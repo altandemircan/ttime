@@ -3013,6 +3013,25 @@ ease;
     width: 45px;
     height: 30px;
 }
+.note-item .remove-btn {
+    margin-top: 0px;
+    padding: 6px;
+}
+.note-item .remove-btn img {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+}
+
+
+.note-item .content.active {
+        margin-top: 0;
+}
+
+.note-item .note-details {
+    padding: 6px 10px;
+}
+
 
 .search-container {
     margin-top: 15px;
