@@ -379,7 +379,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const data = JSON.parse(event.data);
                 if (data.message && data.message.content) {
                     chunkQueue.push(data.message.content);
-                    if (aiDiv.querySelector('.typing')) aiDiv.innerHTML = '🤖 ';
+                    if (aiDiv.querySelector('.typing')) aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> ';
                     
                     if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
                         startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
