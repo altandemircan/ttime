@@ -4353,23 +4353,32 @@ async function updateCart() {
 
             // --- 4. MARKER HTML (Dinamik Renk ve Label) ---
             const listMarkerHtml = `
-                <div class="custom-marker-outer" style="    transform: scale(0.70);
-    position: absolute;
-    left: 20px;
-    top: 10px;
-
+                <div class="custom-marker-outer" style="flex-shrink: 0;
+                    transform: scale(0.70);
+                    position: absolute;
+                    left: 30px;
+                    top: 0px;
                     background: ${markerBgColor} !important; 
-                   ">
+                    border-radius: 50%;
+                    width: 24px; height: 24px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #fff; font-weight: bold; font-size: 16px;
+                    border: 2px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
                     <span class="custom-marker-label" style="font-size: 14px;">${markerLabel}</span>
                 </div>
             `;
             // -------------------------------------------
 
             if (item.category === "Note") {
+                // --- NOTE İÇİN HTML (DRAG ICON EKLENDİ VE CONTENT GİZLENDİ) ---
                 li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
+                
+                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                
                 ${listMarkerHtml} 
                 <img src="${item.image || 'img/added-note.png'}" alt="${item.name}" class="cart-image">
                 <div class="item-info">
@@ -4386,7 +4395,8 @@ async function updateCart() {
               </div>
             </div>
             <div class="confirmation-container" id="confirmation-container-${li.dataset.index}" style="display:none;"></div>
-            <div class="content">
+            
+            <div class="content" style="display:none;">
               <div class="info-section">
                 <div class="note-details">
                   <p>${item.noteDetails ? escapeHtml(item.noteDetails) : ""}</p>
@@ -4420,7 +4430,7 @@ async function updateCart() {
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
-                                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
 
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
