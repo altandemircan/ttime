@@ -10,7 +10,7 @@ function downloadTripPlanPDF(tripKey) {
     
 
 // --- AYARLAR ---
-    const primaryColor = '#8a4af3';
+    const primaryColor = '#d32f2f';
     const accentColor = '#222222';
     const subTextColor = '#666666';
     const lightGray = '#f3f4f6';
