@@ -10,13 +10,16 @@ function downloadTripPlanPDF(tripKey) {
     
 
 // --- AYARLAR ---
-    const primaryColor = '#d32f2f';
+    const primaryColor = '#8a4af3'; // Başlıklar, Day yazıları vs. MOR kalıyor
     const accentColor = '#222222';
     const subTextColor = '#666666';
     const lightGray = '#f3f4f6';
     const lineColor = '#e5e7eb';
     const linkColor = '#2977f5'; 
-    const noteColor = '#f57f17'; // Notlar için turuncu renk
+    
+    // --- MARKER RENKLERİ ---
+    const noteColor = '#f57f17';       // Note: Turuncu
+    const placeMarkerColor = '#d32f2f'; // Place: Kırmızı (İstediğin renk)
     
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -402,7 +405,7 @@ async function generateHighResMap(day, dayItems, trip) {
                      ctx.fillStyle = '#ffffff'; ctx.fill();
                      
                      // Renkli Daire (Not ise turuncu, Yer ise kırmızı)
-                     const pinColor = isNote ? '#f57f17' : '#d32f2f';
+                     const pinColor = isNote ? '#f57f17' : '#d32f2f'; // Burada da kırmızı kullanıyoruz
                      ctx.beginPath(); ctx.arc(x, y, r - 4, 0, 2 * Math.PI); 
                      ctx.fillStyle = pinColor; ctx.fill();
                      
@@ -605,10 +608,10 @@ async function generateHighResMap(day, dayItems, trip) {
 
             for (let i = 0; i < dayItems.length; i++) {
                 const item = dayItems[i];
-                const isNote = item.category === "Note"; 
+                const isNote = item.category === "Note"; // Note kontrolü
 
-                // Note ise ekstra girinti ver (12mm)
-                const indentX = isNote ? 12 : 0; 
+                // Note ise ekstra girinti ver
+                const indentX = isNote ? 12 : 0; // Notlar 12mm içeride
                 const currentMarkerX = timelineX + indentX;
                 const currentContentX = contentX + indentX;
 
@@ -632,10 +635,10 @@ async function generateHighResMap(day, dayItems, trip) {
 
                 checkPageBreak(itemHeight);
 
-                // --- DEĞİŞKENLER (Sıralama önemli) ---
+                // --- DEĞİŞKENLER (BURADA TANIMLANIYOR - HATA DÜZELTİLDİ) ---
                 const isLastItem = (i === dayItems.length - 1);
                 const circleCenterY = cursorY + 7; 
-                // ------------------------------------
+                // --------------------------------------------------------
 
                 // --- TIMELINE ÇİZGİSİ ---
                 if (!isLastItem) {
@@ -648,18 +651,20 @@ async function generateHighResMap(day, dayItems, trip) {
                 if (isNote) {
                     doc.setDrawColor(lineColor);
                     doc.setLineWidth(1.0);
-                    // Badge genişliğinin yarısı (6mm) kadar geriden başlat (Genişlik 12mm olduğu için)
+                    // Badge genişliğinin yarısı (6mm) kadar geriden başlat
                     doc.line(timelineX, circleCenterY, currentMarkerX - 6, circleCenterY);
                 }
 
                 // --- MARKER ÇİZİMİ ---
-                doc.setFillColor(isNote ? noteColor : primaryColor);
+                // Eğer note ise noteColor, değilse YENİ KIRMIZI RENK (placeMarkerColor)
+                doc.setFillColor(isNote ? noteColor : placeMarkerColor);
+                
                 doc.setDrawColor('#ffffff'); 
                 doc.setLineWidth(1);
 
                 if (isNote) {
                     // --- NOTE: OVAL KUTU (BADGE) ---
-                    const badgeW = 12; // Genişlik 10 -> 12 yapıldı
+                    const badgeW = 12;
                     const badgeH = 5;
                     const badgeX = currentMarkerX - (badgeW / 2);
                     const badgeY = circleCenterY - (badgeH / 2);
@@ -667,7 +672,7 @@ async function generateHighResMap(day, dayItems, trip) {
                     doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
                     
                     doc.setFont('Roboto', 'bold');
-                    doc.setFontSize(8); // Font 6 -> 8 yapıldı
+                    doc.setFontSize(8); 
                     doc.setTextColor('#ffffff');
                     doc.text("NOTE", currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
                 } else {
