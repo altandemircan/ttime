@@ -7234,13 +7234,15 @@ position: absolute;
     padding: 10px 10px 10px 0px;
 }
 #ai-chat-input {
-   padding: 10px;
-   border: none;
-   outline: none;
-   
-    border-radius: 6px;
-    font-size: 14px;
-    width: -webkit-fill-available;
+      padding: 10px 0px;
+    border-radius: 30px;
+    color: #000000;
+    outline: none;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    background: #ffffff;
+    font-size: 0.9rem;
+    width: inherit;
 }
 #ai-chat-send-btn {
         border: none;
