@@ -3,16 +3,16 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* --- GHOST ELEMENT (SÜRÜKLENEN HAYALET KUTU) --- */
+        /* --- GHOST WRAPPER --- */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: transparent !important; /* Wrapper şeffaf */
+            background: transparent !important;
             box-shadow: none !important;
             border: none !important;
             
-            /* Genişlik ve Yükseklik */
+            /* Genişlik ana öğeden gelir */
             width: var(--ghost-width) !important;
             height: auto !important; 
             
@@ -21,15 +21,13 @@ function injectDragStyles() {
             transition: none !important;
             overflow: visible !important;
             
-            /* İçindekileri alt alta diz */
             display: flex;
             flex-direction: column;
-            gap: 2px; 
+            gap: 2px;
         }
 
-        /* --- GHOST İÇİNDEKİ ANA ITEM VE NOTLAR --- */
-        /* Genel Travel Item stili */
-        .drag-ghost .travel-item {
+        /* --- SADECE ANA ITEM (Not olmayanlar) --- */
+        .drag-ghost .travel-item:not(.note-item) {
             position: relative !important;
             top: auto !important;
             left: auto !important;
@@ -43,22 +41,28 @@ function injectDragStyles() {
             list-style: none !important;
             height: auto !important;
             min-height: auto !important;
-            width: 100% !important; /* Ana item tam genişlik */
+            width: 100% !important; /* Ana öğe tam otursun */
         }
 
-        /* --- NOTLAR İÇİN ÖZEL AYAR (Senin CSS'ine dokunmuyoruz) --- */
+        /* --- NOTLAR İÇİN ÖZEL (Senin stilini zorluyoruz) --- */
         .drag-ghost .note-item {
-            /* JS ile width müdahalesini engelledik, senin CSS sınıfın (83%, 12%) geçerli olacak */
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
-            border: 2px dashed #ffd54f !important; /* Not olduğu belli olsun diye sarı tire */
-            background: #fff !important;
-            z-index: 2;
-            /* Marginleri koru */
+            /* Senin CSS kurallarının aynısı + Drag görünümü */
+            width: 83% !important;
+            left: 12% !important;
+            position: relative !important;
             margin-top: 16px !important;
             margin-bottom: 16px !important;
+            
+            box-sizing: border-box !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+            border: 2px dashed #ffd54f !important;
+            background: #fff !important;
+            opacity: 0.95;
+            border-radius: 12px;
+            z-index: 2;
         }
 
-        /* --- OKLAR (Sadece en üstteki ana item'da) --- */
+        /* --- OKLAR (Sadece ana öğede) --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
@@ -90,13 +94,13 @@ function injectDragStyles() {
             display: block !important;
         }
 
-        /* Orijinal öğeyi soluklaştır */
+        /* Kaynak öğeyi soluklaştır */
         .travel-item.dragging-source {
             filter: grayscale(100%);
             opacity: 0.3;
         }
 
-        /* GİZLEME SINIFLARI (Aynen korundu) */
+        /* Gizleme Sınıfları */
         @media (max-width: 768px) {
             body.hide-map-details .route-controls-bar,
             body.hide-map-details .tt-travel-mode-set,
@@ -330,37 +334,32 @@ function stopAutoScroll() {
 
 // ========== GHOST & PLACEHOLDER ==========
 function createDragGhost(item, clientX, clientY) {
-    // Varsa eskileri temizle
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     
-    // Orijinal boyutları al
     const rect = item.getBoundingClientRect();
 
-    // 1. Kapsayıcı (Wrapper) Oluştur
+    // Wrapper
     const ghostWrapper = document.createElement('div');
-    // Bu class CSS'te tanımlı olduğu için sürükleme çalışacak
     ghostWrapper.classList.add('drag-ghost'); 
     
-    // Wrapper pozisyonunu ve genişliğini ayarla
     ghostWrapper.style.width = rect.width + "px";
     ghostWrapper.style.left = rect.left + "px";
     ghostWrapper.style.top = rect.top + "px";
     ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
     
-    // 2. Ana İtem'ı Kopyala ve Wrapper'a Ekle
+    // --- 1. ANA ITEM ---
     const mainClone = item.cloneNode(true);
     mainClone.removeAttribute('id');
     
-    // Ana item inline stillerini temizle
+    // Inline stilleri sıfırla
     mainClone.style.marginTop = '0';
     mainClone.style.marginBottom = '0';
     mainClone.style.left = 'auto';
     mainClone.style.top = 'auto';
     mainClone.style.position = 'relative';
-    // Ana item tam genişlikte olsun
-    mainClone.style.width = '100%'; 
+    mainClone.style.width = '100%'; // Ana item tam boy
 
-    // Sürükleme oklarını ekle (sadece ana item'a)
+    // Oklar
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
@@ -373,32 +372,27 @@ function createDragGhost(item, clientX, clientY) {
     
     ghostWrapper.appendChild(mainClone);
 
-    // 3. Altındaki Notları Bul ve Wrapper'a Ekle
+    // --- 2. NOTLARI EKLE ---
     let nextSibling = item.nextElementSibling;
     
-    // Sadece ardışık 'note-item' olanları al
     while (nextSibling && nextSibling.classList.contains('note-item')) {
         const noteClone = nextSibling.cloneNode(true);
         noteClone.removeAttribute('id');
         
-        // --- KRİTİK NOKTA BURASI ---
-        // Note item için width veya left ayarını SIFIRLAMIYORUZ ve %100 YAPMIYORUZ.
-        // Sadece position relative olduğundan emin oluyoruz ki senin CSS'in (left: 12%) çalışsın.
-        noteClone.style.position = 'relative';
-        noteClone.style.top = 'auto';
-        
-        // Notların orijinalindeki marginleri koru (CSS zaten hallediyor ama inline varsa diye)
-        // noteClone.style.marginTop = ... (Senin CSS !important olduğu için dokunmaya gerek yok)
+        // Not inline stillerini temizle AMA width/left ayarına dokunma (CSS halledecek)
+        noteClone.style.marginTop = ''; 
+        noteClone.style.marginBottom = '';
+        noteClone.style.left = ''; 
+        noteClone.style.top = '';
+        noteClone.style.position = ''; 
+        noteClone.style.width = ''; // Temizle ki CSS'teki %83 geçerli olsun
 
         ghostWrapper.appendChild(noteClone);
         
-        // Görsel olarak orijinal notları da soluklaştır
         nextSibling.classList.add('dragging-source');
-        
         nextSibling = nextSibling.nextElementSibling;
     }
 
-    // 4. Body'ye ekle
     document.body.appendChild(ghostWrapper);
 }
 function getDragAfterElement(container, y) {
