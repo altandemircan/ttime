@@ -613,46 +613,85 @@ function finishDrag() {
 
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     try {
-        const newCart = [...window.cart];
+        let newCart = [...window.cart];
+        
+        // 1. Taşınacak bloğu belirle (Ana öğe + altındaki ardışık notlar)
+        // fromIndex, global 'cart' dizisindeki indekstir. Ancak Dragula/UI bize DOM sıralaması verir.
+        // Bu yüzden önce global indeksi bulmamız lazım. Ancak mevcut yapıda fromIndex zaten global.
+        
         if (!newCart[fromIndex]) return;
 
-        const [movedItem] = newCart.splice(fromIndex, 1);
-        movedItem.day = toDay;
-
-        let targetDayItems = newCart.filter(i => i.day === toDay);
-        targetDayItems.splice(toIndex, 0, movedItem);
+        const itemsToMove = [newCart[fromIndex]]; // Ana öğe
         
-        const allDays = new Set([...window.cart.map(i=>i.day), toDay]); 
-        const sortedDays = [...allDays].sort((a,b)=>a-b);
+        // Ana öğenin hemen altından başla ve ardışık "Note"ları topla
+        // Sadece AYNI GÜNDE olan notları almalıyız.
+        let checkIndex = fromIndex + 1;
+        while (checkIndex < newCart.length) {
+            const nextItem = newCart[checkIndex];
+            // Eğer not ise VE aynı gündeyse listeye ekle
+            if (nextItem.category === 'Note' && nextItem.day === fromDay) {
+                itemsToMove.push(nextItem);
+                checkIndex++;
+            } else {
+                // Not değilse veya gün değiştiyse dur
+                break;
+            }
+        }
+
+        // 2. Bu öğeleri ana listeden (newCart) çıkar
+        // filter kullanarak referansa göre silmek en güvenlisi
+        newCart = newCart.filter(item => !itemsToMove.includes(item));
+
+        // 3. Taşınan öğelerin gün bilgisini güncelle
+        if (fromDay !== toDay) {
+            itemsToMove.forEach(item => item.day = toDay);
+        }
+
+        // 4. Hedef konuma ekle
+        // 'toIndex', hedef günün (DOM'daki) kaçıncı sırasına ekleneceğini belirtir.
+        // newCart içindeki hedef gün öğelerini bulup araya eklememiz lazım.
+        
+        // Hedef günün mevcut öğelerini al
+        const targetDayItems = newCart.filter(i => i.day === toDay);
+        
+        // Araya ekle (splice ile)
+        // Not: Eğer toIndex listenin sonundaysa, sona ekler.
+        targetDayItems.splice(toIndex, 0, ...itemsToMove);
+
+        // 5. Listeyi tekrar birleştir (Gün sırasını koruyarak)
+        // Tüm günleri al (hem mevcut hem hedef)
+        const allDays = new Set([...window.cart.map(i => i.day), toDay, fromDay]);
+        const sortedDays = [...allDays].sort((a, b) => a - b);
         
         let finalCart = [];
         sortedDays.forEach(d => {
-            if (d === toDay) finalCart = finalCart.concat(targetDayItems);
-            else finalCart = finalCart.concat(newCart.filter(i => i.day === d));
+            if (d === toDay) {
+                // Hedef gün için güncellenmiş listeyi kullan
+                finalCart = finalCart.concat(targetDayItems);
+            } else {
+                // Diğer günler için newCart'tan (zaten silinmiş hali) al
+                finalCart = finalCart.concat(newCart.filter(i => i.day === d));
+            }
         });
 
         window.cart = finalCart;
 
-        // === KRİTİK FIX: Arayüzü güncellemeden ÖNCE veriyi kaydet ===
+        // === KAYDET ===
         if (typeof saveCurrentTripToStorage === "function") {
             saveCurrentTripToStorage();
         } else {
             localStorage.setItem('cart', JSON.stringify(window.cart));
         }
-        // ============================================================
 
+        // === RENDER ===
         if (typeof updateCart === "function") updateCart();
 
+        // Harita güncellemesi
         setTimeout(() => {
             if (typeof calculateAllRoutes === "function") calculateAllRoutes();
             else if (typeof renderMapForDay === "function") {
                 renderMapForDay(toDay);
-                if(fromDay !== toDay) renderMapForDay(fromDay);
-            }
-            else {
-                window.dispatchEvent(new CustomEvent('cartUpdated', { 
-                    detail: { fromDay, toDay } 
-                }));
+                if (fromDay !== toDay) renderMapForDay(fromDay);
             }
         }, 50);
 
