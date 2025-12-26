@@ -7227,8 +7227,10 @@ position: absolute;
 #ai-chat-box {
     display: flex;
     flex-direction: column;
-  
-    padding: 10px 10px 10px 0px;
+    height: 100%;       /* Container'ı doldur */
+    max-height: 100%;   
+    overflow: hidden;   /* Dışarı taşma olmasın */
+    padding: 0 10px;    /* Kenar boşlukları */
 }
 #ai-chat-input {
    padding: 10px;
@@ -7253,20 +7255,32 @@ position: absolute;
     height: 16px;
     }
 
-#ai-chat-messages {  
-    overflow-y: auto;        
-    font-size: 1em;
-    color: #1e293b;
-    line-height: 1.6;
+#ai-chat-messages {
+    flex: 1;            /* Input hariç tüm alanı kapla */
+    overflow-y: auto;   /* Sadece burası scroll olsun */
+    display: flex;
+    flex-direction: column;
     margin-bottom: 10px;
-      display: flex;
-  flex-direction: column;
+    padding-bottom: 10px;
+    
+    /* Mobil kaydırma hissiyatı için */
+    -webkit-overflow-scrolling: touch; 
 }
 #ai-chat-messages div {
-    margin: 10px 0px;     
-    padding: 16px;
+  
     border-radius: 16px;
     width: fit-content;
+}
+
+.ai-input-wrapper {
+    flex-shrink: 0; /* Asla büzülme, yerini koru */
+    width: 100%;
+    position: relative;
+    background: #ffffff;
+    z-index: 10; /* Mesajların üstünde kalsın */
+    
+    /* Input kutusunu biraz daha derli toplu yap */
+    margin-bottom: 5px; 
 }
 .chat-info {
     text-align: left;
@@ -7347,16 +7361,16 @@ ease-in-out;
 }
 /* Form Konteyner */
 .form-container {
-text-align: center;
-    /* padding: 10px; */
-    /* border-radius: 20px; */
-    height: calc(100vh - 200px);
+    flex: 1; /* Kalan tüm boşluğu doldur */
     display: flex;
-    flex-direction: column-reverse;
-    justify-content: flex-start;
-    max-height: -webkit-fill-available;
+    flex-direction: column; /* Alttan üste değil, normal akış */
+    justify-content: flex-end; /* İçeriği aşağı it (Chat mantığı) */
+    overflow: hidden; /* Taşmaları engelle */
+    height: 100%; /* Kapsayıcının tamamını al */
+    max-height: 100%;
+    /* iPhone alt çizgi (home indicator) için güvenli boşluk */
+    padding-bottom: env(safe-area-inset-bottom, 20px); 
 }
-
 /* Form İçeriği */
 .form-content {
    display: block;
