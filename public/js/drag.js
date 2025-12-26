@@ -1,142 +1,69 @@
 // ========== STYLES (Görsel Ayarlar) ==========
-function injectDragStyles() {
-    const styleId = 'tt-drag-styles';
-    if (document.getElementById(styleId)) return;
-    const css = `
-        /* --- GHOST WRAPPER --- */
-        .drag-ghost {
-            position: fixed !important;
-            z-index: 999999 !important;
-            pointer-events: none !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
-            
-            /* Genişlik JS'den gelir, yükseklik içeriğe göre uzar */
-            width: var(--ghost-width) !important;
-            height: auto !important; 
-            
-            margin: 0 !important;
-            will-change: left, top;
-            transition: none !important;
-            overflow: visible !important; /* Okların dışarı taşması için şart */
-            
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
+function createDragGhost(item, clientX, clientY) {
+    document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
+    
+    const rect = item.getBoundingClientRect();
 
-        /* --- SADECE ANA ITEM --- */
-        .drag-ghost .travel-item:not(.note-item) {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
-            opacity: 0.95;
-            background: #fff; 
-            border: 2px dashed #87cdb5 !important;
-            border-radius: 12px;
-            list-style: none !important;
-            height: auto !important;
-            min-height: auto !important;
-            width: 100% !important; 
-        }
+    // 1. Wrapper Oluştur
+    const ghostWrapper = document.createElement('div');
+    ghostWrapper.classList.add('drag-ghost'); 
+    
+    ghostWrapper.style.width = rect.width + "px";
+    ghostWrapper.style.left = rect.left + "px";
+    ghostWrapper.style.top = rect.top + "px";
+    ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
+    
+    // 2. Üst Oku Wrapper'a Ekle
+    const upArrow = document.createElement('div');
+    upArrow.className = 'drag-arrow-visual drag-arrow-top';
+    upArrow.innerHTML = '▲'; 
+    ghostWrapper.appendChild(upArrow);
 
-        /* --- NOTLAR (Girintili Tasarım Korunur) --- */
-        .drag-ghost .note-item {
-            /* Senin CSS dosyanındaki %83 ve %12 kuralları işlesin diye width vermiyoruz */
-            width: 83% !important;
-            left: 12% !important;
-            position: relative !important;
-            margin-top: 16px !important;
-            margin-bottom: 16px !important;
-            
-            box-sizing: border-box !important;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
-            border: 2px dashed #ffd54f !important;
-            background: #fff !important;
-            opacity: 0.95;
-            border-radius: 12px;
-            z-index: 2;
-        }
+    // 3. Ana Item'ı Kopyala ve Wrapper'a Ekle
+    const mainClone = item.cloneNode(true);
+    mainClone.removeAttribute('id');
+    
+    // Inline stilleri temizle
+    mainClone.style.marginTop = '0';
+    mainClone.style.marginBottom = '0';
+    mainClone.style.left = 'auto';
+    mainClone.style.top = 'auto';
+    mainClone.style.position = 'relative';
+    mainClone.style.width = '100%'; 
 
-        /* --- OKLAR (WRAPPER'A GÖRE KONUMLANACAK) --- */
-        .drag-arrow-visual {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 28px;
-            height: 28px;
-            background: #8a4af3;
-            color: #ffffff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-            opacity: 0.9;
-        }
-        /* İstenilen -36px boşluklar */
-        .drag-arrow-top { top: -36px; }
-        .drag-arrow-bottom { bottom: -36px; }
+    ghostWrapper.appendChild(mainClone);
 
-        /* --- PLACEHOLDER --- */
-        .insertion-placeholder {
-            height: 6px !important;
-            background: linear-gradient(90deg, #8a4af3, #b388ff); 
-            margin: 8px 0;
-            border-radius: 4px;
-            box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
-            pointer-events: none;
-            display: block !important;
-        }
+    // 4. Altındaki Notları Bul ve Wrapper'a Ekle
+    let nextSibling = item.nextElementSibling;
+    
+    while (nextSibling && nextSibling.classList.contains('note-item')) {
+        const noteClone = nextSibling.cloneNode(true);
+        noteClone.removeAttribute('id');
+        
+        // Not inline stillerini temizle ama CSS class'ını koru
+        noteClone.style.marginTop = ''; 
+        noteClone.style.marginBottom = '';
+        noteClone.style.left = ''; 
+        noteClone.style.top = '';
+        noteClone.style.position = ''; 
+        noteClone.style.width = ''; 
 
-        .travel-item.dragging-source {
-            filter: grayscale(100%);
-            opacity: 0.3;
-        }
+        ghostWrapper.appendChild(noteClone);
+        
+        // Orijinal notu soluklaştır
+        nextSibling.classList.add('dragging-source');
+        nextSibling = nextSibling.nextElementSibling;
+    }
 
-        @media (max-width: 768px) {
-            body.hide-map-details .route-controls-bar,
-            body.hide-map-details .tt-travel-mode-set,
-            body.hide-map-details [id^="map-bottom-controls-wrapper"], 
-            body.hide-map-details .add-more-btn,
-            body.hide-map-details .add-new-day-btn,
-            body.hide-map-details #add-new-day-button,
-            body.hide-map-details .add-new-day-separator, 
-            body.hide-map-details .route-info, 
-            body.hide-map-details [id^="route-info-day"], 
-            body.hide-map-details .route-scale-bar,
-            body.hide-map-details .ai-info-section,
-            body.hide-map-details .ai-trip-info-box,
-            body.hide-map-details #generate-ai-info-btn,
-            body.hide-map-details .add-to-calendar-btn,
-            body.hide-map-details .date-range,
-            body.hide-map-details #newchat,
-            body.hide-map-details .trip-share-section,
-            body.hide-map-details .expanded-map-panel
-            {
-                display: none !important;
-            }
-        }
+    // 5. Alt Oku Wrapper'a Ekle
+    // Wrapper'ın pozisyonu "relative" olmadığı için (fixed), oklar wrapper sınırlarına göre hizalanır.
+    // CSS'te wrapper flex olduğu için içeriğe göre uzar. Ok da en alta yapışır.
+    const downArrow = document.createElement('div');
+    downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
+    downArrow.innerHTML = '▼'; 
+    ghostWrapper.appendChild(downArrow);
 
-        .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
-            pointer-events: auto;
-        }
-        body.dragging-active {
-            user-select: none !important;
-            cursor: grabbing !important;
-            touch-action: none !important; 
-        }
-    `;
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = css;
-    document.head.appendChild(style);
+    document.body.appendChild(ghostWrapper);
 }
 
 // ========== GLOBAL VARIABLES ==========
