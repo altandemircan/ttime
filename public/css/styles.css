@@ -7671,7 +7671,7 @@ scrollbar-width: thin;
         flex: 1 !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
-        padding: 15px !important;       
+        
         min-height: 0 !important;
         /* height ve max-height KALDIR */
     }
