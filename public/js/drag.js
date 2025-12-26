@@ -347,8 +347,9 @@ function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
     
     const rect = item.getBoundingClientRect();
+    const isNote = item.classList.contains('note-item'); // KONTROL BURADA
 
-    // 1. Wrapper Oluştur
+    // Wrapper
     const ghostWrapper = document.createElement('div');
     ghostWrapper.classList.add('drag-ghost'); 
     
@@ -357,51 +358,51 @@ function createDragGhost(item, clientX, clientY) {
     ghostWrapper.style.top = rect.top + "px";
     ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
     
-    // 2. Üst Oku Wrapper'a Ekle
+    // --- OKLARI EKLE ---
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
     ghostWrapper.appendChild(upArrow);
 
-    // 3. Ana Item'ı Kopyala ve Wrapper'a Ekle
+    // --- 1. ANA ITEM (SÜRÜKLENEN) ---
     const mainClone = item.cloneNode(true);
     mainClone.removeAttribute('id');
     
-    // Inline stilleri temizle
     mainClone.style.marginTop = '0';
     mainClone.style.marginBottom = '0';
     mainClone.style.left = 'auto';
     mainClone.style.top = 'auto';
     mainClone.style.position = 'relative';
-    mainClone.style.width = '100%'; 
+    // Eğer not ise genişliği boş bırak (CSS halletsin), değilse %100 yap
+    mainClone.style.width = isNote ? '' : '100%'; 
 
     ghostWrapper.appendChild(mainClone);
 
-    // 4. Altındaki Notları Bul ve Wrapper'a Ekle
-    let nextSibling = item.nextElementSibling;
-    
-    while (nextSibling && nextSibling.classList.contains('note-item')) {
-        const noteClone = nextSibling.cloneNode(true);
-        noteClone.removeAttribute('id');
+    // --- 2. ALTTAKİLERİ TOPLA (SADECE SÜRÜKLENEN BİR NOT DEĞİLSE) ---
+    // Eğer biz zaten bir not sürüklüyorsak, altımızdaki notlar bize bağlı değildir.
+    if (!isNote) {
+        let nextSibling = item.nextElementSibling;
         
-        // Not inline stillerini temizle ama CSS class'ını koru
-        noteClone.style.marginTop = ''; 
-        noteClone.style.marginBottom = '';
-        noteClone.style.left = ''; 
-        noteClone.style.top = '';
-        noteClone.style.position = ''; 
-        noteClone.style.width = ''; 
+        while (nextSibling && nextSibling.classList.contains('note-item')) {
+            const noteClone = nextSibling.cloneNode(true);
+            noteClone.removeAttribute('id');
+            
+            noteClone.style.marginTop = ''; 
+            noteClone.style.marginBottom = '';
+            noteClone.style.left = ''; 
+            noteClone.style.top = '';
+            noteClone.style.position = ''; 
+            noteClone.style.width = ''; 
 
-        ghostWrapper.appendChild(noteClone);
-        
-        // Orijinal notu soluklaştır
-        nextSibling.classList.add('dragging-source');
-        nextSibling = nextSibling.nextElementSibling;
+            ghostWrapper.appendChild(noteClone);
+            
+            // Görsel olarak soluklaştır
+            nextSibling.classList.add('dragging-source');
+            nextSibling = nextSibling.nextElementSibling;
+        }
     }
 
-    // 5. Alt Oku Wrapper'a Ekle
-    // Wrapper'ın pozisyonu "relative" olmadığı için (fixed), oklar wrapper sınırlarına göre hizalanır.
-    // CSS'te wrapper flex olduğu için içeriğe göre uzar. Ok da en alta yapışır.
+    // Alt Ok
     const downArrow = document.createElement('div');
     downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
     downArrow.innerHTML = '▼'; 
@@ -667,61 +668,48 @@ function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     try {
         let newCart = [...window.cart];
         
-        // 1. Taşınacak bloğu belirle (Ana öğe + altındaki ardışık notlar)
-        // fromIndex, global 'cart' dizisindeki indekstir. Ancak Dragula/UI bize DOM sıralaması verir.
-        // Bu yüzden önce global indeksi bulmamız lazım. Ancak mevcut yapıda fromIndex zaten global.
-        
         if (!newCart[fromIndex]) return;
 
-        const itemsToMove = [newCart[fromIndex]]; // Ana öğe
+        const mainItem = newCart[fromIndex];
+        const isNote = (mainItem.category === 'Note'); // KONTROL BURADA
+        const itemsToMove = [mainItem];
         
-        // Ana öğenin hemen altından başla ve ardışık "Note"ları topla
-        // Sadece AYNI GÜNDE olan notları almalıyız.
-        let checkIndex = fromIndex + 1;
-        while (checkIndex < newCart.length) {
-            const nextItem = newCart[checkIndex];
-            // Eğer not ise VE aynı gündeyse listeye ekle
-            if (nextItem.category === 'Note' && nextItem.day === fromDay) {
-                itemsToMove.push(nextItem);
-                checkIndex++;
-            } else {
-                // Not değilse veya gün değiştiyse dur
-                break;
+        // Sadece sürüklenen eleman NOT DEĞİLSE altındakileri topla
+        if (!isNote) {
+            let checkIndex = fromIndex + 1;
+            while (checkIndex < newCart.length) {
+                const nextItem = newCart[checkIndex];
+                // Aynı günde olan ardışık notları al
+                if (nextItem.category === 'Note' && nextItem.day === fromDay) {
+                    itemsToMove.push(nextItem);
+                    checkIndex++;
+                } else {
+                    break;
+                }
             }
         }
 
-        // 2. Bu öğeleri ana listeden (newCart) çıkar
-        // filter kullanarak referansa göre silmek en güvenlisi
+        // 2. Silme
         newCart = newCart.filter(item => !itemsToMove.includes(item));
 
-        // 3. Taşınan öğelerin gün bilgisini güncelle
+        // 3. Güncelleme
         if (fromDay !== toDay) {
             itemsToMove.forEach(item => item.day = toDay);
         }
 
-        // 4. Hedef konuma ekle
-        // 'toIndex', hedef günün (DOM'daki) kaçıncı sırasına ekleneceğini belirtir.
-        // newCart içindeki hedef gün öğelerini bulup araya eklememiz lazım.
-        
-        // Hedef günün mevcut öğelerini al
+        // 4. Ekleme
         const targetDayItems = newCart.filter(i => i.day === toDay);
-        
-        // Araya ekle (splice ile)
-        // Not: Eğer toIndex listenin sonundaysa, sona ekler.
         targetDayItems.splice(toIndex, 0, ...itemsToMove);
 
-        // 5. Listeyi tekrar birleştir (Gün sırasını koruyarak)
-        // Tüm günleri al (hem mevcut hem hedef)
+        // 5. Birleştirme
         const allDays = new Set([...window.cart.map(i => i.day), toDay, fromDay]);
         const sortedDays = [...allDays].sort((a, b) => a - b);
         
         let finalCart = [];
         sortedDays.forEach(d => {
             if (d === toDay) {
-                // Hedef gün için güncellenmiş listeyi kullan
                 finalCart = finalCart.concat(targetDayItems);
             } else {
-                // Diğer günler için newCart'tan (zaten silinmiş hali) al
                 finalCart = finalCart.concat(newCart.filter(i => i.day === d));
             }
         });
