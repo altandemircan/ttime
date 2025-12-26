@@ -3164,7 +3164,7 @@ function closeCustomNoteInput() {
     }
 }
 
-function saveCustomNote(day) {
+async function saveCustomNote(day) {
     const titleEl = document.getElementById("noteTitle");
     const detailsEl = document.getElementById("noteDetails");
     
@@ -3173,33 +3173,41 @@ function saveCustomNote(day) {
         return;
     }
 
-    const title = titleEl.value;
-    const details = detailsEl.value;
+    const title = titleEl.value ? titleEl.value.trim() : "";
+    const details = detailsEl.value ? detailsEl.value.trim() : "";
 
+    // İkisi de boşsa uyarı ver
     if (!title && !details) {
         alert("Please enter a title or detail for your note.");
         return;
     }
 
-    // Ensure cart exists
+    // Cart dizisinin var olduğundan emin ol
     if (!window.cart) {
         window.cart = [];
     }
 
-    // 1. Notu geçici hafızaya (RAM) ekle
+    // 1. Notu RAM'e (window.cart) ekle
     window.cart.push({
-        name: title || "Note",
-        noteDetails: (details && details.trim().length > 0) ? details : "No description",
+        name: title || "Note", // Başlık yoksa "Note" olsun
+        noteDetails: (details && details.length > 0) ? details : "No description", // Detay yoksa metni ayarla
         day: Number(day),
         category: "Note",
-        image: "/img/custom-note.svg" 
+        image: "img/added-note.png" // Varsayılan not ikonu
     });
 
-    console.log("Note saved for day", day);
+    console.log("Note added to RAM for day", day);
 
-    // 2. [KRİTİK DÜZELTME] Kalıcı hafızaya (Local Storage) kaydet
+    // 2. Kalıcı Hafızaya (LocalStorage) Kaydet
+    // ÖNEMLİ: 'withThumbnail: false' diyerek harita oluşturmayı atlıyoruz, böylece kayıt anında gerçekleşir.
     if (typeof saveCurrentTripToStorage === "function") {
-        saveCurrentTripToStorage(); 
+        try {
+            await saveCurrentTripToStorage({ withThumbnail: false });
+            console.log("Trip saved to localStorage successfully.");
+        } catch (e) {
+            console.error("Save to storage failed:", e);
+            alert("Error saving note. Please try again.");
+        }
     } else {
         console.warn("saveCurrentTripToStorage function is missing! Data not saved to disk.");
     }
@@ -3211,7 +3219,7 @@ function saveCustomNote(day) {
         console.warn("updateCart function is missing!");
     }
     
-    // Cleanup
+    // Pencereyi kapat
     closeCustomNoteInput();
 }
 
