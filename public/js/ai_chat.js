@@ -474,3 +474,38 @@ document.addEventListener("DOMContentLoaded", function() {
     startNewChat();
 });
 
+// Dosyanın sonuna ekle veya mevcut koda ekle
+document.addEventListener('DOMContentLoaded', function() {
+    // AI Chat için özel toggle fonksiyonu
+    const originalToggleSidebarLogin = window.toggleSidebarLogin;
+    
+    window.toggleSidebarLogin = function() {
+        // Önce orijinal fonksiyonu çağır
+        originalToggleSidebarLogin();
+        
+        // AI input alanını kontrol et
+        const aiInputWrapper = document.querySelector('.ai-input-wrapper');
+        const sidebar = document.getElementById('sidebar-overlay-login');
+        
+        if (aiInputWrapper && sidebar) {
+            if (sidebar.classList.contains('open')) {
+                // Sidebar açıksa göster
+                aiInputWrapper.style.display = 'flex';
+            } else {
+                // Sidebar kapalıysa gizle
+                aiInputWrapper.style.display = 'none';
+            }
+        }
+    };
+    
+    // Sayfa yüklendiğinde kontrol et
+    const sidebar = document.getElementById('sidebar-overlay-login');
+    const aiInputWrapper = document.querySelector('.ai-input-wrapper');
+    
+    if (sidebar && aiInputWrapper) {
+        // Başlangıçta gizle (mobilde)
+        if (window.innerWidth <= 768) {
+            aiInputWrapper.style.display = 'none';
+        }
+    }
+});
