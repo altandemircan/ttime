@@ -3188,10 +3188,11 @@ function saveCustomNote(day) {
 
     window.cart.push({
         name: title || "Note",
-        noteDetails: details,
+        // DEĞİŞİKLİK BURADA: Eğer detay boşsa veya sadece boşluksa "No description" kaydet
+        noteDetails: (details && details.trim().length > 0) ? details : "No description",
         day: Number(day),
         category: "Note",
-        image: "/img/custom-note.svg" // Ensure this image path is correct
+        image: "/img/custom-note.svg" 
     });
 
     console.log("Note saved for day", day);
