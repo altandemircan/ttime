@@ -7623,11 +7623,11 @@ scrollbar-width: thin;
 @media (max-width: 768px) {
     .sidebar-overlay.sidebar-login {
         position: fixed !important;
-        top: 0 !important;
+        top: 100px !important;
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 100vw !important;
+        width: 90vw !important;
         height: 100vh !important;
         max-height: 100vh !important;
         overflow: hidden !important;
@@ -7660,7 +7660,7 @@ scrollbar-width: thin;
         left: 20px !important;
         right: 20px !important;
         margin: 10px !important;
-        z-index: 1000 !important;
+      
         background: white !important;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
     }
