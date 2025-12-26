@@ -2,14 +2,16 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // --- 1. AYARLAR VE DEĞİŞKENLER ---
     const STORAGE_KEY = 'triptime_ai_history_v1';
-    const MAX_MESSAGES_PER_CHAT = 10; 
+    const MAX_MESSAGES_PER_CHAT = 10; // Chat başına limit
     let currentChatId = null;
     let chatHistory = [];
 
-    // --- DOM ELEMENTLERİNİ SEÇ ---
+    // --- DOM ELEMENTLERİNİ GÜVENLE SEÇ ---
     const sidebarLogin = document.getElementById('sidebar-login');
     const sidebarTitle = sidebarLogin ? sidebarLogin.querySelector('.sidebar_title') : null;
+    // Form Container (Ana kapsayıcı)
     const formContainer = sidebarLogin ? sidebarLogin.querySelector('.form-container') : null;
+    // Login Form (Sohbet kutusunu içeren div)
     const formContent = document.getElementById('login-form'); 
     
     const chatBox = document.getElementById('ai-chat-box');
@@ -17,146 +19,21 @@ document.addEventListener("DOMContentLoaded", function() {
     const chatInput = document.getElementById('ai-chat-input');
     const sendBtn = document.getElementById('ai-chat-send-btn');
 
+    // Eğer temel elementler yoksa çalışma
     if (!sidebarLogin || !chatBox || !messagesDiv || !formContainer || !formContent) return;
 
-    // --- 2. CSS STYLES (DÜZELTİLMİŞ & SABİTLENMİŞ) ---
+    // --- 2. CSS STYLES (Mevcut Tasarıma Uyumlu) ---
     const styleId = 'tt-ai-sidebar-styles';
     if (!document.getElementById(styleId)) {
         const css = `
-            /* --- 1. ANA YAPI (Açılışta Gizli Kalmasını Sağlar) --- */
-            /* ÖNEMLİ: position:fixed BURADA YOK. Ebeveyn (overlay) ne derse o olur. */
-            #sidebar-login {
-                display: flex !important;
-                flex-direction: column !important;
-                height: 100% !important;
-                width: 100% !important;
-                overflow: hidden !important;
-                padding: 0 !important;
-            }
-
-            /* --- 2. FLEX YAPI & MOBİL DÜZENİ --- */
-            /* İçeriklerin taşmasını engeller ve inputu alta iter */
-            .form-container {
-                flex: 1 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                height: auto !important;
-                overflow: hidden !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                justify-content: flex-start !important;
-            }
-
-            #login-form {
-                flex: 1 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                height: 100% !important;
-                overflow: hidden !important;
-                width: 100% !important;
-            }
-
-            /* --- 3. CHAT KUTUSU --- */
-            #ai-chat-box {
-                flex: 1 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                height: 100% !important;
-                overflow: hidden !important;
-                position: relative !important;
-                padding: 0 10px !important;
-            }
-
-            /* --- 4. MESAJ LİSTESİ (SADECE BURASI KAYAR) --- */
-            #ai-chat-messages {
-                flex: 1 !important;
-                overflow-y: auto !important;
-                display: flex !important;
-                flex-direction: column !important;
-                padding-bottom: 10px !important;
-                margin-bottom: 0 !important;
-                width: 100% !important;
-                -webkit-overflow-scrolling: touch; /* Mobilde akıcı kaydırma */
-            }
-
-            /* Mesaj divlerinin margin çakışmasını önle */
-            #ai-chat-messages div {
-                margin: 0 !important;
-            }
-
-            /* --- 5. MESAJ TASARIMLARI --- */
-            .chat-message {
-                margin: 8px 0px !important;      
-                padding: 12px 16px !important;
-                border-radius: 16px !important;
-                width: fit-content !important;
-                max-width: 85% !important;
-                display: flex !important;
-                gap: 10px !important;
-                line-height: 1.5 !important;
-                align-items: flex-start !important;
-                flex-shrink: 0 !important;
-            }
-
-            /* İç elemanların marginini sıfırla */
-            .chat-message > div {
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            .ai-message {
-                background: #f6f4ff !important;
-                color: #1e293b !important;
-                align-self: flex-start !important;
-                text-align: left !important;
-            }
-
-            .user-message {
-                background: #e6f5ff !important;
-                color: #1e293b !important;
-                align-self: flex-end !important;
-                flex-direction: row-reverse !important;
-                text-align: left !important;
-                align-items: center !important;
-            }
-
-            .ai-message img {
-                width: 24px !important;
-                height: 24px !important;
-                border-radius: 50% !important;
-                object-fit: cover !important;
-                flex-shrink: 0 !important;
-                margin-top: 2px !important;
-                display: block !important;
-            }
-
-            /* --- 6. INPUT ALANI (ALTTA SABİT) --- */
-            .ai-input-wrapper {
-                flex-shrink: 0 !important;
-                width: 100% !important;
-                background: #ffffff !important;
-                border-top: 1px solid #f0f0f0 !important;
-                z-index: 50 !important;
-                padding: 10px !important;
-                
-                /* iPhone Çentiği ve Home Bar İçin Güvenli Alan */
-                padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
-                
-                position: relative !important;
-                display: flex !important;
-                flex-direction: column !important;
-            }
-
-            /* --- 7. BAŞLIK VE KONTROLLER --- */
+            /* Kontrol Butonları (Başlık Altı) */
             #ai-chat-controls {
-                display: flex !important;
-                gap: 8px !important;
-                padding: 0 10px 10px 10px !important;
-                flex-shrink: 0 !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                margin-bottom: 0 !important;
+                display: flex;
+                gap: 8px;
+                padding: 0 0 15px 0; /* Alt boşluk */
+                margin-bottom: 10px;
+                border-bottom: 1px solid #f0f0f0;
             }
-
             .ai-nav-btn {
                 flex: 1;
                 padding: 8px 12px;
@@ -168,40 +45,91 @@ document.addEventListener("DOMContentLoaded", function() {
                 font-size: 0.85rem;
                 font-weight: 600;
                 color: #555;
+                transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 6px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            }
+            .ai-nav-btn:hover {
+                background: #faf8ff;
+                border-color: #8a4af3;
+                color: #8a4af3;
             }
             .ai-nav-btn.active {
                 background: #9868e8;
                 color: #fff;
                 border-color: #9868e8;
+                box-shadow: 0 4px 10px rgba(138, 74, 243, 0.2);
             }
 
-            /* History Bölümü */
+            /* Geçmiş Listesi Alanı */
             #ai-history-list {
-                display: none;
-                flex-direction: column;
+                display: none; /* JS ile açılacak */
+                    flex-direction: column;
+                width: 100%;
+                height: 100%;
                 overflow-y: auto;
-                padding: 0 10px;
-                flex: 1 !important;
-                height: 100% !important;
+                padding-right: 4px;
+                gap: 10px;
+                order: 10;
+                margin-top: 4px;
             }
+            
+            /* Geçmiş Kartı */
             .history-card {
-                background: #f9f9f9;
+                    background: #f9f9f9;
                 border: 1px solid #eee;
                 border-radius: 10px;
                 padding: 12px;
-                margin-bottom: 8px !important;
                 cursor: pointer;
                 position: relative;
-                flex-shrink: 0;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+                text-align: left;
+                margin-top: 1px;
             }
-            .h-title { font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 4px; }
-            .h-date { font-size: 0.75rem; color: #959595; }
-            .h-delete { position: absolute; right: 10px; top: 10px; background: transparent; border: none; color: #ffcccc; cursor: pointer; }
+            .history-card:hover {
+                border-color: #8a4af3;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            }
+            .h-title {
+                font-weight: 600;
+                font-size: 0.9rem;
+                color: #1e293b;
+                margin-bottom: 4px;
+                display: block;
+                padding-right: 24px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .h-date {
+                font-size: 0.75rem;
+                color: #959595;
+            }
+            .h-delete {
+                position: absolute;
+                right: 8px;
+                top: 8px;
+                background: transparent;
+                border: none;
+                color: #ffcccc;
+                font-size: 16px;
+                line-height: 1;
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+            .h-delete:hover {
+                color: #ff4444;
+                background: #fff5f5;
+            }
 
+            /* Gizleme Helper'ı */
             .view-hidden { display: none !important; }
         `;
         const style = document.createElement('style');
@@ -210,58 +138,96 @@ document.addEventListener("DOMContentLoaded", function() {
         document.head.appendChild(style);
     }
 
-    // --- 3. UI MANTIKLARI ---
+    // --- 3. UI YERLEŞTİRME (Insert Logic) ---
 
-    // Kontrol Butonları
+    // A) Kontrol Butonları (New Chat / History)
     const controlsDiv = document.createElement('div');
     controlsDiv.id = 'ai-chat-controls';
     controlsDiv.innerHTML = `
-        <button id="btn-ai-new" class="ai-nav-btn active"><span>✨ New Chat</span></button>
-        <button id="btn-ai-history" class="ai-nav-btn"><span>📂 History</span></button>
+        <button id="btn-ai-new" class="ai-nav-btn active">
+            <span>✨ New Chat</span>
+        </button>
+        <button id="btn-ai-history" class="ai-nav-btn">
+            <span>📂 History</span>
+        </button>
     `;
-    if (sidebarTitle && sidebarTitle.parentNode) sidebarTitle.insertAdjacentElement('afterend', controlsDiv);
 
-    // History Listesi
+    // Sidebar başlığından hemen sonraya ekle
+    if (sidebarTitle && sidebarTitle.parentNode) {
+        sidebarTitle.insertAdjacentElement('afterend', controlsDiv);
+    }
+
+    // B) Geçmiş Listesi Konteynerı (Form container içine, formun kardeşi olarak)
     const historyListDiv = document.createElement('div');
     historyListDiv.id = 'ai-history-list';
     formContainer.appendChild(historyListDiv);
 
-    // --- 4. CHAT FONKSİYONLARI ---
+    // --- 4. DATA & LOGIC ---
 
+    // Chat başına limit kontrolü
     function canAskQuestion() {
+        // Chat geçmişindeki 'user' mesajlarını say
         const userMsgCount = chatHistory.filter(m => m.role === 'user').length;
         return userMsgCount < MAX_MESSAGES_PER_CHAT;
     }
 
     function getAllChats() {
-        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } 
+        catch { return {}; }
     }
 
     function saveCurrentChat() {
         if (!chatHistory || chatHistory.length === 0) return;
         if (!currentChatId) currentChatId = 'chat_' + Date.now();
+
         const allChats = getAllChats();
-        let title = chatHistory.find(m => m.role === 'user')?.content.slice(0, 35) || "Conversation";
-        allChats[currentChatId] = { id: currentChatId, title: title, updatedAt: Date.now(), messages: chatHistory };
+        
+        let title = "Conversation";
+        const firstUserMsg = chatHistory.find(m => m.role === 'user');
+        if (firstUserMsg) {
+            title = firstUserMsg.content.slice(0, 35);
+        }
+
+        allChats[currentChatId] = {
+            id: currentChatId,
+            title: title,
+            updatedAt: Date.now(),
+            messages: chatHistory
+        };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allChats));
     }
 
+    // --- 5. GÖRÜNÜM GEÇİŞLERİ ---
+
     function showChatScreen() {
+        // Chat Formunu Göster
         formContent.classList.remove('view-hidden');
-        formContent.style.display = 'flex'; // Flex yapısı korunsun
+        formContent.style.display = 'block'; 
+        
+        // History Listesini Gizle
         historyListDiv.classList.add('view-hidden');
         historyListDiv.style.display = 'none';
+        
+        // Buton durumları
         document.getElementById('btn-ai-new').classList.add('active');
         document.getElementById('btn-ai-history').classList.remove('active');
+        
+        // Scroll
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
     function showHistoryScreen() {
         renderHistoryList();
+        
+        // Chat Formunu Gizle
         formContent.classList.add('view-hidden');
         formContent.style.display = 'none';
+
+        // History Listesini Göster
         historyListDiv.classList.remove('view-hidden');
         historyListDiv.style.display = 'flex';
+        
+        // Butonlar
         document.getElementById('btn-ai-new').classList.remove('active');
         document.getElementById('btn-ai-history').classList.add('active');
     }
@@ -270,40 +236,52 @@ document.addEventListener("DOMContentLoaded", function() {
         currentChatId = null;
         chatHistory = [];
         messagesDiv.innerHTML = '';
+        
+        // Başlangıç Mesajı
         const infoDiv = document.createElement("div");
         infoDiv.className = "chat-info";
         infoDiv.innerHTML = `<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <br><span style='font-size:0.8rem;opacity:0.7'>(Limit: ${MAX_MESSAGES_PER_CHAT} messages per chat)</span>`;
         messagesDiv.appendChild(infoDiv);
+
         showChatScreen();
     }
 
     function loadChatFromHistory(id) {
-        const chat = getAllChats()[id];
+        const allChats = getAllChats();
+        const chat = allChats[id];
         if (!chat) return;
+
         currentChatId = chat.id;
         chatHistory = chat.messages || [];
-        messagesDiv.innerHTML = '';
         
+        messagesDiv.innerHTML = ''; // Temizle
+
         chatHistory.forEach(msg => {
             const div = document.createElement('div');
             div.className = `chat-message ${msg.role === 'user' ? 'user-message' : 'ai-message'}`;
-            const text = (typeof markdownToHtml === 'function' && msg.role === 'assistant') ? markdownToHtml(msg.content) : msg.content;
             
-            // HTML yapısını flex'e uygun kuruyoruz
-            if (msg.role === 'user') {
-                div.innerHTML = `<div>🧑</div><div>${text}</div>`;
-            } else {
-                div.innerHTML = `<img src="https://dev.triptime.ai/img/avatar_aiio.png"><div>${text}</div>`;
-            }
+            const text = (typeof markdownToHtml === 'function' && msg.role === 'assistant')
+                ? markdownToHtml(msg.content)
+                : msg.content;
+
+            if (msg.role === 'user') div.textContent = '🧑 ' + text;
+            else div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> ' + text;
+            
             messagesDiv.appendChild(div);
         });
 
+        // Eğer yüklenen chat limiti doldurmuşsa uyarı ekle (opsiyonel görsel bilgi)
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
-            limitDiv.innerHTML = "<span style='color:#d32f2f;font-size:0.85rem'><b>Note:</b> This chat has reached its message limit.</span>";
+            limitDiv.style.background = "#fff3f3"; // Hafif kırmızı
+            limitDiv.style.color = "#d32f2f";
+            limitDiv.style.fontSize = "0.85rem";
+            limitDiv.style.border = "1px solid #ffcdd2";
+            limitDiv.innerHTML = "<b>Note:</b> This chat has reached its message limit.";
             messagesDiv.appendChild(limitDiv);
         }
+
         showChatScreen();
     }
 
@@ -311,65 +289,105 @@ document.addEventListener("DOMContentLoaded", function() {
         historyListDiv.innerHTML = '';
         const allChats = getAllChats();
         const sorted = Object.values(allChats).sort((a, b) => b.updatedAt - a.updatedAt);
+
         if (sorted.length === 0) {
-            historyListDiv.innerHTML = '<div style="text-align:center;color:#959595;margin-top:40px;">No chat history found.</div>';
+            historyListDiv.innerHTML = '<div style="text-align:center;color:#959595;margin-top:40px;font-size:0.9rem;">No chat history found.<br>Start a new chat!</div>';
             return;
         }
+
         sorted.forEach(chat => {
             const card = document.createElement('div');
             card.className = 'history-card';
+            
             const d = new Date(chat.updatedAt);
-            card.innerHTML = `<span class="h-title">${chat.title}</span><span class="h-date">${d.toLocaleDateString()}</span><button class="h-delete">✕</button>`;
-            card.onclick = (e) => { if(!e.target.classList.contains('h-delete')) loadChatFromHistory(chat.id); };
-            card.querySelector('.h-delete').onclick = (e) => {
+            const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            card.innerHTML = `
+                <span class="h-title">${chat.title}</span>
+                <span class="h-date">${dateStr}</span>
+                <button class="h-delete" title="Delete">✕</button>
+            `;
+
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('h-delete')) return;
+                loadChatFromHistory(chat.id);
+            });
+
+            card.querySelector('.h-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
-                if(confirm('Delete?')) {
-                    const db = getAllChats(); delete db[chat.id];
+                if (confirm('Delete this conversation?')) {
+                    const db = getAllChats();
+                    delete db[chat.id];
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-                    currentChatId === chat.id ? startNewChat() : renderHistoryList();
+                    
+                    if (currentChatId === chat.id) {
+                        startNewChat();
+                    } else {
+                        renderHistoryList();
+                    }
                 }
-            };
+            });
+
             historyListDiv.appendChild(card);
         });
     }
 
+    // --- 6. EVENT LISTENERS ---
+
     document.getElementById('btn-ai-new').addEventListener('click', startNewChat);
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
-    // --- 5. MESAJ GÖNDERME ---
+    // --- 7. MESAJ GÖNDERME ---
+    // --- 7. MESAJ GÖNDERME (DÜZELTİLMİŞ VERSİYON) ---
     async function sendAIChatMessage(userMessage) {
+        // LİMİT KONTROLÜ
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
-            limitDiv.innerHTML = "<span style='color:#d32f2f'>Limit Reached. Please start a New Chat.</span>";
+            limitDiv.style.background = "#ffeaea";
+            limitDiv.style.border = "1px solid #ffcdd2";
+            limitDiv.innerHTML = `<b>Limit Reached:</b> You've hit the ${MAX_MESSAGES_PER_CHAT} message limit for this chat.<br>Please start a <b>New Chat</b> to continue!`;
             messagesDiv.appendChild(limitDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return;
         }
 
+        // 1. KULLANICI MESAJINI EKLE
         const userDiv = document.createElement('div');
+        userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`; // Flex yapısına uygun
         userDiv.className = 'chat-message user-message';
-        userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`;
         messagesDiv.appendChild(userDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
         chatHistory.push({ role: "user", content: userMessage });
         saveCurrentChat();
 
+        // 2. AI MESAJ KUTUSUNU OLUŞTUR (Görsel ve Metni Ayırıyoruz)
         const aiDiv = document.createElement('div');
         aiDiv.className = 'chat-message ai-message';
+
+        // A) GÖRSEL ELEMENTİ (Başlangıçta .webp)
         const aiImg = document.createElement('img');
-        aiImg.src = '/img/aioo.webp'; 
+        aiImg.src = '/img/aioo.webp'; // Hareketli görsel
+        aiImg.alt = 'AI';
+        
+        // B) METİN ELEMENTİ (Başlangıçta ...)
         const aiContent = document.createElement('div');
         aiContent.innerHTML = '<span class="typing">...</span>';
-        
+
+        // Elementleri Ana Kutuya Ekle
         aiDiv.appendChild(aiImg);
         aiDiv.appendChild(aiContent);
         messagesDiv.appendChild(aiDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        const eventSource = new EventSource(`/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`);
-        let chunkQueue = [], hasError = false, isFirstChunk = true;
+        const eventSource = new EventSource(
+            `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+        );
+
+        let chunkQueue = [];
+        let hasError = false;
+        let isFirstChunk = true;
 
         eventSource.onmessage = function(event) {
             if (hasError) return;
@@ -377,12 +395,21 @@ document.addEventListener("DOMContentLoaded", function() {
                 const data = JSON.parse(event.data);
                 if (data.message && data.message.content) {
                     chunkQueue.push(data.message.content);
-                    if (isFirstChunk) { aiContent.innerHTML = ''; isFirstChunk = false; }
+                    
+                    // İlk veri geldiğinde "..." yazısını sil
+                    if (isFirstChunk) {
+                        aiContent.innerHTML = ''; 
+                        isFirstChunk = false;
+                    }
+
+                    // Görsele DOKUNMADAN sadece metni güncelle
                     if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
+                        // Typewriter efektine sadece metin kutusunu (aiContent) gönderiyoruz
                         startStreamingTypewriterEffect(aiContent, chunkQueue, 4);
                     } else if (typeof startStreamingTypewriterEffect !== 'function') {
                         aiContent.textContent += data.message.content; 
                     }
+                    // Not: Scroll işlemini buraya da ekleyebilirsin
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }
             } catch (e) {}
@@ -390,9 +417,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
         eventSource.onerror = function() {
             if (!hasError) {
+                // Hata durumunda da durdur
                 if (aiContent._typewriterStop) aiContent._typewriterStop();
-                chunkQueue.length = 0; hasError = true; eventSource.close();
-                aiContent.innerHTML += " <span style='color:red'>(Error)</span>";
+                chunkQueue.length = 0;
+                hasError = true;
+                eventSource.close();
+                aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+                
+                // Hata olsa bile görseli normale döndür
                 aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
             }
         };
@@ -400,12 +432,26 @@ document.addEventListener("DOMContentLoaded", function() {
         eventSource.addEventListener('end', function() {
             if (!hasError) {
                 const fullText = chunkQueue.join('');
+                
                 chatHistory.push({ role: "assistant", content: fullText });
                 saveCurrentChat();
+
                 if (aiContent._typewriterStop) aiContent._typewriterStop();
-                chunkQueue.length = 0; hasError = true; eventSource.close();
+                chunkQueue.length = 0;
+                hasError = true;
+                eventSource.close();
+
+                // 3. BİTİŞ: GÖRSELİ DEĞİŞTİR VE FORMATLA
+                
+                // A) Görseli duran hale (.png) çevir
                 aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
-                aiContent.innerHTML = (typeof markdownToHtml === 'function') ? markdownToHtml(fullText) : fullText;
+
+                // B) Metni Markdown formatına çevir
+                if (typeof markdownToHtml === 'function') {
+                    aiContent.innerHTML = markdownToHtml(fullText);
+                } else {
+                    aiContent.innerHTML = fullText;
+                }
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
         });
@@ -414,10 +460,17 @@ document.addEventListener("DOMContentLoaded", function() {
     if (sendBtn && chatInput) {
         sendBtn.addEventListener('click', () => {
             const val = chatInput.value.trim();
-            if (val) { sendAIChatMessage(val); chatInput.value = ''; }
+            if (val) {
+                sendAIChatMessage(val);
+                chatInput.value = '';
+            }
         });
-        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendBtn.click(); });
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
     }
 
+    // Uygulama Başlangıcı
     startNewChat();
 });
+
