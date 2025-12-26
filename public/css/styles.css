@@ -7621,8 +7621,7 @@ scrollbar-width: thin;
     /* Mira AI Sidebar için mobil düzen */
     .sidebar-overlay.sidebar-login.open {
         position: fixed !important;        
-        bottom: 0 !important;
-        width: 100vw !important;
+        bottom: 0 !important;        
         height: calc(100dvh - 100px) !important;
         max-height: calc(100dvh - 100px) !important;
         overflow: visible !important; /* DEĞİŞTİ: hidden -> visible */
