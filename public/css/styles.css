@@ -7230,21 +7230,18 @@ position: absolute;
 .chat-input-group {
     display: flex;
     align-items: center;
-    gap: 6px;
-    width: 100%;
     flex-wrap: nowrap;
+    width: calc(100% - 20px);
     justify-content: space-between;
 }
 #ai-chat-input {
-    width: 100%;
-    max-width: 100vw;
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 10px;
-    border: none;
+   padding: 10px;
+   border: none;
+   outline: none;
+   
     border-radius: 6px;
     font-size: 14px;
-    outline: none;
+    width: -webkit-fill-available;
 }
 #ai-chat-send-btn {
         border: none;
