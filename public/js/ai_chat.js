@@ -474,45 +474,41 @@ document.addEventListener("DOMContentLoaded", function() {
     startNewChat();
 });
 
-// DOSYA SONUNA EKLE
-// Mobilde viewport height dinamik ayarı
-function setupMobileViewport() {
+// DOSYA SONUNA EKLE - GÜNCELLENMİŞ VERSİYON
+// Mobilde viewport ve scroll düzeni
+function setupMobileAIViewport() {
     if (window.innerWidth > 768) return;
     
     const sidebar = document.getElementById('sidebar-overlay-login');
+    const chatBox = document.getElementById('ai-chat-box');
     const messagesDiv = document.getElementById('ai-chat-messages');
     const inputWrapper = document.querySelector('#ai-chat-box .ai-input-wrapper');
     
-    if (!sidebar || !messagesDiv || !inputWrapper) return;
+    if (!sidebar || !chatBox || !messagesDiv || !inputWrapper) return;
     
-    // Viewport height'ı al
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    // Sadece sidebar açıksa çalış
+    if (!sidebar.classList.contains('open')) return;
     
-    // Sidebar'ın yüksekliğini ayarla
+    // Viewport height hesapla
+    const viewportHeight = window.innerHeight;
     const sidebarTop = 100; // top: 100px
-    const availableHeight = window.innerHeight - sidebarTop;
+    const availableHeight = viewportHeight - sidebarTop;
     
+    // Element boyutlarını ayarla
     sidebar.style.height = `${availableHeight}px`;
-    sidebar.style.maxHeight = `${availableHeight}px`;
+    chatBox.style.height = `${availableHeight}px`;
     
-    // Input wrapper'ın yüksekliğini ayarla
+    // Input yüksekliğini hesapla ve mesajlara padding ekle
     const inputHeight = inputWrapper.offsetHeight;
-    messagesDiv.style.paddingBottom = `${inputHeight + 20}px`;
+    messagesDiv.style.paddingBottom = `${inputHeight + 10}px`;
     
     // Scroll'u en alta al
     setTimeout(() => {
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }, 100);
+    }, 50);
 }
 
-// Event listeners
-window.addEventListener('resize', setupMobileViewport);
-window.addEventListener('orientationchange', function() {
-    setTimeout(setupMobileViewport, 300);
-});
-
-// Input focus olduğunda scroll ayarı
+// Scroll fix için: Input'a her tıklandığında scroll'u düzelt
 document.addEventListener('DOMContentLoaded', function() {
     const chatInput = document.getElementById('ai-chat-input');
     const messagesDiv = document.getElementById('ai-chat-messages');
@@ -521,17 +517,83 @@ document.addEventListener('DOMContentLoaded', function() {
         chatInput.addEventListener('focus', function() {
             setTimeout(() => {
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }, 300);
+                setupMobileAIViewport();
+            }, 350); // Keyboard açılmasını bekle
+        });
+        
+        chatInput.addEventListener('blur', function() {
+            setTimeout(setupMobileAIViewport, 100);
         });
     }
     
-    // Mira AI sidebar açıldığında setup'ı çalıştır
+    // Mira AI sidebar toggle fonksiyonunu güncelle
     const originalToggleSidebarLogin = window.toggleSidebarLogin;
-    window.toggleSidebarLogin = function() {
-        originalToggleSidebarLogin();
-        setTimeout(setupMobileViewport, 100);
-    };
+    if (originalToggleSidebarLogin) {
+        window.toggleSidebarLogin = function() {
+            originalToggleSidebarLogin();
+            
+            // Mobilde viewport'u ayarla
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    setupMobileAIViewport();
+                    // Yeni mesaj eklendiğinde de tetikle
+                    const observer = new MutationObserver(() => {
+                        setupMobileAIViewport();
+                    });
+                    
+                    if (messagesDiv) {
+                        observer.observe(messagesDiv, {
+                            childList: true,
+                            subtree: true
+                        });
+                        
+                        // 10 saniye sonra observer'ı durdur
+                        setTimeout(() => observer.disconnect(), 10000);
+                    }
+                }, 300); // Sidebar animasyonunu bekle
+            }
+        };
+    }
+    
+    // Event listeners
+    window.addEventListener('resize', function() {
+        if (window.innerWidth <= 768) {
+            setupMobileAIViewport();
+        }
+    });
+    
+    window.addEventListener('orientationchange', function() {
+        setTimeout(() => {
+            if (window.innerWidth <= 768) {
+                setupMobileAIViewport();
+            }
+        }, 500);
+    });
     
     // İlk yükleme
-    setTimeout(setupMobileViewport, 500);
+    setTimeout(() => {
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar-overlay-login');
+            if (sidebar && sidebar.classList.contains('open')) {
+                setupMobileAIViewport();
+            }
+        }
+    }, 1000);
 });
+
+// Scroll düzeltme için ek helper
+function fixAIScroll() {
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    if (messagesDiv) {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+}
+
+// Mesaj gönderildiğinde scroll'u düzelt
+const originalSendAIChatMessage = window.sendAIChatMessage;
+if (originalSendAIChatMessage) {
+    window.sendAIChatMessage = function(userMessage) {
+        originalSendAIChatMessage(userMessage);
+        setTimeout(fixAIScroll, 100);
+    };
+}
