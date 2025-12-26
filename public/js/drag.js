@@ -12,21 +12,21 @@ function injectDragStyles() {
             box-shadow: none !important;
             border: none !important;
             
-            /* Genişlik ana öğeden gelir */
+            /* Genişlik JS'den gelir, yükseklik içeriğe göre uzar */
             width: var(--ghost-width) !important;
             height: auto !important; 
             
             margin: 0 !important;
             will-change: left, top;
             transition: none !important;
-            overflow: visible !important;
+            overflow: visible !important; /* Okların dışarı taşması için şart */
             
             display: flex;
             flex-direction: column;
             gap: 2px;
         }
 
-        /* --- SADECE ANA ITEM (Not olmayanlar) --- */
+        /* --- SADECE ANA ITEM --- */
         .drag-ghost .travel-item:not(.note-item) {
             position: relative !important;
             top: auto !important;
@@ -41,12 +41,12 @@ function injectDragStyles() {
             list-style: none !important;
             height: auto !important;
             min-height: auto !important;
-            width: 100% !important; /* Ana öğe tam otursun */
+            width: 100% !important; 
         }
 
-        /* --- NOTLAR İÇİN ÖZEL (Senin stilini zorluyoruz) --- */
+        /* --- NOTLAR (Girintili Tasarım Korunur) --- */
         .drag-ghost .note-item {
-            /* Senin CSS kurallarının aynısı + Drag görünümü */
+            /* Senin CSS dosyanındaki %83 ve %12 kuralları işlesin diye width vermiyoruz */
             width: 83% !important;
             left: 12% !important;
             position: relative !important;
@@ -62,7 +62,7 @@ function injectDragStyles() {
             z-index: 2;
         }
 
-        /* --- OKLAR (Sadece ana öğede) --- */
+        /* --- OKLAR (WRAPPER'A GÖRE KONUMLANACAK) --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
@@ -80,6 +80,7 @@ function injectDragStyles() {
             z-index: 1000;
             opacity: 0.9;
         }
+        /* İstenilen -36px boşluklar */
         .drag-arrow-top { top: -36px; }
         .drag-arrow-bottom { bottom: -36px; }
 
@@ -94,13 +95,11 @@ function injectDragStyles() {
             display: block !important;
         }
 
-        /* Kaynak öğeyi soluklaştır */
         .travel-item.dragging-source {
             filter: grayscale(100%);
             opacity: 0.3;
         }
 
-        /* Gizleme Sınıfları */
         @media (max-width: 768px) {
             body.hide-map-details .route-controls-bar,
             body.hide-map-details .tt-travel-mode-set,
