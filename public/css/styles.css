@@ -7625,9 +7625,9 @@ scrollbar-width: thin;
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 90vw !important;
-        height: calc(100vh - 100px) !important;
-        max-height: calc(100vh - 100px) !important;
+        width: 100vw !important;
+        height: calc(100dvh - 100px) !important; /* dvh kullan */
+        max-height: calc(100dvh - 100px) !important;
         overflow: hidden !important;
         opacity: 1;
         transform: translateX(0);
@@ -7644,7 +7644,7 @@ scrollbar-width: thin;
         padding: 0 !important;
     }
     
-    /* AI Chat kutusu - tüm alanı kaplasın */
+    /* AI Chat kutusu */
     #ai-chat-box {
         display: flex !important;
         flex-direction: column !important;
@@ -7654,43 +7654,27 @@ scrollbar-width: thin;
         position: relative !important;
     }
     
-    /* Mesajlar alanı - scrollable */
+    /* Mesajlar alanı */
     #ai-chat-messages {
         flex: 1 !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         padding: 15px !important;
-        padding-bottom: 100px !important; /* Input için yer bırak */
-        max-height: calc(100% - 80px) !important;
+        padding-bottom: 80px !important; /* Input için yer bırak */
+        height: calc(100% - 80px) !important;
+        max-height: none !important;
     }
     
-    /* AI Input alanı - sidebar'ın ALTINDA değil, İÇİNDE */
+    /* AI Input alanı - FIXED yerine ABSOLUTE */
     #ai-chat-box .ai-input-wrapper {
-        position: absolute !important;
-        bottom: 10px !important;
-        left: 15px !important;
-        right: 15px !important;
-        margin: 0 !important;
+        position: sticky !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
         background: white !important;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
         z-index: 100 !important;
-        border-radius: 12px !important;
-        padding: 10px !important;
-    }
-    
-    /* Input alanı içindeki elementler */
-    #ai-chat-box .ai-input-wrapper .chat-input-group {
-        display: flex !important;
-        gap: 8px !important;
-    }
-    
-    #ai-chat-input {
-        flex: 1 !important;
-        padding: 12px !important;
-        font-size: 16px !important; /* Mobilde büyük font */
-    }
-    
-    #ai-chat-send-btn {
-        padding: 12px !important;
+        padding: 15px !important;
+        margin-top: auto !important; /* Bu önemli */
     }
 }

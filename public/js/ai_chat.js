@@ -474,3 +474,64 @@ document.addEventListener("DOMContentLoaded", function() {
     startNewChat();
 });
 
+// DOSYA SONUNA EKLE
+// Mobilde viewport height dinamik ayarı
+function setupMobileViewport() {
+    if (window.innerWidth > 768) return;
+    
+    const sidebar = document.getElementById('sidebar-overlay-login');
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    const inputWrapper = document.querySelector('#ai-chat-box .ai-input-wrapper');
+    
+    if (!sidebar || !messagesDiv || !inputWrapper) return;
+    
+    // Viewport height'ı al
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    
+    // Sidebar'ın yüksekliğini ayarla
+    const sidebarTop = 100; // top: 100px
+    const availableHeight = window.innerHeight - sidebarTop;
+    
+    sidebar.style.height = `${availableHeight}px`;
+    sidebar.style.maxHeight = `${availableHeight}px`;
+    
+    // Input wrapper'ın yüksekliğini ayarla
+    const inputHeight = inputWrapper.offsetHeight;
+    messagesDiv.style.paddingBottom = `${inputHeight + 20}px`;
+    
+    // Scroll'u en alta al
+    setTimeout(() => {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }, 100);
+}
+
+// Event listeners
+window.addEventListener('resize', setupMobileViewport);
+window.addEventListener('orientationchange', function() {
+    setTimeout(setupMobileViewport, 300);
+});
+
+// Input focus olduğunda scroll ayarı
+document.addEventListener('DOMContentLoaded', function() {
+    const chatInput = document.getElementById('ai-chat-input');
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    
+    if (chatInput && messagesDiv) {
+        chatInput.addEventListener('focus', function() {
+            setTimeout(() => {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, 300);
+        });
+    }
+    
+    // Mira AI sidebar açıldığında setup'ı çalıştır
+    const originalToggleSidebarLogin = window.toggleSidebarLogin;
+    window.toggleSidebarLogin = function() {
+        originalToggleSidebarLogin();
+        setTimeout(setupMobileViewport, 100);
+    };
+    
+    // İlk yükleme
+    setTimeout(setupMobileViewport, 500);
+});
