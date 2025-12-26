@@ -265,8 +265,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 : msg.content;
 
             if (msg.role === 'user') div.textContent = '🧑 ' + text;
-            else div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> ' + text;
-            
+            else {
+    div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"><div style="display:flex;flex-direction:column;flex:1;">' + text + '</div>';
+}
             messagesDiv.appendChild(div);
         });
 
@@ -375,11 +376,20 @@ document.addEventListener("DOMContentLoaded", function() {
         const aiContent = document.createElement('div');
         aiContent.innerHTML = '<span class="typing">...</span>';
 
-        // Elementleri Ana Kutuya Ekle
-        aiDiv.appendChild(aiImg);
-        aiDiv.appendChild(aiContent);
-        messagesDiv.appendChild(aiDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        // Elementleri Ana Kutuya Ekle - DÜZGÜN YAPI
+// 1. İçerik için container oluştur
+const contentContainer = document.createElement('div');
+contentContainer.style.display = 'flex';
+contentContainer.style.flexDirection = 'column';
+contentContainer.style.flex = '1';
+
+// 2. İçeriği container'a ekle
+contentContainer.appendChild(aiContent);
+
+// 3. Container ve img'i ana div'e ekle
+aiDiv.appendChild(aiImg);
+aiDiv.appendChild(contentContainer);
+messagesDiv.appendChild(aiDiv);
 
         const eventSource = new EventSource(
             `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`

@@ -7306,8 +7306,26 @@ position: absolute;
     align-self: flex-start; /* Sola yasla */
     text-align: left;
     align-items: flex-start; /* Resmi yukarı hizala */
-     display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: row; /* DEĞİŞTİ: column -> row */
+}
+
+/* AI Resmi Ayarı (Aynen kalıyor) */
+.ai-message img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* AI mesajının yazı kısmı için column düzeni */
+.ai-message > :not(img) {
+    display: flex;
+    flex-direction: column; /* İçerik alt alta */
+    flex: 1;
+    gap: 8px;
 }
 
 /* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
@@ -7320,15 +7338,7 @@ position: absolute;
     align-items: center;    /* Emojiyi dikeyde ortala */
 }
 
-/* AI Resmi Ayarı (Aynen kalıyor) */
-.ai-message img {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
+
 
 .ai-input-wrapper {
         width: -webkit-fill-available;
