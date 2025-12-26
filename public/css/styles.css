@@ -7277,16 +7277,29 @@ position: absolute;
     padding: 10px;
     border-radius: 10px;
 }
+/* Bu kısmı güncelle */
 .ai-message {
     background: #f6f4ff;
-  color: #1e293b;
-  align-self: flex-start;
-  text-align: left;;
+    color: #1e293b;
+    align-self: flex-start;
+    text-align: left;
+    
+    /* --- EKLENEN KISIMLAR --- */
+    display: flex;             /* Resmi ve yazıyı yan yana kutu yapar */
+    align-items: flex-start;   /* Resmi her zaman en üst satıra hizalar */
+    gap: 10px;                 /* Resim ile yazı arasına boşluk koyar */
 }
 
-.ai-message  img {
-    width: 20px;
-    height: 20px;
+/* Bu kısmı güncelle */
+.ai-message img {
+    width: 24px;       /* 20px biraz küçük kalabilir, 24px idealdir */
+    height: 24px;
+    border-radius: 50%; /* Yuvarlak avatar görünümü */
+    object-fit: cover;
+    
+    /* --- EKLENEN KISIMLAR --- */
+    flex-shrink: 0;    /* Yazı uzun olsa bile resim küçülmez */
+    margin-top: 2px;   /* Yazının 'baseline'ı ile optik olarak hizalar */
 }
 .user-message {
    background: #e6f5ff;
@@ -7294,6 +7307,7 @@ position: absolute;
   align-self: flex-end;
   text-align: right;
 }
+
 
 .ai-input-wrapper {
         width: -webkit-fill-available;
