@@ -3193,7 +3193,7 @@ async function saveCustomNote(day) {
         noteDetails: (details && details.length > 0) ? details : "No description", // Detay yoksa metni ayarla
         day: Number(day),
         category: "Note",
-        image: "img/added-note.png" // Varsayılan not ikonu
+        image: "img/custom-note.svg" // Varsayılan not ikonu
     });
 
     console.log("Note added to RAM for day", day);
