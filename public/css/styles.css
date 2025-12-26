@@ -7268,8 +7268,7 @@ position: absolute;
     -webkit-overflow-scrolling: touch; 
 }
 #ai-chat-messages div {
-  display: flex;
-  flex-direction: column;
+
     border-radius: 16px;
     width: fit-content;
 }
@@ -7307,6 +7306,8 @@ position: absolute;
     align-self: flex-start; /* Sola yasla */
     text-align: left;
     align-items: flex-start; /* Resmi yukarı hizala */
+     display: flex;
+  flex-direction: column;
 }
 
 /* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
