@@ -473,3 +473,4 @@ document.addEventListener("DOMContentLoaded", function() {
     // Uygulama Başlangıcı
     startNewChat();
 });
+

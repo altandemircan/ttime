@@ -7619,16 +7619,18 @@ scrollbar-width: thin;
 
 
 
-/* Mobil cihazlar için AI Chat düzenlemeleri */
+/* En basit fix - direkt pozisyonlama */
 @media (max-width: 768px) {
-    .sidebar-overlay.sidebar-login.open {
+    .sidebar-overlay.sidebar-login {
         position: fixed !important;
         top: 0 !important;
-        bottom: 0 !important;
-        height: 100vh !important;
-        width: 100% !important;
+        left: 0 !important;
         right: 0 !important;
-        z-index: 9999 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
     }
     
     #sidebar-login {
@@ -7636,81 +7638,30 @@ scrollbar-width: thin;
         flex-direction: column !important;
         height: 100vh !important;
         max-height: 100vh !important;
-        padding-bottom: 0 !important;
-    }
-    
-    .form-container {
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        min-height: 0 !important; /* Önemli: overflow için */
-        height: calc(100vh - 120px) !important;
     }
     
     #ai-chat-box {
         display: flex !important;
         flex-direction: column !important;
         flex: 1 !important;
-        height: 100% !important;
         min-height: 0 !important;
-        overflow: hidden !important;
-        padding-bottom: env(safe-area-inset-bottom) !important; /* iPhone X+ için */
     }
     
     #ai-chat-messages {
         flex: 1 !important;
-        min-height: 0 !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 10px !important;
+        padding-bottom: 80px !important; /* Input alanı için yer bırak */
     }
     
     .ai-input-wrapper {
-        flex-shrink: 0 !important;
-        margin-top: auto !important;
-        position: sticky !important;
+        position: fixed !important;
         bottom: 0 !important;
-        background: #fff !important;
-        padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
-        border-top: 1px solid #eee !important;
-        margin-bottom: 0 !important;
-    }
-    
-    /* Mobile keyboard açıkken input'u görünür tut */
-    .ai-input-wrapper:focus-within {
-        position: sticky !important;
-        bottom: 0 !important;
+        left: 20px !important;
+        right: 20px !important;
+        margin: 10px !important;
         z-index: 1000 !important;
-    }
-    
-    /* Sidebar içindeki padding ayarları */
-    #sidebar-overlay-login {
-        padding: 0 !important;
-    }
-    
-    #sidebar-login {
-        padding: 20px !important;
-        padding-bottom: 0 !important;
-    }
-}
-
-/* iPhone X ve üstü için notched cihaz desteği */
-@supports (padding: max(0px)) {
-    .ai-input-wrapper {
-        padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
-    }
-}
-
-/* Keyboard açıldığında header'ı küçült */
-@media (max-height: 600px) {
-    .sidebar_title {
-        padding-bottom: 10px !important;
-        margin-bottom: 5px !important;
-        font-size: 1rem !important;
-    }
-    
-    #ai-chat-controls {
-        padding-bottom: 8px !important;
-        margin-bottom: 5px !important;
+        background: white !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
     }
 }
