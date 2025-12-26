@@ -7227,10 +7227,8 @@ position: absolute;
 #ai-chat-box {
     display: flex;
     flex-direction: column;
-    height: 100%;       /* Container'ı doldur */
-    max-height: 100%;   
-    overflow: hidden;   /* Dışarı taşma olmasın */
-    padding: 0 10px;    /* Kenar boşlukları */
+  
+    padding: 10px 10px 10px 0px;
 }
 #ai-chat-input {
    padding: 10px;
@@ -7270,17 +7268,6 @@ position: absolute;
   
     border-radius: 16px;
     width: fit-content;
-}
-
-.ai-input-wrapper {
-    flex-shrink: 0; /* Asla büzülme, yerini koru */
-    width: 100%;
-    position: relative;
-    background: #ffffff;
-    z-index: 10; /* Mesajların üstünde kalsın */
-    
-    /* Input kutusunu biraz daha derli toplu yap */
-    margin-bottom: 5px; 
 }
 .chat-info {
     text-align: left;
@@ -7361,16 +7348,16 @@ ease-in-out;
 }
 /* Form Konteyner */
 .form-container {
-    flex: 1; /* Kalan tüm boşluğu doldur */
+text-align: center;
+    /* padding: 10px; */
+    /* border-radius: 20px; */
+    height: calc(100vh - 200px);
     display: flex;
-    flex-direction: column; /* Alttan üste değil, normal akış */
-    justify-content: flex-end; /* İçeriği aşağı it (Chat mantığı) */
-    overflow: hidden; /* Taşmaları engelle */
-    height: 100%; /* Kapsayıcının tamamını al */
-    max-height: 100%;
-    /* iPhone alt çizgi (home indicator) için güvenli boşluk */
-    padding-bottom: env(safe-area-inset-bottom, 20px); 
+    flex-direction: column-reverse;
+    justify-content: flex-start;
+    max-height: -webkit-fill-available;
 }
+
 /* Form İçeriği */
 .form-content {
    display: block;
