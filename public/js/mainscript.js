@@ -3186,9 +3186,9 @@ function saveCustomNote(day) {
         window.cart = [];
     }
 
+    // 1. Notu geçici hafızaya (RAM) ekle
     window.cart.push({
         name: title || "Note",
-        // DEĞİŞİKLİK BURADA: Eğer detay boşsa veya sadece boşluksa "No description" kaydet
         noteDetails: (details && details.trim().length > 0) ? details : "No description",
         day: Number(day),
         category: "Note",
@@ -3197,6 +3197,14 @@ function saveCustomNote(day) {
 
     console.log("Note saved for day", day);
 
+    // 2. [KRİTİK DÜZELTME] Kalıcı hafızaya (Local Storage) kaydet
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage(); 
+    } else {
+        console.warn("saveCurrentTripToStorage function is missing! Data not saved to disk.");
+    }
+
+    // 3. Arayüzü güncelle
     if (typeof updateCart === "function") {
         updateCart();
     } else {
