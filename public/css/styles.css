@@ -7268,7 +7268,8 @@ position: absolute;
     -webkit-overflow-scrolling: touch; 
 }
 #ai-chat-messages div {
-  
+  display: flex;
+  flex-direction: column;
     border-radius: 16px;
     width: fit-content;
 }
