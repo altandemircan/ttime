@@ -7283,6 +7283,11 @@ position: absolute;
   align-self: flex-start;
   text-align: left;;
 }
+
+.ai-message  img {
+    width: 20px;
+    height: 20px;
+}
 .user-message {
    background: #e6f5ff;
   color: #1e293b;
