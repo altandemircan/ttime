@@ -4373,8 +4373,8 @@ async function updateCart() {
                 <div class="custom-marker-outer" style="flex-shrink: 0;
                     transform: scale(0.70);
                     position: absolute;
-                    left: 30px;
-                    top: 0px;
+                    left: 24px;
+                    top: -4px;
                     background: ${markerBgColor} !important; 
                     border-radius: 50%;
                     width: 24px; height: 24px;
