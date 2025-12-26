@@ -7615,41 +7615,63 @@ scrollbar-width: thin;
     margin-bottom: 16px !important;
    }
 
-   /* En basit fix - direkt pozisyonlama */
+
+
+
+
+/* Mobil için AI Chat pozisyon düzeltmesi */
 @media (max-width: 768px) {
-    .sidebar-overlay.sidebar-login {
+    /* Sidebar container'ı tam ekran yap */
+    .sidebar-overlay.sidebar-login.open {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 100vw !important;
+        width: 100% !important;
         height: 100vh !important;
-        max-height: 100vh !important;
+        z-index: 9999 !important;
         overflow: hidden !important;
     }
     
+    /* Sidebar içeriğini düzenle */
     #sidebar-login {
         display: flex !important;
         flex-direction: column !important;
-        height: 100vh !important;
+        height: 100% !important;
         max-height: 100vh !important;
+        padding-bottom: 0 !important;
     }
     
+    /* Form container'ı flex yap */
+    .form-container {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+    }
+    
+    /* Chat box'ı tam ekran yap */
     #ai-chat-box {
         display: flex !important;
         flex-direction: column !important;
         flex: 1 !important;
         min-height: 0 !important;
+        height: 100% !important;
     }
     
+    /* Mesajlar alanı - scrollable */
     #ai-chat-messages {
         flex: 1 !important;
+        min-height: 0 !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 80px !important; /* Input alanı için yer bırak */
+        padding: 10px 0 !important;
+        margin-bottom: 80px !important; /* Input için yer bırak */
     }
     
+    /* Input wrapper'ı alt kısma sabitle */
     .ai-input-wrapper {
         position: fixed !important;
         bottom: 0 !important;
@@ -7658,6 +7680,23 @@ scrollbar-width: thin;
         margin: 10px !important;
         z-index: 1000 !important;
         background: white !important;
+        border: 1px solid #ddd !important;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+        padding: 10px !important;
+    }
+    
+    /* Input alanı için ek padding */
+    #ai-chat-input {
+        font-size: 16px !important; /* iOS zoom önlemi */
+    }
+}
+
+/* iPhone X ve üstü için güvenli alan desteği */
+@supports (padding: max(0px)) {
+    @media (max-width: 768px) {
+        .ai-input-wrapper {
+            padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+            margin-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+        }
     }
 }
