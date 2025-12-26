@@ -457,6 +457,19 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    if (sendBtn && chatInput) {
+        sendBtn.addEventListener('click', () => {
+            const val = chatInput.value.trim();
+            if (val) {
+                sendAIChatMessage(val);
+                chatInput.value = '';
+            }
+        });
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+    }
+
     // Uygulama Başlangıcı
     startNewChat();
 });
