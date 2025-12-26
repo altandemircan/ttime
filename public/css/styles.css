@@ -7618,10 +7618,25 @@ scrollbar-width: thin;
 
 
 
-
-/* En basit fix - direkt pozisyonlama */
 /* En basit fix - direkt pozisyonlama */
 @media (max-width: 768px) {
+    /* AI input alanını BAŞLANGIÇTA GİZLE */
+    .ai-input-wrapper {
+        display: none !important;
+    }
+    
+    /* SADECE sidebar AÇIKKEN göster */
+    .sidebar-overlay.sidebar-login.open .ai-input-wrapper {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 20px !important;
+        right: 20px !important;
+        margin: 10px !important;
+        background: white !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+    }
+    
     /* Mobilde sidebar-login kapalıyken TAMAMEN GİZLE */
     .sidebar-overlay.sidebar-login:not(.open) {
         display: none !important;
@@ -7659,16 +7674,6 @@ scrollbar-width: thin;
         flex: 1 !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 80px !important; /* Input alanı için yer bırak */
-    }
-    
-    .ai-input-wrapper {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 20px !important;
-        right: 20px !important;
-        margin: 10px !important;
-        background: white !important;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+        padding-bottom: 80px !important;
     }
 }
