@@ -19,12 +19,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
     if (!sidebarLogin || !chatBox || !messagesDiv || !formContainer || !formContent) return;
 
-    // --- 2. CSS STYLES (DÜZELTİLMİŞ VERSİYON) ---
+    // --- 2. CSS STYLES (DÜZELTİLMİŞ & SABİTLENMİŞ) ---
     const styleId = 'tt-ai-sidebar-styles';
     if (!document.getElementById(styleId)) {
         const css = `
-            /* --- 1. ANA YAPI DÜZELTMESİ --- */
-            /* HATA BURADAYDI: position:fixed kaldırdık. Artık overlay'e uyacak. */
+            /* --- 1. ANA YAPI (Açılışta Gizli Kalmasını Sağlar) --- */
+            /* ÖNEMLİ: position:fixed BURADA YOK. Ebeveyn (overlay) ne derse o olur. */
             #sidebar-login {
                 display: flex !important;
                 flex-direction: column !important;
@@ -32,20 +32,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 width: 100% !important;
                 overflow: hidden !important;
                 padding: 0 !important;
-                /* Mobilde tarayıcı barı sorunu için overlay'e değil içeriğe yükseklik veriyoruz */
-                max-height: 100dvh !important; 
             }
 
-            /* Mobilde Overlay'in kendisini tam ekran yapıyoruz */
-            @media (max-width: 768px) {
-                #sidebar-overlay-login.open {
-                    height: 100dvh !important;
-                    bottom: 0 !important;
-                }
-            }
-
-            /* --- 2. İÇERİK AKIŞI (FLEX) --- */
-            /* styles.css'deki column-reverse gibi kuralları eziyoruz */
+            /* --- 2. FLEX YAPI & MOBİL DÜZENİ --- */
+            /* İçeriklerin taşmasını engeller ve inputu alta iter */
             .form-container {
                 flex: 1 !important;
                 display: flex !important;
@@ -77,7 +67,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 padding: 0 10px !important;
             }
 
-            /* --- 4. MESAJ LİSTESİ (SCROLL ALANI) --- */
+            /* --- 4. MESAJ LİSTESİ (SADECE BURASI KAYAR) --- */
             #ai-chat-messages {
                 flex: 1 !important;
                 overflow-y: auto !important;
@@ -86,15 +76,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 padding-bottom: 10px !important;
                 margin-bottom: 0 !important;
                 width: 100% !important;
-                -webkit-overflow-scrolling: touch;
+                -webkit-overflow-scrolling: touch; /* Mobilde akıcı kaydırma */
             }
 
-            /* Genel div marginlerini sıfırla */
+            /* Mesaj divlerinin margin çakışmasını önle */
             #ai-chat-messages div {
                 margin: 0 !important;
             }
 
-            /* Mesaj Baloncukları */
+            /* --- 5. MESAJ TASARIMLARI --- */
             .chat-message {
                 margin: 8px 0px !important;      
                 padding: 12px 16px !important;
@@ -108,6 +98,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 flex-shrink: 0 !important;
             }
 
+            /* İç elemanların marginini sıfırla */
             .chat-message > div {
                 margin: 0 !important;
                 padding: 0 !important;
@@ -139,7 +130,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 display: block !important;
             }
 
-            /* --- 5. INPUT ALANI (SABİTLEME) --- */
+            /* --- 6. INPUT ALANI (ALTTA SABİT) --- */
             .ai-input-wrapper {
                 flex-shrink: 0 !important;
                 width: 100% !important;
@@ -148,7 +139,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 z-index: 50 !important;
                 padding: 10px !important;
                 
-                /* iPhone Safe Area */
+                /* iPhone Çentiği ve Home Bar İçin Güvenli Alan */
                 padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
                 
                 position: relative !important;
@@ -156,7 +147,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 flex-direction: column !important;
             }
 
-            /* --- 6. DİĞER KONTROLLER --- */
+            /* --- 7. BAŞLIK VE KONTROLLER --- */
             #ai-chat-controls {
                 display: flex !important;
                 gap: 8px !important;
@@ -188,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 border-color: #9868e8;
             }
 
-            /* History */
+            /* History Bölümü */
             #ai-history-list {
                 display: none;
                 flex-direction: column;
@@ -298,6 +289,7 @@ document.addEventListener("DOMContentLoaded", function() {
             div.className = `chat-message ${msg.role === 'user' ? 'user-message' : 'ai-message'}`;
             const text = (typeof markdownToHtml === 'function' && msg.role === 'assistant') ? markdownToHtml(msg.content) : msg.content;
             
+            // HTML yapısını flex'e uygun kuruyoruz
             if (msg.role === 'user') {
                 div.innerHTML = `<div>🧑</div><div>${text}</div>`;
             } else {
