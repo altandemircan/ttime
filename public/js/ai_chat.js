@@ -474,7 +474,7 @@ document.addEventListener("DOMContentLoaded", function() {
     startNewChat();
 });
 
-// Dosyanın sonuna ekle veya mevcut koda ekle
+// Dosyanın sonuna ekle
 document.addEventListener('DOMContentLoaded', function() {
     // AI Chat için özel toggle fonksiyonu
     const originalToggleSidebarLogin = window.toggleSidebarLogin;
@@ -483,17 +483,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Önce orijinal fonksiyonu çağır
         originalToggleSidebarLogin();
         
-        // AI input alanını kontrol et
-        const aiInputWrapper = document.querySelector('.ai-input-wrapper');
-        const sidebar = document.getElementById('sidebar-overlay-login');
-        
-        if (aiInputWrapper && sidebar) {
-            if (sidebar.classList.contains('open')) {
-                // Sidebar açıksa göster
-                aiInputWrapper.style.display = 'flex';
-            } else {
-                // Sidebar kapalıysa gizle
-                aiInputWrapper.style.display = 'none';
+        // AI input alanını kontrol et (mobilde)
+        if (window.innerWidth <= 768) {
+            const aiInputWrapper = document.querySelector('.ai-input-wrapper');
+            const sidebar = document.getElementById('sidebar-overlay-login');
+            
+            if (aiInputWrapper && sidebar) {
+                if (sidebar.classList.contains('open')) {
+                    // Sidebar açıksa göster
+                    aiInputWrapper.style.display = 'flex';
+                } else {
+                    // Sidebar kapalıysa gizle
+                    aiInputWrapper.style.display = 'none';
+                }
             }
         }
     };
@@ -502,9 +504,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar-overlay-login');
     const aiInputWrapper = document.querySelector('.ai-input-wrapper');
     
-    if (sidebar && aiInputWrapper) {
-        // Başlangıçta gizle (mobilde)
-        if (window.innerWidth <= 768) {
+    if (sidebar && aiInputWrapper && window.innerWidth <= 768) {
+        // Başlangıçta sidebar kapalıysa input'u gizle
+        if (!sidebar.classList.contains('open')) {
             aiInputWrapper.style.display = 'none';
         }
     }
