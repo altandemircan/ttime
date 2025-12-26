@@ -3,16 +3,16 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* --- GHOST ELEMENT (SÜRÜKLENEN HAYALET) --- */
+        /* --- GHOST ELEMENT (SÜRÜKLENEN HAYALET KUTU) --- */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: transparent !important; /* Wrapper şeffaf olsun */
+            background: transparent !important; /* Wrapper şeffaf */
             box-shadow: none !important;
             border: none !important;
             
-            /* JS ile set edilecekler */
+            /* Genişlik ve Yükseklik */
             width: var(--ghost-width) !important;
             height: auto !important; 
             
@@ -20,19 +20,20 @@ function injectDragStyles() {
             will-change: left, top;
             transition: none !important;
             overflow: visible !important;
+            
+            /* İçindekileri alt alta diz */
             display: flex;
             flex-direction: column;
-            gap: 2px; /* Elemanlar arası boşluk */
+            gap: 2px; 
         }
 
-        /* Ghost içindeki Klonlanmış Öğeler (Ana item ve Notlar) */
-        .drag-ghost .travel-item, 
-        .drag-ghost .note-item {
+        /* --- GHOST İÇİNDEKİ ANA ITEM VE NOTLAR --- */
+        /* Genel Travel Item stili */
+        .drag-ghost .travel-item {
             position: relative !important;
             top: auto !important;
             left: auto !important;
             margin: 0 !important;
-            width: 100% !important; /* Wrapper'a tam otursun */
             box-sizing: border-box !important;
             box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
             opacity: 0.95;
@@ -42,15 +43,22 @@ function injectDragStyles() {
             list-style: none !important;
             height: auto !important;
             min-height: auto !important;
+            width: 100% !important; /* Ana item tam genişlik */
         }
 
-        /* Notlar biraz daha küçük ve içeride görünsün */
+        /* --- NOTLAR İÇİN ÖZEL AYAR (Senin CSS'ine dokunmuyoruz) --- */
         .drag-ghost .note-item {
-            transform: scale(0.98);
-            border-color: #ffd54f !important;
+            /* JS ile width müdahalesini engelledik, senin CSS sınıfın (83%, 12%) geçerli olacak */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+            border: 2px dashed #ffd54f !important; /* Not olduğu belli olsun diye sarı tire */
+            background: #fff !important;
+            z-index: 2;
+            /* Marginleri koru */
+            margin-top: 16px !important;
+            margin-bottom: 16px !important;
         }
 
-        /* --- OKLAR --- */
+        /* --- OKLAR (Sadece en üstteki ana item'da) --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
@@ -71,7 +79,7 @@ function injectDragStyles() {
         .drag-arrow-top { top: -15px; }
         .drag-arrow-bottom { bottom: -15px; }
 
-        /* --- PLACEHOLDER (YER TUTUCU) --- */
+        /* --- PLACEHOLDER --- */
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -85,28 +93,10 @@ function injectDragStyles() {
         /* Orijinal öğeyi soluklaştır */
         .travel-item.dragging-source {
             filter: grayscale(100%);
-            opacity: 0.4;
+            opacity: 0.3;
         }
 
-        .day-list {
-            min-height: 80px !important; 
-            box-sizing: border-box;
-            display: block;
-        }
-
-        @keyframes shakeError {
-            0% { transform: translateX(0); border-color: #ffa000; }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-            100% { transform: translateX(0); border-color: #ffa000; }
-        }
-        .shake-error {
-            animation: shakeError 0.4s ease-in-out;
-            border: 2px solid #ffa000 !important;
-            background-color: #fffdf0 !important;
-        }
-        
-        /* GİZLEME SINIFLARI */
+        /* GİZLEME SINIFLARI (Aynen korundu) */
         @media (max-width: 768px) {
             body.hide-map-details .route-controls-bar,
             body.hide-map-details .tt-travel-mode-set,
@@ -348,26 +338,27 @@ function createDragGhost(item, clientX, clientY) {
 
     // 1. Kapsayıcı (Wrapper) Oluştur
     const ghostWrapper = document.createElement('div');
-    // HATA BURADAYDI: 'drag-ghost' sınıfı eksikti, bu yüzden hareket etmiyordu.
+    // Bu class CSS'te tanımlı olduğu için sürükleme çalışacak
     ghostWrapper.classList.add('drag-ghost'); 
     
     // Wrapper pozisyonunu ve genişliğini ayarla
     ghostWrapper.style.width = rect.width + "px";
     ghostWrapper.style.left = rect.left + "px";
     ghostWrapper.style.top = rect.top + "px";
-    // Değişkeni de set edelim ki CSS görsün
     ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
     
     // 2. Ana İtem'ı Kopyala ve Wrapper'a Ekle
     const mainClone = item.cloneNode(true);
     mainClone.removeAttribute('id');
-    // Klonun inline stillerini temizle ki CSS kuralları geçerli olsun
+    
+    // Ana item inline stillerini temizle
     mainClone.style.marginTop = '0';
     mainClone.style.marginBottom = '0';
     mainClone.style.left = 'auto';
     mainClone.style.top = 'auto';
     mainClone.style.position = 'relative';
-    mainClone.style.width = '100%';
+    // Ana item tam genişlikte olsun
+    mainClone.style.width = '100%'; 
 
     // Sürükleme oklarını ekle (sadece ana item'a)
     const upArrow = document.createElement('div');
@@ -390,14 +381,15 @@ function createDragGhost(item, clientX, clientY) {
         const noteClone = nextSibling.cloneNode(true);
         noteClone.removeAttribute('id');
         
-        // Not klonunun stillerini temizle
-        noteClone.style.marginTop = '0';
-        noteClone.style.marginBottom = '0';
-        noteClone.style.left = 'auto';
-        noteClone.style.top = 'auto';
+        // --- KRİTİK NOKTA BURASI ---
+        // Note item için width veya left ayarını SIFIRLAMIYORUZ ve %100 YAPMIYORUZ.
+        // Sadece position relative olduğundan emin oluyoruz ki senin CSS'in (left: 12%) çalışsın.
         noteClone.style.position = 'relative';
-        noteClone.style.width = '100%';
+        noteClone.style.top = 'auto';
         
+        // Notların orijinalindeki marginleri koru (CSS zaten hallediyor ama inline varsa diye)
+        // noteClone.style.marginTop = ... (Senin CSS !important olduğu için dokunmaya gerek yok)
+
         ghostWrapper.appendChild(noteClone);
         
         // Görsel olarak orijinal notları da soluklaştır
