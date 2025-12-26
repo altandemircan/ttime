@@ -7277,37 +7277,52 @@ position: absolute;
     padding: 10px;
     border-radius: 10px;
 }
-/* Bu kısmı güncelle */
+/* --- ESKİ HATALI KISIM (Bunu Sil veya Değiştir) --- */
+/* #ai-chat-messages div { ... }  <-- BU KURALI SİLİYORUZ */
+
+
+/* --- YENİ DÜZELTİLMİŞ KISIMLAR --- */
+
+/* 1. Tüm mesaj baloncukları için ortak ayar */
+.chat-message {
+    margin: 8px 0px;      
+    padding: 12px 16px;
+    border-radius: 16px;
+    width: fit-content;
+    max-width: 85%;       /* Çok uzun metinlerde taşmasın */
+    display: flex;        /* Flexbox hizalama */
+    gap: 10px;            /* İkon ve yazı arası boşluk */
+    line-height: 1.5;
+}
+
+/* 2. AI Mesajı (Solda Resim, Sağda Yazı) */
 .ai-message {
     background: #f6f4ff;
     color: #1e293b;
-    align-self: flex-start;
+    align-self: flex-start; /* Sola yasla */
     text-align: left;
-    
-    /* --- EKLENEN KISIMLAR --- */
-    display: flex;             /* Resmi ve yazıyı yan yana kutu yapar */
-    align-items: flex-start;   /* Resmi her zaman en üst satıra hizalar */
-    gap: 10px;                 /* Resim ile yazı arasına boşluk koyar */
+    align-items: flex-start; /* Resmi yukarı hizala */
 }
 
-/* Bu kısmı güncelle */
-.ai-message img {
-    width: 24px;       /* 20px biraz küçük kalabilir, 24px idealdir */
-    height: 24px;
-    border-radius: 50%; /* Yuvarlak avatar görünümü */
-    object-fit: cover;
-    
-    /* --- EKLENEN KISIMLAR --- */
-    flex-shrink: 0;    /* Yazı uzun olsa bile resim küçülmez */
-    margin-top: 2px;   /* Yazının 'baseline'ı ile optik olarak hizalar */
-}
+/* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
 .user-message {
-   background: #e6f5ff;
-  color: #1e293b;
-  align-self: flex-end;
-  text-align: right;
+    background: #e6f5ff;
+    color: #1e293b;
+    align-self: flex-end;   /* Sağa yasla */
+    flex-direction: row-reverse; /* Emojiyi en sağa al, yazıyı sola al */
+    text-align: left;       /* Baloncuk sağda olsa bile içindeki yazı soldan aksın */
+    align-items: center;    /* Emojiyi dikeyde ortala */
 }
 
+/* AI Resmi Ayarı (Aynen kalıyor) */
+.ai-message img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
 
 .ai-input-wrapper {
         width: -webkit-fill-available;
