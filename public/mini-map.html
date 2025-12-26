@@ -1,20 +1,14 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>OpenFreeMap – Single Map</title>
+  <title>Mini Map Split Test</title>
 
   <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
   <!-- MapLibre -->
-  <link
-    href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"
-    rel="stylesheet"
-  >
+  <link href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css" rel="stylesheet">
 
   <style>
     html, body {
@@ -23,16 +17,32 @@
       padding: 0;
     }
 
-    #map {
-      width: 100%;
+    #container {
       height: 100%;
-      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .map {
+      flex: 1;
+      width: 100%;
+    }
+
+    #map-top {
+      border-radius: 15px 15px 0 0;
+    }
+
+    #map-bottom {
+      border-radius: 0 0 15px 15px;
     }
   </style>
 </head>
 <body>
 
-<div id="map"></div>
+<div id="container">
+  <div id="map-top" class="map"></div>
+  <div id="map-bottom" class="map"></div>
+</div>
 
 <!-- JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -49,18 +59,33 @@
   const lon = parseFloat(getParam("lon")) || 29.00;
   const zoom = 14;
 
-  const map = L.map('map').setView([lat, lon], zoom);
+  /* =========================
+     ÜST HARİTA – OPENFREEMAP
+     ========================= */
+
+  const mapTop = L.map('map-top').setView([lat, lon], zoom);
 
   fetch('https://tiles.openfreemap.org/styles/bright')
     .then(res => res.json())
     .then(style => {
-      L.maplibreGL({
-        style: style,
-        interactive: true
-      }).addTo(map);
+      const openFreeMapLayer = L.maplibreGL({ style });
+      openFreeMapLayer.addTo(mapTop);
     });
 
-  L.marker([lat, lon]).addTo(map);
+  L.marker([lat, lon]).addTo(mapTop);
+
+  /* =========================
+     ALT HARİTA – OSM
+     ========================= */
+
+  const mapBottom = L.map('map-bottom').setView([lat, lon], zoom);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(mapBottom);
+
+  L.marker([lat, lon]).addTo(mapBottom);
 </script>
 
 </body>
