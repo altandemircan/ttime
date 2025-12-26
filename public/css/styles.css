@@ -7647,13 +7647,6 @@ scrollbar-width: thin;
     }
     
     .ai-input-wrapper {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 20px !important;
-        right: 20px !important;
-        margin: 10px !important;
-      
-        background: white !important;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+       
     }
 }
