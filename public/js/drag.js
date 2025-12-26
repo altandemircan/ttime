@@ -3,45 +3,69 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        .drag-ghost {
+        /* --- GHOST STACK (YENİ YAP) --- */
+        .drag-ghost-stack {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: rgba(255, 255, 255, 0.95) !important;
-            border: 2px dashed #87cdb5 !important; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
-            border-radius: 12px !important;
+            /* Arka planı transparan yap, içindeki elemanlar kendi arka planını kullansın */
+            background: transparent !important; 
+            box-shadow: none !important;
+            border: none !important;
             
-            /* JS ile set edilecekler */
             width: var(--ghost-width);
-            height: var(--ghost-height);
+            /* Height otomatik olsun ki notlar kadar uzasın */
+            height: auto !important; 
             
             margin: 0 !important;
-           will-change: left, top; 
+            will-change: left, top;
             transition: none !important;
-            overflow: visible !important; /* Okların dışarı taşması için gerekli */
+            overflow: visible !important;
+            display: flex;
+            flex-direction: column;
+            gap: 2px; /* Elemanlar arası hafif boşluk */
         }
 
-        /* --- SÜRÜKLEME OKLARI --- */
+        /* Ghost içindeki her bir parça (Ana item ve notlar) */
+        .drag-ghost-stack .travel-item, 
+        .drag-ghost-stack .note-item {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            margin: 0 !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+            opacity: 0.95;
+            background: #fff; /* Şeffaflığı önle */
+            border: 2px dashed #87cdb5 !important;
+            border-radius: 12px;
+        }
+
+        /* Notlar için özel stil (biraz daha içeride dursun görsel olarak) */
+        .drag-ghost-stack .note-item {
+            transform: scale(0.95); /* Notlar biraz daha küçük görünsün */
+            border-color: #ffd54f !important; /* Not olduğu belli olsun */
+        }
+
+        /* --- SÜRÜKLEME OKLARI (Sadece en üstteki ana itemda görünsün) --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
             width: 28px;
             height: 28px;
-            background: #8a4af3; /* Tema Rengi */
+            background: #8a4af3;
             color: #ffffff;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px; /* Ok boyutu */
+            font-size: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 1000;
             opacity: 0.7;
         }
-        .drag-arrow-top { top: -36px; }
-        .drag-arrow-bottom { bottom: -36px; }
+        .drag-arrow-top { top: -15px; }
+        .drag-arrow-bottom { bottom: -15px; }
 
         .insertion-placeholder {
             height: 6px !important;
@@ -52,14 +76,12 @@ function injectDragStyles() {
             pointer-events: none;
         }
 
-        /* --- YENİ KURAL: SÜRÜKLEME KAYNAĞI SİYAH BEYAZ OLSUN (UX) --- */
         .travel-item.dragging-source {
             filter: grayscale(100%);
-            opacity: 0.45; /* Hafifçe soluklaştır */
+            opacity: 0.45;
             transition: opacity 0.2s, filter 0.2s; 
         }
 
-        /* --- CRITICAL FIX: BOŞ GÜNLER İÇİN ALAN --- */
         .day-list {
             min-height: 80px !important; 
             box-sizing: border-box;
@@ -78,7 +100,7 @@ function injectDragStyles() {
             background-color: #fffdf0 !important;
         }
         
-        /* --- GİZLEME SINIFLARI (SADECE MOBİLDE ÇALIŞSIN) --- */
+        /* GİZLEME SINIFLARI */
         @media (max-width: 768px) {
             body.hide-map-details .route-controls-bar,
             body.hide-map-details .tt-travel-mode-set,
@@ -97,7 +119,7 @@ function injectDragStyles() {
             body.hide-map-details .date-range,
             body.hide-map-details #newchat,
             body.hide-map-details .trip-share-section,
-            body.hide-map-details .expanded-map-panel /* Bunu da garanti olsun diye ekledim */
+            body.hide-map-details .expanded-map-panel
             {
                 display: none !important;
             }
@@ -110,13 +132,6 @@ function injectDragStyles() {
             user-select: none !important;
             cursor: grabbing !important;
             touch-action: none !important; 
-        }
-
-        /* --- YENİ EKLENEN SINIF: GHOST GENİŞLİĞİNİ SINIRLA --- */
-        .drag-ghost-limit {
-            max-width: 360px !important; /* Sidebar genişliğine sabitle */
-            overflow: hidden !important; /* Taşan içeriği gizle */
-            white-space: nowrap; /* Metin kaymasını önle */
         }
     `;
     const style = document.createElement('style');
@@ -319,43 +334,57 @@ function stopAutoScroll() {
 
 // ========== GHOST & PLACEHOLDER ==========
 function createDragGhost(item, clientX, clientY) {
-    document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
+    // Varsa eskileri temizle
+    document.querySelectorAll('.drag-ghost-stack').forEach(g => g.remove());
+    
+    // Orijinal boyutları al
     const rect = item.getBoundingClientRect();
 
-    const ghost = item.cloneNode(true);
-    ghost.className = item.className;
-    ghost.classList.add('drag-ghost');
-
-    ghost.style.width = rect.width + "px";
-    ghost.style.height = rect.height + "px";
-    ghost.style.left = rect.left + "px";
-    ghost.style.top = rect.top + "px";
-    ghost.style.position = 'fixed';
-    ghost.style.zIndex = "999999";
-    ghost.style.pointerEvents = "none";
-    ghost.style.margin = "0";
-    ghost.style.boxSizing = getComputedStyle(item).boxSizing || 'border-box';
-
-    // NOTE ITEM özel override: width ve left yok say!
-    if (ghost.classList.contains('note-item')) {
-        ghost.style.setProperty('width', rect.width + "px", 'important');
-        ghost.style.setProperty('left', rect.left + "px", 'important');
-        ghost.style.removeProperty('right');
-        // Override .note-item'ın width/left !important'ını bastırmak için:
-        ghost.style.setProperty('left', rect.left + "px", 'important');
-        ghost.style.setProperty('width', rect.width + "px", 'important');
-    }
-
+    // 1. Kapsayıcı (Wrapper) Oluştur
+    const ghostWrapper = document.createElement('div');
+    ghostWrapper.classList.add('drag-ghost-stack');
+    
+    // Wrapper pozisyonunu ayarla
+    ghostWrapper.style.width = rect.width + "px";
+    ghostWrapper.style.left = rect.left + "px";
+    ghostWrapper.style.top = rect.top + "px";
+    
+    // 2. Ana İtem'ı Kopyala ve Wrapper'a Ekle
+    const mainClone = item.cloneNode(true);
+    // ID çakışmasını önlemek için id'yi sil
+    mainClone.removeAttribute('id');
+    // Sürükleme oklarını ekle (sadece ana item'a)
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
-    ghost.appendChild(upArrow);
+    mainClone.appendChild(upArrow);
+    
     const downArrow = document.createElement('div');
     downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
     downArrow.innerHTML = '▼'; 
-    ghost.appendChild(downArrow);
+    mainClone.appendChild(downArrow);
+    
+    ghostWrapper.appendChild(mainClone);
 
-    document.body.appendChild(ghost);
+    // 3. Altındaki Notları Bul ve Wrapper'a Ekle
+    let nextSibling = item.nextElementSibling;
+    let noteCount = 0;
+
+    // Sadece ardışık 'note-item' olanları al
+    while (nextSibling && nextSibling.classList.contains('note-item')) {
+        const noteClone = nextSibling.cloneNode(true);
+        noteClone.removeAttribute('id');
+        ghostWrapper.appendChild(noteClone);
+        
+        // Görsel olarak ana item'ın da 'dragging-source' olmasını sağla (opsiyonel)
+        nextSibling.classList.add('dragging-source');
+        
+        nextSibling = nextSibling.nextElementSibling;
+        noteCount++;
+    }
+
+    // 4. Body'ye ekle
+    document.body.appendChild(ghostWrapper);
 }
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
