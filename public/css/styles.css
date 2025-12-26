@@ -7361,6 +7361,12 @@ text-align: center;
     max-height: -webkit-fill-available;
 }
 
+@media (max-width: 768px) {
+    .form-container {
+        height: calc(100vh - 120px);
+    }
+}
+
 /* Form İçeriği */
 .form-content {
    display: block;
