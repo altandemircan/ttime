@@ -338,8 +338,9 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
     // --- 7. MESAJ GÖNDERME ---
+    // --- 7. MESAJ GÖNDERME (DÜZELTİLMİŞ VERSİYON) ---
     async function sendAIChatMessage(userMessage) {
-        // LİMİT KONTROLÜ (Chat başına)
+        // LİMİT KONTROLÜ
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
@@ -351,8 +352,9 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
 
+        // 1. KULLANICI MESAJINI EKLE
         const userDiv = document.createElement('div');
-        userDiv.textContent = '🧑 ' + userMessage;
+        userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`; // Flex yapısına uygun
         userDiv.className = 'chat-message user-message';
         messagesDiv.appendChild(userDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -360,9 +362,22 @@ document.addEventListener("DOMContentLoaded", function() {
         chatHistory.push({ role: "user", content: userMessage });
         saveCurrentChat();
 
+        // 2. AI MESAJ KUTUSUNU OLUŞTUR (Görsel ve Metni Ayırıyoruz)
         const aiDiv = document.createElement('div');
-        aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> <span class="typing">...</span>';
         aiDiv.className = 'chat-message ai-message';
+
+        // A) GÖRSEL ELEMENTİ (Başlangıçta .webp)
+        const aiImg = document.createElement('img');
+        aiImg.src = '/img/aioo.webp'; // Hareketli görsel
+        aiImg.alt = 'AI';
+        
+        // B) METİN ELEMENTİ (Başlangıçta ...)
+        const aiContent = document.createElement('div');
+        aiContent.innerHTML = '<span class="typing">...</span>';
+
+        // Elementleri Ana Kutuya Ekle
+        aiDiv.appendChild(aiImg);
+        aiDiv.appendChild(aiContent);
         messagesDiv.appendChild(aiDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
@@ -372,6 +387,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let chunkQueue = [];
         let hasError = false;
+        let isFirstChunk = true;
 
         eventSource.onmessage = function(event) {
             if (hasError) return;
@@ -379,24 +395,37 @@ document.addEventListener("DOMContentLoaded", function() {
                 const data = JSON.parse(event.data);
                 if (data.message && data.message.content) {
                     chunkQueue.push(data.message.content);
-                    if (aiDiv.querySelector('.typing')) aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> ';
                     
-                    if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
-                        startStreamingTypewriterEffect(aiDiv, chunkQueue, 4);
-                    } else if (typeof startStreamingTypewriterEffect !== 'function') {
-                        aiDiv.textContent += data.message.content; 
+                    // İlk veri geldiğinde "..." yazısını sil
+                    if (isFirstChunk) {
+                        aiContent.innerHTML = ''; 
+                        isFirstChunk = false;
                     }
+
+                    // Görsele DOKUNMADAN sadece metni güncelle
+                    if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
+                        // Typewriter efektine sadece metin kutusunu (aiContent) gönderiyoruz
+                        startStreamingTypewriterEffect(aiContent, chunkQueue, 4);
+                    } else if (typeof startStreamingTypewriterEffect !== 'function') {
+                        aiContent.textContent += data.message.content; 
+                    }
+                    // Not: Scroll işlemini buraya da ekleyebilirsin
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }
             } catch (e) {}
         };
 
         eventSource.onerror = function() {
             if (!hasError) {
-                if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+                // Hata durumunda da durdur
+                if (aiContent._typewriterStop) aiContent._typewriterStop();
                 chunkQueue.length = 0;
                 hasError = true;
                 eventSource.close();
-                aiDiv.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+                aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+                
+                // Hata olsa bile görseli normale döndür
+                aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
             }
         };
 
@@ -406,32 +435,25 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 chatHistory.push({ role: "assistant", content: fullText });
                 saveCurrentChat();
-                // Not: Artık incrementQuestionCount() yok, limit chatHistory uzunluğundan hesaplanıyor.
 
-                if (aiDiv._typewriterStop) aiDiv._typewriterStop();
+                if (aiContent._typewriterStop) aiContent._typewriterStop();
                 chunkQueue.length = 0;
                 hasError = true;
                 eventSource.close();
 
-                if (typeof markdownToHtml === 'function') {
-                    aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png">  ' + markdownToHtml(fullText);
-                } else {
-                    aiDiv.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png">  ' + fullText;
-                }
-            }
-        });
-    }
+                // 3. BİTİŞ: GÖRSELİ DEĞİŞTİR VE FORMATLA
+                
+                // A) Görseli duran hale (.png) çevir
+                aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
 
-    if (sendBtn && chatInput) {
-        sendBtn.addEventListener('click', () => {
-            const val = chatInput.value.trim();
-            if (val) {
-                sendAIChatMessage(val);
-                chatInput.value = '';
+                // B) Metni Markdown formatına çevir
+                if (typeof markdownToHtml === 'function') {
+                    aiContent.innerHTML = markdownToHtml(fullText);
+                } else {
+                    aiContent.innerHTML = fullText;
+                }
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
-        });
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendBtn.click();
         });
     }
 
