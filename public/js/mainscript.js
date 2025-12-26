@@ -4675,7 +4675,15 @@ async function updateCart() {
 
 
     // --- Diğer kalan işlemler ---
-    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+    
+    // --- DEĞİŞİKLİK BURADA: Note hariç say ---
+    const itemCount = window.cart.filter(i => 
+        i.name && 
+        !i._starter && 
+        !i._placeholder &&
+        i.category !== 'Note' // NOTLARI DAHİL ETME
+    ).length;
+    
     if (menuCount) {
         menuCount.textContent = itemCount;
         menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
