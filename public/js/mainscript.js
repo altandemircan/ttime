@@ -4675,15 +4675,14 @@ async function updateCart() {
 
 
     // --- Diğer kalan işlemler ---
-    
-    // --- DEĞİŞİKLİK BURADA: Note hariç say ---
-    const itemCount = window.cart.filter(i => 
-        i.name && 
-        !i._starter && 
-        !i._placeholder &&
-        i.category !== 'Note' // NOTLARI DAHİL ETME
-    ).length;
-    
+// Note kategorisi hariç, sadece mekanları say
+const itemCount = window.cart.filter(i => 
+    i.name && 
+    !i._starter && 
+    !i._placeholder && 
+    i.category !== 'Note'
+).length;
+
     if (menuCount) {
         menuCount.textContent = itemCount;
         menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
