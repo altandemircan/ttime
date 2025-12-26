@@ -3,87 +3,46 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* --- GHOST WRAPPER --- */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
             pointer-events: none !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 2px dashed #87cdb5 !important; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+            border-radius: 12px !important;
             
-            /* Genişlik ana öğeden gelir */
-            width: var(--ghost-width) !important;
-            height: auto !important; 
+            /* JS ile set edilecekler */
+            width: var(--ghost-width);
+            height: var(--ghost-height);
             
             margin: 0 !important;
-            will-change: left, top;
+           will-change: left, top; 
             transition: none !important;
-            overflow: visible !important;
-            
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
+            overflow: visible !important; /* Okların dışarı taşması için gerekli */
         }
 
-        /* --- SADECE ANA ITEM (Not olmayanlar) --- */
-        .drag-ghost .travel-item:not(.note-item) {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
-            opacity: 0.95;
-            background: #fff; 
-            border: 2px dashed #87cdb5 !important;
-            border-radius: 12px;
-            list-style: none !important;
-            height: auto !important;
-            min-height: auto !important;
-            width: 100% !important; /* Ana öğe tam otursun */
-        }
-
-        /* --- NOTLAR İÇİN ÖZEL (Senin stilini zorluyoruz) --- */
-        .drag-ghost .note-item {
-            /* Senin CSS kurallarının aynısı + Drag görünümü */
-            width: 83% !important;
-            left: 12% !important;
-            position: relative !important;
-            margin-top: 16px !important;
-            margin-bottom: 16px !important;
-            
-            box-sizing: border-box !important;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
-            border: 2px dashed #ffd54f !important;
-            background: #fff !important;
-            opacity: 0.95;
-            border-radius: 12px;
-            z-index: 2;
-        }
-
-        /* --- OKLAR (Sadece ana öğede) --- */
+        /* --- SÜRÜKLEME OKLARI --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
             width: 28px;
             height: 28px;
-            background: #8a4af3;
+            background: #8a4af3; /* Tema Rengi */
             color: #ffffff;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 10px; /* Ok boyutu */
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 1000;
-            opacity: 0.9;
+            opacity: 0.7;
         }
-        .drag-arrow-top { top: -15px; }
-        .drag-arrow-bottom { bottom: -15px; }
+        .drag-arrow-top { top: -36px; }
+        .drag-arrow-bottom { bottom: -36px; }
 
-        /* --- PLACEHOLDER --- */
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -91,16 +50,35 @@ function injectDragStyles() {
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(138, 74, 243, 0.5); 
             pointer-events: none;
-            display: block !important;
         }
 
-        /* Kaynak öğeyi soluklaştır */
+        /* --- YENİ KURAL: SÜRÜKLEME KAYNAĞI SİYAH BEYAZ OLSUN (UX) --- */
         .travel-item.dragging-source {
             filter: grayscale(100%);
-            opacity: 0.3;
+            opacity: 0.45; /* Hafifçe soluklaştır */
+            transition: opacity 0.2s, filter 0.2s; 
         }
 
-        /* Gizleme Sınıfları */
+        /* --- CRITICAL FIX: BOŞ GÜNLER İÇİN ALAN --- */
+        .day-list {
+            min-height: 80px !important; 
+            box-sizing: border-box;
+            display: block;
+        }
+
+        @keyframes shakeError {
+            0% { transform: translateX(0); border-color: #ffa000; }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); border-color: #ffa000; }
+        }
+        .shake-error {
+            animation: shakeError 0.4s ease-in-out;
+            border: 2px solid #ffa000 !important;
+            background-color: #fffdf0 !important;
+        }
+        
+        /* --- GİZLEME SINIFLARI (SADECE MOBİLDE ÇALIŞSIN) --- */
         @media (max-width: 768px) {
             body.hide-map-details .route-controls-bar,
             body.hide-map-details .tt-travel-mode-set,
@@ -119,7 +97,7 @@ function injectDragStyles() {
             body.hide-map-details .date-range,
             body.hide-map-details #newchat,
             body.hide-map-details .trip-share-section,
-            body.hide-map-details .expanded-map-panel
+            body.hide-map-details .expanded-map-panel /* Bunu da garanti olsun diye ekledim */
             {
                 display: none !important;
             }
@@ -132,6 +110,13 @@ function injectDragStyles() {
             user-select: none !important;
             cursor: grabbing !important;
             touch-action: none !important; 
+        }
+
+        /* --- YENİ EKLENEN SINIF: GHOST GENİŞLİĞİNİ SINIRLA --- */
+        .drag-ghost-limit {
+            max-width: 360px !important; /* Sidebar genişliğine sabitle */
+            overflow: hidden !important; /* Taşan içeriği gizle */
+            white-space: nowrap; /* Metin kaymasını önle */
         }
     `;
     const style = document.createElement('style');
@@ -335,65 +320,42 @@ function stopAutoScroll() {
 // ========== GHOST & PLACEHOLDER ==========
 function createDragGhost(item, clientX, clientY) {
     document.querySelectorAll('.drag-ghost').forEach(g => g.remove());
-    
     const rect = item.getBoundingClientRect();
 
-    // Wrapper
-    const ghostWrapper = document.createElement('div');
-    ghostWrapper.classList.add('drag-ghost'); 
-    
-    ghostWrapper.style.width = rect.width + "px";
-    ghostWrapper.style.left = rect.left + "px";
-    ghostWrapper.style.top = rect.top + "px";
-    ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
-    
-    // --- 1. ANA ITEM ---
-    const mainClone = item.cloneNode(true);
-    mainClone.removeAttribute('id');
-    
-    // Inline stilleri sıfırla
-    mainClone.style.marginTop = '0';
-    mainClone.style.marginBottom = '0';
-    mainClone.style.left = 'auto';
-    mainClone.style.top = 'auto';
-    mainClone.style.position = 'relative';
-    mainClone.style.width = '100%'; // Ana item tam boy
+    const ghost = item.cloneNode(true);
+    ghost.className = item.className;
+    ghost.classList.add('drag-ghost');
 
-    // Oklar
+    ghost.style.width = rect.width + "px";
+    ghost.style.height = rect.height + "px";
+    ghost.style.left = rect.left + "px";
+    ghost.style.top = rect.top + "px";
+    ghost.style.position = 'fixed';
+    ghost.style.zIndex = "999999";
+    ghost.style.pointerEvents = "none";
+    ghost.style.margin = "0";
+    ghost.style.boxSizing = getComputedStyle(item).boxSizing || 'border-box';
+
+    // NOTE ITEM özel override: width ve left yok say!
+    if (ghost.classList.contains('note-item')) {
+        ghost.style.setProperty('width', rect.width + "px", 'important');
+        ghost.style.setProperty('left', rect.left + "px", 'important');
+        ghost.style.removeProperty('right');
+        // Override .note-item'ın width/left !important'ını bastırmak için:
+        ghost.style.setProperty('left', rect.left + "px", 'important');
+        ghost.style.setProperty('width', rect.width + "px", 'important');
+    }
+
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';
     upArrow.innerHTML = '▲'; 
-    mainClone.appendChild(upArrow);
-    
+    ghost.appendChild(upArrow);
     const downArrow = document.createElement('div');
     downArrow.className = 'drag-arrow-visual drag-arrow-bottom';
     downArrow.innerHTML = '▼'; 
-    mainClone.appendChild(downArrow);
-    
-    ghostWrapper.appendChild(mainClone);
+    ghost.appendChild(downArrow);
 
-    // --- 2. NOTLARI EKLE ---
-    let nextSibling = item.nextElementSibling;
-    
-    while (nextSibling && nextSibling.classList.contains('note-item')) {
-        const noteClone = nextSibling.cloneNode(true);
-        noteClone.removeAttribute('id');
-        
-        // Not inline stillerini temizle AMA width/left ayarına dokunma (CSS halledecek)
-        noteClone.style.marginTop = ''; 
-        noteClone.style.marginBottom = '';
-        noteClone.style.left = ''; 
-        noteClone.style.top = '';
-        noteClone.style.position = ''; 
-        noteClone.style.width = ''; // Temizle ki CSS'teki %83 geçerli olsun
-
-        ghostWrapper.appendChild(noteClone);
-        
-        nextSibling.classList.add('dragging-source');
-        nextSibling = nextSibling.nextElementSibling;
-    }
-
-    document.body.appendChild(ghostWrapper);
+    document.body.appendChild(ghost);
 }
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
@@ -651,85 +613,46 @@ function finishDrag() {
 
 function reorderCart(fromIndex, toIndex, fromDay, toDay) {
     try {
-        let newCart = [...window.cart];
-        
-        // 1. Taşınacak bloğu belirle (Ana öğe + altındaki ardışık notlar)
-        // fromIndex, global 'cart' dizisindeki indekstir. Ancak Dragula/UI bize DOM sıralaması verir.
-        // Bu yüzden önce global indeksi bulmamız lazım. Ancak mevcut yapıda fromIndex zaten global.
-        
+        const newCart = [...window.cart];
         if (!newCart[fromIndex]) return;
 
-        const itemsToMove = [newCart[fromIndex]]; // Ana öğe
+        const [movedItem] = newCart.splice(fromIndex, 1);
+        movedItem.day = toDay;
+
+        let targetDayItems = newCart.filter(i => i.day === toDay);
+        targetDayItems.splice(toIndex, 0, movedItem);
         
-        // Ana öğenin hemen altından başla ve ardışık "Note"ları topla
-        // Sadece AYNI GÜNDE olan notları almalıyız.
-        let checkIndex = fromIndex + 1;
-        while (checkIndex < newCart.length) {
-            const nextItem = newCart[checkIndex];
-            // Eğer not ise VE aynı gündeyse listeye ekle
-            if (nextItem.category === 'Note' && nextItem.day === fromDay) {
-                itemsToMove.push(nextItem);
-                checkIndex++;
-            } else {
-                // Not değilse veya gün değiştiyse dur
-                break;
-            }
-        }
-
-        // 2. Bu öğeleri ana listeden (newCart) çıkar
-        // filter kullanarak referansa göre silmek en güvenlisi
-        newCart = newCart.filter(item => !itemsToMove.includes(item));
-
-        // 3. Taşınan öğelerin gün bilgisini güncelle
-        if (fromDay !== toDay) {
-            itemsToMove.forEach(item => item.day = toDay);
-        }
-
-        // 4. Hedef konuma ekle
-        // 'toIndex', hedef günün (DOM'daki) kaçıncı sırasına ekleneceğini belirtir.
-        // newCart içindeki hedef gün öğelerini bulup araya eklememiz lazım.
-        
-        // Hedef günün mevcut öğelerini al
-        const targetDayItems = newCart.filter(i => i.day === toDay);
-        
-        // Araya ekle (splice ile)
-        // Not: Eğer toIndex listenin sonundaysa, sona ekler.
-        targetDayItems.splice(toIndex, 0, ...itemsToMove);
-
-        // 5. Listeyi tekrar birleştir (Gün sırasını koruyarak)
-        // Tüm günleri al (hem mevcut hem hedef)
-        const allDays = new Set([...window.cart.map(i => i.day), toDay, fromDay]);
-        const sortedDays = [...allDays].sort((a, b) => a - b);
+        const allDays = new Set([...window.cart.map(i=>i.day), toDay]); 
+        const sortedDays = [...allDays].sort((a,b)=>a-b);
         
         let finalCart = [];
         sortedDays.forEach(d => {
-            if (d === toDay) {
-                // Hedef gün için güncellenmiş listeyi kullan
-                finalCart = finalCart.concat(targetDayItems);
-            } else {
-                // Diğer günler için newCart'tan (zaten silinmiş hali) al
-                finalCart = finalCart.concat(newCart.filter(i => i.day === d));
-            }
+            if (d === toDay) finalCart = finalCart.concat(targetDayItems);
+            else finalCart = finalCart.concat(newCart.filter(i => i.day === d));
         });
 
         window.cart = finalCart;
 
-        // === KAYDET ===
+        // === KRİTİK FIX: Arayüzü güncellemeden ÖNCE veriyi kaydet ===
         if (typeof saveCurrentTripToStorage === "function") {
             saveCurrentTripToStorage();
         } else {
             localStorage.setItem('cart', JSON.stringify(window.cart));
         }
+        // ============================================================
 
-        // === RENDER ===
         if (typeof updateCart === "function") updateCart();
 
-        // Harita güncellemesi
         setTimeout(() => {
             if (typeof calculateAllRoutes === "function") calculateAllRoutes();
             else if (typeof renderMapForDay === "function") {
                 renderMapForDay(toDay);
-                if (fromDay !== toDay) renderMapForDay(fromDay);
+                if(fromDay !== toDay) renderMapForDay(fromDay);
+            }
+            else {
+                window.dispatchEvent(new CustomEvent('cartUpdated', { 
+                    detail: { fromDay, toDay } 
+                }));
             }
         }, 50);
 
