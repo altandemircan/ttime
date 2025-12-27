@@ -436,54 +436,48 @@ function updatePlaceholder(clientX, clientY) {
         placeholder.className = 'insertion-placeholder';
     }
 
-    // --- KRİTİK: Placeholder genişliğini draggedItem ile eşitle ---
+    // Placeholder stil ayarları
     if (draggedItem && placeholder) {
         const draggedRect = draggedItem.getBoundingClientRect();
         placeholder.style.width = draggedRect.width + "px";
         const style = getComputedStyle(draggedItem);
         placeholder.style.marginLeft = style.marginLeft;
         placeholder.style.marginRight = style.marginRight;
-        placeholder.style.display = '';
+        
+        // Varsayılan olarak görünür yap (aşağıda gerekirse gizleyeceğiz)
+        placeholder.style.display = 'block'; 
+        
         placeholder.style.boxSizing = style.boxSizing || 'border-box';
         placeholder.style.maxWidth = draggedRect.width + "px";
     }
 
-    // 1. Tüm .travel-item'ları sırayla al
+    // Sürüklenen öğe hariç diğerleri
     const allItems = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging-source)'));
-
-    // --- KURAL: SÜRÜKLENEN BİR 'NOTE' MU? ---
     const isNote = draggedItem && draggedItem.classList.contains('note-item');
 
+    // 1. Boş Gün Kontrolü
     if (allItems.length === 0) {
-        // Boş gün -> Eğer Note ise boş güne eklemeye izin verme! (Çünkü üstünde item yok)
         if (isNote) {
             if (placeholder.parentNode) placeholder.remove();
             return; 
         }
-        // Normal item ise en başa ekle
         dropZone.insertBefore(placeholder, dropZone.firstChild);
         return;
     }
 
-    // 2. Mouse ile üstünde olduğun travel-item hangisi?
+    // 2. Hedef Konumu Bul
     const afterElement = getDragAfterElement(dropZone, clientY);
 
-    // --- KURAL: NOTE, EN BAŞA GELEMEZ ---
-    // Eğer sürüklenen bir Note ise ve afterElement listenin ilk elemanıysa (yani en başa koymaya çalışıyorsa)
-    // Bunu engelle ve ilk elemanın sonrasına koymaya zorla.
-    
+    // --- KURAL: Note en başa gelemez ---
     if (isNote && afterElement === allItems[0]) {
-        // En başa (ilk item'ın üstüne) koymaya çalışıyor -> İzin verme, ilk item'ın altına koy
         if (allItems[0].nextSibling) {
             dropZone.insertBefore(placeholder, allItems[0].nextSibling);
         } else {
             dropZone.appendChild(placeholder);
         }
-        return;
-    }
-
-    if (afterElement == null) {
-        // Listenin sonuna ekle
+    } 
+    else if (afterElement == null) {
+        // Sona ekle
         const lastItem = allItems[allItems.length - 1];
         if (lastItem.nextSibling) {
             dropZone.insertBefore(placeholder, lastItem.nextSibling);
@@ -493,6 +487,22 @@ function updatePlaceholder(clientX, clientY) {
     } else {
         // Araya ekle
         dropZone.insertBefore(placeholder, afterElement);
+    }
+
+    // ============================================================
+    // --- KRİTİK DÜZELTME: KENDİ YERİNDEYSE GİZLE ---
+    // ============================================================
+    
+    // Placeholder şu an DOM'da bir yerde duruyor.
+    // Eğer placeholder'ın hemen öncesindeki eleman BİZİM SÜRÜKLEDİĞİMİZ elemansa
+    // Veya hemen sonrasındaki eleman BİZİM SÜRÜKLEDİĞİMİZ elemansa
+    // Demek ki pozisyon değişmiyor. O zaman çizgiyi gösterme.
+    
+    // Not: draggedItem, 'dragging-source' class'ı ile DOM'da durmaya devam ediyor (sadece opaklığı düşük).
+    
+    if (placeholder.previousElementSibling === draggedItem || 
+        placeholder.nextElementSibling === draggedItem) {
+        placeholder.style.display = 'none';
     }
 }
 
