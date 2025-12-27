@@ -102,11 +102,11 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 /* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
 /* === REPLACED showTripDetails (Notes attached to Items) === */
+/* === REPLACED showTripDetails (Detailed Note Design) === */
 function showTripDetails(startDate) {
-    // Mobil/Desktop ekran kontrolü
     const isMobile = window.innerWidth <= 768;
 
-    // Bölgeyi bul/oluştur
+    // Chat Screen ve Section Kontrolü
     let chatScreen = document.getElementById("chat-screen");
     if (!chatScreen) {
         chatScreen = document.createElement("div");
@@ -122,50 +122,103 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- CSS: Notların Item üzerinde durması için stiller ---
+    // --- CSS: Gelişmiş Not Tasarımı İçin Stiller ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
         style.textContent = `
             .attached-notes-container {
                 position: absolute;
-                top: 10px;
-                right: 10px;
-                z-index: 20; /* Visual'ın üzerinde olması için */
+                top: 45px; /* Marker numarasının altına denk gelsin */
+                right: 5px;
+                left: 5px; /* Genişliği ortalamak için */
+                z-index: 20;
                 display: flex;
                 flex-direction: column;
-                align-items: flex-end;
                 gap: 5px;
-                pointer-events: none; /* Tıklamayı engelleme, altı görünsün */
+                pointer-events: none; /* Boşluklara tıklayınca arkası işlesin */
             }
-            .attached-note-item {
-                background: #fff;
-                border: 2px dashed #d32f2f; 
-                padding: 4px 8px;
-                border-radius: 8px;
-                font-size: 11px;
+            /* Kullanıcının gönderdiği kart tasarımı için CSS */
+            .attached-note-card {
+                background: rgba(255, 255, 255, 0.96); /* Hafif şeffaf beyaz */
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                padding: 8px 12px;
+                pointer-events: auto; /* Karta tıklanabilsin */
+                border: 1px solid #eee;
+                transition: all 0.2s ease;
+            }
+            .attached-note-card .header-row {
+                display: flex; 
+                align-items: center; 
+                justify-content: space-between; 
+                width: 100%;
+            }
+            .attached-note-card .left-group {
+                display: flex; 
+                align-items: center; 
+                gap: 10px;
+            }
+            .attached-note-card .item-position {
+                position: relative;
+                width: 32px; 
+                height: 32px;
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+            }
+            .attached-note-card .custom-marker-outer {
+                /* Senin gönderdiğin HTML'deki inline stilleri destekler, 
+                   ekstra override gerekirse buraya yazılır */
+            }
+            .attached-note-card .cart-image {
+                width: 24px; 
+                height: 24px;
+                margin-left: 20px; /* Marker'ın yanına */
+                object-fit: contain;
+            }
+            .attached-note-card .toggle-title {
+                margin: 0;
                 font-weight: 600;
+                font-size: 0.9rem;
                 color: #333;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                max-width: 140px;
-                pointer-events: auto; /* Nota tıklanabilsin */
             }
-            .attached-note-item img {
-                width: 12px;
-                height: 12px;
-                display: block;
+            .attached-note-card .arrow-icon {
+                width: 16px; 
+                height: 16px; 
+                cursor: pointer;
+                transition: transform 0.3s ease;
             }
-            .attached-note-text {
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+            .attached-note-card .content {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid #eee;
+                font-size: 0.85rem;
+                color: #555;
+                line-height: 1.4;
+            }
+            .attached-note-card .info-section p {
+                margin: 0;
             }
         `;
         document.head.appendChild(style);
     }
+
+    // --- JS: Not Aç/Kapa Fonksiyonu (Global) ---
+    window.toggleAttachedNote = function(el) {
+        // Tıklanan okun olduğu kartı bul
+        const card = el.closest('.attached-note-card');
+        const content = card.querySelector('.content');
+        const img = el.querySelector('img');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'block';
+            if(img) img.style.transform = 'rotate(90deg)';
+        } else {
+            content.style.display = 'none';
+            if(img) img.style.transform = 'rotate(0deg)';
+        }
+    };
 
     if (!Array.isArray(window.cart) || window.cart.length === 0) {
         tripDetailsSection.textContent = "No trip details available.";
@@ -185,7 +238,6 @@ function showTripDetails(startDate) {
     if (typeof window.customDayNames === "undefined") window.customDayNames = {};
 
     for (let day = 1; day <= maxDay; day++) {
-        // --- 1. VERİ GRUPLAMA (Notes -> Parent Item) ---
         const rawItems = window.cart.filter(it => it.day == day && it.name !== undefined);
         
         let groupedItems = [];
@@ -193,22 +245,16 @@ function showTripDetails(startDate) {
 
         rawItems.forEach(item => {
             if (item.category === 'Note') {
-                // Not ise, mevcut parent'a ekle
                 if (currentParent) {
                     currentParent.attachedNotes.push(item);
-                } else {
-                    // İlk eleman not ise, yapacak bir şey yok (veya dummy item açılabilir)
-                    // Şimdilik pas geçiyoruz, çünkü itemsız not sliderda tek duramaz.
                 }
             } else {
-                // Item ise yeni grup başlat
-                // Orijinal veriyi bozmamak için spread ile kopyala + notes dizisi ekle
                 currentParent = { ...item, attachedNotes: [] };
                 groupedItems.push(currentParent);
             }
         });
 
-        // --- Render Başlangıcı ---
+        // --- Date Header Logic ---
         let dateStr = "";
         if (startDateObj) {
             const d = new Date(startDateObj);
@@ -233,10 +279,7 @@ function showTripDetails(startDate) {
         const label = document.createElement("label");
         label.setAttribute("for", inputId);
         label.className = "accordion-label";
-        label.innerHTML = `
-            ${labelText}
-            <img src="img/arrow_down.svg" class="accordion-arrow">
-        `;
+        label.innerHTML = `${labelText} <img src="img/arrow_down.svg" class="accordion-arrow">`;
         container.appendChild(label);
 
         const content = document.createElement("div");
@@ -252,21 +295,50 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- NOT HTML OLUŞTURMA ---
+            // --- NOT HTML OLUŞTURMA (Senin Tasarımın) ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
                 notesHtml = `<div class="attached-notes-container">`;
                 step.attachedNotes.forEach(note => {
+                    // Not içeriği ve başlığı
+                    const noteTitle = note.name || "Note";
+                    const noteDetails = note.noteDetails || ""; 
+                    // HTML Yapısı: Senin gönderdiğin yapının aynısı (Drag/Remove temizlendi)
                     notesHtml += `
-                        <div class="attached-note-item">
-                            <img src="img/custom-note.svg" alt="note">
-                            <span class="attached-note-text">${note.name || 'Note'}</span>
+                    <div class="attached-note-card">
+                        <div class="header-row">
+                            <div class="left-group">
+                                <div class="item-position">
+                                    <div class="custom-marker-outer" style="
+                                        flex-shrink: 0; transform: scale(0.70); position: absolute; left: 0; top: -4px;
+                                        background: #f57f17 !important; border-radius: 50%; width: 24px; height: 24px;
+                                        display: flex; align-items: center; justify-content: center; color: #fff;
+                                        font-weight: bold; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                        <span class="custom-marker-label" style="font-size: 14px;">N</span>
+                                    </div>
+                                    <img src="img/custom-note.svg" alt="note" class="cart-image" style="width:20px; margin-left:14px;">
+                                </div>
+                                <div class="item-info">
+                                    <p class="toggle-title">${noteTitle}</p>
+                                </div>
+                            </div>
+                            <span class="arrow" onclick="toggleAttachedNote(this)">
+                                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">
+                            </span>
                         </div>
-                    `;
+                        <div class="content" style="display: none;">
+                            <div class="info-section">
+                                <div class="note-details">
+                                    <p>${noteDetails.replace(/\n/g, '<br>')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
                 });
                 notesHtml += `</div>`;
             }
 
+            // --- ANA SLIDE HTML ---
             return `<li class="splide__slide">
           <div class="steps" data-day="${day}" data-category="${step.category}"${step.lat && step.lon ? ` data-lat="${step.lat}" data-lon="${step.lon}"` : ""} style="position: relative;">
             
