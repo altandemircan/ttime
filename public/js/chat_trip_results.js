@@ -101,8 +101,7 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 
 /* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
-/* === REPLACED showTripDetails (Notes attached to Items) === */
-/* === REPLACED showTripDetails (Detailed Note Design) === */
+/* === REPLACED showTripDetails (MODERN NOTE DESIGN) === */
 function showTripDetails(startDate) {
     const isMobile = window.innerWidth <= 768;
 
@@ -122,102 +121,127 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- CSS: Gelişmiş Not Tasarımı İçin Stiller ---
+    // --- CSS: Modern & UX Dostu Not Tasarımı ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
         style.textContent = `
             .attached-notes-container {
                 position: absolute;
-                top: 45px; /* Marker numarasının altına denk gelsin */
-                right: 5px;
-                left: 5px; /* Genişliği ortalamak için */
+                top: 10px;
+                right: 10px;
+                width: 65%; /* Görselin tamamını kaplamasın */
+                max-width: 220px;
                 z-index: 20;
                 display: flex;
                 flex-direction: column;
-                gap: 5px;
-                pointer-events: none; /* Boşluklara tıklayınca arkası işlesin */
+                gap: 6px;
+                align-items: flex-end;
+                pointer-events: none; 
             }
-            /* Kullanıcının gönderdiği kart tasarımı için CSS */
+
             .attached-note-card {
-                background: rgba(255, 255, 255, 0.96); /* Hafif şeffaf beyaz */
-                border-radius: 12px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                padding: 8px 12px;
-                pointer-events: auto; /* Karta tıklanabilsin */
-                border: 1px solid #eee;
-                transition: all 0.2s ease;
-            }
-            .attached-note-card .header-row {
-                display: flex; 
-                align-items: center; 
-                justify-content: space-between; 
+                /* Glassmorphism Efekti */
+                background: rgba(255, 255, 255, 0.85); 
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 width: 100%;
+                pointer-events: auto;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                border-left: 4px solid #f57f17; /* Turuncu şerit: Not olduğunu belirtir */
             }
-            .attached-note-card .left-group {
-                display: flex; 
-                align-items: center; 
-                gap: 10px;
+
+            .attached-note-card:hover {
+                background: rgba(255, 255, 255, 0.95);
+                transform: translateY(-2px);
             }
-            .attached-note-card .item-position {
-                position: relative;
-                width: 32px; 
-                height: 32px;
-                display: flex; 
-                align-items: center; 
-                justify-content: center;
-            }
-            .attached-note-card .custom-marker-outer {
-                /* Senin gönderdiğin HTML'deki inline stilleri destekler, 
-                   ekstra override gerekirse buraya yazılır */
-            }
-            .attached-note-card .cart-image {
-                width: 24px; 
-                height: 24px;
-                margin-left: 20px; /* Marker'ın yanına */
-                object-fit: contain;
-            }
-            .attached-note-card .toggle-title {
-                margin: 0;
-                font-weight: 600;
-                font-size: 0.9rem;
-                color: #333;
-            }
-            .attached-note-card .arrow-icon {
-                width: 16px; 
-                height: 16px; 
+
+            /* Başlık Alanı */
+            .attached-note-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 6px 10px;
                 cursor: pointer;
+            }
+
+            .attached-note-title-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                overflow: hidden;
+            }
+
+            /* N Badge'i */
+            .note-badge {
+                background: #f57f17;
+                color: #fff;
+                font-size: 10px;
+                font-weight: 800;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .note-title-text {
+                font-size: 12px;
+                font-weight: 600;
+                color: #333;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Ok İkonu */
+            .note-toggle-icon {
+                width: 12px;
+                height: 12px;
+                opacity: 0.6;
                 transition: transform 0.3s ease;
             }
-            .attached-note-card .content {
-                margin-top: 8px;
-                padding-top: 8px;
-                border-top: 1px solid #eee;
-                font-size: 0.85rem;
-                color: #555;
-                line-height: 1.4;
+
+            /* İçerik Alanı (Animasyonlu Açılma) */
+            .attached-note-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
+                background: rgba(245, 245, 245, 0.5);
             }
-            .attached-note-card .info-section p {
-                margin: 0;
+
+            .attached-note-content-inner {
+                padding: 8px 10px 10px 10px;
+                font-size: 11px;
+                line-height: 1.4;
+                color: #555;
+                border-top: 1px solid rgba(0,0,0,0.05);
+            }
+
+            /* Açık Durum Class'ı */
+            .attached-note-card.expanded .attached-note-content {
+                max-height: 200px; /* İçerik için yeterli alan */
+                transition: max-height 0.3s ease-in-out;
+            }
+            
+            .attached-note-card.expanded .note-toggle-icon {
+                transform: rotate(180deg);
+                opacity: 1;
             }
         `;
         document.head.appendChild(style);
     }
 
-    // --- JS: Not Aç/Kapa Fonksiyonu (Global) ---
-    window.toggleAttachedNote = function(el) {
-        // Tıklanan okun olduğu kartı bul
-        const card = el.closest('.attached-note-card');
-        const content = card.querySelector('.content');
-        const img = el.querySelector('img');
-        
-        if (content.style.display === 'none' || content.style.display === '') {
-            content.style.display = 'block';
-            if(img) img.style.transform = 'rotate(90deg)';
-        } else {
-            content.style.display = 'none';
-            if(img) img.style.transform = 'rotate(0deg)';
-        }
+    // --- JS: Toggle Fonksiyonu ---
+    window.toggleNoteCard = function(headerEl) {
+        const card = headerEl.closest('.attached-note-card');
+        card.classList.toggle('expanded');
     };
 
     if (!Array.isArray(window.cart) || window.cart.length === 0) {
@@ -254,7 +278,7 @@ function showTripDetails(startDate) {
             }
         });
 
-        // --- Date Header Logic ---
+        // Date Logic
         let dateStr = "";
         if (startDateObj) {
             const d = new Date(startDateObj);
@@ -295,42 +319,26 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- NOT HTML OLUŞTURMA (Senin Tasarımın) ---
+            // --- NOT HTML OLUŞTURMA (Modern Tasarım) ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
                 notesHtml = `<div class="attached-notes-container">`;
                 step.attachedNotes.forEach(note => {
-                    // Not içeriği ve başlığı
                     const noteTitle = note.name || "Note";
-                    const noteDetails = note.noteDetails || ""; 
-                    // HTML Yapısı: Senin gönderdiğin yapının aynısı (Drag/Remove temizlendi)
+                    const noteDetails = note.noteDetails || "No details.";
+                    
                     notesHtml += `
                     <div class="attached-note-card">
-                        <div class="header-row">
-                            <div class="left-group">
-                                <div class="item-position">
-                                    <div class="custom-marker-outer" style="
-                                        flex-shrink: 0; transform: scale(0.70); position: absolute; left: 0; top: -4px;
-                                        background: #f57f17 !important; border-radius: 50%; width: 24px; height: 24px;
-                                        display: flex; align-items: center; justify-content: center; color: #fff;
-                                        font-weight: bold; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                                        <span class="custom-marker-label" style="font-size: 14px;">N</span>
-                                    </div>
-                                    <img src="img/custom-note.svg" alt="note" class="cart-image" style="width:20px; margin-left:14px;">
-                                </div>
-                                <div class="item-info">
-                                    <p class="toggle-title">${noteTitle}</p>
-                                </div>
+                        <div class="attached-note-header" onclick="toggleNoteCard(this)">
+                            <div class="attached-note-title-group">
+                                <div class="note-badge">N</div>
+                                <span class="note-title-text">${noteTitle}</span>
                             </div>
-                            <span class="arrow" onclick="toggleAttachedNote(this)">
-                                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon">
-                            </span>
+                            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="note-toggle-icon">
                         </div>
-                        <div class="content" style="display: none;">
-                            <div class="info-section">
-                                <div class="note-details">
-                                    <p>${noteDetails.replace(/\n/g, '<br>')}</p>
-                                </div>
+                        <div class="attached-note-content">
+                            <div class="attached-note-content-inner">
+                                ${noteDetails.replace(/\n/g, '<br>')}
                             </div>
                         </div>
                     </div>`;
@@ -401,7 +409,7 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.appendChild(sect);
 
-    // Splide mount kodu
+    // Splide mount
     setTimeout(() => {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
@@ -427,7 +435,7 @@ function showTripDetails(startDate) {
         });
     }, 1);
 
-    // Paylaşım başlığı ve butonları
+    // Share Buttons
     const shareTitle = document.createElement("div");
     shareTitle.className = "share-buttons-title";
     tripDetailsSection.appendChild(shareTitle);
