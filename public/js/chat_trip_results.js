@@ -101,12 +101,9 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 
 /* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
-/* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
-/* === REPLACED showTripDetails (With Embedded Notes Logic) === */
+/* === REPLACED showTripDetails (Notes attached to Items) === */
 function showTripDetails(startDate) {
-    // Mobil için tek render, desktop için ayrı kodun varsa ona da aynısını uygula!
-
-    // Ekran kontrolü
+    // Mobil/Desktop ekran kontrolü
     const isMobile = window.innerWidth <= 768;
 
     // Bölgeyi bul/oluştur
@@ -125,41 +122,40 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- CSS STYLES (Notlar için gerekli stiller) ---
-    // Bu stil bloğu notların item içinde düzgün görünmesini sağlar
-    if (!document.getElementById('tt-notes-styles')) {
+    // --- CSS: Notların Item üzerinde durması için stiller ---
+    if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
-        style.id = 'tt-notes-styles';
+        style.id = 'tt-attached-notes-style';
         style.textContent = `
             .attached-notes-container {
                 position: absolute;
-                bottom: 90px;
-                right: 12px;
-                z-index: 10;
+                top: 10px;
+                right: 10px;
+                z-index: 20; /* Visual'ın üzerinde olması için */
                 display: flex;
-                flex-direction: row;
-                gap: 8px;
+                flex-direction: column;
                 align-items: flex-end;
-                pointer-events: none;
+                gap: 5px;
+                pointer-events: none; /* Tıklamayı engelleme, altı görünsün */
             }
             .attached-note-item {
-               background: #fff;
-    padding: 5px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #333;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    max-width: 160px;
-    pointer-events: auto;
-    animation: fadeIn 0.3s ease-out;
+                background: #fff;
+                border: 2px dashed #d32f2f; 
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #333;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                max-width: 140px;
+                pointer-events: auto; /* Nota tıklanabilsin */
             }
             .attached-note-item img {
-                width: 14px;
-                height: 14px;
+                width: 12px;
+                height: 12px;
                 display: block;
             }
             .attached-note-text {
@@ -167,7 +163,6 @@ function showTripDetails(startDate) {
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         `;
         document.head.appendChild(style);
     }
@@ -190,36 +185,30 @@ function showTripDetails(startDate) {
     if (typeof window.customDayNames === "undefined") window.customDayNames = {};
 
     for (let day = 1; day <= maxDay; day++) {
-        // --- 1. VERİ GRUPLAMA MANTIĞI ---
-        // O güne ait tüm itemları al
-        const rawDayItems = window.cart.filter(it => it.day == day && it.name !== undefined);
+        // --- 1. VERİ GRUPLAMA (Notes -> Parent Item) ---
+        const rawItems = window.cart.filter(it => it.day == day && it.name !== undefined);
         
-        // Itemları ve Notları Grupla
-        // Hedef: [Item1, Item2(+Note1, +Note2), Item3]
         let groupedItems = [];
         let currentParent = null;
 
-        rawDayItems.forEach(item => {
+        rawItems.forEach(item => {
             if (item.category === 'Note') {
-                // Eğer bu bir not ise ve halihazırda bir parent (Item) varsa, ona ekle
+                // Not ise, mevcut parent'a ekle
                 if (currentParent) {
-                    if (!currentParent._attachedNotes) currentParent._attachedNotes = [];
-                    currentParent._attachedNotes.push(item);
+                    currentParent.attachedNotes.push(item);
                 } else {
-                    // Eğer ilk eleman not ise (bağlanacak item yoksa)
-                    // İsteğe bağlı: Gizleyebilirsin veya geçici bir item oluşturabilirsin.
-                    // Şimdilik pas geçiyoruz (Item olmayan note gösterilmez)
+                    // İlk eleman not ise, yapacak bir şey yok (veya dummy item açılabilir)
+                    // Şimdilik pas geçiyoruz, çünkü itemsız not sliderda tek duramaz.
                 }
             } else {
-                // Bu bir ana item (Mekan)
-                // Orijinal objeyi bozmamak için kopyasını alıyoruz
-                currentParent = { ...item }; 
-                currentParent._attachedNotes = []; // Notlar için boş dizi
+                // Item ise yeni grup başlat
+                // Orijinal veriyi bozmamak için spread ile kopyala + notes dizisi ekle
+                currentParent = { ...item, attachedNotes: [] };
                 groupedItems.push(currentParent);
             }
         });
 
-        // --- Render Kısmı ---
+        // --- Render Başlangıcı ---
         let dateStr = "";
         if (startDateObj) {
             const d = new Date(startDateObj);
@@ -257,22 +246,20 @@ function showTripDetails(startDate) {
         daySteps.setAttribute("data-day", String(day));
 
         if (groupedItems.length > 0) {
-            // groupedItems üzerinden map yapıyoruz
             daySteps.innerHTML = `
   <div class="splide" id="splide-trip-details-day${day}">
     <div class="splide__track">
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
-            // Not HTML'ini oluştur
+            
+            // --- NOT HTML OLUŞTURMA ---
             let notesHtml = "";
-            if (step._attachedNotes && step._attachedNotes.length > 0) {
+            if (step.attachedNotes && step.attachedNotes.length > 0) {
                 notesHtml = `<div class="attached-notes-container">`;
-                step._attachedNotes.forEach(note => {
-                    // Not ikonu veya placeholder
-                    const noteIcon = "img/custom-note.svg"; 
+                step.attachedNotes.forEach(note => {
                     notesHtml += `
                         <div class="attached-note-item">
-                            <img src="${noteIcon}" alt="note">
+                            <img src="img/custom-note.svg" alt="note">
                             <span class="attached-note-text">${note.name || 'Note'}</span>
                         </div>
                     `;
@@ -313,7 +300,7 @@ function showTripDetails(startDate) {
                 </span>
                 ` : ""}
               </div>
-              <div class="display: flex; gap: 12px;">
+              <div style="display: flex; gap: 12px;">
                 <div class="cats cats${(idx % 5) + 1}">
                   <img src="" alt="${step.category}"> ${step.category}
                 </div>
