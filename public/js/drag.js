@@ -105,6 +105,7 @@ function injectDragStyles() {
             opacity: 0.3;
         }
 
+        /* --- MOBİL İÇİN GİZLEME LİSTESİ --- */
         @media (max-width: 768px) {
             body.hide-map-details .route-controls-bar,
             body.hide-map-details .tt-travel-mode-set,
@@ -123,7 +124,8 @@ function injectDragStyles() {
             body.hide-map-details .date-range,
             body.hide-map-details #newchat,
             body.hide-map-details .trip-share-section,
-            body.hide-map-details .expanded-map-panel
+            body.hide-map-details .expanded-map-panel,
+            body.hide-map-details .day-collage  /* <-- MOBİLDE KOLAJ GİZLEME EKLENDİ */
             {
                 display: none !important;
             }
@@ -139,7 +141,7 @@ function injectDragStyles() {
             touch-action: none !important; 
         }
 
-        /* --- YENİ EKLENEN KISIM: SÜRÜKLEME ANINDA KOLAJI GİZLE --- */
+        /* MASAÜSTÜ/GENEL GİZLEME (Garanti olsun diye burada da kalsın) */
         body.dragging-active .day-collage {
             display: none !important;
         }
