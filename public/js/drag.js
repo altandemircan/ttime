@@ -431,13 +431,13 @@ function updatePlaceholder(clientX, clientY) {
     const dropZone = elementBelow.closest('.day-list');
     if (!dropZone) return;
 
-    // Placeholder henüz yoksa oluştur
+    // Placeholder oluştur (yoksa)
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
 
-    // Görsel ayarlar (Genişlik, margin vb.)
+    // Görsel ayarlar
     if (draggedItem) {
         const draggedRect = draggedItem.getBoundingClientRect();
         placeholder.style.width = draggedRect.width + "px";
@@ -446,31 +446,43 @@ function updatePlaceholder(clientX, clientY) {
         placeholder.style.marginRight = style.marginRight;
         placeholder.style.boxSizing = style.boxSizing || 'border-box';
         placeholder.style.maxWidth = draggedRect.width + "px";
-        // Varsayılan olarak göster (aşağıdaki logic gerekirse kaldıracak)
         placeholder.style.display = 'block';
     }
 
-    // Listeyi al (Sürüklenen hariç)
+    // Listeyi al
     const allItems = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging-source)'));
-    const isNote = draggedItem && draggedItem.classList.contains('note-item');
+    const isDraggingNote = draggedItem && draggedItem.classList.contains('note-item');
 
     // 1. BOŞ GÜN KONTROLÜ
     if (allItems.length === 0) {
-        // Notlar tek başına boş güne gidemez (üstünde item olmalı)
-        if (isNote) {
+        if (isDraggingNote) {
             if (placeholder.parentNode) placeholder.remove();
             return; 
         }
         dropZone.insertBefore(placeholder, dropZone.firstChild);
-        return; // Boş güne ekliyorsak çakışma kontrolüne gerek yok
+        return;
     }
 
     // 2. HEDEF KONUMU BUL
-    const afterElement = getDragAfterElement(dropZone, clientY);
+    let afterElement = getDragAfterElement(dropZone, clientY);
+
+    // ============================================================
+    // --- YENİ KURAL: ITEM, NOTLARIN ARASINA GİREMEZ ---
+    // ============================================================
+    if (!isDraggingNote) {
+        // Eğer taşıdığımız şey bir NOTE DEĞİLSE (yani Item ise)
+        // ve hedefimiz bir NOTE ise (yani araya girmeye çalışıyorsak)
+        // Hedefi o not grubunun sonundaki ilk "Item"a (veya sona) kadar ötele.
+        while (afterElement && afterElement.classList.contains('note-item')) {
+            afterElement = afterElement.nextElementSibling;
+        }
+        // Bu döngü sayesinde:
+        // - NOTE 1'in üzerine gelirsen -> NOTE 2'nin sonrasına atlar.
+        // - ITEM 2'nin (header) alt yarısına gelirsen -> NOTE 1..N hepsini geçer, sona atlar.
+    }
 
     // --- KURAL: Note en başa gelemez ---
-    if (isNote && afterElement === allItems[0]) {
-        // İlk elemanın altına koymaya zorla
+    if (isDraggingNote && afterElement === allItems[0]) {
         if (allItems[0].nextSibling) {
             dropZone.insertBefore(placeholder, allItems[0].nextSibling);
         } else {
@@ -491,24 +503,17 @@ function updatePlaceholder(clientX, clientY) {
     }
 
     // ============================================================
-    // --- KRİTİK ÇÖZÜM: "KENDİ YERİ" KONTROLÜ ---
+    // --- KENDİ YERİ KONTROLÜ (GİZLEME) ---
     // ============================================================
-    // Placeholder şu an DOM'a yerleşti. Şimdi komşularına bakıyoruz.
-    // Eğer hemen yanında (önünde veya arkasında) zaten bizim sürüklediğimiz
-    // eleman (draggedItem) duruyorsa, pozisyon değişmeyecek demektir.
-    
     const prev = placeholder.previousElementSibling;
     const next = placeholder.nextElementSibling;
 
-    // draggedItem, 'dragging-source' class'ı ile (soluk şekilde) hala listede duruyor.
+    // Eğer placeholder'ın yanı başında "draggedItem" (soluk hali) varsa,
+    // veya "draggedItem"ın hemen altındaki notların sonundaysak (blok mantığı)
+    // bu kontrolü biraz genişletmemiz lazım ama temel "remove" mantığı şimdilik yeterli.
+    
     if (prev === draggedItem || next === draggedItem) {
-        // "Kendi altına" veya "Kendi üstüne" bırakmaya çalışıyor.
-        // Placeholder'ı tamamen SİL.
         placeholder.remove();
-        
-        // Placeholder silindiği için:
-        // 1. Ekranda mor çizgi çıkmaz.
-        // 2. Drop yapıldığında finishDrag fonksiyonu placeholder bulamaz ve işlemi iptal eder.
     }
 }
 
