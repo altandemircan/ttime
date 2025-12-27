@@ -3,7 +3,7 @@ function injectDragStyles() {
     const styleId = 'tt-drag-styles';
     if (document.getElementById(styleId)) return;
     const css = `
-        /* --- GHOST WRAPPER (EN DIŞ KUTU) --- */
+        /* --- GHOST WRAPPER --- */
         .drag-ghost {
             position: fixed !important;
             z-index: 999999 !important;
@@ -11,21 +11,17 @@ function injectDragStyles() {
             background: transparent !important;
             box-shadow: none !important;
             border: none !important;
-            
             width: var(--ghost-width) !important;
             height: auto !important; 
-            
             margin: 0 !important;
             will-change: left, top;
             transition: none !important;
             overflow: visible !important; 
-            
             display: flex;
             flex-direction: column;
             gap: 2px;
         }
 
-        /* --- SADECE ANA ITEM --- */
         .drag-ghost .travel-item:not(.note-item) {
             position: relative !important;
             top: auto !important;
@@ -43,14 +39,12 @@ function injectDragStyles() {
             width: 100% !important; 
         }
 
-        /* --- NOTLAR --- */
         .drag-ghost .note-item {
             width: 83% !important;
             left: 12% !important;
             position: relative !important;
             margin-top: 16px !important;
             margin-bottom: 16px !important;
-            
             box-sizing: border-box !important;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
             border: 2px dashed #ffd54f !important;
@@ -60,7 +54,6 @@ function injectDragStyles() {
             z-index: 2;
         }
 
-        /* --- OKLAR --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
@@ -78,18 +71,9 @@ function injectDragStyles() {
             z-index: 1000;
             opacity: 0.9;
         }
-        
-        .drag-arrow-top { 
-            top: -36px !important; 
-            bottom: auto !important;
-        }
-        
-        .drag-arrow-bottom { 
-            bottom: -36px !important; 
-            top: auto !important;
-        }
+        .drag-arrow-top { top: -36px !important; bottom: auto !important; }
+        .drag-arrow-bottom { bottom: -36px !important; top: auto !important; }
 
-        /* Placeholder */
         .insertion-placeholder {
             height: 6px !important;
             background: linear-gradient(90deg, #8a4af3, #b388ff); 
@@ -105,27 +89,29 @@ function injectDragStyles() {
             opacity: 0.3;
         }
 
-        /* --- MOBİL İÇİN GİZLEME LİSTESİ --- */
+        /* ============================================================ */
+        /* === SÜRÜKLEME ANINDA GİZLENECEKLER === */
+        /* ============================================================ */
+        
+        /* 1. FOTOĞRAFLAR (HEM MOBİL HEM DESKTOP) */
+        /* İsteğin üzerine: Fotoğraflar kesinlikle gizlensin */
+        body.dragging-active .day-collage,
+        body.hide-map-details .day-collage {
+            display: none !important;
+        }
+
+        /* 2. BUTONLAR VE KALABALIK (MOBİLDE) */
+        /* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
+        /* Onlar artık görünür kalacak. Sadece butonları gizliyoruz. */
         @media (max-width: 768px) {
-            body.hide-map-details .route-controls-bar,
-            body.hide-map-details .tt-travel-mode-set,
-            body.hide-map-details [id^="map-bottom-controls-wrapper"], 
             body.hide-map-details .add-more-btn,
             body.hide-map-details .add-new-day-btn,
             body.hide-map-details #add-new-day-button,
             body.hide-map-details .add-new-day-separator, 
-            body.hide-map-details .route-info, 
-            body.hide-map-details [id^="route-info-day"], 
-            body.hide-map-details .route-scale-bar,
-            body.hide-map-details .ai-info-section,
-            body.hide-map-details .ai-trip-info-box,
-            body.hide-map-details #generate-ai-info-btn,
             body.hide-map-details .add-to-calendar-btn,
-            body.hide-map-details .date-range,
             body.hide-map-details #newchat,
             body.hide-map-details .trip-share-section,
-            body.hide-map-details .expanded-map-panel,
-            body.hide-map-details .day-collage  /* <-- MOBİLDE KOLAJ GİZLEME EKLENDİ */
+            body.hide-map-details .date-range
             {
                 display: none !important;
             }
@@ -139,11 +125,6 @@ function injectDragStyles() {
             user-select: none !important;
             cursor: grabbing !important;
             touch-action: none !important; 
-        }
-
-        /* MASAÜSTÜ/GENEL GİZLEME (Garanti olsun diye burada da kalsın) */
-        body.dragging-active .day-collage {
-            display: none !important;
         }
     `;
     const style = document.createElement('style');
