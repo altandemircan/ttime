@@ -118,7 +118,7 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- 1. CSS GÜNCELLEMESİ: Sadece İkon ve Badge Tasarımı ---
+    // --- 1. CSS GÜNCELLEMESİ: Başlangıçta GİZLİ olacak ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
@@ -135,8 +135,9 @@ function showTripDetails(startDate) {
                 pointer-events: none; 
             }
 
-            /* Üstteki Açıklama Kutusu */
+            /* Üstteki Açıklama Kutusu (BAŞLANGIÇTA GİZLİ) */
             .shared-note-view {
+                display: none; /* <-- Gizli başlar */
                 background: rgba(255, 255, 255, 0.98);
                 border-radius: 8px;
                 padding: 12px;
@@ -145,10 +146,21 @@ function showTripDetails(startDate) {
                 pointer-events: auto;
                 margin-bottom: 2px;
                 min-height: 50px;
-                display: flex;
                 flex-direction: column;
                 justify-content: center;
+                animation: fadeIn 0.2s ease-out;
             }
+            
+            /* JS ile 'open' classı eklenince görünür olacak */
+            .shared-note-view.open {
+                display: flex;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
             .shared-note-view h5 {
                 margin: 0 0 4px 0;
                 font-size: 0.9rem;
@@ -162,21 +174,19 @@ function showTripDetails(startDate) {
                 line-height: 1.3;
             }
 
-            /* Butonların Alanı */
             .note-buttons-wrapper {
                 display: flex;
-                gap: 12px; /* İkonlar arası boşluk */
+                gap: 12px; 
                 pointer-events: auto;
                 padding-left: 5px;
             }
 
-            /* İkon Butonu (Kapsayıcı) */
             .note-trigger-btn {
-                position: relative; /* Badge'i konumlandırmak için */
+                position: relative;
                 width: 36px;
                 height: 36px;
                 background: #fff;
-                border-radius: 8px; /* Hafif karemsi */
+                border-radius: 8px;
                 border: 1px solid #ddd;
                 cursor: pointer;
                 display: flex;
@@ -186,14 +196,17 @@ function showTripDetails(startDate) {
                 transition: all 0.2s;
             }
 
-            /* Aktif olduğunda belli olsun */
+            .note-trigger-btn:hover {
+                background: #f9f9f9;
+            }
+
+            /* Aktif buton stili */
             .note-trigger-btn.active {
                 border-color: #d32f2f;
                 background: #fff5f5;
                 transform: scale(1.1);
             }
 
-            /* Custom Note İkonu */
             .note-trigger-icon {
                 width: 22px; 
                 height: 22px;
@@ -203,14 +216,13 @@ function showTripDetails(startDate) {
                 opacity: 1;
             }
 
-            /* Yuvarlak N Rozeti (Badge) */
             .note-trigger-badge {
                 position: absolute;
                 top: -6px;
                 right: -6px;
                 width: 18px; 
                 height: 18px;
-                background: #f57f17; /* Turuncu renk */
+                background: #f57f17;
                 color: #fff;
                 font-size: 10px;
                 font-weight: bold;
@@ -218,30 +230,42 @@ function showTripDetails(startDate) {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border: 2px solid #fff; /* Patlaması için beyaz kenarlık */
+                border: 2px solid #fff;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             }
         `;
         document.head.appendChild(style);
     }
 
-    // --- 2. JS FONKSİYONU ---
+    // --- 2. JS FONKSİYONU: AÇ / KAPA MANTIĞI ---
     window.updateAttachedNote = function(displayId, btnElement) {
         const displayBox = document.getElementById(displayId);
         if(!displayBox) return;
 
-        const title = btnElement.getAttribute('data-title');
-        const desc = btnElement.getAttribute('data-desc');
+        // Tıklanan buton zaten aktif mi?
+        const isAlreadyActive = btnElement.classList.contains('active');
 
-        displayBox.innerHTML = `
-            <h5>${title}</h5>
-            <p>${desc}</p>
-        `;
-
+        // Önce gruptaki tüm butonların aktifliğini kaldır
         const parentWrapper = btnElement.closest('.note-buttons-wrapper');
         const siblings = parentWrapper.querySelectorAll('.note-trigger-btn');
         siblings.forEach(el => el.classList.remove('active'));
-        btnElement.classList.add('active');
+
+        if (isAlreadyActive) {
+            // DURUM 1: Zaten açık olana tıklandı -> KAPAT
+            displayBox.classList.remove('open'); // CSS ile gizlenir
+            // Butona tekrar 'active' eklemiyoruz, hepsi pasif kalıyor.
+        } else {
+            // DURUM 2: Kapalıyken veya başka butona tıklandı -> AÇ
+            const title = btnElement.getAttribute('data-title');
+            const desc = btnElement.getAttribute('data-desc');
+
+            displayBox.innerHTML = `
+                <h5>${title}</h5>
+                <p>${desc}</p>
+            `;
+            displayBox.classList.add('open'); // Görünür yap
+            btnElement.classList.add('active'); // Butonu işaretle
+        }
     };
 
     if (!Array.isArray(window.cart) || window.cart.length === 0) {
@@ -318,37 +342,33 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- 3. HTML OLUŞTURMA: Sadece İkonlar ---
+            // --- 3. HTML OLUŞTURMA ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
                 const uniqueDisplayId = `note-display-${day}-${idx}`;
                 
-                const firstNote = step.attachedNotes[0];
-                const defaultTitle = firstNote.name || "Note";
-                const defaultDesc = (firstNote.noteDetails || "").replace(/\n/g, '<br>');
+                // NOT: Artık varsayılan içerik (firstNote) yüklemiyoruz.
+                // Kutu boş ve gizli başlıyor.
 
                 notesHtml = `
                 <div class="attached-notes-container">
                     
                     <div id="${uniqueDisplayId}" class="shared-note-view">
-                        <h5>${defaultTitle}</h5>
-                        <p>${defaultDesc}</p>
-                    </div>
+                        </div>
 
                     <div class="note-buttons-wrapper">
                         ${step.attachedNotes.map((note, nIdx) => {
                             const nTitle = note.name || "Note";
                             const nDesc = (note.noteDetails || "").replace(/"/g, '&quot;').replace(/\n/g, '<br>');
-                            const isActive = nIdx === 0 ? 'active' : '';
-
+                            
+                            // Başlangıçta hiçbiri 'active' değil
                             return `
-                            <div class="note-trigger-btn ${isActive}" 
+                            <div class="note-trigger-btn" 
                                  onclick="updateAttachedNote('${uniqueDisplayId}', this)"
                                  data-title="${nTitle}"
                                  data-desc="${nDesc}">
                                 
                                 <img src="img/custom-note.svg" class="note-trigger-icon">
-                                
                                 <div class="note-trigger-badge">N</div>
                                 
                             </div>
