@@ -101,7 +101,7 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 
 /* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
-/* === REPLACED showTripDetails (MODERN NOTE DESIGN) === */
+/* === REPLACED showTripDetails (Minimalist Icon + Popover Design) === */
 function showTripDetails(startDate) {
     const isMobile = window.innerWidth <= 768;
 
@@ -121,7 +121,7 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- CSS: Modern & UX Dostu Not Tasarımı ---
+    // --- CSS: Sadece İkon ve Popover Tasarımı ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
@@ -130,118 +130,116 @@ function showTripDetails(startDate) {
                 position: absolute;
                 top: 10px;
                 right: 10px;
-                width: 65%; /* Görselin tamamını kaplamasın */
-                max-width: 220px;
                 z-index: 20;
                 display: flex;
                 flex-direction: column;
-                gap: 6px;
-                align-items: flex-end;
-                pointer-events: none; 
-            }
-
-            .attached-note-card {
-                /* Glassmorphism Efekti */
-                background: rgba(255, 255, 255, 0.85); 
-                backdrop-filter: blur(6px);
-                -webkit-backdrop-filter: blur(6px);
-                
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                width: 100%;
-                pointer-events: auto;
-                overflow: hidden;
-                transition: all 0.3s ease;
-                border-left: 4px solid #f57f17; /* Turuncu şerit: Not olduğunu belirtir */
-            }
-
-            .attached-note-card:hover {
-                background: rgba(255, 255, 255, 0.95);
-                transform: translateY(-2px);
-            }
-
-            /* Başlık Alanı */
-            .attached-note-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 6px 10px;
-                cursor: pointer;
-            }
-
-            .attached-note-title-group {
-                display: flex;
-                align-items: center;
                 gap: 8px;
-                overflow: hidden;
+                align-items: flex-end; /* Sağa yasla */
+                pointer-events: none; /* Aradaki boşluklara tıklanabilsin */
             }
 
-            /* N Badge'i */
-            .note-badge {
+            .note-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                pointer-events: auto; /* İkona tıklanabilsin */
+            }
+
+            /* Yuvarlak İkon (Trigger) */
+            .note-bubble-trigger {
+                width: 32px;
+                height: 32px;
                 background: #f57f17;
-                color: #fff;
-                font-size: 10px;
-                font-weight: 800;
-                width: 18px;
-                height: 18px;
+                border: 2px solid #fff;
                 border-radius: 50%;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                flex-shrink: 0;
-            }
-
-            .note-title-text {
-                font-size: 12px;
-                font-weight: 600;
-                color: #333;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            /* Ok İkonu */
-            .note-toggle-icon {
-                width: 12px;
-                height: 12px;
-                opacity: 0.6;
-                transition: transform 0.3s ease;
-            }
-
-            /* İçerik Alanı (Animasyonlu Açılma) */
-            .attached-note-content {
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
-                background: rgba(245, 245, 245, 0.5);
-            }
-
-            .attached-note-content-inner {
-                padding: 8px 10px 10px 10px;
-                font-size: 11px;
-                line-height: 1.4;
-                color: #555;
-                border-top: 1px solid rgba(0,0,0,0.05);
-            }
-
-            /* Açık Durum Class'ı */
-            .attached-note-card.expanded .attached-note-content {
-                max-height: 200px; /* İçerik için yeterli alan */
-                transition: max-height 0.3s ease-in-out;
+                cursor: pointer;
+                transition: transform 0.2s ease, background 0.2s;
+                z-index: 2; /* Balonun üstünde dursun */
             }
             
-            .attached-note-card.expanded .note-toggle-icon {
-                transform: rotate(180deg);
+            .note-bubble-trigger:hover {
+                transform: scale(1.1);
+            }
+            
+            .note-bubble-trigger img {
+                width: 16px;
+                height: 16px;
+                filter: brightness(0) invert(1); /* İkonu beyaz yap */
+            }
+            
+            /* Aktif durumda ikon rengi değişsin */
+            .note-wrapper.active .note-bubble-trigger {
+                background: #d32f2f;
+                transform: scale(1.1);
+            }
+
+            /* Açılır Balon (Popover) - Varsayılan GİZLİ */
+            .note-popover-content {
+                position: absolute;
+                right: 40px; /* İkonun soluna it */
+                top: 0; /* İkonla aynı hizada başla */
+                width: 200px; /* Sabit genişlik veya max-width */
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(4px);
+                padding: 10px;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                border-right: 3px solid #f57f17; /* Sağdan turuncu çizgi */
+                
+                opacity: 0;
+                visibility: hidden;
+                transform: translateX(10px); /* Hafif sağdan gelsin */
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                pointer-events: none;
+            }
+
+            /* Aktif olunca görünür yap */
+            .note-wrapper.active .note-popover-content {
                 opacity: 1;
+                visibility: visible;
+                transform: translateX(0);
+                pointer-events: auto;
+            }
+
+            .note-popover-title {
+                font-size: 12px;
+                font-weight: 700;
+                color: #333;
+                margin-bottom: 4px;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 4px;
+            }
+
+            .note-popover-desc {
+                font-size: 11px;
+                color: #555;
+                line-height: 1.4;
+                max-height: 150px; /* Çok uzunsa scroll olsun */
+                overflow-y: auto;
             }
         `;
         document.head.appendChild(style);
     }
 
-    // --- JS: Toggle Fonksiyonu ---
-    window.toggleNoteCard = function(headerEl) {
-        const card = headerEl.closest('.attached-note-card');
-        card.classList.toggle('expanded');
+    // --- JS: Toggle Mantığı (Accordion) ---
+    window.toggleNotePopover = function(triggerEl) {
+        const currentWrapper = triggerEl.closest('.note-wrapper');
+        const container = triggerEl.closest('.attached-notes-container');
+        
+        // Eğer zaten açıksa kapat
+        if (currentWrapper.classList.contains('active')) {
+            currentWrapper.classList.remove('active');
+        } else {
+            // Değilse, ÖNCE hepsini kapat
+            container.querySelectorAll('.note-wrapper').forEach(el => el.classList.remove('active'));
+            // SONRA tıklananı aç
+            currentWrapper.classList.add('active');
+        }
     };
 
     if (!Array.isArray(window.cart) || window.cart.length === 0) {
@@ -319,7 +317,7 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- NOT HTML OLUŞTURMA (Modern Tasarım) ---
+            // --- NOT HTML OLUŞTURMA (Icon Only + Popover) ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
                 notesHtml = `<div class="attached-notes-container">`;
@@ -328,18 +326,14 @@ function showTripDetails(startDate) {
                     const noteDetails = note.noteDetails || "No details.";
                     
                     notesHtml += `
-                    <div class="attached-note-card">
-                        <div class="attached-note-header" onclick="toggleNoteCard(this)">
-                            <div class="attached-note-title-group">
-                                <div class="note-badge">N</div>
-                                <span class="note-title-text">${noteTitle}</span>
-                            </div>
-                            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="note-toggle-icon">
+                    <div class="note-wrapper">
+                        <div class="note-popover-content">
+                            <div class="note-popover-title">${noteTitle}</div>
+                            <div class="note-popover-desc">${noteDetails.replace(/\n/g, '<br>')}</div>
                         </div>
-                        <div class="attached-note-content">
-                            <div class="attached-note-content-inner">
-                                ${noteDetails.replace(/\n/g, '<br>')}
-                            </div>
+
+                        <div class="note-bubble-trigger" onclick="toggleNotePopover(this)">
+                            <img src="img/custom-note.svg" alt="N">
                         </div>
                     </div>`;
                 });
