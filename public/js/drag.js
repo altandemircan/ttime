@@ -437,14 +437,14 @@ function updatePlaceholder(clientX, clientY) {
         placeholder.className = 'insertion-placeholder';
     }
 
-    // Görsel ayarlar (Dragged item'dan kopyala)
+    // Görsel ayarlar
     if (draggedItem && placeholder) {
         const draggedRect = draggedItem.getBoundingClientRect();
         placeholder.style.width = draggedRect.width + "px";
         const style = getComputedStyle(draggedItem);
         placeholder.style.marginLeft = style.marginLeft;
         placeholder.style.marginRight = style.marginRight;
-        placeholder.style.display = 'block'; // Varsayılan görünür
+        placeholder.style.display = 'block'; 
         placeholder.style.boxSizing = style.boxSizing || 'border-box';
         placeholder.style.maxWidth = draggedRect.width + "px";
     }
@@ -454,7 +454,6 @@ function updatePlaceholder(clientX, clientY) {
 
     // 1. BOŞ GÜN KONTROLÜ
     if (allItems.length === 0) {
-        // Notlar tek başına boş güne gidemez
         if (isDraggingNote) {
             if (placeholder.parentNode) placeholder.remove();
             return; 
@@ -463,24 +462,18 @@ function updatePlaceholder(clientX, clientY) {
         return; 
     }
 
-    // 2. HEDEF KONUMU BUL (Mouse'un olduğu yer)
+    // 2. HEDEF KONUMU BUL
     let afterElement = getDragAfterElement(dropZone, clientY);
 
-    // ============================================================
     // --- KURAL: ITEM, NOTLARIN ARASINA GİREMEZ ---
-    // Eğer taşıdığımız şey bir ITEM ise (Note değilse)
-    // ve hedef nokta bir NOTE ise, o not grubunu pas geçip
-    // bir sonraki "Ana Item"ın başına (veya listenin sonuna) atlamalıyız.
-    // ============================================================
     if (!isDraggingNote) {
         while (afterElement && afterElement.classList.contains('note-item')) {
             afterElement = afterElement.nextElementSibling;
         }
     }
 
-    // --- KURAL: Note en başa gelemez (Item'sız note olmaz) ---
+    // --- KURAL: Note en başa gelemez ---
     if (isDraggingNote && afterElement === allItems[0]) {
-        // İlk elemanın altına koymaya zorla
         if (allItems[0].nextSibling) {
             dropZone.insertBefore(placeholder, allItems[0].nextSibling);
         } else {
@@ -488,7 +481,7 @@ function updatePlaceholder(clientX, clientY) {
         }
     } 
     else if (afterElement == null) {
-        // Listenin sonuna ekle
+        // Sona ekle
         const lastItem = allItems[allItems.length - 1];
         if (lastItem.nextSibling) {
             dropZone.insertBefore(placeholder, lastItem.nextSibling);
@@ -501,24 +494,30 @@ function updatePlaceholder(clientX, clientY) {
     }
 
     // ============================================================
-    // --- KRİTİK ÇÖZÜM: "KENDİ YERİ" KONTROLÜ (GİZLEME) ---
-    // Placeholder'ın sağına ve soluna bakıyoruz.
-    // Eğer yanında "bizim sürüklediğimiz öğe" veya "onun notları" varsa
-    // (ki bunlar 'dragging-source' class'ı ile işaretli),
-    // o zaman yer değişmiyor demektir. Çizgiyi kaldır.
+    // --- KOMŞU KONTROLÜ (SEPARATORLARI ATLAYARAK) ---
     // ============================================================
     
-    const prev = placeholder.previousElementSibling;
-    const next = placeholder.nextElementSibling;
-
-    // Helper: Bu eleman bizim sürüklediğimiz grubun bir parçası mı?
+    // Helper: Bir eleman bizim sürüklediğimiz grubun parçası mı?
     const isPartOfDraggingGroup = (el) => el && (el === draggedItem || el.classList.contains('dragging-source'));
 
+    // Geriye doğru ilk gerçek 'travel-item'ı bul (Separatorları atla)
+    let prev = placeholder.previousElementSibling;
+    while (prev && !prev.classList.contains('travel-item')) {
+        prev = prev.previousElementSibling;
+    }
+
+    // İleriye doğru ilk gerçek 'travel-item'ı bul (Separatorları atla)
+    let next = placeholder.nextElementSibling;
+    while (next && !next.classList.contains('travel-item')) {
+        next = next.nextElementSibling;
+    }
+
+    // Eğer sağımızda veya solumuzda (aradaki çizgileri saymazsak) 
+    // kendi sürüklediğimiz eleman varsa, pozisyon değişmiyor demektir.
     if (isPartOfDraggingGroup(prev) || isPartOfDraggingGroup(next)) {
         placeholder.remove();
     }
 }
-
 // ========== HANDLERS ==========
 function handleTouchStart(e) {
     const item = e.target.closest('.travel-item');
