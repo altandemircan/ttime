@@ -100,9 +100,6 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 
 
-/* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
-/* === REPLACED showTripDetails (Minimalist Icon + Popover Design) === */
-/* === REPLACED showTripDetails (User's Exact Design + Accordion) === */
 function showTripDetails(startDate) {
     const isMobile = window.innerWidth <= 768;
 
@@ -122,147 +119,129 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- CSS: Senin Tasarımın İçin Gerekli Ayarlar ---
+    // --- 1. CSS GÜNCELLEMESİ: Senin İstediğin "Kutu + Butonlar" Yapısı ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
         style.textContent = `
+            /* Kapsayıcı: Kartın üzerinde duran alan */
             .attached-notes-container {
                 position: absolute;
-                top: 40px; /* Numaranın altı */
-                right: 5px;
-                left: 5px; /* Ortalamak için */
+                top: 50px; 
+                right: 10px;
+                left: 10px;
                 z-index: 20;
                 display: flex;
-                flex-direction: column;
-                gap: 5px;
+                flex-direction: column; /* Üstte kutu, altta butonlar */
+                gap: 8px;
                 pointer-events: none; 
             }
 
-            /* Kullanıcının 'cart-item' yapısını görselin üzerine uyarlama */
-            .attached-note-wrapper {
-                background: rgba(255, 255, 255, 0.95);
-                border-radius: 12px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-                padding: 8px 10px;
+            /* Ortak Gösterim Alanı (Üstteki Kutu) */
+            .shared-note-view {
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 8px;
+                padding: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                border: 1px solid #ddd;
                 pointer-events: auto;
-                border: 1px solid #eee;
+                margin-bottom: 5px;
+                min-height: 60px;
                 transition: all 0.2s ease;
-                margin-bottom: 2px;
             }
-
-            /* Header Satırı */
-            .attached-note-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
+            .shared-note-view h5 {
+                margin: 0 0 4px 0;
+                font-size: 0.9rem;
+                color: #d32f2f;
+                font-weight: 700;
             }
-
-            .attached-note-left {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                overflow: hidden; /* Taşmayı engelle */
-            }
-
-            /* Senin 'item-position' yapın */
-            .attached-note-position {
-                position: relative;
-                width: 35px; 
-                height: 24px; 
-                flex-shrink: 0;
-            }
-
-            .attached-note-marker {
-                transform: scale(0.65);
-                position: absolute;
-                left: 0; 
-                top: -6px;
-                background: #f57f17 !important;
-                border-radius: 50%;
-                width: 24px; height: 24px;
-                display: flex; align-items: center; justify-content: center;
-                color: #fff; font-weight: bold; font-size: 16px;
-                border: 2px solid #fff;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                z-index: 2;
-            }
-
-            .attached-note-icon {
-                position: absolute;
-                left: 14px;
-                top: 2px;
-                width: 20px;
-                height: 20px;
-                z-index: 1;
-            }
-
-            .attached-note-title {
+            .shared-note-view p {
                 margin: 0;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
+                color: #444;
+                line-height: 1.3;
+            }
+
+            /* Alt Kısım: Butonların Dizildiği Yer */
+            .note-buttons-wrapper {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                pointer-events: auto;
+                justify-content: flex-start; /* Sola yaslı */
+            }
+
+            /* Tıklanabilir N Butonları */
+            .note-trigger-btn {
+                background: #fff;
+                border: 1px solid #ccc;
+                border-radius: 20px;
+                padding: 4px 10px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                transition: all 0.2s;
+            }
+            
+            .note-trigger-btn:hover {
+                transform: translateY(-2px);
+                background: #f9f9f9;
+            }
+
+            /* Seçili Olan Butonun Hali */
+            .note-trigger-btn.active {
+                border-color: #d32f2f;
+                background: #fff0f0;
+            }
+
+            .note-trigger-circle {
+                width: 20px; height: 20px;
+                background: #f57f17;
+                color: #fff;
+                font-size: 12px;
+                font-weight: bold;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .note-trigger-text {
+                font-size: 0.75rem;
                 font-weight: 600;
                 color: #333;
+                max-width: 80px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: 120px; /* Mobilde taşmasın diye */
-            }
-
-            /* Ok İkonu */
-            .attached-note-arrow {
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-                transition: transform 0.3s ease;
-                flex-shrink: 0;
-            }
-
-            /* İçerik Alanı */
-            .attached-note-content {
-                display: none; /* JS ile açılacak */
-                margin-top: 8px;
-                padding-top: 8px;
-                border-top: 1px solid #eee;
-                font-size: 0.8rem;
-                color: #555;
-                line-height: 1.4;
-                text-align: left;
-            }
-            
-            /* Aktif durum için stil (ok döndürme vs) */
-            .attached-note-wrapper.active .attached-note-arrow {
-                transform: rotate(90deg);
-            }
-            .attached-note-wrapper.active .attached-note-content {
-                display: block;
-                animation: slideDown 0.2s ease-out;
-            }
-
-            @keyframes slideDown {
-                from { opacity: 0; transform: translateY(-5px); }
-                to { opacity: 1; transform: translateY(0); }
             }
         `;
         document.head.appendChild(style);
     }
 
-    // --- JS: Accordion Toggle Fonksiyonu ---
-    window.toggleAttachedNote = function(headerEl) {
-        const wrapper = headerEl.closest('.attached-note-wrapper');
-        const container = wrapper.parentElement;
-        
-        // Eğer zaten açıksa kapat
-        if (wrapper.classList.contains('active')) {
-            wrapper.classList.remove('active');
-        } else {
-            // Değilse, ÖNCE o container içindeki diğerlerini kapat
-            const siblings = container.querySelectorAll('.attached-note-wrapper');
-            siblings.forEach(el => el.classList.remove('active'));
-            
-            // SONRA tıklananı aç
-            wrapper.classList.add('active');
-        }
+    // --- 2. JS FONKSİYONU: İçeriği Güncelleyen Kod ---
+    // Bu fonksiyon HTML attribute'larından veriyi okuyup yukarıdaki kutuya yazar
+    window.updateAttachedNote = function(displayId, btnElement) {
+        const displayBox = document.getElementById(displayId);
+        if(!displayBox) return;
+
+        // Verileri butondan al
+        const title = btnElement.getAttribute('data-title');
+        const desc = btnElement.getAttribute('data-desc');
+
+        // Kutuyu güncelle
+        displayBox.innerHTML = `
+            <h5>${title}</h5>
+            <p>${desc}</p>
+        `;
+
+        // Aktif buton görselini değiştir
+        const parentWrapper = btnElement.closest('.note-buttons-wrapper');
+        const siblings = parentWrapper.querySelectorAll('.note-trigger-btn');
+        siblings.forEach(el => el.classList.remove('active'));
+        btnElement.classList.add('active');
     };
 
     if (!Array.isArray(window.cart) || window.cart.length === 0) {
@@ -339,39 +318,54 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- NOT HTML (Senin Yapın) ---
+            // --- 3. HTML OLUŞTURMA: Yeni Yapı ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
-                notesHtml = `<div class="attached-notes-container">`;
-                step.attachedNotes.forEach(note => {
-                    const noteTitle = note.name || "Note";
-                    const noteDetails = note.noteDetails || "No details.";
+                // Her kart için benzersiz bir ID oluşturuyoruz ki karışmasın
+                const uniqueDisplayId = `note-display-${day}-${idx}`;
+                
+                // Varsayılan olarak ilk notu gösterelim
+                const firstNote = step.attachedNotes[0];
+                const defaultTitle = firstNote.name || "Note";
+                const defaultDesc = (firstNote.noteDetails || "").replace(/\n/g, '<br>');
+
+                notesHtml = `
+                <div class="attached-notes-container">
                     
-                    notesHtml += `
-                    <div class="attached-note-wrapper">
-                        <div class="attached-note-header" onclick="toggleAttachedNote(this)">
-                            <div class="attached-note-left">
-                                <div class="attached-note-position">
-                                    <div class="attached-note-marker">N</div>
-                                    <img src="img/custom-note.svg" class="attached-note-icon">
-                                </div>
-                                <p class="attached-note-title">${noteTitle}</p>
+                    <div id="${uniqueDisplayId}" class="shared-note-view">
+                        <h5>${defaultTitle}</h5>
+                        <p>${defaultDesc}</p>
+                    </div>
+
+                    <div class="note-buttons-wrapper">
+                        ${step.attachedNotes.map((note, nIdx) => {
+                            const nTitle = note.name || "Note";
+                            // Tırnak işaretleri HTML'i bozmasın diye escape ediyoruz
+                            const nDesc = (note.noteDetails || "").replace(/"/g, '&quot;').replace(/\n/g, '<br>');
+                            const isActive = nIdx === 0 ? 'active' : ''; // İlki aktif başlasın
+
+                            return `
+                            <div class="note-trigger-btn ${isActive}" 
+                                 onclick="updateAttachedNote('${uniqueDisplayId}', this)"
+                                 data-title="${nTitle}"
+                                 data-desc="${nDesc}">
+                                <div class="note-trigger-circle">N</div>
+                                <span class="note-trigger-text">${nTitle}</span>
                             </div>
-                            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="attached-note-arrow">
-                        </div>
-                        <div class="attached-note-content">
-                            ${noteDetails.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>`;
-                });
-                notesHtml += `</div>`;
+                            `;
+                        }).join('')}
+                    </div>
+
+                </div>`;
             }
 
-            // --- ANA SLIDE HTML ---
+            // --- ANA SLIDE HTML (Değişmedi, sadece notesHtml yerleşti) ---
             return `<li class="splide__slide">
           <div class="steps" data-day="${day}" data-category="${step.category}"${step.lat && step.lon ? ` data-lat="${step.lat}" data-lon="${step.lon}"` : ""} style="position: relative;">
             
-            ${notesHtml} <div class="visual" style="opacity: 1;">
+            ${notesHtml} 
+            
+            <div class="visual" style="opacity: 1;">
               <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
               <img class="check" src="${step.image || "https://www.svgrepo.com/show/522166/location.svg"}" alt="${step.name || step.category}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             </div>
