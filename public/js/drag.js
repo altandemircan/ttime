@@ -431,31 +431,30 @@ function updatePlaceholder(clientX, clientY) {
     const dropZone = elementBelow.closest('.day-list');
     if (!dropZone) return;
 
-    // Placeholder henüz yoksa oluştur
+    // Placeholder yoksa oluştur
     if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'insertion-placeholder';
     }
 
-    // Görsel ayarlar
+    // Görsel ayarlar (Dragged item'dan kopyala)
     if (draggedItem && placeholder) {
         const draggedRect = draggedItem.getBoundingClientRect();
         placeholder.style.width = draggedRect.width + "px";
         const style = getComputedStyle(draggedItem);
         placeholder.style.marginLeft = style.marginLeft;
         placeholder.style.marginRight = style.marginRight;
+        placeholder.style.display = 'block'; // Varsayılan görünür
         placeholder.style.boxSizing = style.boxSizing || 'border-box';
         placeholder.style.maxWidth = draggedRect.width + "px";
-        placeholder.style.display = 'block';
     }
 
-    // Listeyi al (Sürüklenenler hariç)
     const allItems = Array.from(dropZone.querySelectorAll('.travel-item:not(.dragging-source)'));
     const isDraggingNote = draggedItem && draggedItem.classList.contains('note-item');
 
     // 1. BOŞ GÜN KONTROLÜ
     if (allItems.length === 0) {
-        // Notlar tek başına itemsız güne gidemez
+        // Notlar tek başına boş güne gidemez
         if (isDraggingNote) {
             if (placeholder.parentNode) placeholder.remove();
             return; 
@@ -464,13 +463,14 @@ function updatePlaceholder(clientX, clientY) {
         return; 
     }
 
-    // 2. HEDEF KONUMU BUL
+    // 2. HEDEF KONUMU BUL (Mouse'un olduğu yer)
     let afterElement = getDragAfterElement(dropZone, clientY);
 
     // ============================================================
     // --- KURAL: ITEM, NOTLARIN ARASINA GİREMEZ ---
-    // Eğer taşıdığımız şey bir ITEM ise ve hedef bir NOTE ise,
-    // o not grubunun sonuna kadar atla.
+    // Eğer taşıdığımız şey bir ITEM ise (Note değilse)
+    // ve hedef nokta bir NOTE ise, o not grubunu pas geçip
+    // bir sonraki "Ana Item"ın başına (veya listenin sonuna) atlamalıyız.
     // ============================================================
     if (!isDraggingNote) {
         while (afterElement && afterElement.classList.contains('note-item')) {
@@ -478,7 +478,7 @@ function updatePlaceholder(clientX, clientY) {
         }
     }
 
-    // --- KURAL: Note en başa gelemez ---
+    // --- KURAL: Note en başa gelemez (Item'sız note olmaz) ---
     if (isDraggingNote && afterElement === allItems[0]) {
         // İlk elemanın altına koymaya zorla
         if (allItems[0].nextSibling) {
@@ -501,20 +501,20 @@ function updatePlaceholder(clientX, clientY) {
     }
 
     // ============================================================
-    // --- KRİTİK ÇÖZÜM: "ETKİSİZ ALAN" KONTROLÜ ---
-    // Eğer placeholder'ın komşusu zaten BİZİM SÜRÜKLEDİĞİMİZ elemanlardan biriyse,
-    // (Ana item veya onun notları), o zaman pozisyon değişmiyor demektir.
-    // Bu durumda çizgiyi GİZLE (DOM'dan sil).
+    // --- KRİTİK ÇÖZÜM: "KENDİ YERİ" KONTROLÜ (GİZLEME) ---
+    // Placeholder'ın sağına ve soluna bakıyoruz.
+    // Eğer yanında "bizim sürüklediğimiz öğe" veya "onun notları" varsa
+    // (ki bunlar 'dragging-source' class'ı ile işaretli),
+    // o zaman yer değişmiyor demektir. Çizgiyi kaldır.
     // ============================================================
     
     const prev = placeholder.previousElementSibling;
     const next = placeholder.nextElementSibling;
 
-    // Helper: Bir eleman bizim sürüklediğimiz grubun parçası mı?
-    // (createDragGhost fonksiyonunda bunlara 'dragging-source' eklemiştik)
-    const isPart OfDraggingGroup = (el) => el && el.classList.contains('dragging-source');
+    // Helper: Bu eleman bizim sürüklediğimiz grubun bir parçası mı?
+    const isPartOfDraggingGroup = (el) => el && (el === draggedItem || el.classList.contains('dragging-source'));
 
-    if (isPart OfDraggingGroup(prev) || isPart OfDraggingGroup(next)) {
+    if (isPartOfDraggingGroup(prev) || isPartOfDraggingGroup(next)) {
         placeholder.remove();
     }
 }
