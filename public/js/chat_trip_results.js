@@ -120,143 +120,153 @@ function showTripDetails(startDate) {
 
     // --- 1. CSS GÜNCELLEMESİ: İkonlar Sabit, Kutu "Absolute" ---
     if (!document.getElementById('tt-attached-notes-style')) {
-        const style = document.createElement('style');
-        style.id = 'tt-attached-notes-style';
-        style.textContent = `
-            .attached-notes-container {
-                position: absolute;
-                /* Konumu biraz aşağı aldık ki kutu yukarı açılınca yeri olsun */
-                top: 90px; 
-                right: 10px;
-                left: 10px;
-                z-index: 20;
-                /* Flex iptal, çünkü elemanlar üst üste binecek (absolute ile) */
-                display: block; 
-                pointer-events: none; 
-            }
+            const style = document.createElement('style');
+            style.id = 'tt-attached-notes-style';
+            style.textContent = `
+                .attached-notes-container {
+                    position: absolute;
+                    top: 90px; 
+                    right: 10px;
+                    left: 10px;
+                    z-index: 20;
+                    display: block; 
+                    pointer-events: none; 
+                }
 
-            /* Üstteki Açıklama Kutusu (Bağımsız Katman) */
-            .shared-note-view {
-                display: none; 
-                position: absolute; /* Akıştan çıkardık, butonları itmeyecek */
-                bottom: 100%; /* Butonların tam üstüne yapış */
-                left: 0;
-                width: 100%;
-                margin-bottom: 10px; /* Butonlarla arasında boşluk */
+                /* Üstteki Açıklama Kutusu (Artık Aşağıda Açılacak) */
+                .shared-note-view {
+                    display: none; 
+                    position: absolute; 
+                    
+                    /* --- DEĞİŞİKLİK BURADA --- */
+                    top: 100%; /* Butonların altına yerleş */
+                    left: 0;
+                    width: 100%;
+                    margin-top: 12px; /* Butonlarla arasına biraz boşluk */
+                    /* ------------------------ */
+                    
+                    background: rgba(255, 255, 255, 0.98);
+                    border-radius: 8px;
+                    padding: 12px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* Gölgeyi biraz artırdık */
+                    border: 1px solid #ddd;
+                    pointer-events: auto;
+                    
+                    flex-direction: column;
+                    justify-content: center;
+                    animation: slideDown 0.2s ease-out; /* Animasyon yönü değişti */
+                    z-index: 25;
+                }
                 
-                background: rgba(255, 255, 255, 0.98);
-                border-radius: 8px;
-                padding: 12px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                border: 1px solid #ddd;
-                pointer-events: auto;
+                .shared-note-view.open {
+                    display: flex;
+                }
+
+                /* Yukarıdan aşağı süzülme efekti */
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .shared-note-view h5 {
+                    margin: 0 0 4px 0;
+                    font-size: 0.9rem;
+                    color: #d32f2f;
+                    font-weight: 700;
+                }
+                .shared-note-view p {
+                    margin: 0;
+                    font-size: 0.8rem;
+                    color: #444;
+                    line-height: 1.3;
+                    /* Çok uzun metinler için scroll bar ekleyelim mi? İstersen açabilirsin: */
+                    /* max-height: 150px; overflow-y: auto; */
+                }
+
+                /* Butonların Alanı */
+                .note-buttons-wrapper {
+                    position: relative; 
+                    display: flex;
+                    gap: 12px; 
+                    pointer-events: auto;
+                    padding-left: 5px;
+                }
+
+                .note-trigger-btn {
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    background: #fff;
+                    border-radius: 8px;
+                    border: 1px solid #ddd;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    transition: all 0.2s;
+                }
+
+                .note-trigger-btn:hover {
+                    background: #f9f9f9;
+                }
+
+                .note-trigger-btn.active {
+                    border-color: #d32f2f;
+                    background: #fff5f5;
+                    transform: scale(1.1);
+                }
+
+                .note-trigger-icon {
+                    width: 24px; 
+                    height: 24px;
+                    opacity: 0.8;
+                }
+                .note-trigger-btn.active .note-trigger-icon {
+                    opacity: 1;
+                }
+
+                .note-trigger-badge {
+                    position: absolute;
+                    top: -6px;
+                    right: -6px;
+                    width: 18px; 
+                    height: 18px;
+                    background: #f57f17;
+                    color: #fff;
+                    font-size: 10px;
+                    font-weight: bold;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 2px solid #fff;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                }
                 
-                flex-direction: column;
-                justify-content: center;
-                animation: slideUp 0.2s ease-out;
-                z-index: 25;
-            }
-            
-            .shared-note-view.open {
-                display: flex;
-            }
-
-            /* Aşağıdan yukarı hafif kayma efekti */
-            @keyframes slideUp {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-
-            .shared-note-view h5 {
-                margin: 0 0 4px 0;
-                font-size: 0.9rem;
-                color: #d32f2f;
-                font-weight: 700;
-            }
-            .shared-note-view p {
-                margin: 0;
-                font-size: 0.8rem;
-                color: #444;
-                line-height: 1.3;
-            }
-
-            /* Butonların Alanı */
-            .note-buttons-wrapper {
-                position: relative; /* Kendi yerini korur */
-                display: flex;
-                gap: 12px; 
-                pointer-events: auto;
-                padding-left: 5px;
-            }
-
-            .note-trigger-btn {
-                position: relative;
-                width: 36px;
-                height: 36px;
-                background: #fff;
-                border-radius: 8px;
-                border: 1px solid #ddd;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                transition: all 0.2s;
-            }
-
-            .note-trigger-btn:hover {
-                background: #f9f9f9;
-            }
-
-            .note-trigger-btn.active {
-                border-color: #d32f2f;
-                background: #fff5f5;
-                transform: scale(1.1);
-            }
-
-            .note-trigger-icon {
-                width: 22px; 
-                height: 22px;
-                opacity: 0.8;
-            }
-            .note-trigger-btn.active .note-trigger-icon {
-                opacity: 1;
-            }
-
-            .note-trigger-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                width: 18px; 
-                height: 18px;
-                background: #f57f17;
-                color: #fff;
-                font-size: 10px;
-                font-weight: bold;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 2px solid #fff;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            }
-            
-            /* Ok işareti (Baloncuk efekti için opsiyonel) */
-            .shared-note-view::after {
-                content: '';
-                position: absolute;
-                bottom: -6px;
-                left: 20px; /* İlk butonun hizasına yakın */
-                width: 10px;
-                height: 10px;
-                background: #fff;
-                transform: rotate(45deg);
-                border-bottom: 1px solid #ddd;
-                border-right: 1px solid #ddd;
-            }
-        `;
-        document.head.appendChild(style);
-    }
+                /* Ok işareti (Baloncuk efekti) */
+                .shared-note-view::after {
+                    content: '';
+                    position: absolute;
+                    
+                    /* --- OK YÖNÜ DEĞİŞTİ --- */
+                    top: -6px; /* Kutunun tepesine */
+                    left: 20px; 
+                    width: 10px;
+                    height: 10px;
+                    background: #fff;
+                    transform: rotate(45deg);
+                    
+                    /* Üst ve Sol kenarlık vererek yukarı bakan ok yaptık */
+                    border-top: 1px solid #ddd;
+                    border-left: 1px solid #ddd;
+                    /* Alt ve Sağ kaldırıldı */
+                    border-bottom: none; 
+                    border-right: none;
+                }
+            `;
+            document.head.appendChild(style);
+        }
 
     // --- 2. JS FONKSİYONU ---
     window.updateAttachedNote = function(displayId, btnElement) {
