@@ -118,46 +118,52 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- 1. CSS GÜNCELLEMESİ: Başlangıçta GİZLİ olacak ---
+    // --- 1. CSS GÜNCELLEMESİ: İkonlar Sabit, Kutu "Absolute" ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
         style.textContent = `
             .attached-notes-container {
                 position: absolute;
-                top: 50px; 
+                /* Konumu biraz aşağı aldık ki kutu yukarı açılınca yeri olsun */
+                top: 90px; 
                 right: 10px;
                 left: 10px;
                 z-index: 20;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
+                /* Flex iptal, çünkü elemanlar üst üste binecek (absolute ile) */
+                display: block; 
                 pointer-events: none; 
             }
 
-            /* Üstteki Açıklama Kutusu (BAŞLANGIÇTA GİZLİ) */
+            /* Üstteki Açıklama Kutusu (Bağımsız Katman) */
             .shared-note-view {
-                display: none; /* <-- Gizli başlar */
+                display: none; 
+                position: absolute; /* Akıştan çıkardık, butonları itmeyecek */
+                bottom: 100%; /* Butonların tam üstüne yapış */
+                left: 0;
+                width: 100%;
+                margin-bottom: 10px; /* Butonlarla arasında boşluk */
+                
                 background: rgba(255, 255, 255, 0.98);
                 border-radius: 8px;
                 padding: 12px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 border: 1px solid #ddd;
                 pointer-events: auto;
-                margin-bottom: 2px;
-                min-height: 50px;
+                
                 flex-direction: column;
                 justify-content: center;
-                animation: fadeIn 0.2s ease-out;
+                animation: slideUp 0.2s ease-out;
+                z-index: 25;
             }
             
-            /* JS ile 'open' classı eklenince görünür olacak */
             .shared-note-view.open {
                 display: flex;
             }
 
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(-5px); }
+            /* Aşağıdan yukarı hafif kayma efekti */
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(10px); }
                 to { opacity: 1; transform: translateY(0); }
             }
 
@@ -174,7 +180,9 @@ function showTripDetails(startDate) {
                 line-height: 1.3;
             }
 
+            /* Butonların Alanı */
             .note-buttons-wrapper {
+                position: relative; /* Kendi yerini korur */
                 display: flex;
                 gap: 12px; 
                 pointer-events: auto;
@@ -200,7 +208,6 @@ function showTripDetails(startDate) {
                 background: #f9f9f9;
             }
 
-            /* Aktif buton stili */
             .note-trigger-btn.active {
                 border-color: #d32f2f;
                 background: #fff5f5;
@@ -233,29 +240,38 @@ function showTripDetails(startDate) {
                 border: 2px solid #fff;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             }
+            
+            /* Ok işareti (Baloncuk efekti için opsiyonel) */
+            .shared-note-view::after {
+                content: '';
+                position: absolute;
+                bottom: -6px;
+                left: 20px; /* İlk butonun hizasına yakın */
+                width: 10px;
+                height: 10px;
+                background: #fff;
+                transform: rotate(45deg);
+                border-bottom: 1px solid #ddd;
+                border-right: 1px solid #ddd;
+            }
         `;
         document.head.appendChild(style);
     }
 
-    // --- 2. JS FONKSİYONU: AÇ / KAPA MANTIĞI ---
+    // --- 2. JS FONKSİYONU ---
     window.updateAttachedNote = function(displayId, btnElement) {
         const displayBox = document.getElementById(displayId);
         if(!displayBox) return;
 
-        // Tıklanan buton zaten aktif mi?
         const isAlreadyActive = btnElement.classList.contains('active');
 
-        // Önce gruptaki tüm butonların aktifliğini kaldır
         const parentWrapper = btnElement.closest('.note-buttons-wrapper');
         const siblings = parentWrapper.querySelectorAll('.note-trigger-btn');
         siblings.forEach(el => el.classList.remove('active'));
 
         if (isAlreadyActive) {
-            // DURUM 1: Zaten açık olana tıklandı -> KAPAT
-            displayBox.classList.remove('open'); // CSS ile gizlenir
-            // Butona tekrar 'active' eklemiyoruz, hepsi pasif kalıyor.
+            displayBox.classList.remove('open'); 
         } else {
-            // DURUM 2: Kapalıyken veya başka butona tıklandı -> AÇ
             const title = btnElement.getAttribute('data-title');
             const desc = btnElement.getAttribute('data-desc');
 
@@ -263,8 +279,8 @@ function showTripDetails(startDate) {
                 <h5>${title}</h5>
                 <p>${desc}</p>
             `;
-            displayBox.classList.add('open'); // Görünür yap
-            btnElement.classList.add('active'); // Butonu işaretle
+            displayBox.classList.add('open'); 
+            btnElement.classList.add('active'); 
         }
     };
 
@@ -347,9 +363,6 @@ function showTripDetails(startDate) {
             if (step.attachedNotes && step.attachedNotes.length > 0) {
                 const uniqueDisplayId = `note-display-${day}-${idx}`;
                 
-                // NOT: Artık varsayılan içerik (firstNote) yüklemiyoruz.
-                // Kutu boş ve gizli başlıyor.
-
                 notesHtml = `
                 <div class="attached-notes-container">
                     
@@ -361,7 +374,6 @@ function showTripDetails(startDate) {
                             const nTitle = note.name || "Note";
                             const nDesc = (note.noteDetails || "").replace(/"/g, '&quot;').replace(/\n/g, '<br>');
                             
-                            // Başlangıçta hiçbiri 'active' değil
                             return `
                             <div class="note-trigger-btn" 
                                  onclick="updateAttachedNote('${uniqueDisplayId}', this)"
