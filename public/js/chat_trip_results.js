@@ -122,29 +122,28 @@ function showTripDetails(startDate) {
         style.textContent = `
             .attached-notes-container {
                 position: absolute;
-                top: 10px;
-                right: 10px;
+                bottom: 90px;
+                right: 12px;
                 z-index: 10;
                 display: flex;
-                flex-direction: column;
-                gap: 6px;
+                flex-direction: row;
+                gap: 8px;
                 align-items: flex-end;
-                pointer-events: none; /* Altındaki görsele tıklamayı engellemesin */
+                pointer-events: none;
             }
             .attached-note-item {
-                background: #fff;
-                border: 2px dashed #d32f2f; /* Item rengiyle uyumlu veya sarı #ffd54f */
+               background: #fff;
                 padding: 5px 10px;
                 border-radius: 12px;
                 font-size: 11px;
                 font-weight: 600;
                 color: #333;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
                 display: flex;
                 align-items: center;
                 gap: 5px;
                 max-width: 160px;
-                pointer-events: auto; /* Nota tıklanabilsin */
+                pointer-events: auto;
                 animation: fadeIn 0.3s ease-out;
             }
             .attached-note-item img {
