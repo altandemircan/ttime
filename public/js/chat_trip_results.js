@@ -102,6 +102,7 @@ function generateStepHtml(step, day, category, idx = 0) {
 
 /* === REPLACED showTripDetails (Maps / route controls REMOVED in Trip Details view) === */
 /* === REPLACED showTripDetails (Minimalist Icon + Popover Design) === */
+/* === REPLACED showTripDetails (User's Exact Design + Accordion) === */
 function showTripDetails(startDate) {
     const isMobile = window.innerWidth <= 768;
 
@@ -121,124 +122,146 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- CSS: Sadece İkon ve Popover Tasarımı ---
+    // --- CSS: Senin Tasarımın İçin Gerekli Ayarlar ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
         style.textContent = `
             .attached-notes-container {
                 position: absolute;
-                top: 10px;
-                right: 10px;
+                top: 40px; /* Numaranın altı */
+                right: 5px;
+                left: 5px; /* Ortalamak için */
                 z-index: 20;
                 display: flex;
                 flex-direction: column;
+                gap: 5px;
+                pointer-events: none; 
+            }
+
+            /* Kullanıcının 'cart-item' yapısını görselin üzerine uyarlama */
+            .attached-note-wrapper {
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 12px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                padding: 8px 10px;
+                pointer-events: auto;
+                border: 1px solid #eee;
+                transition: all 0.2s ease;
+                margin-bottom: 2px;
+            }
+
+            /* Header Satırı */
+            .attached-note-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            .attached-note-left {
+                display: flex;
+                align-items: center;
                 gap: 8px;
-                align-items: flex-end; /* Sağa yasla */
-                pointer-events: none; /* Aradaki boşluklara tıklanabilsin */
+                overflow: hidden; /* Taşmayı engelle */
             }
 
-            .note-wrapper {
+            /* Senin 'item-position' yapın */
+            .attached-note-position {
                 position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                pointer-events: auto; /* İkona tıklanabilsin */
+                width: 35px; 
+                height: 24px; 
+                flex-shrink: 0;
             }
 
-            /* Yuvarlak İkon (Trigger) */
-            .note-bubble-trigger {
-                width: 32px;
-                height: 32px;
-                background: #f57f17;
-                border: 2px solid #fff;
+            .attached-note-marker {
+                transform: scale(0.65);
+                position: absolute;
+                left: 0; 
+                top: -6px;
+                background: #f57f17 !important;
                 border-radius: 50%;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: transform 0.2s ease, background 0.2s;
-                z-index: 2; /* Balonun üstünde dursun */
+                width: 24px; height: 24px;
+                display: flex; align-items: center; justify-content: center;
+                color: #fff; font-weight: bold; font-size: 16px;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                z-index: 2;
             }
-            
-            .note-bubble-trigger:hover {
-                transform: scale(1.1);
+
+            .attached-note-icon {
+                position: absolute;
+                left: 14px;
+                top: 2px;
+                width: 20px;
+                height: 20px;
+                z-index: 1;
             }
-            
-            .note-bubble-trigger img {
+
+            .attached-note-title {
+                margin: 0;
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: #333;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px; /* Mobilde taşmasın diye */
+            }
+
+            /* Ok İkonu */
+            .attached-note-arrow {
                 width: 16px;
                 height: 16px;
-                filter: brightness(0) invert(1); /* İkonu beyaz yap */
-            }
-            
-            /* Aktif durumda ikon rengi değişsin */
-            .note-wrapper.active .note-bubble-trigger {
-                background: #d32f2f;
-                transform: scale(1.1);
+                cursor: pointer;
+                transition: transform 0.3s ease;
+                flex-shrink: 0;
             }
 
-            /* Açılır Balon (Popover) - Varsayılan GİZLİ */
-            .note-popover-content {
-                position: absolute;
-                right: 40px; /* İkonun soluna it */
-                top: 0; /* İkonla aynı hizada başla */
-                width: 200px; /* Sabit genişlik veya max-width */
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(4px);
-                padding: 10px;
-                border-radius: 8px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-                border-right: 3px solid #f57f17; /* Sağdan turuncu çizgi */
-                
-                opacity: 0;
-                visibility: hidden;
-                transform: translateX(10px); /* Hafif sağdan gelsin */
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                pointer-events: none;
-            }
-
-            /* Aktif olunca görünür yap */
-            .note-wrapper.active .note-popover-content {
-                opacity: 1;
-                visibility: visible;
-                transform: translateX(0);
-                pointer-events: auto;
-            }
-
-            .note-popover-title {
-                font-size: 12px;
-                font-weight: 700;
-                color: #333;
-                margin-bottom: 4px;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 4px;
-            }
-
-            .note-popover-desc {
-                font-size: 11px;
+            /* İçerik Alanı */
+            .attached-note-content {
+                display: none; /* JS ile açılacak */
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid #eee;
+                font-size: 0.8rem;
                 color: #555;
                 line-height: 1.4;
-                max-height: 150px; /* Çok uzunsa scroll olsun */
-                overflow-y: auto;
+                text-align: left;
+            }
+            
+            /* Aktif durum için stil (ok döndürme vs) */
+            .attached-note-wrapper.active .attached-note-arrow {
+                transform: rotate(90deg);
+            }
+            .attached-note-wrapper.active .attached-note-content {
+                display: block;
+                animation: slideDown 0.2s ease-out;
+            }
+
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
             }
         `;
         document.head.appendChild(style);
     }
 
-    // --- JS: Toggle Mantığı (Accordion) ---
-    window.toggleNotePopover = function(triggerEl) {
-        const currentWrapper = triggerEl.closest('.note-wrapper');
-        const container = triggerEl.closest('.attached-notes-container');
+    // --- JS: Accordion Toggle Fonksiyonu ---
+    window.toggleAttachedNote = function(headerEl) {
+        const wrapper = headerEl.closest('.attached-note-wrapper');
+        const container = wrapper.parentElement;
         
         // Eğer zaten açıksa kapat
-        if (currentWrapper.classList.contains('active')) {
-            currentWrapper.classList.remove('active');
+        if (wrapper.classList.contains('active')) {
+            wrapper.classList.remove('active');
         } else {
-            // Değilse, ÖNCE hepsini kapat
-            container.querySelectorAll('.note-wrapper').forEach(el => el.classList.remove('active'));
+            // Değilse, ÖNCE o container içindeki diğerlerini kapat
+            const siblings = container.querySelectorAll('.attached-note-wrapper');
+            siblings.forEach(el => el.classList.remove('active'));
+            
             // SONRA tıklananı aç
-            currentWrapper.classList.add('active');
+            wrapper.classList.add('active');
         }
     };
 
@@ -276,7 +299,6 @@ function showTripDetails(startDate) {
             }
         });
 
-        // Date Logic
         let dateStr = "";
         if (startDateObj) {
             const d = new Date(startDateObj);
@@ -317,7 +339,7 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- NOT HTML OLUŞTURMA (Icon Only + Popover) ---
+            // --- NOT HTML (Senin Yapın) ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
                 notesHtml = `<div class="attached-notes-container">`;
@@ -326,14 +348,19 @@ function showTripDetails(startDate) {
                     const noteDetails = note.noteDetails || "No details.";
                     
                     notesHtml += `
-                    <div class="note-wrapper">
-                        <div class="note-popover-content">
-                            <div class="note-popover-title">${noteTitle}</div>
-                            <div class="note-popover-desc">${noteDetails.replace(/\n/g, '<br>')}</div>
+                    <div class="attached-note-wrapper">
+                        <div class="attached-note-header" onclick="toggleAttachedNote(this)">
+                            <div class="attached-note-left">
+                                <div class="attached-note-position">
+                                    <div class="attached-note-marker">N</div>
+                                    <img src="img/custom-note.svg" class="attached-note-icon">
+                                </div>
+                                <p class="attached-note-title">${noteTitle}</p>
+                            </div>
+                            <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="attached-note-arrow">
                         </div>
-
-                        <div class="note-bubble-trigger" onclick="toggleNotePopover(this)">
-                            <img src="img/custom-note.svg" alt="N">
+                        <div class="attached-note-content">
+                            ${noteDetails.replace(/\n/g, '<br>')}
                         </div>
                     </div>`;
                 });
@@ -403,7 +430,6 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.appendChild(sect);
 
-    // Splide mount
     setTimeout(() => {
         document.querySelectorAll('.splide').forEach(sliderElem => {
             if (!sliderElem._splideInstance) {
@@ -429,7 +455,6 @@ function showTripDetails(startDate) {
         });
     }, 1);
 
-    // Share Buttons
     const shareTitle = document.createElement("div");
     shareTitle.className = "share-buttons-title";
     tripDetailsSection.appendChild(shareTitle);
