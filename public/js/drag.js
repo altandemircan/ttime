@@ -12,17 +12,14 @@ function injectDragStyles() {
             box-shadow: none !important;
             border: none !important;
             
-            /* Genişlik JS'den gelir, yükseklik içeriğe göre OTOMATİK artar */
             width: var(--ghost-width) !important;
             height: auto !important; 
             
             margin: 0 !important;
             will-change: left, top;
             transition: none !important;
-            /* Okların dışarı taşmasına izin ver */
             overflow: visible !important; 
             
-            /* İçindekileri alt alta diz */
             display: flex;
             flex-direction: column;
             gap: 2px;
@@ -46,9 +43,8 @@ function injectDragStyles() {
             width: 100% !important; 
         }
 
-        /* --- NOTLAR (Girintili Tasarımın Aynısı) --- */
+        /* --- NOTLAR --- */
         .drag-ghost .note-item {
-            /* Senin CSS dosyanındaki %83 ve %12 kurallarını koruyoruz */
             width: 83% !important;
             left: 12% !important;
             position: relative !important;
@@ -64,7 +60,7 @@ function injectDragStyles() {
             z-index: 2;
         }
 
-        /* --- OKLAR (WRAPPER'IN KENARLARINA YAPIŞIK) --- */
+        /* --- OKLAR --- */
         .drag-arrow-visual {
             position: absolute;
             left: 50%;
@@ -83,13 +79,11 @@ function injectDragStyles() {
             opacity: 0.9;
         }
         
-        /* Üst Ok: Wrapper'ın tepesinden 36px yukarıda */
         .drag-arrow-top { 
             top: -36px !important; 
             bottom: auto !important;
         }
         
-        /* Alt Ok: Wrapper'ın dibinden 36px aşağıda */
         .drag-arrow-bottom { 
             bottom: -36px !important; 
             top: auto !important;
@@ -138,10 +132,16 @@ function injectDragStyles() {
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
+        
         body.dragging-active {
             user-select: none !important;
             cursor: grabbing !important;
             touch-action: none !important; 
+        }
+
+        /* --- YENİ EKLENEN KISIM: SÜRÜKLEME ANINDA KOLAJI GİZLE --- */
+        body.dragging-active .day-collage {
+            display: none !important;
         }
     `;
     const style = document.createElement('style');
