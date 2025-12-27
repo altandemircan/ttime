@@ -103,7 +103,6 @@ function generateStepHtml(step, day, category, idx = 0) {
 function showTripDetails(startDate) {
     const isMobile = window.innerWidth <= 768;
 
-    // Chat Screen ve Section Kontrolü
     let chatScreen = document.getElementById("chat-screen");
     if (!chatScreen) {
         chatScreen = document.createElement("div");
@@ -119,12 +118,11 @@ function showTripDetails(startDate) {
     }
     tripDetailsSection.innerHTML = "";
 
-    // --- 1. CSS GÜNCELLEMESİ: Senin İstediğin "Kutu + Butonlar" Yapısı ---
+    // --- 1. CSS GÜNCELLEMESİ: Sadece İkon ve Badge Tasarımı ---
     if (!document.getElementById('tt-attached-notes-style')) {
         const style = document.createElement('style');
         style.id = 'tt-attached-notes-style';
         style.textContent = `
-            /* Kapsayıcı: Kartın üzerinde duran alan */
             .attached-notes-container {
                 position: absolute;
                 top: 50px; 
@@ -132,22 +130,24 @@ function showTripDetails(startDate) {
                 left: 10px;
                 z-index: 20;
                 display: flex;
-                flex-direction: column; /* Üstte kutu, altta butonlar */
+                flex-direction: column;
                 gap: 8px;
                 pointer-events: none; 
             }
 
-            /* Ortak Gösterim Alanı (Üstteki Kutu) */
+            /* Üstteki Açıklama Kutusu */
             .shared-note-view {
                 background: rgba(255, 255, 255, 0.98);
                 border-radius: 8px;
-                padding: 10px;
+                padding: 12px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 border: 1px solid #ddd;
                 pointer-events: auto;
-                margin-bottom: 5px;
-                min-height: 60px;
-                transition: all 0.2s ease;
+                margin-bottom: 2px;
+                min-height: 50px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
             .shared-note-view h5 {
                 margin: 0 0 4px 0;
@@ -162,82 +162,82 @@ function showTripDetails(startDate) {
                 line-height: 1.3;
             }
 
-            /* Alt Kısım: Butonların Dizildiği Yer */
+            /* Butonların Alanı */
             .note-buttons-wrapper {
                 display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
+                gap: 12px; /* İkonlar arası boşluk */
                 pointer-events: auto;
-                justify-content: flex-start; /* Sola yaslı */
+                padding-left: 5px;
             }
 
-            /* Tıklanabilir N Butonları */
+            /* İkon Butonu (Kapsayıcı) */
             .note-trigger-btn {
+                position: relative; /* Badge'i konumlandırmak için */
+                width: 36px;
+                height: 36px;
                 background: #fff;
-                border: 1px solid #ccc;
-                border-radius: 20px;
-                padding: 4px 10px;
+                border-radius: 8px; /* Hafif karemsi */
+                border: 1px solid #ddd;
+                cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 5px;
-                cursor: pointer;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 transition: all 0.2s;
             }
-            
-            .note-trigger-btn:hover {
-                transform: translateY(-2px);
-                background: #f9f9f9;
-            }
 
-            /* Seçili Olan Butonun Hali */
+            /* Aktif olduğunda belli olsun */
             .note-trigger-btn.active {
                 border-color: #d32f2f;
-                background: #fff0f0;
+                background: #fff5f5;
+                transform: scale(1.1);
             }
 
-            .note-trigger-circle {
-                width: 20px; height: 20px;
-                background: #f57f17;
+            /* Custom Note İkonu */
+            .note-trigger-icon {
+                width: 22px; 
+                height: 22px;
+                opacity: 0.8;
+            }
+            .note-trigger-btn.active .note-trigger-icon {
+                opacity: 1;
+            }
+
+            /* Yuvarlak N Rozeti (Badge) */
+            .note-trigger-badge {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                width: 18px; 
+                height: 18px;
+                background: #f57f17; /* Turuncu renk */
                 color: #fff;
-                font-size: 12px;
+                font-size: 10px;
                 font-weight: bold;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-            }
-
-            .note-trigger-text {
-                font-size: 0.75rem;
-                font-weight: 600;
-                color: #333;
-                max-width: 80px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                border: 2px solid #fff; /* Patlaması için beyaz kenarlık */
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             }
         `;
         document.head.appendChild(style);
     }
 
-    // --- 2. JS FONKSİYONU: İçeriği Güncelleyen Kod ---
-    // Bu fonksiyon HTML attribute'larından veriyi okuyup yukarıdaki kutuya yazar
+    // --- 2. JS FONKSİYONU ---
     window.updateAttachedNote = function(displayId, btnElement) {
         const displayBox = document.getElementById(displayId);
         if(!displayBox) return;
 
-        // Verileri butondan al
         const title = btnElement.getAttribute('data-title');
         const desc = btnElement.getAttribute('data-desc');
 
-        // Kutuyu güncelle
         displayBox.innerHTML = `
             <h5>${title}</h5>
             <p>${desc}</p>
         `;
 
-        // Aktif buton görselini değiştir
         const parentWrapper = btnElement.closest('.note-buttons-wrapper');
         const siblings = parentWrapper.querySelectorAll('.note-trigger-btn');
         siblings.forEach(el => el.classList.remove('active'));
@@ -318,13 +318,11 @@ function showTripDetails(startDate) {
       <ul class="splide__list">
         ${groupedItems.map((step, idx) => {
             
-            // --- 3. HTML OLUŞTURMA: Yeni Yapı ---
+            // --- 3. HTML OLUŞTURMA: Sadece İkonlar ---
             let notesHtml = "";
             if (step.attachedNotes && step.attachedNotes.length > 0) {
-                // Her kart için benzersiz bir ID oluşturuyoruz ki karışmasın
                 const uniqueDisplayId = `note-display-${day}-${idx}`;
                 
-                // Varsayılan olarak ilk notu gösterelim
                 const firstNote = step.attachedNotes[0];
                 const defaultTitle = firstNote.name || "Note";
                 const defaultDesc = (firstNote.noteDetails || "").replace(/\n/g, '<br>');
@@ -340,17 +338,19 @@ function showTripDetails(startDate) {
                     <div class="note-buttons-wrapper">
                         ${step.attachedNotes.map((note, nIdx) => {
                             const nTitle = note.name || "Note";
-                            // Tırnak işaretleri HTML'i bozmasın diye escape ediyoruz
                             const nDesc = (note.noteDetails || "").replace(/"/g, '&quot;').replace(/\n/g, '<br>');
-                            const isActive = nIdx === 0 ? 'active' : ''; // İlki aktif başlasın
+                            const isActive = nIdx === 0 ? 'active' : '';
 
                             return `
                             <div class="note-trigger-btn ${isActive}" 
                                  onclick="updateAttachedNote('${uniqueDisplayId}', this)"
                                  data-title="${nTitle}"
                                  data-desc="${nDesc}">
-                                <div class="note-trigger-circle">N</div>
-                                <span class="note-trigger-text">${nTitle}</span>
+                                
+                                <img src="img/custom-note.svg" class="note-trigger-icon">
+                                
+                                <div class="note-trigger-badge">N</div>
+                                
                             </div>
                             `;
                         }).join('')}
@@ -359,7 +359,6 @@ function showTripDetails(startDate) {
                 </div>`;
             }
 
-            // --- ANA SLIDE HTML (Değişmedi, sadece notesHtml yerleşti) ---
             return `<li class="splide__slide">
           <div class="steps" data-day="${day}" data-category="${step.category}"${step.lat && step.lon ? ` data-lat="${step.lat}" data-lon="${step.lon}"` : ""} style="position: relative;">
             
