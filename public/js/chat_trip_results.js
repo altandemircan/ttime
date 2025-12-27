@@ -1,101 +1,91 @@
 // chat_trip_results.js
 
-function generateStepHtml(step, day, category, idx = 0) {
+// chat_trip_results.js İÇİNDEKİ generateStepHtml FONKSİYONU
+function generateStepHtml(step, day, category, idx = 0, attachedNotes = []) {
     const name = getDisplayName(step) || category;
-    const localName = getLocalName(step);
+    const localName = getLocalName(step); // Helper function assumed to exist or standard
     const address = step?.address || "";
-    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
+    // Görsel yoksa placeholder
+    const image = step?.image || "img/placeholder.png"; 
     const website = step?.website || "";
     const opening = step?.opening_hours || "";
-    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
-    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
+    const lat = step?.lat || (step?.location?.lat);
+    const lon = step?.lon || (step?.location?.lon);
 
+    // Etiketler (Tags)
     let tagsHtml = "";
     const tags = (step.properties && step.properties.categories) || step.categories;
     if (tags && Array.isArray(tags) && tags.length > 0) {
-        const uniqueTags = getUniqueSpecificTags(tags);
+        // getUniqueSpecificTags global bir yardımcı fonksiyonsa:
+        const uniqueTags = (typeof getUniqueSpecificTags === 'function') 
+            ? getUniqueSpecificTags(tags) 
+            : tags.slice(0, 3).map(t=>({tag:t, label:t})); 
+            
         tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
     }
 
+    // Kategori İkonu
     let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-    if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-        catIcon = "/img/coffee_icon.svg";
-    else if (category === "Museum")
-        catIcon = "/img/museum_icon.svg";
-    else if (category === "Touristic attraction")
-        catIcon = "/img/touristic_icon.svg";
-    else if (category === "Restaurant" || category === "Lunch" || category === "Dinner")
-        catIcon = "/img/restaurant_icon.svg";
-    else if (category === "Accommodation")
-        catIcon = "/img/accommodation_icon.svg";
-    else if (category === "Parks")
-        catIcon = "/img/park_icon.svg"; // Varsa
+    if (window.categoryIcons && window.categoryIcons[category]) {
+        catIcon = window.categoryIcons[category];
+    }
 
-    // Favori durumu (örnek fonksiyon)
-    const isFav = (typeof isTripFav === 'function') 
-        ? isTripFav({ name, category, lat, lon }) 
-        : false;
-    const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
+    // --- NOTLARI HTML OLARAK HAZIRLA ---
+    let notesHtml = '';
+    if (attachedNotes && attachedNotes.length > 0) {
+        notesHtml = `<div class="attached-notes-wrapper">`;
+        attachedNotes.forEach(note => {
+            notesHtml += `
+                <div class="attached-note-bubble">
+                    <img src="img/custom-note.svg" class="note-mini-icon">
+                    <span class="note-text">${escapeHtml(note.name || 'Note')}</span>
+                </div>`;
+        });
+        notesHtml += `</div>`;
+    }
 
-    // --- HTML ÇIKTISI (Info İkonu Eklendi) ---
+    // --- HTML ÇIKTISI ---
     return `
-    <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
-         data-step="${encodeURIComponent(JSON.stringify(step))}">
-        <div class="visual">
-            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-            
-            ${tagsHtml ? `
-            <div class="geoapify-tags-section">
-                <div class="geoapify-tags">${tagsHtml}</div>
-            </div>` : ''}
-
-            <div class="cats cats1">
-                <img src="${catIcon}" alt="${category}"> ${category}
-            </div>
-            
-            <span class="fav-heart" data-name="${name}" data-category="${category}" data-lat="${lat}" data-lon="${lon}">
-                <img class="fav-icon" src="${favIconSrc}" alt="Favorite">
-            </span>
-
-            <span class="info-icon-wrapper">
-                <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">                
-                <div class="info-tooltip">
-                    Photos associated with this place are matched by analyzing search results and may not reflect reality.
-                    <div style="position: absolute; top: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #333;"></div>
-                </div>
-            </span>
-            <style>
-                /* Tooltip Hover Efekti */
-                .info-icon-wrapper:hover .info-tooltip { display: block !important; }
-            </style>
-
+      <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" style="position: relative;">
+        
+        ${notesHtml} <div class="visual" style="opacity: 1;">
+          <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx}</div>
+          <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
         </div>
+
         <div class="info day_cats item-info-view">
-            <div class="title">${name}</div>
-            
-            <div class="address">
-                <img src="img/address_icon.svg"><span>${address || 'Address not found'}</span>
-            </div>
-            <div class="opening_hours">
-                <img src="img/hours_icon.svg"><span>${opening || 'Working hours not found.'}</span>
-            </div>
+          <div class="title">${name}</div>
+          <div class="address">
+            <img src="img/address_icon.svg"> ${address || 'Address not available'}
+          </div>
+          <div class="geoapify-tags-section">
+            <div class="geoapify-tags">${tagsHtml}</div>
+          </div>
+          <div class="opening_hours">
+            <img src="img/hours_icon.svg"> ${opening || 'Working hours not found.'}
+          </div>
         </div>
+
         <div class="item_action">
-            <div class="change">
-                <span onclick="window.showImage && window.showImage(this)">
-                    <img src="img/camera_icon.svg">
-                </span>
-                <span onclick="window.showMap && window.showMap(this)">
-                    <img src="img/map_icon.svg">
-                </span>
-                
+          <div class="change">
+             <span onclick="window.showImage && window.showImage(this)">
+               <img src="img/camera_icon.svg">
+             </span>
+             <span onclick="window.showMap && window.showMap(this)">
+               <img src="img/map_icon.svg">
+             </span>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div class="cats cats${day}">
+              <img src="${catIcon}" alt="${category}"> ${category}
             </div>
-            
-            <a class="addtotrip"><span>Add to trip</span>
-                <img src="img/addtotrip-icon.svg">
+            <a class="addtotrip">
+              <img src="img/addtotrip-icon.svg">
             </a>
+          </div>
         </div>
-    </div>`;
+      </div>
+    `;
 }
 
 
