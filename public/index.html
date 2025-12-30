@@ -148,7 +148,7 @@
                         <div class="toggleMenu" onclick="toggleMenu()">☰</div>
                         <div class="dropDown" id="menuDropdown">
                             <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
-                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI       
+                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI 20
                             </a>                     
                             <a href="#" onclick="toggleSidebarMyTrips(); toggleMenu();" class="mytrips-btn">
                                 <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips
@@ -171,7 +171,7 @@
                             
                         </div>
                     </div>            
-                </div>
+                </div> 
             </div>
         </header>
     </div>
@@ -573,7 +573,7 @@ Your browser does not support the video tag.                  </video>
             <button class="sidebar-toggle" onclick="toggleSidebarLogin()">
                 <img src="/img/close-icon.svg" alt="Close">
             </button>
-            <div class="sidebar_title">Start Chat with Mira!</div>
+            <div class="sidebar_title">Chat with Mira!</div>
 
             <div class="form-container">
                             
@@ -1091,36 +1091,6 @@ Your browser does not support the video tag.                  </video>
         }, 10);
     }
 }
-</script>
-<script>
-  const messages = [
-    "Analyzing your request",
-    "Finding places",
-    "Exploring route options",
-    "Compiling your travel plan"
-  ];
-  let current = 0;
-  const loadingMessage = document.getElementById('loading-message');
-  let isTransitioning = false;
-
-  setInterval(() => {
-    if (isTransitioning) return;
-    isTransitioning = true;
-
-    // Fade out
-    loadingMessage.style.opacity = 0;
-
-    // Mesaj değiştikten sonra fade in
-    setTimeout(() => {
-      current = (current + 1) % messages.length;
-      loadingMessage.textContent = messages[current];
-      loadingMessage.style.opacity = 1;
-      // Fade-in animasyonu bittiğinde tekrar hazır hale getir
-      setTimeout(() => {
-        isTransitioning = false;
-      }, 500); // transition süresini burada da belirt: 0.5s
-    }, 500); // Fade out süresiyle aynı olmalı
-  }, 5000); // 5 saniyede bir dönecek
 </script>
 
 

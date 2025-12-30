@@ -1606,6 +1606,9 @@ ease;
 #sidebar-trip {
     padding-bottom: 40px;
 }
+
+
+
 /* Sidebar Toggle Button */
 .sidebar-toggle {
     border: none;
@@ -7231,13 +7234,15 @@ position: absolute;
     padding: 10px 10px 10px 0px;
 }
 #ai-chat-input {
-   padding: 10px;
-   border: none;
-   outline: none;
-   
-    border-radius: 6px;
-    font-size: 14px;
-    width: -webkit-fill-available;
+      padding: 10px 0px;
+    border-radius: 30px;
+    color: #000000;
+    outline: none;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    background: #ffffff;
+    font-size: 0.9rem;
+    width: inherit;
 }
 #ai-chat-send-btn {
         border: none;
@@ -7253,18 +7258,19 @@ position: absolute;
     height: 16px;
     }
 
-#ai-chat-messages {  
-    overflow-y: auto;        
-    font-size: 1em;
-    color: #1e293b;
-    line-height: 1.6;
+#ai-chat-messages {
+    flex: 1;            /* Input hariç tüm alanı kapla */
+    overflow-y: auto;   /* Sadece burası scroll olsun */
+    display: flex;
+    flex-direction: column;
     margin-bottom: 10px;
-      display: flex;
-  flex-direction: column;
+    padding-bottom: 10px;
+    
+    /* Mobil kaydırma hissiyatı için */
+    -webkit-overflow-scrolling: touch; 
 }
 #ai-chat-messages div {
-    margin: 10px 0px;     
-    padding: 16px;
+
     border-radius: 16px;
     width: fit-content;
 }
@@ -7277,36 +7283,63 @@ position: absolute;
     padding: 10px;
     border-radius: 10px;
 }
-/* Bu kısmı güncelle */
+/* --- ESKİ HATALI KISIM (Bunu Sil veya Değiştir) --- */
+/* #ai-chat-messages div { ... }  <-- BU KURALI SİLİYORUZ */
+
+
+/* --- YENİ DÜZELTİLMİŞ KISIMLAR --- */
+
+/* 1. Tüm mesaj baloncukları için ortak ayar */
+.chat-message {
+    margin: 8px 0px;      
+    padding: 12px 16px;
+    border-radius: 16px;
+    width: fit-content;
+    max-width: 85%;       /* Çok uzun metinlerde taşmasın */
+    display: flex;        /* Flexbox hizalama */
+    gap: 10px;            /* İkon ve yazı arası boşluk */
+    line-height: 1.5;
+}
+
+/* 2. AI Mesajı (Solda Resim, Sağda Yazı) */
 .ai-message {
     background: #f6f4ff;
     color: #1e293b;
-    align-self: flex-start;
+    align-self: flex-start; /* Sola yasla */
     text-align: left;
-    
-    /* --- EKLENEN KISIMLAR --- */
-    display: flex;             /* Resmi ve yazıyı yan yana kutu yapar */
-    align-items: flex-start;   /* Resmi her zaman en üst satıra hizalar */
-    gap: 10px;                 /* Resim ile yazı arasına boşluk koyar */
+    align-items: flex-start; /* Resmi yukarı hizala */
+    display: flex;
+    flex-direction: row; /* DEĞİŞTİ: column -> row */
 }
 
-/* Bu kısmı güncelle */
+/* AI Resmi Ayarı (Aynen kalıyor) */
 .ai-message img {
-    width: 24px;       /* 20px biraz küçük kalabilir, 24px idealdir */
+    width: 24px;
     height: 24px;
-    border-radius: 50%; /* Yuvarlak avatar görünümü */
+    border-radius: 50%;
     object-fit: cover;
-    
-    /* --- EKLENEN KISIMLAR --- */
-    flex-shrink: 0;    /* Yazı uzun olsa bile resim küçülmez */
-    margin-top: 2px;   /* Yazının 'baseline'ı ile optik olarak hizalar */
+    flex-shrink: 0;
+    margin-top: 2px;
 }
+
+/* AI mesajının yazı kısmı için column düzeni */
+.ai-message > :not(img) {
+    display: flex;
+    flex-direction: column; /* İçerik alt alta */
+    flex: 1;
+    gap: 8px;
+}
+
+/* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
 .user-message {
-   background: #e6f5ff;
-  color: #1e293b;
-  align-self: flex-end;
-  text-align: right;
+    background: #e6f5ff;
+    color: #1e293b;
+    align-self: flex-end;   /* Sağa yasla */
+    flex-direction: row-reverse; /* Emojiyi en sağa al, yazıyı sola al */
+    text-align: left;       /* Baloncuk sağda olsa bile içindeki yazı soldan aksın */
+    align-items: center;    /* Emojiyi dikeyde ortala */
 }
+
 
 
 .ai-input-wrapper {
@@ -7333,7 +7366,7 @@ ease-in-out;
 /* Form Konteyner */
 .form-container {
 text-align: center;
-    /* padding: 10px; */
+    padding: 4px;
     /* border-radius: 20px; */
     height: calc(100vh - 200px);
     display: flex;
@@ -7595,3 +7628,85 @@ scrollbar-width: thin;
     margin-top: 16px !important;
     margin-bottom: 16px !important;
    }
+
+
+/* En basit fix - direkt pozisyonlama */
+@media (max-width: 768px) {
+    /* Mira AI Sidebar için mobil düzen */
+    .sidebar-overlay.sidebar-login.open {
+        position: fixed !important;        
+        bottom: 0 !important;        
+        height: calc(100dvh - 100px) !important;
+        max-height: calc(100dvh - 100px) !important;
+        overflow: visible !important; /* DEĞİŞTİ: hidden -> visible */
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+        z-index: 1000;
+    }
+    
+    /* Sidebar iç yapısı */
+    #sidebar-login {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        padding: 0 !important;
+        overflow: hidden !important; /* Buraya overflow ekle */
+    }
+    
+    /* AI Chat kutusu - TAM FLEXBOX */
+    #ai-chat-box {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        position: relative !important;
+        overflow: hidden !important; /* Bu önemli */
+    }
+    
+    /* Mesajlar alanı - SCROLLABLE */
+    #ai-chat-messages {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        
+        min-height: 0 !important;
+        /* height ve max-height KALDIR */
+    }
+    
+    /* AI Input alanı - STICKY ÇALIŞMASI İÇİN */
+    #ai-chat-box .ai-input-wrapper {
+        position: sticky !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: white !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+        z-index: 100 !important;
+        padding: 15px !important;
+        margin-top: auto !important;
+        flex-shrink: 0 !important; /* Bu önemli */
+    }
+    
+    /* Form container düzeni */
+    .form-container {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+    
+    /* Form content */
+    .form-content {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+}

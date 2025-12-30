@@ -147,7 +147,7 @@ app.get('/api/geoapify/places', async (req, res) => {
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
 
-  const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:9000';
+  const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
   const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'merit_dem';
 
   let batchSize = 120; // önce küçük
@@ -250,7 +250,7 @@ app.use((err, req, res, next) => {
 });
 
 // Port (Nginx 3003’e bakıyorsa 3003 yap)
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3004;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

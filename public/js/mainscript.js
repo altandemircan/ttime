@@ -3164,7 +3164,7 @@ function closeCustomNoteInput() {
     }
 }
 
-function saveCustomNote(day) {
+async function saveCustomNote(day) {
     const titleEl = document.getElementById("noteTitle");
     const detailsEl = document.getElementById("noteDetails");
     
@@ -3173,36 +3173,53 @@ function saveCustomNote(day) {
         return;
     }
 
-    const title = titleEl.value;
-    const details = detailsEl.value;
+    const title = titleEl.value ? titleEl.value.trim() : "";
+    const details = detailsEl.value ? detailsEl.value.trim() : "";
 
+    // İkisi de boşsa uyarı ver
     if (!title && !details) {
         alert("Please enter a title or detail for your note.");
         return;
     }
 
-    // Ensure cart exists
+    // Cart dizisinin var olduğundan emin ol
     if (!window.cart) {
         window.cart = [];
     }
 
+    // 1. Notu RAM'e (window.cart) ekle
     window.cart.push({
-        name: title || "Note",
-        noteDetails: details,
+        name: title || "Note", // Başlık yoksa "Note" olsun
+        noteDetails: (details && details.length > 0) ? details : "No description", // Detay yoksa metni ayarla
         day: Number(day),
         category: "Note",
-        image: "/img/custom-note.svg" // Ensure this image path is correct
+        image: "img/custom-note.svg" // Varsayılan not ikonu
     });
 
-    console.log("Note saved for day", day);
+    console.log("Note added to RAM for day", day);
 
+    // 2. Kalıcı Hafızaya (LocalStorage) Kaydet
+    // ÖNEMLİ: 'withThumbnail: false' diyerek harita oluşturmayı atlıyoruz, böylece kayıt anında gerçekleşir.
+    if (typeof saveCurrentTripToStorage === "function") {
+        try {
+            await saveCurrentTripToStorage({ withThumbnail: false });
+            console.log("Trip saved to localStorage successfully.");
+        } catch (e) {
+            console.error("Save to storage failed:", e);
+            alert("Error saving note. Please try again.");
+        }
+    } else {
+        console.warn("saveCurrentTripToStorage function is missing! Data not saved to disk.");
+    }
+
+    // 3. Arayüzü güncelle
     if (typeof updateCart === "function") {
         updateCart();
     } else {
         console.warn("updateCart function is missing!");
     }
     
-    // Cleanup
+    // Pencereyi kapat
     closeCustomNoteInput();
 }
 
@@ -4356,8 +4373,8 @@ async function updateCart() {
                 <div class="custom-marker-outer" style="flex-shrink: 0;
                     transform: scale(0.70);
                     position: absolute;
-                    left: 30px;
-                    top: 0px;
+                    left: 24px;
+                    top: -4px;
                     background: ${markerBgColor} !important; 
                     border-radius: 50%;
                     width: 24px; height: 24px;
@@ -4658,7 +4675,14 @@ async function updateCart() {
 
 
     // --- Diğer kalan işlemler ---
-    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+// Note kategorisi hariç, sadece mekanları say
+const itemCount = window.cart.filter(i => 
+    i.name && 
+    !i._starter && 
+    !i._placeholder && 
+    i.category !== 'Note'
+).length;
+
     if (menuCount) {
         menuCount.textContent = itemCount;
         menuCount.style.display = itemCount > 0 ? "inline-block" : "none";

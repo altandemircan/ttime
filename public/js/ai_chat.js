@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Eğer temel elementler yoksa çalışma
     if (!sidebarLogin || !chatBox || !messagesDiv || !formContainer || !formContent) return;
 
-    // --- 2. CSS STYLES (Mevcut Tasarıma Uyumlu) ---
+    // --- 2. CSS STYLES ---
     const styleId = 'tt-ai-sidebar-styles';
     if (!document.getElementById(styleId)) {
         const css = `
@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", function() {
             /* Geçmiş Listesi Alanı */
             #ai-history-list {
                 display: none; /* JS ile açılacak */
-                    flex-direction: column;
+                flex-direction: column;
                 width: 100%;
                 height: 100%;
                 overflow-y: auto;
@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function() {
             
             /* Geçmiş Kartı */
             .history-card {
-                    background: #f9f9f9;
+                background: #f9f9f9;
                 border: 1px solid #eee;
                 border-radius: 10px;
                 padding: 12px;
@@ -131,6 +131,28 @@ document.addEventListener("DOMContentLoaded", function() {
 
             /* Gizleme Helper'ı */
             .view-hidden { display: none !important; }
+
+            /* --- TYPING ANIMASYONU --- */
+            .typing {
+                display: inline-block;
+                position: relative;
+                color: transparent !important; /* Orjinal noktaları gizle */
+            }
+            .typing::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                color: #1e293b; /* Nokta rengi */
+                font-weight: bold;
+                animation: typing-dots 1.5s infinite steps(4);
+            }
+            @keyframes typing-dots {
+                0% { content: ''; }
+                25% { content: '.'; }
+                50% { content: '..'; }
+                75% { content: '...'; }
+            }
         `;
         const style = document.createElement('style');
         style.id = styleId;
@@ -157,16 +179,14 @@ document.addEventListener("DOMContentLoaded", function() {
         sidebarTitle.insertAdjacentElement('afterend', controlsDiv);
     }
 
-    // B) Geçmiş Listesi Konteynerı (Form container içine, formun kardeşi olarak)
+    // B) Geçmiş Listesi Konteynerı
     const historyListDiv = document.createElement('div');
     historyListDiv.id = 'ai-history-list';
     formContainer.appendChild(historyListDiv);
 
     // --- 4. DATA & LOGIC ---
 
-    // Chat başına limit kontrolü
     function canAskQuestion() {
-        // Chat geçmişindeki 'user' mesajlarını say
         const userMsgCount = chatHistory.filter(m => m.role === 'user').length;
         return userMsgCount < MAX_MESSAGES_PER_CHAT;
     }
@@ -200,34 +220,27 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- 5. GÖRÜNÜM GEÇİŞLERİ ---
 
     function showChatScreen() {
-        // Chat Formunu Göster
         formContent.classList.remove('view-hidden');
         formContent.style.display = 'block'; 
         
-        // History Listesini Gizle
         historyListDiv.classList.add('view-hidden');
         historyListDiv.style.display = 'none';
         
-        // Buton durumları
         document.getElementById('btn-ai-new').classList.add('active');
         document.getElementById('btn-ai-history').classList.remove('active');
         
-        // Scroll
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
     function showHistoryScreen() {
         renderHistoryList();
         
-        // Chat Formunu Gizle
         formContent.classList.add('view-hidden');
         formContent.style.display = 'none';
 
-        // History Listesini Göster
         historyListDiv.classList.remove('view-hidden');
         historyListDiv.style.display = 'flex';
         
-        // Butonlar
         document.getElementById('btn-ai-new').classList.remove('active');
         document.getElementById('btn-ai-history').classList.add('active');
     }
@@ -237,7 +250,6 @@ document.addEventListener("DOMContentLoaded", function() {
         chatHistory = [];
         messagesDiv.innerHTML = '';
         
-        // Başlangıç Mesajı
         const infoDiv = document.createElement("div");
         infoDiv.className = "chat-info";
         infoDiv.innerHTML = `<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <br><span style='font-size:0.8rem;opacity:0.7'>(Limit: ${MAX_MESSAGES_PER_CHAT} messages per chat)</span>`;
@@ -254,7 +266,7 @@ document.addEventListener("DOMContentLoaded", function() {
         currentChatId = chat.id;
         chatHistory = chat.messages || [];
         
-        messagesDiv.innerHTML = ''; // Temizle
+        messagesDiv.innerHTML = ''; 
 
         chatHistory.forEach(msg => {
             const div = document.createElement('div');
@@ -265,16 +277,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 : msg.content;
 
             if (msg.role === 'user') div.textContent = '🧑 ' + text;
-            else div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"> ' + text;
-            
+            else {
+                div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"><div style="display:flex;flex-direction:column;flex:1;">' + text + '</div>';
+            }
             messagesDiv.appendChild(div);
         });
 
-        // Eğer yüklenen chat limiti doldurmuşsa uyarı ekle (opsiyonel görsel bilgi)
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
-            limitDiv.style.background = "#fff3f3"; // Hafif kırmızı
+            limitDiv.style.background = "#fff3f3"; 
             limitDiv.style.color = "#d32f2f";
             limitDiv.style.fontSize = "0.85rem";
             limitDiv.style.border = "1px solid #ffcdd2";
@@ -338,9 +350,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
     // --- 7. MESAJ GÖNDERME ---
-    // --- 7. MESAJ GÖNDERME (DÜZELTİLMİŞ VERSİYON) ---
     async function sendAIChatMessage(userMessage) {
-        // LİMİT KONTROLÜ
         if (!canAskQuestion()) {
             const limitDiv = document.createElement('div');
             limitDiv.className = 'chat-message ai-message';
@@ -354,7 +364,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // 1. KULLANICI MESAJINI EKLE
         const userDiv = document.createElement('div');
-        userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`; // Flex yapısına uygun
+        userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`; 
         userDiv.className = 'chat-message user-message';
         messagesDiv.appendChild(userDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -362,22 +372,28 @@ document.addEventListener("DOMContentLoaded", function() {
         chatHistory.push({ role: "user", content: userMessage });
         saveCurrentChat();
 
-        // 2. AI MESAJ KUTUSUNU OLUŞTUR (Görsel ve Metni Ayırıyoruz)
+        // 2. AI MESAJ KUTUSUNU OLUŞTUR
         const aiDiv = document.createElement('div');
         aiDiv.className = 'chat-message ai-message';
 
-        // A) GÖRSEL ELEMENTİ (Başlangıçta .webp)
+        // Görsel
         const aiImg = document.createElement('img');
-        aiImg.src = '/img/aioo.webp'; // Hareketli görsel
+        aiImg.src = '/img/aioo.webp'; 
         aiImg.alt = 'AI';
         
-        // B) METİN ELEMENTİ (Başlangıçta ...)
+        // İçerik Alanı
         const aiContent = document.createElement('div');
-        aiContent.innerHTML = '<span class="typing">...</span>';
+        aiContent.innerHTML = '<span class="typing">...</span>'; // Animasyonlu nokta
 
-        // Elementleri Ana Kutuya Ekle
+        // Flex Container (Senin istediğin yapı)
+        const contentContainer = document.createElement('div');
+        contentContainer.style.display = 'flex';
+        contentContainer.style.flexDirection = 'column';
+        contentContainer.style.flex = '1';
+        
+        contentContainer.appendChild(aiContent);
         aiDiv.appendChild(aiImg);
-        aiDiv.appendChild(aiContent);
+        aiDiv.appendChild(contentContainer);
         messagesDiv.appendChild(aiDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
@@ -396,20 +412,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (data.message && data.message.content) {
                     chunkQueue.push(data.message.content);
                     
-                    // İlk veri geldiğinde "..." yazısını sil
                     if (isFirstChunk) {
                         aiContent.innerHTML = ''; 
                         isFirstChunk = false;
                     }
 
-                    // Görsele DOKUNMADAN sadece metni güncelle
                     if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
-                        // Typewriter efektine sadece metin kutusunu (aiContent) gönderiyoruz
                         startStreamingTypewriterEffect(aiContent, chunkQueue, 4);
                     } else if (typeof startStreamingTypewriterEffect !== 'function') {
                         aiContent.textContent += data.message.content; 
                     }
-                    // Not: Scroll işlemini buraya da ekleyebilirsin
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }
             } catch (e) {}
@@ -417,14 +429,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
         eventSource.onerror = function() {
             if (!hasError) {
-                // Hata durumunda da durdur
                 if (aiContent._typewriterStop) aiContent._typewriterStop();
                 chunkQueue.length = 0;
                 hasError = true;
                 eventSource.close();
                 aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-                
-                // Hata olsa bile görseli normale döndür
                 aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
             }
         };
@@ -441,12 +450,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 hasError = true;
                 eventSource.close();
 
-                // 3. BİTİŞ: GÖRSELİ DEĞİŞTİR VE FORMATLA
-                
-                // A) Görseli duran hale (.png) çevir
+                // Bitiş (Normal Görsel)
                 aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
 
-                // B) Metni Markdown formatına çevir
                 if (typeof markdownToHtml === 'function') {
                     aiContent.innerHTML = markdownToHtml(fullText);
                 } else {
@@ -473,3 +479,77 @@ document.addEventListener("DOMContentLoaded", function() {
     // Uygulama Başlangıcı
     startNewChat();
 });
+
+// Scroll helper
+function setupMobileAIViewport() {
+    if (window.innerWidth > 768) return;
+    const sidebar = document.getElementById('sidebar-overlay-login');
+    const chatBox = document.getElementById('ai-chat-box');
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    const inputWrapper = document.querySelector('#ai-chat-box .ai-input-wrapper');
+    if (!sidebar || !chatBox || !messagesDiv || !inputWrapper) return;
+    if (!sidebar.classList.contains('open')) return;
+    const viewportHeight = window.innerHeight;
+    const sidebarTop = 100; 
+    const availableHeight = viewportHeight - sidebarTop;
+    sidebar.style.height = `${availableHeight}px`;
+    chatBox.style.height = `${availableHeight}px`;
+    const inputHeight = inputWrapper.offsetHeight;
+    messagesDiv.style.paddingBottom = `${inputHeight + 10}px`;
+    setTimeout(() => { messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 50);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const chatInput = document.getElementById('ai-chat-input');
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    if (chatInput && messagesDiv) {
+        chatInput.addEventListener('focus', function() {
+            setTimeout(() => {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                setupMobileAIViewport();
+            }, 350); 
+        });
+        chatInput.addEventListener('blur', function() {
+            setTimeout(setupMobileAIViewport, 100);
+        });
+    }
+    const originalToggleSidebarLogin = window.toggleSidebarLogin;
+    if (originalToggleSidebarLogin) {
+        window.toggleSidebarLogin = function() {
+            originalToggleSidebarLogin();
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    setupMobileAIViewport();
+                    const observer = new MutationObserver(() => { setupMobileAIViewport(); });
+                    if (messagesDiv) {
+                        observer.observe(messagesDiv, { childList: true, subtree: true });
+                        setTimeout(() => observer.disconnect(), 10000);
+                    }
+                }, 300); 
+            }
+        };
+    }
+    window.addEventListener('resize', function() { if (window.innerWidth <= 768) setupMobileAIViewport(); });
+    window.addEventListener('orientationchange', function() {
+        setTimeout(() => { if (window.innerWidth <= 768) setupMobileAIViewport(); }, 500);
+    });
+    setTimeout(() => {
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar-overlay-login');
+            if (sidebar && sidebar.classList.contains('open')) setupMobileAIViewport();
+        }
+    }, 1000);
+});
+
+function fixAIScroll() {
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+const originalSendAIChatMessage = window.sendAIChatMessage;
+if (originalSendAIChatMessage) {
+    window.sendAIChatMessage = function(userMessage) {
+        originalSendAIChatMessage(userMessage);
+        setTimeout(fixAIScroll, 100);
+    };
+}
