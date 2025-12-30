@@ -125,12 +125,12 @@ function showTripDetails(startDate) {
             style.textContent = `
                 .attached-notes-container {
                     position: absolute;
-                    top: 90px; 
-                    right: 10px;
-                    left: 10px;
-                    z-index: 20;
-                    display: block; 
-                    pointer-events: none; 
+    top: 14px;
+    right: 36px;
+    left: 10px;
+    z-index: 20;
+    display: block;
+    pointer-events: none;
                 }
 
                 /* Üstteki Açıklama Kutusu (Artık Aşağıda Açılacak) */
