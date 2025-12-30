@@ -278,7 +278,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             if (msg.role === 'user') div.textContent = '🧑 ' + text;
             else {
-                div.innerHTML = '<img src="https://dev.triptime.ai/img/avatar_aiio.png"><div style="display:flex;flex-direction:column;flex:1;">' + text + '</div>';
+                div.innerHTML = '<img src="/img/avatar_aiio.png"><div style="display:flex;flex-direction:column;flex:1;">' + text + '</div>';
             }
             messagesDiv.appendChild(div);
         });
@@ -434,7 +434,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 hasError = true;
                 eventSource.close();
                 aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-                aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
+                aiImg.src = '/img/avatar_aiio.png';
             }
         };
 
@@ -451,7 +451,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 eventSource.close();
 
                 // Bitiş (Normal Görsel)
-                aiImg.src = 'https://dev.triptime.ai/img/avatar_aiio.png';
+                aiImg.src = '/img/avatar_aiio.png';
 
                 if (typeof markdownToHtml === 'function') {
                     aiContent.innerHTML = markdownToHtml(fullText);

@@ -933,7 +933,7 @@ window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, l
     const img = document.getElementById(imgId);
     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
         ? img.src
-        : 'https://dev.triptime.ai/img/restaurant_icon.svg';
+        : '/img/restaurant_icon.svg';
         
     // 2. Sepete Ekle
     // addToCart fonksiyonu zaten updateCart'ı çağırır (silent parametresi verilmediği sürece)

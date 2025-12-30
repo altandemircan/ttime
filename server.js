@@ -78,7 +78,7 @@ app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
     const r = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "https://dev.triptime.ai/"
+        "Referer": "https://triptime.ai/"
       }
     });
     console.log(`[VECTOR] Proxying: ${url} → Status: ${r.status}`);
@@ -98,7 +98,7 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
     const r = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "https://dev.triptime.ai/"
+        "Referer": "https://triptime.ai/"
       }
     });
     // DEBUG
