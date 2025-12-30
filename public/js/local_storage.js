@@ -1,4 +1,14 @@
+// ============================================================
+// local_storage.js
+// ============================================================
+
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
+const PLACEHOLDER_IMG_URL = "https://www.svgrepo.com/show/381286/map-navigation-location-gps-directions.svg";
+
+// NOT: Token oluşturucu ve Collage Cache tanımları artık 'photo_day_slider.js' içinden geliyor.
+// Burada tekrar tanımlamaya gerek yok.
+
+window.cart = Array.isArray(window.cart) ? window.cart : [];
 if (!window.areAllPointsInTurkey) {
   window.areAllPointsInTurkey = function(pts) {
     return pts.every(p =>
@@ -17,6 +27,7 @@ function toLatin(str) {
     .replace(/[^A-Za-z0-9_ ]/g, "")
     .trim();
 }
+
 async function saveTripAfterRoutes() {
   const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
   for (let day = 1; day <= maxDay; day++) {
@@ -38,6 +49,7 @@ async function saveTripAfterRoutes() {
   await saveCurrentTripToStorage({ withThumbnail: true, delayMs: 0 });
   if (typeof renderMyTripsPanel === "function") renderMyTripsPanel();
 }
+
 // Helper: how many valid points does this day have?
 function countPointsForDay(day, trip = null) {
   const useTrip = trip || { cart: window.cart || [] };
@@ -51,9 +63,11 @@ function countPointsForDay(day, trip = null) {
       !Number.isNaN(it.location.lng)
   ).length;
 }
+
 // Yardımcı: bir thumbnail URL'si placeholder mı?
 function isPlaceholderThumb(u) {
-  return !u || typeof u !== 'string' || u.includes('img/placeholder');
+  // Hem eski "placeholder" stringini hem de yeni SVG dosya ismini kontrol eder
+  return !u || typeof u !== 'string' || u.includes('img/placeholder') || u.includes('map-navigation-location-gps-directions');
 }
 
 // Yardımcı: bir trip içinden belirli günün nokta listesini çıkar
@@ -75,13 +89,36 @@ function getPointsFromTrip(trip, day) {
 }
 
 // Thumbnail fonksiyonunu DÜZELT:
+// local_storage.js içindeki fonksiyonu bununla değiştir:
+
 async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 80) {
     const pts = getPointsFromTrip(trip, day);
     if (!pts || pts.length < 2) return null;
-    const lats = pts.map(p => p.lat);
-    const lngs = pts.map(p => p.lng);
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+    // 1. Rota verisi varsa onu kullan (Polyline), yoksa sadece durak noktalarını (Markers) kullan
+    const routePoints = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
+        ? trip.directionsPolylines[day]
+        : pts;
+
+    // 2. Bounds (Sınır) Hesaplama: Tüm rota noktalarını kapsa
+    // Not: Math.min(...arr) çok büyük dizilerde hata verebilir, döngü daha güvenlidir.
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    
+    routePoints.forEach(p => {
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lng < minLng) minLng = p.lng;
+        if (p.lng > maxLng) maxLng = p.lng;
+    });
+
+    // Eğer rota noktalarıyla duraklar arasında sapma varsa diye, durakları da sınırlara dahil et (Garanti olsun)
+    pts.forEach(p => {
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lng < minLng) minLng = p.lng;
+        if (p.lng > maxLng) maxLng = p.lng;
+    });
+
     const bounds = [[minLng, minLat], [maxLng, maxLat]];
     const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
 
@@ -95,7 +132,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
 
     const map = new maplibregl.Map({
         container: mapDiv,
-        style: 'https://tiles.openfreemap.org/styles/positron',
+        style: 'https://tiles.openfreemap.org/styles/positron', // Sade stil
         center: center,
         zoom: 13,
         preserveDrawingBuffer: true,
@@ -103,47 +140,50 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
         attributionControl: false
     });
 
-    // Tüm harita tile'ları tamamen yüklenene kadar bekle!
+    // Harita tamamen yüklenene ve sınırları oturtana kadar bekle
     await new Promise(resolve => {
         map.on('load', () => {
-            map.fitBounds(bounds, { padding: 18, maxZoom: 15, minZoom: 12 });
+            // Padding ile kenarlardan boşluk bırak ki çizgiler kesilmesin
+            map.fitBounds(bounds, { padding: 20, animate: false });
         });
         map.on('idle', () => {
             setTimeout(() => {
-                map.resize();
+                map.resize(); // Render garantisi
                 resolve();
-            }, 600); // idle'dan sonra da biraz beklet, garantili!
+            }, 600); 
         });
     });
 
     const mapCanvas = map.getCanvas();
-
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
+    
+    // Arka planı temizle ve haritayı çiz
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(mapCanvas, 0, 0, width, height);
 
+    // --- ROTA ÇİZİMİ ---
     ctx.save();
     ctx.strokeStyle = '#1976d2';
     ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.beginPath();
 
     function project(lng, lat) {
         const p = map.project([lng, lat]);
         return [p.x, p.y];
     }
-    const polyline = (trip.directionsPolylines && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length >= 2)
-        ? trip.directionsPolylines[day]
-        : pts;
-    const flyMode = !window.areAllPointsInTurkey(polyline);
+
+    const flyMode = !window.areAllPointsInTurkey(routePoints);
 
     if (flyMode) {
-        // markerlar arasında yay (Bezier/kavis) ile çiz
-        for (let i = 0; i < polyline.length - 1; i++) {
+        // Yurtdışı / Uçuş modu (Kavisli çizgiler)
+        // routePoints bu durumda muhtemelen sadece markerlardır, aralarını kavisle doldururuz
+        for (let i = 0; i < pts.length - 1; i++) {
             const getCurvedArcCoords = window.getCurvedArcCoords || function(start, end, strength = 0.33, segments = 22) {
-                // Bezier arc generator
                 const sx = start[0], sy = start[1];
                 const ex = end[0], ey = end[1];
                 const mx = (sx + ex) / 2 + strength * (ey - sy);
@@ -157,8 +197,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
                 return coords;
             };
             const arc = getCurvedArcCoords(
-                [polyline[i].lng, polyline[i].lat],
-                [polyline[i + 1].lng, polyline[i + 1].lat],
+                [pts[i].lng, pts[i].lat],
+                [pts[i + 1].lng, pts[i + 1].lat],
                 0.33, 18
             );
             arc.forEach((pt, j) => {
@@ -168,8 +208,8 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
             });
         }
     } else {
-        // Türkiye ise, gerçek polyline (düz çizgi) kalsın
-        polyline.forEach((p, i) => {
+        // Normal Rota (routePoints kullan)
+        routePoints.forEach((p, i) => {
             const [x, y] = project(p.lng, p.lat);
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
@@ -178,6 +218,7 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     ctx.stroke();
     ctx.restore();
 
+    // --- MARKER ÇİZİMİ (Kırmızı Noktalar) ---
     ctx.save();
     ctx.fillStyle = '#d32f2f';
     ctx.strokeStyle = "#fff";
@@ -191,11 +232,11 @@ async function generateTripThumbnailOffscreen(trip, day, width = 120, height = 8
     });
     ctx.restore();
 
-    // Temizlik: harita ve div'i DOM'dan sil
+    // Temizlik
     setTimeout(() => {
         map.remove();
         document.body.removeChild(mapDiv);
-    }, 500);
+    }, 100);
 
     return canvas.toDataURL('image/png');
 }
@@ -205,18 +246,50 @@ function safeParse(jsonStr) {
   if (!jsonStr || jsonStr === "undefined" || jsonStr === undefined || jsonStr === null) return null;
   try { return JSON.parse(jsonStr); } catch { return null; }
 }
+
+// === local_storage.js içindeki saveCurrentTripToStorage fonksiyonunu bununla değiştirin ===
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
   }
 
+  // === GÜÇLENDİRİLMİŞ AUTO-FORK (OVERWRITE KORUMASI) ===
+  if (window.activeTripKey && window.selectedCity) {
+      const allSaved = getAllSavedTrips();
+      const currentSavedTrip = allSaved[window.activeTripKey];
+       
+      if (currentSavedTrip) {
+           // 1. Kayıtlı şehri bulmaya çalış
+           let oldCity = currentSavedTrip.selectedCity 
+                 ? toLatin(currentSavedTrip.selectedCity).toLowerCase().trim()
+                 : "";
+           
+           // 2. Eğer kayıtlı şehir yoksa (eski sürüm data), başlıktan tahmin et
+           if (!oldCity && currentSavedTrip.title) {
+               // "Rome trip plan" -> "rome"
+               oldCity = toLatin(currentSavedTrip.title).toLowerCase()
+                          .replace(" trip plan", "").replace(" trip", "").trim();
+           }
+
+           const newCity = toLatin(window.selectedCity).toLowerCase().trim();
+           
+           // Şehirler belirgin şekilde farklıysa -> YENİ KEY OLUŞTUR
+           if (oldCity && newCity && oldCity !== newCity) {
+               console.log(`[Auto-Fork] Prevent overwrite! ${oldCity} != ${newCity}. Forcing new trip key.`);
+               window.activeTripKey = null; 
+           }
+      }
+  }
+  // =======================================================
+
   let tripTitle;
   if (window.__startedWithMapFlag) {
     tripTitle = getNextTripTitle();
-    window.__startedWithMapFlag = false; // Sıfırla (sadece ilk kayıtta çalışacak)
-    window.activeTripKey = null; // Kritik: yeni trip başlatılırken key sıfırlansın
+    window.__startedWithMapFlag = false; 
+    window.activeTripKey = null; 
   } else {
+    // Başlık belirleme: Eğer key varsa ve yeni değilse eskisini koru, yoksa yenisini üret
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
         ? getAllSavedTrips()[window.activeTripKey].title
@@ -228,7 +301,6 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     );
   }
 
-  // TRIP TITLE HER ZAMAN LATIN OLSUN
   tripTitle = toLatin(tripTitle);
 
   if (!tripTitle && window.selectedCity && Array.isArray(window.cart) && window.cart.length > 0) {
@@ -242,24 +314,18 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
 
-  // --- En önemli blok ---
   if (window.activeTripKey) {
-    // Zaten aktif bir trip varsa, ona ekle
     tripKey = window.activeTripKey;
   } else {
-    // Yeni bir trip başlatılıyorsa (ör: Start with map veya yeni chat)
     let timestamp = Date.now();
     tripKey = toLatin(tripTitle.replace(/\s+/g, "_")) + "_" + tripDate.replace(/[^\d]/g, '') + "_" + timestamp;
-    window.activeTripKey = tripKey; // Sadece ilk defa trip oluşturulurken atanır
+    window.activeTripKey = tripKey; 
   }
-  // --------------------------------
 
-  const tripObj = {
+ const tripObj = {
     title: tripTitle,
     date: tripDate,
-    days: window.cart && window.cart.length > 0
-      ? Math.max(...window.cart.map(item => item.day || 1))
-      : 1,
+    days: window.cart && window.cart.length > 0 ? Math.max(...window.cart.map(item => item.day || 1)) : 1,
     cart: window.cart ? JSON.parse(JSON.stringify(window.cart)) : [],
     customDayNames: window.customDayNames ? { ...window.customDayNames } : {},
     lastUserQuery: window.lastUserQuery || "",
@@ -267,25 +333,23 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     updatedAt: Date.now(),
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
-    aiInfo: window.lastTripAIInfo || null,
+    aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
+    dayCollageData: window.__dayCollagePhotosByDay || {}, // FOTOĞRAFLAR KORUNDU
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
-  // Thumbnail üretimi
+  // Thumbnail logic...
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
     if (withThumbnail && tripObj.directionsPolylines[day] && tripObj.directionsPolylines[day].length > 2) {
-      thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || "img/placeholder.png";
+      thumbnails[day] = await generateTripThumbnailOffscreen(tripObj, day) || PLACEHOLDER_IMG_URL;
     } else {
-      thumbnails[day] = "img/placeholder.png";
+      thumbnails[day] = PLACEHOLDER_IMG_URL;
     }
   }
   tripObj.thumbnails = thumbnails;
-
-  tripObj.favorite =
-    (trips[tripKey] && typeof trips[tripKey].favorite === "boolean")
-      ? trips[tripKey].favorite : false;
+  tripObj.favorite = (trips[tripKey] && typeof trips[tripKey].favorite === "boolean") ? trips[tripKey].favorite : false;
 
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
@@ -308,6 +372,7 @@ function getNextTripTitle() {
   return `My Trip #${nextNum}`;
 }
 function patchCartLocations() {
+    if (!Array.isArray(window.cart)) return; // Güvenlik: array değilse hiç dokunma
     window.cart.forEach(function(item) {
         // Eğer item.location yok ama lat/lon var ise location ekle
         if (!item.location && (item.lat != null && item.lon != null)) {
@@ -320,7 +385,6 @@ function patchCartLocations() {
         }
     });
 }
-
 
 // 2. Tüm gezileri getir
 function getAllSavedTrips() {
@@ -338,101 +402,242 @@ function showTripAiInfo(aiInfo) {
   if (aiHighlight) aiHighlight.textContent = aiInfo.highlight || "";
 }
 
+// === local_storage.js içindeki loadTripFromStorage fonksiyonunu BU HALİYLE değiştirin ===
 function loadTripFromStorage(tripKey) {
-    window.activeTripKey = tripKey;
+    // 1. ARKA PLAN İŞLEMLERİNİ İPTAL ET
+    window.__planGenerationId = Date.now(); 
+    window.isProcessing = false; 
 
+    window.activeTripKey = tripKey;
     const trips = getAllSavedTrips();
     if (!trips[tripKey]) return false;
     const t = trips[tripKey];
 
-    // --- AI kutusu işlemleri ---
-    if (t.aiInfo) {
-        window.lastTripAIInfo = t.aiInfo;
-        let aiDiv = document.querySelector('.ai-info-section');
-        if (!aiDiv) {
-            insertTripAiInfo(null, t.aiInfo);
-        } else {
-            showTripAiInfo(t.aiInfo);
+    // ============================================================
+    // --- COLLAGE RACE CONDITION FIX ---
+    // ============================================================
+  try {
+      if (typeof window.__ttNewTripToken === 'function') {
+        window.__activeTripSessionToken = window.__ttNewTripToken();
+      }
+
+      if (t.dayCollageData) {
+          window.__dayCollagePhotosByDay = JSON.parse(JSON.stringify(t.dayCollageData));
+      } else {
+          window.__dayCollagePhotosByDay = {};
+      }
+
+      // *** PEXELS KALINTILARI TEMİZLİĞİ (GÜÇLENDİRİLMİŞ) ***
+      Object.keys(window.__dayCollagePhotosByDay || {}).forEach(k => {
+        const arr = window.__dayCollagePhotosByDay[k];
+        if (Array.isArray(arr)) {
+          // Pexels URL'lerini tamamen filtrele
+          const filtered = arr.filter(u => !(typeof u === "string" && /pexels\.com/i.test(u)));
+          window.__dayCollagePhotosByDay[k] = filtered;
+           
+          // Eğer tüm görseller Pexels ise, cache'i boşalt ki yeniden Pixabay'dan çeksin
+          if (filtered.length === 0 && arr.length > 0) {
+            console.log(`[Collage] Day ${k} had only Pexels images, clearing cache for Pixabay refresh`);
+          }
         }
+      });
+
+      // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur (sadece non-Pexels)
+      window.__globalCollageUsed = new Set(
+        Object.values(window.__dayCollagePhotosByDay || {})
+          .flat()
+          .filter(u => typeof u === "string" && ! (/pexels\.com/i.test(u)))
+      );
+
+    } catch(e) {
+      console.warn('[collage] Token reset error:', e);
     }
 
-    // window.cart doğrudan TÜM item’larıyla kopyalanmalı:
+    // Harita temizlikleri...
+    if (window._maplibre3DInstance) { try { window._maplibre3DInstance.remove(); } catch(e) {} window._maplibre3DInstance = null; }
+    const map3DElement = document.getElementById('maplibre-3d-view');
+    if (map3DElement) map3DElement.remove();
+    document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
+    document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+    if (window.expandedMaps) { Object.values(window.expandedMaps).forEach(obj => { if (obj && obj.expandedMap) { try { obj.expandedMap.remove(); } catch(_) {} } }); window.expandedMaps = {}; }
+    document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
+
+    // --- VERİ YÜKLEME ---
     window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
     window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
 
-        // --- Elevation ascent/descent datalarını yükle ---
+    // AI Info Fix
+    if (t.aiInfo) {
+        window.cart.aiData = t.aiInfo;
+        window.lastTripAIInfo = t.aiInfo;
+    } else {
+        window.cart.aiData = null;
+        window.lastTripAIInfo = null;
+    }
+     
+    // AI Panelini Güncelle
+    const aiSection = document.querySelector('.ai-info-section');
+    if (t.aiInfo) {
+        if (!aiSection) { if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo); } 
+        else { if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo); aiSection.style.display = 'block'; }
+    } else {
+        if (typeof window.showTripAiInfo === "function") window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+        if (aiSection) aiSection.style.display = 'none';
+    }
+
     window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
 
-    // --- Null ve tip garanti düzeltme ---
+    // Data normalizasyonu
     window.cart = window.cart.map(item => {
         item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
         if (item.location) {
-            item.location.lat = (item.location.lat == null || isNaN(Number(item.location.lat)))
-                ? 0 : Number(item.location.lat);
-            item.location.lng = (item.location.lng == null || isNaN(Number(item.location.lng)))
-                ? 0 : Number(item.location.lng);
+            item.location.lat = (item.location.lat == null || isNaN(Number(item.location.lat))) ? 0 : Number(item.location.lat);
+            item.location.lng = (item.location.lng == null || isNaN(Number(item.location.lng))) ? 0 : Number(item.location.lng);
         }
         return item;
     });
-
     patchCartLocations();
 
     window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
-    window.lastUserQuery = t.lastUserQuery || t.title || "";
     window.selectedCity = t.selectedCity || "";
+     
+    // === BAŞLIK DÜZELTME (KESİN VE DOĞRUDAN ÇÖZÜM) ===
+    let finalTitle = "Trip Plan";
+    if (t.title && t.title.trim().length > 0) {
+        finalTitle = t.title;
+    } else {
+        finalTitle = t.lastUserQuery || (window.selectedCity ? window.selectedCity + " trip plan" : "Trip Plan");
+    }
+     
+    // 1. Global değişkeni güncelle
+    window.lastUserQuery = finalTitle;
 
-    // 2. Chat ve cart panel temizle
+    // 2. DOM ELEMENTİNİ ZORLA GÜNCELLE (Bu satır sorunu çözer!)
+    // updateTripTitle() fonksiyonunun ne yaptığına bakmaksızın, biz burada işi bitiriyoruz.
+    const titleEl = document.getElementById("trip_title");
+    if (titleEl) {
+        titleEl.textContent = finalTitle;
+    }
+    // ===================================================
+
+    // UI Güncellemeleri
     const chatBox = document.getElementById("chat-box");
     if (chatBox) chatBox.innerHTML = "";
     let cartDiv = document.getElementById("cart-items");
     if (cartDiv) cartDiv.innerHTML = "";
 
-    // 3. UI güncellemeleri
-    if (typeof updateTripTitle === "function") updateTripTitle();
+    // updateTripTitle yine de kalsın, diğer UI elementlerini tetikliyorsa diye.
+    if (typeof updateTripTitle === "function") updateTripTitle(); 
     if (typeof updateCart === "function") updateCart();
     if (typeof showResults === "function") showResults();
     if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
 
-    // 4. Gün sayısını bul
+    // Rota Çizimi
+   // Rota Çizimi - DÜZELTİLDİ
     let maxDay = 0;
     window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
-
-    // 5. Route'ları çiz, sonra thumbnail üret ve paneli güncelle
+    
+    // CRITICAL FIX: Elevation ve Scalebar için DOM'un hazır olmasını bekle
     setTimeout(async () => {
-        for (let day = 1; day <= maxDay; day++) {
-            await renderRouteForDay(day);
+        Object.values(window.leafletMaps || {}).forEach(map => { 
+            if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); 
+        });
+        
+        if (maxDay > 0) {
+            // Gün 1 için önce route çiz
+            await renderRouteForDay(1); 
+            
+            // DİĞER GÜNLERİ DE ÇİZ
+            for (let day = 2; day <= maxDay; day++) { 
+                renderRouteForDay(day); 
+            }
+            
+            // === ELEVATION VE SCALEBAR İÇİN EK GECİKME ===
+            setTimeout(() => {
+                // Tüm day slider'larını tazele
+                document.querySelectorAll('.scale-bar-track').forEach(track => { 
+                    if (typeof track.handleResize === "function") track.handleResize(); 
+                });
+                
+                // Elevation profillerini zorla yenile
+                if (typeof window.updateAllElevationProfiles === 'function') {
+                    window.updateAllElevationProfiles();
+                } else if (typeof window.renderElevationProfile === 'function') {
+                    // Her gün için elevation profile render et
+                    for (let day = 1; day <= maxDay; day++) {
+                        const points = getPointsFromTrip(t, day);
+                        if (points.length >= 2) {
+                            window.renderElevationProfile(day, points);
+                        }
+                    }
+                }
+                
+                // Splide slider'larını tazele
+                document.querySelectorAll('.splide').forEach(sliderElem => { 
+                    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') 
+                        sliderElem._splideInstance.refresh(); 
+                });
+                
+                // SCALEBAR'LARI YENİDEN OLUŞTUR
+                document.querySelectorAll('.scale-bar-track').forEach(track => {
+                    if (track._updateTimeout) clearTimeout(track._updateTimeout);
+                    track._updateTimeout = setTimeout(() => {
+                        if (typeof track.handleResize === "function") {
+                            track.handleResize();
+                        }
+                        // Ek olarak createScaleElements'ı direkt çağır
+                        if (typeof createScaleElements === 'function' && track._day) {
+                            const day = track._day;
+                            const points = getPointsFromTrip(t, day);
+                            if (points.length >= 2) {
+                                // Elevation data varsa kullan
+                                const elevData = window.routeElevStatsByDay && window.routeElevStatsByDay[day];
+                                const markers = window.cart.filter(item => item.day === day);
+                                
+                                // Scalebar'ı güncelle
+                                createScaleElements(
+                                    track, 
+                                    track.clientWidth || 300,
+                                    0, // spanKm sonradan hesaplanacak
+                                    0, // startKm
+                                    markers.map(m => ({
+                                        ...m,
+                                        distance: m._distance || 0,
+                                        originalIndex: markers.indexOf(m) + 1
+                                    })),
+                                    elevData
+                                );
+                            }
+                        }
+                    }, 300); // Gecikmeyi artır
+                });
+                
+            }, 500); // Route çizildikten sonra elevation için ek bekleme
         }
+        
         saveTripAfterRoutes();
-    }, 0);
-
-    // --- Görünüm sorunları için: Harita, scale bar, slider düzelt ---
-    setTimeout(function() {
-        Object.values(window.leafletMaps || {}).forEach(map => {
-            if (map && typeof map.invalidateSize === 'function') {
-                map.invalidateSize();
-            }
-        });
-
-        Object.values(window.expandedMaps || {}).forEach(ex => {
-            if (ex?.expandedMap && typeof ex.expandedMap.invalidateSize === 'function') {
-                ex.expandedMap.invalidateSize();
-            }
-        });
-
-        document.querySelectorAll('.scale-bar-track').forEach(track => {
-            if (typeof track.handleResize === "function") track.handleResize();
-        });
-
-        document.querySelectorAll('.splide').forEach(sliderElem => {
-            if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
-                sliderElem._splideInstance.refresh();
-            }
-        });
-    }, 350);
+    }, 150); // Başlangıç beklemesi
+    
+    // === TRIP PANEL AÇMA ===
+    setTimeout(() => {
+        if (typeof window.toggleSidebarTrip === "function") {
+            window.toggleSidebarTrip();
+        }
+        
+        // VEYA trip panelini direkt aç
+        const tripSidebar = document.getElementById('sidebar-overlay-trip');
+        if (tripSidebar && !tripSidebar.classList.contains('open')) {
+            tripSidebar.classList.add('open');
+        }
+        
+        // Day 1'i aktif yap
+        if (typeof window.showDay === 'function') {
+            window.showDay(1);
+        }
+    }, 800); // Daha uzun bekleme - tüm veriler yüklendikten sonra
 
     return true;
 }
-
 function groupTripsByDate(trips) {
     const grouped = {};
     Object.values(trips).forEach(trip => {
@@ -458,10 +663,6 @@ function getTimeGroupLabel(updatedAt) {
     if (diffDay < 31) return "Last 1 month";
     return "Older";
 }
-// function formatTime(date) {
-//     const d = new Date(date);
-//     return d.toLocaleTimeString('tr-TR', { hour12: false });
-// }
 
 // Favori toggle
 async function toggleTripFavorite(tripKey) {
@@ -482,9 +683,9 @@ async function toggleTripFavorite(tripKey) {
             if ((trip.directionsPolylines && trip.directionsPolylines[day]) ||
                 (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
             ) {
-                trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
+                trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || PLACEHOLDER_IMG_URL;
             } else {
-                trip.thumbnails[day] = "img/placeholder.png";
+                trip.thumbnails[day] = PLACEHOLDER_IMG_URL;
             }
         }
         all[tripKey] = trip;
@@ -537,15 +738,15 @@ function renderMyTripsPanel() {
     });
 
     // Grupları sırayla göster
-const groupOrder = [
-    "Last 15 minutes",
-    "Last 1 hour",
-    "Last 1 day",
-    "Last 1 week",
-    "Last 15 days",
-    "Last 1 month",
-    "Older"
-];    let firstGroup = true;
+    const groupOrder = [
+        "Last 15 minutes",
+        "Last 1 hour",
+        "Last 1 day",
+        "Last 1 week",
+        "Last 15 days",
+        "Last 1 month",
+        "Older"
+    ];    let firstGroup = true;
     groupOrder.forEach(label => {
         if (!groups[label] || groups[label].length === 0) return;
 
@@ -567,248 +768,249 @@ const groupOrder = [
     tryUpdateTripThumbnailsDelayed(3500);
 
     // İç yardımcı: tek satırlık gezi kutusu
-function buildTripRow(trip, isFavoriteSection) {
-    const tripDiv = document.createElement("div");
-    tripDiv.className = "mytrips-tripbox";
+    function buildTripRow(trip, isFavoriteSection) {
+        const tripDiv = document.createElement("div");
+        tripDiv.className = "mytrips-tripbox";
 
-    // === ANA DIV: Görsel, trip-info-box, fav buton, PDF butonu ===
-    const mainBox = document.createElement("div");
-    mainBox.className = "trip-main-box";
-    mainBox.style.display = "flex";
-    mainBox.style.alignItems = "center";
-    mainBox.style.gap = "10px";
+        // === ANA DIV: Görsel, trip-info-box, fav buton, PDF butonu ===
+        const mainBox = document.createElement("div");
+        mainBox.className = "trip-main-box";
+        mainBox.style.display = "flex";
+        mainBox.style.alignItems = "center";
+        mainBox.style.gap = "10px";
 
-    // Görsel ve info kutusu için kapsayıcı
-    const thumbBox = document.createElement("div");
-    thumbBox.style.position = "relative";
-    thumbBox.style.display = "inline-block";
-    // thumbBox'ın genişliği ve yüksekliği sadece görsele göre ayarlanır:
-    thumbBox.style.width = "60px";
-    thumbBox.style.height = "40px";
-    thumbBox.style.cursor = "pointer";
-
-
-    const thumbImg = document.createElement("img");
-    thumbImg.className = "mytrips-thumb";
-    thumbImg.src = trip.thumbnails && trip.thumbnails[1] ? trip.thumbnails[1] : "img/placeholder.png";
-    thumbImg.width = 60;
-    thumbImg.height = 40;
-    thumbImg.dataset.tripkey = trip.key;
-    thumbImg.style.borderRadius = "8px";
+        // Görsel ve info kutusu için kapsayıcı
+        const thumbBox = document.createElement("div");
+        thumbBox.style.position = "relative";
+        thumbBox.style.display = "inline-block";
+        // thumbBox'ın genişliği ve yüksekliği sadece görsele göre ayarlanır:
+        thumbBox.style.width = "60px";
+        thumbBox.style.height = "40px";
+        thumbBox.style.cursor = "pointer";
 
 
-    const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
-    const itemCount = (trip.cart || []).filter(it =>
-        (it.name && it.name.trim() !== '') || (it.location && typeof it.location.lat === "number")
-    ).length;
+        const thumbImg = document.createElement("img");
+        thumbImg.className = "mytrips-thumb";
+        // PLACEHOLDER DEĞİŞTİ:
+        thumbImg.src = trip.thumbnails && trip.thumbnails[1] ? trip.thumbnails[1] : PLACEHOLDER_IMG_URL;
+        thumbImg.width = 60;
+        thumbImg.height = 40;
+        thumbImg.dataset.tripkey = trip.key;
+        thumbImg.style.borderRadius = "8px";
 
-    const thumbInfo = document.createElement("div");
-thumbInfo.className = "mytrips-thumb-info";
-    thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} place</div>`;
-thumbInfo.style.position = "absolute";
-thumbInfo.style.top = "0";
-thumbInfo.style.left = "0";
-thumbInfo.style.width = "100%";
-thumbInfo.style.height = "100%";
-thumbInfo.style.background = "rgb(152, 104, 232)";
-thumbInfo.style.color = "#fff";
-thumbInfo.style.fontSize = "13px";
-thumbInfo.style.opacity = "0";
-thumbInfo.style.pointerEvents = "none"; // hover kutusu hover'ı engellemesin
-thumbInfo.style.transition = "opacity 0.25s";
-thumbInfo.style.flexDirection = "column";
-thumbInfo.style.display = "flex";
-thumbInfo.style.alignItems = "center";
-thumbInfo.style.justifyContent = "center";
-thumbInfo.style.borderRadius = "8px";
-thumbInfo.style.zIndex = "2";
 
-tripDiv.addEventListener("mouseenter", () => {
-  thumbInfo.style.opacity = "1";
-});
-tripDiv.addEventListener("mouseleave", () => {
-  thumbInfo.style.opacity = "0";
-});
+        const dayCount = trip.days || (trip.cart ? Math.max(1, ...trip.cart.map(i => i.day || 1)) : 1);
+        const itemCount = (trip.cart || []).filter(it =>
+            (it.name && it.name.trim() !== '') || (it.location && typeof it.location.lat === "number")
+        ).length;
 
-    thumbInfo.style.pointerEvents = "none"; // info kutusu üstüne gelince hover kaybolmasın
-
-    thumbBox.appendChild(thumbImg);
-    thumbBox.appendChild(thumbInfo);
-
-    // Sadece TRIPDIV'e event ekliyoruz
-    tripDiv.addEventListener("mouseenter", () => {
+        const thumbInfo = document.createElement("div");
+        thumbInfo.className = "mytrips-thumb-info";
+        thumbInfo.innerHTML = `<div>${dayCount} day</div><div>${itemCount} place</div>`;
+        thumbInfo.style.position = "absolute";
+        thumbInfo.style.top = "0";
+        thumbInfo.style.left = "0";
+        thumbInfo.style.width = "100%";
+        thumbInfo.style.height = "100%";
+        thumbInfo.style.background = "rgb(152, 104, 232)";
+        thumbInfo.style.color = "#fff";
+        thumbInfo.style.fontSize = "13px";
+        thumbInfo.style.opacity = "0";
+        thumbInfo.style.pointerEvents = "none"; // hover kutusu hover'ı engellemesin
+        thumbInfo.style.transition = "opacity 0.25s";
+        thumbInfo.style.flexDirection = "column";
         thumbInfo.style.display = "flex";
-    });
-    tripDiv.addEventListener("mouseleave", () => {
-        thumbInfo.style.display = "none";
-    });
+        thumbInfo.style.alignItems = "center";
+        thumbInfo.style.justifyContent = "center";
+        thumbInfo.style.borderRadius = "8px";
+        thumbInfo.style.zIndex = "2";
 
-    // Trip info box (tıklanabilir)
-    const infoBox = document.createElement("div");
-    infoBox.className = "trip-info-box";
-    infoBox.style.cursor = "pointer";
-    infoBox.style.flex = "1";
+        tripDiv.addEventListener("mouseenter", () => {
+        thumbInfo.style.opacity = "1";
+        });
+        tripDiv.addEventListener("mouseleave", () => {
+        thumbInfo.style.opacity = "0";
+        });
 
-    // Başlık ve rename inputu
-    const titleDiv = document.createElement("div");
-    titleDiv.className = "trip-title";
-    titleDiv.textContent = trip.title || `${trip.days} day${trip.days > 1 ? 's' : ''}${trip.selectedCity ? " " + trip.selectedCity : ""}`;
+        thumbInfo.style.pointerEvents = "none"; // info kutusu üstüne gelince hover kaybolmasın
 
-function startRename() {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = titleDiv.textContent;
-    input.className = "trip-rename-input";
-    input.style.marginRight = "5px";
-    input.style.maxWidth = "120px";
+        thumbBox.appendChild(thumbImg);
+        thumbBox.appendChild(thumbInfo);
 
-    input.addEventListener("keydown", function(e) {
-        if (e.key === "Enter") doRename();
-        if (e.key === "Escape") cancelRename();
-    });
-    input.addEventListener("blur", function() {
-        doRename();
-    });
+        // Sadece TRIPDIV'e event ekliyoruz
+        tripDiv.addEventListener("mouseenter", () => {
+            thumbInfo.style.display = "flex";
+        });
+        tripDiv.addEventListener("mouseleave", () => {
+            thumbInfo.style.display = "none";
+        });
 
-    titleDiv.replaceWith(input);
-    input.focus();
+        // Trip info box (tıklanabilir)
+        const infoBox = document.createElement("div");
+        infoBox.className = "trip-info-box";
+        infoBox.style.cursor = "pointer";
+        infoBox.style.flex = "1";
 
-                function doRename() {
-                    const newTitle = input.value.trim();
-                    if (!newTitle) return cancelRename();
-                    const all = getAllSavedTrips();
-                    const oldKey = trip.key;
-const newKey = toLatin(newTitle.replace(/\s+/g, "_")) + "_" + trip.date.replace(/[^\d]/g, '');
+        // Başlık ve rename inputu
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "trip-title";
+        titleDiv.textContent = trip.title || `${trip.days} day${trip.days > 1 ? 's' : ''}${trip.selectedCity ? " " + trip.selectedCity : ""}`;
 
-                    if (newKey === oldKey) return cancelRename();
+        function startRename() {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = titleDiv.textContent;
+            input.className = "trip-rename-input";
+            input.style.marginRight = "5px";
+            input.style.maxWidth = "120px";
 
-                    trip.title = newTitle;
-                    trip.key = newKey;
-                    trip.updatedAt = Date.now();
+            input.addEventListener("keydown", function(e) {
+                if (e.key === "Enter") doRename();
+                if (e.key === "Escape") cancelRename();
+            });
+            input.addEventListener("blur", function() {
+                doRename();
+            });
 
-                    delete all[oldKey];
-                    all[newKey] = trip;
+            titleDiv.replaceWith(input);
+            input.focus();
 
-                    // EN KRİTİK: lastUserQuery'yi de güncelle
-                    if (window.activeTripKey === oldKey) {
-                        window.activeTripKey = newKey;
-                        window.cart = JSON.parse(JSON.stringify(trip.cart));
-                        window.customDayNames = trip.customDayNames ? { ...trip.customDayNames } : {};
-                        window.lastUserQuery = newTitle; // <-- Burası!
-                        window.selectedCity = trip.selectedCity || "";
-                        window.latestTripPlan = Array.isArray(trip.cart) ? JSON.parse(JSON.stringify(trip.cart)) : [];
+                    function doRename() {
+                        const newTitle = input.value.trim();
+                        if (!newTitle) return cancelRename();
+                        const all = getAllSavedTrips();
+                        const oldKey = trip.key;
+        const newKey = toLatin(newTitle.replace(/\s+/g, "_")) + "_" + trip.date.replace(/[^\d]/g, '');
+
+                        if (newKey === oldKey) return cancelRename();
+
+                        trip.title = newTitle;
+                        trip.key = newKey;
+                        trip.updatedAt = Date.now();
+
+                        delete all[oldKey];
+                        all[newKey] = trip;
+
+                        // EN KRİTİK: lastUserQuery'yi de güncelle
+                        if (window.activeTripKey === oldKey) {
+                            window.activeTripKey = newKey;
+                            window.cart = JSON.parse(JSON.stringify(trip.cart));
+                            window.customDayNames = trip.customDayNames ? { ...trip.customDayNames } : {};
+                            window.lastUserQuery = newTitle; // <-- Burası!
+                            window.selectedCity = trip.selectedCity || "";
+                            window.latestTripPlan = Array.isArray(trip.cart) ? JSON.parse(JSON.stringify(trip.cart)) : [];
+                        }
+
+                        localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
+                        setTimeout(() => { renderMyTripsPanel(); }, 0);
                     }
+            function cancelRename() {
+                setTimeout(() => { renderMyTripsPanel(); }, 0);
+            }
+        }
+        // Buton satırı (Rename, Delete)
+        const buttonRow = document.createElement("div");
+        buttonRow.style.display = "flex";
+        buttonRow.style.alignItems = "center";
+        buttonRow.style.gap = "8px";
 
-                    localStorage.setItem("triptime_user_trips_v2", JSON.stringify(all));
-                    setTimeout(() => { renderMyTripsPanel(); }, 0);
-                }
-    function cancelRename() {
-        setTimeout(() => { renderMyTripsPanel(); }, 0);
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "trip-rename-btn";
+        renameBtn.type = "button";
+        renameBtn.textContent = "Rename";
+        renameBtn.title = "Rename trip";
+        renameBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startRename();
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "mytrips-delete-btn";
+        deleteBtn.title = "Delete this trip";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm("Are you sure you want to delete this trip?")) {
+                deleteTrip(trip.key);
+                renderMyTripsPanel();
+            }
+        };
+
+        buttonRow.appendChild(renameBtn);
+        buttonRow.appendChild(deleteBtn);
+
+        infoBox.appendChild(titleDiv);
+        infoBox.appendChild(buttonRow);
+
+        infoBox.onclick = function(e) {
+            if (
+            e.target === renameBtn ||
+            e.target === deleteBtn ||
+            (e.target.classList && e.target.classList.contains('trip-rename-save')) ||
+            (e.target.tagName === "INPUT")
+            ) return;
+
+            e.preventDefault();
+            if (typeof window.toggleSidebarMyTrips === "function") window.toggleSidebarMyTrips();
+            loadTripFromStorage(trip.key);
+            setTimeout(function() {
+                if (typeof openTripSidebar === "function") openTripSidebar();
+            }, 400);
+        };
+
+        // PDF butonu
+        const pdfBtn = document.createElement("button");
+        pdfBtn.className = "mytrips-pdf-btn";
+        pdfBtn.type = "button";
+        pdfBtn.title = "Download PDF";
+        pdfBtn.innerHTML = `<img src="/img/pdf-icon.svg" alt="Download PDF" style="width:22px;vertical-align:middle;">`;
+        pdfBtn.style.border = "none";
+        pdfBtn.style.background = "transparent";
+        pdfBtn.style.cursor = "pointer";
+        pdfBtn.style.fontSize = "20px";
+        pdfBtn.style.marginRight = "0";
+        pdfBtn.style.marginLeft = "6px";
+        pdfBtn.style.padding = "0";
+        pdfBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof downloadTripPlanPDF === "function") {
+                downloadTripPlanPDF(trip.key);
+            }
+        };
+
+        // Favorite star
+        const favBtn = document.createElement("button");
+        favBtn.className = "mytrips-fav-btn";
+        favBtn.type = "button";
+        favBtn.title = trip.favorite ? "Remove from favorites" : "Add to favorites";
+        favBtn.textContent = "★";
+        favBtn.style.border = "none";
+        favBtn.style.background = "transparent";
+        favBtn.style.cursor = "pointer";
+        favBtn.style.fontSize = "20px";
+        favBtn.style.marginLeft = "0";
+        favBtn.style.padding = "0";
+        favBtn.style.color = trip.favorite ? "#ffcc00" : "#bdbdbd";
+        favBtn.onclick = async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            await toggleTripFavorite(trip.key);
+            renderMyTripsPanel && renderMyTripsPanel();
+        };
+
+        // Sıralama
+        mainBox.appendChild(thumbBox);
+        mainBox.appendChild(infoBox);
+        mainBox.appendChild(pdfBtn);
+        mainBox.appendChild(favBtn);
+
+        tripDiv.appendChild(mainBox);
+
+        return tripDiv;
     }
-}
-    // Buton satırı (Rename, Delete)
-    const buttonRow = document.createElement("div");
-    buttonRow.style.display = "flex";
-    buttonRow.style.alignItems = "center";
-    buttonRow.style.gap = "8px";
-
-    const renameBtn = document.createElement("button");
-    renameBtn.className = "trip-rename-btn";
-    renameBtn.type = "button";
-    renameBtn.textContent = "Rename";
-    renameBtn.title = "Rename trip";
-    renameBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        startRename();
-    };
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "mytrips-delete-btn";
-    deleteBtn.title = "Delete this trip";
-    deleteBtn.textContent = "Delete";
-    deleteBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (confirm("Are you sure you want to delete this trip?")) {
-            deleteTrip(trip.key);
-            renderMyTripsPanel();
-        }
-    };
-
-    buttonRow.appendChild(renameBtn);
-    buttonRow.appendChild(deleteBtn);
-
-    infoBox.appendChild(titleDiv);
-    infoBox.appendChild(buttonRow);
-
-    infoBox.onclick = function(e) {
-        if (
-      e.target === renameBtn ||
-      e.target === deleteBtn ||
-      (e.target.classList && e.target.classList.contains('trip-rename-save')) ||
-      (e.target.tagName === "INPUT")
-    ) return;
-
-        e.preventDefault();
-        if (typeof window.toggleSidebarMyTrips === "function") window.toggleSidebarMyTrips();
-        loadTripFromStorage(trip.key);
-        setTimeout(function() {
-            if (typeof openTripSidebar === "function") openTripSidebar();
-        }, 400);
-    };
-
-    // PDF butonu
-    const pdfBtn = document.createElement("button");
-    pdfBtn.className = "mytrips-pdf-btn";
-    pdfBtn.type = "button";
-    pdfBtn.title = "Download PDF";
-    pdfBtn.innerHTML = `<img src="/img/pdf-icon.svg" alt="Download PDF" style="width:22px;vertical-align:middle;">`;
-    pdfBtn.style.border = "none";
-    pdfBtn.style.background = "transparent";
-    pdfBtn.style.cursor = "pointer";
-    pdfBtn.style.fontSize = "20px";
-    pdfBtn.style.marginRight = "0";
-    pdfBtn.style.marginLeft = "6px";
-    pdfBtn.style.padding = "0";
-    pdfBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof downloadTripPlanPDF === "function") {
-            downloadTripPlanPDF(trip.key);
-        }
-    };
-
-    // Favorite star
-    const favBtn = document.createElement("button");
-    favBtn.className = "mytrips-fav-btn";
-    favBtn.type = "button";
-    favBtn.title = trip.favorite ? "Remove from favorites" : "Add to favorites";
-    favBtn.textContent = "★";
-    favBtn.style.border = "none";
-    favBtn.style.background = "transparent";
-    favBtn.style.cursor = "pointer";
-    favBtn.style.fontSize = "20px";
-    favBtn.style.marginLeft = "0";
-    favBtn.style.padding = "0";
-    favBtn.style.color = trip.favorite ? "#ffcc00" : "#bdbdbd";
-    favBtn.onclick = async function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        await toggleTripFavorite(trip.key);
-        renderMyTripsPanel && renderMyTripsPanel();
-    };
-
-    // Sıralama
-    mainBox.appendChild(thumbBox);
-    mainBox.appendChild(infoBox);
-    mainBox.appendChild(pdfBtn);
-    mainBox.appendChild(favBtn);
-
-    tripDiv.appendChild(mainBox);
-
-    return tripDiv;
-}
 }
 
 
@@ -825,6 +1027,19 @@ window.startNewChat = function() {
     window.lastUserQuery = "";
     window.selectedCity = "";
     window.activeTripKey = null;
+     
+    // --- EKLENEN KISIM: AI Verisini Sıfırla ---
+    window.lastTripAIInfo = null; 
+    if (window.cart) window.cart.aiData = null;
+     
+    // UI'daki AI yazısını da temizle
+    const aiSection = document.querySelector('.ai-info-section');
+    if (aiSection) aiSection.style.display = 'none';
+    if (typeof window.showTripAiInfo === "function") {
+        window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+    }
+    // ------------------------------------------
+
     saveTripAfterRoutes();
 };
 
@@ -845,9 +1060,11 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
       const maxDay = trip.days || 1;
       for (let day = 1; day <= maxDay; day++) {
         if (!trip.thumbnails) trip.thumbnails = {};
+        
+        // Placeholder kontrolü hem eskiyi hem yeniyi kapsayacak şekilde güncellendi
         if (
           !trip.thumbnails[day] ||
-          (typeof trip.thumbnails[day] === "string" && trip.thumbnails[day].includes("placeholder"))
+          (typeof trip.thumbnails[day] === "string" && (trip.thumbnails[day].includes("placeholder") || trip.thumbnails[day].includes("map-navigation-location-gps-directions")))
         ) {
           if (countPointsForDay(day, trip) < 2) continue;
           const thumb = await generateTripThumbnailOffscreen(trip, day);
@@ -866,41 +1083,6 @@ async function tryUpdateTripThumbnailsDelayed(delay = 3500) {
     }
   }, delay);
 }
-
-
-// async function updateAllTripThumbnailsWithPolyline() {
-//   const all = getAllSavedTrips();
-//   for (const [tripKey, trip] of Object.entries(all)) {
-//     if (!trip.directionsPolylines) trip.directionsPolylines = {};
-//     let updated = false;
-//     for (let day = 1; day <= (trip.days || 1); day++) {
-//       // Şu an sadece düz çizgi: getPointsFromTrip(trip, day)
-//       // YERİNE, GERÇEK Polyline'ı Directions API'den çekmelisin:
-//       if (
-//         !trip.directionsPolylines[day] &&
-//         (trip.cart || []).filter(it => it.day == day && it.location && typeof it.location.lat === "number" && typeof it.location.lng === "number").length >= 2
-//       ) {
-//         // DÜZELTME: Directions API'ye istek at, polyline'ı bul
-//         // const polyline = await fetchDirectionsPolyline(trip, day);  // <--- Senin Directions fonksiyonun
-//         // trip.directionsPolylines[day] = polyline;
-//         // updated = true;
-
-//         // Şu anda Directions API yoksa, sadece düz çizgi çizer!
-//       }
-//     }
-//     if (updated) {
-//       // Thumbnail tekrar üret
-//       trip.thumbnails = trip.thumbnails || {};
-//       for (let day = 1; day <= (trip.days || 1); day++) {
-//         if ((trip.directionsPolylines[day] || []).length >= 2) {
-//           trip.thumbnails[day] = await generateTripThumbnailOffscreen(trip, day) || "img/placeholder.png";
-//         }
-//       }
-//       all[tripKey] = trip;
-//     }
-//   }
-//   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(all));
-// }
 
 
 // Debounce fonksiyonu (her gün için ayrı)
@@ -961,12 +1143,12 @@ async function toggleFavTrip(item, heartEl) {
         }
     }
 
-    // image yoksa otomatik doldur
-    if (!item.image || item.image === "" || item.image === "img/placeholder.png") {
+    // image yoksa veya placeholder ise yeni placeholder ile otomatik doldur
+    if (!item.image || item.image === "" || item.image === "img/placeholder.png" || item.image === PLACEHOLDER_IMG_URL) {
         if (typeof getImageForPlace === "function") {
             item.image = await getImageForPlace(item.name, item.category, window.selectedCity || "");
         } else {
-            item.image = "img/placeholder.png";
+            item.image = PLACEHOLDER_IMG_URL;
         }
     }
 
@@ -1048,15 +1230,15 @@ async function renderFavoritePlacesPanel() {
             }
         }
         // Görsel
-        if (!place.image || place.image === "img/placeholder.png") {
+        if (!place.image || place.image === "img/placeholder.png" || place.image === PLACEHOLDER_IMG_URL) {
             if (typeof getImageForPlace === "function") {
                 try {
                     place.image = await getImageForPlace(place.name, place.category, place.city || window.selectedCity || "");
                 } catch {
-                    place.image = "img/placeholder.png";
+                    place.image = PLACEHOLDER_IMG_URL;
                 }
             } else {
-                place.image = "img/placeholder.png";
+                place.image = PLACEHOLDER_IMG_URL;
             }
         }
     }
@@ -1095,7 +1277,7 @@ async function renderFavoritePlacesPanel() {
             const imgDiv = document.createElement("div");
             imgDiv.style = "width:42px;height:42px;";
             const img = document.createElement("img");
-            img.src = place.image || "img/placeholder.png";
+            img.src = place.image || PLACEHOLDER_IMG_URL;
             img.alt = place.name || "";
             img.style = "width:100%;height:100%;object-fit:cover;border-radius:8px;";
             imgDiv.appendChild(img);
@@ -1219,231 +1401,3 @@ function updateFavoriteBtnText(favHeartEl) {
         }
     }
 }
-
-
-// Favori listesi (localStorage ile kalıcı)
-window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
-function saveFavTrips() {
-    localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
-}
-
-async function toggleFavTrip(item, heartEl) {
-    // Liste yoksa oluştur
-    window.favTrips = window.favTrips || [];
-
-    // Şehir/ülke eksikse, doldur
-    if (!item.city || !item.country) {
-        if (item.address) {
-            const addrParts = item.address.split(",");
-            item.city = addrParts.length >= 2 ? addrParts[addrParts.length-2].trim() : window.selectedCity || "Unknown City";
-            item.country = addrParts.length >= 1 ? addrParts[addrParts.length-1].trim() : "Unknown Country";
-        } else {
-            item.city = window.selectedCity || "Unknown City";
-            item.country = "Unknown Country";
-        }
-    }
-
-    // image yoksa otomatik doldur
-    if (!item.image || item.image === "" || item.image === "img/placeholder.png") {
-        if (typeof getImageForPlace === "function") {
-            item.image = await getImageForPlace(item.name, item.category, window.selectedCity || "");
-        } else {
-            item.image = "img/placeholder.png";
-        }
-    }
-
-    // Favoride mi kontrol et
-    const idx = window.favTrips.findIndex(f =>
-        f.name === item.name &&
-        f.category === item.category &&
-        String(f.lat) === String(item.lat) &&
-        String(f.lon) === String(item.lon)
-    );
-
-    if (idx >= 0) {
-        window.favTrips.splice(idx, 1);
-        heartEl.innerHTML = '<img class="fav-icon" src="img/like_off.svg" alt="notfav">';
-        heartEl.classList.remove("is-fav");
-    } else {
-        window.favTrips.push(item);
-        heartEl.innerHTML = '<img class="fav-icon" src="img/like_on.svg" alt="fav">';
-        heartEl.classList.add("is-fav");
-    }
-
-    // LocalStorage veya API ile kaydet
-    if (typeof saveFavTrips === "function") {
-        saveFavTrips();
-    } else {
-        localStorage.setItem("favTrips", JSON.stringify(window.favTrips));
-    }
-    // Konsol debug:
-    console.log("FavTrips:", window.favTrips);
-}
-
-function getFavoriteTrips() {
-    return window.favTrips || [];
-}
-
-function groupFavoritesByCountryCity(favList) {
-    const grouped = {};
-    favList.forEach(place => {
-        const country = place.country || place.properties?.country || "Unknown Country";
-        const city = place.city || place.properties?.city || place.properties?.name || "Unknown City";
-        const key = `${city}, ${country}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(place);
-    });
-    return grouped;
-}
-async function renderFavoritePlacesPanel() {
-    const favPanel = document.getElementById("favorite-places-panel");
-    if (!favPanel) return;
-    favPanel.innerHTML = "";
-
-    const favList = window.favTrips || [];
-    if (favList.length === 0) {
-        favPanel.innerHTML = `<div class="mytrips-empty">No favorite places yet.<br>Add places to favorites to see them here!</div>`;
-        return;
-    }
-
-    for (let place of favList) {
-        // Şehir
-        if (!place.city || place.city === "Unknown City") {
-            if (place.address) {
-                const addrParts = place.address.split(",");
-                place.city = addrParts.length >= 2 ? addrParts[addrParts.length - 2].trim() : place.address.trim();
-            } else if (place.properties?.city) {
-                place.city = place.properties.city;
-            } else {
-                place.city = window.selectedCity || "Unknown City";
-            }
-        }
-        // Ülke
-        if (!place.country || place.country === "Unknown Country") {
-            if (place.address) {
-                const addrParts = place.address.split(",");
-                place.country = addrParts.length > 1 ? addrParts[addrParts.length - 1].trim() : "Unknown Country";
-            } else if (place.properties?.country) {
-                place.country = place.properties.country;
-            } else {
-                place.country = "Unknown Country";
-            }
-        }
-        // Görsel
-        if (!place.image || place.image === "img/placeholder.png") {
-            if (typeof getImageForPlace === "function") {
-                try {
-                    place.image = await getImageForPlace(place.name, place.category, place.city || window.selectedCity || "");
-                } catch {
-                    place.image = "img/placeholder.png";
-                }
-            } else {
-                place.image = "img/placeholder.png";
-            }
-        }
-    }
-
-    // Gruplama ve render - senin kodun ile aynı
-    function groupFavoritesByCountryCity(list) {
-    const grouped = {};
-    list.forEach(place => {
-        const city = place.city && place.city !== "Unknown City" ? place.city : "";
-        const country = place.country && place.country !== "Unknown Country" ? place.country : "";
-        let key = "";
-        if (city && country) key = `${city}, ${country}`;
-        else if (city) key = city;
-        else if (country) key = country;
-        else key = "Unknown";
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(place);
-    });
-    return grouped;
-}
-    const grouped = groupFavoritesByCountryCity(favList);
-
-    Object.entries(grouped).forEach(([locationKey, places]) => {
-        const section = document.createElement("div");
-        section.className = "fav-place-group";
-        section.innerHTML = `<h3 style="margin-bottom:10px; color:#6c3fc2;">${locationKey}</h3>`;
-
-        const ul = document.createElement("ul");
-        ul.style = "list-style:none;padding:0;margin:0;";
-
-        places.forEach((place, i) => {
-            const li = document.createElement("li");
-            li.className = "fav-item";
-            li.style = "margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;";
-
-            const imgDiv = document.createElement("div");
-            imgDiv.style = "width:42px;height:42px;";
-            const img = document.createElement("img");
-            img.src = place.image || "img/placeholder.png";
-            img.alt = place.name || "";
-            img.style = "width:100%;height:100%;object-fit:cover;border-radius:8px;";
-            imgDiv.appendChild(img);
-
-            const infoDiv = document.createElement("div");
-            infoDiv.style = "flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;";
-            infoDiv.innerHTML = `
-                <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
-                <span style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.address || ""}</span>
-                <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
-            `;
-
-            const btnDiv = document.createElement("div");
-            btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:7px;";
-
-            const addBtn = document.createElement("button");
-            addBtn.className = "add-fav-to-trip-btn";
-            addBtn.setAttribute("data-index", i);
-            addBtn.title = "Add to trip";
-            addBtn.style = "width:32px;height:32px;background:#1976d2;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
-            addBtn.textContent = "+";
-            addBtn.onclick = function() {
-                addToCart(
-                    place.name,
-                    place.image,
-                    window.currentDay || 1,
-                    place.category,
-                    place.address || "",
-                    null, null, place.opening_hours || "",
-                    null,
-                    place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
-                    place.website || ""
-                );
-                if (typeof updateCart === "function") updateCart();
-                const overlay = document.getElementById('sidebar-overlay-favorite-places');
-                if (overlay) overlay.classList.remove('open');
-                window.toggleSidebar && window.toggleSidebar('sidebar-overlay-trip');
-            };
-
-            const removeBtn = document.createElement("button");
-            removeBtn.className = "remove-fav-btn";
-            removeBtn.setAttribute("data-name", place.name);
-            removeBtn.setAttribute("data-category", place.category);
-            removeBtn.setAttribute("data-lat", place.lat || "");
-            removeBtn.setAttribute("data-lon", place.lon || "");
-            removeBtn.title = "Remove from favorites";
-            removeBtn.style = "width:32px;height:32px;background:#ffecec;color:#d32f2f;border:none;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
-            removeBtn.textContent = "–";
-            removeBtn.onclick = function() {
-                window.favTrips.splice(i, 1);
-                localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
-                renderFavoritePlacesPanel();
-            };
-
-            btnDiv.appendChild(addBtn);
-            btnDiv.appendChild(removeBtn);
-
-            li.appendChild(imgDiv);
-            li.appendChild(infoDiv);
-            li.appendChild(btnDiv);
-
-            ul.appendChild(li);
-        });
-
-        section.appendChild(ul);
-        favPanel.appendChild(section);
-    });
-}
-

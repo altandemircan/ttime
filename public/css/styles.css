@@ -463,23 +463,27 @@ ease;
 }
 
 .info .description, .info .address, .info .opening_hours {
-    display: -webkit-box;
+  /*  display: -webkit-box;
     /*max-width: 335px;*/
     
-    -webkit-box-orient: vertical;
+  /*  -webkit-box-orient: vertical;
     overflow: hidden;   
     align-items: baseline;
         overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 2;*/*/
 
 }
 
-.info .address {
+.info .address, .info .opening_hours {
     font-weight: 500;
+    display: flex;
 }
 
+.info .address img, .info .opening_hours img {
+    padding-top: 3px;
+} 
 
 /* Bot Mesajı */
 .bot-message {
@@ -1229,10 +1233,7 @@ ease;
         padding-right: 0;
     }
 
-    .info div img {
-        height: 24px;
-        max-width: 24px;
-    }
+    
     .logo img {
         height: 22px;
        
@@ -1605,6 +1606,9 @@ ease;
 #sidebar-trip {
     padding-bottom: 40px;
 }
+
+
+
 /* Sidebar Toggle Button */
 .sidebar-toggle {
     border: none;
@@ -2980,22 +2984,20 @@ ease;
     font-size: 0.95rem;
     color: #2c3e50;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    text-align: center;
+    text-align: center; 
     width: -webkit-fill-available;
     font-family: 'Satoshi';
 }
 
-
-.travel-item.custom-note {
-  width: 84%;
-    left: 11%;
-    position: relative;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    background: #fff;
+.insertion-placeholder {
+    max-width: 100vw; /* taşmayı önler */
+    box-sizing: border-box;
 }
 
-.travel-item.custom-note::before {
+
+
+
+.note-item::before {
     content: "";
     position: absolute;
     left: -26px;
@@ -3008,6 +3010,30 @@ ease;
     box-sizing: border-box;
     border-radius: 2px;
 }
+
+.note-item .cart-image {
+    width: 45px;
+    height: 30px;
+}
+.note-item .remove-btn {
+    margin-top: 0px;
+    padding: 6px;
+}
+.note-item .remove-btn img {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+}
+
+
+.note-item .content.active {
+        margin-top: 0;
+}
+
+.note-item .note-details {
+    padding: 6px 10px;
+}
+
 
 .search-container {
     margin-top: 15px;
@@ -4414,6 +4440,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     min-height: 285px;
     height: 285px;
     width: 100%;
+    
+
     /* Responsive için ekstra:
     max-width: 100%;
     box-sizing: border-box;
@@ -4434,12 +4462,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
-.expanded-map {
-    width: 100% !important;
-    height: 100% !important;
+.expanded-map, #maplibre-3d-view  {
+    width: 100% !important;    
     min-height: 285px;
-     height: calc(100% - 190px) !important;
-    bottom: 190px;
+     height: calc(100% - 120px) !important;
+    bottom: 180px;
 }
 
 
@@ -4563,7 +4590,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    display: none;
+
 }
 .route-stats .stat img {
     width: 16px;
@@ -4576,7 +4603,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-    width: calc(100% - 40px);
+    width: calc(100% - 30px);
 }
 
 .scale-bar-track { user-select: none; }
@@ -4601,41 +4628,101 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     align-items: center;
     /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
     flex-direction: column;
-    height: 155px;
+    height: 145px;
+}
+
+@media (max-width: 768px) {
+    .expanded-map-panel { 
+        width: calc(100% - 40px);
+        right: 0px;
+        left: 0px;
+        padding-left: 40px;
+        bottom: 5px; /* Bu boşluk sabit kaldı */
+        height: 155px;
+                padding-top: 20px;
     }
 
-    @media (max-width:768px) {
- .expanded-map-panel { 
-    width: calc(100% - 50px);
-        right: 0px;
-        left: 20px;
-        /* background: #ff9900; */
-        bottom: 10px;
-        padding: 0 20px;
-    }
     .route-scale-bar {
-         width: calc(100% - 20px);
-      
+        width: calc(100% - 20px);
     }
-    .expanded-map{
-        height: calc(100% - 185px) !important;
-    bottom: 185px;
+
+    .expanded-map {
+        /* Haritanın altını tam panelin bittiği yere (160px) çekiyoruz */
+        bottom: 160px !important; 
+        
+        /* Harita yüksekliği: Ekran boyu - Alt Panel Alanı (160px) */
+        height: calc(100dvh - 160px) !important; 
+        
+        width: 100% !important;
+        position: fixed !important;
     }
 }
 .elevation-labels-container {
     position: absolute;
-    left: -65px;
+    left: -55px;
     width: 45px;
-    height: 165px;
+        height: 148px;
     pointer-events: none;
-    z-index: 5; 
+    z-index: 5;
     background: #ffffff;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-end;
+    top: 8px;
 
 }
+
+.elev-segment-toolbar {
+        bottom: 160px;
+    right: 14px;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+    background: #ffffff;
+    border-radius: 12px 0 0 0;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #1e293b;
+    font-weight: 700;
+
+    justify-content: flex-end;
+    border-radius: 0;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .elev-segment-toolbar {
+        justify-content: flex-end;
+        gap: 6px;
+        right: 8px;
+        border-radius: 8px;
+
+    }
+    
+    /* Mobilde buton daha kompakt olsun */
+    .elev-segment-reset {
+      ;
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+}
+
+.elev-segment-toolbar .pill, .elev-segment-reset {
+        border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-weight: 600;
+}
+.elev-segment-reset {
+    color: #ffffff;
+    border: none;;
+    font-size: 12px;
+    
+}
+
 .expanded-map {
     width: 100%;
     height: calc(100% - 50px);   
@@ -4647,7 +4734,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     top: 15px;
     right: 15px;
     padding: 8px 15px;
-    background: #d32f2f;
+    background: #ff3b3b;
     color: white;
     border: none;
     border-radius: 4px;
@@ -4656,7 +4743,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .close-expanded-map:hover {
-    background: #f5f5f5;
+    background: #f84d4d;
 }
 
 
@@ -4833,9 +4920,9 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .route-info,
 .add-more-btn,
 [id^="map-bottom-controls-wrapper-day"] {
-
-  transition: max-height 0.3s cubic-bezier(.4,0,.2,1), padding 0.3s cubic-bezier(.4,0,.2,1), opacity 0.3s;
-  max-height: 2000px;
+  transition: max-height 0.5s ease-in-out, padding 0.3s ease, opacity 0.3s;
+  /* 2000px yerine çok yüksek bir değer verin */
+  max-height: 50000px; 
 }
 
 .day-list.collapsed,
@@ -5088,19 +5175,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 
-.expanded-map-header {
-    position: absolute;
-     z-index: 10001;
-    background: rgb(255 255 255);  
-    border: none;
-    padding: 6px 4px;
-    border-radius: 4px;
-    top: 140px;
-    left: 10px;
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    background-clip: padding-box;
-
-}
 
 
 
@@ -5117,17 +5191,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     width: 100%;
 }
 
-.expanded-map-container .close-expanded-map {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 10001;
-    background: white;
-    border: 1px solid #ccc;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-}
 
 
 .empty-day-message, .one-item-message {
@@ -5179,8 +5242,11 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   .expanded-map-container {
     z-index: 1005 !important;
     width: 100% !important;
-        max-height: calc(100vh - 60px);
+        /*max-height: calc(100vh - 60px);*/
            background-color: #ffffff;
+  }
+  .close-expanded-map {
+    margin-top: -60px;
   }
 }
 @keyframes spin {
@@ -5700,27 +5766,82 @@ ease;
     object-fit: unset;
 }
 
-.expand-map-btn {
-    background: rgb(90 132 173);
-    border: none;
-    border-radius: 8px;
+
+.info-icon-wrapper {
+    position: absolute;
+    right: 16px;
+    top: 48px;
+    border-radius: 50%;
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    font-weight: bold;
-    color: rgb(255, 255, 255);
-    cursor: pointer;
+    justify-content: center;
+    cursor: help;
+    z-index: 5;
+}
+.info-icon-wrapper img {
+    width: 20px !important;
+    height: 20px !important;
+    }
+.day-collage .info-icon-wrapper {
+    right: 10px;
+    top: 42px;
 }
 
+
+.info-tooltip {
+    display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;     font-weight: 400;"
+}
+    
+.expand-map-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #ffffff !important;
+    border: none;
+    border-radius: 21px;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px dashed #1976d2;
+}
+
+
 .expand-map-btn img {
+    width: 20px;
+    height: 20px;  
+}
+.maplibregl-ctrl-bottom-right {
+    display: none;
+}
+.route-controls-bar .leaflet-touch .leaflet-control-attribution {
+    width: max-content;
+    bottom: 0px !important;
+    right: 2px !important;
+    padding: 3px;
+    border-radius: 5px;
+    font-weight: 400;
+}
 
+.leaflet-control-attribution  {
+       position: absolute !important;
+    bottom: 32px !important;
+    right: 0px !important;
+    margin: 0px !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    color: #00000080 !important;
+    z-index: 1005 !important;
+    pointer-events: auto !important;
+    width: max-content !important;
+}
+.leaflet-control-attribution a {
+    color: #00000080 !important;
+}
 
-    width: 16px;
-    height: 16px;
-
-  
+.leaflet-attribution-flag {
+    display: none !important;
 }
 .leaflet-popup-pane {
     z-index: 700;
@@ -6364,7 +6485,7 @@ ease;
   border: 1px solid #e1e4e8;
   padding: 6px 8px;
   border-radius: 6px;
-  display: none;
+  display: none !important;
   white-space: nowrap;
   overflow: auto;
 }
@@ -6454,14 +6575,11 @@ border-bottom:1px solid #ddd;
 
 
  .route-controls-bar {
-    display: flex;
-    gap: 8px;
-    margin: 10px 0 20px 0;
+        display: flex;
+    gap: 10px;
+    margin: 20px 0;
     flex-direction: column;
-    padding: 10px;
     border-radius: 6px;
-    background: #fafafa;
-    border: 1px solid #ddd;
     }
     .route-controls-bar .tt-travel-mode-set { margin: 0; }
     @media (max-width: 560px) {
@@ -6538,20 +6656,54 @@ border-bottom:1px solid #ddd;
       display: inline-block;
     }
 
-
-
-
-
-     .tt-scale-loader{    position: absolute;
+     .elev-animation {
+        position: absolute;
     left: 50%;
-    top: 40%;
+    margin-left: -15px;
+    top: 35%;
     transform: translate(-50%, -50%);
-    display: flex
-;
     align-items: center;
     gap: 10px;
     z-index: 5;
-    background: #ffffff;
+    background: #f8f8f8;
+    /* border: 1px solid #e0e0e0; */
+    border-radius: 10px;
+    padding: 10px 13px;
+    /* box-shadow: 0 4px 12px rgba(0, 0, 0, .08); */
+    font-size: 12px;
+    color: #8a4af3;
+    font-weight: 700;
+        }
+
+      .elev-animation .spinner{width: 20px;
+    height: 20px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #8a4af3;
+    border-radius: 50%;
+    animation: ttspin .9s linear infinite;
+}
+
+
+ .scale-bar-track.loading > *:not(.elev-animation) {
+            opacity: 0.4; 
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .scale-bar-track.loading .elev-animation {
+            opacity: 1 !important;
+        }
+
+
+
+     .tt-scale-loader{        position: absolute;
+    left: 50%;
+    margin-left: -15px;
+    top: 35%;
+    transform: translate(-50%, -50%);
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+    background: #f8f8f8;
     /* border: 1px solid #e0e0e0; */
     border-radius: 10px;
     padding: 10px 13px;
@@ -6559,6 +6711,7 @@ border-bottom:1px solid #ddd;
     font-size: 12px;
     color: #8a4af3;
     font-weight: 700;}
+
       .tt-scale-loader .spinner{width: 20px;
     height: 20px;
     border: 4px solid #e0e0e0;
@@ -6584,7 +6737,7 @@ border-bottom:1px solid #ddd;
 }
     @supports (height: 100dvh) { .scale-bar-track { bottom: auto; } }
     @media (max-width:768px) { .scale-bar-track { width: 100%;
-    right: -5px; } }
+   } }
     /* Distance baseline and ticks (top) */
    
     .scale-bar-tick { position:absolute; top:10px; width:1px; height:16px; background:#cfd8dc; }
@@ -6795,61 +6948,6 @@ ease;
 
 
 
-
-.map-layers-row {
-    display: flex
-;
-    gap: 6px;
-    justify-content: flex-start;
-    align-items: flex-end;
-    flex-direction: column;
-}
-
-.map-type-option {
-    cursor: pointer;
-    border-radius: 6px;
-    border: 2px solid #eee;
-    /* padding: 9px 13px 7px 13px; */
-    display: flex
-;
-    flex-direction: column;
-    align-items: center;
-    background: #fff;
-    transition: border 0.18s, box-shadow 0.18s;
-    position: relative;
-}
-
-.map-type-option.selected {
-  border: 2px solid #1976d2;
-    box-shadow: 0 2px 12px #1976d233;
-}
-
-.map-type-option img {
-      width: 18px;
-    height: 18px;
-    object-fit: cover;
-    border-radius: 4px;
-}
-
-.map-type-option span {
-  font-size: 0.8rem;
-    color: #222;
-    margin-top: 2px;
-    font-weight: 500;
-    display: none;
-}
-
-.map-type-option.selected::after {
-   content: "✔";
-    position: absolute;
-    top: -4px;
-    right: 0px;
-    color: #00bbfc;
-    font-size: 19px;
-    font-weight: bold;
-    pointer-events: none;
-}
-
 .visual .fav-heart {
   position: absolute;
     top: 12px;
@@ -6858,6 +6956,7 @@ ease;
     padding: 2px;
     user-select: none;
     border-radius: 10px;
+    cursor: pointer;
 }
 .visual .fav-heart.is-fav .fav-icon {
  
@@ -6951,17 +7050,30 @@ display: flex
   100% { transform: scale(1) translateY(0); opacity: 0.65; }
 }
 .loading-panel {
-  position: absolute;
-  left: 0; right: 0; top: 0; bottom: 0;
-  z-index: 1200;
-  display: none;
-  width: 100%; height: 100%; box-sizing: border-box;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0px;
-  padding: 0px 10px 120px 10px;
-  margin: 0 auto;
+position: absolute;
+    left: 0;
+    right: 0;
+    /* top: 0; */
+    /* bottom: 0; */
+    z-index: 1200;
+    display: none;
+    width: 100%;
+    /* height: 100%; */
+    box-sizing: border-box;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0px;
+    /* padding: 0px 10px 120px 10px; */
+    margin: 0 auto;
+    background: #ffffff;
+    max-width: 1200px;
+    /* width: 100%; */
+    display: grid;
+    max-width: 860px;
+    gap: 30px;
+    padding: 60px 10px;
+    margin: 0 auto;
 }
 .loading-text {
     text-align: center;
@@ -6973,6 +7085,7 @@ display: flex
 #loading-message {
   transition: opacity 0.5s;
   opacity: 1;
+  background: #ffffff;
 }
 /* TRIP LOADING */
 
@@ -6997,46 +7110,61 @@ display: flex
 .day-steps { min-height: 300px; }
 
 .route-info-banner {
-      position: absolute;
+position: absolute;
     top: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #2980d5;
-    color: #fff;
-    font-size: 15px;
-    padding: 10px 20px;
-    border-radius: 22px;
+    color: #ffffff;
     box-shadow: 0 4px 24px #0006;
     z-index: 1008;
-    display: flex
-;
-    align-items: center;
-    gap: 10px;
-    opacity: 0.97;
-    max-width: 90vw;
-    min-width: 210px;
+    opacity: 1;
+    min-width: 210px;   
+    gap: 0px;
+    padding: 6px 12px;
+    background: #8a4af3;
+    border-radius: 30px;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    display: block;
 }
 .route-info-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 23px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0 3px;
-  margin-left: 8px;
-  opacity: 0.8;
-  transition: opacity 0.2s;
+        background: none;
+    border: none;
+    color: #8a4af3;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0px 3px;
+    
+    padding-top: 1px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
 }
 .route-info-close:hover { opacity: 1; }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .route-info-banner {
-    font-size: 14px;
-    padding: 10px 14px 10px 12px;
-    top: 12px;
-    min-width: 170px;
-    max-width: 96vw;
+   position: absolute;
+
+        left: 15px;        
+        box-shadow: 0 4px 24px #0000000a;  
+        opacity: 1; 
+        gap: 0px;
+        padding: 12px 16px;       
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        font-weight: 600;
+        transform: none;
+        /* margin-top: -60px; */
+              margin: 0 auto;
+        width: -webkit-fill-available;
+        right: 15px;
+      
+                margin-top: -20px;
+                        text-align: center;
   }
 }
 
@@ -7050,9 +7178,6 @@ display: flex
   transform: scale(1);
 }
 
-.travel-item {
-
-}
 
 .distance-separator {
 
@@ -7068,7 +7193,7 @@ display: flex
 }
 
 .distance-separator .separator-line {
-  width: 48%;
+  width: 34%;
   height: 1px;
   background: #e2e2e2;
   margin: 0 auto 2px auto;
@@ -7109,13 +7234,15 @@ display: flex
     padding: 10px 10px 10px 0px;
 }
 #ai-chat-input {
-   padding: 10px;
-   border: none;
-   outline: none;
-   
-    border-radius: 6px;
-    font-size: 14px;
-    width: -webkit-fill-available;
+      padding: 10px 0px;
+    border-radius: 30px;
+    color: #000000;
+    outline: none;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    background: #ffffff;
+    font-size: 0.9rem;
+    width: inherit;
 }
 #ai-chat-send-btn {
         border: none;
@@ -7131,18 +7258,19 @@ display: flex
     height: 16px;
     }
 
-#ai-chat-messages {  
-    overflow-y: auto;        
-    font-size: 1em;
-    color: #1e293b;
-    line-height: 1.6;
+#ai-chat-messages {
+    flex: 1;            /* Input hariç tüm alanı kapla */
+    overflow-y: auto;   /* Sadece burası scroll olsun */
+    display: flex;
+    flex-direction: column;
     margin-bottom: 10px;
-      display: flex;
-  flex-direction: column;
+    padding-bottom: 10px;
+    
+    /* Mobil kaydırma hissiyatı için */
+    -webkit-overflow-scrolling: touch; 
 }
 #ai-chat-messages div {
-    margin: 10px 0px;     
-    padding: 16px;
+
     border-radius: 16px;
     width: fit-content;
 }
@@ -7155,18 +7283,64 @@ display: flex
     padding: 10px;
     border-radius: 10px;
 }
+/* --- ESKİ HATALI KISIM (Bunu Sil veya Değiştir) --- */
+/* #ai-chat-messages div { ... }  <-- BU KURALI SİLİYORUZ */
+
+
+/* --- YENİ DÜZELTİLMİŞ KISIMLAR --- */
+
+/* 1. Tüm mesaj baloncukları için ortak ayar */
+.chat-message {
+    margin: 8px 0px;      
+    padding: 12px 16px;
+    border-radius: 16px;
+    width: fit-content;
+    max-width: 85%;       /* Çok uzun metinlerde taşmasın */
+    display: flex;        /* Flexbox hizalama */
+    gap: 10px;            /* İkon ve yazı arası boşluk */
+    line-height: 1.5;
+}
+
+/* 2. AI Mesajı (Solda Resim, Sağda Yazı) */
 .ai-message {
     background: #f6f4ff;
-  color: #1e293b;
-  align-self: flex-start;
-  text-align: left;;
+    color: #1e293b;
+    align-self: flex-start; /* Sola yasla */
+    text-align: left;
+    align-items: flex-start; /* Resmi yukarı hizala */
+    display: flex;
+    flex-direction: row; /* DEĞİŞTİ: column -> row */
 }
+
+/* AI Resmi Ayarı (Aynen kalıyor) */
+.ai-message img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* AI mesajının yazı kısmı için column düzeni */
+.ai-message > :not(img) {
+    display: flex;
+    flex-direction: column; /* İçerik alt alta */
+    flex: 1;
+    gap: 8px;
+}
+
+/* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
 .user-message {
-   background: #e6f5ff;
-  color: #1e293b;
-  align-self: flex-end;
-  text-align: right;
+    background: #e6f5ff;
+    color: #1e293b;
+    align-self: flex-end;   /* Sağa yasla */
+    flex-direction: row-reverse; /* Emojiyi en sağa al, yazıyı sola al */
+    text-align: left;       /* Baloncuk sağda olsa bile içindeki yazı soldan aksın */
+    align-items: center;    /* Emojiyi dikeyde ortala */
 }
+
+
 
 .ai-input-wrapper {
         width: -webkit-fill-available;
@@ -7192,9 +7366,9 @@ ease-in-out;
 /* Form Konteyner */
 .form-container {
 text-align: center;
-    /* padding: 10px; */
+    padding: 4px;
     /* border-radius: 20px; */
-    height: calc(100vh - 160px);
+    height: calc(100vh - 200px);
     display: flex;
     flex-direction: column-reverse;
     justify-content: flex-start;
@@ -7303,8 +7477,236 @@ scrollbar-width: thin;
 .chat-message.ai-message li { margin-bottom: 6px; }
 .chat-message.ai-message strong { color: #1976d2; }
 
-#maplibre-3d-view {
-    height: 100% !important;
+
+
+/* Day X menu header */
+    .action-buttons-container { position: relative; display: flex; align-items: center; }
+    .action-menu-trigger {
+      appearance: none; border: 1px solid #ddd; background: #fff; color: #333;
+      border-radius: 8px; padding: 4px 8px; cursor: pointer; font-size: 16px; line-height: 1;
+    }
+    .action-menu { position: relative; }
+    .action-menu-list {
+      position: absolute; right: 0; top: calc(100% + 6px);
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      padding: 6px 0; min-width: 160px; z-index: 10005; display: none;
+    }
+    .action-menu.open .action-menu-list { display: block; }
+    .action-menu-item {
+      width: 100%; display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; background: transparent; border: none; text-align: left;
+      cursor: pointer; font-size: 14px; color: #333;
+    }
+    .action-menu-item:hover { background: #f5f7ff; }
+    .action-menu-item .icon { width: 18px; display: inline-block; }
+    /* Remove maddesi vurgulu (isteğe bağlı) */
+    .action-menu-item.remove { color: #c62828; }
+    .action-menu-item.remove:hover { background: #ffecec; }
+
+  .day-header {
+      display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-block-start: 0em;
+    margin-block-end: 1em;
+    }
+    .day-header .title-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+/* Day X menu header */
+
+
+
+
+/* --- Günlük Fotoğraf Kolajı --- */
+.day-hero-collage {
+    display: grid;
+    gap: 6px;
+    height: 220px; /* Kolaj yüksekliği */
+    width: 100%;
+    margin-bottom: 15px; /* Harita ile arasındaki boşluk */
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
+.collage-item {
+    position: relative;
+    overflow: hidden;
+    background: #f0f0f0; /* Yüklenirken gri fon */
+}
+
+.collage-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+    display: block;
+}
+
+.collage-item:hover img {
+    transform: scale(1.05); /* Üzerine gelince hafif zoom */
+}
+
+/* Şehir/Mekan İsmi Etiketi (Opsiyonel Şıklık) */
+.collage-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+/* --- Izgara Düzenleri --- */
+
+/* 1 Fotoğraf Varsa: Tam ekran */
+.day-hero-collage.grid-1 {
+    grid-template-columns: 1fr;
+}
+
+/* 2 Fotoğraf Varsa: Yarı yarıya */
+.day-hero-collage.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* 3 Fotoğraf Varsa: Sol büyük, sağ iki küçük */
+.day-hero-collage.grid-3 {
+    grid-template-columns: 2fr 1fr; /* Sol 2 birim, Sağ 1 birim */
+    grid-template-rows: 1fr 1fr;
+}
+
+/* Sol Büyük Fotoğraf */
+.day-hero-collage.grid-3 .item-0 {
+    grid-row: 1 / -1; /* İlk satırdan sona kadar kapla */
+    grid-column: 1;
+}
+
+/* Sağ Üst Küçük */
+.day-hero-collage.grid-3 .item-1 {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Sağ Alt Küçük */
+.day-hero-collage.grid-3 .item-2 {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+/* Mobilde hepsi alt alta olmasın, yine grid kalsın ama yükseklik azalsın */
+@media (max-width: 768px) {
+    .day-hero-collage {
+        height: 180px;
+    }
+}
+
+
+/* Note Marker Stili */
+.custom-marker-outer.note-marker {
+    background: #f57c00 !important; /* Turuncu renk */
+    border-color: #fff !important;
+}
+
+/* Note kartı için hafif sarı arka plan (isteğe bağlı) */
+.place-card.note-card {
+    background-color: #fffdeb;
+    border-left: 4px solid #f57c00;
+}
+.note-item {
+ width: 83% !important;
+    left: 12%;
+    position: relative !important;
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+   }
+
+
+/* En basit fix - direkt pozisyonlama */
+@media (max-width: 768px) {
+    /* Mira AI Sidebar için mobil düzen */
+    .sidebar-overlay.sidebar-login.open {
+        position: fixed !important;        
+        bottom: 0 !important;        
+        height: calc(100dvh - 100px) !important;
+        max-height: calc(100dvh - 100px) !important;
+        overflow: visible !important; /* DEĞİŞTİ: hidden -> visible */
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+        z-index: 1000;
+    }
     
+    /* Sidebar iç yapısı */
+    #sidebar-login {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        padding: 0 !important;
+        overflow: hidden !important; /* Buraya overflow ekle */
+    }
+    
+    /* AI Chat kutusu - TAM FLEXBOX */
+    #ai-chat-box {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        position: relative !important;
+        overflow: hidden !important; /* Bu önemli */
+    }
+    
+    /* Mesajlar alanı - SCROLLABLE */
+    #ai-chat-messages {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        
+        min-height: 0 !important;
+        /* height ve max-height KALDIR */
+    }
+    
+    /* AI Input alanı - STICKY ÇALIŞMASI İÇİN */
+    #ai-chat-box .ai-input-wrapper {
+        position: sticky !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: white !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+        z-index: 100 !important;
+        padding: 15px !important;
+        margin-top: auto !important;
+        flex-shrink: 0 !important; /* Bu önemli */
+    }
+    
+    /* Form container düzeni */
+    .form-container {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+    
+    /* Form content */
+    .form-content {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+}

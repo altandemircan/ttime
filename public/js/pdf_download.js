@@ -9,255 +9,786 @@ function downloadTripPlanPDF(tripKey) {
     doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
     
 
-  // Font & color ayarları
-  const defaultFont = 'Roboto';
-  const defaultFontStyle = 'normal';
-  const defaultFontSize = 15;
-  const titleFontSize = 22;
-  const itemTitleFontSize = 13;
-  const infoFontSize = 10;
-  const addressFontColor = '#737373';
+// --- AYARLAR ---
+    const primaryColor = '#8a4af3'; // Başlıklar, Day yazıları vs. MOR kalıyor
+    const accentColor = '#222222';
+    const subTextColor = '#666666';
+    const lightGray = '#f3f4f6';
+    const lineColor = '#e5e7eb';
+    const linkColor = '#2977f5'; 
+    
+    // --- MARKER RENKLERİ ---
+    const noteColor = '#f57f17';       // Note: Turuncu
+    const placeMarkerColor = '#d32f2f'; // Place: Kırmızı (İstediğin renk)
+    
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    const marginX = 14;
+    const timelineX = 24;
+    const contentX = 40; 
+    const contentWidth = pageWidth - contentX - marginX;
+    
+    let cursorY = 20;
+    const logoTargetWidth = 60; 
 
-  doc.setFont(defaultFont, defaultFontStyle);
-  doc.setFontSize(defaultFontSize);
-  doc.setTextColor('#222');
+    // --- STATUS OVERLAY ---
+    function showStatus(msg) {
+        let el = document.getElementById('pdf-status-overlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'pdf-status-overlay';
+            el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:15px 25px;border-radius:30px;z-index:99999;font-family:sans-serif;font-size:14px;box-shadow:0 4px 15px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;';
+            el.innerHTML = '<div class="spinner" style="width:16px;height:16px;border:2px solid #fff;border-top:2px solid transparent;border-radius:50%;animation:spin 1s linear infinite;"></div><span id="pdf-status-text"></span><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
+            document.body.appendChild(el);
+        }
+        const txt = document.getElementById('pdf-status-text');
+        if (txt) txt.textContent = msg;
+        console.log(`[PDF Process] ${msg}`);
+    }
 
-  const primaryColor = '#8a4af3';
-  const secondaryColor = '#737373';
-  const dividerColor = '#EFEFEF';
+    function hideStatus() {
+        const el = document.getElementById('pdf-status-overlay');
+        if (el) el.remove();
+    }
 
-  let y = 28;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 10;
-  const lineHeight = 9;
-  const logoWidth = 61.35;
-  const logoHeight = 9.75;
-  const imageWidth = 42;
-  const imageHeight = 28;
-  const imageTextGap = 10;
-  const minItemHeight = 30;
-  const bottomSafePadding = 30; // sayfa alt güvenlik payı
+    // --- YARDIMCI FONKSİYONLAR ---
+    function checkPageBreak(neededHeight) {
+        if (cursorY + neededHeight > pageHeight - 15) {
+            doc.addPage();
+            cursorY = 25; 
+            return true;
+        }
+        return false;
+    }
 
-  // --- YARDIMCI FONKSİYONLAR ---
-  async function addImage(imgSrc, x, y, w, h, fallbackColor = '#eee') {
-    return new Promise((resolve) => {
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        doc.addImage(img, 'PNG', x, y, w, h);
-        resolve();
-      };
-      img.onerror = () => {
-        doc.setDrawColor(fallbackColor);
-        doc.setFillColor(fallbackColor);
-        doc.rect(x, y, w, h, 'F');
-        resolve();
-      };
-      img.src = imgSrc;
+    function addFooter() {
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFont('Roboto', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor('#999');
+            const text = `Page ${i} of ${pageCount} - Triptime AI Trip Plan`;
+            const textWidth = doc.getTextWidth(text);
+            doc.text(text, (pageWidth - textWidth) / 2, pageHeight - 10);
+        }
+    }
+
+    function areAllPointsInTurkey(pts) {
+        return pts.every(p => {
+            const lat = p.location ? p.location.lat : p.lat;
+            const lng = p.location ? p.location.lng : p.lng;
+            return lat >= 35.81 && lat <= 42.11 && lng >= 25.87 && lng <= 44.57;
+        });
+    }
+
+    function getCurvedArcCoords(start, end) {
+        const lon1 = start[0];
+        const lat1 = start[1];
+        const lon2 = end[0];
+        const lat2 = end[1];
+
+        const offsetX = lon2 - lon1;
+        const offsetY = lat2 - lat1;
+        const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
+        const theta = Math.atan2(offsetY, offsetX);
+        
+        const thetaOffset = (Math.PI / 10); 
+        const r2 = (r / 2.0) / Math.cos(thetaOffset);
+        const theta2 = theta + thetaOffset;
+        
+        const controlX = (r2 * Math.cos(theta2)) + lon1;
+        const controlY = (r2 * Math.sin(theta2)) + lat1;
+        
+        const coords = [];
+        for (let t = 0; t < 1.01; t += 0.05) {
+            const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
+            const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
+            coords.push([x, y]); 
+        }
+        return coords;
+    }
+
+    async function addLogo(imgSrc, x, y, targetWidth) {
+        return new Promise((resolve) => {
+            const img = new window.Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                const ratio = img.height / img.width;
+                const targetHeight = targetWidth * ratio;
+                try { doc.addImage(img, 'PNG', x, y, targetWidth, targetHeight); } catch(e){}
+                resolve(targetHeight);
+            };
+            img.onerror = () => resolve(15);
+            img.src = imgSrc;
+        });
+    }
+
+    async function addSmartImage(imgSrc, x, y, w, h, radius = 0) {
+        return new Promise((resolve) => {
+            const img = new window.Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scale = 4; 
+                const targetW = w * scale;
+                const targetH = h * scale;
+                const r = radius * scale;
+                
+                canvas.width = targetW; 
+                canvas.height = targetH;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+
+                if (r > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(r, 0);
+                    ctx.lineTo(targetW - r, 0);
+                    ctx.quadraticCurveTo(targetW, 0, targetW, r);
+                    ctx.lineTo(targetW, targetH - r);
+                    ctx.quadraticCurveTo(targetW, targetH, targetW - r, targetH);
+                    ctx.lineTo(r, targetH);
+                    ctx.quadraticCurveTo(0, targetH, 0, targetH - r);
+                    ctx.lineTo(0, r);
+                    ctx.quadraticCurveTo(0, 0, r, 0);
+                    ctx.closePath();
+                    ctx.clip();
+                }
+
+                const sourceW = img.naturalWidth;
+                const sourceH = img.naturalHeight;
+                const targetRatio = w / h;
+                const sourceRatio = sourceW / sourceH;
+                let sx, sy, sWidth, sHeight;
+
+                if (sourceRatio > targetRatio) {
+                    sHeight = sourceH;
+                    sWidth = sourceH * targetRatio;
+                    sx = (sourceW - sWidth) / 2;
+                    sy = 0;
+                } else {
+                    sWidth = sourceW;
+                    sHeight = sourceW / targetRatio;
+                    sx = 0;
+                    sy = (sourceH - sHeight) / 2;
+                }
+                ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
+                try {
+                    const dataUrl = canvas.toDataURL('image/png'); 
+                    doc.addImage(dataUrl, 'PNG', x, y, w, h);
+                } catch (e) { }
+                resolve();
+            };
+            img.onerror = () => {
+                doc.setDrawColor('#f0f0f0');
+                doc.setFillColor('#f8f8f8');
+                doc.roundedRect(x, y, w, h, radius, radius, 'FD');
+                resolve();
+            };
+            img.src = imgSrc;
+        });
+    }
+
+// --- 1. decodePolyline FONKSİYONU (Dosyanın en üstünde olmalı) ---
+function decodePolyline(str, precision) {
+    var index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0,
+        byte = null, latitude_change, longitude_change, factor = Math.pow(10, precision || 5);
+    while (index < str.length) {
+        byte = null; shift = 0; result = 0;
+        do {
+            byte = str.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20);
+        latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        shift = result = 0;
+        do {
+            byte = str.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20);
+        longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += latitude_change;
+        lng += longitude_change;
+        coordinates.push([lat / factor, lng / factor]);
+    }
+    return coordinates.map(c => [c[1], c[0]]); 
+};
+
+// --- 2. GÜNCELLENMİŞ generateHighResMap FONKSİYONU ---
+async function generateHighResMap(day, dayItems, trip) {
+    return new Promise(async (resolve) => {
+        const validPoints = dayItems.filter(i => i.location && !isNaN(i.location.lat));
+        
+        if (validPoints.length === 0 || typeof maplibregl === 'undefined') { 
+            resolve(null); return; 
+        }
+
+        let isResolved = false;
+        
+        // Timeout 20sn
+        const timeoutID = setTimeout(() => {
+            if (!isResolved) {
+                isResolved = true;
+                const el = document.getElementById(`pdf-map-gen-day${day}`);
+                if(el) el.remove();
+                resolve(null);
+            }
+        }, 20000); 
+
+        const width = 1500; 
+        const height = 1000; 
+        const container = document.createElement('div');
+        container.id = `pdf-map-gen-day${day}`;
+        container.style.width = width + 'px';
+        container.style.height = height + 'px';
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '-9999px';
+        document.body.appendChild(container);
+
+        const lats = validPoints.map(p => p.location.lat);
+        const lngs = validPoints.map(p => p.location.lng);
+        const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+        const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
+        try {
+            const map = new maplibregl.Map({
+                container: container,
+                style: 'https://tiles.openfreemap.org/styles/positron', 
+                center: [centerLng, centerLat],
+                zoom: 12,
+                preserveDrawingBuffer: true,
+                interactive: false,
+                attributionControl: false,
+                fadeDuration: 0
+            });
+
+            // --- ROTA VERİSİ HAZIRLAMA ---
+            let routeCoordinates = null;
+            const isTurkey = areAllPointsInTurkey(validPoints);
+
+            // 1. Modu Belirle
+            let selectedMode = 'driving'; 
+            
+            const modeContainer = document.getElementById(`tt-travel-mode-set-day${day}`);
+            if (modeContainer) {
+                const activeBtn = modeContainer.querySelector('button.active');
+                if (activeBtn) selectedMode = activeBtn.getAttribute('data-mode') || 'driving';
+            } else if (trip.travelModes && trip.travelModes[day]) {
+                 selectedMode = trip.travelModes[day];
+            } else if (day > 1 && trip.travelModes && trip.travelModes[1]) {
+                selectedMode = trip.travelModes[1];
+            }
+
+            console.log(`[PDF Map] Day ${day} (${selectedMode}) - Points: ${validPoints.length}`);
+
+            // 2. Rota Verisini Al (GeoJSON veya Decode Edilmiş Polyline)
+            if (trip.directionsPolylines && trip.directionsPolylines[day] && Array.isArray(trip.directionsPolylines[day]) && trip.directionsPolylines[day].length > 0) {
+                routeCoordinates = trip.directionsPolylines[day].map(p => [p.lng, p.lat]);
+            } 
+            else if (isTurkey && validPoints.length > 1) {
+                try {
+                    const coordsString = validPoints.map(p => `${p.location.lng},${p.location.lat}`).join(';');
+                    let osrmProfile = 'driving';
+                    if (selectedMode === 'walking') osrmProfile = 'walking'; 
+                    if (selectedMode === 'cycling') osrmProfile = 'cycling';
+
+                    // overview=simplified ile hafif veri istiyoruz
+                    const url = `/route/v1/${osrmProfile}/${coordsString}?overview=simplified&geometries=polyline`;
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                        const geom = data.routes[0].geometry;
+                        if (typeof geom === 'string') {
+                            routeCoordinates = decodePolyline(geom, 5); // String ise decode et
+                        } else if (geom.coordinates) {
+                            routeCoordinates = geom.coordinates; // GeoJSON ise direkt al
+                        }
+                    }
+                } catch (err) { console.warn("Route fetch error", err); }
+            }
+
+            // Basitleştirme (PDF için 500 nokta yeterli)
+            if (routeCoordinates && routeCoordinates.length > 500) {
+                const step = Math.ceil(routeCoordinates.length / 500);
+                routeCoordinates = routeCoordinates.filter((_, index) => index % step === 0);
+            }
+
+            // Uçuş Modu (Fly Mode) için veri hazırlığı (Eğer rota yoksa)
+            let flyCoordinates = null;
+            if (!routeCoordinates && validPoints.length > 1) {
+                flyCoordinates = [];
+                for (let i = 0; i < validPoints.length - 1; i++) {
+                    const start = [validPoints[i].location.lng, validPoints[i].location.lat];
+                    const end = [validPoints[i+1].location.lng, validPoints[i+1].location.lat];
+                    flyCoordinates = flyCoordinates.concat(getCurvedArcCoords(start, end));
+                }
+            }
+
+            // --- Bounds Ayarı ---
+            const bounds = new maplibregl.LngLatBounds();
+            validPoints.forEach(p => bounds.extend([p.location.lng, p.location.lat]));
+            if (routeCoordinates) routeCoordinates.forEach(pt => bounds.extend(pt));
+            if (flyCoordinates) flyCoordinates.forEach(pt => bounds.extend(pt));
+            
+            map.fitBounds(bounds, { padding: 100, animate: false });
+
+            // --- RENDER & MANUAL DRAWING ---
+            map.once('idle', async () => {
+                 if (isResolved) return;
+                 
+                 // Harita zeminini beklemek için kısa süre
+                 await new Promise(r => setTimeout(r, 600)); 
+
+                 const mapCanvas = map.getCanvas();
+                 const compositeCanvas = document.createElement('canvas');
+                 compositeCanvas.width = width;
+                 compositeCanvas.height = height;
+                 const ctx = compositeCanvas.getContext('2d');
+                 
+                 // 1. Harita Zeminini Yapıştır
+                 ctx.drawImage(mapCanvas, 0, 0);
+                 
+                 // 2. Rota Çizgisini MANUEL Çiz (Harita kütüphanesine güvenmiyoruz)
+                 const pointsToDraw = routeCoordinates || flyCoordinates;
+                 
+                 if (pointsToDraw && pointsToDraw.length > 1) {
+                     ctx.beginPath();
+                     ctx.lineJoin = 'round';
+                     ctx.lineCap = 'round';
+                     ctx.strokeStyle = '#1976d2'; // Rota Rengi
+                     
+                     // Walk modu için daha ince, diğerleri kalın
+                     ctx.lineWidth = (selectedMode === 'walking') ? 5 : 7;
+                     
+                     // Walk modu için kesikli çizgi
+                     if (selectedMode === 'walking' || (!routeCoordinates && flyCoordinates)) {
+                         ctx.setLineDash([15, 15]);
+                     } else {
+                         ctx.setLineDash([]);
+                     }
+
+                     // Koordinatları Canvas X,Y'ye çevirip çiz
+                     pointsToDraw.forEach((pt, i) => {
+                         const pos = map.project(pt); // [lng, lat] -> {x, y}
+                         if (i === 0) ctx.moveTo(pos.x, pos.y);
+                         else ctx.lineTo(pos.x, pos.y);
+                     });
+                     
+                     ctx.stroke();
+                     ctx.setLineDash([]); // Dash'i sıfırla
+                 }
+                 
+                 // 3. Markerları Çiz
+                 let mapMarkerCounter = 1; // Harita üzerinde sadece yerleri numaralandır
+                 validPoints.forEach((pt) => {
+                     // Note kontrolü (Eğer haritada note göstermek istemiyorsanız burayı filtreleyebilirsiniz)
+                     // Ancak genelde haritada sadece lokasyonu olanlar görünür.
+                     // Note'ların lokasyonu varsa 'N' yazabiliriz.
+                     
+                     const isNote = pt.category === 'Note';
+                     const lngLat = [pt.location.lng, pt.location.lat];
+                     const pos = map.project(lngLat); 
+                     const x = pos.x; const y = pos.y; const r = 24;
+                     
+                     // Gölge
+                     ctx.beginPath(); ctx.arc(x, y + 4, r, 0, 2 * Math.PI); 
+                     ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+                     
+                     // Beyaz Daire
+                     ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); 
+                     ctx.fillStyle = '#ffffff'; ctx.fill();
+                     
+                     // Renkli Daire (Not ise turuncu, Yer ise kırmızı)
+                     const pinColor = isNote ? '#f57f17' : '#d32f2f'; // Burada da kırmızı kullanıyoruz
+                     ctx.beginPath(); ctx.arc(x, y, r - 4, 0, 2 * Math.PI); 
+                     ctx.fillStyle = pinColor; ctx.fill();
+                     
+                     // Numara veya N
+                     const pinText = isNote ? 'N' : mapMarkerCounter.toString();
+                     if (!isNote) mapMarkerCounter++;
+
+                     ctx.fillStyle = '#ffffff'; 
+                     ctx.font = 'bold 20px Roboto, Arial, sans-serif'; 
+                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                     ctx.fillText(pinText, x, y + 1);
+                 });
+
+                 clearTimeout(timeoutID);
+                 isResolved = true;
+                 
+                 try {
+                     const dataURL = compositeCanvas.toDataURL('image/png');
+                     map.remove();
+                     container.remove();
+                     resolve(dataURL);
+                 } catch (e) {
+                     container.remove();
+                     resolve(null);
+                 }
+            });
+
+        } catch (err) {
+             if (!isResolved) {
+                clearTimeout(timeoutID);
+                isResolved = true;
+                container.remove();
+                resolve(null);
+            }
+        }
     });
-  }
-
-  function addDivider(yPos) {
-    doc.setDrawColor(dividerColor);
-    doc.setLineWidth(0.35);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    return yPos + 7;
-  }
-
-  function addFooter(text) {
-    doc.setFont(defaultFont, defaultFontStyle);
-    doc.setFontSize(8);
-    doc.setTextColor(secondaryColor);
-    const textWidth = doc.getTextWidth(text);
-    doc.text(text, (pageWidth - textWidth) / 2, doc.internal.pageSize.getHeight() - 10);
-  }
-
-  // Adresi splitTextToSize ile yaz, place adı olmadan
-  function addAddress(address, x, yPos, width) {
-    if (address) {
-      doc.setFont(defaultFont, 'normal');
-      doc.setFontSize(infoFontSize);
-      doc.setTextColor(addressFontColor);
-      const addressText = `Address: ${address}`;
-      const wrappedAddress = doc.splitTextToSize(addressText, width);
-      wrappedAddress.forEach((line) => {
-        doc.text(line, x, yPos);
-        yPos += lineHeight;
-      });
-    }
-    return yPos;
-  }
-
-  // Bu item'ın yükseklik tahminini yap (kesilmesin diye)
-  function estimateItemHeight(item, textWidth) {
-    // Başlık yüksekliği (tek satır varsayımı + küçük boşluk)
-    const titleBlock = lineHeight + 3;
-
-    // Adres satırları
-    const addrLines = item.address
-      ? doc.splitTextToSize(`Address: ${item.address}`, textWidth).length
-      : 0;
-    const addrBlock = addrLines * lineHeight + 2;
-
-    // Working hours satırı (varsa)
-    const hoursBlock =
-      item.opening_hours && item.opening_hours !== "No working hours info"
-        ? (lineHeight + 2)
-        : 0;
-
-    // İç padding
-    const innerPad = 8;
-
-    // Toplam text alanı
-    const textTotal = titleBlock + addrBlock + hoursBlock + innerPad;
-
-    // Görsel ve min yükseklikle karşılaştır
-    const contentHeight = Math.max(imageHeight, minItemHeight, textTotal);
-
-    // Divider + boşluk ekle
-    const afterDivider = 7; // addDivider ekliyor
-    return contentHeight + afterDivider;
-  }
-
-  // Sayfa dolduysa yeni sayfaya geç
-  function ensurePageSpace(requiredHeight) {
-    if (y + requiredHeight > pageHeight - bottomSafePadding) {
-      doc.addPage();
-      y = 28;
-      return true; // sayfa değişti
-    }
-    return false;
-  }
-
-  // --- VERİYİ AL ---
-  let trip = null;
-  if (tripKey) {
-    const allTrips = (typeof getAllSavedTrips === 'function') ? getAllSavedTrips() : {};
-    trip = allTrips[tripKey];
-  }
-  if (!trip || !trip.cart) {
-    alert("Trip is empty or not found!");
-    return;
-  }
-
-  // --- PDF OLUŞTUR ---
-  (async function generatePDF() {
-    // LOGO
-    await addImage('img/triptime_pdf.png', margin, y, logoWidth, logoHeight, '#f8f8f8');
-    y += logoHeight + 13;
-
-    // Başlık
-    doc.setFont(defaultFont, 'bold');
-    doc.setFontSize(titleFontSize);
-    doc.setTextColor(primaryColor);
-    doc.text(trip.title || "Trip Plan", margin, y);
-    y += titleFontSize + 4;
-
-    // Tarih
-doc.setFontSize(defaultFontSize);
-doc.setFont(defaultFont, 'bold');
-doc.setTextColor(secondaryColor);
-doc.text(`Generated on: ${new Date().toLocaleDateString('en-US')}`, margin, y);
-
-// Tarihin altına uyarı (adres fontu büyüklüğünde)
-y += lineHeight; // bir satır alta
-doc.setFont(defaultFont, 'normal');
-doc.setFontSize(infoFontSize);            // adres fontu büyüklüğü
-doc.setTextColor(addressFontColor);       // istersen secondaryColor da kullanabilirsin
-doc.text(
-  "Images were fetched from an API by keyword matching. They may not reflect reality.",
-  margin,
-  y
-);
-
-// Eski akıştaki +8 boşluğu koruyalım
-y += 8;
-
-// Divider
-y = addDivider(y);
-
-    // Günler
-    const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
-    for (let day = 1; day <= days; day++) {
-      // Day header basmadan önce de yüksekliği kontrol et (header + divider sığsın)
-      const dayHeaderBlock = (lineHeight + 6) /* "Day X" satırı */ + 7 /* divider */;
-      if (ensurePageSpace(dayHeaderBlock)) {
-        // yeni sayfadaysak sadece devam
-      }
-
-      // Day Header
-      y += 10;
-      doc.setFont(defaultFont, 'bold');
-      doc.setFontSize(17);
-      doc.setTextColor(primaryColor);
-      doc.text(`Day ${day}`, margin, y);
-      y += lineHeight + 6;
-
-      // Travel mode KALDIRILDI
-
-      // Divider
-      y = addDivider(y);
-
-      // Mekanlar/aktiviteler
-      const dayItems = trip.cart.filter(item => item.day === day);
-      for (let idx = 0; idx < dayItems.length; idx++) {
-        const item = dayItems[idx];
-
-        // Bu item'ın yükseklik tahmini ile önce sayfa taşmasını kontrol et
-        const infoX = margin + imageWidth + imageTextGap;
-        const textWidth = pageWidth - margin - infoX;
-        const required = estimateItemHeight(item, textWidth);
-
-        if (ensurePageSpace(required)) {
-          // Yeni sayfaya geçtik: Day header'ı tekrar bas (travel mode yok)
-          y += 10;
-          doc.setFont(defaultFont, 'bold');
-          doc.setFontSize(17);
-          doc.setTextColor(primaryColor);
-          doc.text(`Day ${day}`, margin, y);
-          y += lineHeight + 6;
-          y = addDivider(y);
-        }
-
-        // Artık item güvenle sığar; çiz
-        const itemYStart = y;
-        let infoY = itemYStart;
-
-        // Resim
-        if (item.image) {
-          await addImage(item.image, margin, infoY, imageWidth, imageHeight, '#fafafa');
-        }
-
-        // Mekan adı
-        doc.setFont(defaultFont, 'bold');
-        doc.setFontSize(itemTitleFontSize);
-        doc.setTextColor('#222');
-        doc.text(item.name || "Place", infoX, infoY + 6);
-
-        infoY += lineHeight + 3;
-        doc.setFont(defaultFont, 'normal');
-        doc.setFontSize(infoFontSize);
-
-        // Address (sadece adres, isim yok, satırda taşarsa otomatik alt satır)
-        infoY = addAddress(item.address, infoX, infoY + 2, textWidth);
-
-        // Çalışma saatleri
-       if (item.opening_hours && item.opening_hours !== "No working hours info") {
-  doc.setTextColor(secondaryColor);
-  doc.text(`Working hours: ${item.opening_hours}`, infoX, infoY);
-  infoY += lineHeight; // +2 yok, +6 ön boşluk yok
 }
 
-        // Divider ve padding
-        y = Math.max(itemYStart + imageHeight, infoY + 2, itemYStart + minItemHeight);
-        y = addDivider(y);
-      }
-
-      y += 12; // GÜN SONU padding
+    // --- ANA AKIŞ ---
+    let trip = null;
+    if (tripKey) {
+        const allTrips = (typeof getAllSavedTrips === 'function') ? getAllSavedTrips() : {};
+        trip = allTrips[tripKey];
+    }
+    if (!trip || !trip.cart) {
+        alert("Trip data not found.");
+        return;
     }
 
-    addFooter("© Copyright Triptime AI - Triptime AI PDF Viewer");
-    doc.save((trip.title || "trip_plan") + ".pdf");
-  })();
+    (async function render() {
+        showStatus("Preparing PDF Layout...");
+
+        // --- HEADER ---
+        const renderLogoH = await addLogo('img/triptime_pdf.png', marginX, cursorY, logoTargetWidth);
+        cursorY += renderLogoH + 12;
+
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(primaryColor);
+        const title = trip.title || "Trip Plan";
+        const titleLines = doc.splitTextToSize(title, pageWidth - (marginX * 2));
+        doc.text(titleLines, marginX, cursorY);
+        cursorY += (titleLines.length * 10) + 4;
+
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(subTextColor);
+        const dateStr = new Date().toLocaleDateString('en-US'); 
+        doc.text(`Generated on: ${dateStr}`, marginX, cursorY);
+        cursorY += 6;
+
+        doc.setFont('Roboto', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor('#999');
+        const disclaimer = "Images were fetched from an API by keyword matching. They may not reflect reality.";
+        const disclaimerLines = doc.splitTextToSize(disclaimer, pageWidth - (marginX * 2));
+        doc.text(disclaimerLines, marginX, cursorY);
+        
+        cursorY += (disclaimerLines.length * 5) + 10;
+
+        doc.setDrawColor('#e0e0e0');
+        doc.setLineWidth(0.5);
+        doc.line(marginX, cursorY - 5, pageWidth - marginX, cursorY - 5);
+
+        // --- AI INFORMATION SECTION ---
+        const aiData = trip.aiData || (trip.cart && trip.cart.aiData) || window.lastTripAIInfo;
+
+        if (aiData && (aiData.summary || aiData.tip || aiData.highlight)) {
+            cursorY += 8; 
+
+            // Emojileri temizle
+            const clean = (txt) => (txt || "").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "").trim();
+            
+            const summaryText = clean(aiData.summary);
+            const tipText = clean(aiData.tip);
+            const highlightText = clean(aiData.highlight);
+
+            // Metin alanı genişliği
+            const labelWidth = 22; 
+            const textAreaWidth = contentWidth - labelWidth - 5; 
+
+            // Font ayarla
+            doc.setFont('Roboto', 'normal');
+            doc.setFontSize(10);
+            
+            const sumLines = doc.splitTextToSize(summaryText, textAreaWidth);
+            const tipLines = doc.splitTextToSize(tipText, textAreaWidth);
+            const highLines = doc.splitTextToSize(highlightText, textAreaWidth);
+
+            // Kutunun toplam yüksekliğini hesapla
+            const lineHeight = 5;
+            let boxHeight = 6; 
+            if (summaryText) boxHeight += (sumLines.length * lineHeight) + 3;
+            if (tipText) boxHeight += (tipLines.length * lineHeight) + 3;
+            if (highlightText) boxHeight += (highLines.length * lineHeight) + 3;
+
+            // Sayfa sonu kontrolü
+            checkPageBreak(boxHeight + 10);
+
+            // Arka plan kutusunu çiz
+            doc.setFillColor('#f9fafb'); 
+            doc.setDrawColor('#e5e7eb');
+            doc.setLineWidth(0.1);
+            doc.roundedRect(marginX, cursorY, pageWidth - (marginX * 2), boxHeight, 3, 3, 'FD');
+
+            let currentAiY = cursorY + 6;
+
+            // Satır Yazdırma Fonksiyonu
+            const printAiItem = (label, lines, labelColor) => {
+                if (!lines || lines.length === 0 || lines[0] === "") return;
+                
+                doc.setFont('Roboto', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(labelColor);
+                doc.text(label, marginX + 4, currentAiY);
+
+                doc.setFont('Roboto', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(accentColor);
+                doc.text(lines, marginX + labelWidth + 4, currentAiY);
+
+                currentAiY += (lines.length * lineHeight) + 3;
+            };
+
+            // Yazdır
+            printAiItem("SUMMARY:", sumLines, '#374151');
+            printAiItem("TIP:", tipLines, '#059669');
+            printAiItem("HIGHLIGHT:", highLines, '#d97706');
+
+            // İmleci aşağı kaydır
+            cursorY += boxHeight + 10;
+        }
+
+        // --- CONTENT ---
+        const days = trip.days || Math.max(...trip.cart.map(i => i.day || 1));
+
+        for (let day = 1; day <= days; day++) {
+            const dayItems = trip.cart.filter(item => item.day === day);
+            
+            checkPageBreak(90);
+
+            // GÜN BAŞLIĞI
+            doc.setFillColor(lightGray);
+            doc.setDrawColor(lightGray);
+            doc.roundedRect(marginX, cursorY, 24, 8, 3, 3, 'FD'); 
+            doc.setFont('Roboto', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(primaryColor);
+            doc.text(`DAY ${day}`, marginX + 12, cursorY + 4, { align: 'center', baseline: 'middle' });
+            cursorY += 12; 
+
+            // HARİTA RENDER (3x2 Oran)
+            if (dayItems.length > 0) {
+                showStatus(`Generating Map for Day ${day}...`);
+                const highResMapUrl = await generateHighResMap(day, dayItems, trip);
+                
+                if (highResMapUrl) {
+                    const mapWidth = pageWidth - (marginX * 2);
+                    const mapHeight = mapWidth / 1.5; 
+                    await addSmartImage(highResMapUrl, marginX, cursorY, mapWidth, mapHeight, 4);
+                    cursorY += mapHeight + 15;
+                } else {
+                    cursorY += 5; 
+                }
+            }
+            
+            if (dayItems.length === 0) {
+                doc.setFont('Roboto', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(subTextColor);
+                doc.text("No plans added for this day.", contentX, cursorY);
+                cursorY += 15;
+                continue;
+            }
+
+            // MEKANLAR (VE NOTLAR)
+            showStatus(`Processing Day ${day} Items...`);
+            
+            let placeCounter = 1; // Sadece Place itemlar için sayaç
+
+            for (let i = 0; i < dayItems.length; i++) {
+                const item = dayItems[i];
+                const isNote = item.category === "Note"; // Note kontrolü
+
+                // Note ise ekstra girinti ver
+                const indentX = isNote ? 12 : 0; // Notlar 12mm içeride
+                const currentMarkerX = timelineX + indentX;
+                const currentContentX = contentX + indentX;
+
+                // --- YÜKSEKLİK HESAPLAMA ---
+                let itemHeight = 40;
+                let noteLines = [];
+                let addressLines = 0;
+                let webLines = 0;
+
+                doc.setFontSize(10); 
+
+                if (isNote) {
+                    let cleanNote = item.noteDetails ? item.noteDetails.replace(/<[^>]*>?/gm, '') : item.name;
+                    noteLines = doc.splitTextToSize(cleanNote, contentWidth - 45); 
+                    itemHeight = Math.max(30, 20 + (noteLines.length * 5)); 
+                } else {
+                    addressLines = item.address ? doc.splitTextToSize(item.address, contentWidth - 45).length : 0;
+                    webLines = item.website ? doc.splitTextToSize(`Web: ${item.website}`, contentWidth - 45).length : 0;
+                    itemHeight = Math.max(40, 24 + (addressLines * 5) + (webLines * 5)); 
+                }
+
+                checkPageBreak(itemHeight);
+
+                // --- DEĞİŞKENLER (BURADA TANIMLANIYOR - HATA DÜZELTİLDİ) ---
+                const isLastItem = (i === dayItems.length - 1);
+                const circleCenterY = cursorY + 7; 
+                // --------------------------------------------------------
+
+                // --- TIMELINE ÇİZGİSİ ---
+                if (!isLastItem) {
+                    doc.setDrawColor(lineColor);
+                    doc.setLineWidth(1.0); 
+                    doc.line(timelineX, circleCenterY + 3.5, timelineX, cursorY + itemHeight);
+                }
+
+                // Note için bağlantı çizgisi
+                if (isNote) {
+                    doc.setDrawColor(lineColor);
+                    doc.setLineWidth(1.0);
+                    // Badge genişliğinin yarısı (6mm) kadar geriden başlat
+                    doc.line(timelineX, circleCenterY, currentMarkerX - 6, circleCenterY);
+                }
+
+                // --- MARKER ÇİZİMİ ---
+                // Eğer note ise noteColor, değilse YENİ KIRMIZI RENK (placeMarkerColor)
+                doc.setFillColor(isNote ? noteColor : placeMarkerColor);
+                
+                doc.setDrawColor('#ffffff'); 
+                doc.setLineWidth(1);
+
+                if (isNote) {
+                    // --- NOTE: OVAL KUTU (BADGE) ---
+                    const badgeW = 12;
+                    const badgeH = 5;
+                    const badgeX = currentMarkerX - (badgeW / 2);
+                    const badgeY = circleCenterY - (badgeH / 2);
+                    
+                    doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
+                    
+                    doc.setFont('Roboto', 'bold');
+                    doc.setFontSize(8); 
+                    doc.setTextColor('#ffffff');
+                    doc.text("NOTE", currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
+                } else {
+                    // --- NORMAL ITEM: DAİRE ---
+                    doc.circle(currentMarkerX, circleCenterY, 3.5, 'FD');
+                    
+                    doc.setFont('Roboto', 'bold');
+                    doc.setFontSize(7);
+                    doc.setTextColor('#ffffff');
+                    doc.text(String(placeCounter), currentMarkerX, circleCenterY, { align: 'center', baseline: 'middle' });
+                    
+                    placeCounter++;
+                }
+
+                // --- İÇERİK ÇİZİMİ ---
+                
+                // NOT İÇERİĞİ
+                if (isNote) {
+                    doc.setFont('Roboto', 'normal'); 
+                    doc.setFontSize(10);
+                    doc.setTextColor('#444'); 
+                    
+                    let textY = cursorY + 5;
+                    if (item.name && item.name !== "Note") {
+                        doc.setFont('Roboto', 'bold');
+                        doc.text(item.name, currentContentX, textY);
+                        textY += 5;
+                        doc.setFont('Roboto', 'normal');
+                    }
+                    
+                    doc.text(noteLines, currentContentX, textY);
+                    
+                    cursorY += itemHeight + 8;
+                    continue; 
+                }
+
+                // NORMAL MEKAN İÇERİĞİ
+                const imgSize = 35;
+                const imgY = cursorY; 
+
+                if (item.image) {
+                    await addSmartImage(item.image, contentX, imgY, imgSize, imgSize, 4);
+                }
+
+                const textStartX = contentX + imgSize + 8; 
+                let textCursorY = cursorY + 5; 
+
+                doc.setFont('Roboto', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(accentColor);
+
+                let displayName = item.name;
+                if (!displayName || displayName.trim() === "") {
+                    displayName = item.title || 
+                                  (item.properties && item.properties.name) || 
+                                  (item.properties && item.properties.address_line1) ||
+                                  "Unknown Place";
+                }
+
+                const displayLines = doc.splitTextToSize(displayName, contentWidth - imgSize - 10);
+                doc.text(displayLines, textStartX, textCursorY);
+
+                textCursorY += (displayLines.length * 5) + 2;
+
+                if (item.category) {
+                    doc.setFont('Roboto', 'bold');
+                    doc.setFontSize(11); 
+                    doc.setTextColor(primaryColor);
+                    doc.text(item.category.toUpperCase(), textStartX, textCursorY);
+                    textCursorY += 5;
+                }
+
+                if (item.address) {
+                    doc.setFont('Roboto', 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(subTextColor);
+                    const addrText = doc.splitTextToSize(item.address, contentWidth - imgSize - 10);
+                    doc.text(addrText, textStartX, textCursorY);
+                    textCursorY += (addrText.length * 4.5);
+                }
+
+                if (item.opening_hours && item.opening_hours !== "No working hours info") {
+                    doc.setFont('Roboto', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor('#888');
+                    const hoursText = doc.splitTextToSize(`Open: ${item.opening_hours}`, contentWidth - imgSize - 10);
+                    doc.text(hoursText, textStartX, textCursorY + 2);
+                    textCursorY += 4.5;
+                }
+
+                if (item.website) {
+                    const dotRadius = 1; 
+                    const dotX = textStartX + dotRadius;
+                    const dotCenterY = textCursorY + 4.5 - (1 * dotRadius); 
+                    
+                    doc.setFillColor(linkColor);
+                    doc.circle(dotX, dotCenterY, dotRadius, 'F'); 
+
+                    doc.setFont('Roboto', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(linkColor);
+                    
+                    const textAfterDotX = dotX + dotRadius + 1; 
+                    const websiteText = doc.splitTextToSize(`${item.website}`, contentWidth - imgSize - 10 - (2 * dotRadius));
+                    
+                    doc.text(websiteText, textAfterDotX, textCursorY + 4.5);
+                    textCursorY += (websiteText.length * 4.5);
+                }
+                cursorY += itemHeight + 8; 
+            }
+            cursorY += 8; 
+        }
+
+        addFooter();
+        showStatus("Finalizing PDF...");
+        doc.save(`${trip.title || 'Trip_Plan'}.pdf`);
+        hideStatus();
+    })();
 }

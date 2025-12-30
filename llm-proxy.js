@@ -1,76 +1,140 @@
 const express = require('express');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
-// Plan summary endpoint
+// --- AYARLAR ---
+const CACHE_FILE = path.join(__dirname, 'ai_cache_db.json');
+
+// --- BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
+let aiCache = {};
+if (fs.existsSync(CACHE_FILE)) {
+    try {
+        const rawData = fs.readFileSync(CACHE_FILE, 'utf8');
+        aiCache = JSON.parse(rawData);
+        console.log(`[AI SERVER] ${Object.keys(aiCache).length} kayıt diskten yüklendi.`);
+    } catch (e) {
+        aiCache = {};
+    }
+}
+
+// Helper: Diske Kaydet
+function saveCacheToDisk() {
+    // Sadece tamamlanmış verileri kaydet
+    const dataToSave = {};
+    for (const key in aiCache) {
+        if (aiCache[key].status === 'done') {
+            dataToSave[key] = aiCache[key];
+        }
+    }
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(dataToSave, null, 2));
+}
+
+// --- ENDPOINT ---
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
     if (!city) {
         res.status(400).send('City is required');
         return;
     }
-    const aiReqCity = country ? `${city}, ${country}` : city;
 
-    // DEBUG: Her sorguda şehir ne gidiyor görün
-    console.log("AIReqCity:", aiReqCity);
+    // Anahtar oluştur (Örn: "Rome-Italy")
+    const cacheKey = country ? `${city}-${country}` : city;
+    console.log(`[AI REQ] ${cacheKey}`);
 
-const prompt = `
-You are an expert travel assistant.
-For the city "${aiReqCity}", respond ONLY with a valid JSON object with these fields (no code block, no explanation):
-
-{
-  "summary": "...",
-  "tip": "...",
-  "highlight": "..."
-}
-
-If you don't know the answer, put "Bilgi yok." for that field.
-`.trim();
-
-    try {
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "gemma:2b",
-            messages: [{ role: "user", content: prompt }],
-            stream: false,
-            max_tokens: 200
-        });
-
-        // Yanıtı debug et!
-        console.log("Ollama response:", response.data);
-
-        // Gemma yanıtı şu formatta gelir:
-        // { model: ..., message: { role: 'assistant', content: '{...}' }, ... }
-        let jsonText = '';
-        if (typeof response.data === 'object' && response.data.message && response.data.message.content) {
-            jsonText = response.data.message.content;
-        } else if (typeof response.data === 'string') {
-            const match = response.data.match(/\{[\s\S]*?\}/);
-            if (match) {
-                jsonText = match[0];
+    // 1. KONTROL: Cache'de var mı?
+    if (aiCache[cacheKey]) {
+        // A) Hazırsa hemen ver
+        if (aiCache[cacheKey].status === 'done') {
+            return res.json(aiCache[cacheKey].data);
+        }
+        // B) Şu an başkası için hazırlanıyorsa bekle
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try {
+                const data = await aiCache[cacheKey].promise;
+                return res.json(data);
+            } catch (error) {
+                delete aiCache[cacheKey];
             }
         }
+    }
 
-        let jsonResponse;
+    // 2. YENİ İŞLEM BAŞLAT (Burayı güncelliyoruz)
+    const processingPromise = (async () => {
+        const aiReqCity = country ? `${city}, ${country}` : city;
+         
+        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
+        console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
+
+        const prompt = `
+        You are a strictly factual travel guide. 
+        Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
+        RULES:
+        1. Do NOT hallucinate. If unknown, state "Info not available".
+        2. Verify landmarks are INSIDE "${aiReqCity}".
+        3. Respond ONLY with a valid JSON object:
+        { "summary": "...", "tip": "...", "highlight": "..." }
+        `.trim();
+
         try {
-            jsonResponse = JSON.parse(jsonText);
-        } catch (e) {
-            console.error('Yanıt JSON değil:', response.data);
-            res.status(500).send('AI geçersiz yanıt verdi.');
-            return;
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: activeModel, // Yukarıdaki değişkeni kullanıyoruz
+                messages: [{ role: "user", content: prompt }],
+                stream: false,
+                format: "json",
+                options: {
+                    temperature: 0.1, // Llama 3 için düşük sıcaklık önemli
+                    top_p: 0.9,
+                    max_tokens: 300
+                }
+            });
+
+            // JSON Temizleme (Ollama format:json ile gelirse direkt parse edilebilir ama önlem kalsın)
+            let jsonText = '';
+            if (typeof response.data === 'object' && response.data.message) {
+                jsonText = response.data.message.content;
+            } else if (typeof response.data === 'string') {
+                const match = response.data.match(/\{[\s\S]*?\}/);
+                if (match) jsonText = match[0];
+            }
+
+            return JSON.parse(jsonText);
+        } catch (err) {
+            console.error("LLM Error:", err.message);
+            // Hata durumunda boş dön ki cache patlamasın
+            return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
         }
+    })();
+
+    // 3. PENDING OLARAK İŞARETLE
+    aiCache[cacheKey] = {
+        status: 'pending',
+        promise: processingPromise
+    };
+
+    // 4. BEKLE VE KAYDET
+    try {
+        const result = await processingPromise;
+        
+        aiCache[cacheKey] = {
+            status: 'done',
+            data: result
+        };
+        saveCacheToDisk(); // Kalıcı kaydet
+        console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(jsonResponse);
+        res.json(result);
+
     } catch (error) {
-        const errMsg = error?.response?.data || error?.message || String(error);
-        console.error('LLM Proxy Error:', errMsg);
-        res.status(500).json({ error: 'AI bilgi alınamadı.', details: errMsg });
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'AI Error' });
     }
 });
-
-
-
 
 
 // Chat stream (SSE) endpoint
@@ -105,7 +169,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
-    const model = 'gemma:2b';
+    const model = 'llama3:8b';
 
     try {
         const ollama = await axios({
