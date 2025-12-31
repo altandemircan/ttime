@@ -5035,6 +5035,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   position:relative;
   transition:background 0.2s, box-shadow 0.18s;
   background: #d32f2f;
+      color: #fff;
 }
 .custom-marker-outer.spin {
   animation: spin-marker-bg 0.7s linear infinite;
