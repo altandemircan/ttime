@@ -3014,6 +3014,7 @@ ease;
 .note-item .cart-image {
     width: 45px;
     height: 30px;
+    object-fit: inherit;
 }
 .note-item .remove-btn {
     margin-top: 0px;
@@ -5034,6 +5035,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
   position:relative;
   transition:background 0.2s, box-shadow 0.18s;
   background: #d32f2f;
+      color: #fff;
 }
 .custom-marker-outer.spin {
   animation: spin-marker-bg 0.7s linear infinite;
@@ -7628,6 +7630,15 @@ scrollbar-width: thin;
     margin-top: 16px !important;
     margin-bottom: 16px !important;
    }
+
+.note-item .custom-marker-outer {
+    top: 0 !important;
+    left: 24px !important;
+    background: #eb9712;
+}
+.note-item .item-position, .note-item .item-info {
+    left: -10px;
+}
 
 
 /* En basit fix - direkt pozisyonlama */
