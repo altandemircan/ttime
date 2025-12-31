@@ -7,53 +7,29 @@
   <title>Triptime AI - New Generation Trip Planner, It's time to trip!</title>
 
   <!-- ======================================================
-       ENVIRONMENT DETECTION (PROD vs STAGE)
+       SEO (DEFAULT = PROD SAFE)
+       Stage zaten nginx + header ile bloklu
   ======================================================= -->
-  <script>
-    const TT_ENV = {
-      isProd: location.hostname === "triptime.ai",
-      isStage: location.hostname === "stage.triptime.ai"
-    };
-  </script>
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <link rel="canonical" href="https://triptime.ai">
 
   <!-- ======================================================
-       SEO META TAGS (AUTO)
+       OPEN GRAPH (PROD SAFE)
   ======================================================= -->
-  <script>
-    if (TT_ENV.isProd) {
-      document.write(`
-        <meta name="robots" content="index, follow">
-        <link rel="canonical" href="https://triptime.ai">
-        <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-      `);
-    } else {
-      document.write(`
-        <meta name="robots" content="noindex, nofollow">
-      `);
-    }
-  </script>
+  <meta property="og:url" content="https://triptime.ai">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
+  <meta property="og:image" content="/img/og_image.png">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="419">
 
-  <!-- ======================================================
-       OPEN GRAPH & SOCIAL (ONLY PROD)
-  ======================================================= -->
-  <script>
-    if (TT_ENV.isProd) {
-      document.write(`
-        <meta property="og:url" content="https://triptime.ai">
-        <meta property="og:type" content="website">
-        <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-        <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
-        <meta property="og:image" content="/img/og_image.png">
-        <meta property="og:image:width" content="800">
-        <meta property="og:image:height" content="419">
-
-        <meta name="twitter:card" content="summary_large_image">
-        <meta property="twitter:domain" content="triptime.ai">
-        <meta property="twitter:url" content="https://triptime.ai">
-        <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-      `);
-    }
-  </script>
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="twitter:domain" content="triptime.ai">
+  <meta property="twitter:url" content="https://triptime.ai">
+  <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
 
   <!-- ======================================================
        LEAFLET & MAPLIBRE
@@ -111,10 +87,10 @@
   <meta name="theme-color" content="#ffffff">
 
   <!-- ======================================================
-       GOOGLE ANALYTICS (ONLY PROD)
+       GOOGLE ANALYTICS (PROD ONLY VIA DOMAIN)
   ======================================================= -->
   <script>
-    if (TT_ENV.isProd) {
+    if (location.hostname === "triptime.ai") {
       const ga = document.createElement("script");
       ga.src = "https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7";
       ga.async = true;
@@ -123,7 +99,7 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-6W42FMZ5T7');
+      gtag('config', 'G-6W42FMZ5T7', { anonymize_ip: true });
     }
   </script>
 
@@ -138,6 +114,7 @@
   </style>
 
 </head>
+
 
 
 <body>
