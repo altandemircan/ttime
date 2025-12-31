@@ -163,8 +163,7 @@ window.addClickedPointToCart = async function(lat, lng, day) {
     try {
         window.currentDay = parseInt(day); // Gün sabitleme
 
-        const pointInfo = window._currentPointInfo || { name: "Seçilen Nokta", address: "", opening_hours: "" };
-        const placeName = pointInfo.name;
+const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };        const placeName = pointInfo.name;
         
         let imageUrl = "img/placeholder.png";
         if (typeof getPexelsImage === "function") {
@@ -393,7 +392,8 @@ function showSearchButton(lat, lng, map, options = {}) {
                 const resp = await fetch(url);
                 const data = await resp.json();
                 if (!data.features || data.features.length === 0) {
-                    alert("Bu alanda restoran bulunamadı!");
+                    alert("No restaurants found in this area!");
+
                     map.removeControl(button);
                     return;
                 }
@@ -402,7 +402,7 @@ function showSearchButton(lat, lng, map, options = {}) {
                         .addTo(map)
                         .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
                 });
-                alert(`Bu alanda ${data.features.length} restoran bulundu.`);
+alert(`${data.features.length} restaurants found in this area.`);
                 map.removeControl(button);
             } catch(e) {
                 console.error("Search error:", e);
@@ -577,7 +577,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
             <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
                 <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
                     <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-                        <img id="clicked-point-img" src="img/placeholder.png" alt="Seçilen Nokta" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                       <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
                     </div>
                     <div class="point-info" style="flex: 1; min-width: 0;">
@@ -1047,7 +1047,7 @@ async function searchRestaurantsAt(lat, lng, map) {
         alert(`Bu alanda ${data.features.length} restoran bulundu.`);
     } catch(e) {
         console.error("Search error:", e);
-        alert("Arama sırasında hata oluştu.");
+alert("An error occurred during the search.");
     }
 }
 
@@ -1212,7 +1212,7 @@ function showRouteInfoBanner(day) {
 }
 
 async function getRestaurantPopupHTML(f, day) {
-    const name = f.properties.name || "Restoran";
+const name = f.properties.name || "Restaurant";
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
     const lon = f.properties.lon;
@@ -1330,7 +1330,7 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
             const resp = await fetch(url);
             const data = await resp.json();
             if (!data.features || data.features.length === 0) {
-                alert("Bu bölgede restoran/kafe/bar bulunamadı!");
+alert("No restaurants/cafes/bars found in this area!");
                 return;
             }
             data.features.forEach((f, idx) => {
@@ -1358,9 +1358,9 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
                     handlePopupImageLoading(f, imgId);
                 });
             });
-            alert(`Bu alanda ${data.features.length} restoran/kafe/bar gösterildi.`);
+alert(`${data.features.length} restaurants/cafes/bars have been displayed in this area.`);
         } catch (err) {
-            alert("Restoranları çekerken hata oluştu. Lütfen tekrar deneyin.");
+alert("An error occurred while fetching restaurants. Please try again.");
         }
     });
 }
