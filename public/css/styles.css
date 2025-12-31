@@ -3014,6 +3014,7 @@ ease;
 .note-item .cart-image {
     width: 45px;
     height: 30px;
+    object-fit: inherit;
 }
 .note-item .remove-btn {
     margin-top: 0px;
