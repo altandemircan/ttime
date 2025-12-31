@@ -7631,6 +7631,14 @@ scrollbar-width: thin;
     margin-bottom: 16px !important;
    }
 
+.note-item .custom-marker-outer {
+    top: 0 !important;
+    left: 24px !important;
+}
+.note-item .item-position, .note-item .item-info {
+    left: -10px;
+}
+
 
 /* En basit fix - direkt pozisyonlama */
 @media (max-width: 768px) {
