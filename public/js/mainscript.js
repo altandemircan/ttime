@@ -4370,19 +4370,7 @@ async function updateCart() {
 
             // --- 4. MARKER HTML ---
             const listMarkerHtml = `
-                <div class="custom-marker-outer" style="flex-shrink: 0;
-                    transform: scale(0.70);
-                    position: absolute;
-                    left: 24px;
-                    top: -4px;
-                    background: ${markerBgColor} !important; 
-                    border-radius: 50%;
-                    width: 24px; height: 24px;
-                    display: flex; align-items: center; justify-content: center;
-                    color: #fff; font-weight: bold; font-size: 16px;
-                    border: 2px solid #fff;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                    <span class="custom-marker-label" style="font-size: 14px;">${markerLabel}</span>
+                <div class="custom-marker-outer">${markerLabel}</span>
                 </div>
             `;
             // -------------------------------------------
@@ -8312,7 +8300,7 @@ async function renderRouteForDay(day) {
 
         const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) {
-            infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
+            infoPanel.innerHTML = `<span style="color:#1976d2;">The route from the GPS file is <b>LOCKED</b>. The start-finish interval is fixed, subsequent parts were added.</span>`;
         }
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
@@ -8723,7 +8711,7 @@ async function renderRouteForDay(day) {
         const url = buildDirectionsUrl(coordParam, day);
         const response = await fetch(url);
         if (!response.ok) {
-            alert("Rota oluşturulamıyor...");
+            alert("Unable to create route...");
             return null;
         }
         const data = await response.json();
@@ -10030,7 +10018,7 @@ function ensureRouteStatsUI(day) {
     const asc = document.createElement('span');
     asc.className = 'stat stat-ascent';
     asc.innerHTML = `
-      <img class="icon" src="https://www.svgrepo.com/show/530913/arrow-up.svg" alt="Ascent" loading="lazy" decoding="async">
+      <img class="icon" src="   " alt="Ascent" loading="lazy" decoding="async">
       <span class="badge">— m</span>
     `;
     control.appendChild(asc);
@@ -10194,7 +10182,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // Koordinat kontrolü (Tekrar)
   if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Route points not found</div></div>`;
     container.style.display = 'block';
     return;
   }
