@@ -373,7 +373,7 @@ async function ensureFitParser() {
         umdErrors.push(e.message);
       }
     }
-    throw new Error('FIT parser yüklenemedi: ' + umdErrors.join(' || '));
+throw new Error('FIT parser could not be loaded: ' + umdErrors.join(' || '));
   })();
 
   ensureFitParser.__inflight = attempt;

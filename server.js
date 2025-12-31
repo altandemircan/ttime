@@ -31,7 +31,7 @@ const geoapify = require('./geoapify.js');
 app.get('/api/geoapify/nearby-cities', async (req, res) => {
   try {
     const { lat, lon, radius, limit } = req.query;
-    if (!lat || !lon) return res.status(400).json({ error: 'lat/lon gerekli' });
+    if (!lat || !lon) return res.status(400).json({ error: 'lat/lon required' });
     const data = await geoapify.nearbyCities({
       lat,
       lon,
@@ -47,10 +47,10 @@ app.get('/api/geoapify/nearby-cities', async (req, res) => {
 // --- EKLENEN ENDPOINT --- //
 app.get('/api/geoapify/geocode', async (req, res) => {
   const { text, limit } = req.query;
-  console.log('[geocode] gelen text:', text, 'limit:', limit);
+  console.log('[geocode] incoming text:', text, 'limit:', limit);
   const apiKey = process.env.GEOAPIFY_KEY;
-  if (!apiKey) return res.status(500).send('Geoapify API key eksik');
-  if (!text) return res.status(400).json({ error: 'text parametresi eksik' });
+  if (!apiKey) return res.status(500).send('Geoapify API key missing');
+  if (!text) return res.status(400).json({ error: 'text parameter missing' });
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(text)}&limit=${limit || 1}&apiKey=${apiKey}`;
   try {
     const response = await fetch(url);
