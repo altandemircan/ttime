@@ -1297,7 +1297,7 @@ function addCanonicalMessage(canonicalStr) {
   if (!chatBox) return;
   const msg = document.createElement("div");
   msg.className = "message canonical-message";
-  msg.innerHTML = `<img src="https://dev.triptime.ai/img/profile-icon.svg" alt="Profile" class="profile-img">
+  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
   <span>${canonicalStr}</span>`;
   // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
   const typingIndicator = chatBox.querySelector('#typing-indicator');
@@ -4584,11 +4584,11 @@ async function updateCart() {
 
                     // --- İKONLAR ---
                     if (currentMode === "driving" || currentMode === "car") {
-                        prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
+                        prefix = `<img src="/img/way_car.svg" alt="Car">`;
                     } else if (currentMode === "bike" || currentMode === "cycling") {
-                        prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
+                        prefix = `<img src="/img/way_bike.svg" alt="Bike">`;
                     } else if (currentMode === "walk" || currentMode === "walking") {
-                        prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
+                        prefix = `<img src="/img/way_walk.svg" alt="Walk">`;
                     } else {
                         prefix = ''; // Diğer tiplerde ikon gösterme
                     }
