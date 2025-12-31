@@ -7634,6 +7634,7 @@ scrollbar-width: thin;
 .note-item .custom-marker-outer {
     top: 0 !important;
     left: 24px !important;
+    background: #eb9712;
 }
 .note-item .item-position, .note-item .item-info {
     left: -10px;
