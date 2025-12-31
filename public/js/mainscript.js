@@ -2013,7 +2013,7 @@ function toggleAccordion(accordionHeader) {
             case "Touristic attraction": return "img/touristic_icon.svg";
             case "Restaurant": return "img/restaurant_icon.svg";
             case "Accommodation": return "img/accommodation_icon.svg";
-            default: return "https://www.svgrepo.com/show/522166/location.svg";
+            default: return "img/location.svg";
         }
     }
 
@@ -4393,7 +4393,7 @@ async function updateCart() {
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
                 
-                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                <img src="img/drag_move.svg" alt="Drag" class="drag-icon">
                 
                 <div class="item-position">
                     ${listMarkerHtml} 
@@ -4409,7 +4409,7 @@ async function updateCart() {
                   <img src="img/remove-icon.svg" alt="Close">
                 </button>
                 <span class="arrow">
-                  <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                  <img src="img/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
                 </span>
               </div>
             </div>
@@ -4443,13 +4443,13 @@ async function updateCart() {
                 // Kategori ikonu bul (categoryIcons global objesinden)
                 const catIcon = (window.categoryIcons && window.categoryIcons[item.category]) 
                                 ? window.categoryIcons[item.category] 
-                                : 'https://www.svgrepo.com/show/522166/location.svg';
+                                : 'img/location.svg';
 
                 li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
+                <img src="img/drag_move.svg" alt="Drag" class="drag-icon">
 
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
@@ -4461,7 +4461,7 @@ async function updateCart() {
                 </div>
               </div>
               <span class="arrow">
-                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                <img src="img/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
               </span>
             </div>
             <div class="content">
@@ -6925,7 +6925,7 @@ async function expandMap(containerId, day) {
     compassBtn.id = `custom-compass-btn-${day}`;
     compassBtn.className = 'map-ctrl-btn ctrl-compass';
     compassBtn.style.display = 'none';
-    compassBtn.innerHTML = `<div class="custom-compass-disc"><img src="https://www.svgrepo.com/show/526952/compass-big.svg" style="width:100%;height:100%;" alt="N"></div>`;
+    compassBtn.innerHTML = `<div class="custom-compass-disc"><img src="img/compass-big.svg" style="width:100%;height:100%;" alt="N"></div>`;
     compassBtn.onclick = function() {
         if (currentLayer === 'liberty' && window._maplibre3DInstance) {
             window._maplibre3DInstance.easeTo({ bearing: 0, pitch: 60, duration: 1000 });
@@ -6935,11 +6935,11 @@ async function expandMap(containerId, day) {
     const locBtn = document.createElement('button');
     locBtn.className = 'map-ctrl-btn';
     locBtn.id = `use-my-location-btn-day${day}`;
-    locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
     if (window.isLocationActiveByDay[day]) {
-        locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
+        locBtn.innerHTML = '<img src="img/location.svg" alt="On">';
     }
 
     locBtn.onclick = function() {
@@ -6947,7 +6947,7 @@ async function expandMap(containerId, day) {
         const isActive = window.isLocationActiveByDay[day];
 
         if (isActive) {
-            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
+            locBtn.innerHTML = '<img src="img/location.svg" alt="On">';
             if (!document.getElementById('tt-unified-loc-style')) {
                 const s = document.createElement('style');
                 s.id = 'tt-unified-loc-style';
@@ -6959,11 +6959,11 @@ async function expandMap(containerId, day) {
                     window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true);
                 }, () => {
                     window.isLocationActiveByDay[day] = false;
-                    locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+                    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
                 });
             }
         } else {
-            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
+            locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
             window.updateUserLocationMarker(expandedMapInstance, day);
         }
     };
@@ -9321,7 +9321,7 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
     set.innerHTML = `
       <div class="travel-modes">
         <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
-          <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
+          <img class="tm-icon" src="img/fly_mode.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE</span>
         </button>
         <div class="fly-info-msg" style="font-size: 13px; color: #607d8b; margin-top: 3px; margin-left: 4px; font-weight: 400;">
@@ -9486,7 +9486,7 @@ function wrapRouteControls(day) {
   arrowSpan.style.cursor = 'pointer';
   arrowSpan.style.padding = '0px';
   arrowSpan.style.marginTop = '6px';
-  arrowSpan.innerHTML = `<img class="arrow-icon" src="https://www.svgrepo.com/show/520912/right-arrow.svg" style="transform: rotate(0deg); transition: transform 0.18s;">`;
+  arrowSpan.innerHTML = `<img class="arrow-icon" src="img/right-arrow.svg" style="transform: rotate(0deg); transition: transform 0.18s;">`;
 
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
