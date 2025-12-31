@@ -104,21 +104,41 @@
   </script>
 
   <!-- ======================================================
-       UI STATE STYLES
+       UI STATE STYLES + VISUALLY HIDDEN
   ======================================================= -->
   <style>
     #tt-about-us { display:none; }
     #tt-about-us.active { display:block; }
     #tt-welcome { display:block; }
     #tt-welcome:not(.active) { display:none; }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
   </style>
 
 </head>
 
-
-
 <body>
 
+<h1 class="visually-hidden">
+  New generation AI trip planner for routes, maps and travel planning
+</h1>
+
+<p class="visually-hidden">
+  Triptime AI helps users plan trips by creating routes, exploring places on maps
+  and building travel plans using AI-powered recommendations.
+</p>
+
+<!-- UYGULAMA DEVAMI BURADAN -->
 
 
     <div id="main-header">
