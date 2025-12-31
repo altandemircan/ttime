@@ -4370,7 +4370,19 @@ async function updateCart() {
 
             // --- 4. MARKER HTML ---
             const listMarkerHtml = `
-                <div class="custom-marker-outer">${markerLabel}</span>
+                <div class="custom-marker-outer" style="flex-shrink: 0;
+                    transform: scale(0.70);
+                    position: absolute;
+                    left: 24px;
+                    top: -4px;
+                    background: ${markerBgColor} !important; 
+                    border-radius: 50%;
+                    width: 24px; height: 24px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #fff; font-weight: bold; font-size: 16px;
+                    border: 2px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <span class="custom-marker-label" style="font-size: 14px;">${markerLabel}</span>
                 </div>
             `;
             // -------------------------------------------
