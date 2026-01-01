@@ -1171,8 +1171,7 @@ chatInput.addEventListener("input", function() {
         const currentText = normalize(currentLocName);
 
         // Eğer kayıtlı şehir ismi, şu an yazılı olanı kapsıyorsa (örn: "Venice, IT" içinde "Venice" var)
-        if (savedText.includes(currentText) && currentText.length > 2) {
-             // Sadece gün sayısını güncelle, kilidi açma
+if (savedText === currentText && currentText.length > 1) {             // Sadece gün sayısını güncelle, kilidi açma
              const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
              if (dayMatch && window.selectedLocation) {
                  window.selectedLocation.days = parseInt(dayMatch[1], 10);
@@ -1334,8 +1333,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedText = normalize(window.selectedSuggestion.displayText);
         const currentText = normalize(currentLocName);
 
-        if (savedText.includes(currentText) && currentText.length > 2) {
-             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+if (savedText === currentText && currentText.length > 1) {             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
              if (dayMatch && window.selectedLocation) {
                  window.selectedLocation.days = parseInt(dayMatch[1], 10);
              }
