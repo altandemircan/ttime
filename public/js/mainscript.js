@@ -10228,7 +10228,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  const N = Math.max(40, Math.round(totalKm * 2));
+  //km'de nokta sayısı: 2'den 5'e
+  // const N = Math.max(40, Math.round(totalKm * 2));
+
+  const N = Math.max(80, Math.round(totalKm * 5));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -10698,8 +10701,12 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   if (segEndM - segStartM < 100) return; 
 
   const segKm = (segEndM - segStartM) / 1000;
+
   // Örnekleme sayısını artırdık ki grafik kırık görünmesin
-  const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
+  /* segment noktları */
+  // const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
+  // Limiti 800'e çıkar, km başına 50 nokta al
+  const N = Math.min(500, Math.max(120, Math.round(segKm * 50)));
 
   const samples = [];
   for (let i = 0; i < N; i++) {
