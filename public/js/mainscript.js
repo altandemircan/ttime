@@ -10967,12 +10967,17 @@ const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');  
       }
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const j = await resp.json();
+      
+      // Türkiye için Geoid Düzeltmesi (~35-36 metre)
+      // API "Ellipsoidal" yükseklik dönüyorsa, "Deniz Seviyesi" (MSL) için bu farkı çıkarıyoruz.
+      const GEOID_OFFSET = 35; 
+
       if (j.results && j.results.length === chunk.length) {
-        res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
+        res.push(...j.results.map(r => r && typeof r.elevation==='number' ? (r.elevation - GEOID_OFFSET) : null));
       } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
-        res.push(...j.elevations);
+        res.push(...j.elevations.map(e => typeof e === 'number' ? (e - GEOID_OFFSET) : e));
       } else if (j.data && Array.isArray(j.data)) {
-        res.push(...j.data);
+        res.push(...j.data.map(d => typeof d === 'number' ? (d - GEOID_OFFSET) : d));
       } else {
         throw new Error('bad response');
       }
