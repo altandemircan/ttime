@@ -11889,7 +11889,13 @@ window.showLoadingPanel = function() {
 
     // Döngüyü başlat
     window.loadingInterval = setInterval(() => {
-        if (!msgEl || panel.style.display === 'none') return;
+    // EĞER SEKME GİZLİYSE HİÇBİR ŞEY YAPMA, DÖNGÜYÜ PAS GEÇ
+    if (document.hidden) { 
+        return; 
+    }
+
+    // Kodlarınız normal çalışmaya devam etsin...
+    if (!msgEl || panel.style.display === 'none') return;
         if (isTransitioning) return;
         
         isTransitioning = true;
