@@ -241,21 +241,7 @@ ease;
     border-radius: 50%;
     object-position: top;
 }
-.circle-video {
-    width: 100%;
-    height: 100%;
-    /* Sprite görselini buraya koy */
-    background: url('/img/aioo-sprite.png') no-repeat;
-    background-size: cover; /* Veya kare sayısına göre özel ayar */
-    
-    /* steps() içine kare sayısını yaz */
-    animation: play-sprite 2s steps(30) infinite alternate; 
-}
 
-@keyframes play-sprite {
-    from { background-position: 0px; }
-    to { background-position: -3300px; } /* Görselin toplam genişliği */
-}
 /* Welcome Başlık ve Metin Ayarları */
 #tt-welcome img {
     width: 110px;
