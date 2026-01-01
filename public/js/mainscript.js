@@ -338,7 +338,9 @@ window.ensureElevationDataLoaded = function(day) {
     return new Promise((resolve) => {
         let attempts = 0;
         const checkInterval = setInterval(() => {
-            attempts++;
+    if (document.hidden) return; // <-- EKLENECEK SATIR
+    
+    attempts++;
             const elevData = window.routeElevStatsByDay && window.routeElevStatsByDay[day];
             
             if (elevData || attempts > 10) {
