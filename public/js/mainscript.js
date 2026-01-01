@@ -688,6 +688,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
+
+        // [FIX] Eğer bu şehir zaten seçiliyse, gün sayısı değişse bile listede seçili kalsın
+        if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
+            div.classList.add("selected-suggestion");
+        }
         
         // === TIKLAMA OLAYI ===
         div.onclick = () => {
