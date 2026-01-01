@@ -4553,25 +4553,25 @@ async function updateCart() {
                   ` : ''
                 }
               </div>
-             // [FIX] onclick="toggleFavFromCart(this)" eklendi.
-// Böylece sepet yenilense bile tıklama çalışır.
-<button class="add-favorite-btn" 
-    onclick="toggleFavFromCart(this)"
-    data-name="${item.name}" 
-    data-category="${item.category}" 
-    data-lat="${item.location?.lat ?? item.lat ?? ""}" 
-    data-lon="${item.location?.lng ?? item.lon ?? ""}"
-    data-image="${item.image || ""}"> 
-    
-    <span class="fav-heart" 
-        data-name="${item.name}" 
-        data-category="${item.category}"
-        data-lat="${item.location?.lat ?? item.lat ?? ""}" 
-        data-lon="${item.location?.lng ?? item.lon ?? ""}">
-        <img class="fav-icon" src="${isTripFav(item) ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
-    </span>
-    <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
-</button>
+         <button class="add-favorite-btn"
+                onclick="toggleFavFromCart(this)"
+                data-name="${item.name}"
+                data-category="${item.category}"
+                data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                data-image="${item.image || ""}">
+                
+                <span class="fav-heart"
+                  data-name="${item.name}"
+                  data-category="${item.category}"
+                  data-lat="${item.location?.lat ?? item.lat ?? ""}"
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                  data-image="${item.image || ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                </span>
+                <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
+              </button>
+
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                 Remove place
               </button>
