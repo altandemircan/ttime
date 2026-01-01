@@ -34,6 +34,30 @@ function attachFavEvents() {
     });
 }
 
+// Sepet içindeki favori butonuna tıklandığında çalışır
+async function toggleFavFromCart(btn) {
+    // Tıklamayı yukarı (drag vs.) yayma
+    if(event) { event.stopPropagation(); event.preventDefault(); }
+
+    // İkon elementini bul (görseli güncellemek için lazım)
+    const heartEl = btn.querySelector('.fav-heart');
+    if (!heartEl) return;
+
+    const item = {
+        name: btn.getAttribute('data-name'),
+        category: btn.getAttribute('data-category'),
+        lat: btn.getAttribute('data-lat'),
+        lon: btn.getAttribute('data-lon'),
+        image: btn.getAttribute('data-image') || ""
+    };
+
+    // Mevcut favori ekleme/çıkarma fonksiyonunuzu çağırın
+    await toggleFavTrip(item, heartEl);
+
+    // Butonun üzerindeki yazıyı ("Add..." -> "Remove...") güncelleyin
+    updateFavoriteBtnText(heartEl);
+}
+
 // Buton textini güncelleyen fonksiyon
 function updateFavoriteBtnText(favHeartEl) {
     const btn = favHeartEl.closest('.add-favorite-btn');
