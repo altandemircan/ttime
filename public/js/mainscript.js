@@ -522,8 +522,8 @@ function extractLocationQuery(input) {
     let cleaned = input; 
     
     // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
-    // Şehir isminin kendisine (büyük/küçük harf) dokunma.
-    cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
     // Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
@@ -532,7 +532,9 @@ function extractLocationQuery(input) {
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
-        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
+        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
+        // [FIX] Zaman birimleri stop words'e eklendi
+        "day", "days", "gün", "gun", "night", "nights"
     ];
     
     // Kelimeleri ayır ve stop word'leri temizle
@@ -846,14 +848,20 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     }, 150));
 
-    chatInput.addEventListener("focus", function () {
+    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
+    const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
-    });
+    };
+
+    chatInput.addEventListener("focus", showSuggestionsLogic);
+    
+    // [FIX] Inputa tıklandığında da listenin açılmasını sağla
+    chatInput.addEventListener("click", showSuggestionsLogic);
 }
 
 
