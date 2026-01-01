@@ -35,27 +35,60 @@ function attachFavEvents() {
 }
 
 // Sepet içindeki favori butonuna tıklandığında çalışır
+// === my_places.js EN ALTINA EKLE ===
+
+// Sepet (Cart) içindeki favori butonuna tıklandığında çalışır
 async function toggleFavFromCart(btn) {
-    // Tıklamayı yukarı (drag vs.) yayma
-    if(event) { event.stopPropagation(); event.preventDefault(); }
+    // Tıklamanın sepeti sürüklemesini veya başka eventleri engelle
+    if (window.event) {
+        window.event.stopPropagation();
+        window.event.preventDefault();
+    }
 
-    // İkon elementini bul (görseli güncellemek için lazım)
+    // İkon elementini bul (görseli güncellemek için)
     const heartEl = btn.querySelector('.fav-heart');
-    if (!heartEl) return;
-
+    
+    // Verileri butonun kendi attribute'larından al
     const item = {
         name: btn.getAttribute('data-name'),
         category: btn.getAttribute('data-category'),
         lat: btn.getAttribute('data-lat'),
         lon: btn.getAttribute('data-lon'),
-        image: btn.getAttribute('data-image') || ""
+        image: btn.getAttribute('data-image') || "img/placeholder.png"
     };
 
-    // Mevcut favori ekleme/çıkarma fonksiyonunuzu çağırın
-    await toggleFavTrip(item, heartEl);
+    // Mevcut favori fonksiyonunu çağır (Global fonksiyon)
+    if (typeof toggleFavTrip === 'function') {
+        // Not: toggleFavTrip genellikle heartEl (ikon) üzerinden görsel değiştirir
+        await toggleFavTrip(item, heartEl || btn);
+    }
 
-    // Butonun üzerindeki yazıyı ("Add..." -> "Remove...") güncelleyin
-    updateFavoriteBtnText(heartEl);
+    // Butonun üzerindeki yazıyı ("Add..." -> "Remove...") güncelle
+    const btnText = btn.querySelector('.fav-btn-text');
+    if (btnText) {
+        // toggleFavTrip çalıştıktan sonra window.favTrips güncellenmiş olur.
+        // Tekrar kontrol edip yazıyı doğrusunu yazalım.
+        const isFav = window.favTrips && window.favTrips.some(f => 
+            f.name === item.name && String(f.lat) === String(item.lat)
+        );
+        
+        if (isFav) {
+            btnText.textContent = "Remove from My Places";
+            // İkonu da garantiye alalım
+            if(heartEl) {
+                const img = heartEl.querySelector('img');
+                if(img) img.src = "img/like_on.svg";
+                heartEl.classList.add('is-fav');
+            }
+        } else {
+            btnText.textContent = "Add to My Places";
+            if(heartEl) {
+                const img = heartEl.querySelector('img');
+                if(img) img.src = "img/like_off.svg";
+                heartEl.classList.remove('is-fav');
+            }
+        }
+    }
 }
 
 // Buton textini güncelleyen fonksiyon
