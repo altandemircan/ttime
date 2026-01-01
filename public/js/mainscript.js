@@ -10970,7 +10970,7 @@ const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');  
       
       // Türkiye için Geoid Düzeltmesi (~35-36 metre)
       // API "Ellipsoidal" yükseklik dönüyorsa, "Deniz Seviyesi" (MSL) için bu farkı çıkarıyoruz.
-      const GEOID_OFFSET = 35; 
+      const GEOID_OFFSET = 25; 
 
       if (j.results && j.results.length === chunk.length) {
         res.push(...j.results.map(r => r && typeof r.elevation==='number' ? (r.elevation - GEOID_OFFSET) : null));
