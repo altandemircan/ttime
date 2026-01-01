@@ -10959,8 +10959,7 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
       const chunk = samples.slice(i,i+CHUNK);
-      const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
+const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
       const resp = await fetch(url);
       if (resp.status === 429) {
         cooldownUntil.myApi = Date.now() + 10*60*1000;
