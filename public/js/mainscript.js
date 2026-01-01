@@ -10926,7 +10926,7 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
 (function ensureElevationMux(){
   // Global değişkenler ve Rate Limit koruması burada kalmalı
   const TTL_MS = 48 * 60 * 60 * 1000;
-  const LS_PREFIX = 'tt_elev_cache_v1:';
+  const LS_PREFIX = 'tt_elev_cache_v2:';
 
   const providers = [
     { key: 'myApi', fn: viaMyApi, chunk: 80, minInterval: 1200 },
