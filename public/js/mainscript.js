@@ -10926,7 +10926,7 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
 (function ensureElevationMux(){
   // Global değişkenler ve Rate Limit koruması burada kalmalı
   const TTL_MS = 48 * 60 * 60 * 1000;
-  const LS_PREFIX = 'tt_elev_cache_v2:';
+  const LS_PREFIX = 'tt_elev_cache_v1:';
 
   const providers = [
     { key: 'myApi', fn: viaMyApi, chunk: 80, minInterval: 1200 },
@@ -10959,7 +10959,8 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
       const chunk = samples.slice(i,i+CHUNK);
-const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
+const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
+      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
       const resp = await fetch(url);
       if (resp.status === 429) {
         cooldownUntil.myApi = Date.now() + 10*60*1000;
@@ -10967,17 +10968,12 @@ const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');  
       }
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const j = await resp.json();
-      
-      // Türkiye için Geoid Düzeltmesi (~35-36 metre)
-      // API "Ellipsoidal" yükseklik dönüyorsa, "Deniz Seviyesi" (MSL) için bu farkı çıkarıyoruz.
-      const GEOID_OFFSET = 10; 
-
       if (j.results && j.results.length === chunk.length) {
-        res.push(...j.results.map(r => r && typeof r.elevation==='number' ? (r.elevation - GEOID_OFFSET) : null));
+        res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
       } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
-        res.push(...j.elevations.map(e => typeof e === 'number' ? (e - GEOID_OFFSET) : e));
+        res.push(...j.elevations);
       } else if (j.data && Array.isArray(j.data)) {
-        res.push(...j.data.map(d => typeof d === 'number' ? (d - GEOID_OFFSET) : d));
+        res.push(...j.data);
       } else {
         throw new Error('bad response');
       }
