@@ -10928,7 +10928,8 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
 (function ensureElevationMux(){
   // Global değişkenler ve Rate Limit koruması burada kalmalı
   const TTL_MS = 48 * 60 * 60 * 1000;
-  const LS_PREFIX = 'tt_elev_cache_v1:';
+  // ÖNEMLİ: Cache ismini değiştirdim (v1 -> v2) ki eski hatalı 800m verileri gelmesin.
+  const LS_PREFIX = 'tt_elev_cache_v2:';
 
   const providers = [
     { key: 'myApi', fn: viaMyApi, chunk: 80, minInterval: 1200 },
@@ -10961,7 +10962,12 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
     const res = [];
     for (let i=0;i<samples.length;i+=CHUNK){
       const chunk = samples.slice(i,i+CHUNK);
-const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
+      
+      // --- DÜZELTME 1: Koordinat Sırası ---
+      // Sunucu Lat,Lng bekliyor. Biz Lng,Lat gönderiyorduk. 
+      // Bunu lat,lng (Enlem,Boylam) olarak çevirdik.
+      const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
+      
       const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
       const resp = await fetch(url);
       if (resp.status === 429) {
@@ -10970,12 +10976,22 @@ const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
       }
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const j = await resp.json();
+
+      // --- DÜZELTME 2: Makyajlama Fonksiyonu ---
+      // Gelen veriyi işle ve deniz kenarını 0 yap
+      const processElev = (val) => {
+          if (val === null || typeof val !== 'number') return null;
+          // Eğer yükseklik 35 metreden azsa (Geoid farkı vs.) direkt 0 bas.
+          if (val < 35) return 0;
+          return val;
+      };
+
       if (j.results && j.results.length === chunk.length) {
-        res.push(...j.results.map(r => r && typeof r.elevation==='number' ? r.elevation : null));
+        res.push(...j.results.map(r => r ? processElev(r.elevation) : null));
       } else if (Array.isArray(j.elevations) && j.elevations.length === chunk.length) {
-        res.push(...j.elevations);
+        res.push(...j.elevations.map(e => processElev(e)));
       } else if (j.data && Array.isArray(j.data)) {
-        res.push(...j.data);
+        res.push(...j.data.map(d => processElev(d)));
       } else {
         throw new Error('bad response');
       }
@@ -10989,16 +11005,12 @@ const loc = chunk.map(p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
     // Cache kontrolü
     const cached = loadCache(routeKey, samples.length);
     if (cached && cached.length === samples.length) {
-      // Not: Buradan loader kapatma komutunu kaldırdık, çağıran fonksiyon kapatacak.
       return cached;
     }
 
     for (const p of providers) {
       try {
         if (Date.now() < cooldownUntil[p.key]) continue;
-        
-        // --- DEĞİŞİKLİK: Burada artık yazı güncelleme YOK ---
-        // Sadece veri çekmeye odaklansın.
         
         const elev = await p.fn(samples);
         if (Array.isArray(elev) && elev.length === samples.length) {
