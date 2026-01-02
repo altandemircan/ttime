@@ -1,9 +1,3 @@
-
-/* ======================================================
-   TRIP LOADING & APP LOCK MECHANISM (CSS IN JS)
-====================================================== */
-
-// 1. Önce gerekli CSS stilini JS ile oluşturup sayfaya enjekte edelim
 /* ======================================================
    TRIP LOADING & CHAT STATE MANAGEMENT
 ====================================================== */
@@ -113,31 +107,6 @@ window.hideLoadingPanel = function() {
         // Eğer işlem iptal edildiyse ve chat hiç başlamadıysa tekrar gizle (Opsiyonel)
         // const chatBox = document.getElementById("chat-box");
         // if(chatBox && chatBox.innerHTML.trim() === "") chatBox.classList.add("awaiting-start");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-};
-
-// 3. Loading Panel Kapatma Fonksiyonu
-window.hideLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "none";
-    }
-
-    // Animasyonu durdur
-    if (window.loadingInterval) {
-        clearInterval(window.loadingInterval);
-        window.loadingInterval = null;
-    }
-
-    // --- KİLİDİ AÇMA İŞLEMİ ---
-    document.body.classList.remove('app-locked');
-    // --------------------------
-
-    // İçeriği duruma göre geri getir
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
     } else {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
