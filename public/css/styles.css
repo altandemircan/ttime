@@ -7757,30 +7757,3 @@ scrollbar-width: thin;
         bottom: 100px !important;
     }
 }
-/* Chrome Autofill Toolbar için responsive çözüm */
-@media (max-width: 768px) {
-    #chat-container {
-        position: fixed;
-        bottom: 0;
-        width: calc(100% - 40px) !important;
-        transition: bottom 0.3s ease;
-    }
-    
-    /* Klavye açıkken (viewport küçüldüğünde) */
-    @media (max-height: 600px) {
-        #chat-container {
-            bottom: 80px !important; /* Autofill toolbar için varsayılan yükseklik */
-        }
-    }
-    
-    /* Çok küçük ekranlar (autofill toolbar kesin var) */
-    @media (max-height: 500px) {
-        #chat-container {
-            bottom: 120px !important; /* Daha fazla yukarı */
-        }
-        
-        #chat-box {
-            max-height: 50vh !important; /* Chat alanını küçült */
-        }
-    }
-}
