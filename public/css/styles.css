@@ -7052,30 +7052,24 @@ display: flex
   100% { transform: scale(1) translateY(0); opacity: 0.65; }
 }
 .loading-panel {
-position: absolute;
-    left: 0;
-    right: 0;
-    /* top: 0; */
-    /* bottom: 0; */
-    z-index: 1200;
-    display: none;
-    width: max-content;
-    /* height: 100%; */
+    /* position: absolute;  <-- BUNLARI SİLİYORUZ */
+    /* left: 0; */
+    /* right: 0; */
+    /* z-index: 1200; */
+    
+    display: none; /* Başlangıçta gizli, JS ile açılacak */
+    width: 100%;
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0px;
-    /* padding: 0px 10px 120px 10px; */
-    margin: 0 auto;
     background: #ffffff;
-    max-width: 1200px;
-    /* width: 100%; */
-    display: flex;
-    max-width: 860px;
+    
+    /* .cw sınıfı ile birebir aynı hizalama ayarları: */
+    max-width: 860px; 
     gap: 30px;
     padding: 60px 10px;
-    margin: 0 auto;
+    margin: 0 auto; 
 }
 .loading-text {
     text-align: center;
