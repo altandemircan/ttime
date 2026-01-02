@@ -12027,3 +12027,68 @@ function stabilizeInputOnFocus() {
 }
 
 document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
+
+
+// Basit ve etkili Chrome Autofill toolbar çözümü
+function fixChromeAutofillIssue() {
+    // Sadece mobil Chrome
+    if (!/Android.*Chrome\//.test(navigator.userAgent)) return;
+    
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+    
+    let lastViewportHeight = window.innerHeight;
+    
+    // Viewport değişikliklerini dinle
+    window.addEventListener('resize', function() {
+        const currentHeight = window.innerHeight;
+        const heightDifference = lastViewportHeight - currentHeight;
+        
+        // Ekran önemli ölçüde küçüldüyse (klavye + toolbar açıldı)
+        if (heightDifference > 200) {
+            console.log('Klavye + Autofill toolbar açıldı');
+            
+            // Chat container'ı yukarı çek
+            // 100px (input için) + 70px (toolbar için) = 170px
+            chatContainer.style.bottom = '170px';
+            
+            // Input'u görünür yap
+            const activeInput = document.activeElement;
+            if (activeInput && activeInput.matches('#user-input, #ai-chat-input')) {
+                setTimeout(() => {
+                    activeInput.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }, 350);
+            }
+        } 
+        // Ekran büyüdüyse (klavye kapandı)
+        else if (heightDifference < -100) {
+            chatContainer.style.bottom = '0px';
+        }
+        
+        lastViewportHeight = currentHeight;
+    });
+    
+    // Input focus için de ayarla
+    document.addEventListener('focusin', function(e) {
+        if (e.target.matches('#user-input, #ai-chat-input')) {
+            // 400ms sonra ayarla (klavye + toolbar açılmasını bekle)
+            setTimeout(() => {
+                chatContainer.style.bottom = '170px';
+            }, 400);
+        }
+    });
+    
+    document.addEventListener('focusout', function(e) {
+        if (e.target.matches('#user-input, #ai-chat-input')) {
+            // 200ms sonra eski haline döndür
+            setTimeout(() => {
+                chatContainer.style.bottom = '0px';
+            }, 200);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', fixChromeAutofillIssue);
