@@ -7718,28 +7718,24 @@ scrollbar-width: thin;
 }
 
 /* ======================================================
-   MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (GLOBAL FIX)
+   MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (FİNAL)
 ====================================================== */
 
-/* ======================================================
-   MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (GLOBAL FIX)
-====================================================== */
-
-/* 1. Tüm sayfa yüksekliğini dinamik viewport'a göre ayarla */
+/* 1. Sayfa Temeli */
 html, body {
-    height: 100dvh; /* Dynamic Viewport Height: Klavye ve adres çubuğunu hesaba katar */
+    height: 100dvh; 
     min-height: 100dvh;
-    overflow-x: hidden; /* Yan taşmayı engelle */
+    overflow: hidden; /* Scroll'u kökten engelle */
+    position: relative; /* Absolute konumlandırma için referans */
 }
 
-/* 2. KLAVYE AÇIK MODU (Ekran yüksekliği küçüldüğünde) */
+/* 2. KLAVYE AÇIK MODU (Ekran yüksekliği 600px altına düşünce) */
 @media screen and (max-height: 600px) {
 
-    /* --- A. GENEL GİZLEMELER --- */
-    /* Klavye açılınca üst menüyü ve gereksiz başlıkları gizle */
+    /* --- A. GİZLEMELER --- */
     .fixed-header, 
     .logo,
-    .sidebar_title, /* Sidebar başlıklarını (Chat with Mira vb.) gizle */
+    .sidebar_title,
     #tt-welcome h1,
     #tt-welcome p,
     .circle-container,
@@ -7748,51 +7744,62 @@ html, body {
     }
 
     /* --- B. ANA EKRAN (WELCOME) DÜZENLEMESİ --- */
-    /* Konteyneri esnek yap, inputu yukarı itme */
     .fixed-container {
-        height: 100dvh !important; /* Görünür alan kadar yükseklik */
-        position: fixed !important;
+        /* FIXED YERİNE ABSOLUTE KULLANIYORUZ */
+        position: absolute !important; 
+        
+        /* 100dvh YERİNE 100% YAP Kİ KLAVYE EKRANI KÜÇÜLTÜNCE ONA UYSUN */
+        height: 100% !important; 
+        
         bottom: 0 !important;
-        top: 0 !important;
-        justify-content: flex-end !important; /* İçeriği alta yasla */
-        padding-bottom: 10px !important;
-        align-items: flex-end !important;
+        left: 0 !important;
+        width: 100% !important;
+        justify-content: flex-end !important; /* İçeriği alta it */
+        padding-bottom: 15px !important; /* Inputu biraz daha yukarı kaldır */
+        align-items: center !important; /* Mobilde ortala */
+        z-index: 9999; /* Her şeyin üstünde */
     }
 
     .cw {
         padding: 0 !important;
         margin: 0 !important;
         height: auto !important;
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
-    /* Öneriler (Suggestions) listesinin yüksekliğini kısıtla ve kaydırılabilir yap */
+    /* Inputu saran kapsayıcı */
+    .input-wrapper {
+        width: 95% !important; /* Kenarlardan taşmasın */
+        margin-bottom: 5px !important;
+    }
+
+    /* Öneriler (Suggestions) */
     #suggestions {
-        max-height: 50px; /* Az yer kaplasın */
+        max-height: 45px;
         overflow-x: auto;
         overflow-y: hidden;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
         white-space: nowrap;
-        background: #fff; /* Okunabilirlik için */
-        z-index: 999;
+        background: transparent;
+        z-index: 10000;
     }
 
-    /* --- C. MIRA AI CHAT (SIDEBAR) DÜZENLEMESİ --- */
-    /* Sidebar overlay tam ekran olsun ama klavyenin üstünde kalsın */
+    /* --- C. MIRA AI CHAT (SIDEBAR) --- */
     .sidebar-overlay.open {
-        height: 100dvh !important;
+        height: 100% !important; /* 100dvh yerine % */
+        position: absolute !important;
         bottom: 0 !important;
-        top: 0 !important;
     }
 
-    /* Chat kutusu tüm boşluğu kaplasın */
     #sidebar-login, #ai-chat-box {
         height: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        padding-top: 0 !important; /* Başlık gizlendiği için padding'i sıfırla */
+        padding-top: 0 !important;
     }
 
-    /* Mesaj alanı kaydırılabilir olsun ve kalan alanı doldursun */
     #ai-chat-messages {
         flex: 1 !important;
         overflow-y: auto !important;
@@ -7800,25 +7807,23 @@ html, body {
         padding-bottom: 10px;
     }
 
-    /* Form container (Chat inputunu saran yapı) */
     .form-container {
         height: auto !important;
         flex: 1 !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: flex-end !important; /* Inputu alta it */
+        justify-content: flex-end !important;
     }
 
-    /* Chat input alanı */
     .ai-input-wrapper {
         margin-bottom: 0 !important;
         padding: 8px !important;
         background: #fff;
-        flex-shrink: 0; /* Küçülmesini engelle */
+        flex-shrink: 0;
     }
 }
 
-/* Inputa tıklayınca açılmasını engelleyen kesin komut */
+/* Chat Başlangıç Gizliliği (Inputa tıklayınca açılmaması için) */
 #chat-box.awaiting-start {
     display: none !important;
 }
