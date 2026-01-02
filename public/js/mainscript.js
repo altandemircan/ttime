@@ -4817,90 +4817,89 @@ const itemCount = window.cart.filter(i =>
             newChat.textContent = 'New Trip Plan';
             newChat.style.cursor = 'pointer';
 
-           newChat.onclick = function () {
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
+            newChat.onclick = function () {
+                const chatBox = document.getElementById('chat-box');
+                if (chatBox) chatBox.innerHTML = '';
+                const userInput = document.getElementById('user-input');
+                if (userInput) userInput.value = '';
 
-    // 1. Chat Kutusunu Sıfırla ve GİZLE
-    if (chatBox) {
-        chatBox.innerHTML = ''; // İçeriği temizle
-        
-        // [KRİTİK HAMLE] Sınıfı geri ekle ki inputa tıklayınca yine GİZLİ kalsın
-        chatBox.classList.add('awaiting-start'); 
-        
-        // Inline style varsa temizle (garanti olsun)
-        chatBox.style.display = ''; 
-    }
+                // Temizlik - global değişkenler
+                window.selectedCity = null;
+                window.selectedLocation = null;
+                window.selectedLocationLocked = false;
+                window.__locationPickedFromSuggestions = false;
+                window.lastUserQuery = '';
+                window.latestTripPlan = [];
+                window.cart = [];
 
-    if (userInput) userInput.value = '';
+                // Collage race condition fix - yeni token oluştur
+                try {
+                    if (typeof window.__ttNewTripToken === 'function') {
+                        window.__activeTripSessionToken = window.__ttNewTripToken();
+                    }
+                    window.__dayCollagePhotosByDay = {};
+                    window.__globalCollageUsed = new Set();
+                } catch (e) {
+                    console.warn('[collage] Token reset error:', e);
+                }
+                // Tüm harita ve overlay temizliği
+                if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+                window.routeElevStatsByDay = {};
+                window.__ttElevDayCache = {};
+                window._segmentHighlight = {};
+                window._lastSegmentDay = undefined;
+                window._lastSegmentStartKm = undefined;
+                window._lastSegmentEndKm = undefined;
 
-    // Temizlik - global değişkenler
-    window.selectedCity = null;
-    window.selectedLocation = null;
-    window.selectedLocationLocked = false;
-    window.__locationPickedFromSuggestions = false;
-    window.lastUserQuery = '';
-    window.latestTripPlan = [];
-    window.cart = [];
+                document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
 
-    // Collage race condition fix
-    try {
-        if (typeof window.__ttNewTripToken === 'function') {
-            window.__activeTripSessionToken = window.__ttNewTripToken();
-        }
-        window.__dayCollagePhotosByDay = {};
-        window.__globalCollageUsed = new Set();
-    } catch (e) {
-        console.warn('[collage] Token reset error:', e);
-    }
+                if (typeof updateCart === "function") updateCart();
+                document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+                const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+                if (sidebar) sidebar.classList.add('open');
 
-    // Harita ve overlay temizliği
-    if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-    window.routeElevStatsByDay = {};
-    window.__ttElevDayCache = {};
-    window._segmentHighlight = {};
-    window._lastSegmentDay = undefined;
-    window._lastSegmentStartKm = undefined;
-    window._lastSegmentEndKm = undefined;
+                // Welcome mesajı ekle
+                if (chatBox) {
+                    let indicator = document.getElementById('typing-indicator');
+                    if (!indicator) {
+                        indicator = document.createElement('div');
+                        indicator.id = 'typing-indicator';
+                        indicator.className = 'typing-indicator';
+                        indicator.innerHTML = '<span></span><span></span><span></span>';
+                        chatBox.appendChild(indicator);
+                    } else {
+                        indicator.style.display = 'block';
+                        indicator.innerHTML = '<span></span><span></span><span></span>';
+                    }
 
-    document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+                    const welcome = document.createElement('div');
+                    welcome.className = 'message bot-message';
+                    welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+                    chatBox.appendChild(welcome);
 
-    if (typeof updateCart === "function") updateCart();
-    document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-    const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-    if (sidebar) sidebar.classList.add('open');
+                    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+                }
 
-    // Welcome mesajını arka planda oluştur (Ama awaiting-start yüzünden görünmeyecek)
-    if (chatBox) {
-        let indicator = document.createElement('div');
-        indicator.id = 'typing-indicator';
-        indicator.className = 'typing-indicator';
-        indicator.innerHTML = '<span></span><span></span><span></span>';
-        chatBox.appendChild(indicator);
+                // input-wrapper tekrar görünür olsun
+                var iw = document.querySelector('.input-wrapper');
+                if (iw) iw.style.display = '';
 
-        const welcome = document.createElement('div');
-        welcome.className = 'message bot-message';
-        welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'><div>Let's get started.</div>";
-        chatBox.appendChild(welcome);
-    }
+                // Tüm seçili suggestionları temizle
+                document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
+                    el.classList.remove('selected-suggestion');
+                });
 
-    // Input alanını görünür yap
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = '';
+                // Trip Details ekranını tamamen kaldır (mobil ve desktop için)
+                const tripDetailsSection = document.getElementById("tt-trip-details");
+                if (tripDetailsSection) tripDetailsSection.remove();
 
-    // Suggestionları temizle
-    document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
-        el.classList.remove('selected-suggestion');
-    });
+                // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
+                const chatScreen = document.getElementById("chat-screen");
+                if (chatScreen) chatScreen.innerHTML = "";
 
-    // Detayları kaldır
-    const tripDetailsSection = document.getElementById("tt-trip-details");
-    if (tripDetailsSection) tripDetailsSection.remove();
-
-    // Mobil chat ekranını temizle
-    const chatScreen = document.getElementById("chat-screen");
-    if (chatScreen) chatScreen.innerHTML = "";
-};
+            };
         }
         const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         if (datesBtn && datesBtn.nextSibling !== newChat) {
