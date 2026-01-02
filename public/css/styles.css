@@ -7716,3 +7716,54 @@ scrollbar-width: thin;
         overflow: hidden !important;
     }
 }
+
+/* ======================================================
+   MOBİL KLAVYE DÜZENLEMESİ (Landscape & Keyboard Open)
+====================================================== */
+
+@media screen and (max-height: 600px) {
+    /* 1. Gereksiz Görselleri ve Yazıları Gizle */
+    .circle-container,          /* Yuvarlak resim */
+    #tt-welcome h1,             /* Hello I'm Mira */
+    #welcome-content,           /* Let's get started yazısı */
+    .fixed-header,              /* Üst menü çubuğu */
+    #tt-welcome p               /* Diğer paragraflar */
+    {
+        display: none !important;
+    }
+
+    /* 2. Ana Konteyneri Rahatlat */
+    /* Input grubunu ekranın ortasına/yukarısına taşı */
+    .fixed-container {
+        height: auto !important;       /* 100vh zorlamasını kaldır */
+        min-height: auto !important;
+        bottom: 0 !important;          /* Alta yapışık kalsın */
+        justify-content: flex-end;     /* İçeriği alta it */
+        padding-bottom: 10px !important;
+        position: fixed !important;    /* Sabit kalsın */
+    }
+
+    /* 3. Suggestions (Öneriler) Kısmını Düzelt */
+    /* Klavyenin altında kalmaması için */
+    #suggestions {
+        max-height: 45px;       /* Yüksekliği sınırla */
+        margin-bottom: 5px;     /* Input ile arasına mesafe */
+        overflow-x: auto;       /* Yan kaydırmaya izin ver */
+        overflow-y: hidden;     /* Dikey taşmayı engelle */
+        flex-shrink: 0;         /* Sıkışmasını engelle */
+    }
+
+    /* 4. Input Alanını Düzenle */
+    .input-wrapper {
+        margin-bottom: 5px !important; /* Alt boşluğu azalt */
+    }
+
+    /* 5. Arka Planın Bozulmasını Önle */
+    body {
+        /* Klavye açılınca background sıkışmasın */
+        background-attachment: fixed; 
+        min-height: 100vh;
+        /* Veya düz renk yapıp resmi gizleyebilirsin */
+        /* background-image: none !important; */
+    }
+}
