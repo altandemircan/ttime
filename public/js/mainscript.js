@@ -11785,22 +11785,6 @@ function attachImLuckyEvents() {
 }
 
 
-function showLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "flex";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-}
-
-function hideLoadingPanel() {
-    var loadingPanel = document.getElementById("loading-panel");
-    if (loadingPanel) loadingPanel.style.display = "none";
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-}
-
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
   // Kalın yazı
@@ -11949,16 +11933,19 @@ window.showLoadingPanel = function() {
     
     if (!panel) return;
     
-    // Paneli aç
+    // 1. Paneli aç
     panel.style.display = "flex"; 
     
-    // İlk mesajı sıfırla
+    // 2. EKSİK OLAN KISIM: İçeriği (cw) gizle
+    // Böylece loading panel ekrana tek başına hakim olur.
+    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+    
+    // 3. Mesaj Animasyonları (Mevcut kodun)
     if (msgEl) {
         msgEl.textContent = "Analyzing your request...";
         msgEl.style.opacity = 1;
     }
 
-    // Varsa eski döngüyü temizle
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
@@ -11970,18 +11957,15 @@ window.showLoadingPanel = function() {
     let current = 0;
     let isTransitioning = false;
 
-    // Döngüyü başlat
     window.loadingInterval = setInterval(() => {
         if (!msgEl || panel.style.display === 'none') return;
         if (isTransitioning) return;
         
         isTransitioning = true;
 
-        // Fade out
         msgEl.style.transition = "opacity 0.5s ease";
         msgEl.style.opacity = 0;
 
-        // Mesaj değişimi ve Fade in
         setTimeout(() => {
             current = (current + 1) % messages.length;
             if(msgEl) {
@@ -12001,9 +11985,19 @@ window.hideLoadingPanel = function() {
     if (panel) {
         panel.style.display = "none";
     }
+
     // Animasyonu durdur
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
+    }
+
+    // 4. EKSİK OLAN KISIM: Duruma göre içeriği geri getir
+    // Eğer sonuçlar geldiyse (welcomeHiddenForever true ise) cw kapalı kalmalı,
+    // yoksa (iptal edildiyse vs) cw geri gelmeli.
+    if (!window.__welcomeHiddenForever) {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
+    } else {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
 };
