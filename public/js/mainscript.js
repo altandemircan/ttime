@@ -11785,22 +11785,6 @@ function attachImLuckyEvents() {
 }
 
 
-function showLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "flex";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-}
-
-function hideLoadingPanel() {
-    var loadingPanel = document.getElementById("loading-panel");
-    if (loadingPanel) loadingPanel.style.display = "none";
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-}
-
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
   // Kalın yazı
@@ -11942,68 +11926,3 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
-
-window.showLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    const msgEl = document.getElementById('loading-message');
-    
-    if (!panel) return;
-    
-    // Paneli aç
-    panel.style.display = "flex"; 
-    
-    // İlk mesajı sıfırla
-    if (msgEl) {
-        msgEl.textContent = "Analyzing your request...";
-        msgEl.style.opacity = 1;
-    }
-
-    // Varsa eski döngüyü temizle
-    if (window.loadingInterval) clearInterval(window.loadingInterval);
-
-    const messages = [
-        "Analyzing your request",
-        "Finding places",
-        "Exploring route options",
-        "Compiling your travel plan"
-    ];
-    let current = 0;
-    let isTransitioning = false;
-
-    // Döngüyü başlat
-    window.loadingInterval = setInterval(() => {
-        if (!msgEl || panel.style.display === 'none') return;
-        if (isTransitioning) return;
-        
-        isTransitioning = true;
-
-        // Fade out
-        msgEl.style.transition = "opacity 0.5s ease";
-        msgEl.style.opacity = 0;
-
-        // Mesaj değişimi ve Fade in
-        setTimeout(() => {
-            current = (current + 1) % messages.length;
-            if(msgEl) {
-                msgEl.textContent = messages[current];
-                msgEl.style.opacity = 1;
-            }
-            
-            setTimeout(() => {
-                isTransitioning = false;
-            }, 500); 
-        }, 500); 
-    }, 3000); 
-};
-
-window.hideLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "none";
-    }
-    // Animasyonu durdur
-    if (window.loadingInterval) {
-        clearInterval(window.loadingInterval);
-        window.loadingInterval = null;
-    }
-};
