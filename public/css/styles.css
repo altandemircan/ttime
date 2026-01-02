@@ -7721,6 +7721,10 @@ scrollbar-width: thin;
    MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (GLOBAL FIX)
 ====================================================== */
 
+/* ======================================================
+   MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (GLOBAL FIX)
+====================================================== */
+
 /* 1. Tüm sayfa yüksekliğini dinamik viewport'a göre ayarla */
 html, body {
     height: 100dvh; /* Dynamic Viewport Height: Klavye ve adres çubuğunu hesaba katar */
