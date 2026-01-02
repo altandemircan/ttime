@@ -12029,66 +12029,84 @@ function stabilizeInputOnFocus() {
 document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
 
 
-// Basit ve etkili Chrome Autofill toolbar çözümü
-function fixChromeAutofillIssue() {
-    // Sadece mobil Chrome
-    if (!/Android.*Chrome\//.test(navigator.userAgent)) return;
+// Chrome Autofill Toolbar Algılama ve Çözüm
+function handleChromeAutofillToolbar() {
+    // Sadece mobil Chrome için
+    const isMobileChrome = /Android.*Chrome\//.test(navigator.userAgent);
+    if (!isMobileChrome) return;
     
-    const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) return;
+    let originalViewportHeight = window.innerHeight;
+    let autofillToolbarHeight = 0;
     
-    let lastViewportHeight = window.innerHeight;
-    
-    // Viewport değişikliklerini dinle
-    window.addEventListener('resize', function() {
-        const currentHeight = window.innerHeight;
-        const heightDifference = lastViewportHeight - currentHeight;
+    function checkForAutofillToolbar() {
+        const currentViewport = window.visualViewport?.height || window.innerHeight;
+        const windowHeight = window.innerHeight;
         
-        // Ekran önemli ölçüde küçüldüyse (klavye + toolbar açıldı)
-        if (heightDifference > 200) {
-            console.log('Klavye + Autofill toolbar açıldı');
-            
-            // Chat container'ı yukarı çek
-            // 100px (input için) + 70px (toolbar için) = 170px
-            chatContainer.style.bottom = '170px';
-            
-            // Input'u görünür yap
-            const activeInput = document.activeElement;
-            if (activeInput && activeInput.matches('#user-input, #ai-chat-input')) {
-                setTimeout(() => {
-                    activeInput.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }, 350);
-            }
-        } 
-        // Ekran büyüdüyse (klavye kapandı)
-        else if (heightDifference < -100) {
-            chatContainer.style.bottom = '0px';
+        // Klavye + toolbar yüksekliğini hesapla
+        const totalCoveredHeight = windowHeight - currentViewport;
+        
+        // Sadece klavye yüksekliği (tahmini)
+        const estimatedKeyboardHeight = totalCoveredHeight * 0.7; // %70 klavye
+        
+        // Autofill toolbar yüksekliği (kalan %30)
+        autofillToolbarHeight = totalCoveredHeight - estimatedKeyboardHeight;
+        
+        console.log('Autofill Toolbar detected, height:', autofillToolbarHeight, 'px');
+        
+        // Toolbar varsa chat container'ı yukarı kaydır
+        if (autofillToolbarHeight > 20) { // 20px'den büyükse toolbar var
+            adjustForAutofillToolbar(autofillToolbarHeight);
         }
-        
-        lastViewportHeight = currentHeight;
-    });
+    }
     
-    // Input focus için de ayarla
+    function adjustForAutofillToolbar(toolbarHeight) {
+        const chatContainer = document.getElementById('chat-container');
+        const input = document.activeElement;
+        
+        if (!chatContainer || !input) return;
+        
+        // 1. CSS ile chat container'ı yukarı kaydır
+        chatContainer.style.bottom = `${toolbarHeight + 50}px`; // Toolbar + ekstra 50px
+        
+        // 2. Input'u görünür alana getir
+        setTimeout(() => {
+            const inputRect = input.getBoundingClientRect();
+            const viewportHeight = window.visualViewport?.height || window.innerHeight;
+            
+            // Eğer input hala görünmüyorsa
+            if (inputRect.bottom > (viewportHeight - 50)) {
+                const scrollAmount = inputRect.bottom - viewportHeight + 100;
+                window.scrollBy({
+                    top: scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
+        }, 300);
+    }
+    
+    // Viewport değişikliklerini dinle (klavye açılması)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function() {
+            setTimeout(checkForAutofillToolbar, 200);
+        });
+    }
+    
+    // Input focus olduğunda kontrol et
     document.addEventListener('focusin', function(e) {
         if (e.target.matches('#user-input, #ai-chat-input')) {
-            // 400ms sonra ayarla (klavye + toolbar açılmasını bekle)
-            setTimeout(() => {
-                chatContainer.style.bottom = '170px';
-            }, 400);
+            setTimeout(checkForAutofillToolbar, 400); // Klavye + toolbar açılmasını bekle
         }
     });
     
+    // Input focus kaybolunca eski haline döndür
     document.addEventListener('focusout', function(e) {
         if (e.target.matches('#user-input, #ai-chat-input')) {
-            // 200ms sonra eski haline döndür
-            setTimeout(() => {
+            const chatContainer = document.getElementById('chat-container');
+            if (chatContainer) {
                 chatContainer.style.bottom = '0px';
-            }, 200);
+            }
         }
     });
 }
 
-document.addEventListener('DOMContentLoaded', fixChromeAutofillIssue);
+document.addEventListener('DOMContentLoaded', handleChromeAutofillToolbar);
