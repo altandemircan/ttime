@@ -610,7 +610,7 @@ ease;
     border: 1px solid #ddd;
     transition: all 0.2s ease-in-out;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    
+
 }
 .input-wrapper:focus-within {
     border: 1px solid #8a4af3;
@@ -1208,20 +1208,18 @@ ease;
     body {
         overflow: scroll;
     }
-    #chat-container {
+    
+   #chat-container {
         position: fixed;
         border-radius: 0;
-        bottom: 0;
+        bottom: 0; /* Normal durumda en altta */
         width: calc(100% - 40px) !important;
+        transition: bottom 0.3s ease; /* Yumuşak geçiş */
     }
-      #chat-container {
-        width: 100% !important;
-        max-height: calc(var(--visible-height, 100dvh) - 60px) !important;
-        /* Ayrıca şunu da ekle: */
-        top: 60px; /* Header'dan sonra başla */
-        bottom: 0;
-        height: auto !important;
-        min-height: calc(100dvh - 60px);
+    
+    /* Input'a tıklandığında 100px yukarı çek */
+    #chat-container.input-focused {
+        bottom: 100px !important;
     }
 
     #tt-welcome {

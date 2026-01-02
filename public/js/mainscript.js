@@ -12000,30 +12000,29 @@ if (window.visualViewport) {
     handleVisualViewportResize();
 }
 
-// Tüm cihazlar için Input Focus Sabitleme
+// CSS ile Input Focus Yönetimi
 function stabilizeInputOnFocus() {
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+    
+    // Input'a tıklandığında
     document.addEventListener('focusin', function(e) {
         const input = e.target;
         if (!input.matches('#user-input, #ai-chat-input')) return;
-
-        console.log('Input focus stabilize ediliyor...');
-
-        const inputRect = input.getBoundingClientRect();
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-        const targetScroll = currentScroll + inputRect.top - 100;
         
-        window.scrollTo({
-            top: targetScroll,
-            behavior: 'instant'
-        });
+        // Chat container'ı 100px yukarı çek
+        chatContainer.classList.add('input-focused');
+    });
+    
+    // Input'tan çıkıldığında
+    document.addEventListener('focusout', function(e) {
+        const input = e.target;
+        if (!input.matches('#user-input, #ai-chat-input')) return;
         
+        // 200ms bekleyip eski haline döndür
         setTimeout(() => {
-            const newRect = input.getBoundingClientRect();
-            if (newRect.top < 50 || newRect.top > 150) {
-                const adjustedScroll = (window.pageYOffset || document.documentElement.scrollTop) + newRect.top - 100;
-                window.scrollTo({ top: adjustedScroll, behavior: 'smooth' });
-            }
-        }, 300);
+            chatContainer.classList.remove('input-focused');
+        }, 200);
     });
 }
 
