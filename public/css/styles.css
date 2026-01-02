@@ -1209,18 +1209,7 @@ ease;
         overflow: scroll;
     }
     
-   #chat-container {
-        position: fixed;
-        border-radius: 0;
-        bottom: 0; /* Normal durumda en altta */
-        width: calc(100% - 40px) !important;
-        transition: bottom 0.3s ease; /* Yumuşak geçiş */
-    }
-    
-    /* Input'a tıklandığında 100px yukarı çek */
-    #chat-container.input-focused {
-        bottom: 100px !important;
-    }
+   
 
     #tt-welcome {
         width: calc(100% - 40px) !important;
@@ -7755,22 +7744,16 @@ scrollbar-width: thin;
 
 /* Mobile için özel düzenleme */
 @media (max-width: 768px) {
-    body {
-        min-height: 100dvh; /* dvh kullan */
-        height: auto;
-        overflow-y: auto; /* Scroll'a izin ver */
-        -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
+   #chat-container {
+        position: fixed;
+        border-radius: 0;
+        bottom: 0; /* Normal durumda en altta */
+        width: calc(100% - 40px) !important;
+        transition: bottom 0.3s ease; /* Yumuşak geçiş */
     }
     
-    /* Kesin çözüm için: */
-    html {
-        height: 100%;
-        overflow: hidden; /* Sadece html overflow hidden */
-    }
-    
-    body {
-        height: 100%;
-        overflow-y: auto;
-        position: relative;
+    /* Input'a tıklandığında 100px yukarı çek */
+    #chat-container.input-focused {
+        bottom: 100px !important;
     }
 }
