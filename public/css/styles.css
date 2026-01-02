@@ -210,14 +210,7 @@ ease;
 .confirmation-container {
     padding: 20px;
 }
-.cw {
-    width: 100%;
-    display: grid;
-    max-width: 860px;
-    gap: 30px;
-    padding: 60px 10px;
-    margin: 0 auto;
-}
+
 /* Welcome kısmı */
 #tt-welcome {
     text-align: center;
@@ -496,6 +489,54 @@ ease;
 }
 
 
+
+/* styles.css -> .fixed-container bul ve değiştir */
+.fixed-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh; /* Klavye açılınca otomatik kısalır */
+    display: flex;         /* Flexbox şart */
+    flex-direction: column; 
+    z-index: 1000;
+    pointer-events: none; /* Arka plan tıklanabilsin diye */
+}
+
+/* styles.css -> .cw sınıfını bul ve değiştir */
+.cw {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+    pointer-events: auto;
+    
+    /* YENİ EKLENENLER: */
+    flex: 1;              /* Kalan tüm boşluğu kapla */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* İçeriği dikey ortala */
+    overflow-y: auto;     /* Klavye çok sıkıştırırsa kaydırılabilir olsun */
+    min-height: 0;        /* Flex taşmasını önler */
+}
+
+/* styles.css -> .input-wrapper sınıfını bul ve değiştir */
+.input-wrapper {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+    pointer-events: auto;
+    
+    /* YENİ EKLENENLER: */
+    flex-shrink: 0;       /* Asla küçülme, hep sabit kal */
+    background: transparent; /* Veya ihtiyaca göre #fff */
+    margin-bottom: 0 !important; /* Alt boşluğu sıfırla */
+}
+
+
 /* User Mesajı */
 .user-message {
     background: rgb(233 243 248 / 90%);
@@ -576,38 +617,7 @@ ease;
     cursor: pointer;
 }
 
-.fixed-container {
-    bottom: 0;
-    background-color: #ffffff;
-    height: calc(100vh - 40px) !important;
-    align-items: baseline;
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin: 0 auto;
-    align-content: center;
-    max-width: 1200px;
-}
 
-.input-wrapper {
-    width: -webkit-fill-available;
-    position: relative;
-    gap: 10px;
-    border-radius: 20px;
-    display: flex;
-    justify-content: space-between;
-    flex-direction: column;
-    align-items: center;
-    flex-shrink: 0;
-    position: relative;
-    border-radius: 10px;
-    background: #ffffff;
-    padding: 10px;
-    padding-inline: 0;
-    gap: 10px;
-    border: 1px solid #ddd;
-    transition: all 0.2s ease-in-out;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-}
 .input-wrapper:focus-within {
     border: 1px solid #8a4af3;
 }
@@ -7339,37 +7349,31 @@ position: absolute;
 
 
 
-.ai-input-wrapper {
-        width: -webkit-fill-available;
-    position: relative;
-    gap: 10px;
-    border-radius: 20px;
-    display: flex;
-    justify-content: space-between;
-    flex-direction: column;
-    align-items: center;
-    flex-shrink: 0;
-    position: relative;
-    border-radius: 10px;
-    background: #ffffff;
-    padding: 10px;
-    padding-inline: 0;
-    gap: 10px;
-    border: 1px solid #ddd;
-    transition: all 0.2s 
-ease-in-out;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-}
-/* Form Konteyner */
+/* Sidebar içindeki container */
 .form-container {
-text-align: center;
-    padding: 4px;
-    /* border-radius: 20px; */
-    height: calc(100vh - 200px);
+    height: 100dvh !important; /* Tam boy */
     display: flex;
-    flex-direction: column-reverse;
-    justify-content: flex-start;
-    max-height: -webkit-fill-available;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Mesajların olduğu alan */
+#ai-chat-messages {
+    flex: 1;              /* Esnek alan: Boşluğu doldur */
+    overflow-y: auto;     /* Taşıyorsa kaydır */
+    padding: 15px;
+    height: auto !important; /* Sabit yüksekliği iptal et */
+}
+
+/* Mira Chat input alanı */
+.ai-input-wrapper {
+    flex-shrink: 0;       /* Sabit kal */
+    padding: 10px;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+    /* position: fixed; <-- Bunu SİL, flex kullanıyoruz */
+    /* bottom: 0;       <-- Bunu SİL */
 }
 
 /* Form İçeriği */
@@ -7672,15 +7676,7 @@ scrollbar-width: thin;
         overflow: hidden !important; /* Bu önemli */
     }
     
-    /* Mesajlar alanı - SCROLLABLE */
-    #ai-chat-messages {
-        flex: 1 !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        
-        min-height: 0 !important;
-        /* height ve max-height KALDIR */
-    }
+   
     
     /* AI Input alanı - STICKY ÇALIŞMASI İÇİN */
     #ai-chat-box .ai-input-wrapper {
