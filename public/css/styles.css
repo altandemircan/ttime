@@ -7851,23 +7851,26 @@ scrollbar-width: thin;
 }
 
 /* style_d.css'e ekle - Samsung için özel */
-@media (max-width: 768px) and (hover: none) {
-    /* Touch cihazlar için */
+/* Android/Samsung için Temel Input Güvenliği */
+@media (max-width: 768px) {
     #user-input, #ai-chat-input {
-        font-size: 16px !important; /* iOS zoom'u engellemek için */
-        touch-action: manipulation;
+        /* Yazı boyutunu sabitle (iOS zoom'u önler, Android'de de tutarlılık sağlar) */
+        font-size: 16px !important;
+        /* Yeterli yükseklik ve iç boşluk (padding) */
+        min-height: 44px !important;
+        line-height: 1.4 !important;
     }
     
     .input-wrapper {
-        /* Samsung klavye toolbar'ı için ekstra alan */
-        padding-bottom: 20px !important;
-        margin-bottom: constant(safe-area-inset-bottom) !important;
-        margin-bottom: env(safe-area-inset-bottom) !important;
+        /* Input alanının altında her ihtimale karşı güvenli bir boşluk bırak */
+        padding-bottom: 10px !important;
     }
     
-    /* Klavye açıkken chat box'ın daha küçük olması */
-    body.keyboard-open #chat-box {
-        max-height: 60vh !important;
-        padding-bottom: 150px !important; /* Klavye + toolbar için yer */
+    /* Klavye açıkken, chat mesajlarının olduğu alanın maksimum yüksekliğini sınırla */
+    /* Bu, input'un daha yukarıda kalmasını sağlar */
+    body:has(#user-input:focus) #chat-box,
+    body:has(#ai-chat-input:focus) #chat-box {
+        max-height: 55vh !important;
+        overflow-y: auto !important;
     }
 }

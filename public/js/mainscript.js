@@ -1,3 +1,53 @@
+// mainscript_d.js dosyasının en başına ekle:
+(function() {
+    // Mobilde viewport yüksekliğini doğru hesapla
+    function updateViewportHeight() {
+        // iOS Safari için visualViewport kullan
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--visible-height', `${vh}px`);
+        
+        // Chat box'ı yeniden boyutlandır
+        const chatBox = document.getElementById('chat-box');
+        const chatContainer = document.getElementById('chat-container');
+        
+        if (chatBox && window.innerWidth <= 768) {
+            // Chat box için dinamik yükseklik
+            const headerHeight = 60; // Header yüksekliği
+            const inputHeight = 80; // Input alanı yüksekliği
+            chatBox.style.maxHeight = `${vh - headerHeight - inputHeight}px`;
+        }
+        
+        if (chatContainer && window.innerWidth <= 768) {
+            chatContainer.style.height = `${vh - 60}px`;
+        }
+    }
+    
+    // İlk yükleme
+    setTimeout(updateViewportHeight, 100);
+    
+    // Event listener'lar
+    window.addEventListener('resize', updateViewportHeight);
+    window.addEventListener('orientationchange', function() {
+        setTimeout(updateViewportHeight, 300);
+    });
+    
+    // iOS için ek event
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateViewportHeight);
+    }
+    
+    // Input focus olduğunda (klavye açıldığında)
+    document.addEventListener('focusin', function(e) {
+        if (e.target.matches('input, textarea')) {
+            setTimeout(updateViewportHeight, 300);
+        }
+    });
+})();
+
+
+
+
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
@@ -11949,3 +11999,242 @@ if (window.visualViewport) {
     // İlk açılışta tetikle
     handleVisualViewportResize();
 }
+
+// mainscript_d.js dosyasına ekle:
+// Samsung/Android klavye toolbar fix'i
+function setupKeyboardToolbarFix() {
+    if (!navigator.userAgent.toLowerCase().includes('android')) return;
+    
+    let lastFocusElement = null;
+    let keyboardHeight = 0;
+    
+    // Input focus olduğunda
+    document.addEventListener('focusin', function(e) {
+        if (e.target.matches('input, textarea, #user-input, #ai-chat-input')) {
+            lastFocusElement = e.target;
+            
+            // Önce mevcut görünür yüksekliği kaydet
+            const windowHeight = window.innerHeight;
+            const visualHeight = window.visualViewport ? window.visualViewport.height : windowHeight;
+            
+            // Klavye yüksekliğini tahmin et (Samsung toolbar dahil)
+            keyboardHeight = windowHeight - visualHeight;
+            
+            // Samsung toolbar için ekstra 60-80px ekle
+            const estimatedToolbarHeight = 70; // Samsung toolbar tahmini yükseklik
+            const totalOffset = keyboardHeight + estimatedToolbarHeight;
+            
+            console.log('Keyboard + Toolbar height estimated:', totalOffset);
+            
+            // Scroll işlemi için biraz bekleyelim
+            setTimeout(() => {
+                scrollInputIntoView(e.target, totalOffset);
+            }, 350); // Klavye animasyonu için bekle
+        }
+    });
+    
+    // Input focus kaybettiğinde
+    document.addEventListener('focusout', function(e) {
+        if (e.target.matches('input, textarea, #user-input, #ai-chat-input')) {
+            // Focus kaybolduğunda scroll'u sıfırla
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 200);
+        }
+    });
+    
+    function scrollInputIntoView(inputElement, offset) {
+        if (!inputElement) return;
+        
+        // Input'un pozisyonunu al
+        const inputRect = inputElement.getBoundingClientRect();
+        const inputBottom = inputRect.bottom;
+        
+        // Görünür alanın alt sınırı
+        const viewportBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        
+        // Eğer input görünmüyorsa veya toolbar altında kalıyorsa
+        if (inputBottom > (viewportBottom - offset)) {
+            // Scroll pozisyonunu hesapla
+            const scrollY = window.scrollY || window.pageYOffset;
+            const targetScroll = scrollY + (inputBottom - viewportBottom) + offset + 20;
+            
+            // Yumuşak scroll yap
+            window.scrollTo({
+                top: targetScroll,
+                behavior: 'smooth'
+            });
+            
+            // Alternatif: input'a odaklan
+            setTimeout(() => {
+                inputElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+            }, 100);
+        }
+    }
+    
+    // Resize event'ini de dinle (klavye açılıp kapanması)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function() {
+            if (lastFocusElement && document.activeElement === lastFocusElement) {
+                setTimeout(() => {
+                    const windowHeight = window.innerHeight;
+                    const visualHeight = window.visualViewport.height;
+                    const currentKeyboardHeight = windowHeight - visualHeight;
+                    
+                    if (currentKeyboardHeight > 100) { // Klavye açık
+                        scrollInputIntoView(lastFocusElement, currentKeyboardHeight + 70);
+                    }
+                }, 300);
+            }
+        });
+    }
+}
+
+// DOM yüklendiğinde çalıştır
+document.addEventListener('DOMContentLoaded', function() {
+    setupKeyboardToolbarFix();
+});
+
+
+// mainscript_d.js'ye ekle:
+// Klavye durumunu tespit etmek için
+(function() {
+    // Klavye durumunu izle
+    let isKeyboardOpen = false;
+    let originalViewportHeight = window.innerHeight;
+    
+    function checkKeyboardState() {
+        const currentHeight = window.innerHeight;
+        const isNowOpen = (currentHeight < originalViewportHeight * 0.7);
+        
+        if (isNowOpen !== isKeyboardOpen) {
+            isKeyboardOpen = isNowOpen;
+            
+            // Body class'ını güncelle
+            if (isKeyboardOpen) {
+                document.body.classList.add('keyboard-open');
+                console.log('Keyboard opened');
+                
+                // Samsung toolbar fix: input'u göster
+                const activeInput = document.activeElement;
+                if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
+                    setTimeout(() => {
+                        activeInput.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                        
+                        // Chat box'ı da aşağı kaydır
+                        const chatBox = document.getElementById('chat-box');
+                        if (chatBox) {
+                            chatBox.scrollTop = chatBox.scrollHeight;
+                        }
+                    }, 400);
+                }
+            } else {
+                document.body.classList.remove('keyboard-open');
+                console.log('Keyboard closed');
+            }
+        }
+        
+        originalViewportHeight = currentHeight;
+    }
+    
+    // Resize event'ini dinle (klavye açılıp kapanması)
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(checkKeyboardState, 100);
+    });
+    
+    // Input focus event'leri
+    document.addEventListener('focusin', function(e) {
+        if (e.target.matches('input, textarea')) {
+            // 500ms sonra klavye kontrolü yap
+            setTimeout(() => {
+                checkKeyboardState();
+                
+                // Samsung için özel: Input'u viewport'un ortasına getir
+                const inputRect = e.target.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                
+                // Eğer input ekranın alt çeyreğindeyse yukarı kaydır
+                if (inputRect.bottom > viewportHeight * 0.6) {
+                    const scrollAmount = inputRect.bottom - (viewportHeight * 0.4);
+                    window.scrollBy({
+                        top: scrollAmount,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 500);
+        }
+    });
+    
+    // Sayfa yüklendiğinde orijinal yüksekliği kaydet
+    setTimeout(() => {
+        originalViewportHeight = window.innerHeight;
+    }, 1000);
+})();
+
+// Samsung/Android Klavye Araç Çubuğu (Toolbar) için Gelişmiş Fix
+function setupSamsungKeyboardFix() {
+    // Sadece Android'de çalışsın
+    if (!navigator.userAgent.toLowerCase().includes('android')) return;
+
+    let pendingScroll = null;
+
+    // INPUT'A TIKLANDIĞINDA (FOCUS)
+    document.addEventListener('focusin', function(e) {
+        const input = e.target;
+        if (!input.matches('#user-input, #ai-chat-input, input, textarea')) return;
+
+        console.log('Input focus oldu, bekleniyor...');
+
+        // ÖNCE: Tüm bekleyen timeout'ları temizle
+        if (pendingScroll) clearTimeout(pendingScroll);
+
+        // 1. ADIM: Hemen küçük bir scroll yap (klavye animasyonunu tetikle)
+        setTimeout(() => {
+            input.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+
+        // 2. ADIM: Asıl pozisyonlamayı, klavye ve araç çubuğu TAMAMEN açıldıktan SONRA yap
+        pendingScroll = setTimeout(() => {
+            // Görünür alanı hesapla
+            const visualHeight = window.visualViewport?.height || window.innerHeight;
+            
+            // Input'un mevcut konumunu al
+            const inputRect = input.getBoundingClientRect();
+            
+            // Araç çubuğu için ekstra "güvenli" mesafe (dinamik olarak hesapla)
+            // Kritik nokta: "center" yerine "start" kullanarak inputu ekranın üstüne yaklaştırıyoruz.
+            // Bu, araç çubuğu çıksa da çıkmasa da iyi görünmesini sağlar.
+            const targetPosition = inputRect.top - 100; // Input'u 100px aşağı kaydır
+            
+            window.scrollTo({
+                top: window.pageYOffset + targetPosition,
+                behavior: 'smooth'
+            });
+            console.log('Gecikmeli scroll tamamlandı.');
+            
+            pendingScroll = null;
+        }, 650); // ✅ KRİTİK: Bu gecikmeyi 650ms'ye çıkarın. Bu, Samsung'un araç çubuğunu yukarı itmesi için yeterli süre.
+    });
+
+    // INPUT'TAN ÇIKILDIĞINDA (FOCUS OUT)
+    document.addEventListener('focusout', function(e) {
+        if (pendingScroll) {
+            clearTimeout(pendingScroll);
+            pendingScroll = null;
+        }
+        // İsteğe bağlı: Klavye kapanınca sayfayı başa al
+        setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 200);
+    });
+}
+
+// Sayfa yüklendiğinde bu fonksiyonu çalıştır
+document.addEventListener('DOMContentLoaded', setupSamsungKeyboardFix);
