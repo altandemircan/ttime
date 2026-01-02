@@ -1157,12 +1157,36 @@ const __cityCoordCache = new Map();
 
 chatInput.addEventListener("input", function() {
     if (window.__programmaticInput) return;
+
+    // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı? (Sadece gün mü değişti?)
+    if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
+        const currentInput = this.value || "";
+        // Inputtaki "2 days" gibi kısımları temizle, sadece şehri al
+        const currentLocName = typeof extractLocationQuery === 'function' 
+            ? extractLocationQuery(currentInput) 
+            : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
+
+        const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const savedText = normalize(window.selectedSuggestion.displayText);
+        const currentText = normalize(currentLocName);
+
+        // Eğer kayıtlı şehir ismi, şu an yazılı olanı kapsıyorsa (örn: "Venice, IT" içinde "Venice" var)
+if (savedText === currentText && currentText.length > 1) {             // Sadece gün sayısını güncelle, kilidi açma
+             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+             if (dayMatch && window.selectedLocation) {
+                 window.selectedLocation.days = parseInt(dayMatch[1], 10);
+             }
+             if (typeof enableSendButton === 'function') enableSendButton();
+             return; // SEÇİMİ SIFIRLAMADAN ÇIK
+        }
+    }
+
+    // Şehir ismi değiştiyse seçimi iptal et
     window.__locationPickedFromSuggestions = false;
     window.selectedLocationLocked = false;
     window.selectedLocation = null;
     disableSendButton && disableSendButton();
 });
-
 
 
 // === handleAnswer Fonksiyonunun Tam ve Güncel Hali ===
@@ -1292,17 +1316,51 @@ async function handleAnswer(answer) {
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('user-input');
-  if (!inp) return;
-  inp.addEventListener('input', () => {
-    // Programatik set fonksiyonun varsa ve flag kullanıyorsan:
-    if (window.__programmaticInput) return;
-    // Kullanıcı elle değiştirdi → seçim iptal
-    window.__locationPickedFromSuggestions = false;
-    window.selectedLocationLocked = false;
-    window.selectedLocation = null;
-    disableSendButton && disableSendButton();
-  });
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+
+    inp.addEventListener('input', () => {
+        // Programatik set fonksiyonu kontrolü
+        if (window.__programmaticInput) return;
+
+        // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı?
+        if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
+            const currentInput = inp.value || "";
+            
+            // Şehir ismini ayıkla (gün sayılarını temizle)
+            const currentLocName = typeof extractLocationQuery === 'function' 
+                ? extractLocationQuery(currentInput) 
+                : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
+
+            // Normalizasyon (küçük harf, noktalama yok)
+            const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const savedText = normalize(window.selectedSuggestion.displayText);
+            const currentText = normalize(currentLocName);
+
+            // === (TAM EŞİTLİK) KONTROLÜ
+            // Beşiktaş == Beşiktaş -> Eşit, seçimi koru.
+            // Beşiktaş != Beşi    -> Eşit değil, kilidi aç, öneri getir.
+            if (savedText === currentText && currentText.length > 1) {
+                const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+                
+                // Eğer gün sayısı varsa güncelle
+                if (dayMatch && window.selectedLocation) {
+                    window.selectedLocation.days = parseInt(dayMatch[1], 10);
+                }
+                
+                // Gönder butonunu aktif et ve çık (Arama yapma)
+                if (typeof enableSendButton === 'function') enableSendButton();
+                return; 
+            }
+        }
+
+        // Buraya düşerse: Kullanıcı harf sildi veya şehri değiştirdi.
+        // Seçimi iptal et ki yeni öneriler gelsin.
+        window.__locationPickedFromSuggestions = false;
+        window.selectedLocationLocked = false;
+        window.selectedLocation = null;
+        disableSendButton && disableSendButton();
+    });
 });
 
 function addCanonicalMessage(canonicalStr) {
@@ -4495,20 +4553,25 @@ async function updateCart() {
                   ` : ''
                 }
               </div>
-              <button class="add-favorite-btn"
+         <button class="add-favorite-btn"
+                onclick="toggleFavFromCart(this)"
                 data-name="${item.name}"
                 data-category="${item.category}"
                 data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                data-image="${item.image || ""}">
+                
                 <span class="fav-heart"
                   data-name="${item.name}"
                   data-category="${item.category}"
                   data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                  data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                  <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                  data-image="${item.image || ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
                 </span>
                 <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
               </button>
+
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                 Remove place
               </button>

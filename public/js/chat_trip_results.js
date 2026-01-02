@@ -53,7 +53,12 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <img src="${catIcon}" alt="${category}"> ${category}
             </div>
             
-            <span class="fav-heart" data-name="${name}" data-category="${category}" data-lat="${lat}" data-lon="${lon}">
+            <span class="fav-heart" 
+                  data-name="${name}" 
+                  data-category="${category}" 
+                  data-lat="${lat}" 
+                  data-lon="${lon}" 
+                  data-image="${image}">
                 <img class="fav-icon" src="${favIconSrc}" alt="Favorite">
             </span>
 
