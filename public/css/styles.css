@@ -3,7 +3,7 @@ body {
     /* display: block; */
     /* justify-content: center; */
     align-items: center;
-    height: 100vh;
+
     background-color: #ffffff;
     color: #333;
     flex-direction: column;
