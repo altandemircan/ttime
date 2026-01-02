@@ -388,7 +388,8 @@ ease;
     padding: 20px !important;
     border-radius: 0 !important;
     bottom: 0;
-    max-height: calc(100vh - 60px);
+   max-height: calc(100dvh - 60px); 
+    padding-bottom: env(safe-area-inset-bottom); /* iPhone alt çubuğu için güvenli alan */
     align-items: flex-end;
     align-content: flex-end;
     flex-direction: row;
@@ -400,7 +401,7 @@ ease;
 #chat-box {
     flex-grow: 1;
     overflow-y: auto;
-    max-height: calc(100vh - 100px);
+    max-height: calc(100dvh - 100px)
     padding-right: 20px;
     margin-bottom: 10px;
     border-radius: 15px;
@@ -576,17 +577,7 @@ ease;
     cursor: pointer;
 }
 
-.fixed-container {
-    bottom: 0;
-    background-color: #ffffff;
-    height: calc(100vh - 40px) !important;
-    align-items: baseline;
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin: 0 auto;
-    align-content: center;
-    max-width: 1200px;
-}
+
 
 .input-wrapper {
     width: -webkit-fill-available;
@@ -7720,6 +7711,18 @@ scrollbar-width: thin;
 /* ======================================================
    MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (FİNAL)
 ====================================================== */
+.fixed-container {
+    bottom: 0;
+    background-color: #ffffff;
+height: calc(100dvh - 40px) !important;
+    align-items: baseline;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0 auto;
+    align-content: center;
+    max-width: 1200px;
+}
+
 
 /* 1. Sayfa Temeli */
 html, body {
@@ -7788,7 +7791,7 @@ html, body {
 
     /* --- C. MIRA AI CHAT (SIDEBAR) --- */
     .sidebar-overlay.open {
-        height: 100% !important; /* 100dvh yerine % */
+height: 100dvh !important;
         position: absolute !important;
         bottom: 0 !important;
     }
