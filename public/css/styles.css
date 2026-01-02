@@ -7813,3 +7813,8 @@ html, body {
         flex-shrink: 0; /* Küçülmesini engelle */
     }
 }
+
+/* Inputa tıklayınca açılmasını engelleyen kesin komut */
+#chat-box.awaiting-start {
+    display: none !important;
+}
