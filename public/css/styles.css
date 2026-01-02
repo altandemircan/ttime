@@ -7801,3 +7801,73 @@ scrollbar-width: thin;
         padding-bottom: 20px;
     }
 }
+
+/* Samsung klavye toolbar fix için */
+@media (max-width: 768px) {
+    /* Chat input wrapper için özel padding */
+    .input-wrapper {
+        padding-bottom: env(safe-area-inset-bottom, 10px) !important;
+        padding-bottom: constant(safe-area-inset-bottom, 10px) !important; /* Eski iOS */
+    }
+    
+    /* Samsung için özel düzenleme */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        #chat-container {
+            padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+        }
+        
+        .input-wrapper {
+            margin-bottom: env(safe-area-inset-bottom) !important;
+        }
+    }
+    
+    /* Android/Samsung için klavye açıkken özel stil */
+    body.keyboard-open {
+        overflow: hidden !important;
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    body.keyboard-open #chat-container {
+        position: absolute !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        height: 100% !important;
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    
+    body.keyboard-open .input-wrapper {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 10px !important;
+        right: 10px !important;
+        z-index: 9999 !important;
+        background: white !important;
+        box-shadow: 0 -2px 20px rgba(0,0,0,0.15) !important;
+        border-radius: 12px 12px 0 0 !important;
+    }
+}
+
+/* style_d.css'e ekle - Samsung için özel */
+@media (max-width: 768px) and (hover: none) {
+    /* Touch cihazlar için */
+    #user-input, #ai-chat-input {
+        font-size: 16px !important; /* iOS zoom'u engellemek için */
+        touch-action: manipulation;
+    }
+    
+    .input-wrapper {
+        /* Samsung klavye toolbar'ı için ekstra alan */
+        padding-bottom: 20px !important;
+        margin-bottom: constant(safe-area-inset-bottom) !important;
+        margin-bottom: env(safe-area-inset-bottom) !important;
+    }
+    
+    /* Klavye açıkken chat box'ın daha küçük olması */
+    body.keyboard-open #chat-box {
+        max-height: 60vh !important;
+        padding-bottom: 150px !important; /* Klavye + toolbar için yer */
+    }
+}
