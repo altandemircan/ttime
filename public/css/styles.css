@@ -7071,7 +7071,7 @@ position: absolute;
     background: #ffffff;
     max-width: 1200px;
     /* width: 100%; */
-    display: grid;
+    display: flex;
     max-width: 860px;
     gap: 30px;
     padding: 60px 10px;
