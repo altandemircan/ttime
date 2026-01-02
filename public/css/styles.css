@@ -7090,33 +7090,7 @@ position: absolute;
   background: #ffffff;
 }
 /* TRIP LOADING */
-.loading-panel {
-    /* position: absolute;  <-- BUNU VE KOORDİNATLARI KALDIRIYORUZ */
-    /* left: 0; */
-    /* right: 0; */
-    /* z-index: 1200; */
-    
-    display: none; /* JS ile açılacak */
-    width: 100%;
-    box-sizing: border-box;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #ffffff;
-    
-    /* .cw sınıfı ile birebir aynı yerleşim ayarları: */
-    max-width: 860px; 
-    gap: 30px;
-    padding: 60px 10px;
-    margin: 0 auto; 
-}
 
-/* Eğer JS ile display:grid veriyorsan düzenin bozulmaması için: */
-.loading-panel[style*="display: block"], 
-.loading-panel[style*="display: grid"],
-.loading-panel[style*="display: flex"] {
-    display: grid !important; /* İçeriğin yapısı grid ise bunu koru */
-}
 
 
 
