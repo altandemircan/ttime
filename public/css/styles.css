@@ -7643,6 +7643,14 @@ scrollbar-width: thin;
 
 /* En basit fix - direkt pozisyonlama */
 @media (max-width: 768px) {
+    html, body {
+    height: 100%; /* Fallback */
+    height: var(--visible-height, 100dvh); /* JS çalışırsa değişkeni, çalışmazsa dvh kullan */
+    overflow: hidden; /* Sayfanın kendisinin kaymasını engeller */
+    position: fixed; /* Mobilde scroll zıplamasını önler */
+    width: 100%;
+}
+
     /* Mira AI Sidebar için mobil düzen */
     .sidebar-overlay.sidebar-login.open {
         position: fixed !important;        

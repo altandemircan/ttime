@@ -11924,3 +11924,28 @@ window.hideLoadingPanel = function() {
         window.loadingInterval = null;
     }
 };
+
+// === KLAVYE VE EKRAN YÜKSEKLİK FİX (Visual Viewport API) ===
+if (window.visualViewport) {
+    function handleVisualViewportResize() {
+        // Klavye açıldığında/kapandığında gerçek görünür yüksekliği al
+        const height = window.visualViewport.height;
+        
+        // Bu yüksekliği bir CSS değişkenine ata
+        document.documentElement.style.setProperty('--visible-height', `${height}px`);
+        
+        // Eğer bir inputa odaklanılmışsa ve klavye açılmışsa, içeriği yukarı kaydır
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+             setTimeout(() => {
+                 window.scrollTo(0, 0); // Sayfanın gereksiz scroll olmasını engelle
+                 // İhtiyaç varsa buraya chat kutusunun en altına scroll kodu eklenebilir
+             }, 100);
+        }
+    }
+
+    window.visualViewport.addEventListener('resize', handleVisualViewportResize);
+    window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
+    
+    // İlk açılışta tetikle
+    handleVisualViewportResize();
+}
