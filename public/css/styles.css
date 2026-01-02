@@ -7718,52 +7718,98 @@ scrollbar-width: thin;
 }
 
 /* ======================================================
-   MOBİL KLAVYE DÜZENLEMESİ (Landscape & Keyboard Open)
+   MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (GLOBAL FIX)
 ====================================================== */
 
+/* 1. Tüm sayfa yüksekliğini dinamik viewport'a göre ayarla */
+html, body {
+    height: 100dvh; /* Dynamic Viewport Height: Klavye ve adres çubuğunu hesaba katar */
+    min-height: 100dvh;
+    overflow-x: hidden; /* Yan taşmayı engelle */
+}
+
+/* 2. KLAVYE AÇIK MODU (Ekran yüksekliği küçüldüğünde) */
 @media screen and (max-height: 600px) {
-    /* 1. Gereksiz Görselleri ve Yazıları Gizle */
-    .circle-container,          /* Yuvarlak resim */
-    #tt-welcome h1,             /* Hello I'm Mira */
-    #welcome-content,           /* Let's get started yazısı */
-    .fixed-header,              /* Üst menü çubuğu */
-    #tt-welcome p               /* Diğer paragraflar */
-    {
+
+    /* --- A. GENEL GİZLEMELER --- */
+    /* Klavye açılınca üst menüyü ve gereksiz başlıkları gizle */
+    .fixed-header, 
+    .logo,
+    .sidebar_title, /* Sidebar başlıklarını (Chat with Mira vb.) gizle */
+    #tt-welcome h1,
+    #tt-welcome p,
+    .circle-container,
+    #welcome-content {
         display: none !important;
     }
 
-    /* 2. Ana Konteyneri Rahatlat */
-    /* Input grubunu ekranın ortasına/yukarısına taşı */
+    /* --- B. ANA EKRAN (WELCOME) DÜZENLEMESİ --- */
+    /* Konteyneri esnek yap, inputu yukarı itme */
     .fixed-container {
-        height: auto !important;       /* 100vh zorlamasını kaldır */
-        min-height: auto !important;
-        bottom: 0 !important;          /* Alta yapışık kalsın */
-        justify-content: flex-end;     /* İçeriği alta it */
+        height: 100dvh !important; /* Görünür alan kadar yükseklik */
+        position: fixed !important;
+        bottom: 0 !important;
+        top: 0 !important;
+        justify-content: flex-end !important; /* İçeriği alta yasla */
         padding-bottom: 10px !important;
-        position: fixed !important;    /* Sabit kalsın */
+        align-items: flex-end !important;
     }
 
-    /* 3. Suggestions (Öneriler) Kısmını Düzelt */
-    /* Klavyenin altında kalmaması için */
+    .cw {
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+    }
+
+    /* Öneriler (Suggestions) listesinin yüksekliğini kısıtla ve kaydırılabilir yap */
     #suggestions {
-        max-height: 45px;       /* Yüksekliği sınırla */
-        margin-bottom: 5px;     /* Input ile arasına mesafe */
-        overflow-x: auto;       /* Yan kaydırmaya izin ver */
-        overflow-y: hidden;     /* Dikey taşmayı engelle */
-        flex-shrink: 0;         /* Sıkışmasını engelle */
+        max-height: 50px; /* Az yer kaplasın */
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin-bottom: 5px;
+        white-space: nowrap;
+        background: #fff; /* Okunabilirlik için */
+        z-index: 999;
     }
 
-    /* 4. Input Alanını Düzenle */
-    .input-wrapper {
-        margin-bottom: 5px !important; /* Alt boşluğu azalt */
+    /* --- C. MIRA AI CHAT (SIDEBAR) DÜZENLEMESİ --- */
+    /* Sidebar overlay tam ekran olsun ama klavyenin üstünde kalsın */
+    .sidebar-overlay.open {
+        height: 100dvh !important;
+        bottom: 0 !important;
+        top: 0 !important;
     }
 
-    /* 5. Arka Planın Bozulmasını Önle */
-    body {
-        /* Klavye açılınca background sıkışmasın */
-        background-attachment: fixed; 
-        min-height: 100vh;
-        /* Veya düz renk yapıp resmi gizleyebilirsin */
-        /* background-image: none !important; */
+    /* Chat kutusu tüm boşluğu kaplasın */
+    #sidebar-login, #ai-chat-box {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding-top: 0 !important; /* Başlık gizlendiği için padding'i sıfırla */
+    }
+
+    /* Mesaj alanı kaydırılabilir olsun ve kalan alanı doldursun */
+    #ai-chat-messages {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        padding-bottom: 10px;
+    }
+
+    /* Form container (Chat inputunu saran yapı) */
+    .form-container {
+        height: auto !important;
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-end !important; /* Inputu alta it */
+    }
+
+    /* Chat input alanı */
+    .ai-input-wrapper {
+        margin-bottom: 0 !important;
+        padding: 8px !important;
+        background: #fff;
+        flex-shrink: 0; /* Küçülmesini engelle */
     }
 }
