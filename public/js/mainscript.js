@@ -1449,7 +1449,7 @@ function sendMessage() {
 
     showLoadingPanel();
     handleAnswer(val);
-}
+} 
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 

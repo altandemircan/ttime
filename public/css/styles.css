@@ -7315,7 +7315,7 @@ position: absolute;
     height: 24px;
     border-radius: 50%;
     object-fit: cover;
-    flex-shrink: 0;
+    flex-shrink: 0; 
     margin-top: 2px;
 }
 
