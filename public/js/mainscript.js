@@ -8382,6 +8382,47 @@ if (imported) {
   }
 }
 
+// Helper: fallback route when routing fails (straight line between points)
+function buildFallbackRouteGeojson(points, mode = 'driving') {
+    if (!points || points.length < 2) return null;
+
+    // Basit hız (m/sn)
+    const speed =
+        mode === 'walking' ? 1.4 :
+        mode === 'cycling' ? 4.5 :
+        11; // driving varsayılan
+
+    const coords = points.map(p => [p.lng, p.lat]);
+    const pairwise = [];
+    let totalDist = 0;
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const d = haversine(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng);
+        pairwise.push({ distance: d, duration: d / speed });
+        totalDist += d;
+    }
+
+    const duration = totalDist / speed;
+
+    return {
+        geojson: {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: coords },
+                properties: {
+                    summary: {
+                        distance: totalDist,
+                        duration,
+                        source: 'fallback-straight-line'
+                    }
+                }
+            }]
+        },
+        summary: { distance: totalDist, duration },
+        pairwise
+    };
+}
 async function renderRouteForDay(day) {
 
     // 1. ADIM: TEMİZLİK (RESET)
@@ -8924,11 +8965,52 @@ async function renderRouteForDay(day) {
         routeData = await fetchRoute();
         if (!routeData) return;
         missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
-    } catch (e) {
-        const infoPanel = document.getElementById(`route-info-day${day}`);
-        if (infoPanel) infoPanel.textContent = "Could not draw the route!";
-        return;
-    }
+      } catch (e) {
+      console.warn('Rota servisi hata verdi, fallback çiziliyor', e);
+      const travelMode = (typeof getTravelModeForDay === 'function') ? getTravelModeForDay(day) : 'driving';
+      const fallback = buildFallbackRouteGeojson(snappedPoints, travelMode);
+      const infoPanel = document.getElementById(`route-info-day${day}`);
+      if (infoPanel) {
+          infoPanel.innerHTML = `<span style="color:#d32f2f;font-weight:bold;">
+            Rota servisi başarısız oldu. Düz çizgi fallback gösteriliyor.
+          </span>`;
+      }
+      if (!fallback) return;
+
+      window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+      window.lastRouteSummaries = window.lastRouteSummaries || {};
+      window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+      window.directionsPolylines = window.directionsPolylines || {};
+
+      window.lastRouteGeojsons[containerId] = fallback.geojson;
+      window.lastRouteSummaries[containerId] = fallback.summary;
+      window.pairwiseRouteSummaries[containerId] = fallback.pairwise;
+      window.directionsPolylines[day] =
+          fallback.geojson.features[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
+
+      renderLeafletRoute(containerId, fallback.geojson, snappedPoints, fallback.summary, day, []);
+      if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
+
+      const totalKm = fallback.summary.distance / 1000;
+      const markerPositions = getRouteMarkerPositionsOrdered(day);
+      const scaleBarDiv = document.getElementById(`route-scale-bar-day${day}`);
+      if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
+          renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+      }
+
+      if (typeof updateDistanceDurationUI === 'function') {
+          updateDistanceDurationUI(fallback.summary.distance, fallback.summary.duration);
+      }
+      if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
+
+      const expandedMapObj = window.expandedMaps?.[containerId];
+      if (expandedMapObj?.expandedMap && typeof updateExpandedMap === 'function') {
+          updateExpandedMap(expandedMapObj.expandedMap, day);
+      }
+
+      document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day } }));
+      return;
+  }
 
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (missingPoints.length > 0) {
