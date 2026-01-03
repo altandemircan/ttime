@@ -1462,20 +1462,39 @@ function addMessage(text, className) {
     const messageElement = document.createElement("div");
     messageElement.classList.add("message", className);
 
-    const profileImg = document.createElement("img");
-    profileImg.src = className === "user-message" ? "img/avatar_user.png" : "img/avatar_aiio.png";
-    profileImg.alt = className === "user-message" ? "User" : "AI";
-    profileImg.classList.add("profile-img");
+    // --- PROFİL GÖRSELİ MANTIĞI (GÜNCELLENDİ) ---
+    let profileElem;
+    if (className === "user-message") {
+        // Kullanıcı için: Emoji (🧑) içeren bir DIV oluştur
+        profileElem = document.createElement("div");
+        profileElem.className = "profile-img"; // Mevcut CSS boyutlarını (width/height/radius) alır
+        profileElem.textContent = "🧑";
+        
+        // Emojiyi dairenin tam ortasına hizalamak için flex kullanıyoruz
+        profileElem.style.display = "flex";
+        profileElem.style.alignItems = "center";
+        profileElem.style.justifyContent = "center";
+        profileElem.style.fontSize = "24px"; // Emojinin boyutu
+        profileElem.style.lineHeight = "1";
+    } else {
+        // Bot için: Standart resim (IMG) oluştur
+        profileElem = document.createElement("img");
+        profileElem.src = "img/avatar_aiio.png";
+        profileElem.alt = "AI";
+        profileElem.classList.add("profile-img");
+    }
+    // ---------------------------------------------
 
-    // HTML içerik kontrolü
+    // İçerik ekleme mantığı (Değişmedi)
     if (className === "bot-message" && /<button|<div|<br/i.test(text)) {
-        messageElement.appendChild(profileImg);
+        messageElement.appendChild(profileElem);
         const htmlDiv = document.createElement("span");
         htmlDiv.innerHTML = text;
         messageElement.appendChild(htmlDiv);
     } else {
-        messageElement.appendChild(profileImg);
+        messageElement.appendChild(profileElem);
         const textElement = document.createElement("div");
+        // Diff HTML kontrolü
         if (/<div|<span|canonical-diff|→/.test(text)) {
             textElement.innerHTML = text;
         } else {
@@ -1484,8 +1503,7 @@ function addMessage(text, className) {
         messageElement.appendChild(textElement);
     }
 
-    // --- DEĞİŞİKLİK BURADA ---
-    // Eğer typing-indicator varsa, mesajı onun ÖNÜNE ekle. Yoksa en sona ekle.
+    // Typing indicator kontrolü (Mesajı indikatörün üstüne ekle)
     const typingIndicator = document.getElementById("typing-indicator");
     if (typingIndicator && typingIndicator.parentNode === chatBox) {
         chatBox.insertBefore(messageElement, typingIndicator);
