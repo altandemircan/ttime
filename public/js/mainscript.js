@@ -2270,16 +2270,19 @@ async function buildPlan(city, days) {
   // [Global Dedup] Aynı mekanı planda 2 kere göstermemek için hafıza
   const globalSelectedPlaceNames = new Set();
 
-  // Koordinatları al ve SAKLA (Mesafe hesabı için lazım)
-  const cityCoords = await getCityCoordinates(city); 
+  // Koordinatları al
+  await getCityCoordinates(city); 
 
-  // --- 1. ÖZEL KOD TANIMLARI ---
+  // --- 1. ÖZEL KOD TANIMLARI (Dışarıdaki bozuk/eksik listelerden etkilenmez) ---
+  // Bu liste sadece bu fonksiyonun anlayacağı dildir. Dışarıyı bozmaz.
   const localCodes = {
+      // Standartlar
       "Coffee": "catering.cafe",
       "Museum": "entertainment.museum",
       "Touristic attraction": "tourism.sights",
       "Restaurant": "catering.restaurant",
       "Accommodation": "accommodation.hotel",
+      // Yedekler (Fallback) - Sadece burası için özel tanımlı
       "Park": "leisure.park",
       "Viewpoint": "tourism.viewpoint",
       "Natural": "natural",
@@ -2287,41 +2290,39 @@ async function buildPlan(city, days) {
       "Leisure": "leisure"
   };
 
-  // Basit mesafe hesaplayıcı (Haversine) - Sıralama yapmak için
-  function getDist(lat1, lon1, lat2, lon2) {
-      const R = 6371; // km
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-  }
-
+  // Kodu bulan güvenli fonksiyon
   function getCode(catName) {
+      // Önce buradaki sağlam listeye bak (Garanti çözüm)
       if (localCodes[catName]) return localCodes[catName];
+      
+      // Yoksa global listelere bak (Hata vermesin diye kontrol ediyoruz)
       if (window.geoapifyCategoryMap && window.geoapifyCategoryMap[catName]) return window.geoapifyCategoryMap[catName];
       if (window.placeCategories && window.placeCategories[catName]) return window.placeCategories[catName];
-      return "tourism"; 
+      
+      return "tourism"; // Hiçbiri yoksa varsayılan
   }
 
-  // --- 2. ARAMA MANTIĞI ---
+  // --- 2. ARAMA MANTIĞI (Mesafe Genişletmeli) ---
   async function searchWithLogic(cat) {
-      const MAX_RADIUS = 60000; 
-      let radius = 3; 
+      const MAX_RADIUS = 60000; // Max 60km uzağa git
+      let radius = 3; // 3km ile başla
       let catCode = getCode(cat);
       
+      // API isteği (Kodu elle gönderiyoruz ki dışarıya muhtaç olmasın)
       let places = await getPlacesForCategory(city, cat, 12, radius * 1000, catCode);
       
+      // Sonuç yoksa veya azsa genişle
       let attempt = 0;
       const triedNames = new Set();
       while (places.length <= 1 && attempt < 5 && (radius * 1000) < MAX_RADIUS) {
           if (places.length === 1) triedNames.add(places[0].name);
           
-          radius += 10; 
+          radius += 10; // 10ar km artır
           if (radius * 1000 > MAX_RADIUS) radius = MAX_RADIUS / 1000;
 
           let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000, catCode);
+          
+          // Tekrarları süz
           newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
           
           if (newPlaces.length > 0) places = places.concat(newPlaces);
@@ -2337,6 +2338,7 @@ async function buildPlan(city, days) {
     let places = result.places;
 
     // --- AKILLI FALLBACK (YEDEK PLAN) ---
+    // Burası senin istediğin "Müze yoksa Camiye gitme, Kalıntıya git" mantığıdır.
     if (places.length === 0) {
         let fallbacks = [];
         
@@ -2344,31 +2346,23 @@ async function buildPlan(city, days) {
         if (cat === 'Museum') {
              fallbacks = ['Heritage', 'Viewpoint', 'Natural', 'Park'];
         }
+        
         // TURİSTİK YER YOKSA -> Doğa, Manzara, Eğlence, Park
         else if (cat === 'Touristic attraction') {
              fallbacks = ['Natural', 'Viewpoint', 'Leisure', 'Park'];
         }
         
+        // Yedekleri dene
         if (fallbacks.length > 0) {
             console.log(`[Smart Fallback] ${cat} bulunamadı. Alternatifler: ${fallbacks.join(', ')}`);
             for (const fbCat of fallbacks) {
                 const fbCode = getCode(fbCat);
-                // Alternatifleri 45km içinde ara
-                let fbResult = await getPlacesForCategory(city, fbCat, 15, 45000, fbCode);
+                // Yedekleri 40km içinde ara
+                const fbResult = await getPlacesForCategory(city, fbCat, 12, 40000, fbCode);
                 
                 if (fbResult.length > 0) {
-                    // [DÜZELTME] Gelen sonuçları MERKEZE OLAN UZAKLIĞA göre sırala
-                    if (cityCoords && cityCoords.lat) {
-                        fbResult.forEach(p => {
-                            p._dist = getDist(cityCoords.lat, cityCoords.lon, p.lat, p.lon);
-                        });
-                        fbResult.sort((a, b) => a._dist - b._dist);
-                    }
-
-                    // [KRİTİK HAMLE] Listenin hepsini alma, SADECE EN YAKIN 5 TANEYİ AL
-                    // Böylece 39km ötedeki göl listeye girse bile, 15km ötedeki Salda ilk 5'te kalır ve seçilir.
-                    places = fbResult.slice(0, 5); 
-                    break; 
+                    places = fbResult; 
+                    break; // Bulduysan çık
                 }
             }
         }
@@ -2396,7 +2390,7 @@ async function buildPlan(city, days) {
     categoryResults[cat] = places;
   }
 
-  // --- 4. GÜNLERE DAĞITIM ---
+  // --- 4. GÜNLERE DAĞITIM (Rastgele ve Tekrarsız) ---
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
@@ -2405,6 +2399,7 @@ async function buildPlan(city, days) {
         let selectedPlace = null;
         let attempts = 0;
         
+        // 20 kere dene, daha önce seçilmemiş bir yer bul
         while (attempts < 20) {
             const idx = Math.floor(Math.random() * places.length);
             const candidate = places[idx];
@@ -2417,12 +2412,14 @@ async function buildPlan(city, days) {
             attempts++;
         }
         
+        // Eğer hepsi seçildiyse mecburen rastgele birini al
         if (!selectedPlace) {
              selectedPlace = places[Math.floor(Math.random() * places.length)];
         }
 
         dailyPlaces.push({ day, category: cat, ...selectedPlace });
       } else {
+        // Mekan bulunamadıysa boş dön
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
     }
