@@ -2114,7 +2114,27 @@ function toggleAccordion(accordionHeader) {
 }
 
 
+    function categoryIcon(category) {
+        switch (category) {
+            case "Coffee": return "img/coffee_icon.svg";
+            case "Museum": return "img/museum_icon.svg";
+            case "Touristic attraction": return "img/touristic_icon.svg";
+            case "Restaurant": return "img/restaurant_icon.svg";
+            case "Accommodation": return "img/accommodation_icon.svg";
+            default: return "img/location.svg";
+        }
+    }
 
+
+
+const placeCategories = {
+    "Coffee": "catering.cafe",     
+    "Museum": "entertainment.museum",      
+    "Touristic attraction": "tourism.sights",         
+    "Restaurant": "catering.restaurant",
+    "Accommodation": "accommodation.hotel",
+    
+};
 
 // mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
@@ -2266,78 +2286,42 @@ async function buildPlan(city, days) {
   const categories = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
   let plan = [];
   let categoryResults = {};
-  
-  // [Global Dedup] Aynı mekanı tekrar seçmemek için kayıt tutuyoruz
-  const globalSelectedPlaceNames = new Set();
-
-  await getCityCoordinates(city); 
-
-  // --- Yardımcı Fonksiyon: Limitli ve Yedekli Arama ---
-  async function searchWithLogic(cat) {
-      const MAX_RADIUS = 60000; // Maksimum 60km (Çok uzaklaşmasın)
-      let radius = 3;
-      
-      // 1. Ana kategoriyi ara (Örn: Museum)
-      let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
-      
-      // Sonuç azsa yarıçapı genişlet
-      let attempt = 0;
-      const triedNames = new Set();
-      while (places.length <= 1 && attempt < 5 && (radius * 1000) < MAX_RADIUS) {
-          if (places.length === 1) triedNames.add(places[0].name);
-          radius += 10; 
-          if (radius * 1000 > MAX_RADIUS) radius = MAX_RADIUS / 1000;
-
-          let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
-          // Tekrarları temizle
-          newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
-          
-          if (newPlaces.length > 0) places = places.concat(newPlaces);
-          attempt++;
-          if (radius * 1000 >= MAX_RADIUS) break;
-      }
-      return { places, finalRadius: radius };
-  }
+  const cityCoords = await getCityCoordinates(city);
 
   for (const cat of categories) {
-    let result = await searchWithLogic(cat);
-    let places = result.places;
-
-    // 2. [AKILLI FALLBACK] Eğer ana kategori (örn: Müze) yoksa alternatifleri dene
-    if (places.length === 0) {
-        let fallbacks = [];
-        // Müze yoksa -> İbadethane -> Park -> Manzara
-        if (cat === 'Museum') fallbacks = ['Place of Worship', 'Park', 'Viewpoint'];
-        // Turistik yer yoksa -> Doğa (Göl/Baraj) -> Tarihi Kalıntı -> Eğlence
-        else if (cat === 'Touristic attraction') fallbacks = ['Natural', 'Heritage', 'Leisure'];
-        
-        if (fallbacks.length > 0) {
-            console.log(`[Smart Fallback] ${cat} bulunamadı. Alternatifler deneniyor: ${fallbacks.join(', ')}`);
-            for (const fbCat of fallbacks) {
-                // Alternatifleri 35km içinde ara (Çok uzaklaşma)
-                const fbResult = await getPlacesForCategory(city, fbCat, 12, 35000);
-                if (fbResult.length > 0) {
-                    places = fbResult; // Bulduğumuz an bunu kullan
-                    break; 
-                }
-            }
-        }
+    let radius = 3;
+    let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
+    let attempt = 0;
+    const maxAttempts = 5;
+    const triedNames = new Set();
+    while (places.length <= 1 && attempt < maxAttempts) {
+      if (places.length === 1) triedNames.add(places[0].name);
+      radius += 5;
+      let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
+      newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
+      if (newPlaces.length > 0) {
+        places = places.concat(newPlaces);
+      }
+      attempt++;
     }
-
-    // 3. Lucky Algoritması (Hala boşsa son çare biraz daha genişlet)
+    // Lucky algoritmasını SADECE mekan yoksa devreye sok!
     if (places.length === 0) {
-      let luckyRadius = result.finalRadius + 10;
+      // Lucky: radius'u büyüterek en yakındaki mekanı bul
+      let luckyRadius = radius + 5;
       let foundPlace = null;
       let luckyAttempts = 0;
-      const HARD_LIMIT = 80000; // 80km son sınır
-
-      while (!foundPlace && luckyAttempts < 5 && (luckyRadius * 1000) < HARD_LIMIT) {
-        const luckyResults = await getPlacesForCategory(city, cat, 5, luckyRadius * 1000);
+      while (!foundPlace && luckyAttempts < 8) {
+        const luckyResults = await getPlacesForCategory(city, cat, 10, luckyRadius * 1000);
         if (luckyResults.length > 0) {
-          places = luckyResults;
-          break;
+          // Sadece daha önce eklenmemiş mekan gelsin
+          const usedKeys = new Set(places.map(p => `${p.name}__${p.lat}__${p.lon}`));
+          const newLucky = luckyResults.find(p => !usedKeys.has(`${p.name}__${p.lat}__${p.lon}`));
+          if (newLucky) {
+            foundPlace = newLucky;
+            places.push(foundPlace);
+          }
         }
-        luckyRadius += 15;
+        luckyRadius += 7;
         luckyAttempts++;
       }
     }
@@ -2345,37 +2329,15 @@ async function buildPlan(city, days) {
     categoryResults[cat] = places;
   }
 
-  // --- Günlük Planı Dağıt ---
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
       const places = categoryResults[cat];
       if (places.length > 0) {
-        
-        // [GELİŞMİŞ SEÇİM] Rastgele ama tekrar etmeyen seçim
-        let selectedPlace = null;
-        let attempts = 0;
-        
-        // 20 kere dene, daha önce seçilmemiş bir yer bulmaya çalış
-        while (attempts < 20) {
-            const idx = Math.floor(Math.random() * places.length);
-            const candidate = places[idx];
-            
-            // Eğer bu mekan daha önce GLOBAL listede yoksa seç
-            if (!globalSelectedPlaceNames.has(candidate.name)) {
-                selectedPlace = candidate;
-                globalSelectedPlaceNames.add(candidate.name);
-                break;
-            }
-            attempts++;
-        }
-        
-        // Eğer hepsi kullanıldıysa (fallback), mecburen rastgele birini al
-        if (!selectedPlace) {
-             selectedPlace = places[Math.floor(Math.random() * places.length)];
-        }
-
-        dailyPlaces.push({ day, category: cat, ...selectedPlace });
+        // Her gün için farklı mekan gelsin!
+        const idx = (day - 1) % places.length;
+      // --- LOG SONU ---
+        dailyPlaces.push({ day, category: cat, ...places[idx] });
       } else {
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
@@ -2384,7 +2346,7 @@ async function buildPlan(city, days) {
   }
 
   plan = await enrichPlanWithWiki(plan);
-  plan = plan.map(normalizePlaceName);
+plan = plan.map(normalizePlaceName);
   return plan;
 }
 function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
@@ -4288,6 +4250,8 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 }
 
 
+// mainscript.js içine (mevcut updateCart'ın yerine) yapıştırın
+
 async function updateCart() {
 
     // [PERFORMANS] Eski item haritalarını temizle
@@ -5496,8 +5460,6 @@ function toggleContent(arrowIcon) {
     if (!cartItem) return;
     const contentDiv = cartItem.querySelector('.content');
     if (!contentDiv) return;
-    
-    // Aç/Kapa işlemi
     contentDiv.classList.toggle('open');
     if (contentDiv.classList.contains('open')) {
         contentDiv.style.display = 'block';
@@ -5505,43 +5467,26 @@ function toggleContent(arrowIcon) {
         contentDiv.style.display = 'none';
     }
 
-    // Ok işaretini döndür (Eğer CSS class ile yapıyorsan burası kalabilir)
-    const arrowImg = arrowIcon.querySelector('img') || arrowIcon;
-    if(arrowImg && arrowImg.classList) arrowImg.classList.toggle('rotated');
-
-    // --- LEAFLET HARİTA YÖNETİMİ (GÜVENLİ) ---
+    // EK: Leaflet haritayı başlat
+    // EK: Leaflet haritayı başlat (Optimize Edildi)
     const item = cartItem.closest('.travel-item');
     if (!item) return;
-    
     const mapDiv = item.querySelector('.leaflet-map');
-    // Sadece görünürse işlem yap
-    if (mapDiv && contentDiv.style.display !== 'none') {
+    if (mapDiv && mapDiv.offsetParent !== null) {
         const mapId = mapDiv.id;
-        
-        // [SAFETY CHECK] Koordinatları güvenli al
-        const latStr = item.getAttribute('data-lat');
-        const lonStr = item.getAttribute('data-lon');
-        
-        // Eğer veri yoksa veya sayı değilse işlemi durdur (ÇÖKMEYİ ENGELLER)
-        if (!latStr || !lonStr || isNaN(parseFloat(latStr)) || isNaN(parseFloat(lonStr))) {
-             console.warn("Harita için geçersiz koordinat, atlanıyor:", item);
-             mapDiv.innerHTML = '<div class="map-error" style="padding:20px;text-align:center;color:#999;">Location data not available</div>';
-             return;
-        }
-
-        const lat = parseFloat(latStr);
-        const lon = parseFloat(lonStr);
-        const name = item.querySelector('.toggle-title') ? item.querySelector('.toggle-title').textContent : "Place";
-        const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-
-        // [PERFORMANS] Harita zaten varsa sadece boyutunu düzelt, yoksa oluştur
+        // Harita zaten varsa sadece güncelle, yoksa oluştur
         if (window._leafletMaps && window._leafletMaps[mapId]) {
-             setTimeout(() => { window._leafletMaps[mapId].invalidateSize(); }, 100);
+             window._leafletMaps[mapId].invalidateSize();
         } else {
+            const lat = parseFloat(item.getAttribute('data-lat'));
+            const lon = parseFloat(item.getAttribute('data-lon'));
+            const name = item.querySelector('.toggle-title').textContent;
+            const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
             createLeafletMapForItem(mapId, lat, lon, name, number);
         }
     }
 }
+
 
 
 
