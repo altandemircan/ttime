@@ -3,7 +3,7 @@ body {
     /* display: block; */
     /* justify-content: center; */
     align-items: center;
-
+    height: 100vh;
     background-color: #ffffff;
     color: #333;
     flex-direction: column;
@@ -274,7 +274,7 @@ ease;
     line-height: 1.6;
     margin-top: 0;
     padding: 0;
-    max-width: 440px;
+    max-width: 540px;
     margin: 0 auto;
 }
 
@@ -388,8 +388,7 @@ ease;
     padding: 20px !important;
     border-radius: 0 !important;
     bottom: 0;
-   max-height: calc(100dvh - 60px); 
-    padding-bottom: env(safe-area-inset-bottom); /* iPhone alt çubuğu için güvenli alan */
+    max-height: calc(100vh - 60px);
     align-items: flex-end;
     align-content: flex-end;
     flex-direction: row;
@@ -401,7 +400,7 @@ ease;
 #chat-box {
     flex-grow: 1;
     overflow-y: auto;
-    max-height: calc(100dvh - 100px)
+    max-height: calc(100vh - 100px);
     padding-right: 20px;
     margin-bottom: 10px;
     border-radius: 15px;
@@ -577,7 +576,17 @@ ease;
     cursor: pointer;
 }
 
-
+.fixed-container {
+    bottom: 0;
+    background-color: #ffffff;
+    height: calc(100vh - 40px) !important;
+    align-items: baseline;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0 auto;
+    align-content: center;
+    max-width: 1200px;
+}
 
 .input-wrapper {
     width: -webkit-fill-available;
@@ -7706,127 +7715,4 @@ scrollbar-width: thin;
         height: 100% !important;
         overflow: hidden !important;
     }
-}
-
-/* ======================================================
-   MOBİL KLAVYE VE EKRAN DÜZENLEMELERİ (FİNAL)
-====================================================== */
-.fixed-container {
-    bottom: 0;
-    background-color: #ffffff;
-height: calc(100dvh - 40px) !important;
-    align-items: baseline;
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin: 0 auto;
-    align-content: center;
-    max-width: 1200px;
-}
-
-
-/* 1. Sayfa Temeli */
-html, body {
-    height: 100dvh; 
-    min-height: 100dvh;
-    overflow: hidden; /* Scroll'u kökten engelle */
-    position: relative; /* Absolute konumlandırma için referans */
-}
-
-/* 2. KLAVYE AÇIK MODU (Ekran yüksekliği 600px altına düşünce) */
-@media screen and (max-height: 600px) {
-
-    /* --- A. GİZLEMELER --- */
-    .fixed-header, 
-    .logo,
-    .sidebar_title,
-    #tt-welcome h1,
-    #tt-welcome p,
-    .circle-container,
-    #welcome-content {
-        display: none !important;
-    }
-
-    /* --- B. ANA EKRAN (WELCOME) DÜZENLEMESİ --- */
-    .fixed-container {
-        /* FIXED YERİNE ABSOLUTE KULLANIYORUZ */
-        position: absolute !important; 
-        
-        /* 100dvh YERİNE 100% YAP Kİ KLAVYE EKRANI KÜÇÜLTÜNCE ONA UYSUN */
-        height: 100% !important; 
-        
-        bottom: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        justify-content: flex-end !important; /* İçeriği alta it */
-        padding-bottom: 15px !important; /* Inputu biraz daha yukarı kaldır */
-        align-items: center !important; /* Mobilde ortala */
-        z-index: 9999; /* Her şeyin üstünde */
-    }
-
-    .cw {
-        padding: 0 !important;
-        margin: 0 !important;
-        height: auto !important;
-        width: 100% !important;
-        display: flex !important;
-        justify-content: center !important;
-    }
-
-    /* Inputu saran kapsayıcı */
-    .input-wrapper {
-        width: 95% !important; /* Kenarlardan taşmasın */
-        margin-bottom: 5px !important;
-    }
-
-    /* Öneriler (Suggestions) */
-    #suggestions {
-        max-height: 45px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        margin-bottom: 8px;
-        white-space: nowrap;
-        background: transparent;
-        z-index: 10000;
-    }
-
-    /* --- C. MIRA AI CHAT (SIDEBAR) --- */
-    .sidebar-overlay.open {
-height: 100dvh !important;
-        position: absolute !important;
-        bottom: 0 !important;
-    }
-
-    #sidebar-login, #ai-chat-box {
-        height: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        padding-top: 0 !important;
-    }
-
-    #ai-chat-messages {
-        flex: 1 !important;
-        overflow-y: auto !important;
-        height: auto !important;
-        padding-bottom: 10px;
-    }
-
-    .form-container {
-        height: auto !important;
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: flex-end !important;
-    }
-
-    .ai-input-wrapper {
-        margin-bottom: 0 !important;
-        padding: 8px !important;
-        background: #fff;
-        flex-shrink: 0;
-    }
-}
-
-/* Chat Başlangıç Gizliliği (Inputa tıklayınca açılmaması için) */
-#chat-box.awaiting-start {
-    display: none !important;
 }
