@@ -6052,26 +6052,52 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
             // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
            // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
-if (missingPoints && missingPoints.length > 0) {
+// --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
+if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     missingPoints.forEach((mp) => {
         let minDist = Infinity;
-        let closestPointOnRoute = null;
+        let closestPoint = null;
         
-        // routeCoords zaten [lat, lng] formatında
+        // 1. Önce rota noktaları arasında en yakını bul
         for (const rc of routeCoords) {
             const [lat, lng] = rc;
             const d = haversine(lat, lng, mp.lat, mp.lng);
             if (d < minDist) {
                 minDist = d;
-                closestPointOnRoute = { lat, lng };
+                closestPoint = { lat, lng };
             }
         }
         
-        if (closestPointOnRoute) {
+        // 2. Segmentler üzerinde daha iyi bir nokta ara (opsiyonel ama daha doğru)
+        // Eğer rota uzunsa bu kısmı ekleyebilirsiniz
+        let betterPoint = null;
+        for (let i = 0; i < routeCoords.length - 1; i++) {
+            const [lat1, lng1] = routeCoords[i];
+            const [lat2, lng2] = routeCoords[i + 1];
+            
+            const closestOnSegment = findClosestPointOnSegment(
+                mp.lat, mp.lng,
+                lat1, lng1,
+                lat2, lng2
+            );
+            
+            const d = haversine(mp.lat, mp.lng, closestOnSegment.lat, closestOnSegment.lng);
+            if (d < minDist) {
+                minDist = d;
+                betterPoint = closestOnSegment;
+            }
+        }
+        
+        // Daha iyi bir nokta bulunduysa onu kullan
+        if (betterPoint) {
+            closestPoint = betterPoint;
+        }
+        
+        if (closestPoint) {
             L.polyline(
                 [
                     [mp.lat, mp.lng],
-                    [closestPointOnRoute.lat, closestPointOnRoute.lng]
+                    [closestPoint.lat, closestPoint.lng]
                 ],
                 {
                     color: '#d32f2f',
@@ -6080,7 +6106,19 @@ if (missingPoints && missingPoints.length > 0) {
                     dashArray: '5, 8',
                     pane: 'customRoutePane'
                 }
-            ).addTo(map);
+            ).addTo(map).bindTooltip(
+                `${mp.name || 'Missing point'}: ${Math.round(minDist)}m from route`,
+                { permanent: false, direction: 'top' }
+            );
+            
+            // Eksik noktayı da işaretleyelim (kırmızı daire)
+            L.circleMarker([mp.lat, mp.lng], {
+                radius: 6,
+                color: '#d32f2f',
+                fillColor: '#d32f2f',
+                fillOpacity: 0.7,
+                weight: 2
+            }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`);
         }
     });
 }
@@ -6151,7 +6189,36 @@ window.mapStates = {};
 window.expandedMaps = {};
 // Güncellenmiş expandMap fonksiyonu: YÜKSEKLİK/ELEVATION ile ilgili her şey kaldırıldı!
 
-
+function findClosestPointOnSegment(px, py, x1, y1, x2, y2) {
+    // Noktanın segment üzerindeki izdüşümünü bul
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+    
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+    
+    if (lenSq !== 0) {
+        param = dot / lenSq;
+    }
+    
+    let xx, yy;
+    
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+    
+    return { lat: xx, lng: yy };
+}
 function getFallbackRouteSummary(points) {
   if (!points || points.length < 2) return { distance: 0, duration: 0 };
   let totalKm = 0;
@@ -8269,14 +8336,7 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     const start = polylineCoords[0];
     const end = polylineCoords[polylineCoords.length - 1];
 
-    // function haversine(lat1, lon1, lat2, lon2) {
-    //     const R = 6371000;
-    //     const toRad = x => x * Math.PI / 180;
-    //     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-    //     const a = Math.sin(dLat/2)**2 +
-    //         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-    //     return 2 * R * Math.asin(Math.sqrt(a));
-    // }
+  
 
     // Polyline üzerindeki en yakın noktayı ve mesafesini bul
     let minDist = Infinity, minIdx = -1;
