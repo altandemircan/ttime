@@ -917,6 +917,7 @@ window.buildPlanFromSelection = function (days) {
             addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
         }
     }
+    
 async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
   if (places.length < 2) return places;
   let limitedPlaces = [...places];
@@ -1380,14 +1381,13 @@ function addCanonicalMessage(canonicalStr) {
 }
 
 function sendMessage() {
-
     if (window.isProcessing) return;
-    // showLoadingPanel() BURADAN KALDIRILDI
+    
     const input = document.getElementById("user-input");
-
-  if (!input) return;
-  const val = input.value.trim();
-  if (!val) return;
+    if (!input) return;
+    
+    const val = input.value.trim();
+    if (!val) return;
 
   // Öneriler yükleniyorken/gelmeden Enter basmayı engellemek istersen (opsiyonel flag):
   if (!window.__locationPickedFromSuggestions) {
