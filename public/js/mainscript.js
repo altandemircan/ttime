@@ -12061,3 +12061,49 @@ function stabilizeInputOnFocus() {
 document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
 
 
+
+
+// mainscript.js
+
+(function() {
+    function handleMobileInputFocus() {
+        // Sadece mobilde çalışsın
+        if (window.innerWidth > 768) return;
+
+        const chatContainer = document.getElementById('chat-container');
+        // styles.css'teki doğru sınıf ismini hedefliyoruz:
+        const inputWrapper = document.querySelector('.ai-input-wrapper'); 
+        
+        // Hem text input'u hem de varsa textarea'yı seçelim
+        const inputs = document.querySelectorAll('input[type="text"], textarea, #user-input');
+
+        if (!inputWrapper) return;
+
+        inputs.forEach(input => {
+            // 1. İNPUTA TIKLANDIĞINDA (KLAVYE AÇILINCA)
+            input.addEventListener('focus', function() {
+                // Sınıfı ekle -> CSS'teki bottom: 100px devreye girer
+                inputWrapper.classList.add('keyboard-active');
+                
+                // İsteğe bağlı: İçeriğin arkada kalmaması için hafifçe yukarı kaydır
+                setTimeout(() => {
+                    window.scrollTo(0, document.body.scrollHeight);
+                    if(chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 100);
+            });
+
+            // 2. İNPUTTAN ÇIKILDIĞINDA (KLAVYE KAPANINCA)
+            input.addEventListener('blur', function() {
+                // Hemen kapatma, belki "Gönder" butonuna basılıyordur (gecikme koyalım)
+                setTimeout(() => {
+                    inputWrapper.classList.remove('keyboard-active');
+                }, 200); 
+            });
+        });
+    }
+
+    // Sayfa yüklendiğinde çalıştır
+    window.addEventListener('DOMContentLoaded', handleMobileInputFocus);
+    // Dinamik yükleniyorsa biraz gecikmeli tekrar dene
+    setTimeout(handleMobileInputFocus, 1000);
+})();

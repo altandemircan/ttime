@@ -7757,3 +7757,13 @@ scrollbar-width: thin;
         bottom: 100px !important;
     }
 }
+
+
+@media (max-width: 768px) {
+    /* Klavye açıldığında eklenecek sınıf */
+    #ai-chat-box .ai-input-wrapper.keyboard-active {
+        bottom: 100px !important; /* İsteğinize göre 100px yukarı iter */
+        padding-bottom: 10px !important; /* Alt kısımda biraz boşluk iyidir */
+        transition: bottom 0.2s ease-out; /* Animasyonlu geçiş */
+    }
+}
