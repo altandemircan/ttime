@@ -522,8 +522,8 @@ function extractLocationQuery(input) {
     let cleaned = input; 
     
     // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
-    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
-    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    // Şehir isminin kendisine (büyük/küçük harf) dokunma.
+    cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
     // Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
@@ -532,9 +532,7 @@ function extractLocationQuery(input) {
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
-        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
-        // [FIX] Zaman birimleri stop words'e eklendi
-        "day", "days", "gün", "gun", "night", "nights"
+        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
     ];
     
     // Kelimeleri ayır ve stop word'leri temizle
@@ -688,11 +686,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
-
-        // [FIX] Eğer bu şehir zaten seçiliyse, gün sayısı değişse bile listede seçili kalsın
-        if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
-            div.classList.add("selected-suggestion");
-        }
         
         // === TIKLAMA OLAYI ===
         div.onclick = () => {
@@ -853,20 +846,14 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     }, 150));
 
-    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
-    const showSuggestionsLogic = function() {
+    chatInput.addEventListener("focus", function () {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
-    };
-
-    chatInput.addEventListener("focus", showSuggestionsLogic);
-    
-    // [FIX] Inputa tıklandığında da listenin açılmasını sağla
-    chatInput.addEventListener("click", showSuggestionsLogic);
+    });
 }
 
 
@@ -1157,36 +1144,12 @@ const __cityCoordCache = new Map();
 
 chatInput.addEventListener("input", function() {
     if (window.__programmaticInput) return;
-
-    // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı? (Sadece gün mü değişti?)
-    if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
-        const currentInput = this.value || "";
-        // Inputtaki "2 days" gibi kısımları temizle, sadece şehri al
-        const currentLocName = typeof extractLocationQuery === 'function' 
-            ? extractLocationQuery(currentInput) 
-            : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
-
-        const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const savedText = normalize(window.selectedSuggestion.displayText);
-        const currentText = normalize(currentLocName);
-
-        // Eğer kayıtlı şehir ismi, şu an yazılı olanı kapsıyorsa (örn: "Venice, IT" içinde "Venice" var)
-if (savedText === currentText && currentText.length > 1) {             // Sadece gün sayısını güncelle, kilidi açma
-             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
-             if (dayMatch && window.selectedLocation) {
-                 window.selectedLocation.days = parseInt(dayMatch[1], 10);
-             }
-             if (typeof enableSendButton === 'function') enableSendButton();
-             return; // SEÇİMİ SIFIRLAMADAN ÇIK
-        }
-    }
-
-    // Şehir ismi değiştiyse seçimi iptal et
     window.__locationPickedFromSuggestions = false;
     window.selectedLocationLocked = false;
     window.selectedLocation = null;
     disableSendButton && disableSendButton();
 });
+
 
 
 // === handleAnswer Fonksiyonunun Tam ve Güncel Hali ===
@@ -1316,51 +1279,17 @@ async function handleAnswer(answer) {
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
-    const inp = document.getElementById('user-input');
-    if (!inp) return;
-
-    inp.addEventListener('input', () => {
-        // Programatik set fonksiyonu kontrolü
-        if (window.__programmaticInput) return;
-
-        // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı?
-        if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
-            const currentInput = inp.value || "";
-            
-            // Şehir ismini ayıkla (gün sayılarını temizle)
-            const currentLocName = typeof extractLocationQuery === 'function' 
-                ? extractLocationQuery(currentInput) 
-                : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
-
-            // Normalizasyon (küçük harf, noktalama yok)
-            const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const savedText = normalize(window.selectedSuggestion.displayText);
-            const currentText = normalize(currentLocName);
-
-            // === (TAM EŞİTLİK) KONTROLÜ
-            // Beşiktaş == Beşiktaş -> Eşit, seçimi koru.
-            // Beşiktaş != Beşi    -> Eşit değil, kilidi aç, öneri getir.
-            if (savedText === currentText && currentText.length > 1) {
-                const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
-                
-                // Eğer gün sayısı varsa güncelle
-                if (dayMatch && window.selectedLocation) {
-                    window.selectedLocation.days = parseInt(dayMatch[1], 10);
-                }
-                
-                // Gönder butonunu aktif et ve çık (Arama yapma)
-                if (typeof enableSendButton === 'function') enableSendButton();
-                return; 
-            }
-        }
-
-        // Buraya düşerse: Kullanıcı harf sildi veya şehri değiştirdi.
-        // Seçimi iptal et ki yeni öneriler gelsin.
-        window.__locationPickedFromSuggestions = false;
-        window.selectedLocationLocked = false;
-        window.selectedLocation = null;
-        disableSendButton && disableSendButton();
-    });
+  const inp = document.getElementById('user-input');
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    // Programatik set fonksiyonun varsa ve flag kullanıyorsan:
+    if (window.__programmaticInput) return;
+    // Kullanıcı elle değiştirdi → seçim iptal
+    window.__locationPickedFromSuggestions = false;
+    window.selectedLocationLocked = false;
+    window.selectedLocation = null;
+    disableSendButton && disableSendButton();
+  });
 });
 
 function addCanonicalMessage(canonicalStr) {
@@ -1368,7 +1297,7 @@ function addCanonicalMessage(canonicalStr) {
   if (!chatBox) return;
   const msg = document.createElement("div");
   msg.className = "message canonical-message";
-  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
+  msg.innerHTML = `<img src="https://dev.triptime.ai/img/profile-icon.svg" alt="Profile" class="profile-img">
   <span>${canonicalStr}</span>`;
   // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
   const typingIndicator = chatBox.querySelector('#typing-indicator');
@@ -2084,7 +2013,7 @@ function toggleAccordion(accordionHeader) {
             case "Touristic attraction": return "img/touristic_icon.svg";
             case "Restaurant": return "img/restaurant_icon.svg";
             case "Accommodation": return "img/accommodation_icon.svg";
-            default: return "img/location.svg";
+            default: return "https://www.svgrepo.com/show/522166/location.svg";
         }
     }
 
@@ -4441,7 +4370,19 @@ async function updateCart() {
 
             // --- 4. MARKER HTML ---
             const listMarkerHtml = `
-                <div class="custom-marker-outer">${markerLabel}</span>
+                <div class="custom-marker-outer" style="flex-shrink: 0;
+                    transform: scale(0.70);
+                    position: absolute;
+                    left: 30px;
+                    top: 0px;
+                    background: ${markerBgColor} !important; 
+                    border-radius: 50%;
+                    width: 24px; height: 24px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #fff; font-weight: bold; font-size: 16px;
+                    border: 2px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <span class="custom-marker-label" style="font-size: 14px;">${markerLabel}</span>
                 </div>
             `;
             // -------------------------------------------
@@ -4452,7 +4393,7 @@ async function updateCart() {
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
                 
-                <img src="img/drag_move.svg" alt="Drag" class="drag-icon">
+                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
                 
                 <div class="item-position">
                     ${listMarkerHtml} 
@@ -4468,7 +4409,7 @@ async function updateCart() {
                   <img src="img/remove-icon.svg" alt="Close">
                 </button>
                 <span class="arrow">
-                  <img src="img/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                  <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
                 </span>
               </div>
             </div>
@@ -4502,13 +4443,13 @@ async function updateCart() {
                 // Kategori ikonu bul (categoryIcons global objesinden)
                 const catIcon = (window.categoryIcons && window.categoryIcons[item.category]) 
                                 ? window.categoryIcons[item.category] 
-                                : 'img/location.svg';
+                                : 'https://www.svgrepo.com/show/522166/location.svg';
 
                 li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="img/drag_move.svg" alt="Drag" class="drag-icon">
+                <img src="https://www.svgrepo.com/show/458813/move-1.svg" alt="Drag" class="drag-icon">
 
                 <div class="item-position">${listMarkerHtml}                
                   <img src="${item.image}" alt="${item.name}" class="cart-image">
@@ -4520,7 +4461,7 @@ async function updateCart() {
                 </div>
               </div>
               <span class="arrow">
-                <img src="img/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                <img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
               </span>
             </div>
             <div class="content">
@@ -4553,25 +4494,20 @@ async function updateCart() {
                   ` : ''
                 }
               </div>
-         <button class="add-favorite-btn"
-                onclick="toggleFavFromCart(this)"
+              <button class="add-favorite-btn"
                 data-name="${item.name}"
                 data-category="${item.category}"
                 data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                data-lon="${item.location?.lng ?? item.lon ?? ""}"
-                data-image="${item.image || ""}">
-                
+                data-lon="${item.location?.lng ?? item.lon ?? ""}">
                 <span class="fav-heart"
                   data-name="${item.name}"
                   data-category="${item.category}"
                   data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                  data-lon="${item.location?.lng ?? item.lon ?? ""}"
-                  data-image="${item.image || ""}">
-                  <img class="fav-icon" src="${isTripFav(item) ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
                 </span>
                 <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
               </button>
-
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                 Remove place
               </button>
@@ -4648,11 +4584,11 @@ async function updateCart() {
 
                     // --- İKONLAR ---
                     if (currentMode === "driving" || currentMode === "car") {
-                        prefix = `<img src="/img/way_car.svg" alt="Car">`;
+                        prefix = `<img src="https://dev.triptime.ai/img/way_car.svg" alt="Car">`;
                     } else if (currentMode === "bike" || currentMode === "cycling") {
-                        prefix = `<img src="/img/way_bike.svg" alt="Bike">`;
+                        prefix = `<img src="https://dev.triptime.ai/img/way_bike.svg" alt="Bike">`;
                     } else if (currentMode === "walk" || currentMode === "walking") {
-                        prefix = `<img src="/img/way_walk.svg" alt="Walk">`;
+                        prefix = `<img src="https://dev.triptime.ai/img/way_walk.svg" alt="Walk">`;
                     } else {
                         prefix = ''; // Diğer tiplerde ikon gösterme
                     }
@@ -4739,14 +4675,7 @@ async function updateCart() {
 
 
     // --- Diğer kalan işlemler ---
-// Note kategorisi hariç, sadece mekanları say
-const itemCount = window.cart.filter(i => 
-    i.name && 
-    !i._starter && 
-    !i._placeholder && 
-    i.category !== 'Note'
-).length;
-
+    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
     if (menuCount) {
         menuCount.textContent = itemCount;
         menuCount.style.display = itemCount > 0 ? "inline-block" : "none";
@@ -6989,7 +6918,7 @@ async function expandMap(containerId, day) {
     compassBtn.id = `custom-compass-btn-${day}`;
     compassBtn.className = 'map-ctrl-btn ctrl-compass';
     compassBtn.style.display = 'none';
-    compassBtn.innerHTML = `<div class="custom-compass-disc"><img src="img/compass-big.svg" style="width:100%;height:100%;" alt="N"></div>`;
+    compassBtn.innerHTML = `<div class="custom-compass-disc"><img src="https://www.svgrepo.com/show/526952/compass-big.svg" style="width:100%;height:100%;" alt="N"></div>`;
     compassBtn.onclick = function() {
         if (currentLayer === 'liberty' && window._maplibre3DInstance) {
             window._maplibre3DInstance.easeTo({ bearing: 0, pitch: 60, duration: 1000 });
@@ -6999,11 +6928,11 @@ async function expandMap(containerId, day) {
     const locBtn = document.createElement('button');
     locBtn.className = 'map-ctrl-btn';
     locBtn.id = `use-my-location-btn-day${day}`;
-    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+    locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
     if (window.isLocationActiveByDay[day]) {
-        locBtn.innerHTML = '<img src="img/location.svg" alt="On">';
+        locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
     }
 
     locBtn.onclick = function() {
@@ -7011,7 +6940,7 @@ async function expandMap(containerId, day) {
         const isActive = window.isLocationActiveByDay[day];
 
         if (isActive) {
-            locBtn.innerHTML = '<img src="img/location.svg" alt="On">';
+            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522167/location.svg" alt="On">';
             if (!document.getElementById('tt-unified-loc-style')) {
                 const s = document.createElement('style');
                 s.id = 'tt-unified-loc-style';
@@ -7023,11 +6952,11 @@ async function expandMap(containerId, day) {
                     window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true);
                 }, () => {
                     window.isLocationActiveByDay[day] = false;
-                    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+                    locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
                 });
             }
         } else {
-            locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+            locBtn.innerHTML = '<img src="https://www.svgrepo.com/show/522166/location.svg" alt="Locate">';
             window.updateUserLocationMarker(expandedMapInstance, day);
         }
     };
@@ -8376,7 +8305,7 @@ async function renderRouteForDay(day) {
 
         const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) {
-            infoPanel.innerHTML = `<span style="color:#1976d2;">The route from the GPS file is <b>LOCKED</b>. The start-finish interval is fixed, subsequent parts were added.</span>`;
+            infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
         }
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
@@ -8787,7 +8716,7 @@ async function renderRouteForDay(day) {
         const url = buildDirectionsUrl(coordParam, day);
         const response = await fetch(url);
         if (!response.ok) {
-            alert("Unable to create route...");
+            alert("Rota oluşturulamıyor...");
             return null;
         }
         const data = await response.json();
@@ -9385,7 +9314,7 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
     set.innerHTML = `
       <div class="travel-modes">
         <button type="button" data-mode="fly" aria-label="Fly" class="active" style="pointer-events:none;opacity:0.97;">
-          <img class="tm-icon" src="img/fly_mode.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
+          <img class="tm-icon" src="https://www.svgrepo.com/show/262270/kite.svg" alt="FLY" loading="lazy" decoding="async" style="width:20px;height:20px;">
           <span class="tm-label">FLY MODE</span>
         </button>
         <div class="fly-info-msg" style="font-size: 13px; color: #607d8b; margin-top: 3px; margin-left: 4px; font-weight: 400;">
@@ -9550,7 +9479,7 @@ function wrapRouteControls(day) {
   arrowSpan.style.cursor = 'pointer';
   arrowSpan.style.padding = '0px';
   arrowSpan.style.marginTop = '6px';
-  arrowSpan.innerHTML = `<img class="arrow-icon" src="img/right-arrow.svg" style="transform: rotate(0deg); transition: transform 0.18s;">`;
+  arrowSpan.innerHTML = `<img class="arrow-icon" src="https://www.svgrepo.com/show/520912/right-arrow.svg" style="transform: rotate(0deg); transition: transform 0.18s;">`;
 
   mapFunctionsDiv.appendChild(mapTitleDiv);
   mapFunctionsDiv.appendChild(arrowSpan);
@@ -10094,7 +10023,7 @@ function ensureRouteStatsUI(day) {
     const asc = document.createElement('span');
     asc.className = 'stat stat-ascent';
     asc.innerHTML = `
-      <img class="icon" src="   " alt="Ascent" loading="lazy" decoding="async">
+      <img class="icon" src="https://www.svgrepo.com/show/530913/arrow-up.svg" alt="Ascent" loading="lazy" decoding="async">
       <span class="badge">— m</span>
     `;
     control.appendChild(asc);
@@ -10258,7 +10187,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // Koordinat kontrolü (Tekrar)
   if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Route points not found</div></div>`;
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
     container.style.display = 'block';
     return;
   }
@@ -10304,10 +10233,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  //km'de nokta sayısı: 2'den 5'e
-  // const N = Math.max(40, Math.round(totalKm * 2));
-
-  const N = Math.max(80, Math.round(totalKm * 5));
+  const N = Math.max(40, Math.round(totalKm * 2));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -10777,12 +10703,8 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   if (segEndM - segStartM < 100) return; 
 
   const segKm = (segEndM - segStartM) / 1000;
-
   // Örnekleme sayısını artırdık ki grafik kırık görünmesin
-  /* segment noktları */
-  // const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
-  // Limiti 800'e çıkar, km başına 50 nokta al
-  const N = Math.min(500, Math.max(120, Math.round(segKm * 50)));
+  const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
 
   const samples = [];
   for (let i = 0; i < N; i++) {
@@ -11785,6 +11707,22 @@ function attachImLuckyEvents() {
 }
 
 
+function showLoadingPanel() {
+  var loadingPanel = document.getElementById("loading-panel");
+  if (loadingPanel) loadingPanel.style.display = "flex";
+  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+}
+
+function hideLoadingPanel() {
+    var loadingPanel = document.getElementById("loading-panel");
+    if (loadingPanel) loadingPanel.style.display = "none";
+    if (!window.__welcomeHiddenForever) {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
+    } else {
+        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+    }
+}
+
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
   // Kalın yazı
@@ -11926,3 +11864,68 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
+
+window.showLoadingPanel = function() {
+    const panel = document.getElementById("loading-panel");
+    const msgEl = document.getElementById('loading-message');
+    
+    if (!panel) return;
+    
+    // Paneli aç
+    panel.style.display = "flex"; 
+    
+    // İlk mesajı sıfırla
+    if (msgEl) {
+        msgEl.textContent = "Analyzing your request...";
+        msgEl.style.opacity = 1;
+    }
+
+    // Varsa eski döngüyü temizle
+    if (window.loadingInterval) clearInterval(window.loadingInterval);
+
+    const messages = [
+        "Analyzing your request",
+        "Finding places",
+        "Exploring route options",
+        "Compiling your travel plan"
+    ];
+    let current = 0;
+    let isTransitioning = false;
+
+    // Döngüyü başlat
+    window.loadingInterval = setInterval(() => {
+        if (!msgEl || panel.style.display === 'none') return;
+        if (isTransitioning) return;
+        
+        isTransitioning = true;
+
+        // Fade out
+        msgEl.style.transition = "opacity 0.5s ease";
+        msgEl.style.opacity = 0;
+
+        // Mesaj değişimi ve Fade in
+        setTimeout(() => {
+            current = (current + 1) % messages.length;
+            if(msgEl) {
+                msgEl.textContent = messages[current];
+                msgEl.style.opacity = 1;
+            }
+            
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 500); 
+        }, 500); 
+    }, 3000); 
+};
+
+window.hideLoadingPanel = function() {
+    const panel = document.getElementById("loading-panel");
+    if (panel) {
+        panel.style.display = "none";
+    }
+    // Animasyonu durdur
+    if (window.loadingInterval) {
+        clearInterval(window.loadingInterval);
+        window.loadingInterval = null;
+    }
+};
