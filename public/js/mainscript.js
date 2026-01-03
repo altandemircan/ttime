@@ -1915,7 +1915,7 @@ async function showResults() {
     }
 
     html += `</ul></div></div>`;
-    chatBox.innerHTML += html;
+    chatBox.insertAdjacentHTML('beforeend', html);
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
