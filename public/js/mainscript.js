@@ -2,10 +2,15 @@
 window.__planGenerationId = Date.now();
 
 function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371000, toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(a));
+    const R = 6371000; // Dünya yarıçapı metre cinsinden
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
 }
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
@@ -6046,38 +6051,40 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             bounds.extend(routePoly.getBounds());
 
             // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
-            if (missingPoints && missingPoints.length > 0) {
-                missingPoints.forEach((mp) => {
-    let minDist = Infinity;
-    let closest = null;
-
-    // routeCoords zaten [lat, lng] formatında
-    for (const rc of routeCoords) {
-        const [lat, lng] = rc;
-        const d = haversine(lat, lng, mp.lat, mp.lng);
-        if (d < minDist) {
-            minDist = d;
-            closest = { lat, lng };
+           // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
+if (missingPoints && missingPoints.length > 0) {
+    missingPoints.forEach((mp) => {
+        let minDist = Infinity;
+        let closestPointOnRoute = null;
+        
+        // routeCoords zaten [lat, lng] formatında
+        for (const rc of routeCoords) {
+            const [lat, lng] = rc;
+            const d = haversine(lat, lng, mp.lat, mp.lng);
+            if (d < minDist) {
+                minDist = d;
+                closestPointOnRoute = { lat, lng };
+            }
         }
-    }
-
-    if (closest) {
-        L.polyline(
-            [
-                [mp.lat, mp.lng],
-                [closest.lat, closest.lng]
-            ],
-            {
-                color: '#d32f2f',
-                weight: 3,
-                opacity: 0.7,
-                dashArray: '5, 8',
-                pane: 'customRoutePane'
-            }
-        ).addTo(map);
-    }
-});
-            }
+        
+        if (closestPointOnRoute) {
+            L.polyline(
+                [
+                    [mp.lat, mp.lng],
+                    [closestPointOnRoute.lat, closestPointOnRoute.lng]
+                ],
+                {
+                    color: '#d32f2f',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '5, 8',
+                    pane: 'customRoutePane'
+                }
+            ).addTo(map);
+        }
+    });
+}
+// -----------------------------------------------
             // -----------------------------------------------
 
         } else {
