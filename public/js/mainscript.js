@@ -9076,7 +9076,6 @@ let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.targe
 if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
     if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
         // Hide content sections only if user message exists
-        if (welcomeSection) welcomeSection.style.display = 'none';
         if (aboutUsSection) aboutUsSection.style.display = 'none';
     }
     chatBox.style.display = 'block';
