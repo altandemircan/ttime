@@ -7332,7 +7332,7 @@ position: absolute;
     background: #e6f5ff;
     color: #1e293b;
     align-self: flex-end;   /* Sağa yasla */
-    flex-direction: row-reverse; /* Emojiyi en sağa al, yazıyı sola al */
+
     text-align: left;       /* Baloncuk sağda olsa bile içindeki yazı soldan aksın */
     align-items: center;    /* Emojiyi dikeyde ortala */
 }
