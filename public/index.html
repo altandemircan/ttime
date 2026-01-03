@@ -6,53 +6,29 @@
   <title>Triptime AI - New Generation Trip Planner, It's time to trip!</title>
 
   <!-- ======================================================
-       ENVIRONMENT DETECTION (PROD vs STAGE)
+       SEO (DEFAULT = PROD SAFE)
+       Stage zaten nginx + header ile bloklu
   ======================================================= -->
-  <script>
-    const TT_ENV = {
-      isProd: location.hostname === "triptime.ai",
-      isStage: location.hostname === "stage.triptime.ai"
-    };
-  </script>
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <link rel="canonical" href="https://triptime.ai">
 
   <!-- ======================================================
-       SEO META TAGS (AUTO)
+       OPEN GRAPH (PROD SAFE)
   ======================================================= -->
-  <script>
-    if (TT_ENV.isProd) {
-      document.write(`
-        <meta name="robots" content="index, follow">
-        <link rel="canonical" href="https://triptime.ai">
-        <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-      `);
-    } else {
-      document.write(`
-        <meta name="robots" content="noindex, nofollow">
-      `);
-    }
-  </script>
+  <meta property="og:url" content="https://triptime.ai">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
+  <meta property="og:image" content="/img/og_image.png">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="419">
 
-  <!-- ======================================================
-       OPEN GRAPH & SOCIAL (ONLY PROD)
-  ======================================================= -->
-  <script>
-    if (TT_ENV.isProd) {
-      document.write(`
-        <meta property="og:url" content="https://triptime.ai">
-        <meta property="og:type" content="website">
-        <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-        <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
-        <meta property="og:image" content="/img/og_image.png">
-        <meta property="og:image:width" content="800">
-        <meta property="og:image:height" content="419">
-
-        <meta name="twitter:card" content="summary_large_image">
-        <meta property="twitter:domain" content="triptime.ai">
-        <meta property="twitter:url" content="https://triptime.ai">
-        <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-      `);
-    }
-  </script>
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="twitter:domain" content="triptime.ai">
+  <meta property="twitter:url" content="https://triptime.ai">
+  <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
 
   <!-- ======================================================
        LEAFLET & MAPLIBRE
@@ -90,6 +66,7 @@
   <link href="/css/open_loading.css" rel="stylesheet">
 
   <script src="/js/mainscript.js?v=3678"></script>
+  <script src="/js/loading_trip.js?"></script>
   <script src="/js/photo_day_slider.js"></script>
   <script src="/js/chat_trip_results.js"></script>
   <script src="/js/start-map-buttons-init.js" defer></script>
@@ -110,10 +87,10 @@
   <meta name="theme-color" content="#ffffff">
 
   <!-- ======================================================
-       GOOGLE ANALYTICS (ONLY PROD)
+       GOOGLE ANALYTICS (PROD ONLY VIA DOMAIN)
   ======================================================= -->
   <script>
-    if (TT_ENV.isProd) {
+    if (location.hostname === "triptime.ai") {
       const ga = document.createElement("script");
       ga.src = "https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7";
       ga.async = true;
@@ -122,25 +99,46 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-6W42FMZ5T7');
+      gtag('config', 'G-6W42FMZ5T7', { anonymize_ip: true });
     }
   </script>
 
   <!-- ======================================================
-       UI STATE STYLES
+       UI STATE STYLES + VISUALLY HIDDEN
   ======================================================= -->
   <style>
     #tt-about-us { display:none; }
     #tt-about-us.active { display:block; }
     #tt-welcome { display:block; }
     #tt-welcome:not(.active) { display:none; }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
   </style>
 
 </head>
 
-
 <body>
 
+<h1 class="visually-hidden">
+  New generation AI trip planner for routes, maps and travel planning
+</h1>
+
+<p class="visually-hidden">
+  Triptime AI helps users plan trips by creating routes, exploring places on maps
+  and building travel plans using AI-powered recommendations.
+</p>
+
+<!-- UYGULAMA DEVAMI BURADAN -->
 
 
     <div id="main-header">
@@ -193,9 +191,9 @@
                             <a href="#" onclick="toggleSidebarFeedback(); toggleMenu();" class="feedback-btn">
                                 <img src="/img/feedback-icon.svg" alt="Menu">Feedback
                             </a>     
-                            <a href="#" onclick="changeContent(2)" class="updates-btn">
+                            <!--<a href="#" onclick="changeContent(2)" class="updates-btn">
                                 <img src="/img/about-icon.svg" alt="Menu">About Triptime
-                            </a>   
+                            </a>-->   
                             
                         </div>
                     </div>            
