@@ -7336,7 +7336,7 @@ position: absolute;
 
 /* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
 .user-message {
-    background: #e6f5ff;
+    background: #e6f5ff; 
     color: #1e293b;
     align-self: flex-end;   /* Sağa yasla */
 
