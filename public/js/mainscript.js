@@ -917,7 +917,7 @@ window.buildPlanFromSelection = function (days) {
             addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
         }
     }
-    
+
 async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
   if (places.length < 2) return places;
   let limitedPlaces = [...places];
@@ -2518,7 +2518,7 @@ document.addEventListener("DOMContentLoaded", function() {
 document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
 
-    displayQuestion();
+   
 });
 
 
