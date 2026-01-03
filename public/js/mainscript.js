@@ -1,24 +1,57 @@
 // mainscript_d.js dosyasının en başına ekle:
+// mainscript.js içindeki mevcut updateViewportHeight fonksiyonunu bununla değiştirin:
+
 (function() {
-    // Mobilde viewport yüksekliğini doğru hesapla
+    // Mobilde viewport yüksekliğini ve pozisyonunu doğru hesapla
     function updateViewportHeight() {
-        // iOS Safari için visualViewport kullan
-        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        if (!window.visualViewport) return;
+        
+        // Görünür alanın yüksekliği ve üstten boşluğu (offset)
+        const vh = window.visualViewport.height;
+        const offsetTop = window.visualViewport.offsetTop;
+        
+        // CSS değişkenini güncelle (Gerekirse CSS'te kullanmak için)
         document.documentElement.style.setProperty('--visible-height', `${vh}px`);
         
-        // Chat box'ı yeniden boyutlandır
         const chatBox = document.getElementById('chat-box');
         const chatContainer = document.getElementById('chat-container');
         
-        if (chatBox && window.innerWidth <= 768) {
-            // Chat box için dinamik yükseklik
-            const headerHeight = 60; // Header yüksekliği
-            const inputHeight = 80; // Input alanı yüksekliği
-            chatBox.style.maxHeight = `${vh - headerHeight - inputHeight}px`;
-        }
-        
-        if (chatContainer && window.innerWidth <= 768) {
-            chatContainer.style.height = `${vh - 60}px`;
+        // Sadece mobil görünümde (768px altı) müdahale et
+        if (window.innerWidth <= 768) {
+            const headerHeight = 60; // Sabit header yüksekliğiniz
+
+            if (chatContainer) {
+                // KRİTİK DÜZELTME: Bottom yerine Top referansı kullanın
+                // Konteyneri header'ın hemen altına sabitle ve yüksekliği ayarla.
+                // Böylece altta ne açılırsa açılsın (klavye, autofill) container hep görünür alanda kalır.
+                chatContainer.style.height = `${vh - headerHeight}px`;
+                chatContainer.style.top = `${headerHeight + offsetTop}px`; 
+                chatContainer.style.bottom = 'auto'; // Bottom sabitlemesini iptal et
+                chatContainer.style.position = 'fixed';
+            }
+
+            if (chatBox) {
+                const inputHeight = 80; // Input alanı tahmini
+                // Chat kutusunun iç yüksekliğini de buna göre kıs
+                chatBox.style.maxHeight = `${vh - headerHeight - inputHeight}px`;
+            }
+            
+            // Ekranı zorla en alta kaydır (Son mesajın görünmesi için)
+            if (document.activeElement && 
+               (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                 // Hafif bir gecikme ile scroll yap
+                 setTimeout(() => {
+                     if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+                 }, 100);
+            }
+        } else {
+            // Masaüstü/Tablet için stilleri temizle (CSS'e bırak)
+            if (chatContainer) {
+                chatContainer.style.height = '';
+                chatContainer.style.top = '';
+                chatContainer.style.bottom = '';
+            }
+            if (chatBox) chatBox.style.maxHeight = '';
         }
     }
     
@@ -27,23 +60,22 @@
     
     // Event listener'lar
     window.addEventListener('resize', updateViewportHeight);
-    window.addEventListener('orientationchange', function() {
-        setTimeout(updateViewportHeight, 300);
-    });
+    window.addEventListener('orientationchange', () => setTimeout(updateViewportHeight, 300));
     
-    // iOS için ek event
+    // Visual Viewport Events (Autofill bar için en önemli kısım)
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', updateViewportHeight);
+        window.visualViewport.addEventListener('scroll', updateViewportHeight); // Scroll da ekledik
     }
     
-    // Input focus olduğunda (klavye açıldığında)
-    document.addEventListener('focusin', function(e) {
-        if (e.target.matches('input, textarea')) {
-            setTimeout(updateViewportHeight, 300);
-        }
+    // Klavye açıldığında/kapandığında tetikle
+    document.addEventListener('focusin', (e) => {
+        if (e.target.matches('input, textarea')) setTimeout(updateViewportHeight, 300);
+    });
+    document.addEventListener('focusout', (e) => {
+        if (e.target.matches('input, textarea')) setTimeout(updateViewportHeight, 300);
     });
 })();
-
 
 
 
@@ -12029,84 +12061,3 @@ function stabilizeInputOnFocus() {
 document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
 
 
-// Chrome Autofill Toolbar Algılama ve Çözüm
-function handleChromeAutofillToolbar() {
-    // Sadece mobil Chrome için
-    const isMobileChrome = /Android.*Chrome\//.test(navigator.userAgent);
-    if (!isMobileChrome) return;
-    
-    let originalViewportHeight = window.innerHeight;
-    let autofillToolbarHeight = 0;
-    
-    function checkForAutofillToolbar() {
-        const currentViewport = window.visualViewport?.height || window.innerHeight;
-        const windowHeight = window.innerHeight;
-        
-        // Klavye + toolbar yüksekliğini hesapla
-        const totalCoveredHeight = windowHeight - currentViewport;
-        
-        // Sadece klavye yüksekliği (tahmini)
-        const estimatedKeyboardHeight = totalCoveredHeight * 0.7; // %70 klavye
-        
-        // Autofill toolbar yüksekliği (kalan %30)
-        autofillToolbarHeight = totalCoveredHeight - estimatedKeyboardHeight;
-        
-        console.log('Autofill Toolbar detected, height:', autofillToolbarHeight, 'px');
-        
-        // Toolbar varsa chat container'ı yukarı kaydır
-        if (autofillToolbarHeight > 20) { // 20px'den büyükse toolbar var
-            adjustForAutofillToolbar(autofillToolbarHeight);
-        }
-    }
-    
-    function adjustForAutofillToolbar(toolbarHeight) {
-        const chatContainer = document.getElementById('chat-container');
-        const input = document.activeElement;
-        
-        if (!chatContainer || !input) return;
-        
-        // 1. CSS ile chat container'ı yukarı kaydır
-        chatContainer.style.bottom = `${toolbarHeight + 50}px`; // Toolbar + ekstra 50px
-        
-        // 2. Input'u görünür alana getir
-        setTimeout(() => {
-            const inputRect = input.getBoundingClientRect();
-            const viewportHeight = window.visualViewport?.height || window.innerHeight;
-            
-            // Eğer input hala görünmüyorsa
-            if (inputRect.bottom > (viewportHeight - 50)) {
-                const scrollAmount = inputRect.bottom - viewportHeight + 100;
-                window.scrollBy({
-                    top: scrollAmount,
-                    behavior: 'smooth'
-                });
-            }
-        }, 300);
-    }
-    
-    // Viewport değişikliklerini dinle (klavye açılması)
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', function() {
-            setTimeout(checkForAutofillToolbar, 200);
-        });
-    }
-    
-    // Input focus olduğunda kontrol et
-    document.addEventListener('focusin', function(e) {
-        if (e.target.matches('#user-input, #ai-chat-input')) {
-            setTimeout(checkForAutofillToolbar, 400); // Klavye + toolbar açılmasını bekle
-        }
-    });
-    
-    // Input focus kaybolunca eski haline döndür
-    document.addEventListener('focusout', function(e) {
-        if (e.target.matches('#user-input, #ai-chat-input')) {
-            const chatContainer = document.getElementById('chat-container');
-            if (chatContainer) {
-                chatContainer.style.bottom = '0px';
-            }
-        }
-    });
-}
-
-document.addEventListener('DOMContentLoaded', handleChromeAutofillToolbar);
