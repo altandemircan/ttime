@@ -1383,63 +1383,81 @@ function addCanonicalMessage(canonicalStr) {
 function sendMessage() {
     if (window.isProcessing) return;
     
-    const input = document.getElementById("user-input");
+    const input = document. getElementById("user-input");
     if (!input) return;
     
     const val = input.value.trim();
     if (!val) return;
 
-  // Öneriler yükleniyorken/gelmeden Enter basmayı engellemek istersen (opsiyonel flag):
-  if (!window.__locationPickedFromSuggestions) {
-    addMessage("Please select a city from the suggestions first.", "bot-message");
-    return;
-  }
+    // Öneriler yükleniyorken/gelmeden Enter basmayı engellemek istersen (opsiyonel flag):
+    if (! window.__locationPickedFromSuggestions) {
+        addMessage("Please select a city from the suggestions first.", "bot-message");
+        return;
+    }
 
-  const formatted = formatCanonicalPlan(val);
+    const formatted = formatCanonicalPlan(val);
 
-  // --- CANONICAL MESAJI GÖSTER ---
-  if (formatted.canonical) {
-    addCanonicalMessage(formatted.canonical);
-  }
+    // --- CANONICAL MESAJI GÖSTER ---
+    if (formatted.canonical) {
+        addCanonicalMessage(formatted.canonical);
+    }
 
-  // Diff sadece seçim yapılmışsa
-  if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
-    const diffHtml = `
-      <div class="canonical-diff">
-        <span class="raw-strike">${strikeThrough(val)}</span>
-        <span class="canon-arrow">→</span>
-        <span class="canon-text">${formatted.canonical}</span>
-      </div>
-    `;
-    addMessage(diffHtml, "user-message");
-    window.__suppressNextUserEcho = true;
-    handleAnswer(`${formatted.city} ${formatted.days} days`);
-    input.value = "";
-    return;
-  }
+    // Diff sadece seçim yapılmışsa
+    if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
+        const diffHtml = `
+          <div class="canonical-diff">
+            <span class="raw-strike">${strikeThrough(val)}</span>
+            <span class="canon-arrow">→</span>
+            <span class="canon-text">${formatted.canonical}</span>
+          </div>
+        `;
+        addMessage(diffHtml, "user-message");
+        window.__suppressNextUserEcho = true;
+        
+        // Welcome mesajı gönderim sırasında
+        addWelcomeMessage();
+        showLoadingPanel();
+        
+        handleAnswer(`${formatted.city} ${formatted.days} days`);
+        input.value = "";
+        return;
+    }
 
-  // Lokasyon kilidi yine güvenlik
-  if (!window.selectedLocationLocked || !window.selectedLocation) {
-    addMessage("Please select a city from the suggestions first.", "bot-message");
-    return;
-  }
+    // Lokasyon kilidi yine güvenlik
+    if (!window.selectedLocationLocked || !window.selectedLocation) {
+        addMessage("Please select a city from the suggestions first.", "bot-message");
+        return;
+    }
 
-  // Canonical formatta ise doğrudan parse
-  showLoadingPanel();
-  const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
-  if (m) {
-    let days = parseInt(m[1], 10);
-    if (!days || days < 1) days = 2;
-    const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
-    window.__suppressNextUserEcho = true;
-    handleAnswer(`${city} ${days} days`);
-    input.value = "";
-    return;
-  }
+    // Canonical formatta ise doğrudan parse
+    const m = val.match(/Plan a (\d+)-day tour for (. +)$/i);
+    if (m) {
+        let days = parseInt(m[1], 10);
+        if (!days || days < 1) days = 2;
+        const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
+        window.__suppressNextUserEcho = true;
+        
+        // Welcome mesajı gönderim sırasında
+        addWelcomeMessage();
+        showLoadingPanel();
+        
+        handleAnswer(`${city} ${days} days`);
+        input.value = "";
+        return;
+    }
 
-   // LOADING PANELİ GÖSTER
-  showLoadingPanel();
-  handleAnswer(val);
+    // Welcome mesajı gönderim sırasında
+    addWelcomeMessage();
+    showLoadingPanel();
+    handleAnswer(val);
+}
+
+// Helper function - Welcome mesajını ekle
+function addWelcomeMessage() {
+    if (! window.__welcomeShown) {
+        addMessage("Let's get started.", "bot-message");
+        window.__welcomeShown = true;
+    }
 }
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
@@ -11923,3 +11941,4 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
+
