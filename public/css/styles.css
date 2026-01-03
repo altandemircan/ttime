@@ -7059,34 +7059,29 @@ display: flex
   100% { transform: scale(1) translateY(0); opacity: 0.65; }
 }
 .loading-panel {
-position: absolute;
-    left: 0;
-    right: 0;
-    /* top: 0; */
-    /* bottom: 0; */
-    z-index: 1200;
-    display: none;
+    /* position: absolute;  <-- BUNLARI SİLİYORUZ */
+    /* left: 0; */
+    /* right: 0; */
+    /* z-index: 1200; */
+    
+    display: none; /* Başlangıçta gizli, JS ile açılacak */
     width: 100%;
-    /* height: 100%; */
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0px;
-    /* padding: 0px 10px 120px 10px; */
-    margin: 0 auto;
     background: #ffffff;
-    max-width: 1200px;
-    /* width: 100%; */
-    display: grid;
-    max-width: 860px;
+    
+    /* .cw sınıfı ile birebir aynı hizalama ayarları: */
+    max-width: 860px; 
     gap: 30px;
-    padding: 60px 10px;
-    margin: 0 auto;
+    padding: 20px 10px 60px 10px;
+    margin: 0 auto; 
 }
 .loading-text {
     text-align: center;
     margin-bottom: 40px;
+    margin-top: -20px;
 }
 .loading-text h2 {
     margin-bottom: 10px; 
@@ -7327,8 +7322,8 @@ position: absolute;
     height: 24px;
     border-radius: 50%;
     object-fit: cover;
-    flex-shrink: 0;
-    margin-top: 2px; 
+    flex-shrink: 0; 
+    margin-top: 2px;
 }
 
 /* AI mesajının yazı kısmı için column düzeni */
@@ -7339,16 +7334,41 @@ position: absolute;
     gap: 8px;
 }
 
+
 /* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
 .user-message {
-    background: #e6f5ff;
+    background: #e6f5ff; 
     color: #1e293b;
     align-self: flex-end;   /* Sağa yasla */
-    flex-direction: row-reverse; /* Emojiyi en sağa al, yazıyı sola al */
+
     text-align: left;       /* Baloncuk sağda olsa bile içindeki yazı soldan aksın */
     align-items: center;    /* Emojiyi dikeyde ortala */
 }
+.request-bot-message {
+            margin: 8px 0px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            width: fit-content;
+            max-width: 85%;
+            display: flex;
+            gap: 10px;
+            line-height: 1.5;
+            background: #f6f4ff;
+        }
 
+        /* Kullanıcı Mesaj Stili */
+        .request-user-message {
+            margin: 8px 0px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            width: fit-content;
+            max-width: 85%;
+            display: flex;
+            gap: 10px;
+            line-height: 1.5;
+            background: #e6f5ff;
+            margin-left: 20px; /* Kullanıcı mesajını biraz içeriden başlatır */
+        }
 
 
 .ai-input-wrapper {
