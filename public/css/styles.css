@@ -7742,28 +7742,23 @@ scrollbar-width: thin;
     }
 }
 
-/* Mobile için özel düzenleme */
+/* BRUTE FORCE KEYBOARD FIX + DEBUG RED */
 @media (max-width: 768px) {
-   #chat-container {
-        position: fixed;
-        border-radius: 0;
-        bottom: 0; /* Normal durumda en altta */
-        width: calc(100% - 40px) !important;
-        transition: bottom 0.3s ease; /* Yumuşak geçiş */
-    }
     
-    /* Input'a tıklandığında 100px yukarı çek */
-    #chat-container.input-focused {
-        bottom: 100px !important;
+    /* Input'a odaklanıldığında bu devreye girer */
+    body.force-keyboard-up .ai-input-wrapper {
+        position: fixed !important; /* Çivileme */
+        bottom: 120px !important;   /* Yerden 120px yukarı */
+        z-index: 99999 !important;  /* En üstte */
+        transition: bottom 0.1s !important;
+        
+        /* GÖRSEL KANIT: ÇALIŞTIĞINI GÖRMEK İÇİN */
+        background-color: #bc4949 !important; 
+        border-top: 2px solid yellow !important; /* Ekstra belirginlik için */
     }
-}
 
-
-@media (max-width: 768px) {
-    /* Klavye açıldığında eklenecek sınıf */
-    #ai-chat-box .ai-input-wrapper.keyboard-active {
-        bottom: 100px !important; /* İsteğinize göre 100px yukarı iter */
-        padding-bottom: 10px !important; /* Alt kısımda biraz boşluk iyidir */
-        transition: bottom 0.2s ease-out; /* Animasyonlu geçiş */
+    /* Input yukarı çıkınca arkadaki içerik görünür kalsın diye */
+    body.force-keyboard-up #chat-container {
+        padding-bottom: 200px !important;
     }
 }
