@@ -891,16 +891,16 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     let latestTripPlan = [];
     let apiCallTimeout;
 
-    function displayQuestion() {
-        if (currentQuestionIndex < surveyData.length) {
-            addMessage(surveyData[currentQuestionIndex].question, "bot-message");
-            showSuggestions();
-        } else {
-            addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
-        }
-        console.log("displayQuestion called");
+    // function displayQuestion() {
+    //     if (currentQuestionIndex < surveyData.length) {
+    //         addMessage(surveyData[currentQuestionIndex].question, "bot-message");
+    //         showSuggestions();
+    //     } else {
+    //         addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
+    //     }
+    //     console.log("displayQuestion called");
 
-    }
+    // }
 
 // async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
 //   if (places.length < 2) return places;
