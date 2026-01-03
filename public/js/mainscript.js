@@ -856,15 +856,15 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
 
 
-// --- DİĞER FONKSİYONLAR ---
-window.buildPlanFromSelection = function (days) {
-    if (!window.selectedLocation) {
-        alert("Please select a city!");
-        return;
-    }
-    const loc = window.selectedLocation;
-    console.log("Plan:", loc.city || loc.name, days, loc.lat, loc.lon, loc.country);
-};
+// // --- DİĞER FONKSİYONLAR ---
+// window.buildPlanFromSelection = function (days) {
+//     if (!window.selectedLocation) {
+//         alert("Please select a city!");
+//         return;
+//     }
+//     const loc = window.selectedLocation;
+//     console.log("Plan:", loc.city || loc.name, days, loc.lat, loc.lon, loc.country);
+// };
 
 
 
