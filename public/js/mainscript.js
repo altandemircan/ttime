@@ -1364,32 +1364,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function addCanonicalMessage(canonicalStr) {
-  const chatBox = document.getElementById("chat-box");
-  if (!chatBox) return;
-  const msg = document.createElement("div");
-  msg.className = "message canonical-message";
-  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
-  <span>${canonicalStr}</span>`;
-  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
-  const typingIndicator = chatBox.querySelector('#typing-indicator');
-  if (typingIndicator && typingIndicator.nextSibling) {
-    chatBox.insertBefore(msg, typingIndicator.nextSibling);
-  } else {
-    chatBox.appendChild(msg);
-  }
-}
+// function addCanonicalMessage(canonicalStr) {
+//   const chatBox = document.getElementById("chat-box");
+//   if (!chatBox) return;
+//   const msg = document.createElement("div");
+//   msg.className = "message canonical-message";
+//   msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
+//   <span>${canonicalStr}</span>`;
+//   // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
+//   const typingIndicator = chatBox.querySelector('#typing-indicator');
+//   if (typingIndicator && typingIndicator.nextSibling) {
+//     chatBox.insertBefore(msg, typingIndicator.nextSibling);
+//   } else {
+//     chatBox.appendChild(msg);
+//   }
+// }
 
 function sendMessage() {
     if (window.isProcessing) return;
-    
-    const input = document. getElementById("user-input");
-    if (!input) return;
-    
+    const input = document.getElementById("user-input");
+
+    if (! input) return;
     const val = input.value.trim();
     if (!val) return;
 
-    // Öneriler yükleniyorken/gelmeden Enter basmayı engellemek istersen (opsiyonel flag):
     if (! window.__locationPickedFromSuggestions) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
