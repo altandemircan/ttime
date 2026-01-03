@@ -1475,7 +1475,7 @@ function addMessage(text, className) {
         profileElem.style.display = "flex";
         profileElem.style.alignItems = "center";
         profileElem.style.justifyContent = "center";
-        profileElem.style.fontSize = "24px";
+        profileElem.style.fontSize = "1rem";
         profileElem.style.lineHeight = "1";
     } else {
         // Bot: Resim

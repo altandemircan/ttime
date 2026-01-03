@@ -7336,7 +7336,31 @@ position: absolute;
     text-align: left;       /* Baloncuk sağda olsa bile içindeki yazı soldan aksın */
     align-items: center;    /* Emojiyi dikeyde ortala */
 }
+.request-bot-message {
+            margin: 8px 0px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            width: fit-content;
+            max-width: 85%;
+            display: flex;
+            gap: 10px;
+            line-height: 1.5;
+            background: #f6f4ff;
+        }
 
+        /* Kullanıcı Mesaj Stili */
+        .request-user-message {
+            margin: 8px 0px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            width: fit-content;
+            max-width: 85%;
+            display: flex;
+            gap: 10px;
+            line-height: 1.5;
+            background: #e6f5ff;
+            margin-left: 20px; /* Kullanıcı mesajını biraz içeriden başlatır */
+        }
 
 
 .ai-input-wrapper {
