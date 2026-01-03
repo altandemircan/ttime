@@ -9031,10 +9031,6 @@ if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
 }
 });
 
-// Show tt-welcome on page load
-document.addEventListener('DOMContentLoaded', function() {
-    changeContent(1);
-});
 
   function toggleMenu() {
         document.getElementById("menuDropdown").classList.toggle("show");
