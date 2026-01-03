@@ -1,53 +1,3 @@
-// mainscript_d.js dosyasının en başına ekle:
-(function() {
-    // Mobilde viewport yüksekliğini doğru hesapla
-    function updateViewportHeight() {
-        // iOS Safari için visualViewport kullan
-        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        document.documentElement.style.setProperty('--visible-height', `${vh}px`);
-        
-        // Chat box'ı yeniden boyutlandır
-        const chatBox = document.getElementById('chat-box');
-        const chatContainer = document.getElementById('chat-container');
-        
-        if (chatBox && window.innerWidth <= 768) {
-            // Chat box için dinamik yükseklik
-            const headerHeight = 60; // Header yüksekliği
-            const inputHeight = 80; // Input alanı yüksekliği
-            chatBox.style.maxHeight = `${vh - headerHeight - inputHeight}px`;
-        }
-        
-        if (chatContainer && window.innerWidth <= 768) {
-            chatContainer.style.height = `${vh - 60}px`;
-        }
-    }
-    
-    // İlk yükleme
-    setTimeout(updateViewportHeight, 100);
-    
-    // Event listener'lar
-    window.addEventListener('resize', updateViewportHeight);
-    window.addEventListener('orientationchange', function() {
-        setTimeout(updateViewportHeight, 300);
-    });
-    
-    // iOS için ek event
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateViewportHeight);
-    }
-    
-    // Input focus olduğunda (klavye açıldığında)
-    document.addEventListener('focusin', function(e) {
-        if (e.target.matches('input, textarea')) {
-            setTimeout(updateViewportHeight, 300);
-        }
-    });
-})();
-
-
-
-
-
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
@@ -572,8 +522,8 @@ function extractLocationQuery(input) {
     let cleaned = input; 
     
     // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
-    // Şehir isminin kendisine (büyük/küçük harf) dokunma.
-    cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
     // Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
@@ -582,7 +532,9 @@ function extractLocationQuery(input) {
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
-        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
+        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
+        // [FIX] Zaman birimleri stop words'e eklendi
+        "day", "days", "gün", "gun", "night", "nights"
     ];
     
     // Kelimeleri ayır ve stop word'leri temizle
@@ -736,6 +688,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
+
+        // [FIX] Eğer bu şehir zaten seçiliyse, gün sayısı değişse bile listede seçili kalsın
+        if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
+            div.classList.add("selected-suggestion");
+        }
         
         // === TIKLAMA OLAYI ===
         div.onclick = () => {
@@ -896,14 +853,20 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     }, 150));
 
-    chatInput.addEventListener("focus", function () {
+    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
+    const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
-    });
+    };
+
+    chatInput.addEventListener("focus", showSuggestionsLogic);
+    
+    // [FIX] Inputa tıklandığında da listenin açılmasını sağla
+    chatInput.addEventListener("click", showSuggestionsLogic);
 }
 
 
@@ -1194,12 +1157,36 @@ const __cityCoordCache = new Map();
 
 chatInput.addEventListener("input", function() {
     if (window.__programmaticInput) return;
+
+    // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı? (Sadece gün mü değişti?)
+    if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
+        const currentInput = this.value || "";
+        // Inputtaki "2 days" gibi kısımları temizle, sadece şehri al
+        const currentLocName = typeof extractLocationQuery === 'function' 
+            ? extractLocationQuery(currentInput) 
+            : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
+
+        const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const savedText = normalize(window.selectedSuggestion.displayText);
+        const currentText = normalize(currentLocName);
+
+        // Eğer kayıtlı şehir ismi, şu an yazılı olanı kapsıyorsa (örn: "Venice, IT" içinde "Venice" var)
+if (savedText === currentText && currentText.length > 1) {             // Sadece gün sayısını güncelle, kilidi açma
+             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+             if (dayMatch && window.selectedLocation) {
+                 window.selectedLocation.days = parseInt(dayMatch[1], 10);
+             }
+             if (typeof enableSendButton === 'function') enableSendButton();
+             return; // SEÇİMİ SIFIRLAMADAN ÇIK
+        }
+    }
+
+    // Şehir ismi değiştiyse seçimi iptal et
     window.__locationPickedFromSuggestions = false;
     window.selectedLocationLocked = false;
     window.selectedLocation = null;
     disableSendButton && disableSendButton();
 });
-
 
 
 // === handleAnswer Fonksiyonunun Tam ve Güncel Hali ===
@@ -1329,17 +1316,51 @@ async function handleAnswer(answer) {
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('user-input');
-  if (!inp) return;
-  inp.addEventListener('input', () => {
-    // Programatik set fonksiyonun varsa ve flag kullanıyorsan:
-    if (window.__programmaticInput) return;
-    // Kullanıcı elle değiştirdi → seçim iptal
-    window.__locationPickedFromSuggestions = false;
-    window.selectedLocationLocked = false;
-    window.selectedLocation = null;
-    disableSendButton && disableSendButton();
-  });
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+
+    inp.addEventListener('input', () => {
+        // Programatik set fonksiyonu kontrolü
+        if (window.__programmaticInput) return;
+
+        // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı?
+        if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
+            const currentInput = inp.value || "";
+            
+            // Şehir ismini ayıkla (gün sayılarını temizle)
+            const currentLocName = typeof extractLocationQuery === 'function' 
+                ? extractLocationQuery(currentInput) 
+                : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
+
+            // Normalizasyon (küçük harf, noktalama yok)
+            const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const savedText = normalize(window.selectedSuggestion.displayText);
+            const currentText = normalize(currentLocName);
+
+            // === (TAM EŞİTLİK) KONTROLÜ
+            // Beşiktaş == Beşiktaş -> Eşit, seçimi koru.
+            // Beşiktaş != Beşi    -> Eşit değil, kilidi aç, öneri getir.
+            if (savedText === currentText && currentText.length > 1) {
+                const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+                
+                // Eğer gün sayısı varsa güncelle
+                if (dayMatch && window.selectedLocation) {
+                    window.selectedLocation.days = parseInt(dayMatch[1], 10);
+                }
+                
+                // Gönder butonunu aktif et ve çık (Arama yapma)
+                if (typeof enableSendButton === 'function') enableSendButton();
+                return; 
+            }
+        }
+
+        // Buraya düşerse: Kullanıcı harf sildi veya şehri değiştirdi.
+        // Seçimi iptal et ki yeni öneriler gelsin.
+        window.__locationPickedFromSuggestions = false;
+        window.selectedLocationLocked = false;
+        window.selectedLocation = null;
+        disableSendButton && disableSendButton();
+    });
 });
 
 function addCanonicalMessage(canonicalStr) {
@@ -4532,20 +4553,25 @@ async function updateCart() {
                   ` : ''
                 }
               </div>
-              <button class="add-favorite-btn"
+         <button class="add-favorite-btn"
+                onclick="toggleFavFromCart(this)"
                 data-name="${item.name}"
                 data-category="${item.category}"
                 data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                data-image="${item.image || ""}">
+                
                 <span class="fav-heart"
                   data-name="${item.name}"
                   data-category="${item.category}"
                   data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                  data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                  <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                  data-image="${item.image || ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
                 </span>
                 <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
               </button>
+
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                 Remove place
               </button>
@@ -10278,7 +10304,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  const N = Math.max(40, Math.round(totalKm * 2));
+  //km'de nokta sayısı: 2'den 5'e
+  // const N = Math.max(40, Math.round(totalKm * 2));
+
+  const N = Math.max(80, Math.round(totalKm * 5));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -10748,8 +10777,12 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   if (segEndM - segStartM < 100) return; 
 
   const segKm = (segEndM - segStartM) / 1000;
+
   // Örnekleme sayısını artırdık ki grafik kırık görünmesin
-  const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
+  /* segment noktları */
+  // const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
+  // Limiti 800'e çıkar, km başına 50 nokta al
+  const N = Math.min(500, Math.max(120, Math.round(segKm * 50)));
 
   const samples = [];
   for (let i = 0; i < N; i++) {
@@ -11752,22 +11785,6 @@ function attachImLuckyEvents() {
 }
 
 
-function showLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "flex";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-}
-
-function hideLoadingPanel() {
-    var loadingPanel = document.getElementById("loading-panel");
-    if (loadingPanel) loadingPanel.style.display = "none";
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-}
-
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
   // Kalın yazı
@@ -11909,186 +11926,3 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     `;
     document.head.appendChild(style);
 })();
-
-window.showLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    const msgEl = document.getElementById('loading-message');
-    
-    if (!panel) return;
-    
-    // Paneli aç
-    panel.style.display = "flex"; 
-    
-    // İlk mesajı sıfırla
-    if (msgEl) {
-        msgEl.textContent = "Analyzing your request...";
-        msgEl.style.opacity = 1;
-    }
-
-    // Varsa eski döngüyü temizle
-    if (window.loadingInterval) clearInterval(window.loadingInterval);
-
-    const messages = [
-        "Analyzing your request",
-        "Finding places",
-        "Exploring route options",
-        "Compiling your travel plan"
-    ];
-    let current = 0;
-    let isTransitioning = false;
-
-    // Döngüyü başlat
-    window.loadingInterval = setInterval(() => {
-        if (!msgEl || panel.style.display === 'none') return;
-        if (isTransitioning) return;
-        
-        isTransitioning = true;
-
-        // Fade out
-        msgEl.style.transition = "opacity 0.5s ease";
-        msgEl.style.opacity = 0;
-
-        // Mesaj değişimi ve Fade in
-        setTimeout(() => {
-            current = (current + 1) % messages.length;
-            if(msgEl) {
-                msgEl.textContent = messages[current];
-                msgEl.style.opacity = 1;
-            }
-            
-            setTimeout(() => {
-                isTransitioning = false;
-            }, 500); 
-        }, 500); 
-    }, 3000); 
-};
-
-window.hideLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "none";
-    }
-    // Animasyonu durdur
-    if (window.loadingInterval) {
-        clearInterval(window.loadingInterval);
-        window.loadingInterval = null;
-    }
-};
-
-// === KLAVYE VE EKRAN YÜKSEKLİK FİX (Visual Viewport API) ===
-if (window.visualViewport) {
-    function handleVisualViewportResize() {
-        // Klavye açıldığında/kapandığında gerçek görünür yüksekliği al
-        const height = window.visualViewport.height;
-        
-        // Bu yüksekliği bir CSS değişkenine ata
-        document.documentElement.style.setProperty('--visible-height', `${height}px`);
-        
-        // Eğer bir inputa odaklanılmışsa ve klavye açılmışsa, içeriği yukarı kaydır
-        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-             setTimeout(() => {
-                 window.scrollTo(0, 0); // Sayfanın gereksiz scroll olmasını engelle
-                 // İhtiyaç varsa buraya chat kutusunun en altına scroll kodu eklenebilir
-             }, 100);
-        }
-    }
-
-    window.visualViewport.addEventListener('resize', handleVisualViewportResize);
-    window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
-    
-    // İlk açılışta tetikle
-    handleVisualViewportResize();
-}
-
-// CSS ile Input Focus Yönetimi
-function stabilizeInputOnFocus() {
-    const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) return;
-    
-    // Input'a tıklandığında
-    document.addEventListener('focusin', function(e) {
-        const input = e.target;
-        if (!input.matches('#user-input, #ai-chat-input')) return;
-        
-        // Chat container'ı 100px yukarı çek
-        chatContainer.classList.add('input-focused');
-    });
-    
-    // Input'tan çıkıldığında
-    document.addEventListener('focusout', function(e) {
-        const input = e.target;
-        if (!input.matches('#user-input, #ai-chat-input')) return;
-        
-        // 200ms bekleyip eski haline döndür
-        setTimeout(() => {
-            chatContainer.classList.remove('input-focused');
-        }, 200);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
-
-
-// Basit ve etkili Chrome Autofill toolbar çözümü
-function fixChromeAutofillIssue() {
-    // Sadece mobil Chrome
-    if (!/Android.*Chrome\//.test(navigator.userAgent)) return;
-    
-    const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) return;
-    
-    let lastViewportHeight = window.innerHeight;
-    
-    // Viewport değişikliklerini dinle
-    window.addEventListener('resize', function() {
-        const currentHeight = window.innerHeight;
-        const heightDifference = lastViewportHeight - currentHeight;
-        
-        // Ekran önemli ölçüde küçüldüyse (klavye + toolbar açıldı)
-        if (heightDifference > 200) {
-            console.log('Klavye + Autofill toolbar açıldı');
-            
-            // Chat container'ı yukarı çek
-            // 100px (input için) + 70px (toolbar için) = 170px
-            chatContainer.style.bottom = '170px';
-            
-            // Input'u görünür yap
-            const activeInput = document.activeElement;
-            if (activeInput && activeInput.matches('#user-input, #ai-chat-input')) {
-                setTimeout(() => {
-                    activeInput.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }, 350);
-            }
-        } 
-        // Ekran büyüdüyse (klavye kapandı)
-        else if (heightDifference < -100) {
-            chatContainer.style.bottom = '0px';
-        }
-        
-        lastViewportHeight = currentHeight;
-    });
-    
-    // Input focus için de ayarla
-    document.addEventListener('focusin', function(e) {
-        if (e.target.matches('#user-input, #ai-chat-input')) {
-            // 400ms sonra ayarla (klavye + toolbar açılmasını bekle)
-            setTimeout(() => {
-                chatContainer.style.bottom = '170px';
-            }, 400);
-        }
-    });
-    
-    document.addEventListener('focusout', function(e) {
-        if (e.target.matches('#user-input, #ai-chat-input')) {
-            // 200ms sonra eski haline döndür
-            setTimeout(() => {
-                chatContainer.style.bottom = '0px';
-            }, 200);
-        }
-    });
-}
-
-document.addEventListener('DOMContentLoaded', fixChromeAutofillIssue);
