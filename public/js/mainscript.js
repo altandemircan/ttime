@@ -3947,33 +3947,33 @@ const map = L.map(containerId, {
   window.leafletMaps[containerId] = map;
 }
 
-function restoreLostDayMaps() {
-  if (!window.leafletMaps) return;
-  Object.keys(window.leafletMaps).forEach(id => {
-    if (!/^route-map-day\d+$/.test(id)) return;
-    const container = document.getElementById(id);
-    if (!container) return; // Gün tamamen silinmiş olabilir
-    if (!container.querySelector('.leaflet-container')) {
-      const old = window.leafletMaps[id];
-      let center = null, zoom = null;
-      try {
-        center = old.getCenter();
-        zoom = old.getZoom();
-        old.remove();
-      } catch(_){}
-      delete window.leafletMaps[id];
+// function restoreLostDayMaps() {
+//   if (!window.leafletMaps) return;
+//   Object.keys(window.leafletMaps).forEach(id => {
+//     if (!/^route-map-day\d+$/.test(id)) return;
+//     const container = document.getElementById(id);
+//     if (!container) return; // Gün tamamen silinmiş olabilir
+//     if (!container.querySelector('.leaflet-container')) {
+//       const old = window.leafletMaps[id];
+//       let center = null, zoom = null;
+//       try {
+//         center = old.getCenter();
+//         zoom = old.getZoom();
+//         old.remove();
+//       } catch(_){}
+//       delete window.leafletMaps[id];
 
-      const day = parseInt(id.replace('route-map-day',''), 10);
-      initEmptyDayMap(day);
-      if (center && window.leafletMaps[id]) {
-        try { window.leafletMaps[id].setView(center, zoom || window.leafletMaps[id].getZoom()); } catch(_){}
-      }
-      if (typeof renderRouteForDay === 'function') {
-        setTimeout(()=>renderRouteForDay(day), 0);
-      }
-    }
-  });
- }
+//       const day = parseInt(id.replace('route-map-day',''), 10);
+//       initEmptyDayMap(day);
+//       if (center && window.leafletMaps[id]) {
+//         try { window.leafletMaps[id].setView(center, zoom || window.leafletMaps[id].getZoom()); } catch(_){}
+//       }
+//       if (typeof renderRouteForDay === 'function') {
+//         setTimeout(()=>renderRouteForDay(day), 0);
+//       }
+//     }
+//   });
+// }
 
 
 (function initDirectDayExpandedMapPatch(){
@@ -8257,14 +8257,14 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     const start = polylineCoords[0];
     const end = polylineCoords[polylineCoords.length - 1];
 
-    // function haversine(lat1, lon1, lat2, lon2) {
-    //     const R = 6371000;
-    //     const toRad = x => x * Math.PI / 180;
-    //     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-    //     const a = Math.sin(dLat/2)**2 +
-    //         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-    //     return 2 * R * Math.asin(Math.sqrt(a));
-    // }
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = x => x * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+        return 2 * R * Math.asin(Math.sqrt(a));
+    }
 
     // Polyline üzerindeki en yakın noktayı ve mesafesini bul
     let minDist = Infinity, minIdx = -1;
