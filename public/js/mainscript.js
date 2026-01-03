@@ -2423,7 +2423,7 @@ places = fbResult.slice(0, 3);                    break;
             }
             
             const candidate = places[idx];
-            const candidate = places[idx];
+     
             
             if (!globalSelectedPlaceNames.has(candidate.name)) {
                 selectedPlace = candidate;
