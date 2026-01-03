@@ -1380,6 +1380,15 @@ function addCanonicalMessage(canonicalStr) {
   }
 }
 
+// Helper fonksiyonu güncelliyoruz
+function addWelcomeMessage() {
+    if (!window.__welcomeShown) {
+        // BURASI DEĞİŞTİ:
+        addMessage("Let's get started.", "bot-message request-bot-message");
+        window.__welcomeShown = true;
+    }
+}
+
 function sendMessage() {
     if (window.isProcessing) return;
     const input = document.getElementById("user-input");
@@ -1393,9 +1402,7 @@ function sendMessage() {
         return;
     }
 
-    // *** DEĞİŞİKLİK BURADA: Bot mesajını EN BAŞTA garantiliyoruz ***
-    // Eğer ekranda yoksa ekler, varsa (window.__welcomeShown sayesinde) eklemez.
-    // Böylece sıralama: [BOT] -> [USER] olur.
+    // Bot mesajı (Varsa eklenmez, yoksa yeni class ile eklenir)
     addWelcomeMessage();
 
     const formatted = formatCanonicalPlan(val);
@@ -1409,8 +1416,8 @@ function sendMessage() {
             <span class="canon-text">${formatted.canonical}</span>
           </div>
         `;
-        // Bot mesajı zaten yukarıda eklendiği için User mesajı onun altına gelir
-        addMessage(diffHtml, "user-message");
+        // BURASI DEĞİŞTİ:
+        addMessage(diffHtml, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
         showLoadingPanel();
@@ -1419,21 +1426,19 @@ function sendMessage() {
         return;
     }
 
-    // Lokasyon kilidi kontrolü
     if (!window.selectedLocationLocked || !window.selectedLocation) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
-    // Canonical Match
     const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
         
-        // Bot mesajı zaten yukarıda eklendi, şimdi User mesajını ekliyoruz
-        addMessage(val, "user-message");
+        // BURASI DEĞİŞTİ:
+        addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
         showLoadingPanel();
@@ -1442,16 +1447,8 @@ function sendMessage() {
         return;
     }
 
-    // Standart akış
     showLoadingPanel();
     handleAnswer(val);
-}
-// Helper function - Welcome mesajını ekle
-function addWelcomeMessage() {
-    if (! window.__welcomeShown) {
-        addMessage("Let's get started.", "bot-message");
-        window.__welcomeShown = true;
-    }
 }
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
@@ -1460,33 +1457,36 @@ document.getElementById('send-button').addEventListener('click', sendMessage);
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
-    messageElement.classList.add("message", className);
+    
+    // 1. ÇOKLU CLASS DESTEĞİ:
+    // Gelen className "user-message request-user-message" olabilir.
+    // Mevcut 'message' class'ının yanına ekliyoruz.
+    messageElement.className = "message " + className;
 
-    // --- PROFİL GÖRSELİ MANTIĞI (GÜNCELLENDİ) ---
+    // --- PROFİL GÖRSELİ MANTIĞI ---
     let profileElem;
-    if (className === "user-message") {
-        // Kullanıcı için: Emoji (🧑) içeren bir DIV oluştur
+    
+    // 2. KONTROL DEĞİŞİKLİĞİ (=== yerine includes):
+    if (className.includes("user-message")) {
+        // Kullanıcı: Emoji (🧑)
         profileElem = document.createElement("div");
-        profileElem.className = "profile-img"; // Mevcut CSS boyutlarını (width/height/radius) alır
+        profileElem.className = "profile-img"; 
         profileElem.textContent = "🧑";
-        
-        // Emojiyi dairenin tam ortasına hizalamak için flex kullanıyoruz
         profileElem.style.display = "flex";
         profileElem.style.alignItems = "center";
         profileElem.style.justifyContent = "center";
-        profileElem.style.fontSize = "1rem"; // Emojinin boyutu
+        profileElem.style.fontSize = "24px";
         profileElem.style.lineHeight = "1";
     } else {
-        // Bot için: Standart resim (IMG) oluştur
+        // Bot: Resim
         profileElem = document.createElement("img");
         profileElem.src = "img/avatar_aiio.png";
         profileElem.alt = "AI";
         profileElem.classList.add("profile-img");
     }
-    // ---------------------------------------------
+    // -----------------------------
 
-    // İçerik ekleme mantığı (Değişmedi)
-    if (className === "bot-message" && /<button|<div|<br/i.test(text)) {
+    if (className.includes("bot-message") && /<button|<div|<br/i.test(text)) {
         messageElement.appendChild(profileElem);
         const htmlDiv = document.createElement("span");
         htmlDiv.innerHTML = text;
@@ -1494,7 +1494,6 @@ function addMessage(text, className) {
     } else {
         messageElement.appendChild(profileElem);
         const textElement = document.createElement("div");
-        // Diff HTML kontrolü
         if (/<div|<span|canonical-diff|→/.test(text)) {
             textElement.innerHTML = text;
         } else {
@@ -1503,7 +1502,6 @@ function addMessage(text, className) {
         messageElement.appendChild(textElement);
     }
 
-    // Typing indicator kontrolü (Mesajı indikatörün üstüne ekle)
     const typingIndicator = document.getElementById("typing-indicator");
     if (typingIndicator && typingIndicator.parentNode === chatBox) {
         chatBox.insertBefore(messageElement, typingIndicator);
@@ -1511,7 +1509,6 @@ function addMessage(text, className) {
         chatBox.appendChild(messageElement);
     }
     
-    // Scroll ayarı
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -4903,9 +4900,9 @@ const itemCount = window.cart.filter(i =>
 
             // --- BOT MESAJI VE INDIKATOR EKLENİYOR ---
             if (chatBox) {
-                // 1. Bot Mesajı
+                // 1. Bot Mesajı (request-bot-message EKLENDİ)
                 const welcome = document.createElement('div');
-                welcome.className = 'message bot-message';
+                welcome.className = 'message bot-message request-bot-message';
                 welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
                 chatBox.appendChild(welcome);
 
