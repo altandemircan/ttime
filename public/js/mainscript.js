@@ -3051,14 +3051,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-const placeCategories = {
-    "Coffee": "catering.cafe",     
-    "Museum": "entertainment.museum",      
-    "Touristic attraction": "tourism.sights",         
-    "Restaurant": "catering.restaurant",
-    "Accommodation": "accommodation.hotel",
-    
-};
 
 window.placeCategories = {
     "Coffee": "catering.cafe",
