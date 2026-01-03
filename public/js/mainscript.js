@@ -2114,27 +2114,7 @@ function toggleAccordion(accordionHeader) {
 }
 
 
-    function categoryIcon(category) {
-        switch (category) {
-            case "Coffee": return "img/coffee_icon.svg";
-            case "Museum": return "img/museum_icon.svg";
-            case "Touristic attraction": return "img/touristic_icon.svg";
-            case "Restaurant": return "img/restaurant_icon.svg";
-            case "Accommodation": return "img/accommodation_icon.svg";
-            default: return "img/location.svg";
-        }
-    }
 
-
-
-const placeCategories = {
-    "Coffee": "catering.cafe",     
-    "Museum": "entertainment.museum",      
-    "Touristic attraction": "tourism.sights",         
-    "Restaurant": "catering.restaurant",
-    "Accommodation": "accommodation.hotel",
-    
-};
 
 // mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
@@ -2287,29 +2267,62 @@ async function buildPlan(city, days) {
   let plan = [];
   let categoryResults = {};
   
-  // [Global Dedup] Aynı mekanı tekrar seçmemek için kayıt tutuyoruz
+  // [Global Dedup] Aynı mekanı planda 2 kere göstermemek için hafıza
   const globalSelectedPlaceNames = new Set();
 
+  // Koordinatları al
   await getCityCoordinates(city); 
 
-  // --- Yardımcı Fonksiyon: Limitli ve Yedekli Arama ---
+  // --- 1. ÖZEL KOD TANIMLARI (Dışarıdaki bozuk/eksik listelerden etkilenmez) ---
+  // Bu liste sadece bu fonksiyonun anlayacağı dildir. Dışarıyı bozmaz.
+  const localCodes = {
+      // Standartlar
+      "Coffee": "catering.cafe",
+      "Museum": "entertainment.museum",
+      "Touristic attraction": "tourism.sights",
+      "Restaurant": "catering.restaurant",
+      "Accommodation": "accommodation.hotel",
+      // Yedekler (Fallback) - Sadece burası için özel tanımlı
+      "Park": "leisure.park",
+      "Viewpoint": "tourism.viewpoint",
+      "Natural": "natural",
+      "Heritage": "heritage",
+      "Leisure": "leisure"
+  };
+
+  // Kodu bulan güvenli fonksiyon
+  function getCode(catName) {
+      // Önce buradaki sağlam listeye bak (Garanti çözüm)
+      if (localCodes[catName]) return localCodes[catName];
+      
+      // Yoksa global listelere bak (Hata vermesin diye kontrol ediyoruz)
+      if (window.geoapifyCategoryMap && window.geoapifyCategoryMap[catName]) return window.geoapifyCategoryMap[catName];
+      if (window.placeCategories && window.placeCategories[catName]) return window.placeCategories[catName];
+      
+      return "tourism"; // Hiçbiri yoksa varsayılan
+  }
+
+  // --- 2. ARAMA MANTIĞI (Mesafe Genişletmeli) ---
   async function searchWithLogic(cat) {
-      const MAX_RADIUS = 60000; // Maksimum 60km (Çok uzaklaşmasın)
-      let radius = 3;
+      const MAX_RADIUS = 60000; // Max 60km uzağa git
+      let radius = 3; // 3km ile başla
+      let catCode = getCode(cat);
       
-      // 1. Ana kategoriyi ara (Örn: Museum)
-      let places = await getPlacesForCategory(city, cat, 12, radius * 1000);
+      // API isteği (Kodu elle gönderiyoruz ki dışarıya muhtaç olmasın)
+      let places = await getPlacesForCategory(city, cat, 12, radius * 1000, catCode);
       
-      // Sonuç azsa yarıçapı genişlet
+      // Sonuç yoksa veya azsa genişle
       let attempt = 0;
       const triedNames = new Set();
       while (places.length <= 1 && attempt < 5 && (radius * 1000) < MAX_RADIUS) {
           if (places.length === 1) triedNames.add(places[0].name);
-          radius += 10; 
+          
+          radius += 10; // 10ar km artır
           if (radius * 1000 > MAX_RADIUS) radius = MAX_RADIUS / 1000;
 
-          let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000);
-          // Tekrarları temizle
+          let newPlaces = await getPlacesForCategory(city, cat, 12, radius * 1000, catCode);
+          
+          // Tekrarları süz
           newPlaces = newPlaces.filter(p => !triedNames.has(p.name));
           
           if (newPlaces.length > 0) places = places.concat(newPlaces);
@@ -2319,40 +2332,52 @@ async function buildPlan(city, days) {
       return { places, finalRadius: radius };
   }
 
+  // --- 3. KATEGORİ DÖNGÜSÜ ---
   for (const cat of categories) {
     let result = await searchWithLogic(cat);
     let places = result.places;
 
-    // 2. [AKILLI FALLBACK] Eğer ana kategori (örn: Müze) yoksa alternatifleri dene
+    // --- AKILLI FALLBACK (YEDEK PLAN) ---
+    // Burası senin istediğin "Müze yoksa Camiye gitme, Kalıntıya git" mantığıdır.
     if (places.length === 0) {
         let fallbacks = [];
-        // Müze yoksa -> İbadethane -> Park -> Manzara
-        if (cat === 'Museum') fallbacks = ['Place of Worship', 'Park', 'Viewpoint'];
-        // Turistik yer yoksa -> Doğa (Göl/Baraj) -> Tarihi Kalıntı -> Eğlence
-        else if (cat === 'Touristic attraction') fallbacks = ['Natural', 'Heritage', 'Leisure'];
         
+        // MÜZE YOKSA -> Tarihi Kalıntı, Manzara, Doğa, Park
+        if (cat === 'Museum') {
+             fallbacks = ['Heritage', 'Viewpoint', 'Natural', 'Park'];
+        }
+        
+        // TURİSTİK YER YOKSA -> Doğa, Manzara, Eğlence, Park
+        else if (cat === 'Touristic attraction') {
+             fallbacks = ['Natural', 'Viewpoint', 'Leisure', 'Park'];
+        }
+        
+        // Yedekleri dene
         if (fallbacks.length > 0) {
-            console.log(`[Smart Fallback] ${cat} bulunamadı. Alternatifler deneniyor: ${fallbacks.join(', ')}`);
+            console.log(`[Smart Fallback] ${cat} bulunamadı. Alternatifler: ${fallbacks.join(', ')}`);
             for (const fbCat of fallbacks) {
-                // Alternatifleri 35km içinde ara (Çok uzaklaşma)
-                const fbResult = await getPlacesForCategory(city, fbCat, 12, 35000);
+                const fbCode = getCode(fbCat);
+                // Yedekleri 40km içinde ara
+                const fbResult = await getPlacesForCategory(city, fbCat, 12, 40000, fbCode);
+                
                 if (fbResult.length > 0) {
-                    places = fbResult; // Bulduğumuz an bunu kullan
-                    break; 
+                    places = fbResult; 
+                    break; // Bulduysan çık
                 }
             }
         }
     }
 
-    // 3. Lucky Algoritması (Hala boşsa son çare biraz daha genişlet)
+    // --- LUCKY (Son Çare) ---
     if (places.length === 0) {
       let luckyRadius = result.finalRadius + 10;
       let foundPlace = null;
       let luckyAttempts = 0;
-      const HARD_LIMIT = 80000; // 80km son sınır
+      const HARD_LIMIT = 80000;
+      let catCode = getCode(cat);
 
       while (!foundPlace && luckyAttempts < 5 && (luckyRadius * 1000) < HARD_LIMIT) {
-        const luckyResults = await getPlacesForCategory(city, cat, 5, luckyRadius * 1000);
+        let luckyResults = await getPlacesForCategory(city, cat, 5, luckyRadius * 1000, catCode);
         if (luckyResults.length > 0) {
           places = luckyResults;
           break;
@@ -2365,23 +2390,20 @@ async function buildPlan(city, days) {
     categoryResults[cat] = places;
   }
 
-  // --- Günlük Planı Dağıt ---
+  // --- 4. GÜNLERE DAĞITIM (Rastgele ve Tekrarsız) ---
   for (let day = 1; day <= days; day++) {
     let dailyPlaces = [];
     for (const cat of categories) {
       const places = categoryResults[cat];
       if (places.length > 0) {
-        
-        // [GELİŞMİŞ SEÇİM] Rastgele ama tekrar etmeyen seçim
         let selectedPlace = null;
         let attempts = 0;
         
-        // 20 kere dene, daha önce seçilmemiş bir yer bulmaya çalış
+        // 20 kere dene, daha önce seçilmemiş bir yer bul
         while (attempts < 20) {
             const idx = Math.floor(Math.random() * places.length);
             const candidate = places[idx];
             
-            // Eğer bu mekan daha önce GLOBAL listede yoksa seç
             if (!globalSelectedPlaceNames.has(candidate.name)) {
                 selectedPlace = candidate;
                 globalSelectedPlaceNames.add(candidate.name);
@@ -2390,13 +2412,14 @@ async function buildPlan(city, days) {
             attempts++;
         }
         
-        // Eğer hepsi kullanıldıysa (fallback), mecburen rastgele birini al
+        // Eğer hepsi seçildiyse mecburen rastgele birini al
         if (!selectedPlace) {
              selectedPlace = places[Math.floor(Math.random() * places.length)];
         }
 
         dailyPlaces.push({ day, category: cat, ...selectedPlace });
       } else {
+        // Mekan bulunamadıysa boş dön
         dailyPlaces.push({ day, category: cat, name: null, _noPlace: true });
       }
     }
@@ -2407,6 +2430,7 @@ async function buildPlan(city, days) {
   plan = plan.map(normalizePlaceName);
   return plan;
 }
+
 function smartStepFilter(places, minM = 500, maxM = 2500, maxPlaces = 10) {
     if (places.length < 2) return places;
     let remaining = [...places];
@@ -3058,6 +3082,27 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
+    function categoryIcon(category) {
+        switch (category) {
+            case "Coffee": return "img/coffee_icon.svg";
+            case "Museum": return "img/museum_icon.svg";
+            case "Touristic attraction": return "img/touristic_icon.svg";
+            case "Restaurant": return "img/restaurant_icon.svg";
+            case "Accommodation": return "img/accommodation_icon.svg";
+            default: return "img/location.svg";
+        }
+    }
+
+
+
+const placeCategories = {
+    "Coffee": "catering.cafe",     
+    "Museum": "entertainment.museum",      
+    "Touristic attraction": "tourism.sights",         
+    "Restaurant": "catering.restaurant",
+    "Accommodation": "accommodation.hotel",
+    
+};
 
 const geoapifyCategoryMap = {
   // Basic Plan
