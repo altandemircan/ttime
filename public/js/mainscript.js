@@ -1364,21 +1364,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function addCanonicalMessage(canonicalStr) {
-  const chatBox = document.getElementById("chat-box");
-  if (!chatBox) return;
-  const msg = document.createElement("div");
-  msg.className = "message canonical-message";
-  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
-  <span>${canonicalStr}</span>`;
-  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
-  const typingIndicator = chatBox.querySelector('#typing-indicator');
-  if (typingIndicator && typingIndicator.nextSibling) {
-    chatBox.insertBefore(msg, typingIndicator.nextSibling);
-  } else {
-    chatBox.appendChild(msg);
-  }
-}
 
 
 function sendMessage() {
