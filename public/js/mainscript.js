@@ -1390,9 +1390,18 @@ function addWelcomeMessage() {
 }
 
 function sendMessage() {
-    if (window.isProcessing) return;
-    const input = document.getElementById("user-input");
+    // Kilit kontrolü (Loading sırasında tekrar basılmasın)
+    if (window.isProcessing) {
+        const panel = document.getElementById('loading-panel');
+        // Eğer panel ekranda yoksa ama kilit varsa, kilidi aç (Hata koruması)
+        if (!panel || panel.style.display === 'none') {
+             window.isProcessing = false; 
+        } else {
+             return; 
+        }
+    }
 
+    const input = document.getElementById("user-input");
     if (!input) return;
     const val = input.value.trim();
     if (!val) return;
@@ -1402,12 +1411,12 @@ function sendMessage() {
         return;
     }
 
-    // Bot mesajı (Varsa eklenmez, yoksa yeni class ile eklenir)
+    // İlk mesaj (Let's get started)
     addWelcomeMessage();
 
     const formatted = formatCanonicalPlan(val);
 
-    // Diff (Düzeltme) Senaryosu
+    // 1. Diff (Düzeltme) Senaryosu
     if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
         const diffHtml = `
           <div class="canonical-diff">
@@ -1416,39 +1425,41 @@ function sendMessage() {
             <span class="canon-text">${formatted.canonical}</span>
           </div>
         `;
-        // BURASI DEĞİŞTİ:
         addMessage(diffHtml, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel();
+        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
         handleAnswer(`${formatted.city} ${formatted.days} days`);
         input.value = "";
         return;
     }
 
+    // Lokasyon kilidi
     if (!window.selectedLocationLocked || !window.selectedLocation) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
+    // 2. Canonical Match (Plan a X days...)
     const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
         
-        // BURASI DEĞİŞTİ:
         addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel();
+        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
-    showLoadingPanel();
+    // 3. Standart Akış
+    showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
     handleAnswer(val);
+    input.value = ""; 
 }
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
@@ -9028,7 +9039,7 @@ function changeContent(option) {
     const aboutUsSection = document.getElementById('tt-about-us');
 
     if (chatBox) chatBox.style.display = 'none';
-    if (welcomeSection) welcomeSection.style.display = 'none';
+
     if (aboutUsSection) aboutUsSection.style.display = 'none';
 
     if (option === 1) {
@@ -9065,7 +9076,6 @@ let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.targe
 if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
     if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
         // Hide content sections only if user message exists
-        if (welcomeSection) welcomeSection.style.display = 'none';
         if (aboutUsSection) aboutUsSection.style.display = 'none';
     }
     chatBox.style.display = 'block';
