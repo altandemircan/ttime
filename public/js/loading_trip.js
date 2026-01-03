@@ -17,7 +17,7 @@
             body.app-locked .loading-panel {
                 pointer-events: auto !important;
             }
-        `;
+        `; 
         document.head.appendChild(style);
     }
 })();
