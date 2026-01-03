@@ -1447,7 +1447,7 @@ function sendMessage() {
         return;
     }
 
-    showLoadingPanel();
+    showLoadingPanel(); 
     handleAnswer(val);
 }
 
