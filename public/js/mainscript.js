@@ -6047,31 +6047,36 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
             // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
             if (missingPoints && missingPoints.length > 0) {
-                missingPoints.forEach(mp => {
-                    let minDist = Infinity;
-                    let closestPoint = null;
-                    
-                    for (const rc of routeCoords) {
-                        const d = Math.pow(rc[0] - mp.lat, 2) + Math.pow(rc[1] - mp.lng, 2);
-                        if (d < minDist) {
-                            minDist = d;
-                            closestPoint = rc;
-                        }
-                    }
+                missingPoints.forEach((mp) => {
+    let minDist = Infinity;
+    let closest = null;
 
-                    if (closestPoint) {
-                        L.polyline([
-                            [mp.lat, mp.lng], 
-                            closestPoint
-                        ], {
-                            color: '#d32f2f', 
-                            weight: 3,
-                            opacity: 0.7,
-                            dashArray: '5, 8',
-                            pane: 'customRoutePane'
-                        }).addTo(map);
-                    }
-                });
+    // routeCoords zaten [lat, lng] formatında
+    for (const rc of routeCoords) {
+        const [lat, lng] = rc;
+        const d = haversine(lat, lng, mp.lat, mp.lng);
+        if (d < minDist) {
+            minDist = d;
+            closest = { lat, lng };
+        }
+    }
+
+    if (closest) {
+        L.polyline(
+            [
+                [mp.lat, mp.lng],
+                [closest.lat, closest.lng]
+            ],
+            {
+                color: '#d32f2f',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '5, 8',
+                pane: 'customRoutePane'
+            }
+        ).addTo(map);
+    }
+});
             }
             // -----------------------------------------------
 
