@@ -3067,7 +3067,7 @@ window.placeCategories = {
     "Leisure": "leisure"
 };
 
-const geoapifyCategoryMap = {
+window.geoapifyCategoryMap = {
   // Basic Plan
   "Coffee": "catering.cafe",
   "Museum": "entertainment.museum",
