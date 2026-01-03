@@ -833,7 +833,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
             renderSuggestions(suggestions, locationQuery);
         }
 
-    }, 150));
+    }, 500));
 
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
@@ -2325,14 +2325,7 @@ async function buildPlan(city, days) {
         luckyAttempts++;
       }
     }
-  console.log(`buildPlan - category: ${cat}, radius: ${radius}, found places:`);
-    console.log(places.map(p => ({
-      name: p.name,
-      lat: p.lat,
-      lon: p.lon,
-      address: p.address,
-      categories: p.categories
-    })));
+ 
     categoryResults[cat] = places;
   }
 
@@ -2343,7 +2336,6 @@ async function buildPlan(city, days) {
       if (places.length > 0) {
         // Her gün için farklı mekan gelsin!
         const idx = (day - 1) % places.length;
-         console.log(`buildPlan - Day ${day}, Category: ${cat}, Selected place:`, places[idx]);
       // --- LOG SONU ---
         dailyPlaces.push({ day, category: cat, ...places[idx] });
       } else {
@@ -2557,23 +2549,23 @@ document.getElementById("send-button").addEventListener("click", sendMessage);
    
 });
 
-
-// 2) Yerleri Geoapify'dan çeken fonksiyon
-
-
-
-// Şehir koordinatı bulma fonksiyonu
+// Cache mekanizması eklendi
 async function getCityCoordinates(city) {
-const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
+    if (window.__cityCoordCache && window.__cityCoordCache.has(city)) {
+        return window.__cityCoordCache.get(city);
+    }
+    const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
     const resp = await fetch(url);
     const data = await resp.json();
     if (data.features && data.features.length > 0) {
         const f = data.features[0];
-        return { lat: f.properties.lat, lon: f.properties.lon };
+        const res = { lat: f.properties.lat, lon: f.properties.lon };
+        if (!window.__cityCoordCache) window.__cityCoordCache = new Map();
+        window.__cityCoordCache.set(city, res);
+        return res;
     }
     return null;
 }
-
 
 const btn = document.getElementById('show-coords-btn');
 if (btn) {
@@ -4258,9 +4250,17 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 }
 
 
-// mainscript.js içine (mevcut updateCart'ın yerine) yapıştırın
-
 async function updateCart() {
+
+    // [PERFORMANS] Eski item haritalarını temizle
+    if (window._leafletMaps) {
+        Object.keys(window._leafletMaps).forEach(k => {
+            if (window._leafletMaps[k]) {
+                try { window._leafletMaps[k].remove(); } catch(e){}
+                delete window._leafletMaps[k];
+            }
+        });
+    }
 
     // === EKLENECEK KOD BAŞLANGICI: AI Bölümünü Göster ===
     const aiInfoSection = document.querySelector('.ai-info-section');
@@ -5466,16 +5466,22 @@ function toggleContent(arrowIcon) {
     }
 
     // EK: Leaflet haritayı başlat
+    // EK: Leaflet haritayı başlat (Optimize Edildi)
     const item = cartItem.closest('.travel-item');
     if (!item) return;
     const mapDiv = item.querySelector('.leaflet-map');
     if (mapDiv && mapDiv.offsetParent !== null) {
         const mapId = mapDiv.id;
-        const lat = parseFloat(item.getAttribute('data-lat'));
-        const lon = parseFloat(item.getAttribute('data-lon'));
-        const name = item.querySelector('.toggle-title').textContent;
-        const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
-        createLeafletMapForItem(mapId, lat, lon, name, number);
+        // Harita zaten varsa sadece güncelle, yoksa oluştur
+        if (window._leafletMaps && window._leafletMaps[mapId]) {
+             window._leafletMaps[mapId].invalidateSize();
+        } else {
+            const lat = parseFloat(item.getAttribute('data-lat'));
+            const lon = parseFloat(item.getAttribute('data-lon'));
+            const name = item.querySelector('.toggle-title').textContent;
+            const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+            createLeafletMapForItem(mapId, lat, lon, name, number);
+        }
     }
 }
 
@@ -8106,14 +8112,14 @@ function isPointReallyMissing(point, polylineCoords, maxDistanceMeters = 100) {
     const start = polylineCoords[0];
     const end = polylineCoords[polylineCoords.length - 1];
 
-    function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = x => x * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-        return 2 * R * Math.asin(Math.sqrt(a));
-    }
+    // function haversine(lat1, lon1, lat2, lon2) {
+    //     const R = 6371000;
+    //     const toRad = x => x * Math.PI / 180;
+    //     const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+    //     const a = Math.sin(dLat/2)**2 +
+    //         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    //     return 2 * R * Math.asin(Math.sqrt(a));
+    // }
 
     // Polyline üzerindeki en yakın noktayı ve mesafesini bul
     let minDist = Infinity, minIdx = -1;
@@ -9077,15 +9083,15 @@ function getRouteMarkerPositionsOrdered(day) {
     const routeCoords = geojson.features[0].geometry.coordinates;
     const points = getDayPoints(day);
 
-    function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = x => x * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-        return 2 * R * Math.asin(Math.sqrt(a));
-    }
+    // function haversine(lat1, lon1, lat2, lon2) {
+    //     const R = 6371000;
+    //     const toRad = x => x * Math.PI / 180;
+    //     const dLat = toRad(lat2 - lat1);
+    //     const dLon = toRad(lon2 - lon1);
+    //     const a = Math.sin(dLat / 2) ** 2 +
+    //         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    //     return 2 * R * Math.asin(Math.sqrt(a));
+    // }
 
     let polylineDistances = [0];
     for (let i = 1; i < routeCoords.length; i++) {
