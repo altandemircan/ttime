@@ -1393,9 +1393,12 @@ function sendMessage() {
         return;
     }
 
-    const formatted = formatCanonicalPlan(val);
+    // *** DEĞİŞİKLİK BURADA: Bot mesajını EN BAŞTA garantiliyoruz ***
+    // Eğer ekranda yoksa ekler, varsa (window.__welcomeShown sayesinde) eklemez.
+    // Böylece sıralama: [BOT] -> [USER] olur.
+    addWelcomeMessage();
 
-    // --- ESKİ addCanonicalMessage BLOĞU BURADAYDI, SİLİNDİ ---
+    const formatted = formatCanonicalPlan(val);
 
     // Diff (Düzeltme) Senaryosu
     if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
@@ -1406,12 +1409,11 @@ function sendMessage() {
             <span class="canon-text">${formatted.canonical}</span>
           </div>
         `;
+        // Bot mesajı zaten yukarıda eklendiği için User mesajı onun altına gelir
         addMessage(diffHtml, "user-message");
         window.__suppressNextUserEcho = true;
         
-        addWelcomeMessage();
         showLoadingPanel();
-        
         handleAnswer(`${formatted.city} ${formatted.days} days`);
         input.value = "";
         return;
@@ -1423,29 +1425,24 @@ function sendMessage() {
         return;
     }
 
-    // --- DÜZELTİLEN KISIM: Canonical Match ---
+    // Canonical Match
     const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
         
-        // 1. Normal kullanıcı mesajını MANUEL olarak ekliyoruz:
+        // Bot mesajı zaten yukarıda eklendi, şimdi User mesajını ekliyoruz
         addMessage(val, "user-message");
-
-        // 2. handleAnswer'ın tekrar eklemesini engelliyoruz (çünkü yukarıda biz ekledik):
         window.__suppressNextUserEcho = true;
         
-        addWelcomeMessage();
         showLoadingPanel();
-        
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
-    // Standart akış (Regex eşleşmezse)
-    addWelcomeMessage();
+    // Standart akış
     showLoadingPanel();
     handleAnswer(val);
 }
@@ -4835,7 +4832,7 @@ const itemCount = window.cart.filter(i =>
         };
     })();
 
-    (function ensureNewChatInsideCart() {
+(function ensureNewChatInsideCart() {
     const oldOutside = document.querySelector('#newchat');
     if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
     const cartRoot = document.getElementById('cart');
@@ -4853,7 +4850,7 @@ const itemCount = window.cart.filter(i =>
             const userInput = document.getElementById('user-input');
             if (userInput) userInput.value = '';
 
-            // Temizlik - global değişkenler
+            // Temizlik
             window.selectedCity = null;
             window.selectedLocation = null;
             window.selectedLocationLocked = false;
@@ -4862,7 +4859,6 @@ const itemCount = window.cart.filter(i =>
             window.latestTripPlan = [];
             window.cart = [];
 
-            // Collage race condition fix - yeni token oluştur
             try {
                 if (typeof window.__ttNewTripToken === 'function') {
                     window.__activeTripSessionToken = window.__ttNewTripToken();
@@ -4872,7 +4868,6 @@ const itemCount = window.cart.filter(i =>
             } catch (e) {
                 console.warn('[collage] Token reset error:', e);
             }
-            // Tüm harita ve overlay temizliği
             if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
             window.routeElevStatsByDay = {};
             window.__ttElevDayCache = {};
@@ -4888,15 +4883,18 @@ const itemCount = window.cart.filter(i =>
             const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
             if (sidebar) sidebar.classList.add('open');
 
-            // --- SIRALAMA DÜZELTİLEN KISIM BAŞLANGICI ---
+            // --- BOT MESAJI VE INDIKATOR EKLENİYOR ---
             if (chatBox) {
-                // 1. ÖNCE "Let's get started" mesajını ekle
+                // 1. Bot Mesajı
                 const welcome = document.createElement('div');
                 welcome.className = 'message bot-message';
                 welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
                 chatBox.appendChild(welcome);
 
-                // 2. SONRA Typing Indicator'ı ekle (Böylece DOM'da en altta kalır)
+                // *** KRİTİK EKLEME: Bot mesajının gösterildiğini sisteme bildir ***
+                window.__welcomeShown = true; 
+
+                // 2. Typing Indicator (En alta)
                 let indicator = document.getElementById('typing-indicator');
                 if (!indicator) {
                     indicator = document.createElement('div');
@@ -4905,37 +4903,28 @@ const itemCount = window.cart.filter(i =>
                     indicator.innerHTML = '<span></span><span></span><span></span>';
                     chatBox.appendChild(indicator);
                 } else {
-                    chatBox.appendChild(indicator); // Var olanı söküp en sona takar
+                    chatBox.appendChild(indicator);
                     indicator.innerHTML = '<span></span><span></span><span></span>';
                 }
-                
-                // Başlangıçta indicator'ı gizle (Bot konuşmayı bitirdi)
-                // Eğer sürekli yanıp sönmesini istiyorsan 'block' yapabilirsin ama doğrusu 'none'dır.
                 indicator.style.display = 'none';
 
                 if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
                     chatBox.scrollTop = chatBox.scrollHeight;
                 }
             }
-            // --- SIRALAMA DÜZELTİLEN KISIM BİTİŞİ ---
 
-            // input-wrapper tekrar görünür olsun
             var iw = document.querySelector('.input-wrapper');
             if (iw) iw.style.display = '';
 
-            // Tüm seçili suggestionları temizle
             document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
                 el.classList.remove('selected-suggestion');
             });
 
-            // Trip Details ekranını tamamen kaldır (mobil ve desktop için)
             const tripDetailsSection = document.getElementById("tt-trip-details");
             if (tripDetailsSection) tripDetailsSection.remove();
 
-            // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
             const chatScreen = document.getElementById("chat-screen");
             if (chatScreen) chatScreen.innerHTML = "";
-
         };
     }
     const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
