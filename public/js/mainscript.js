@@ -1384,23 +1384,20 @@ function sendMessage() {
     if (window.isProcessing) return;
     const input = document.getElementById("user-input");
 
-    if (! input) return;
+    if (!input) return;
     const val = input.value.trim();
     if (!val) return;
 
-    if (! window.__locationPickedFromSuggestions) {
+    if (!window.__locationPickedFromSuggestions) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
     const formatted = formatCanonicalPlan(val);
 
-    // --- CANONICAL MESAJI GÖSTER ---
-    if (formatted.canonical) {
-        addCanonicalMessage(formatted.canonical);
-    }
+    // --- ESKİ addCanonicalMessage BLOĞU BURADAYDI, SİLİNDİ ---
 
-    // Diff sadece seçim yapılmışsa
+    // Diff (Düzeltme) Senaryosu
     if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
         const diffHtml = `
           <div class="canonical-diff">
@@ -1412,7 +1409,6 @@ function sendMessage() {
         addMessage(diffHtml, "user-message");
         window.__suppressNextUserEcho = true;
         
-        // Welcome mesajı gönderim sırasında
         addWelcomeMessage();
         showLoadingPanel();
         
@@ -1421,21 +1417,25 @@ function sendMessage() {
         return;
     }
 
-    // Lokasyon kilidi yine güvenlik
+    // Lokasyon kilidi kontrolü
     if (!window.selectedLocationLocked || !window.selectedLocation) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
-    // Canonical formatta ise doğrudan parse
-    const m = val.match(/Plan a (\d+)-day tour for (. +)$/i);
+    // --- DÜZELTİLEN KISIM: Canonical Match ---
+    const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
+        
+        // 1. Normal kullanıcı mesajını MANUEL olarak ekliyoruz:
+        addMessage(val, "user-message");
+
+        // 2. handleAnswer'ın tekrar eklemesini engelliyoruz (çünkü yukarıda biz ekledik):
         window.__suppressNextUserEcho = true;
         
-        // Welcome mesajı gönderim sırasında
         addWelcomeMessage();
         showLoadingPanel();
         
@@ -1444,12 +1444,11 @@ function sendMessage() {
         return;
     }
 
-    // Welcome mesajı gönderim sırasında
+    // Standart akış (Regex eşleşmezse)
     addWelcomeMessage();
     showLoadingPanel();
     handleAnswer(val);
 }
-
 // Helper function - Welcome mesajını ekle
 function addWelcomeMessage() {
     if (! window.__welcomeShown) {
