@@ -8909,7 +8909,48 @@ async function renderRouteForDay(day) {
         }
     }
 
-    async function fetchRoute() {
+    // coords: [[lon,lat], ...]
+async function fetchRoutePartial(coords, day) {
+    for (let n = coords.length; n >= 2; n--) {
+        const subset = coords.slice(0, n);
+        const coordParam = subset.map(c => `${c[0]},${c[1]}`).join(';');
+        const url = buildDirectionsUrl(coordParam, day);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (!data.routes || !data.routes[0] || !data.routes[0].geometry) continue;
+            return {
+                routeData: {
+                    geojson: {
+                        type: 'FeatureCollection',
+                        features: [{
+                            type: 'Feature',
+                            geometry: data.routes[0].geometry,
+                            properties: {
+                                summary: {
+                                    distance: data.routes[0].distance,
+                                    duration: data.routes[0].duration,
+                                    source: 'OSRM'
+                                }
+                            }
+                        }]
+                    },
+                    coords: data.routes[0].geometry.coordinates,
+                    summary: {
+                        distance: data.routes[0].distance,
+                        duration: data.routes[0].duration
+                    },
+                    legs: data.routes[0].legs
+                },
+                usedCount: n,                  // kaç noktaya kadar çizildi
+                missingCoords: coords.slice(n-1) // kalanlar (kesik çizgi için)
+            };
+        } catch (_) { /* sonraki kısaltılmış denemeye geç */ }
+    }
+    return null;
+}
+async function fetchRoute() {
         const coordParam = coordinates.map(c => `${c[0]},${c[1]}`).join(';');
         const url = buildDirectionsUrl(coordParam, day);
         const response = await fetch(url);
@@ -8943,56 +8984,22 @@ async function renderRouteForDay(day) {
         };
     }
 
-    let routeData;
+let routeData;
 let missingPoints = [];
 try {
-    routeData = await fetchRoute();
-    if (!routeData) throw new Error('Route data empty');
-    missingPoints = snappedPoints.filter(p => isPointReallyMissing(p, routeData.coords, 100));
+    const partial = await fetchRoutePartial(coordinates, day);
+    if (!partial) throw new Error('Route not reachable');
+
+    routeData = partial.routeData;
+
+    // Başarılı çizilen noktalar dışındaki (kalan) noktaları missing olarak işaretle
+    const usedCount = partial.usedCount;
+    missingPoints = snappedPoints.slice(usedCount - 1); // son kullanılan + sonrası
+
 } catch (e) {
-    console.warn('Rota servisi hata verdi, fallback çiziliyor', e);
-    const travelMode = (typeof getTravelModeForDay === 'function') ? getTravelModeForDay(day) : 'driving';
-    const fallback = buildFallbackRouteGeojson(snappedPoints, travelMode);
+    console.warn('Parçalı rota da çizilemedi, fallback devre dışı (isteğinize göre). Hata:', e);
     const infoPanel = document.getElementById(`route-info-day${day}`);
-    if (infoPanel) {
-        infoPanel.innerHTML = `<span style="color:#d32f2f;font-weight:bold;">
-            Rota servisi başarısız oldu. Düz çizgi fallback gösteriliyor.
-        </span>`;
-    }
-    if (!fallback) return;
-
-    window.lastRouteGeojsons = window.lastRouteGeojsons || {};
-    window.lastRouteSummaries = window.lastRouteSummaries || {};
-    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
-    window.directionsPolylines = window.directionsPolylines || {};
-
-    window.lastRouteGeojsons[containerId] = fallback.geojson;
-    window.lastRouteSummaries[containerId] = fallback.summary;
-    window.pairwiseRouteSummaries[containerId] = fallback.pairwise;
-    window.directionsPolylines[day] =
-        fallback.geojson.features[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
-
-    renderLeafletRoute(containerId, fallback.geojson, snappedPoints, fallback.summary, day, []);
-    if (typeof updatePairwiseDistanceLabels === 'function') updatePairwiseDistanceLabels(day);
-
-    const totalKm = fallback.summary.distance / 1000;
-    const markerPositions = getRouteMarkerPositionsOrdered(day);
-    const scaleBarDiv = document.getElementById(`route-scale-bar-day${day}`);
-    if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
-        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-    }
-
-    if (typeof updateDistanceDurationUI === 'function') {
-        updateDistanceDurationUI(fallback.summary.distance, fallback.summary.duration);
-    }
-    if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-
-    const expandedMapObj = window.expandedMaps?.[containerId];
-    if (expandedMapObj?.expandedMap && typeof updateExpandedMap === 'function') {
-        updateExpandedMap(expandedMapObj.expandedMap, day);
-    }
-
-    document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day } }));
+    if (infoPanel) infoPanel.textContent = ""; // Uyarı göstermeyin
     return;
 }
 
