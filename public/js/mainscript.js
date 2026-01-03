@@ -1380,10 +1380,7 @@ function addCanonicalMessage(canonicalStr) {
 }
 
 function sendMessage() {
-    if (!window.__welcomeShown) {
-  addMessage("<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.", "bot-message");
-  window.__welcomeShown = true;
-}
+
     if (window.isProcessing) return;
     // showLoadingPanel() BURADAN KALDIRILDI
     const input = document.getElementById("user-input");
