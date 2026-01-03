@@ -1390,10 +1390,12 @@ function addWelcomeMessage() {
 }
 
 function sendMessage() {
-    // Kilitlenmişse (önceki işlem bitmediyse) çık, ama loading panel yoksa kilidi açmayı dene
+    // Kilit kontrolü (Loading sırasında tekrar basılmasın)
     if (window.isProcessing) {
-        if(!document.getElementById('loading-panel') || document.getElementById('loading-panel').style.display === 'none') {
-             window.isProcessing = false; // Kilit takılı kaldıysa aç
+        const panel = document.getElementById('loading-panel');
+        // Eğer panel ekranda yoksa ama kilit varsa, kilidi aç (Hata koruması)
+        if (!panel || panel.style.display === 'none') {
+             window.isProcessing = false; 
         } else {
              return; 
         }
@@ -1409,7 +1411,7 @@ function sendMessage() {
         return;
     }
 
-    // Bot mesajı (let's get started) kontrolü
+    // İlk mesaj (Let's get started)
     addWelcomeMessage();
 
     const formatted = formatCanonicalPlan(val);
@@ -1426,19 +1428,19 @@ function sendMessage() {
         addMessage(diffHtml, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel(); // <--- BURASI ÖNEMLİ
+        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
         handleAnswer(`${formatted.city} ${formatted.days} days`);
         input.value = "";
         return;
     }
 
-    // Lokasyon kilidi kontrolü
+    // Lokasyon kilidi
     if (!window.selectedLocationLocked || !window.selectedLocation) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
-    // 2. Canonical Match (Regex)
+    // 2. Canonical Match (Plan a X days...)
     const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
     if (m) {
         let days = parseInt(m[1], 10);
@@ -1448,16 +1450,15 @@ function sendMessage() {
         addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel(); // <--- BURASI ÖNEMLİ
+        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
     // 3. Standart Akış
-    showLoadingPanel(); // <--- BURASI ÖNEMLİ
+    showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
     handleAnswer(val);
-    // Standart akışta input.value'yu handleAnswer temizler veya burada temizleyebilirsin:
     input.value = ""; 
 }
 
