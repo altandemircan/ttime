@@ -752,24 +752,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 }
 // --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
 
-function addActive(x) {
-    if (!x) return false;
-    removeActive(x);
-    if (currentFocus >= x.length) currentFocus = 0;
-    if (currentFocus < 0) currentFocus = (x.length - 1);
-    
-    // Seçili hale getir
-    x[currentFocus].classList.add("selected-suggestion");
-    
-    // Görünür alana kaydır
-    x[currentFocus].scrollIntoView({ block: "nearest" });
-}
-
-function removeActive(x) {
-    for (let i = 0; i < x.length; i++) {
-        x[i].classList.remove("selected-suggestion");
-    }
-}
 
 // Sayfa yüklendiğinde listener'ı ekle
 document.addEventListener("DOMContentLoaded", function() {
@@ -1464,7 +1446,7 @@ function sendMessage() {
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
-
+    
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
@@ -3267,26 +3249,6 @@ function showCategoryList(day) {
     }
 }
 
-// --- Helper Functions ---
-
-function closeCustomNoteInput() {
-    const container = document.getElementById("customNoteContainer");
-    if (container) {
-        container.style.display = "none";
-        
-        // Clear inputs when closing
-        const titleEl = document.getElementById("noteTitle");
-        const detailsEl = document.getElementById("noteDetails");
-        if(titleEl) titleEl.value = "";
-        if(detailsEl) detailsEl.value = "";
-    }
-    
-    // Show the "Add Custom Note" button again
-    const addBtn = document.querySelector(".add-custom-note-btn");
-    if (addBtn) {
-        addBtn.style.display = "block";
-    }
-}
 
 async function saveCustomNote(day) {
     const titleEl = document.getElementById("noteTitle");
@@ -5343,39 +5305,7 @@ function forceCleanExpandedMap(day) {
     mapDiv.querySelectorAll('.leaflet-container').forEach(el => el.remove());
   }
 }
-// Yardımcı fonksiyon - Yay koordinatlarını al
-// [lng, lat] formatında girdi alır, [lng, lat] dizisi döndürür
-function getCurvedArcCoords(start, end) {
-    const lon1 = start[0];
-    const lat1 = start[1];
-    const lon2 = end[0];
-    const lat2 = end[1];
 
-    const offsetX = lon2 - lon1;
-    const offsetY = lat2 - lat1;
-    
-    const r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
-    const theta = Math.atan2(offsetY, offsetX);
-    
-    // --- KÜÇÜK HARİTA İLE BİREBİR EŞİTLEME ---
-    // drawCurvedLine fonksiyonundaki oranın aynısı:
-    const thetaOffset = (Math.PI / 10); 
-    // -----------------------------------------
-    
-    const r2 = (r / 2.0) / Math.cos(thetaOffset);
-    const theta2 = theta + thetaOffset;
-    
-    const controlX = (r2 * Math.cos(theta2)) + lon1;
-    const controlY = (r2 * Math.sin(theta2)) + lat1;
-    
-    const coords = [];
-    for (let t = 0; t < 1.01; t += 0.05) {
-        const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlX + t * t * lon2;
-        const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlY + t * t * lat2;
-        coords.push([x, y]); 
-    }
-    return coords;
-}
 /* === ROUTE CLEANUP HELPERS (EKLENDİ) === */
 function clearRouteCachesForDay(day){
   if(!day) return;
@@ -7790,46 +7720,12 @@ function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = 
     });
 }
 
-
 function disableAllMarkerDragging(expandedMap) {
     expandedMap.eachLayer(layer => {
         if (layer instanceof L.Marker && layer.dragging && layer.dragging.enabled && layer.dragging.enabled()) {
             layer.dragging.disable();
         }
     });
-}
-
-// Hint tooltip (top) – English text, no close button, auto-hide in 1s
-function showTransientDragHint(marker, map, text = 'Drag to reposition') {
-  if (marker._hintTempPopup && map.hasLayer(marker._hintTempPopup)) {
-    map.removeLayer(marker._hintTempPopup);
-    marker._hintTempPopup = null;
-  }
-  if (marker._hintTimer) {
-    clearTimeout(marker._hintTimer);
-    marker._hintTimer = null;
-  }
-
-  const popup = L.popup({
-    className: 'drag-hint-popup',
-    closeButton: false,
-    autoClose: false,
-    closeOnClick: false,
-    autoPan: false,
-    offset: [0, -28]
-  })
-    .setLatLng(marker.getLatLng())
-    .setContent(text)
-    .openOn(map);
-
-  marker._hintTempPopup = popup;
-  marker._hintTimer = setTimeout(() => {
-    if (marker._hintTempPopup && map.hasLayer(marker._hintTempPopup)) {
-      map.removeLayer(marker._hintTempPopup);
-    }
-    marker._hintTempPopup = null;
-    marker._hintTimer = null;
-  }, 1000);
 }
 
 // Show name bubble once with animation, then hide (no X)
@@ -9529,13 +9425,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-function ensureCanvasRenderer(map) {
-  if (!map._ttCanvasRenderer) {
-    map._ttCanvasRenderer = L.canvas(); // you can pass padding if needed
-  }
-  return map._ttCanvasRenderer;
-}
-
 
 // KÜÇÜK HARİTA İŞLEVLERİ SIRALAMA
 function wrapRouteControls(day) {
@@ -9729,87 +9618,6 @@ function wrapRouteControlsForAllDays() {
 })();
 
 
-(function initRouteSummaryIconizer(){
-  // Basit metin ayrıştırıcı: "Mesafe: 3.58 km  Süre: 13 min" gibi metinden değeri çeker
-  function parseStats(text) {
-    if (!text) return { dist: '', dura: '' };
-    const t = text.replace(/\s+/g, ' ').trim();
-    const distMatch = t.match(/([\d.,]+)\s*(km|m)\b/i);
-    const duraMatch = t.match(/([\d.,]+)\s*(dk|sn|saat|sa)\b/i);
-    return {
-      dist: distMatch ? `${distMatch[1]} ${distMatch[2]}` : '',
-      dura: duraMatch ? `${duraMatch[1]} ${duraMatch[2]}` : ''
-    };
-  }
-
-  // İkonlu içerik üret (yol + saat)
-  function renderIcons(dist, dura) {
-    const roadSVG = `
-      <img class="icon" src="/img/way_distance.svg" alt="Distance" loading="lazy" decoding="async">`;
-    const clockSVG = `
-      <img class="icon" src="/img/way_time.svg" alt="Distance" loading="lazy" decoding="async">`;
-    const distHTML = dist ? `<span class="stat"><span class="icon">${roadSVG}</span><span>${dist}</span></span>` : '';
-    const duraHTML = dura ? `<span class="stat"><span class="icon">${clockSVG}</span><span>${dura}</span></span>` : '';
-    return `${distHTML}${dist && dura ? ' ' : ''}${duraHTML}`;
-  }
-
-  // Bir span üzerinde uygula
-  function applyIcons(span) {
-    if (!span) return;
-    // Eğer zaten ikonluysa ve içinde 'stat' sınıfı varsa, bir şey yapma
-    if (span.querySelector('.stat')) return;
-
-    const { dist, dura } = parseStats(span.textContent || '');
-    if (!dist && !dura) return; // tanınabilir metin yoksa dokunma
-
-    // Re-entrancy koruması
-    if (span.__ttIconizing) return;
-    span.__ttIconizing = true;
-    try {
-      span.innerHTML = renderIcons(dist, dura);
-    } finally {
-      span.__ttIconizing = false;
-    }
-  }
-
-  function applyAll() {
-    document.querySelectorAll('.route-summary-control').forEach(applyIcons);
-  }
-
-  const mo = new MutationObserver((mutList) => {
-    for (const mut of mutList) {
-      // Yeni eklenen .route-summary-control
-      mut.addedNodes.forEach(node => {
-        if (node.nodeType !== 1) return;
-        if (node.matches?.('.route-summary-control')) applyIcons(node);
-        node.querySelectorAll?.('.route-summary-control').forEach(applyIcons);
-      });
-
-      // Mevcut özet span'ının metni değiştiyse
-      if (mut.type === 'characterData') {
-        const el = mut.target.parentElement;
-        if (el && el.classList?.contains('route-summary-control')) {
-          applyIcons(el);
-        }
-      } else if (mut.type === 'childList') {
-        const t = mut.target;
-        if (t && t.nodeType === 1 && t.classList?.contains('route-summary-control')) {
-          applyIcons(t);
-        }
-      }
-    }
-  });
-
-  function startObserver() {
-    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { applyAll(); startObserver(); });
-  } else {
-    applyAll(); startObserver();
-  }
-})();
 
 window.TT_SVG_ICONS = {
   // Travel modes
@@ -11705,13 +11513,6 @@ function resetDayAction(day, confirmationContainerId) {
   setTimeout(function(){ highlightSegmentOnMap(day); }, 120);
 }
 
-function clearScaleBarSelection(day) {
-  // Sadece ilgili gün için expanded scale bar'ı bul ve overlay'i gizle
-  const sel = document.querySelector(`#expanded-route-scale-bar-day${day} .scale-bar-selection`);
-  if (sel) sel.style.display = 'block';
-  // Eğer her yerde tümünü kapatmak istersen:
-  // document.querySelectorAll('.scale-bar-selection').forEach(s => s.style.display = 'none');
-}
 
 // Sadece Geoapify tags güncellensin:
 function fillGeoapifyTagsOnly() {
