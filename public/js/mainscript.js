@@ -1,5 +1,3 @@
-console.time("MAIN_SCRIPT_START");
-
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
@@ -524,8 +522,8 @@ function extractLocationQuery(input) {
     let cleaned = input; 
     
     // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
-    // Şehir isminin kendisine (büyük/küçük harf) dokunma.
-    cleaned = cleaned.replace(/(\d+)\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
     // Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
@@ -534,7 +532,9 @@ function extractLocationQuery(input) {
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
-        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my"
+        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
+        // [FIX] Zaman birimleri stop words'e eklendi
+        "day", "days", "gün", "gun", "night", "nights"
     ];
     
     // Kelimeleri ayır ve stop word'leri temizle
@@ -688,6 +688,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         div.textContent = displayText;
         div.dataset.displayText = displayText;
+
+        // [FIX] Eğer bu şehir zaten seçiliyse, gün sayısı değişse bile listede seçili kalsın
+        if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
+            div.classList.add("selected-suggestion");
+        }
         
         // === TIKLAMA OLAYI ===
         div.onclick = () => {
@@ -848,14 +853,20 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     }, 150));
 
-    chatInput.addEventListener("focus", function () {
+    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
+    const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
              showSuggestions();
         }
-    });
+    };
+
+    chatInput.addEventListener("focus", showSuggestionsLogic);
+    
+    // [FIX] Inputa tıklandığında da listenin açılmasını sağla
+    chatInput.addEventListener("click", showSuggestionsLogic);
 }
 
 
@@ -906,6 +917,7 @@ window.buildPlanFromSelection = function (days) {
             addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
         }
     }
+
 async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
   if (places.length < 2) return places;
   let limitedPlaces = [...places];
@@ -1146,12 +1158,36 @@ const __cityCoordCache = new Map();
 
 chatInput.addEventListener("input", function() {
     if (window.__programmaticInput) return;
+
+    // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı? (Sadece gün mü değişti?)
+    if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
+        const currentInput = this.value || "";
+        // Inputtaki "2 days" gibi kısımları temizle, sadece şehri al
+        const currentLocName = typeof extractLocationQuery === 'function' 
+            ? extractLocationQuery(currentInput) 
+            : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
+
+        const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const savedText = normalize(window.selectedSuggestion.displayText);
+        const currentText = normalize(currentLocName);
+
+        // Eğer kayıtlı şehir ismi, şu an yazılı olanı kapsıyorsa (örn: "Venice, IT" içinde "Venice" var)
+if (savedText === currentText && currentText.length > 1) {             // Sadece gün sayısını güncelle, kilidi açma
+             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+             if (dayMatch && window.selectedLocation) {
+                 window.selectedLocation.days = parseInt(dayMatch[1], 10);
+             }
+             if (typeof enableSendButton === 'function') enableSendButton();
+             return; // SEÇİMİ SIFIRLAMADAN ÇIK
+        }
+    }
+
+    // Şehir ismi değiştiyse seçimi iptal et
     window.__locationPickedFromSuggestions = false;
     window.selectedLocationLocked = false;
     window.selectedLocation = null;
     disableSendButton && disableSendButton();
 });
-
 
 
 // === handleAnswer Fonksiyonunun Tam ve Güncel Hali ===
@@ -1281,17 +1317,51 @@ async function handleAnswer(answer) {
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('user-input');
-  if (!inp) return;
-  inp.addEventListener('input', () => {
-    // Programatik set fonksiyonun varsa ve flag kullanıyorsan:
-    if (window.__programmaticInput) return;
-    // Kullanıcı elle değiştirdi → seçim iptal
-    window.__locationPickedFromSuggestions = false;
-    window.selectedLocationLocked = false;
-    window.selectedLocation = null;
-    disableSendButton && disableSendButton();
-  });
+    const inp = document.getElementById('user-input');
+    if (!inp) return;
+
+    inp.addEventListener('input', () => {
+        // Programatik set fonksiyonu kontrolü
+        if (window.__programmaticInput) return;
+
+        // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı?
+        if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
+            const currentInput = inp.value || "";
+            
+            // Şehir ismini ayıkla (gün sayılarını temizle)
+            const currentLocName = typeof extractLocationQuery === 'function' 
+                ? extractLocationQuery(currentInput) 
+                : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
+
+            // Normalizasyon (küçük harf, noktalama yok)
+            const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const savedText = normalize(window.selectedSuggestion.displayText);
+            const currentText = normalize(currentLocName);
+
+            // === (TAM EŞİTLİK) KONTROLÜ
+            // Beşiktaş == Beşiktaş -> Eşit, seçimi koru.
+            // Beşiktaş != Beşi    -> Eşit değil, kilidi aç, öneri getir.
+            if (savedText === currentText && currentText.length > 1) {
+                const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
+                
+                // Eğer gün sayısı varsa güncelle
+                if (dayMatch && window.selectedLocation) {
+                    window.selectedLocation.days = parseInt(dayMatch[1], 10);
+                }
+                
+                // Gönder butonunu aktif et ve çık (Arama yapma)
+                if (typeof enableSendButton === 'function') enableSendButton();
+                return; 
+            }
+        }
+
+        // Buraya düşerse: Kullanıcı harf sildi veya şehri değiştirdi.
+        // Seçimi iptal et ki yeni öneriler gelsin.
+        window.__locationPickedFromSuggestions = false;
+        window.selectedLocationLocked = false;
+        window.selectedLocation = null;
+        disableSendButton && disableSendButton();
+    });
 });
 
 function addCanonicalMessage(canonicalStr) {
@@ -1310,70 +1380,75 @@ function addCanonicalMessage(canonicalStr) {
   }
 }
 
-function sendMessage() {
+// Helper fonksiyonu güncelliyoruz
+function addWelcomeMessage() {
     if (!window.__welcomeShown) {
-  addMessage("<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.", "bot-message");
-  window.__welcomeShown = true;
+        // BURASI DEĞİŞTİ:
+        addMessage("Let's get started.", "bot-message request-bot-message");
+        window.__welcomeShown = true;
+    }
 }
+
+function sendMessage() {
     if (window.isProcessing) return;
-    // showLoadingPanel() BURADAN KALDIRILDI
     const input = document.getElementById("user-input");
 
-  if (!input) return;
-  const val = input.value.trim();
-  if (!val) return;
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) return;
 
-  // Öneriler yükleniyorken/gelmeden Enter basmayı engellemek istersen (opsiyonel flag):
-  if (!window.__locationPickedFromSuggestions) {
-    addMessage("Please select a city from the suggestions first.", "bot-message");
-    return;
-  }
+    if (!window.__locationPickedFromSuggestions) {
+        addMessage("Please select a city from the suggestions first.", "bot-message");
+        return;
+    }
 
-  const formatted = formatCanonicalPlan(val);
+    // Bot mesajı (Varsa eklenmez, yoksa yeni class ile eklenir)
+    addWelcomeMessage();
 
-  // --- CANONICAL MESAJI GÖSTER ---
-  if (formatted.canonical) {
-    addCanonicalMessage(formatted.canonical);
-  }
+    const formatted = formatCanonicalPlan(val);
 
-  // Diff sadece seçim yapılmışsa
-  if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
-    const diffHtml = `
-      <div class="canonical-diff">
-        <span class="raw-strike">${strikeThrough(val)}</span>
-        <span class="canon-arrow">→</span>
-        <span class="canon-text">${formatted.canonical}</span>
-      </div>
-    `;
-    addMessage(diffHtml, "user-message");
-    window.__suppressNextUserEcho = true;
-    handleAnswer(`${formatted.city} ${formatted.days} days`);
-    input.value = "";
-    return;
-  }
+    // Diff (Düzeltme) Senaryosu
+    if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
+        const diffHtml = `
+          <div class="canonical-diff">
+            <span class="raw-strike">${strikeThrough(val)}</span>
+            <span class="canon-arrow">→</span>
+            <span class="canon-text">${formatted.canonical}</span>
+          </div>
+        `;
+        // BURASI DEĞİŞTİ:
+        addMessage(diffHtml, "user-message request-user-message");
+        window.__suppressNextUserEcho = true;
+        
+        showLoadingPanel();
+        handleAnswer(`${formatted.city} ${formatted.days} days`);
+        input.value = "";
+        return;
+    }
 
-  // Lokasyon kilidi yine güvenlik
-  if (!window.selectedLocationLocked || !window.selectedLocation) {
-    addMessage("Please select a city from the suggestions first.", "bot-message");
-    return;
-  }
+    if (!window.selectedLocationLocked || !window.selectedLocation) {
+        addMessage("Please select a city from the suggestions first.", "bot-message");
+        return;
+    }
 
-  // Canonical formatta ise doğrudan parse
-  showLoadingPanel();
-  const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
-  if (m) {
-    let days = parseInt(m[1], 10);
-    if (!days || days < 1) days = 2;
-    const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
-    window.__suppressNextUserEcho = true;
-    handleAnswer(`${city} ${days} days`);
-    input.value = "";
-    return;
-  }
+    const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
+    if (m) {
+        let days = parseInt(m[1], 10);
+        if (!days || days < 1) days = 2;
+        const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
+        
+        // BURASI DEĞİŞTİ:
+        addMessage(val, "user-message request-user-message");
+        window.__suppressNextUserEcho = true;
+        
+        showLoadingPanel();
+        handleAnswer(`${city} ${days} days`);
+        input.value = "";
+        return;
+    }
 
-   // LOADING PANELİ GÖSTER
-  showLoadingPanel();
-  handleAnswer(val);
+    showLoadingPanel();
+    handleAnswer(val);
 }
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
@@ -1382,39 +1457,67 @@ document.getElementById('send-button').addEventListener('click', sendMessage);
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
-    messageElement.classList.add("message", className);
+    
+    // 1. ÇOKLU CLASS DESTEĞİ:
+    // Gelen className "user-message request-user-message" olabilir.
+    // Mevcut 'message' class'ının yanına ekliyoruz.
+    messageElement.className = "message " + className;
 
-    const profileImg = document.createElement("img");
-    profileImg.src = className === "user-message" ? "img/avatar_user.png" : "img/avatar_aiio.png";
-    profileImg.alt = className === "user-message" ? "User" : "AI";
-    profileImg.classList.add("profile-img");
+    // --- PROFİL GÖRSELİ MANTIĞI ---
+    let profileElem;
+    
+    // 2. KONTROL DEĞİŞİKLİĞİ (=== yerine includes):
+    if (className.includes("user-message")) {
+        // Kullanıcı: Emoji (🧑)
+        profileElem = document.createElement("div");
+        profileElem.className = "profile-img"; 
+        profileElem.textContent = "🧑";
+        profileElem.style.display = "flex";
+        profileElem.style.alignItems = "center";
+        profileElem.style.justifyContent = "center";
+        profileElem.style.fontSize = "1rem";
+        profileElem.style.lineHeight = "1";
+    } else {
+        // Bot: Resim
+        profileElem = document.createElement("img");
+        profileElem.src = "img/avatar_aiio.png";
+        profileElem.alt = "AI";
+        profileElem.classList.add("profile-img");
+    }
+    // -----------------------------
 
-    // Eğer bot-message ve text içinde <button> veya HTML fragmenti varsa innerHTML ile ekle
-    if (className === "bot-message" && /<button|<div|<br/i.test(text)) {
-        messageElement.appendChild(profileImg);
+    if (className.includes("bot-message") && /<button|<div|<br/i.test(text)) {
+        messageElement.appendChild(profileElem);
         const htmlDiv = document.createElement("span");
         htmlDiv.innerHTML = text;
         messageElement.appendChild(htmlDiv);
     } else {
-        messageElement.appendChild(profileImg);
+        messageElement.appendChild(profileElem);
         const textElement = document.createElement("div");
         if (/<div|<span|canonical-diff|→/.test(text)) {
-            textElement.innerHTML = text; // allow our diff HTML
+            textElement.innerHTML = text;
         } else {
             textElement.textContent = text;
         }
         messageElement.appendChild(textElement);
     }
 
-    chatBox.appendChild(messageElement);
+    const typingIndicator = document.getElementById("typing-indicator");
+    if (typingIndicator && typingIndicator.parentNode === chatBox) {
+        chatBox.insertBefore(messageElement, typingIndicator);
+    } else {
+        chatBox.appendChild(messageElement);
+    }
+    
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 }
 
 function showTypingIndicator() {
   const chatBox = document.getElementById("chat-box");
   let indicator = document.getElementById("typing-indicator");
+  
   if (!indicator) {
     indicator = document.createElement("div");
     indicator.id = "typing-indicator";
@@ -1422,12 +1525,16 @@ function showTypingIndicator() {
     indicator.innerHTML = '<span></span><span></span><span></span>';
     chatBox.appendChild(indicator);
   } else {
+    // --- DEĞİŞİKLİK BURADA ---
+    // Var olan indikatörü yerinden söküp en sona tekrar ekliyoruz
+    chatBox.appendChild(indicator); 
     indicator.style.display = "block";
-    indicator.innerHTML = '<span></span><span></span><span></span>'; // DAİMA animasyonlu format!
+    indicator.innerHTML = '<span></span><span></span><span></span>';
   }
+  
   if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 }
 
 function hideTypingIndicator() {
@@ -1920,7 +2027,7 @@ async function showResults() {
     }
 
     html += `</ul></div></div>`;
-    chatBox.insertAdjacentHTML('beforeend', html);
+    chatBox.innerHTML += html;
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -2452,7 +2559,7 @@ document.addEventListener("DOMContentLoaded", function() {
 document.getElementById("send-button").addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", handleKeyPress);
 
-    displayQuestion();
+   
 });
 
 
@@ -4488,20 +4595,25 @@ async function updateCart() {
                   ` : ''
                 }
               </div>
-              <button class="add-favorite-btn"
+         <button class="add-favorite-btn"
+                onclick="toggleFavFromCart(this)"
                 data-name="${item.name}"
                 data-category="${item.category}"
                 data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                data-lon="${item.location?.lng ?? item.lon ?? ""}">
+                data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                data-image="${item.image || ""}">
+                
                 <span class="fav-heart"
                   data-name="${item.name}"
                   data-category="${item.category}"
                   data-lat="${item.location?.lat ?? item.lat ?? ""}"
-                  data-lon="${item.location?.lng ?? item.lon ?? ""}">
-                  <img class="fav-icon" src="${isTripFav(item) ? '/img/like_on.svg' : '/img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
+                  data-lon="${item.location?.lng ?? item.lon ?? ""}"
+                  data-image="${item.image || ""}">
+                  <img class="fav-icon" src="${isTripFav(item) ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="Favorite" style="width:18px;height:18px;">
                 </span>
                 <span class="fav-btn-text">${isTripFav(item) ? "Remove from My Places" : "Add to My Places"}</span>
               </button>
+
               <button class="remove-btn" onclick="showRemoveItemConfirmation(${li.dataset.index}, this)">
                 Remove place
               </button>
@@ -4735,111 +4847,110 @@ const itemCount = window.cart.filter(i =>
         };
     })();
 
-    (function ensureNewChatInsideCart() {
-        const oldOutside = document.querySelector('#newchat');
-        if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
-        const cartRoot = document.getElementById('cart');
-        if (!cartRoot) return;
-        let newChat = cartRoot.querySelector('#newchat');
-        if (!newChat) {
-            newChat = document.createElement('div');
-            newChat.id = 'newchat';
-            newChat.textContent = 'New Trip Plan';
-            newChat.style.cursor = 'pointer';
+(function ensureNewChatInsideCart() {
+    const oldOutside = document.querySelector('#newchat');
+    if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+    const cartRoot = document.getElementById('cart');
+    if (!cartRoot) return;
+    let newChat = cartRoot.querySelector('#newchat');
+    if (!newChat) {
+        newChat = document.createElement('div');
+        newChat.id = 'newchat';
+        newChat.textContent = 'New Trip Plan';
+        newChat.style.cursor = 'pointer';
 
-            newChat.onclick = function () {
-                const chatBox = document.getElementById('chat-box');
-                if (chatBox) chatBox.innerHTML = '';
-                const userInput = document.getElementById('user-input');
-                if (userInput) userInput.value = '';
+        newChat.onclick = function () {
+            const chatBox = document.getElementById('chat-box');
+            if (chatBox) chatBox.innerHTML = '';
+            const userInput = document.getElementById('user-input');
+            if (userInput) userInput.value = '';
 
-                // Temizlik - global değişkenler
-                window.selectedCity = null;
-                window.selectedLocation = null;
-                window.selectedLocationLocked = false;
-                window.__locationPickedFromSuggestions = false;
-                window.lastUserQuery = '';
-                window.latestTripPlan = [];
-                window.cart = [];
+            // Temizlik
+            window.selectedCity = null;
+            window.selectedLocation = null;
+            window.selectedLocationLocked = false;
+            window.__locationPickedFromSuggestions = false;
+            window.lastUserQuery = '';
+            window.latestTripPlan = [];
+            window.cart = [];
 
-                // Collage race condition fix - yeni token oluştur
-                try {
-                    if (typeof window.__ttNewTripToken === 'function') {
-                        window.__activeTripSessionToken = window.__ttNewTripToken();
-                    }
-                    window.__dayCollagePhotosByDay = {};
-                    window.__globalCollageUsed = new Set();
-                } catch (e) {
-                    console.warn('[collage] Token reset error:', e);
+            try {
+                if (typeof window.__ttNewTripToken === 'function') {
+                    window.__activeTripSessionToken = window.__ttNewTripToken();
                 }
-                // Tüm harita ve overlay temizliği
-                if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-                window.routeElevStatsByDay = {};
-                window.__ttElevDayCache = {};
-                window._segmentHighlight = {};
-                window._lastSegmentDay = undefined;
-                window._lastSegmentStartKm = undefined;
-                window._lastSegmentEndKm = undefined;
+                window.__dayCollagePhotosByDay = {};
+                window.__globalCollageUsed = new Set();
+            } catch (e) {
+                console.warn('[collage] Token reset error:', e);
+            }
+            if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+            window.routeElevStatsByDay = {};
+            window.__ttElevDayCache = {};
+            window._segmentHighlight = {};
+            window._lastSegmentDay = undefined;
+            window._lastSegmentStartKm = undefined;
+            window._lastSegmentEndKm = undefined;
 
-                document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+            document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
 
-                if (typeof updateCart === "function") updateCart();
-                document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-                const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-                if (sidebar) sidebar.classList.add('open');
+            if (typeof updateCart === "function") updateCart();
+            document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+            const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+            if (sidebar) sidebar.classList.add('open');
 
-                // Welcome mesajı ekle
-                if (chatBox) {
-                    let indicator = document.getElementById('typing-indicator');
-                    if (!indicator) {
-                        indicator = document.createElement('div');
-                        indicator.id = 'typing-indicator';
-                        indicator.className = 'typing-indicator';
-                        indicator.innerHTML = '<span></span><span></span><span></span>';
-                        chatBox.appendChild(indicator);
-                    } else {
-                        indicator.style.display = 'block';
-                        indicator.innerHTML = '<span></span><span></span><span></span>';
-                    }
+            // --- BOT MESAJI VE INDIKATOR EKLENİYOR ---
+            if (chatBox) {
+                // 1. Bot Mesajı (request-bot-message EKLENDİ)
+                const welcome = document.createElement('div');
+                welcome.className = 'message bot-message request-bot-message';
+                welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
+                chatBox.appendChild(welcome);
 
-                    const welcome = document.createElement('div');
-                    welcome.className = 'message bot-message';
-                    welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
-                    chatBox.appendChild(welcome);
+                // *** KRİTİK EKLEME: Bot mesajının gösterildiğini sisteme bildir ***
+                window.__welcomeShown = true; 
 
-                    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-                        chatBox.scrollTop = chatBox.scrollHeight;
-                    }
+                // 2. Typing Indicator (En alta)
+                let indicator = document.getElementById('typing-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.id = 'typing-indicator';
+                    indicator.className = 'typing-indicator';
+                    indicator.innerHTML = '<span></span><span></span><span></span>';
+                    chatBox.appendChild(indicator);
+                } else {
+                    chatBox.appendChild(indicator);
+                    indicator.innerHTML = '<span></span><span></span><span></span>';
                 }
+                indicator.style.display = 'none';
 
-                // input-wrapper tekrar görünür olsun
-                var iw = document.querySelector('.input-wrapper');
-                if (iw) iw.style.display = '';
+                if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            }
 
-                // Tüm seçili suggestionları temizle
-                document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
-                    el.classList.remove('selected-suggestion');
-                });
+            var iw = document.querySelector('.input-wrapper');
+            if (iw) iw.style.display = '';
 
-                // Trip Details ekranını tamamen kaldır (mobil ve desktop için)
-                const tripDetailsSection = document.getElementById("tt-trip-details");
-                if (tripDetailsSection) tripDetailsSection.remove();
+            document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
+                el.classList.remove('selected-suggestion');
+            });
 
-                // Eğer chat-screen içinde de bir şey varsa (mobilde), onu da temizle:
-                const chatScreen = document.getElementById("chat-screen");
-                if (chatScreen) chatScreen.innerHTML = "";
+            const tripDetailsSection = document.getElementById("tt-trip-details");
+            if (tripDetailsSection) tripDetailsSection.remove();
 
-            };
-        }
-        const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-        if (datesBtn && datesBtn.nextSibling !== newChat) {
-            datesBtn.insertAdjacentElement('afterend', newChat);
-        } else if (!datesBtn && newChat.parentNode !== cartRoot) {
-            cartRoot.appendChild(newChat);
-        }
-        const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-        newChat.style.display = itemCount > 0 ? 'block' : 'none';
-    })();
+            const chatScreen = document.getElementById("chat-screen");
+            if (chatScreen) chatScreen.innerHTML = "";
+        };
+    }
+    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (datesBtn && datesBtn.nextSibling !== newChat) {
+        datesBtn.insertAdjacentElement('afterend', newChat);
+    } else if (!datesBtn && newChat.parentNode !== cartRoot) {
+        cartRoot.appendChild(newChat);
+    }
+    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+    newChat.style.display = itemCount > 0 ? 'block' : 'none';
+})();
 
     // === PDF DOWNLOAD BUTTON & ORDERING (FIXED ORDER) ===
     (function ensurePdfButtonAndOrder() {
@@ -10230,7 +10341,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
-  const N = Math.max(40, Math.round(totalKm * 2));
+  //km'de nokta sayısı: 2'den 5'e
+  // const N = Math.max(40, Math.round(totalKm * 2));
+
+  const N = Math.max(80, Math.round(totalKm * 5));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -10700,8 +10814,12 @@ async function fetchAndRenderSegmentElevation(container, day, startKm, endKm) {
   if (segEndM - segStartM < 100) return; 
 
   const segKm = (segEndM - segStartM) / 1000;
+
   // Örnekleme sayısını artırdık ki grafik kırık görünmesin
-  const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
+  /* segment noktları */
+  // const N = Math.min(300, Math.max(80, Math.round(segKm * 20)));
+  // Limiti 800'e çıkar, km başına 50 nokta al
+  const N = Math.min(500, Math.max(120, Math.round(segKm * 50)));
 
   const samples = [];
   for (let i = 0; i < N; i++) {
@@ -11704,22 +11822,6 @@ function attachImLuckyEvents() {
 }
 
 
-function showLoadingPanel() {
-  var loadingPanel = document.getElementById("loading-panel");
-  if (loadingPanel) loadingPanel.style.display = "flex";
-  document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-}
-
-function hideLoadingPanel() {
-    var loadingPanel = document.getElementById("loading-panel");
-    if (loadingPanel) loadingPanel.style.display = "none";
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
-}
-
 // Markdown'dan HTML'e çevirici fonksiyon
 function markdownToHtml(text) {
   // Kalın yazı
@@ -11862,169 +11964,3 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     document.head.appendChild(style);
 })();
 
-window.showLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    const msgEl = document.getElementById('loading-message');
-    
-    if (!panel) return;
-    
-    // Paneli aç
-    panel.style.display = "flex"; 
-    
-    // İlk mesajı sıfırla
-    if (msgEl) {
-        msgEl.textContent = "Analyzing your request...";
-        msgEl.style.opacity = 1;
-    }
-
-    // Varsa eski döngüyü temizle
-    if (window.loadingInterval) clearInterval(window.loadingInterval);
-
-    const messages = [
-        "Analyzing your request",
-        "Finding places",
-        "Exploring route options",
-        "Compiling your travel plan"
-    ];
-    let current = 0;
-    let isTransitioning = false;
-
-    // Döngüyü başlat
-    window.loadingInterval = setInterval(() => {
-        if (!msgEl || panel.style.display === 'none') return;
-        if (isTransitioning) return;
-        
-        isTransitioning = true;
-
-        // Fade out
-        msgEl.style.transition = "opacity 0.5s ease";
-        msgEl.style.opacity = 0;
-
-        // Mesaj değişimi ve Fade in
-        setTimeout(() => {
-            current = (current + 1) % messages.length;
-            if(msgEl) {
-                msgEl.textContent = messages[current];
-                msgEl.style.opacity = 1;
-            }
-            
-            setTimeout(() => {
-                isTransitioning = false;
-            }, 500); 
-        }, 500); 
-    }, 3000); 
-};
-
-window.hideLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "none";
-    }
-    // Animasyonu durdur
-    if (window.loadingInterval) {
-        clearInterval(window.loadingInterval);
-        window.loadingInterval = null;
-    }
-};
-
-// === KLAVYE VE EKRAN YÜKSEKLİK FİX (Visual Viewport API) ===
-if (window.visualViewport) {
-    function handleVisualViewportResize() {
-        // Klavye açıldığında/kapandığında gerçek görünür yüksekliği al
-        const height = window.visualViewport.height;
-        
-        // Bu yüksekliği bir CSS değişkenine ata
-        document.documentElement.style.setProperty('--visible-height', `${height}px`);
-        
-        // Eğer bir inputa odaklanılmışsa ve klavye açılmışsa, içeriği yukarı kaydır
-        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-             setTimeout(() => {
-                 window.scrollTo(0, 0); // Sayfanın gereksiz scroll olmasını engelle
-                 // İhtiyaç varsa buraya chat kutusunun en altına scroll kodu eklenebilir
-             }, 100);
-        }
-    }
-
-    window.visualViewport.addEventListener('resize', handleVisualViewportResize);
-    window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
-    
-    // İlk açılışta tetikle
-    handleVisualViewportResize();
-}
-
-// CSS ile Input Focus Yönetimi
-function stabilizeInputOnFocus() {
-    const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) return;
-    
-    // Input'a tıklandığında
-    document.addEventListener('focusin', function(e) {
-        const input = e.target;
-        if (!input.matches('#user-input, #ai-chat-input')) return;
-        
-        // Chat container'ı 100px yukarı çek
-        chatContainer.classList.add('input-focused');
-    });
-    
-    // Input'tan çıkıldığında
-    document.addEventListener('focusout', function(e) {
-        const input = e.target;
-        if (!input.matches('#user-input, #ai-chat-input')) return;
-        
-        // 200ms bekleyip eski haline döndür
-        setTimeout(() => {
-            chatContainer.classList.remove('input-focused');
-        }, 200);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
-
-
-
-
-// mainscript.js
-(function() {
-    // Tüm olası inputları yakala
-    function activateBruteForceMode() {
-        const inputs = document.querySelectorAll('input, textarea');
-        
-        inputs.forEach(input => {
-            // Önce eski eventleri temizle (varsa)
-            input.removeEventListener('focus', forceUp);
-            input.removeEventListener('blur', forceDown);
-            
-            // Yeni eventleri ekle
-            input.addEventListener('focus', forceUp);
-            input.addEventListener('blur', forceDown);
-        });
-    }
-
-    // YUKARI İT
-    function forceUp() {
-        if (window.innerWidth > 768) return; // Sadece mobilde
-        document.body.classList.add('force-keyboard-up');
-        
-        // Ekranı hafifçe en alta kaydır ki son mesaj görünsün
-        setTimeout(() => {
-            window.scrollTo(0, document.body.scrollHeight);
-            const chatBox = document.getElementById('chat-container');
-            if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
-        }, 100);
-    }
-
-    // AŞAĞI İNDİR
-    function forceDown() {
-        // Hemen inmesin, belki kullanıcı "Gönder" butonuna basıyordur
-        setTimeout(() => {
-            document.body.classList.remove('force-keyboard-up');
-        }, 200);
-    }
-
-    // Sayfa yüklenince ve dinamik elemanlar gelince çalıştır
-    window.addEventListener('DOMContentLoaded', activateBruteForceMode);
-    
-    // SPA geçişleri veya sonradan yüklenen elementler için sürekli kontrol
-    setInterval(activateBruteForceMode, 1000); // Her saniye yeni input var mı diye bakar (Garanti olsun)
-})();
-console.timeEnd("MAIN_SCRIPT_START");
