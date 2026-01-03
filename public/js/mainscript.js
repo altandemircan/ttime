@@ -2289,6 +2289,7 @@ async function buildPlan(city, days) {
 
   // Basit mesafe hesaplayıcı (Haversine) - Sıralama yapmak için
   function getDist(lat1, lon1, lat2, lon2) {
+      if(!lat1 || !lon1 || !lat2 || !lon2) return 99999;
       const R = 6371; // km
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -2365,9 +2366,9 @@ async function buildPlan(city, days) {
                         fbResult.sort((a, b) => a._dist - b._dist);
                     }
 
-                    // [KRİTİK HAMLE] Listenin hepsini alma, SADECE EN YAKIN 5 TANEYİ AL
-                    // Böylece 39km ötedeki göl listeye girse bile, 15km ötedeki Salda ilk 5'te kalır ve seçilir.
-places = fbResult.slice(0, 3);                    break; 
+                    // [KRİTİK HAMLE] Sadece en yakın 3 taneyi al (Salda gibi yakınları kaçırmamak için)
+                    places = fbResult.slice(0, 3); 
+                    break; 
                 }
             }
         }
@@ -2404,30 +2405,27 @@ places = fbResult.slice(0, 3);                    break;
         let selectedPlace = null;
         let attempts = 0;
         
-        // 20 kere dene
         while (attempts < 20) {
             let idx;
             
             // [AKILLI SEÇİM] Eğer bu kategori "Yedek" kategoriyse (Natural, Heritage, Park)
             // Rastgele seçme, listenin BAŞINDAKİNİ (en yakınını) seçmeye çalış.
-            // places listesi zaten mesafeye göre sıralı geliyor (fallback kısmında sıralamıştık).
             const isFallbackCategory = ["Natural", "Heritage", "Park", "Viewpoint"].includes(cat);
             
             if (isFallbackCategory) {
                  // En yakındaki (0), o doluyse bir sonraki (1)...
-                 // Rastgelelik katma, direkt en yakını ver.
                  idx = attempts % places.length; 
             } else {
-                 // Diğerleri (Yemek, Otel) için rastgele olabilir
+                 // Diğerleri için rastgele
                  idx = Math.floor(Math.random() * places.length);
             }
             
-            const candidate = places[idx];
-     
+            // [FIX] 'candidate' ismi çakışma yaptığı için 'placeCandidate' yaptık
+            const placeCandidate = places[idx];
             
-            if (!globalSelectedPlaceNames.has(candidate.name)) {
-                selectedPlace = candidate;
-                globalSelectedPlaceNames.add(candidate.name);
+            if (placeCandidate && !globalSelectedPlaceNames.has(placeCandidate.name)) {
+                selectedPlace = placeCandidate;
+                globalSelectedPlaceNames.add(placeCandidate.name);
                 break;
             }
             attempts++;
@@ -2444,6 +2442,12 @@ places = fbResult.slice(0, 3);                    break;
     }
     plan = plan.concat(dailyPlaces);
   }
+
+  // [SAFETY] Koordinatları sayıya çevir (OSRM Hatası önlemek için)
+  plan.forEach(item => {
+      if (item.lat) item.lat = parseFloat(item.lat);
+      if (item.lon) item.lon = parseFloat(item.lon);
+  });
 
   plan = await enrichPlanWithWiki(plan);
   plan = plan.map(normalizePlaceName);
