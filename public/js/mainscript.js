@@ -898,32 +898,34 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         } else {
             addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
         }
+        console.log("displayQuestion called");
+
     }
 
-async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
-  if (places.length < 2) return places;
-  let limitedPlaces = [...places];
-  while (limitedPlaces.length > 1) {
-    const coords = limitedPlaces.map(p => [p.lon, p.lat]);
-    try {
-      const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
-      const url = buildDirectionsUrl(coordParam, day); // <-- day eklendi
-      const response = await fetch(url);
-      if (!response.ok) break;
-      const data = await response.json();
-      if (!data.routes || !data.routes[0]) break;
-      const km = data.routes[0].distance / 1000;
-      if (km <= maxKm) {
-        return limitedPlaces;
-      } else {
-        limitedPlaces.pop();
-      }
-    } catch (e) {
-      break;
-    }
-  }
-  return limitedPlaces;
-}
+// async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
+//   if (places.length < 2) return places;
+//   let limitedPlaces = [...places];
+//   while (limitedPlaces.length > 1) {
+//     const coords = limitedPlaces.map(p => [p.lon, p.lat]);
+//     try {
+//       const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
+//       const url = buildDirectionsUrl(coordParam, day); // <-- day eklendi
+//       const response = await fetch(url);
+//       if (!response.ok) break;
+//       const data = await response.json();
+//       if (!data.routes || !data.routes[0]) break;
+//       const km = data.routes[0].distance / 1000;
+//       if (km <= maxKm) {
+//         return limitedPlaces;
+//       } else {
+//         limitedPlaces.pop();
+//       }
+//     } catch (e) {
+//       break;
+//     }
+//   }
+//   return limitedPlaces;
+// }
 
 
 function parsePlanRequest(text) {
