@@ -1204,7 +1204,7 @@ ease;
     body {
         overflow: scroll;
     }
-    #chat-container {
+    #chat-container { 
         position: fixed;
         border-radius: 0;
         bottom: 0;
