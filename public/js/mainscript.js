@@ -3973,7 +3973,7 @@ function restoreLostDayMaps() {
       }
     }
   });
-// }
+ }
 
 
 (function initDirectDayExpandedMapPatch(){
