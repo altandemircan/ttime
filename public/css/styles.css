@@ -1,13 +1,15 @@
 body {
     font-family: "Satoshi", Arial, sans-serif;
-    /* display: block; */
-    /* justify-content: center; */
     align-items: center;
-    height: 100vh;
+    min-height: 100vh; /* height yerine min-height kullan */
     background-color: #ffffff;
     color: #333;
     flex-direction: column;
     margin: 0 auto;
+    /* Aşağıdaki satırları ekle: */
+    overflow-x: hidden;
+    overflow-y: auto; /* Dikey scroll'a izin ver */
+    position: relative;
 }
 /* Target the scrollbar itself */
 ::-webkit-scrollbar {
@@ -375,7 +377,7 @@ ease;
     background: #fff;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
 }
-
+ 
 /* Chat Box Container */
 #chat-container {
     background-color: #ffffff;
@@ -394,6 +396,7 @@ ease;
     flex-direction: row;
     flex-wrap: wrap;
 }
+
 
 /* Chat Box */
 /* Initial style for chat box */
@@ -607,6 +610,7 @@ ease;
     border: 1px solid #ddd;
     transition: all 0.2s ease-in-out;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+
 }
 .input-wrapper:focus-within {
     border: 1px solid #8a4af3;
@@ -1204,12 +1208,8 @@ ease;
     body {
         overflow: scroll;
     }
-    #chat-container {
-        position: fixed;
-        border-radius: 0;
-        bottom: 0;
-        width: calc(100% - 40px) !important;
-    }
+
+   
 
     #tt-welcome {
         width: calc(100% - 40px) !important;
@@ -1231,6 +1231,13 @@ ease;
     }
     #chat-box {
         padding-right: 0;
+    }
+     #chat-box {
+        max-height: calc(100dvh - 160px) !important; /* daha iyi bir hesap */
+        height: auto !important;
+        flex: 1;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
     }
 
     
@@ -7661,7 +7668,20 @@ scrollbar-width: thin;
 
 
 /* En basit fix - direkt pozisyonlama */
-@media (max-width: 768px) {
+@media (max-width:768px) {
+    html, body {
+        min-height: 100dvh; /* dvh kullan */
+        height: auto;
+        overflow-y: auto; /* Scroll'a izin ver */
+        -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
+    }
+
+    .fixed-container {
+        height: calc(100dvh - 40px) !important;
+        min-height: calc(100dvh - 40px);
+        overflow-y: auto; /* İçerik uzunsa scroll yapabilir */
+        -webkit-overflow-scrolling: touch;
+    }
     /* Mira AI Sidebar için mobil düzen */
     .sidebar-overlay.sidebar-login.open {
         position: fixed !important;        
@@ -7738,5 +7758,26 @@ scrollbar-width: thin;
         min-height: 0 !important;
         height: 100% !important;
         overflow: hidden !important;
+    }
+}
+
+/* BRUTE FORCE KEYBOARD FIX + DEBUG RED */
+@media (max-width: 768px) {
+    
+    /* Input'a odaklanıldığında bu devreye girer */
+    body.force-keyboard-up .ai-input-wrapper {
+        position: fixed !important; /* Çivileme */
+        bottom: 120px !important;   /* Yerden 120px yukarı */
+        z-index: 99999 !important;  /* En üstte */
+        transition: bottom 0.1s !important;
+        
+        /* GÖRSEL KANIT: ÇALIŞTIĞINI GÖRMEK İÇİN */
+        background-color: #bc4949 !important; 
+        border-top: 2px solid yellow !important; /* Ekstra belirginlik için */
+    }
+
+    /* Input yukarı çıkınca arkadaki içerik görünür kalsın diye */
+    body.force-keyboard-up #chat-container {
+        padding-bottom: 200px !important;
     }
 }

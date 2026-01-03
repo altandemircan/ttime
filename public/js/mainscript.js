@@ -1,3 +1,5 @@
+console.time("MAIN_SCRIPT_START");
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
@@ -2027,7 +2029,7 @@ async function showResults() {
     }
 
     html += `</ul></div></div>`;
-    chatBox.innerHTML += html;
+    chatBox.insertAdjacentHTML('beforeend', html);
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -11964,3 +11966,172 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
     document.head.appendChild(style);
 })();
 
+<<<<<<< HEAD
+=======
+window.showLoadingPanel = function() {
+    const panel = document.getElementById("loading-panel");
+    const msgEl = document.getElementById('loading-message');
+    
+    if (!panel) return;
+    
+    // Paneli aç
+    panel.style.display = "flex"; 
+    
+    // İlk mesajı sıfırla
+    if (msgEl) {
+        msgEl.textContent = "Analyzing your request...";
+        msgEl.style.opacity = 1;
+    }
+
+    // Varsa eski döngüyü temizle
+    if (window.loadingInterval) clearInterval(window.loadingInterval);
+
+    const messages = [
+        "Analyzing your request",
+        "Finding places",
+        "Exploring route options",
+        "Compiling your travel plan"
+    ];
+    let current = 0;
+    let isTransitioning = false;
+
+    // Döngüyü başlat
+    window.loadingInterval = setInterval(() => {
+        if (!msgEl || panel.style.display === 'none') return;
+        if (isTransitioning) return;
+        
+        isTransitioning = true;
+
+        // Fade out
+        msgEl.style.transition = "opacity 0.5s ease";
+        msgEl.style.opacity = 0;
+
+        // Mesaj değişimi ve Fade in
+        setTimeout(() => {
+            current = (current + 1) % messages.length;
+            if(msgEl) {
+                msgEl.textContent = messages[current];
+                msgEl.style.opacity = 1;
+            }
+            
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 500); 
+        }, 500); 
+    }, 3000); 
+};
+
+window.hideLoadingPanel = function() {
+    const panel = document.getElementById("loading-panel");
+    if (panel) {
+        panel.style.display = "none";
+    }
+    // Animasyonu durdur
+    if (window.loadingInterval) {
+        clearInterval(window.loadingInterval);
+        window.loadingInterval = null;
+    }
+};
+
+// === KLAVYE VE EKRAN YÜKSEKLİK FİX (Visual Viewport API) ===
+if (window.visualViewport) {
+    function handleVisualViewportResize() {
+        // Klavye açıldığında/kapandığında gerçek görünür yüksekliği al
+        const height = window.visualViewport.height;
+        
+        // Bu yüksekliği bir CSS değişkenine ata
+        document.documentElement.style.setProperty('--visible-height', `${height}px`);
+        
+        // Eğer bir inputa odaklanılmışsa ve klavye açılmışsa, içeriği yukarı kaydır
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+             setTimeout(() => {
+                 window.scrollTo(0, 0); // Sayfanın gereksiz scroll olmasını engelle
+                 // İhtiyaç varsa buraya chat kutusunun en altına scroll kodu eklenebilir
+             }, 100);
+        }
+    }
+
+    window.visualViewport.addEventListener('resize', handleVisualViewportResize);
+    window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
+    
+    // İlk açılışta tetikle
+    handleVisualViewportResize();
+}
+
+// CSS ile Input Focus Yönetimi
+function stabilizeInputOnFocus() {
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+    
+    // Input'a tıklandığında
+    document.addEventListener('focusin', function(e) {
+        const input = e.target;
+        if (!input.matches('#user-input, #ai-chat-input')) return;
+        
+        // Chat container'ı 100px yukarı çek
+        chatContainer.classList.add('input-focused');
+    });
+    
+    // Input'tan çıkıldığında
+    document.addEventListener('focusout', function(e) {
+        const input = e.target;
+        if (!input.matches('#user-input, #ai-chat-input')) return;
+        
+        // 200ms bekleyip eski haline döndür
+        setTimeout(() => {
+            chatContainer.classList.remove('input-focused');
+        }, 200);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
+
+
+
+
+// mainscript.js
+(function() {
+    // Tüm olası inputları yakala
+    function activateBruteForceMode() {
+        const inputs = document.querySelectorAll('input, textarea');
+        
+        inputs.forEach(input => {
+            // Önce eski eventleri temizle (varsa)
+            input.removeEventListener('focus', forceUp);
+            input.removeEventListener('blur', forceDown);
+            
+            // Yeni eventleri ekle
+            input.addEventListener('focus', forceUp);
+            input.addEventListener('blur', forceDown);
+        });
+    }
+
+    // YUKARI İT
+    function forceUp() {
+        if (window.innerWidth > 768) return; // Sadece mobilde
+        document.body.classList.add('force-keyboard-up');
+        
+        // Ekranı hafifçe en alta kaydır ki son mesaj görünsün
+        setTimeout(() => {
+            window.scrollTo(0, document.body.scrollHeight);
+            const chatBox = document.getElementById('chat-container');
+            if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        }, 100);
+    }
+
+    // AŞAĞI İNDİR
+    function forceDown() {
+        // Hemen inmesin, belki kullanıcı "Gönder" butonuna basıyordur
+        setTimeout(() => {
+            document.body.classList.remove('force-keyboard-up');
+        }, 200);
+    }
+
+    // Sayfa yüklenince ve dinamik elemanlar gelince çalıştır
+    window.addEventListener('DOMContentLoaded', activateBruteForceMode);
+    
+    // SPA geçişleri veya sonradan yüklenen elementler için sürekli kontrol
+    setInterval(activateBruteForceMode, 1000); // Her saniye yeni input var mı diye bakar (Garanti olsun)
+})();
+console.timeEnd("MAIN_SCRIPT_START");
+>>>>>>> 1629b93257515bd3ffc0b83c625ba6d0969b2645
