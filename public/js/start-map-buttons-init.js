@@ -3,8 +3,7 @@
     if (typeof startMapPlanning === 'function') {
       startMapPlanning();
     } else {
-      console.warn('[start-map] startMapPlanning fonksiyonu bulunamadı.');
-    }
+console.warn('[start-map] startMapPlanning function not found.');    }
   }
 
   function bindStartMapButtons() {

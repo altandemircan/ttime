@@ -1,118 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Triptime AI - New Generation Trip Planner, It's time to trip!</title>   
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Triptime AI - New Generation Trip Planner, It's time to trip!</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>    
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"/>
-    <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
-    
-    <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
+  <!-- ======================================================
+       SEO (DEFAULT = PROD SAFE)
+       Stage zaten nginx + header ile bloklu
+  ======================================================= -->
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <link rel="canonical" href="https://triptime.ai">
 
+  <!-- ======================================================
+       OPEN GRAPH (PROD SAFE)
+  ======================================================= -->
+  <meta property="og:url" content="https://triptime.ai">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
+  <meta property="og:image" content="/img/og_image.png">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="419">
 
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="twitter:domain" content="triptime.ai">
+  <meta property="twitter:url" content="https://triptime.ai">
+  <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
 
-    <!-- Leaflet Routing Machine -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    <!-- <script src="/js/leaflet-image.js"></script> -->
-    <!-- OpenRouteService Routing Plugin -->
-    <script src="https://unpkg.com/lrm-openrouteservice/dist/lrm-openrouteservice.js"></script>
+  <!-- ======================================================
+       LEAFLET & MAPLIBRE
+  ======================================================= -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"/>
+  <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
 
-    <!-- Local CSS -->
-    <link href="/css/styles.css?v=2615" rel="stylesheet" type="text/css" />
-    <link href="/css/open_loading.css" rel="stylesheet" type="text/css" />
+  <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
-   
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <!-- ======================================================
+       ROUTING & CHARTS
+  ======================================================= -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+  <script src="https://unpkg.com/lrm-openrouteservice/dist/lrm-openrouteservice.js"></script>
 
-    <!-- Local JS -->  
-    <script src="/js/mainscript.js?v=3678"></script> 
-    <script src="/js/photo_day_slider.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 
-    <script src="/js/chat_trip_results.js"></script> 
-   
-    <script src="/js/start-map-buttons-init.js" defer></script>
-    <script src="/js/drag.js?v=56" defer></script>
-    <script src="/js/ai_chat.js"></script>
+  <!-- ======================================================
+       UI LIBRARIES
+  ======================================================= -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
 
-    <!-- Fonts -->
-    <link href="https://fonts.cdnfonts.com/css/satoshi" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-    <!-- Meta tags -->
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="googlebot" content="noindex, nofollow">
-    <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <!-- ======================================================
+       LOCAL FILES
+  ======================================================= -->
+  <link href="/css/styles.css?v=2615" rel="stylesheet">
+  <link href="/css/open_loading.css" rel="stylesheet">
 
-    <!-- Open Graph & Twitter & Facebook Meta Tags -->
-    <meta property="og:url" content="https://triptime.ai">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-    <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
-    <meta property="og:image" content="/img/og_image.png">
-    <meta property="og:image:width" content="800">
-    <meta property="og:image:height" content="419">
-    <meta property="og:logo" content="/img/og_image.png" />
+  <script src="/js/mainscript.js?v=3678"></script>
+  <script src="/js/loading_trip.js?"></script>
+  <script src="/js/photo_day_slider.js"></script>
+  <script src="/js/chat_trip_results.js"></script>
+  <script src="/js/start-map-buttons-init.js" defer></script>
+  <script src="/js/drag.js?v=56" defer></script>
+  <script src="/js/ai_chat.js"></script>
 
-    <meta name="twitter:card" content="summary_large_image">
-    <meta property="twitter:domain" content="triptime.ai">
-    <meta property="twitter:url" content="http://triptime.ai">
-    <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <!-- ======================================================
+       FONTS
+  ======================================================= -->
+  <link href="https://fonts.cdnfonts.com/css/satoshi" rel="stylesheet">
 
-    <!-- Favicons -->
-    <link rel="apple-touch-icon" sizes="57x57" href="/favicon/apple-icon-57x57.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="/favicon/apple-icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="/favicon/apple-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="/favicon/apple-icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="/favicon/apple-icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/favicon/apple-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="/favicon/apple-icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/favicon/apple-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-icon-180x180.png">
-    <link rel="icon" type="image/png" sizes="192x192"  href="/favicon/android-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
-    <link rel="manifest" href="/favicon/manifest.json">
-    <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="/favicon/ms-icon-144x144.png">
-    <meta name="theme-color" content="#ffffff">
+  <!-- ======================================================
+       FAVICONS
+  ======================================================= -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-icon-180x180.png">
+  <meta name="theme-color" content="#ffffff">
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7"></script>
-    <script>
+  <!-- ======================================================
+       GOOGLE ANALYTICS (PROD ONLY VIA DOMAIN)
+  ======================================================= -->
+  <script>
+    if (location.hostname === "triptime.ai") {
+      const ga = document.createElement("script");
+      ga.src = "https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7";
+      ga.async = true;
+      document.head.appendChild(ga);
+
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-6W42FMZ5T7');
-    </script>
+      gtag('config', 'G-6W42FMZ5T7', { anonymize_ip: true });
+    }
+  </script>
 
+  <!-- ======================================================
+       UI STATE STYLES + VISUALLY HIDDEN
+  ======================================================= -->
+  <style>
+    #tt-about-us { display:none; }
+    #tt-about-us.active { display:block; }
+    #tt-welcome { display:block; }
+    #tt-welcome:not(.active) { display:none; }
 
-    <style>
-  /* Başlangıçta About gizli */
-  #tt-about-us { display:none; }
-
-  /* Sadece JS ile görünür yapılacağı zaman */
-  #tt-about-us.active { display:block; }
-
-  /* (İsteğe bağlı) Varsayılan welcome açık */
-  #tt-welcome { display:block; }
-  #tt-welcome:not(.active) { display:none; }
-</style>
-
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
 
 </head>
 
 <body>
 
+<h1 class="visually-hidden">
+  New generation AI trip planner for routes, maps and travel planning
+</h1>
+
+<p class="visually-hidden">
+  Triptime AI helps users plan trips by creating routes, exploring places on maps
+  and building travel plans using AI-powered recommendations.
+</p>
+
+<!-- UYGULAMA DEVAMI BURADAN -->
 
 
     <div id="main-header">
@@ -148,7 +174,7 @@
                         <div class="toggleMenu" onclick="toggleMenu()">☰</div>
                         <div class="dropDown" id="menuDropdown">
                             <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
-                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI
+                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI 
                             </a>                     
                             <a href="#" onclick="toggleSidebarMyTrips(); toggleMenu();" class="mytrips-btn">
                                 <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips
@@ -165,9 +191,9 @@
                             <a href="#" onclick="toggleSidebarFeedback(); toggleMenu();" class="feedback-btn">
                                 <img src="/img/feedback-icon.svg" alt="Menu">Feedback
                             </a>     
-                            <a href="#" onclick="changeContent(2)" class="updates-btn">
+                            <!--<a href="#" onclick="changeContent(2)" class="updates-btn">
                                 <img src="/img/about-icon.svg" alt="Menu">About Triptime
-                            </a>   
+                            </a>-->   
                             
                         </div>
                     </div>            
@@ -945,7 +971,7 @@ Your browser does not support the video tag.                  </video>
 
 </div>
     <!-- BURAYA KADAR -->
-
+ 
 
         <div class="cw">
             <div class="circle-container">
@@ -1097,7 +1123,7 @@ Your browser does not support the video tag.                  </video>
 <script src="/js/route-importer.js" defer></script>
 <script src="/js/type_writer_ai.js" defer></script>
 <script src="/js/restaurant_module.js" defer></script>
- <script src="/js/my_places.js"></script>
+ <script src="/js/my_places.js" defer></script>
 <script>
 window.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {

@@ -1,3 +1,5 @@
+console.time("MAIN_SCRIPT_START");
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 
@@ -1309,6 +1311,10 @@ function addCanonicalMessage(canonicalStr) {
 }
 
 function sendMessage() {
+    if (!window.__welcomeShown) {
+  addMessage("<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.", "bot-message");
+  window.__welcomeShown = true;
+}
     if (window.isProcessing) return;
     // showLoadingPanel() BURADAN KALDIRILDI
     const input = document.getElementById("user-input");
@@ -1914,7 +1920,7 @@ async function showResults() {
     }
 
     html += `</ul></div></div>`;
-    chatBox.innerHTML += html;
+    chatBox.insertAdjacentHTML('beforeend', html);
     if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -4370,19 +4376,7 @@ async function updateCart() {
 
             // --- 4. MARKER HTML ---
             const listMarkerHtml = `
-                <div class="custom-marker-outer" style="flex-shrink: 0;
-                    transform: scale(0.70);
-                    position: absolute;
-                    left: 24px;
-                    top: -4px;
-                    background: ${markerBgColor} !important; 
-                    border-radius: 50%;
-                    width: 24px; height: 24px;
-                    display: flex; align-items: center; justify-content: center;
-                    color: #fff; font-weight: bold; font-size: 16px;
-                    border: 2px solid #fff;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                    <span class="custom-marker-label" style="font-size: 14px;">${markerLabel}</span>
+                <div class="custom-marker-outer">${markerLabel}</span>
                 </div>
             `;
             // -------------------------------------------
@@ -8312,7 +8306,7 @@ async function renderRouteForDay(day) {
 
         const infoPanel = document.getElementById(`route-info-day${day}`);
         if (infoPanel) {
-            infoPanel.innerHTML = `<span style="color:#1976d2;">GPS dosyasından gelen rota <b>KİLİTLİ</b>. Başlangıç-bitiş arası sabit, sonrası eklendi.</span>`;
+            infoPanel.innerHTML = `<span style="color:#1976d2;">The route from the GPS file is <b>LOCKED</b>. The start-finish interval is fixed, subsequent parts were added.</span>`;
         }
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         if (typeof adjustExpandedHeader === 'function') adjustExpandedHeader(day);
@@ -8723,7 +8717,7 @@ async function renderRouteForDay(day) {
         const url = buildDirectionsUrl(coordParam, day);
         const response = await fetch(url);
         if (!response.ok) {
-            alert("Rota oluşturulamıyor...");
+            alert("Unable to create route...");
             return null;
         }
         const data = await response.json();
@@ -8967,10 +8961,6 @@ if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
 }
 });
 
-// Show tt-welcome on page load
-document.addEventListener('DOMContentLoaded', function() {
-    changeContent(1);
-});
 
   function toggleMenu() {
         document.getElementById("menuDropdown").classList.toggle("show");
@@ -10030,7 +10020,7 @@ function ensureRouteStatsUI(day) {
     const asc = document.createElement('span');
     asc.className = 'stat stat-ascent';
     asc.innerHTML = `
-      <img class="icon" src="https://www.svgrepo.com/show/530913/arrow-up.svg" alt="Ascent" loading="lazy" decoding="async">
+      <img class="icon" src="   " alt="Ascent" loading="lazy" decoding="async">
       <span class="badge">— m</span>
     `;
     control.appendChild(asc);
@@ -10194,7 +10184,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // Koordinat kontrolü (Tekrar)
   if (!Array.isArray(coords) || coords.length < 2) {
-    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Rota noktaları bulunamadı</div></div>`;
+    container.innerHTML = `<div class="scale-bar-track"><div style="text-align:center;padding:12px;font-size:13px;color:#c62828;">Route points not found</div></div>`;
     container.style.display = 'block';
     return;
   }
@@ -11936,3 +11926,105 @@ window.hideLoadingPanel = function() {
         window.loadingInterval = null;
     }
 };
+
+// === KLAVYE VE EKRAN YÜKSEKLİK FİX (Visual Viewport API) ===
+if (window.visualViewport) {
+    function handleVisualViewportResize() {
+        // Klavye açıldığında/kapandığında gerçek görünür yüksekliği al
+        const height = window.visualViewport.height;
+        
+        // Bu yüksekliği bir CSS değişkenine ata
+        document.documentElement.style.setProperty('--visible-height', `${height}px`);
+        
+        // Eğer bir inputa odaklanılmışsa ve klavye açılmışsa, içeriği yukarı kaydır
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+             setTimeout(() => {
+                 window.scrollTo(0, 0); // Sayfanın gereksiz scroll olmasını engelle
+                 // İhtiyaç varsa buraya chat kutusunun en altına scroll kodu eklenebilir
+             }, 100);
+        }
+    }
+
+    window.visualViewport.addEventListener('resize', handleVisualViewportResize);
+    window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
+    
+    // İlk açılışta tetikle
+    handleVisualViewportResize();
+}
+
+// CSS ile Input Focus Yönetimi
+function stabilizeInputOnFocus() {
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+    
+    // Input'a tıklandığında
+    document.addEventListener('focusin', function(e) {
+        const input = e.target;
+        if (!input.matches('#user-input, #ai-chat-input')) return;
+        
+        // Chat container'ı 100px yukarı çek
+        chatContainer.classList.add('input-focused');
+    });
+    
+    // Input'tan çıkıldığında
+    document.addEventListener('focusout', function(e) {
+        const input = e.target;
+        if (!input.matches('#user-input, #ai-chat-input')) return;
+        
+        // 200ms bekleyip eski haline döndür
+        setTimeout(() => {
+            chatContainer.classList.remove('input-focused');
+        }, 200);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
+
+
+
+
+// mainscript.js
+(function() {
+    // Tüm olası inputları yakala
+    function activateBruteForceMode() {
+        const inputs = document.querySelectorAll('input, textarea');
+        
+        inputs.forEach(input => {
+            // Önce eski eventleri temizle (varsa)
+            input.removeEventListener('focus', forceUp);
+            input.removeEventListener('blur', forceDown);
+            
+            // Yeni eventleri ekle
+            input.addEventListener('focus', forceUp);
+            input.addEventListener('blur', forceDown);
+        });
+    }
+
+    // YUKARI İT
+    function forceUp() {
+        if (window.innerWidth > 768) return; // Sadece mobilde
+        document.body.classList.add('force-keyboard-up');
+        
+        // Ekranı hafifçe en alta kaydır ki son mesaj görünsün
+        setTimeout(() => {
+            window.scrollTo(0, document.body.scrollHeight);
+            const chatBox = document.getElementById('chat-container');
+            if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        }, 100);
+    }
+
+    // AŞAĞI İNDİR
+    function forceDown() {
+        // Hemen inmesin, belki kullanıcı "Gönder" butonuna basıyordur
+        setTimeout(() => {
+            document.body.classList.remove('force-keyboard-up');
+        }, 200);
+    }
+
+    // Sayfa yüklenince ve dinamik elemanlar gelince çalıştır
+    window.addEventListener('DOMContentLoaded', activateBruteForceMode);
+    
+    // SPA geçişleri veya sonradan yüklenen elementler için sürekli kontrol
+    setInterval(activateBruteForceMode, 1000); // Her saniye yeni input var mı diye bakar (Garanti olsun)
+})();
+console.timeEnd("MAIN_SCRIPT_START");

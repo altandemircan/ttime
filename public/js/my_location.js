@@ -7,7 +7,7 @@ window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 // 2. Konum alma fonksiyonu (sadece butonla tetiklenir)
 function getMyLocation(day, expandedMap) {
     if (!navigator.geolocation) {
-        alert('Tarayıcınız konum özelliğini desteklemiyor.');
+        alert('Your browser does not support geolocation.');
         return;
     }
 
