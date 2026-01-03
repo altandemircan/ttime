@@ -9039,7 +9039,7 @@ function changeContent(option) {
     const aboutUsSection = document.getElementById('tt-about-us');
 
     if (chatBox) chatBox.style.display = 'none';
-    if (welcomeSection) welcomeSection.style.display = 'none';
+
     if (aboutUsSection) aboutUsSection.style.display = 'none';
 
     if (option === 1) {
