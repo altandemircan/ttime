@@ -1,3 +1,4 @@
+console.time("MAIN_SCRIPT_START");
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
@@ -12026,3 +12027,4 @@ document.addEventListener('DOMContentLoaded', stabilizeInputOnFocus);
     // SPA geçişleri veya sonradan yüklenen elementler için sürekli kontrol
     setInterval(activateBruteForceMode, 1000); // Her saniye yeni input var mı diye bakar (Garanti olsun)
 })();
+console.timeEnd("MAIN_SCRIPT_START");
