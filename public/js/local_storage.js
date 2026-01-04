@@ -248,6 +248,7 @@ function safeParse(jsonStr) {
 }
 
 // === local_storage.js içindeki saveCurrentTripToStorage fonksiyonunu bununla değiştirin ===
+// === BU FONKSİYONU KOMPLE AŞAĞIDAKİ İLE DEĞİŞTİRİN ===
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
@@ -258,23 +259,19 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   if (window.activeTripKey && window.selectedCity) {
       const allSaved = getAllSavedTrips();
       const currentSavedTrip = allSaved[window.activeTripKey];
-       
+        
       if (currentSavedTrip) {
-           // 1. Kayıtlı şehri bulmaya çalış
            let oldCity = currentSavedTrip.selectedCity 
-                 ? toLatin(currentSavedTrip.selectedCity).toLowerCase().trim()
-                 : "";
+                  ? toLatin(currentSavedTrip.selectedCity).toLowerCase().trim()
+                  : "";
            
-           // 2. Eğer kayıtlı şehir yoksa (eski sürüm data), başlıktan tahmin et
            if (!oldCity && currentSavedTrip.title) {
-               // "Rome trip plan" -> "rome"
                oldCity = toLatin(currentSavedTrip.title).toLowerCase()
                           .replace(" trip plan", "").replace(" trip", "").trim();
            }
 
            const newCity = toLatin(window.selectedCity).toLowerCase().trim();
            
-           // Şehirler belirgin şekilde farklıysa -> YENİ KEY OLUŞTUR
            if (oldCity && newCity && oldCity !== newCity) {
                console.log(`[Auto-Fork] Prevent overwrite! ${oldCity} != ${newCity}. Forcing new trip key.`);
                window.activeTripKey = null; 
@@ -283,13 +280,28 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   }
   // =======================================================
 
+  // trips verisini önden çekiyoruz
+  let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
+
+  // --- KURAL 4: LOCAL STORAGE LİMİTİ (MAX 30 GEZİ) ---
+  // Eğer bu yeni bir kayıt ise (activeTripKey null) ve zaten 30 veya daha fazla gezi varsa kaydetme.
+  if (!window.activeTripKey) {
+      const currentCount = Object.keys(trips).length;
+      if (currentCount >= 30) {
+          // Kullanıcıyı uyar
+          alert("Kayıtlı gezi limitine (30) ulaştınız. Yeni plan oluşturmak için 'My Trips' panelinden eski gezilerinizi silmelisiniz.");
+          // İşlemi durdur, kaydetme yapma.
+          return; 
+      }
+  }
+  // ----------------------------------------------------
+
   let tripTitle;
   if (window.__startedWithMapFlag) {
     tripTitle = getNextTripTitle();
     window.__startedWithMapFlag = false; 
     window.activeTripKey = null; 
   } else {
-    // Başlık belirleme: Eğer key varsa ve yeni değilse eskisini koru, yoksa yenisini üret
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
         ? getAllSavedTrips()[window.activeTripKey].title
@@ -311,7 +323,6 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     ? window.cart[0].date
     : (new Date()).toISOString().slice(0, 10);
 
-  let trips = safeParse(localStorage.getItem(TRIP_STORAGE_KEY)) || {};
   let tripKey;
 
   if (window.activeTripKey) {
@@ -334,11 +345,10 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     key: tripKey,
     directionsPolylines: window.directionsPolylines ? JSON.parse(JSON.stringify(window.directionsPolylines)) : {},
     aiInfo: (window.cart && window.cart.aiData) ? window.cart.aiData : (window.lastTripAIInfo || null),
-    dayCollageData: window.__dayCollagePhotosByDay || {}, // FOTOĞRAFLAR KORUNDU
+    dayCollageData: window.__dayCollagePhotosByDay || {},
     elevStatsByDay: window.routeElevStatsByDay ? JSON.parse(JSON.stringify(window.routeElevStatsByDay)) : {}
   };
 
-  // Thumbnail logic...
   const thumbnails = {};
   const days = tripObj.days;
   for (let day = 1; day <= days; day++) {
@@ -354,6 +364,8 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 }
+
+
 async function saveCurrentTripToStorageWithThumbnailDelay() {
     // 500-1000ms gecikme ile harita oluşmuş olur
     saveTripAfterRoutes();
