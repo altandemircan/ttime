@@ -965,6 +965,11 @@ function parsePlanRequest(text) {
         days = parseInt(dayMatch[1]);
     }
 
+    // --- BURAYI EKLEYİN ---
+    // Başlangıçta max 5 gün limiti
+    if (days > 5) days = 5; 
+    // ---------------------
+
     // Gün bulunamazsa varsayılan 2 yap
     if (!days || isNaN(days) || days < 1) days = 2;
 
@@ -1205,9 +1210,6 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
 // === handleAnswer Fonksiyonunun GÜVENLİ HALİ ===
 async function handleAnswer(answer) {
   if (window.isProcessing) return;
-
-  async function handleAnswer(answer) {
-  if (window.isProcessing) return;
   
   // 1. GÜNLÜK LİMİT KONTROLÜ
   if (!checkAndIncrementDailyLimit(true)) {
@@ -1221,7 +1223,7 @@ async function handleAnswer(answer) {
       addMessage("Lütfen isteğinizi daha kısa tutun (Maks. 60 karakter).", "bot-message");
       return;
   }
-  
+
   window.isProcessing = true;
 
   // Bu işlemin kimlik numarası (Şu anki zaman)
@@ -4918,9 +4920,23 @@ async function updateCart() {
     addNewDayButton.className = "add-new-day-btn";
     addNewDayButton.id = "add-new-day-button";
     addNewDayButton.textContent = "+ Add New Day";
+
+    // --- BURAYI GÜNCELLEYİN ---
     addNewDayButton.onclick = function () { 
+        // Mevcut en büyük günü bul
+        const currentMaxDay = window.cart && window.cart.length > 0 
+            ? Math.max(...window.cart.map(i => i.day || 1)) 
+            : 1;
+
+        if (currentMaxDay >= 10) {
+            alert("Bir gezi planı en fazla 10 gün olabilir.");
+            return;
+        }
+
         if(typeof addNewDay === 'function') addNewDay(this); 
     };
+    // --------------------------
+    
     cartDiv.appendChild(addNewDayButton);
 
 
