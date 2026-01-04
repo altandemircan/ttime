@@ -1206,17 +1206,17 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
 async function handleAnswer(answer) {
   if (window.isProcessing) return;
   
-  // 1. GÜNLÜK LİMİT KONTROLÜ (Sadece kontrol et, henüz düşme)
+  // 1. DAILY LIMIT CHECK (Check only, increment on success)
   if (typeof checkAndIncrementDailyLimit === 'function' && !checkAndIncrementDailyLimit(true)) {
       addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 🛑", "bot-message");
       return; 
   }
 
-  // === RAW DEĞİŞKENİNİ BURADA TANIMLIYORUZ (SİLMEYİN) ===
+  // === DEFINE RAW VARIABLE HERE (DO NOT DELETE) ===
   const raw = (answer || "").toString().trim();
-  // ======================================================
+  // ===============================================
 
-  // Suggestion kontrolü
+  // Suggestion check
   if (!window.__locationPickedFromSuggestions) {
     addMessage("Please select a city from the suggestions first.", "bot-message");
     return;
@@ -1230,14 +1230,14 @@ async function handleAnswer(answer) {
     return;
   }
 
-  // --- İŞLEM BAŞLIYOR ---
+  // --- PROCESS STARTS ---
   window.isProcessing = true;
 
-  // Bu işlemin kimlik numarası (Şu anki zaman)
+  // Generation ID for this process
   const currentGenId = Date.now();
-  window.__planGenerationId = currentGenId; // Global ID'yi güncelle
+  window.__planGenerationId = currentGenId; // Update Global ID
 
-  // YENİ GEZİ BAŞLATILIYORSA: Temizlik
+  // CLEANUP IF STARTING NEW TRIP
   if (!window.activeTripKey) {
     window.directionsPolylines = {};
     window.routeElevStatsByDay = {};
@@ -1249,17 +1249,16 @@ async function handleAnswer(answer) {
     addMessage(raw, "user-message");
   }
 
-  // --- PARSE İŞLEMİ VE UYARI ---
-  // isCapped değerini buradan alıyoruz
+  // --- PARSE AND CAP WARNING ---
   const { location, days, isCapped } = parsePlanRequest(raw);
 
-  // EĞER GÜN SAYISI KIRPILDIYSA MESAJI GÖSTER
+  // IF DAYS WERE CAPPED, SHOW NOTIFICATION
   if (isCapped) {
       setTimeout(() => {
           addMessage("Note: The initial trip plan is limited to a maximum of 5 days. You can add more days later.", "bot-message");
       }, 600);
   }
-  // ------------------------------------------
+  // -----------------------------
 
   showTypingIndicator();
   
@@ -1279,7 +1278,7 @@ async function handleAnswer(answer) {
       return;
     }
 
-    // === OVERWRITE KORUMASI: Şehir değiştiyse eski geziyi unut ===
+    // === OVERWRITE PROTECTION: If city changed, detach from old trip ===
     if (window.activeTripKey && window.selectedCity) {
          const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
          if (normalize(window.selectedCity) !== normalize(location)) {
@@ -1288,43 +1287,43 @@ async function handleAnswer(answer) {
              window.cart = [];
          }
     }
-    // =============================================================
+    // =================================================================
 
     window.selectedCity = location; 
 
-    // 1. AŞAMA: Plan Oluşturma
+    // PHASE 1: Build Plan
     let planResult = await buildPlan(location, days);
 
-    // KONTROL 1: Kullanıcı bu sırada "My Trips"ten başka geziye tıkladı mı?
+    // CHECK 1: Did user switch trips during process?
     if (currentGenId !== window.__planGenerationId) {
-        console.log(`[İPTAL] Plan oluşturuldu ama kullanıcı başka geziye geçti.`);
-        return; // ÇIK
+        console.log(`[CANCEL] Plan generated but user switched context.`);
+        return; // EXIT
     }
 
-    // 2. AŞAMA: Wiki Zenginleştirme
+    // PHASE 2: Enrich with Wiki
     planResult = await enrichPlanWithWiki(planResult);
 
-    // KONTROL 2: Wiki sırasında başka geziye tıklandı mı?
+    // CHECK 2: Did user switch trips during wiki fetch?
     if (currentGenId !== window.__planGenerationId) {
-        console.log(`[İPTAL] Wiki bitti ama kullanıcı başka geziye geçti.`);
-        return; // ÇIK
+        console.log(`[CANCEL] Wiki finished but user switched context.`);
+        return; // EXIT
     }
 
-    // İŞLEM BAŞARILI: Artık ekrana basabiliriz
+    // SUCCESS: Render results
     latestTripPlan = planResult;
 
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
       
-      // Başlığı şimdi güncelle (Güvenli zaman)
+      // Update title safely
       window.lastUserQuery = `${location} trip plan`;
 
-      // --- BAŞARILI OLDUĞUNDA HAKKI DÜŞ ---
+      // --- DEDUCT DAILY LIMIT ON SUCCESS ---
       if (typeof checkAndIncrementDailyLimit === 'function') {
           checkAndIncrementDailyLimit(false); 
       }
-      // ------------------------------------
+      // -------------------------------------
 
       showResults();
       updateTripTitle();
@@ -1342,7 +1341,7 @@ async function handleAnswer(answer) {
     console.error("Plan error:", error);
     addMessage("An error occurred.", "bot-message");
   } finally {
-    // Sadece işlem hala geçerliyse loading'i kaldır
+    // Hide loading only if this process is still active
     if (currentGenId === window.__planGenerationId) {
         hideTypingIndicator();
         window.isProcessing = false;
