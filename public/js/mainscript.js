@@ -1180,26 +1180,34 @@ if (savedText === currentText && currentText.length > 1) {             // Sadece
 
 
 // === YARDIMCI FONKSİYONLAR (Dosyanın uygun bir yerine veya en üste ekleyin) ===
+// === GÜNLÜK LİMİT KONTROL FONKSİYONU ===
 function checkAndIncrementDailyLimit(checkOnly = false) {
     const STORAGE_KEY = 'daily_plan_usage';
     const MAX_DAILY = 5;
     const today = new Date().toDateString(); // Örn: "Sun Jan 04 2026"
     
-    let usage = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { date: today, count: 0 };
-    
-    // Gün değiştiyse sayacı sıfırla
+    let usage = {};
+    try {
+        usage = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch (e) {
+        usage = {};
+    }
+
+    // Tarih farklıysa (yeni günse) veya veri bozuksa sıfırla
     if (usage.date !== today) {
         usage = { date: today, count: 0 };
     }
     
-    // Sadece kontrol ediyorsak (işlem başı)
+    // Sadece kontrol ediyorsak (İşlem başı)
     if (checkOnly) {
+        // Eğer sayaç 5 veya daha fazlaysa FALSE döndür (İzin verme)
         return usage.count < MAX_DAILY;
     }
     
-    // Arttırma işlemi (işlem başarılı olunca)
+    // Arttırma işlemi (İşlem başarılı olunca)
     usage.count++;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
+    console.log(`[DailyLimit] New count: ${usage.count}`);
     return true;
 }
 // === handleAnswer Fonksiyonunun GÜVENLİ HALİ ===
