@@ -1212,20 +1212,27 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
 }
 // === handleAnswer Fonksiyonunun GÜVENLİ HALİ ===
 async function handleAnswer(answer) {
+  // 1. Zaten işlem yapılıyorsa dur (Çift tıklama önlemi)
   if (window.isProcessing) return;
-  
-  // 1. DAILY LIMIT CHECK (Check only, increment on success)
+
+  // === 2. GÜNLÜK LİMİT KONTROLÜ (EN KRİTİK YER) ===
+  // Bu kontrolü en başa koyuyoruz ve içinde loading'i zorla kapatıyoruz.
   if (typeof checkAndIncrementDailyLimit === 'function' && !checkAndIncrementDailyLimit(true)) {
+      // EĞER ANİMASYON YANLIŞLIKLA AÇILDIYSA KAPAT:
+      if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
+      window.isProcessing = false; 
+      
+      // Uyarıyı ver ve çık
       addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 🛑", "bot-message");
       return; 
   }
+  // =================================================
 
-  // === DEFINE RAW VARIABLE HERE (DO NOT DELETE) ===
   const raw = (answer || "").toString().trim();
-  // ===============================================
 
-  // Suggestion check
+  // Suggestion kontrolü
   if (!window.__locationPickedFromSuggestions) {
+    if (typeof hideTypingIndicator === 'function') hideTypingIndicator(); // Önlem
     addMessage("Please select a city from the suggestions first.", "bot-message");
     return;
   }
@@ -1234,18 +1241,21 @@ async function handleAnswer(answer) {
   if (inputEl) inputEl.value = "";
 
   if (!raw || raw.length < 2) {
+    if (typeof hideTypingIndicator === 'function') hideTypingIndicator(); // Önlem
     addMessage("Please enter a location request.", "bot-message");
     return;
   }
 
-  // --- PROCESS STARTS ---
+  // --- ARTIK HER ŞEY YOLUNDA, YÜKLEMEYİ BAŞLATABİLİRİZ ---
   window.isProcessing = true;
+  showTypingIndicator(); // Animasyon burada başlamalı, daha önce değil!
+  // --------------------------------------------------------
 
-  // Generation ID for this process
+  // Bu işlemin kimlik numarası (Şu anki zaman)
   const currentGenId = Date.now();
-  window.__planGenerationId = currentGenId; // Update Global ID
+  window.__planGenerationId = currentGenId; 
 
-  // CLEANUP IF STARTING NEW TRIP
+  // Yeni gezi ise temizlik
   if (!window.activeTripKey) {
     window.directionsPolylines = {};
     window.routeElevStatsByDay = {};
@@ -1257,36 +1267,32 @@ async function handleAnswer(answer) {
     addMessage(raw, "user-message");
   }
 
-  // --- PARSE AND CAP WARNING ---
+  // --- PARSE İŞLEMİ ---
   const { location, days, isCapped } = parsePlanRequest(raw);
 
-  // IF DAYS WERE CAPPED, SHOW NOTIFICATION
   if (isCapped) {
       setTimeout(() => {
           addMessage("Note: The initial trip plan is limited to a maximum of 5 days. You can add more days later.", "bot-message");
       }, 600);
   }
-  // -----------------------------
 
-  showTypingIndicator();
-  
   try {
     if (!location || !days || isNaN(days)) {
       addMessage("I could not understand that.", "bot-message");
-      return;
+      throw new Error("Invalid input"); // catch bloğuna düşsün diye
     }
     if (location.length < 2) {
       addMessage("Location name looks too short.", "bot-message");
-      return;
+      throw new Error("Short location");
     }
 
     const coords = await getCityCoordinates(location);
     if (!coords || !coords.lat || !coords.lon) {
       addMessage("Could not find a valid location.", "bot-message");
-      return;
+      throw new Error("Invalid coords");
     }
 
-    // === OVERWRITE PROTECTION: If city changed, detach from old trip ===
+    // Overwrite Koruması
     if (window.activeTripKey && window.selectedCity) {
          const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
          if (normalize(window.selectedCity) !== normalize(location)) {
@@ -1295,43 +1301,38 @@ async function handleAnswer(answer) {
              window.cart = [];
          }
     }
-    // =================================================================
 
     window.selectedCity = location; 
 
-    // PHASE 1: Build Plan
+    // 1. AŞAMA: Plan Oluşturma
     let planResult = await buildPlan(location, days);
 
-    // CHECK 1: Did user switch trips during process?
     if (currentGenId !== window.__planGenerationId) {
         console.log(`[CANCEL] Plan generated but user switched context.`);
-        return; // EXIT
+        return; 
     }
 
-    // PHASE 2: Enrich with Wiki
+    // 2. AŞAMA: Wiki
     planResult = await enrichPlanWithWiki(planResult);
 
-    // CHECK 2: Did user switch trips during wiki fetch?
     if (currentGenId !== window.__planGenerationId) {
         console.log(`[CANCEL] Wiki finished but user switched context.`);
-        return; // EXIT
+        return; 
     }
 
-    // SUCCESS: Render results
+    // BAŞARILI
     latestTripPlan = planResult;
 
     if (latestTripPlan && latestTripPlan.length > 0) {
       window.latestTripPlan = JSON.parse(JSON.stringify(latestTripPlan));
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
-      
-      // Update title safely
       window.lastUserQuery = `${location} trip plan`;
 
-      // --- DEDUCT DAILY LIMIT ON SUCCESS ---
+      // --- SAYAÇ DÜŞME ---
       if (typeof checkAndIncrementDailyLimit === 'function') {
           checkAndIncrementDailyLimit(false); 
       }
-      // -------------------------------------
+      // -------------------
 
       showResults();
       updateTripTitle();
@@ -1346,10 +1347,13 @@ async function handleAnswer(answer) {
       addMessage("Could not create a plan.", "bot-message");
     }
   } catch (error) {
+    // Hata durumunda (veya limit uyarısı catch'e düşerse) loading'i kapat
     console.error("Plan error:", error);
-    addMessage("An error occurred.", "bot-message");
+    if (error.message !== "Invalid input" && error.message !== "Short location" && error.message !== "Invalid coords") {
+         addMessage("An error occurred.", "bot-message");
+    }
   } finally {
-    // Hide loading only if this process is still active
+    // HER DURUMDA LOADING'İ KAPAT (Eğer işlem hala aktifse)
     if (currentGenId === window.__planGenerationId) {
         hideTypingIndicator();
         window.isProcessing = false;
