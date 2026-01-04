@@ -289,8 +289,7 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
       const currentCount = Object.keys(trips).length;
       if (currentCount >= 30) {
           // Kullanıcıyı uyar
-          alert("Kayıtlı gezi limitine (30) ulaştınız. Yeni plan oluşturmak için 'My Trips' panelinden eski gezilerinizi silmelisiniz.");
-          // İşlemi durdur, kaydetme yapma.
+alert("You have reached the saved trip limit (30). Please delete old trips from the 'My Trips' panel to create a new one.");          // İşlemi durdur, kaydetme yapma.
           return; 
       }
   }
