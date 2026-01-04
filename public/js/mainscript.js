@@ -1212,13 +1212,6 @@ async function handleAnswer(answer) {
       return; 
   }
 
-  // 2. KARAKTER SINIRI KONTROLÜ (Input Limit 60)
-  const raw = (answer || "").toString().trim();
-  if (raw.length > 60) {
-      addMessage("Lütfen isteğinizi daha kısa tutun (Maks. 60 karakter).", "bot-message");
-      return;
-  }
-
   // Suggestion kontrolü
   if (!window.__locationPickedFromSuggestions) {
     addMessage("Please select a city from the suggestions first.", "bot-message");
@@ -12138,3 +12131,11 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 
+
+document.addEventListener("DOMContentLoaded", function() {
+    const inputEl = document.getElementById("user-input");
+    if (inputEl) {
+        inputEl.setAttribute("maxlength", "60"); // 61. karakteri yazmayı engeller
+        inputEl.setAttribute("placeholder", "Where do you want to go? (Max 60 chars)"); // İsterseniz placeholder'ı da güncelleyin
+    }
+});
