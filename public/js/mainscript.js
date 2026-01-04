@@ -936,50 +936,45 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 function parsePlanRequest(text) {
     let days = null;
     let location = null;
+    let isCapped = false; // Yeni eklenen kontrol değişkeni
 
-    // 1. Kullanıcı listeden seçim yaptıysa veriyi buradan al
+    // 1. Önce Context/Suggestion kontrolü
     if (window.selectedSuggestion && window.selectedSuggestion.props) {
         const props = window.selectedSuggestion.props;
-        
-        // --- DÜZELTME: SADECE VERİ SEÇİMİ ---
-        // API bazen 'city' alanında bölge ismi (Mediterranean Region) veriyor.
-        // Biz öncelikle 'name' (Antalya) alanını kullan diyoruz.
-        // UI değişmez, sadece alınan veri değişir.
         const specificName = props.name || props.city || props.county;
-        
-        // Konum: "Antalya, Turkey" formatına getir
         location = [specificName, props.country].filter(Boolean).join(', ');
-
     } else if (window.selectedLocation && typeof window.selectedLocation === "object") {
-        // Eski yöntemle seçildiyse oradan al
         const sl = window.selectedLocation;
         const specificName = sl.name || sl.city;
         location = [specificName, sl.country].filter(Boolean).join(', ');
     }
 
-    // 2. Gün sayısını yazıdan bul (Türkçe/İngilizce)
+    // 2. Gün sayısını metinden ayıkla
     let dayMatch = text.match(/(\d+)[- ]*day/i);
     if (!dayMatch) dayMatch = text.match(/(\d+)[- ]*gün/i);
     
     if (dayMatch) {
         days = parseInt(dayMatch[1]);
+        
+        // --- BURASI DEĞİŞTİ: LİMİT KONTROLÜ VE UYARI BAYRAĞI ---
+        if (days > 5) {
+            days = 5;       // Gün sayısını 5'e indir
+            isCapped = true; // "Evet, müdahale ettim" diye işaretle
+        }
+        // -------------------------------------------------------
     }
 
-    // --- BURAYI EKLEYİN ---
-    // Başlangıçta max 5 gün limiti
-    if (days > 5) days = 5; 
-    // ---------------------
-
-    // Gün bulunamazsa varsayılan 2 yap
+    // Gün bulunamazsa varsayılan 2
     if (!days || isNaN(days) || days < 1) days = 2;
 
-    // Eğer konum hala bulunamadıysa metinden tahmin et
+    // Konum bulunamadıysa metinden tahmin et
     if (!location) {
         let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
         if (wordMatch) location = wordMatch[1];
     }
 
-    return { location, days };
+    // Fonksiyon artık 3 veri döndürüyor: Konum, Gün ve Kırpılma Durumu
+    return { location, days, isCapped }; 
 }
 
 function formatCanonicalPlan(rawInput) {
@@ -1211,8 +1206,8 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
 async function handleAnswer(answer) {
   if (window.isProcessing) return;
   
-  // 1. GÜNLÜK LİMİT KONTROLÜ
-  if (!checkAndIncrementDailyLimit(true)) {
+  // 1. GÜNLÜK LİMİT KONTROLÜ (Sadece kontrol et, henüz düşme)
+  if (typeof checkAndIncrementDailyLimit === 'function' && !checkAndIncrementDailyLimit(true)) {
       addMessage("Günlük gezi planı oluşturma limitinize (5) ulaştınız. Yarın tekrar bekleriz! 🛑", "bot-message");
       return; 
   }
@@ -1224,6 +1219,21 @@ async function handleAnswer(answer) {
       return;
   }
 
+  // Suggestion kontrolü
+  if (!window.__locationPickedFromSuggestions) {
+    addMessage("Please select a city from the suggestions first.", "bot-message");
+    return;
+  }
+
+  const inputEl = document.getElementById("user-input");
+  if (inputEl) inputEl.value = "";
+
+  if (!raw || raw.length < 2) {
+    addMessage("Please enter a location request.", "bot-message");
+    return;
+  }
+
+  // --- İŞLEM BAŞLIYOR ---
   window.isProcessing = true;
 
   // Bu işlemin kimlik numarası (Şu anki zaman)
@@ -1236,36 +1246,27 @@ async function handleAnswer(answer) {
     window.routeElevStatsByDay = {};
   }
 
-  const inputEl = document.getElementById("user-input");
-
-
-  // Suggestion kontrolü
-  if (!window.__locationPickedFromSuggestions) {
-    addMessage("Please select a city from the suggestions first.", "bot-message");
-    window.isProcessing = false;
-    return;
-  }
-
-  if (inputEl) inputEl.value = "";
-
-  if (!raw || raw.length < 2) {
-    addMessage("Please enter a location request.", "bot-message");
-    window.isProcessing = false;
-    return;
-  }
-
   if (window.__suppressNextUserEcho) {
     window.__suppressNextUserEcho = false;
   } else {
     addMessage(raw, "user-message");
   }
+
+  // --- PARSE İŞLEMİ VE UYARI ---
+  // isCapped değerini buradan alıyoruz
+  const { location, days, isCapped } = parsePlanRequest(raw);
+
+  // EĞER GÜN SAYISI KIRPILDIYSA MESAJI GÖSTER
+  if (isCapped) {
+      // Hafif gecikmeli gelsin, dikkat çeksin
+      setTimeout(() => {
+          addMessage("Note: The initial trip plan is limited to a maximum of 5 days. You can add more days later.", "bot-message");
+      }, 600);
+  }
+  // ------------------------------------------
+
   showTypingIndicator();
   
-  // lastUserQuery'yi hemen set etme, işlem başarılı olursa ederiz
-  // window.lastUserQuery = raw; 
-
-  const { location, days } = parsePlanRequest(raw);
-
   try {
     if (!location || !days || isNaN(days)) {
       addMessage("I could not understand that.", "bot-message");
@@ -1299,10 +1300,9 @@ async function handleAnswer(answer) {
     let planResult = await buildPlan(location, days);
 
     // KONTROL 1: Kullanıcı bu sırada "My Trips"ten başka geziye tıkladı mı?
-    // Eğer tıkladıysa loadTripFromStorage çalışmış ve __planGenerationId değişmiştir.
     if (currentGenId !== window.__planGenerationId) {
-        console.log(`[İPTAL] Plan oluşturuldu ama kullanıcı başka geziye geçti. (Eski ID: ${currentGenId}, Yeni ID: ${window.__planGenerationId})`);
-        return; // HİÇBİR ŞEY YAPMADAN ÇIK
+        console.log(`[İPTAL] Plan oluşturuldu ama kullanıcı başka geziye geçti.`);
+        return; // ÇIK
     }
 
     // 2. AŞAMA: Wiki Zenginleştirme
@@ -1324,9 +1324,17 @@ async function handleAnswer(answer) {
       // Başlığı şimdi güncelle (Güvenli zaman)
       window.lastUserQuery = `${location} trip plan`;
 
+      // --- BAŞARILI OLDUĞUNDA HAKKI DÜŞ ---
+      // (Burası önceki kodunda eksikti, ekledik)
+      if (typeof checkAndIncrementDailyLimit === 'function') {
+          checkAndIncrementDailyLimit(false); 
+      }
+      // ------------------------------------
+
       showResults();
       updateTripTitle();
-      insertTripAiInfo();
+      
+      if (typeof insertTripAiInfo === 'function') insertTripAiInfo();
 
       const inputWrapper = document.querySelector('.input-wrapper');
       if (inputWrapper) inputWrapper.style.display = 'none';
