@@ -1237,7 +1237,7 @@ async function handleAnswer(answer) {
   }
 
   const inputEl = document.getElementById("user-input");
-  const raw = (answer || "").toString().trim();
+
 
   // Suggestion kontrolü
   if (!window.__locationPickedFromSuggestions) {
@@ -4936,7 +4936,7 @@ async function updateCart() {
         if(typeof addNewDay === 'function') addNewDay(this); 
     };
     // --------------------------
-    
+
     cartDiv.appendChild(addNewDayButton);
 
 
