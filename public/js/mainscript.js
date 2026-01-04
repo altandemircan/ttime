@@ -1208,9 +1208,13 @@ async function handleAnswer(answer) {
   
   // 1. GÜNLÜK LİMİT KONTROLÜ (Sadece kontrol et, henüz düşme)
   if (typeof checkAndIncrementDailyLimit === 'function' && !checkAndIncrementDailyLimit(true)) {
-      addMessage("Günlük gezi planı oluşturma limitinize (5) ulaştınız. Yarın tekrar bekleriz! 🛑", "bot-message");
+      addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 🛑", "bot-message");
       return; 
   }
+
+  // === RAW DEĞİŞKENİNİ BURADA TANIMLIYORUZ (SİLMEYİN) ===
+  const raw = (answer || "").toString().trim();
+  // ======================================================
 
   // Suggestion kontrolü
   if (!window.__locationPickedFromSuggestions) {
@@ -1251,7 +1255,6 @@ async function handleAnswer(answer) {
 
   // EĞER GÜN SAYISI KIRPILDIYSA MESAJI GÖSTER
   if (isCapped) {
-      // Hafif gecikmeli gelsin, dikkat çeksin
       setTimeout(() => {
           addMessage("Note: The initial trip plan is limited to a maximum of 5 days. You can add more days later.", "bot-message");
       }, 600);
@@ -1318,7 +1321,6 @@ async function handleAnswer(answer) {
       window.lastUserQuery = `${location} trip plan`;
 
       // --- BAŞARILI OLDUĞUNDA HAKKI DÜŞ ---
-      // (Burası önceki kodunda eksikti, ekledik)
       if (typeof checkAndIncrementDailyLimit === 'function') {
           checkAndIncrementDailyLimit(false); 
       }
@@ -4921,8 +4923,8 @@ async function updateCart() {
     addNewDayButton.className = "add-new-day-btn";
     addNewDayButton.id = "add-new-day-button";
     addNewDayButton.textContent = "+ Add New Day";
-
-    // --- BURAYI GÜNCELLEYİN ---
+    
+    // --- GÜNCELLENMİŞ KISIM (İngilizce Uyarı) ---
     addNewDayButton.onclick = function () { 
         // Mevcut en büyük günü bul
         const currentMaxDay = window.cart && window.cart.length > 0 
@@ -4930,7 +4932,7 @@ async function updateCart() {
             : 1;
 
         if (currentMaxDay >= 10) {
-            alert("Bir gezi planı en fazla 10 gün olabilir.");
+            alert("A trip plan cannot exceed 10 days."); // <-- İngilizce Uyarı
             return;
         }
 
