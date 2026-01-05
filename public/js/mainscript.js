@@ -4524,12 +4524,12 @@ async function updateCart() {
         });
     }
 
-    // === EKLENECEK KOD BAŞLANGICI: AI Bölümünü Göster ===
+    // AI Bölümünü Göster
     const aiInfoSection = document.querySelector('.ai-info-section');
     if (aiInfoSection) {
-        aiInfoSection.style.display = ''; // Varsayılan görünümüne döndürür
+        aiInfoSection.style.display = ''; 
     }
-    // === EKLENECEK KOD SONU ===
+    
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
     const days = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b);
@@ -4635,13 +4635,11 @@ async function updateCart() {
         );
         const isEmptyDay = dayItemsArr.length === 0;
 
-        // ÖNEMLİ: Önce varolan container'ı DOM'dan tamamen kaldır (Güvenlik için)
         const existingContainer = document.getElementById(`day-container-${day}`);
         if (existingContainer) {
             existingContainer.remove();
         }
 
-        // Her zaman yeni container oluştur
         const dayContainer = document.createElement("div");
         dayContainer.className = "day-container";
         dayContainer.id = `day-container-${day}`;
@@ -4657,7 +4655,7 @@ async function updateCart() {
         titleSpan.textContent = window.customDayNames[day] || `Day ${day}`;
         titleContainer.appendChild(titleSpan);
         dayHeader.appendChild(titleContainer);
-        // createDayActionMenu fonksiyonu globalde olmalı
+        
         if (typeof createDayActionMenu === 'function') {
             dayHeader.appendChild(createDayActionMenu(day));
         }
@@ -4673,17 +4671,11 @@ async function updateCart() {
         dayList.className = "day-list";
         dayList.dataset.day = day;
 
-        // PATCH LOG
-        console.log("[PATCH ÖNÜ] isEmptyDay:", isEmptyDay, "day:", day, "window.cart:", window.cart);
-        console.log("[PATCH] dayList typeof:", typeof dayList, "nodeName:", dayList?.nodeName, "childCount:", dayList?.childElementCount);
-
-
         const containerId = `route-map-day${day}`;
         const travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "driving";
         const pairwiseSummaries = window.pairwiseRouteSummaries?.[containerId] || [];
         const points = dayItemsArr.map(it => it.location ? it.location : null).filter(Boolean);
 
-        // --- 1. SAYAÇ BAŞLAT (Her gün için 1'den başlar) ---
         let placeCounter = 1;
 
         for (let idx = 0; idx < dayItemsArr.length; idx++) {
@@ -4693,11 +4685,9 @@ async function updateCart() {
             const li = document.createElement("li");
             li.className = "travel-item";
 
-            // --- 2. NOTE ITEM CLASS ---
             if (item.category === "Note") {
                 li.classList.add("note-item");
             }
-            // --------------------------
 
             li.dataset.index = currIdx;
             if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
@@ -4705,25 +4695,22 @@ async function updateCart() {
                 li.setAttribute("data-lon", item.location.lng);
             }
 
-            // --- 3. MARKER MANTIĞI (Note ise N, Değilse Sayı) ---
             let markerLabel = "";
             let markerBgColor = ""; 
 
             if (item.category === "Note") {
                 markerLabel = "N";
-                markerBgColor = "#f57f17"; // Notlar için TURUNCU renk
+                markerBgColor = "#f57f17"; 
             } else {
                 markerLabel = placeCounter;
-                markerBgColor = "#d32f2f"; // Yerler için KIRMIZI renk
-                placeCounter++; // Sadece yer eklendiğinde sayacı artır
+                markerBgColor = "#d32f2f"; 
+                placeCounter++; 
             }
 
-            // --- 4. MARKER HTML ---
             const listMarkerHtml = `
                 <div class="custom-marker-outer">${markerLabel}</span>
                 </div>
             `;
-            // -------------------------------------------
 
             if (item.category === "Note") {
                 li.innerHTML = `
@@ -4763,7 +4750,6 @@ async function updateCart() {
           </div>
         `;
             } else {
-                // --- NORMAL YERLER (Places) ---
                 let openingHoursDisplay = "No working hours info";
                 if (item.opening_hours) {
                     if (Array.isArray(item.opening_hours)) {
@@ -4778,7 +4764,6 @@ async function updateCart() {
                     ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
                     : '<div class="map-error">Location not available</div>';
 
-                // Kategori ikonu bul (categoryIcons global objesinden)
                 const catIcon = (window.categoryIcons && window.categoryIcons[item.category]) 
                                 ? window.categoryIcons[item.category] 
                                 : 'img/location.svg';
@@ -4868,7 +4853,6 @@ async function updateCart() {
 
             dayList.appendChild(li);
 
-            // Separator (mesafe/süre) ayraçlarını doğru ekle!
             const nextItem = dayItemsArr[idx + 1];
             const hasNextLoc =
                 item.location &&
@@ -4879,35 +4863,29 @@ async function updateCart() {
                 typeof nextItem.location.lat === "number" &&
                 typeof nextItem.location.lng === "number";
 
-            // Travel mode kesin al
             const currentMode =
                 typeof getTravelModeForDay === "function"
                     ? String(getTravelModeForDay(day)).trim().toLowerCase()
-                    : "car"; // fallback
+                    : "car"; 
 
             if (hasNextLoc) {
                 let distanceStr = '';
                 let durationStr = '';
                 let prefix = '';
 
-                // Noktaları al
-                // Sadece şu iki noktanın Türkiye'de olup olmadığını kontrol etmek ideal
-                // areAllPointsInTurkey fonksiyonu globalde tanımlı olmalı
                 const isInTurkey = (typeof areAllPointsInTurkey === 'function') 
                                     ? areAllPointsInTurkey([item.location, nextItem.location])
                                     : false;
 
                 if (!isInTurkey) {
-                    // --- TÜRKİYE DIŞI: Auto generated ---
                     const ptA = item.location;
                     const ptB = nextItem.location;
                     const distM = haversine(ptA.lat, ptA.lng, ptB.lat, ptB.lng);
-                    const durSec = Math.round((distM / 1000) / 4 * 3600); // 4km/h yürüme hızı varsayımı
+                    const durSec = Math.round((distM / 1000) / 4 * 3600); 
                     distanceStr = distM >= 1000 ? (distM / 1000).toFixed(2) + " km" : Math.round(distM) + " m";
                     durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
                     prefix = `<span class="auto-generated-label" style="font-size:12px;margin-right:5px;">Auto generated</span>`;
                 } else {
-                    // --- TÜRKİYE İÇİ: Icon modları ---
                     const summary = pairwiseSummaries[idx];
                     if (summary && typeof summary.distance === "number" && typeof summary.duration === "number") {
                         distanceStr = summary.distance >= 1000
@@ -4925,7 +4903,6 @@ async function updateCart() {
                         durationStr = durSec >= 60 ? Math.round(durSec / 60) + " min" : Math.round(durSec) + " sec";
                     }
 
-                    // --- İKONLAR ---
                     if (currentMode === "driving" || currentMode === "car") {
                         prefix = `<img src="/img/way_car.svg" alt="Car">`;
                     } else if (currentMode === "bike" || currentMode === "cycling") {
@@ -4933,11 +4910,10 @@ async function updateCart() {
                     } else if (currentMode === "walk" || currentMode === "walking") {
                         prefix = `<img src="/img/way_walk.svg" alt="Walk">`;
                     } else {
-                        prefix = ''; // Diğer tiplerde ikon gösterme
+                        prefix = ''; 
                     }
                 }
 
-                // DOM separator ekle
                 const distanceSeparator = document.createElement('div');
                 distanceSeparator.className = 'distance-separator';
                 distanceSeparator.innerHTML = `
@@ -4953,12 +4929,9 @@ async function updateCart() {
 
         dayContainer.appendChild(dayList);
         
-        // PATCH: Travel-item ekledikten hemen sonra harita+rota kontrolleri koy
         if (typeof ensureDayMapContainer === 'function') ensureDayMapContainer(day);
         if (typeof initEmptyDayMap === 'function') initEmptyDayMap(day);
 
-        // --- COLLAGE (SLIDER) ÇAĞRISI ---
-        // Burada await kullanmıyoruz, asenkron çalışsın
         if (typeof window.renderDayCollage === 'function') {
             window.renderDayCollage(day, dayContainer, dayItemsArr);
         }
@@ -4968,19 +4941,12 @@ async function updateCart() {
             setTimeout(() => wrapRouteControls(day), 0);
         }
 
-        // --- Herhangi bir günde gerçek item varsa, tüm günlerde Add Category çıkar ---
         const anyDayHasRealItem = window.cart.some(i =>
             !i._starter && !i._placeholder && i.category !== "Note" && i.name
         );
         const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
-        // Buradaki butonu renderDayCollage fonksiyonu yönetiyor olabilir, 
-        // ancak listeyi oluştururken koymak garanti olur.
-        // Eğer photo_day_slider.js içindeki kod da ekliyorsa çakışma olmasın diye kontrol edelim.
-        // Ama en temizi listeyi oluştururken burada eklemektir.
-        
         if (anyDayHasRealItem && !hideAddCat) {
-            // Mevcut bir buton var mı kontrol et
             let existingBtn = dayList.querySelector('.add-more-btn');
             if (!existingBtn) {
                 const addMoreButton = document.createElement("button");
@@ -4988,9 +4954,6 @@ async function updateCart() {
                 addMoreButton.textContent = "+ Add Category";
                 addMoreButton.dataset.day = day;
                 addMoreButton.onclick = function () {
-                    // Önce eski içeriği temizle! (Kategori seçimi açarken)
-                    // const cartDiv = document.getElementById("cart-items");
-                    // if (cartDiv) cartDiv.innerHTML = "";
                     if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
                 };
                 dayList.appendChild(addMoreButton);
@@ -4998,7 +4961,7 @@ async function updateCart() {
         }
 
         cartDiv.appendChild(dayContainer);
-    } // End for loop (days)
+    } 
 
 
     // Tüm günler eklendikten sonra, EN ALTA ekle:
@@ -5009,36 +4972,41 @@ async function updateCart() {
     const addNewDayButton = document.createElement("button");
     addNewDayButton.className = "add-new-day-btn";
     addNewDayButton.id = "add-new-day-button";
-    addNewDayButton.textContent = "+ Add New Day";
     
-    // --- GÜNCELLENMİŞ KISIM (İngilizce Uyarı) ---
-    addNewDayButton.onclick = function () { 
-        // Mevcut en büyük günü bul
-        const currentMaxDay = window.cart && window.cart.length > 0 
-            ? Math.max(...window.cart.map(i => i.day || 1)) 
-            : 1;
+    // === YENİ 10 GÜN LİMİT KONTROLÜ (UI) ===
+    // En yüksek gün sayısını bul
+    const currentMaxDay = window.cart && window.cart.length > 0 
+        ? Math.max(...window.cart.map(i => i.day || 1)) 
+        : 1;
 
-        if (currentMaxDay >= 10) {
-            alert("A trip plan cannot exceed 10 days."); // <-- İngilizce Uyarı
-            return;
-        }
-
-        if(typeof addNewDay === 'function') addNewDay(this); 
-    };
-    // --------------------------
+    if (currentMaxDay >= 10) {
+        // PASİF DURUM (Limit Doldu)
+        addNewDayButton.textContent = "Max 10 Days Reached 🛑";
+        addNewDayButton.disabled = true;
+        addNewDayButton.style.opacity = "0.5";
+        addNewDayButton.style.cursor = "not-allowed";
+        addNewDayButton.style.backgroundColor = "#ccc"; // Görsel olarak grileştir
+    } else {
+        // AKTİF DURUM (Limit Dolmadı)
+        addNewDayButton.textContent = "+ Add New Day";
+        addNewDayButton.disabled = false;
+        addNewDayButton.onclick = function () { 
+             if(typeof addNewDay === 'function') addNewDay(this); 
+        };
+    }
+    // =======================================
 
     cartDiv.appendChild(addNewDayButton);
 
 
 
     // --- Diğer kalan işlemler ---
-// Note kategorisi hariç, sadece mekanları say
-const itemCount = window.cart.filter(i => 
-    i.name && 
-    !i._starter && 
-    !i._placeholder && 
-    i.category !== 'Note'
-).length;
+    const itemCount = window.cart.filter(i => 
+        i.name && 
+        !i._starter && 
+        !i._placeholder && 
+        i.category !== 'Note'
+    ).length;
 
     if (menuCount) {
         menuCount.textContent = itemCount;
@@ -5849,6 +5817,20 @@ function addNewDay(button) {
         });
     }
 
+    // === 10 GÜN LİMİT KONTROLÜ (YENİ EKLENEN KISIM) ===
+    if (maxDay >= 10) {
+        // Eğer fonksiyona buton öğesi gönderildiyse görselini değiştir
+        if (button) {
+            button.innerHTML = "Max 10 Days Reached 🛑";
+            button.disabled = true;
+            button.style.opacity = "0.6";
+            button.style.cursor = "not-allowed";
+        }
+        console.log("Max day limit (10) reached. Cannot add more.");
+        return; // Fonksiyondan çık, 11. günü ekleme
+    }
+    // ==================================================
+
     const newDay = maxDay + 1;
 
     // 2. Önceki günün son geçerli lokasyonunu bul
@@ -5879,7 +5861,7 @@ function addNewDay(button) {
     // Arayüzü güncelle
     if (typeof updateCart === "function") updateCart();
 
-    // 4. HARİTA ODAKLAMA DÜZELTMESİ (Konya Sorunu Çözümü)
+    // 4. HARİTA ODAKLAMA DÜZELTMESİ
     if (lastMarkerOfPrevDay) {
         setTimeout(() => {
             const mapId = `route-map-day${newDay}`;
@@ -5900,25 +5882,24 @@ function addNewDay(button) {
                 renderRouteForDay(newDay);
             }
 
-            // D) GARANTİ ODAKLAMA: Harita objesini bul ve manuel setView yap
+            // D) GARANTİ ODAKLAMA
             setTimeout(() => {
                 const mapInstance = window.leafletMaps && window.leafletMaps[mapId];
                 if (mapInstance && lastMarkerOfPrevDay.location) {
-                    // Leaflet'in "invalidateSize" fonksiyonu, harita boyutu değişimini algılar
                     mapInstance.invalidateSize(); 
                     
-                    // Doğrudan Konya koordinatına uçur
                     mapInstance.setView(
                         [lastMarkerOfPrevDay.location.lat, lastMarkerOfPrevDay.location.lng], 
                         14, 
                         { animate: false }
                     );
                 }
-            }, 150); // renderRouteForDay çalıştıktan hemen sonra
+            }, 150); 
 
         }, 250); 
     }
 }
+
 function addCoordinatesToContent() {
     document.querySelectorAll('.travel-item').forEach(item => {
         const contentDiv = item.querySelector('.content');
