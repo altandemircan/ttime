@@ -410,7 +410,7 @@ document.addEventListener('click', function(event) {
 document.addEventListener("DOMContentLoaded", function () {
     const chatInput = document.getElementById("user-input");
     const suggestionsDiv = document.getElementById("suggestions");
-    let selectedOption = null;
+    // let selectedOption = null;
 
 function showSuggestions() {
     if (!suggestionsDiv) return;
@@ -1021,15 +1021,15 @@ function debouncePreview(fn, wait=120){
 const debouncedUpdateCanonicalPreview = debouncePreview(updateCanonicalPreview, 140);
 let isFirstQuery = true; // Flag to track the first query
 
-function handleKeyPress(event) {
-  if (event.key !== "Enter") return;
-  if (window.isProcessing) {
-    event.preventDefault();
-    return;
-  }
-  sendMessage();
-  event.preventDefault();
-}
+// function handleKeyPress(event) {
+//   if (event.key !== "Enter") return;
+//   if (window.isProcessing) {
+//     event.preventDefault();
+//     return;
+//   }
+//   sendMessage();
+//   event.preventDefault();
+// }
 
 
 function extractCityAndDays(input) {
@@ -1535,13 +1535,13 @@ function hideTypingIndicator() {
 }
 
 
-document.addEventListener("DOMContentLoaded", function() {
-    const sendBtn = document.getElementById("send-button");
-    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+// document.addEventListener("DOMContentLoaded", function() {
+//     const sendBtn = document.getElementById("send-button");
+//     if (sendBtn) sendBtn.addEventListener("click", sendMessage);
 
-    const userInput = document.getElementById("user-input");
-    if (userInput) userInput.addEventListener("keypress", handleKeyPress);
-});
+//     const userInput = document.getElementById("user-input");
+//     if (userInput) userInput.addEventListener("keypress", handleKeyPress);
+// });
 
 
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
@@ -2645,11 +2645,11 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-document.getElementById("send-button").addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", handleKeyPress);
+// document.getElementById("send-button").addEventListener("click", sendMessage);
+//     userInput.addEventListener("keypress", handleKeyPress);
 
    
-});
+// });
 
 // Cache mekanizması eklendi
 // === BU KODU MEVCUT getCityCoordinates YERİNE YAPIŞTIRIN ===
@@ -4992,11 +4992,12 @@ async function updateCart() {
 
         newChat.onclick = function () {
             const chatBox = document.getElementById('chat-box');
-            if (chatBox) chatBox.innerHTML = '';
-            const userInput = document.getElementById('user-input');
+            if (chatBox) chatBox.innerHTML = ''; // Chat'i temizle
+            
+            const userInput = document.getElementById("user-input");
             if (userInput) userInput.value = '';
 
-            // Temizlik
+            // Temizlik İşlemleri
             window.selectedCity = null;
             window.selectedLocation = null;
             window.selectedLocationLocked = false;
@@ -5014,7 +5015,9 @@ async function updateCart() {
             } catch (e) {
                 console.warn('[collage] Token reset error:', e);
             }
+            
             if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+            
             window.routeElevStatsByDay = {};
             window.__ttElevDayCache = {};
             window._segmentHighlight = {};
@@ -5025,22 +5028,16 @@ async function updateCart() {
             document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
 
             if (typeof updateCart === "function") updateCart();
+            
             document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
             const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
             if (sidebar) sidebar.classList.add('open');
 
-            // --- BOT MESAJI VE INDIKATOR EKLENİYOR ---
+            // --- İPTAL EDİLDİ: "Let's get started" mesajı artık eklenmiyor ---
+            
+            // Sadece Typing Indicator yapısını (gizli olarak) ekleyelim ki 
+            // daha sonra showTypingIndicator çağırdığımızda hata vermesin.
             if (chatBox) {
-                // 1. Bot Mesajı (request-bot-message EKLENDİ)
-                const welcome = document.createElement('div');
-                welcome.className = 'message bot-message request-bot-message';
-                welcome.innerHTML = "<img src='img/avatar_aiio.png' alt='Bot Profile' class='profile-img'>Let's get started.";
-                chatBox.appendChild(welcome);
-
-                // *** KRİTİK EKLEME: Bot mesajının gösterildiğini sisteme bildir ***
-                window.__welcomeShown = true; 
-
-                // 2. Typing Indicator (En alta)
                 let indicator = document.getElementById('typing-indicator');
                 if (!indicator) {
                     indicator = document.createElement('div');
@@ -5049,18 +5046,17 @@ async function updateCart() {
                     indicator.innerHTML = '<span></span><span></span><span></span>';
                     chatBox.appendChild(indicator);
                 } else {
+                    // Varsa en sona taşı
                     chatBox.appendChild(indicator);
-                    indicator.innerHTML = '<span></span><span></span><span></span>';
                 }
                 indicator.style.display = 'none';
-
-                if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }
             }
 
             var iw = document.querySelector('.input-wrapper');
             if (iw) iw.style.display = '';
+
+            // Önerileri sıfırla
+            if (typeof showSuggestions === "function") showSuggestions(); 
 
             document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
                 el.classList.remove('selected-suggestion');
