@@ -857,80 +857,16 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 }
 
 
+// Global Değişkenler ve Element Seçimleri
+const chatBox = document.getElementById("chat-box");
+const userInput = document.getElementById("user-input");
 
+let latestTripPlan = []; // KRİTİK: Gezi verisi burada tutulur
 
-
-
-// // --- DİĞER FONKSİYONLAR ---
-// window.buildPlanFromSelection = function (days) {
-//     if (!window.selectedLocation) {
-//         alert("Please select a city!");
-//         return;
-//     }
-//     const loc = window.selectedLocation;
-//     console.log("Plan:", loc.city || loc.name, days, loc.lat, loc.lon, loc.country);
-// };
-
-
-
-
-
-    const surveyData = [
-        {
-            question: "Let's get started.",
-            options: [
-                { name: "Plan a 1-day tour for Rome" },
-                { name: "Do a 1-day city tour in Antalya" },
-                { name: "Do a 2-day city tour in Giresun" },
-            ]
-        },
-    ];
-
+// Başlangıç önerilerini göster
+if (typeof showSuggestions === 'function') {
     showSuggestions();
-
-    let currentQuestionIndex = 0;
-
-    const chatBox = document.getElementById("chat-box");
-    const userInput = document.getElementById("user-input");
-
-    let latestTripPlan = [];
-    let apiCallTimeout;
-
-    // function displayQuestion() {
-    //     if (currentQuestionIndex < surveyData.length) {
-    //         addMessage(surveyData[currentQuestionIndex].question, "bot-message");
-    //         showSuggestions();
-    //     } else {
-    //         addMessage("I’ve created a fantastic trip plan for you...", "bot-message");
-    //     }
-    //     console.log("displayQuestion called");
-
-    // }
-
-// async function limitDayRouteToMaxDistance(places, day, maxKm = 10) {
-//   if (places.length < 2) return places;
-//   let limitedPlaces = [...places];
-//   while (limitedPlaces.length > 1) {
-//     const coords = limitedPlaces.map(p => [p.lon, p.lat]);
-//     try {
-//       const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
-//       const url = buildDirectionsUrl(coordParam, day); // <-- day eklendi
-//       const response = await fetch(url);
-//       if (!response.ok) break;
-//       const data = await response.json();
-//       if (!data.routes || !data.routes[0]) break;
-//       const km = data.routes[0].distance / 1000;
-//       if (km <= maxKm) {
-//         return limitedPlaces;
-//       } else {
-//         limitedPlaces.pop();
-//       }
-//     } catch (e) {
-//       break;
-//     }
-//   }
-//   return limitedPlaces;
-// }
+}
 
 
 function parsePlanRequest(text) {
