@@ -7039,15 +7039,7 @@ async function expandMap(containerId, day) {
 
     if (window.expandedMaps && window.expandedMaps[containerId]) return;
 
-    if (expandedMapInstance) {
-    // Önce varsa eski click listener'ı temizle (üst üste binmemesi için)
-    expandedMapInstance.off('click', handleMapAIClick);
-    
-    // Yeni listener'ı ekle
-    expandedMapInstance.on('click', handleMapAIClick);
-    
-    console.log("🤖 AI Map Click Listener Attached");
-}
+
 
     if (window.expandedMaps) {
         Object.keys(window.expandedMaps).forEach(otherId => {
@@ -7359,6 +7351,15 @@ async function expandMap(containerId, day) {
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
     });
+
+  // === [CRITICAL FIX] AI CLICK LISTENER BURAYA EKLENMELİ ===
+    // Harita oluşturuldu, artık 'expandedMapInstance' kullanılabilir.
+    if (typeof handleMapAIClick === 'function') {
+        expandedMapInstance.off('click', handleMapAIClick); // Varsa eskisini temizle
+        expandedMapInstance.on('click', handleMapAIClick);  // Yenisini ekle
+        console.log("🤖 AI Map Click Listener Attached for Day:", day);
+    }
+    // ==========================================================
 
     // === [CRITICAL FIX] TILE LAYER AYARLAMA VE AGRESİF TEMİZLİK ===
     function setExpandedMapTile(styleKey) {
