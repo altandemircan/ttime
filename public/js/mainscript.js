@@ -5820,10 +5820,11 @@ function addNewDay(button) {
     if (maxDay >= 10) {
         // Eğer fonksiyona buton öğesi gönderildiyse görselini değiştir
         if (button) {
-            button.innerHTML = "Max 10 Days Reached 🛑";
+            button.innerHTML = "Max 10 Days Reached 😮";
             button.disabled = true;
             button.style.opacity = "0.6";
             button.style.cursor = "not-allowed";
+            button.style.color = "#e66a6a";
         }
         console.log("Max day limit (10) reached. Cannot add more.");
         return; // Fonksiyondan çık, 11. günü ekleme
