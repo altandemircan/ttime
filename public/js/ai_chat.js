@@ -252,7 +252,7 @@ document.addEventListener("DOMContentLoaded", function() {
         
         const infoDiv = document.createElement("div");
         infoDiv.className = "chat-info";
-        infoDiv.innerHTML = `<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <br><span style='font-size:0.8rem;opacity:0.7'>(Limit: ${MAX_MESSAGES_PER_CHAT} messages per chat)</span>`;
+        infoDiv.innerHTML = `<b>Mira AI:</b> Hello! Ask me anything about your trip plan. <span style='font-size:0.8rem;opacity:0.7'>(Limit: ${MAX_MESSAGES_PER_CHAT} messages per chat)</span>`;
         messagesDiv.appendChild(infoDiv);
 
         showChatScreen();
