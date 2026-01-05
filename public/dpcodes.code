@@ -1,1 +1,3 @@
 git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
+
+git checkout public/index.html && git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
