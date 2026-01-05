@@ -1286,7 +1286,7 @@ async function handleAnswer(answer) {
 
   if (isCapped) {
       setTimeout(() => {
-          addMessage("Note: The initial trip plan is limited to a maximum of 5 days. You can add more days later.", "bot-message");
+          addMessage("Note: The initial trip plan is limited to a maximum of 5 days. You can add more days later.", "bot-message request-bot-message");
       }, 600);
   }
 
