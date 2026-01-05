@@ -5348,7 +5348,6 @@ async function updateCart() {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-
 }
 
 function showRemoveItemConfirmation(index, btn) {
