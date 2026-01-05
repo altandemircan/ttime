@@ -2649,7 +2649,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //     userInput.addEventListener("keypress", handleKeyPress);
 
    
-// });
+});
 
 // Cache mekanizması eklendi
 // === BU KODU MEVCUT getCityCoordinates YERİNE YAPIŞTIRIN ===
