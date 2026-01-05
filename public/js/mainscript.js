@@ -2740,19 +2740,70 @@ document.getElementById("send-button").addEventListener("click", sendMessage);
 });
 
 // Cache mekanizması eklendi
+// === BU KODU MEVCUT getCityCoordinates YERİNE YAPIŞTIRIN ===
 async function getCityCoordinates(city) {
-    if (window.__cityCoordCache && window.__cityCoordCache.has(city)) {
-        return window.__cityCoordCache.get(city);
+    if (!city) return null;
+    
+    // 1. Şehir ismini standartlaştır (Küçük harf ve boşluk temizliği)
+    // Böylece "Rome", "rome" ve "Rome " aynı kabul edilir.
+    const normalize = (str) => str.trim().toLowerCase();
+    const key = normalize(city);
+    const STORAGE_KEY = 'city_coords_cache_v1';
+
+    // 2. Önce RAM'e (Hızlı Erişim) Bak
+    if (window.__cityCoordCache && window.__cityCoordCache.has(key)) {
+        console.log(`[GeoCache] RAM hit for: ${city}`);
+        return window.__cityCoordCache.get(key);
     }
-    const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.features && data.features.length > 0) {
-        const f = data.features[0];
-        const res = { lat: f.properties.lat, lon: f.properties.lon };
+
+    // 3. RAM'de yoksa, LocalStorage'a (Kalıcı Hafıza) Bak
+    let storedData = {};
+    try {
+        storedData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch(e) {
+        console.warn("[GeoCache] Storage parse error", e);
+    }
+
+    if (storedData[key]) {
+        console.log(`[GeoCache] Disk hit for: ${city}`);
+        // Bulduysak RAM'e de ekleyelim ki bu oturumda tekrar disk okuması yapmasın
         if (!window.__cityCoordCache) window.__cityCoordCache = new Map();
-        window.__cityCoordCache.set(city, res);
-        return res;
+        window.__cityCoordCache.set(key, storedData[key]);
+        return storedData[key];
+    }
+
+    // 4. Hiçbir yerde yoksa API'ye Git (Maliyetli İşlem)
+    console.log(`[GeoCache] API call for: ${city}`);
+    
+    // URL yapınızın mevcut kodunuzla aynı olduğundan emin olun
+    const url = `/api/geoapify/geocode?text=${encodeURIComponent(city)}&limit=1`;
+    
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`API Error: ${resp.status}`);
+        
+        const data = await resp.json();
+        if (data.features && data.features.length > 0) {
+            const f = data.features[0];
+            const res = { lat: f.properties.lat, lon: f.properties.lon };
+
+            // A) RAM'e Kaydet (Oturum süresince hızlı erişim)
+            if (!window.__cityCoordCache) window.__cityCoordCache = new Map();
+            window.__cityCoordCache.set(key, res);
+
+            // B) LocalStorage'a Kaydet (Kalıcı - Sayfa yenilense bile gitmez)
+            storedData[key] = res;
+            // LocalStorage dolarsa diye hata yakalama (Quota Exceeded koruması)
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(storedData));
+            } catch (storageErr) {
+                console.warn("[GeoCache] LocalStorage full, skipping save.");
+            }
+
+            return res;
+        }
+    } catch (err) {
+        console.error("Geocode error:", err);
     }
     return null;
 }
