@@ -2,41 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+
   <title>Triptime AI - New Generation Trip Planner, It's time to trip!</title>
 
   <!-- ======================================================
-       SEO (DEFAULT = PROD SAFE)
-       Stage zaten nginx + header ile bloklu
+       SEO (PROD)
   ======================================================= -->
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow">
-  <meta name="description" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-  <link rel="canonical" href="https://triptime.ai">
+
+  <meta name="description"
+        content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+
+  <!-- ⚠️ CANONICAL (FIXED - SLASH) -->
+  <link rel="canonical" href="https://triptime.ai/">
 
   <!-- ======================================================
-       OPEN GRAPH (PROD SAFE)
+       OPEN GRAPH
   ======================================================= -->
-  <meta property="og:url" content="https://triptime.ai">
+  <meta property="og:url" content="https://triptime.ai/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
-  <meta property="og:description" content="Create personalized travel plans with triptime.ai! Save time with AI-powered suggestions and easily plan your dream trip.">
-  <meta property="og:image" content="/img/og_image.png">
+  <meta property="og:title"
+        content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <meta property="og:description"
+        content="Create personalized travel plans with Triptime AI. Build routes, explore places on maps and plan trips using AI-powered recommendations.">
+  <meta property="og:image" content="https://triptime.ai/img/og_image.png">
   <meta property="og:image:width" content="800">
   <meta property="og:image:height" content="419"> 
 
+  <!-- ======================================================
+       TWITTER
+  ======================================================= -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta property="twitter:domain" content="triptime.ai">
-  <meta property="twitter:url" content="https://triptime.ai">
-  <meta name="twitter:title" content="Triptime AI - New Generation Trip Planner, It's time to trip!">
+  <meta name="twitter:domain" content="triptime.ai">
+  <meta name="twitter:url" content="https://triptime.ai/">
+  <meta name="twitter:title"
+        content="Triptime AI - New Generation Trip Planner, It's time to trip!">
 
   <!-- ======================================================
        LEAFLET & MAPLIBRE
   ======================================================= -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"/>
+  <link rel="stylesheet"
+        href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css">
   <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
 
   <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
@@ -44,7 +58,8 @@
   <!-- ======================================================
        ROUTING & CHARTS
   ======================================================= -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
   <script src="https://unpkg.com/lrm-openrouteservice/dist/lrm-openrouteservice.js"></script>
 
@@ -54,7 +69,8 @@
   <!-- ======================================================
        UI LIBRARIES
   ======================================================= -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -62,15 +78,15 @@
   <!-- ======================================================
        LOCAL FILES
   ======================================================= -->
-<link href="/css/styles.css?v=v=__BUILD__" rel="stylesheet">
+  <link href="/css/styles.css?v=__BUILD__" rel="stylesheet">
 
-<script src="/js/mainscript.js?v=v=__BUILD__"></script>
-<script src="/js/loading_trip.js?v=v=__BUILD__"></script>
-<script src="/js/photo_day_slider.js?v=v=__BUILD__"></script>
-<script src="/js/chat_trip_results.js?v=v=__BUILD__"></script>
-<script src="/js/start-map-buttons-init.js?v=v=__BUILD__" defer></script>
-<script src="/js/drag.js?v=v=__BUILD__" defer></script>
-<script src="/js/ai_chat.js?v=v=__BUILD__"></script>
+  <script src="/js/mainscript.js?v=__BUILD__"></script>
+  <script src="/js/loading_trip.js?v=__BUILD__"></script>
+  <script src="/js/photo_day_slider.js?v=__BUILD__"></script>
+  <script src="/js/chat_trip_results.js?v=__BUILD__"></script>
+  <script src="/js/start-map-buttons-init.js?v=__BUILD__" defer></script>
+  <script src="/js/drag.js?v=__BUILD__" defer></script>
+  <script src="/js/ai_chat.js?v=__BUILD__"></script>
 
   <!-- ======================================================
        FONTS
@@ -86,7 +102,7 @@
   <meta name="theme-color" content="#ffffff">
 
   <!-- ======================================================
-       GOOGLE ANALYTICS (PROD ONLY VIA DOMAIN)
+       GOOGLE ANALYTICS (PROD ONLY)
   ======================================================= -->
   <script>
     if (location.hostname === "triptime.ai") {
@@ -103,14 +119,9 @@
   </script>
 
   <!-- ======================================================
-       UI STATE STYLES + VISUALLY HIDDEN
+       VISUALLY HIDDEN SUPPORT
   ======================================================= -->
   <style>
-    #tt-about-us { display:none; }
-    #tt-about-us.active { display:block; } 
-    #tt-welcome { display:block; }
-
-
     .visually-hidden {
       position: absolute;
       width: 1px;
@@ -125,6 +136,7 @@
   </style>
 
 </head>
+
 
 <body>
 
