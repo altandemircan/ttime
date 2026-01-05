@@ -179,48 +179,53 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
 
 
+
+
+
+
+
+
+
+
+
+
 // =========================================================================
-// === AI MAP INTERACTION MODULE (WORLDWIDE & TABBED) ===
+// === NET VE BASİT: YER - İLÇE - İL (3 TABLI YAPI) ===
 // =========================================================================
 
-// 1. CSS STYLES (Dinamik olarak eklenir)
-(function addAIStyles() {
-    const styleId = 'tt-ai-popup-styles';
+// 1. CSS (Sade ve anlaşılır)
+(function addSimpleAIStyles() {
+    const styleId = 'tt-ai-simple-styles';
     if (document.getElementById(styleId)) return;
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        .ai-popup-container { font-family: 'Satoshi', sans-serif; min-width: 260px; max-width: 320px; }
-        .ai-header-title { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .ai-popup-simple { font-family: 'Satoshi', sans-serif; min-width: 280px; max-width: 320px; }
         
-        /* TABS */
-        .ai-tabs { display: flex; gap: 4px; margin-bottom: 10px; background: #f8fafc; padding: 3px; border-radius: 8px; }
-        .ai-tab-btn { 
-            flex: 1; border: none; background: transparent; padding: 6px 4px; 
-            font-size: 0.75rem; font-weight: 600; color: #64748b; 
-            cursor: pointer; transition: all 0.2s; border-radius: 6px;
+        /* TAB YAPISI */
+        .ai-simple-tabs { display: flex; border-bottom: 2px solid #f1f5f9; margin-bottom: 10px; }
+        .ai-simple-tab { 
+            flex: 1; border: none; background: none; padding: 8px 4px; 
+            font-size: 0.8rem; font-weight: 600; color: #94a3b8; 
+            cursor: pointer; transition: all 0.2s; border-bottom: 2px solid transparent; margin-bottom: -2px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .ai-tab-btn:hover { color: #8a4af3; background: rgba(138, 74, 243, 0.05); }
-        .ai-tab-btn.active { background: #fff; color: #8a4af3; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .ai-simple-tab:hover { color: #64748b; }
+        .ai-simple-tab.active { color: #8a4af3; border-bottom-color: #8a4af3; }
         
-        /* CONTENT */
-        .ai-content-box { min-height: 120px; font-size: 0.9rem; color: #334155; line-height: 1.5; }
-        .ai-loading { text-align: center; padding: 20px; color: #94a3b8; font-size: 0.8rem; }
-        .ai-error { color: #ef4444; font-size: 0.85rem; text-align: center; margin-top: 10px; background: #fef2f2; padding: 8px; border-radius: 6px; }
-        
-        /* INFO ITEMS */
-        .ai-info-item { margin-bottom: 8px; }
-        .ai-info-label { font-weight: 700; color: #475569; margin-right: 4px; }
-        .ai-footer { margin-top: 10px; font-size: 0.7rem; color: #cbd5e1; text-align: right; border-top: 1px solid #f1f5f9; padding-top: 6px; }
+        /* İÇERİK */
+        .ai-simple-content { min-height: 100px; font-size: 0.9rem; color: #334155; line-height: 1.5; }
+        .ai-simple-loading { padding: 20px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
+        .ai-info-row { margin-bottom: 6px; }
+        .ai-label { font-weight: 700; color: #475569; margin-right: 5px; }
+        .ai-simple-footer { margin-top: 8px; font-size: 0.7rem; color: #cbd5e1; text-align: right; }
     `;
     document.head.appendChild(style);
 })();
 
-// 2. DETAYLI KONUM ÇÖZÜCÜ (Global)
-async function getDetailedLocation(lat, lng) {
+// 2. KONUMU 3 PARÇAYA BÖL (Yer > İlçe > İl)
+async function getHierarchicalLocation(lat, lng) {
     try {
-        // Geoapify reverse geocoding
         const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}&limit=1`);
         if (!resp.ok) return null;
         
@@ -228,227 +233,167 @@ async function getDetailedLocation(lat, lng) {
         if (data.features && data.features.length > 0) {
             const props = data.features[0].properties;
             
-            // --- Akıllı Ayrıştırma (Global Standard) ---
+            // --- HİYERARŞİ MANTIĞI ---
             
-            // 1. Ülke (API'den ne gelirse)
+            // 1. ÖZEL YER (Bodrum Kalesi)
+            // Eğer name yoksa null döner, tab hiç oluşmaz.
+            let specific = props.name || null;
+            // Gereksiz sokak isimlerini filtrele (İsteğe bağlı, şimdilik net kalsın)
+            if (specific && (specific === props.street || /^\d/.test(specific))) specific = null;
+
+            // 2. İLÇE (Bodrum)
+            // Türkiye'de 'county', yurtdışında 'city' veya 'town' olabilir.
+            let district = props.county || props.town || props.suburb || "";
+            
+            // 3. İL (Muğla)
+            // Türkiye'de 'state', yurtdışında 'province' veya 'state'.
+            let province = props.state || props.province || props.city || ""; // City bazen il olur
+
+            // Çakışma düzeltme: İlçe ve İl aynıysa (Muğla Merkez gibi), ilçe boş kalsın veya 'Merkez' olsun.
+            if (district === province) district = "Merkez";
+
+            // Ülke (AI context için gerekli)
             const country = props.country || "";
 
-            // 2. Şehir / Eyalet / Bölge
-            // Bazı ülkelerde state, bazılarında city, bazılarında province asıl bölgedir.
-            let city = props.state || props.province || props.city || "";
-            
-            // 3. İlçe / Semt / Kasaba
-            let district = props.county || props.district || props.suburb || props.town || "";
-            
-            // Çakışma Kontrolü: İlçe ile Şehir aynıysa ilçeyi genel yap
-            if (district === city) district = "Center/Downtown";
-
-            // 4. Özel Yer İsmi (Specific Place)
-            let specificName = props.name || "";
-            
-            // Filtreleme: Sokak isimlerini veya anlamsız adresleri "Gezilecek Yer" gibi görme
-            // Eğer isim sokak adıyla aynıysa veya sadece numara içeriyorsa özel isim olarak alma.
-            if (!specificName || 
-                specificName === props.street || 
-                /^[\d\s\-\.]+$/.test(specificName) || // Sadece sayı
-                (props.address_line1 && specificName === props.address_line1)
-            ) {
-                specificName = null;
-            }
-
-            return {
-                specific: specificName, // Örn: "Eiffel Tower" (Yoksa null)
-                district: district,     // Örn: "7th Arrondissement"
-                city: city,             // Örn: "Paris"
-                country: country        // Örn: "France"
-            };
+            return { specific, district, province, country };
         }
-    } catch (e) {
-        console.error("Location fetch error:", e);
-    }
+    } catch (e) { console.error(e); }
     return null;
 }
 
-// 3. AI İSTEK YÖNETİCİSİ (Cache Mekanizmalı)
-const aiResponseCache = {}; 
+// 3. AI İSTEK FONKSİYONU
+const aiSimpleCache = {};
 
-async function fetchAIForTab(locationName, fullContext, containerDiv) {
-    // Cache Key: Sorgu + Ülke (Benzersiz olması için)
-    const cacheKey = fullContext; 
-
-    if (aiResponseCache[cacheKey]) {
-        containerDiv.innerHTML = aiResponseCache[cacheKey];
+async function fetchSimpleAI(queryName, fullContext, containerDiv) {
+    const cacheKey = fullContext;
+    
+    if (aiSimpleCache[cacheKey]) {
+        containerDiv.innerHTML = aiSimpleCache[cacheKey];
         return;
     }
 
-    // Loading State
     containerDiv.innerHTML = `
-        <div class="ai-loading">
-            <div class="spinner" style="display:inline-block; width:12px; height:12px; border:2px solid #e2e8f0; border-top-color:#8a4af3; border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom:8px;"></div>
-            <div>Consulting AI about<br><strong style="color:#64748b">${locationName}</strong>...</div>
+        <div class="ai-simple-loading">
+            <div class="spinner" style="display:inline-block; width:10px; height:10px; border:2px solid #ccc; border-top-color:#8a4af3; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+            <div style="margin-top:5px">Araştırılıyor: <b>${queryName}</b></div>
         </div>
     `;
 
     try {
-        // AI Endpoint'e İstek
-        // Context string'i (ör: "Eiffel Tower, Paris, France") city parametresine gönderiyoruz.
-        // Backend bu string'i kullanarak detaylı bilgi üretecek.
         const response = await fetch('/llm-proxy/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                city: fullContext, // "Specific Name, City, Country" formatında gider
-                country: ""        // Ülkeyi zaten fullContext içine gömdük, burayı boş bırakabiliriz veya tekrar gönderebiliriz.
-            })
+            body: JSON.stringify({ city: fullContext, country: "" }) 
         });
 
-        if (!response.ok) throw new Error("AI Service Busy");
-        const aiData = await response.json();
-
-        // Sonuç HTML'i
-        const htmlContent = `
-            <div style="animation: fadeIn 0.4s ease;">
-                <div class="ai-info-item">
-                    <span class="ai-info-label">📝 Summary:</span>
-                    <span>${aiData.summary || 'No summary available.'}</span>
-                </div>
-                ${aiData.tip ? `
-                <div class="ai-info-item">
-                    <span class="ai-info-label">💡 Tip:</span>
-                    <span>${aiData.tip}</span>
-                </div>` : ''}
-                ${aiData.highlight ? `
-                <div class="ai-info-item">
-                    <span class="ai-info-label">✨ Highlight:</span>
-                    <span>${aiData.highlight}</span>
-                </div>` : ''}
-            </div>
-        `;
+        const data = await response.json();
         
-        // Cache'e kaydet ve göster
-        aiResponseCache[cacheKey] = htmlContent;
-        containerDiv.innerHTML = htmlContent;
-
-    } catch (err) {
-        containerDiv.innerHTML = `
-            <div class="ai-error">
-                Could not retrieve info.<br>
-                <button onclick="this.parentElement.parentElement.innerHTML=''; fetchAIForTab('${locationName}', '${fullContext}', document.getElementById('${containerDiv.id}'))" style="background:none; border:none; color:#ef4444; text-decoration:underline; cursor:pointer; margin-top:4px;">Try Again</button>
+        const html = `
+            <div style="animation: fadeIn 0.3s ease;">
+                <div class="ai-info-row"><span class="ai-label">📝 Özet:</span>${data.summary || 'Bilgi yok.'}</div>
+                ${data.tip ? `<div class="ai-info-row"><span class="ai-label">💡 İpucu:</span>${data.tip}</div>` : ''}
+                ${data.highlight ? `<div class="ai-info-row"><span class="ai-label">✨ Popüler:</span>${data.highlight}</div>` : ''}
             </div>
         `;
+
+        aiSimpleCache[cacheKey] = html;
+        containerDiv.innerHTML = html;
+
+    } catch (e) {
+        containerDiv.innerHTML = `<div style="color:red; text-align:center; padding:10px;">Bağlantı hatası.</div>`;
     }
 }
 
-// 4. HARİTA TIKLAMA OLAYI (ANA FONKSİYON)
+// 4. TIKLAMA VE POPUP YÖNETİMİ
 async function handleMapAIClick(e) {
     const map = e.target;
-    const { lat, lng } = e.latlng;
+    
+    // A) Spinner Aç
+    const popup = L.popup({ maxWidth: 320 }).setLatLng(e.latlng)
+        .setContent('<div style="padding:10px; text-align:center;">Konum alınıyor...</div>')
+        .openOn(map);
 
-    // A) İlk Popup (Spinner)
-    const popup = L.popup({
-        maxWidth: 320,
-        className: 'ai-initial-popup'
-    })
-    .setLatLng([lat, lng])
-    .setContent(`
-        <div style="padding:12px; text-align:center; color:#64748b; font-family:'Satoshi', sans-serif;">
-            <div class="spinner" style="display:inline-block; width:10px; height:10px; border:2px solid #ccc; border-top-color:#8a4af3; border-radius:50%; animation:spin 1s linear infinite;"></div>
-            <span style="margin-left:8px; font-weight:600; font-size:0.85rem;">Identifying Location...</span>
-        </div>
-    `)
-    .openOn(map);
-
-    // B) Koordinat Çözümleme
-    const loc = await getDetailedLocation(lat, lng);
-
+    // B) Veriyi Çek
+    const loc = await getHierarchicalLocation(e.latlng.lat, e.latlng.lng);
+    
     if (!loc) {
-        popup.setContent('<div style="padding:10px; color:#ef4444; font-family:sans-serif;">Location not found in database.</div>');
+        popup.setContent('<div style="padding:10px; color:red;">Konum bulunamadı.</div>');
         return;
     }
 
-    // C) Tab Verilerini Hazırla
-    // Eğer özel bir yer ismi yoksa (Specific), ilk tab gösterilmeyecek.
-    const hasSpecific = !!loc.specific;
-    const countryStr = loc.country ? `, ${loc.country}` : '';
-    const cityStr = loc.city ? `, ${loc.city}` : '';
-
-    // D) HTML İskeleti Oluştur
-    const uniqueId = 'ai-ui-' + Date.now();
-    const contentBoxId = uniqueId + '-content';
+    // C) Tab Butonlarını Hazırla
+    // Context Mantığı: AI'ya "Bodrum Kalesi, Bodrum, Muğla" şeklinde tam adres gönderiyoruz.
     
-    // Tab Butonları HTML
-    let tabsHtml = '';
+    let tabsHTML = '';
+    let firstActiveTab = '';
     
-    // Tab 1: Specific (Varsa)
-    if (hasSpecific) {
-        tabsHtml += `<button class="ai-tab-btn active" data-context="${loc.specific}${cityStr}${countryStr}" data-label="${loc.specific}">📍 Spot</button>`;
+    // 1. Tab: ÖZEL YER (Varsa)
+    if (loc.specific) {
+        tabsHTML += `<button class="ai-simple-tab active" 
+            data-query="${loc.specific}" 
+            data-context="${loc.specific}, ${loc.district}, ${loc.province}, ${loc.country}">
+            📍 ${loc.specific}
+        </button>`;
+        firstActiveTab = 'specific';
     }
-    
-    // Tab 2: District (Varsa)
+
+    // 2. Tab: İLÇE (Varsa)
     if (loc.district) {
-        // Eğer Specific yoksa, District active olsun
-        const activeClass = !hasSpecific ? 'active' : '';
-        tabsHtml += `<button class="ai-tab-btn ${activeClass}" data-context="${loc.district}${cityStr}${countryStr}" data-label="${loc.district}">🏙️ District</button>`;
+        const isActive = !firstActiveTab ? 'active' : ''; 
+        if (!firstActiveTab) firstActiveTab = 'district';
+        
+        tabsHTML += `<button class="ai-simple-tab ${isActive}" 
+            data-query="${loc.district}" 
+            data-context="${loc.district}, ${loc.province}, ${loc.country}">
+            🏙️ ${loc.district}
+        </button>`;
     }
 
-    // Tab 3: City (Her zaman)
-    const cityActive = (!hasSpecific && !loc.district) ? 'active' : '';
-    const displayCity = loc.city || loc.country || "Region";
-    tabsHtml += `<button class="ai-tab-btn ${cityActive}" data-context="${loc.city}${countryStr}" data-label="${displayCity}">🌍 City</button>`;
+    // 3. Tab: İL (Her zaman)
+    const isCityActive = !firstActiveTab ? 'active' : '';
+    tabsHTML += `<button class="ai-simple-tab ${isCityActive}" 
+        data-query="${loc.province}" 
+        data-context="${loc.province}, ${loc.country}">
+        🌍 ${loc.province}
+    </button>`;
 
-    // Ana Popup İçeriği
-    const popupHTML = `
-        <div id="${uniqueId}" class="ai-popup-container">
-            <h3 class="ai-header-title" id="${uniqueId}-title">
-                ${hasSpecific ? '📍 ' + loc.specific : (loc.district ? '🏙️ ' + loc.district : '🌍 ' + loc.city)}
-            </h3>
-            
-            <div class="ai-tabs">
-                ${tabsHtml}
+    // D) Popup İçeriğini Oluştur
+    const uiID = 'ai-ui-' + Date.now();
+    const contentHTML = `
+        <div id="${uiID}" class="ai-popup-simple">
+            <div class="ai-simple-tabs">
+                ${tabsHTML}
             </div>
-            
-            <div id="${contentBoxId}" class="ai-content-box">
-                </div>
-            
-            <div class="ai-footer">AI Travel Assistant • ${loc.country || 'Global'}</div>
+            <div id="${uiID}-content" class="ai-simple-content"></div>
+            <div class="ai-simple-footer">AI Travel Assistant</div>
         </div>
     `;
 
-    popup.setContent(popupHTML);
+    popup.setContent(contentHTML);
 
-    // E) Etkileşim ve İlk Yükleme
-    // Popup render edildikten sonra çalışır
+    // E) Etkileşimi Başlat
     requestAnimationFrame(() => {
-        const container = document.getElementById(uniqueId);
-        if (!container) return;
+        const container = document.getElementById(uiID);
+        if(!container) return;
 
-        const contentDiv = document.getElementById(contentBoxId);
-        const titleDiv = document.getElementById(uniqueId + '-title');
-        const buttons = container.querySelectorAll('.ai-tab-btn');
+        const contentDiv = document.getElementById(uiID + '-content');
+        const buttons = container.querySelectorAll('.ai-simple-tab');
 
-        // Tab Tıklama Mantığı
         buttons.forEach(btn => {
             btn.onclick = (evt) => {
-                // Görsel güncelleme
+                // Tab değiştir
                 buttons.forEach(b => b.classList.remove('active'));
-                const target = evt.target;
-                target.classList.add('active');
-
-                // Başlığı güncelle
-                const label = target.getAttribute('data-label');
-                const icon = target.innerText.split(' ')[0]; // Emojiyi al
-                titleDiv.innerHTML = `${icon} ${label}`;
-
-                // İçeriği Çek
-                const context = target.getAttribute('data-context');
-                fetchAIForTab(label, context, contentDiv);
+                evt.target.classList.add('active');
+                
+                // Veri çek
+                const qName = evt.target.getAttribute('data-query');
+                const qContext = evt.target.getAttribute('data-context');
+                fetchSimpleAI(qName, qContext, contentDiv);
             };
         });
 
-        // Açılışta Aktif Olan Tab'ı Tetikle
-        const initialBtn = container.querySelector('.ai-tab-btn.active');
-        if (initialBtn) {
-            initialBtn.click();
-        }
+        // Açılışta ilk tabı tetikle
+        const activeBtn = container.querySelector('.ai-simple-tab.active');
+        if (activeBtn) activeBtn.click();
     });
 }
