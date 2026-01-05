@@ -176,3 +176,132 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         console.error("AI Error:", e);
     }
 };
+
+// === AI MAP INTERACTION START ===
+
+// 1. Koordinattan sadece Şehir ve Ülke bilgisini çeker
+// 1. Koordinattan Hiyerarşik Konum Bilgisi Çeker (Köy > İlçe > İl > Ülke)
+async function getCityFromCoordinates(lat, lng) {
+    try {
+        const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}&limit=1`);
+        if (!resp.ok) return null;
+        
+        const data = await resp.json();
+        if (data.features && data.features.length > 0) {
+            const props = data.features[0].properties;
+            
+            // --- HİYERARŞİ MANTIĞI ---
+            // Geoapify'den gelen verileri güvenli bir zincire oturtuyoruz.
+            
+            let parts = [];
+
+            // 1. ADIM: En alt birim (Köy, Mahalle veya Turistik Yer Adı)
+            // Eğer 'name' varsa ve bu bir sokak adı değilse (bazen cadde adı gelebilir, bunu engellemek lazım ama basit tutalım)
+            // Genelde 'suburb' (mahalle) veya 'village' daha güvenlidir.
+            if (props.name && props.name !== props.county && props.name !== props.city) {
+                 parts.push(props.name); 
+            }
+
+            // 2. ADIM: İlçe (County)
+            if (props.county) {
+                parts.push(props.county);
+            } else if (props.city && props.city !== props.state) {
+                // Bazen ilçe bilgisi 'city' içinde gelir
+                parts.push(props.city);
+            }
+
+            // 3. ADIM: İl / Eyalet (State)
+            if (props.state) {
+                // Eğer İlçe ismi ile İl ismi aynıysa (Örn: Denizli Merkez), tekrar ekleme.
+                const lastPart = parts[parts.length - 1];
+                if (lastPart !== props.state) {
+                    parts.push(props.state);
+                }
+            }
+
+            // 4. ADIM: Ülke
+            const country = props.country || "Turkey";
+            // Ülkeyi string'e eklemiyoruz, onu ayrı parametre olarak tutacağız ama
+            // AI'ya giden tam metinde kullanacağız.
+
+            // Sonuç String'i Oluştur: "Merkezefendi, Denizli" veya "Aksu, Isparta"
+            const fullLocationName = parts.join(", ");
+
+            return { 
+                name: fullLocationName, // Örn: "Şirince, Selçuk, İzmir"
+                country: country 
+            };
+        }
+    } catch (e) {
+        console.error("City fetch error:", e);
+    }
+    return null;
+}
+
+// 2. Harita Tıklama Olayı (Expanded Map için)
+// 2. Harita Tıklama Olayı (Güncellenmiş)
+async function handleMapAIClick(e) {
+    const map = e.target;
+    const { lat, lng } = e.latlng;
+
+    // A) Spinner Popup
+    const popup = L.popup()
+        .setLatLng([lat, lng])
+        .setContent(`
+            <div style="text-align:center; padding:10px; min-width:180px;">
+                <div class="spinner" style="display:inline-block; width:12px; height:12px; border:2px solid #ccc; border-top-color:#8a4af3; border-radius:50%; animation:spin 1s linear infinite;"></div>
+                <span style="margin-left:8px; font-weight:600; color:#555; font-size:0.9rem;">Konum Analiz Ediliyor...</span>
+            </div>
+        `)
+        .openOn(map);
+
+    // B) Hiyerarşik Konumu Bul
+    const locationData = await getCityFromCoordinates(lat, lng);
+    
+    if (!locationData || !locationData.name) {
+        popup.setContent('<div style="color:#d32f2f; padding:5px;">Konum bilgisi alınamadı.</div>');
+        return;
+    }
+
+    console.log("📍 AI Sorulacak Konum:", locationData.name, locationData.country);
+
+    // C) AI Servisine Sor
+    // Backend'de kod değişikliği yapmamak için 'city' parametresine
+    // "Merkezefendi, Denizli" gibi tam string'i gönderiyoruz.
+    try {
+        const response = await fetch('/llm-proxy/plan-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                city: locationData.name, // Örn: "Aksu, Antalya" gider
+                country: locationData.country 
+            })
+        });
+        
+        if (!response.ok) throw new Error("AI Busy");
+        const aiData = await response.json();
+
+        // D) Popup İçeriği
+        const aiContent = `
+            <div class="ai-map-popup" style="max-width:300px; font-family:'Satoshi', sans-serif;">
+                <h3 style="margin:0 0 10px 0; padding-bottom:8px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:6px; color:#1e293b; font-size:1rem;">
+                    📍 ${locationData.name}
+                </h3>
+                <div style="font-size:0.9rem; line-height:1.5; color:#475569;">
+                    <p style="margin-bottom:8px;"><b>📝 Özet:</b> ${aiData.summary || 'Özet bulunamadı.'}</p>
+                    <p style="margin-bottom:8px;"><b>💡 İpucu:</b> ${aiData.tip || 'İpucu yok.'}</p>
+                    <p style="margin:0;"><b>✨ Öne Çıkan:</b> ${aiData.highlight || ''}</p>
+                </div>
+                <div style="margin-top:8px; font-size:0.7rem; color:#94a3b8; text-align:right;">
+                    AI tarafından oluşturuldu
+                </div>
+            </div>
+        `;
+        popup.setContent(aiContent);
+
+    } catch (err) {
+        console.error(err);
+        popup.setContent('<div style="color:#d32f2f; padding:5px;">AI yanıt vermedi. Tekrar deneyin.</div>');
+    }
+}
+// === AI MAP INTERACTION END ===
