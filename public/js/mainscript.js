@@ -12114,6 +12114,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const inputEl = document.getElementById("user-input");
     if (inputEl) {
         inputEl.setAttribute("maxlength", "60"); // 61. karakteri yazmayı engeller
-        inputEl.setAttribute("placeholder", "Where do you want to go? (Max 60 chars)"); // İsterseniz placeholder'ı da güncelleyin
+        inputEl.setAttribute("placeholder", "Enter destination & duration (Max 60 chars)"); // İsterseniz placeholder'ı da güncelleyin
     }
 });
