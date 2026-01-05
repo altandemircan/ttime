@@ -1215,24 +1215,14 @@ async function handleAnswer(answer) {
   // Çift tıklama önlemi
   if (window.isProcessing) return;
 
-  // =================================================================
-  // 1. GÜNLÜK LİMİT KONTROLÜ (EN KRİTİK YER)
-  // =================================================================
+  // 1. GÜNLÜK LİMİT KONTROLÜ
   if (typeof checkAndIncrementDailyLimit === 'function' && !checkAndIncrementDailyLimit(true)) {
-      // SORUN ÇÖZÜMÜ BURADA:
-      // Eğer bir şekilde loading devreye girdiyse veya girmek üzereyse ZORLA KAPAT.
-      // loading_trip.js içindeki fonksiyonu çağırıp kilidi açıyoruz.
       if (typeof hideLoadingPanel === 'function') hideLoadingPanel(); 
       if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
-      
-      window.isProcessing = false; // İşlem kilidini manuel aç
-      
+      window.isProcessing = false; 
       addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 😊", "bot-message request-bot-message");
-      
-      // Ve fonksiyondan tamamen çık (Aşağıdaki animasyon kodları çalışmayacak)
       return; 
   }
-  // =================================================================
 
   const raw = (answer || "").toString().trim();
 
@@ -1247,7 +1237,6 @@ async function handleAnswer(answer) {
   const inputEl = document.getElementById("user-input");
   if (inputEl) inputEl.value = "";
 
-  // Input boş kontrolü
   if (!raw || raw.length < 2) {
     if (typeof hideLoadingPanel === 'function') hideLoadingPanel();
     if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
@@ -1255,21 +1244,15 @@ async function handleAnswer(answer) {
     return;
   }
 
-  // --------------------------------------------------------
-  // HER ŞEY YOLUNDA -> ANİMASYONU ARTIK BAŞLATABİLİRİZ
-  // --------------------------------------------------------
+  // --- ANİMASYON BAŞLAT ---
   window.isProcessing = true;
-  
-  // Loading Panelini (loading_trip.js) devreye sok
   if (typeof showLoadingPanel === 'function') showLoadingPanel();
-  // Chat baloncuğu animasyonunu başlat
   showTypingIndicator(); 
-  // --------------------------------------------------------
+  // ------------------------
 
   const currentGenId = Date.now();
   window.__planGenerationId = currentGenId; 
 
-  // Temizlik (Yeni gezi başlıyor)
   if (!window.activeTripKey) {
     window.directionsPolylines = {};
     window.routeElevStatsByDay = {};
@@ -1281,7 +1264,6 @@ async function handleAnswer(answer) {
     addMessage(raw, "user-message");
   }
 
-  // --- PARSE İŞLEMİ VE UYARI ---
   const { location, days, isCapped } = parsePlanRequest(raw);
 
   if (isCapped) {
@@ -1306,14 +1288,13 @@ async function handleAnswer(answer) {
       throw new Error("Invalid coords");
     }
 
-    // Overwrite Koruması
     if (window.activeTripKey && window.selectedCity) {
-         const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-         if (normalize(window.selectedCity) !== normalize(location)) {
-             console.log(`[handleAnswer] New city ${location}. Detaching from old trip.`);
-             window.activeTripKey = null; 
-             window.cart = [];
-         }
+          const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (normalize(window.selectedCity) !== normalize(location)) {
+              console.log(`[handleAnswer] New city ${location}. Detaching from old trip.`);
+              window.activeTripKey = null; 
+              window.cart = [];
+          }
     }
 
     window.selectedCity = location; 
@@ -1321,9 +1302,7 @@ async function handleAnswer(answer) {
     // 1. AŞAMA: Plan Oluşturma
     let planResult = await buildPlan(location, days);
 
-    // Kullanıcı vazgeçtiyse/değiştirdiyse çık
     if (currentGenId !== window.__planGenerationId) {
-        console.log(`[CANCEL] Plan generated but user switched context.`);
         return; 
     }
 
@@ -1331,11 +1310,9 @@ async function handleAnswer(answer) {
     planResult = await enrichPlanWithWiki(planResult);
 
     if (currentGenId !== window.__planGenerationId) {
-        console.log(`[CANCEL] Wiki finished but user switched context.`);
         return; 
     }
 
-    // BAŞARILI
     latestTripPlan = planResult;
 
     if (latestTripPlan && latestTripPlan.length > 0) {
@@ -1343,10 +1320,14 @@ async function handleAnswer(answer) {
       window.cart = JSON.parse(JSON.stringify(latestTripPlan));
       window.lastUserQuery = `${location} trip plan`;
 
-      // --- SAYAÇ DÜŞME (BAŞARILI OLDU) ---
       if (typeof checkAndIncrementDailyLimit === 'function') {
           checkAndIncrementDailyLimit(false); 
       }
+      
+      // === DEĞİŞİKLİK BURADA: Sonuçları basmadan önce animasyonu kapat ===
+      if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
+      if (typeof hideLoadingPanel === 'function') hideLoadingPanel();
+      // ==================================================================
       
       showResults();
       updateTripTitle();
@@ -1359,23 +1340,18 @@ async function handleAnswer(answer) {
       if (typeof openTripSidebar === "function") openTripSidebar();
     } else {
       addMessage("Could not create a plan.", "bot-message");
-      // Başarısız olsa bile loading'i kapatmak için throw ediyoruz
       throw new Error("Plan creation failed");
     }
   } catch (error) {
     console.error("Plan error:", error);
     
-    // Hata olduysa animasyonu mutlaka kapat
     if (typeof hideLoadingPanel === 'function') hideLoadingPanel();
     if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
     
-    // Kullanıcıya hata mesajı (eğer özel hata değilse)
     if (error.message !== "Invalid input" && error.message !== "Short location" && error.message !== "Invalid coords") {
          addMessage("An error occurred. Please try again.", "bot-message");
     }
   } finally {
-    // HER İHTİMALE KARŞI TEMİZLİK
-    // (Başarılı akışta showResults zaten kapatıyor ama garanti olsun)
     if (currentGenId === window.__planGenerationId) {
         if (!window.latestTripPlan || window.latestTripPlan.length === 0) {
              if (typeof hideLoadingPanel === 'function') hideLoadingPanel();
