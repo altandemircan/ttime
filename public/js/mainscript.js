@@ -1227,7 +1227,7 @@ async function handleAnswer(answer) {
       
       window.isProcessing = false; // İşlem kilidini manuel aç
       
-      addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 🛑", "bot-message request-bot-message");
+      addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 😊", "bot-message request-bot-message");
       
       // Ve fonksiyondan tamamen çık (Aşağıdaki animasyon kodları çalışmayacak)
       return; 
