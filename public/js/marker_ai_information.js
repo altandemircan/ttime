@@ -109,51 +109,16 @@ async function getHierarchicalLocation(lat, lng) {
 
 // marker_ai_information.js içindeki fetchNearbyPlaceNames fonksiyonu
 
-async function fetchNearbyPlaceNames(lat, lng) {
-  try {
-    const response = await fetch('/llm-proxy/nearby-ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat, lng })
-    });
-    
-    if (!response.ok) return [];
-    
-    const data = await response.json();
-    const places = [];
-    const usedNames = new Set();
-
-    // Veri null gelse bile patlamaması için güvenli erişim (?.)
-    const checkAndAdd = (obj, type) => {
-        if (obj?.name && !usedNames.has(obj.name)) {
-            places.push({ name: obj.name, type: type });
-            usedNames.add(obj.name);
-        }
-    };
-
-    checkAndAdd(data.settlement, "settlement");
-    checkAndAdd(data.nature, "nature");
-    checkAndAdd(data.historic, "historic");
-    
-    return places;
-    
-  } catch (error) {
-    console.error("Client error:", error);
-    return [];
-  }
-}
 async function fetchNearbyPlaces(lat, lng, containerId) {
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container) {
+        console.error("❌ [Nearby] Hata: Container bulunamadı!", containerId);
+        return;
+    }
 
-    // Paneli görünür yapalım ki yüklendiğini görelim
+    console.log(`🚀 [Nearby] İstek başlatıldı: Lat: ${lat}, Lng: ${lng}`);
     container.style.display = 'block';
-    container.innerHTML = `
-        <div class="ai-nearby-title">📍 Nearby Exploration:</div>
-        <div id="nearby-loading" style="color: #94a3b8; font-size: 0.75rem; padding: 10px; text-align: center;">
-            Searching surroundings...
-        </div>
-    `;
+    container.innerHTML = '<div class="ai-nearby-title">📍 Nearby Exploration:</div><div id="nearby-status">🔍 Searching...</div>';
 
     try {
         const response = await fetch('/llm/nearby-ai', {
@@ -162,43 +127,30 @@ async function fetchNearbyPlaces(lat, lng, containerId) {
             body: JSON.stringify({ lat, lng })
         });
 
+        console.log("📡 [Nearby] Sunucu yanıt kodu:", response.status);
         const data = await response.json();
-        const loadingDiv = document.getElementById('nearby-loading');
-        if (loadingDiv) loadingDiv.remove();
+        console.log("📦 [Nearby] Gelen Veri:", data);
 
-        // Veri kontrolü
-        if (data.settlement || data.nature || data.historic) {
-            const grid = document.createElement('div');
-            grid.className = 'ai-nearby-grid';
-            grid.style.cssText = "display: flex; flex-direction: column; gap: 8px; margin-top: 8px;";
+        const statusDiv = document.getElementById('nearby-status');
+        if (statusDiv) statusDiv.remove();
 
-            const items = [
-                { key: 'settlement', icon: '🏙️', label: 'Settlement' },
-                { key: 'nature', icon: '🌳', label: 'Nature/Parks' },
-                { key: 'historic', icon: '🏛️', label: 'Historic/Tourism' }
-            ];
-
-            items.forEach(item => {
-                if (data[item.key]) {
-                    const btn = document.createElement('button');
-                    btn.className = 'ai-nearby-btn';
-                    btn.style.cssText = "background: #1e293b; border: 1px solid #334155; color: white; padding: 8px; border-radius: 6px; text-align: left; cursor: pointer; font-size: 0.85rem;";
-                    btn.innerHTML = `<strong>${item.icon} ${item.label}:</strong> ${data[item.key].name}`;
-                    
-                    // Butona tıklandığında AI'ya sorsun
-                    btn.onclick = () => {
-                        alert(`${data[item.key].name} hakkında detaylı bilgi hazırlanıyor...`);
-                    };
-                    grid.appendChild(btn);
-                }
-            });
-            container.appendChild(grid);
+        if (data && (data.settlement || data.nature || data.historic)) {
+            let html = '<div class="ai-nearby-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">';
+            
+            if(data.settlement) html += `<button class="ai-nearby-btn" style="background:#1e293b; color:white; padding:8px; border-radius:5px; border:1px solid #334155;">🏙️ ${data.settlement.name}</button>`;
+            if(data.nature) html += `<button class="ai-nearby-btn" style="background:#1e293b; color:white; padding:8px; border-radius:5px; border:1px solid #334155;">🌳 ${data.nature.name}</button>`;
+            if(data.historic) html += `<button class="ai-nearby-btn" style="background:#1e293b; color:white; padding:8px; border-radius:5px; border:1px solid #334155;">🏛️ ${data.historic.name}</button>`;
+            
+            html += '</div>';
+            container.innerHTML += html;
+            console.log("✅ [Nearby] Butonlar basıldı.");
         } else {
-            container.innerHTML += '<div style="color: #ef4444; font-size: 0.75rem; padding: 5px;">No significant nearby places found.</div>';
+            console.warn("⚠️ [Nearby] Veri boş geldi veya beklenen formatta değil.");
+            container.innerHTML += '<div style="color: #94a3b8; font-size: 0.75rem;">No places found nearby.</div>';
         }
     } catch (err) {
-        console.error("Nearby Error:", err);
-        container.innerHTML = '<div style="color: #ef4444; font-size: 0.75rem;">Error loading nearby data.</div>';
+        console.error("❌ [Nearby] Fetch Hatası:", err);
+        container.innerHTML = '<div style="color: #ef4444; font-size: 0.75rem;">Failed to load nearby places.</div>';
     }
 }
 // 4. AI FETCH FUNCTION (AYNI)
