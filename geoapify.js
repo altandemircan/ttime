@@ -31,7 +31,7 @@ async function places({ categories, lon, lat, radius = 6000, limit = 10 }) {
   });
 }
 
-// YENİ: Bölgeye yakın şehirleri çek
+// Bölgeye yakın şehirleri çek
 async function nearbyCities({ lat, lon, radius = 80000, limit = 10 }) {
   return geoapifyGet("/v1/geocode/search", {
     lat,
@@ -39,7 +39,7 @@ async function nearbyCities({ lat, lon, radius = 80000, limit = 10 }) {
     type: "city",
     radius,
     limit
-  }); 
+  });
 }
 
 // YENİ: Yakın yerleri getir (3 kategori)
@@ -80,27 +80,9 @@ async function nearbyPlaces({ lat, lon, radius = 25000 }) {
   }
 }
 
-// Router'a endpoint ekle
-router.post('/api/geoapify/nearby-places', async (req, res) => {
-  const { lat, lng } = req.body;
-  
-  if (!lat || !lng) {
-    return res.status(400).json({ error: "lat and lng required" });
-  }
-  
-  try {
-    const result = await nearbyPlaces({ lat, lon: lng, radius: 25000 });
-    res.json(result);
-  } catch (error) {
-    console.error("Nearby places endpoint error:", error);
-    res.status(500).json({ error: "Failed to fetch nearby places" });
-  }
-});
-
-// Export'a ekle:
 module.exports = {
   autocomplete,
   places,
   nearbyCities,
-  nearbyPlaces  // YENİ EKLENEN
+  nearbyPlaces
 };
