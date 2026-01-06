@@ -85,8 +85,8 @@ async function getHierarchicalLocation(lat, lng) {
 // 3. AI FETCH FUNCTION (Aynı)
 const aiSimpleCache = {};
 
-async function fetchSimpleAI(queryName, city, country, containerDiv) {
-    const cacheKey = `${queryName}__${city}__${country}`;
+async function fetchSimpleAI(endpointType, queryName, city, country, containerDiv) {
+    const cacheKey = `${endpointType}__${queryName}__${city}__${country}`;
     
     if (aiSimpleCache[cacheKey]) {
         containerDiv.innerHTML = aiSimpleCache[cacheKey];
@@ -101,28 +101,43 @@ async function fetchSimpleAI(queryName, city, country, containerDiv) {
     `; 
 
     try {
-const response = await fetch('/llm-proxy/point-ai-info', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-// fullContext şu formatta geliyor: "Point, City, Country" veya "City, Country"
-// Biz point+city ayrı yollayalım (daha stabil)
-body: JSON.stringify({
-    point: queryName,
-    city,
-    country
-})
-       });
+const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
 
-        const data = await response.json();
+const body =
+    endpointType === 'city'
+        ? { city, country }                 // şehir özeti
+        : { point: queryName, city, country }; // nokta özeti
 
-const p1 = (data && typeof data.p1 === "string" && data.p1.trim().length > 0) ? data.p1.trim() : "Info not available.";
-const p2 = (data && typeof data.p2 === "string" && data.p2.trim().length > 0) ? data.p2.trim() : "Info not available.";
+const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+});
+const data = await response.json();
+
+const norm = (s) => (typeof s === "string" ? s.trim() : "");
+const isNoInfo = (s) => /^info not available\.?$/i.test(norm(s));
+
+let p1 = "Info not available.";
+let p2 = "";
+
+if (endpointType === 'city') {
+    // plan-summary -> 2 paragraf: summary + (tip ya da highlight)
+    p1 = norm(data.summary) || "Info not available.";
+    p2 = norm(data.tip) || norm(data.highlight) || "";
+} else {
+    // point-ai-info -> p1/p2
+    p1 = norm(data.p1) || "Info not available.";
+    p2 = norm(data.p2) || "";
+}
+
+if (isNoInfo(p2)) p2 = "";
 
 const html = `
     <div style="animation: fadeIn 0.3s ease;">
         <div class="ai-point-title">Point AI Info:</div>
         <p class="ai-point-p">${p1}</p>
-        <p class="ai-point-p">${p2}</p>
+        ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
     </div>
 `;
 
@@ -186,9 +201,10 @@ let tabsHTML = '';
 // TAB 1: Nokta (mekan) varsa
 if (loc.specific && loc.specific.trim().length > 0) {
     tabsHTML += `<button class="ai-simple-tab active"
-        data-query="${loc.specific}"
-        data-city="${loc.city}"
-data-country="${loc.country}">
+    data-endpoint="point"
+    data-query="${loc.specific}"
+    data-city="${loc.city}"
+    data-country="${loc.country}">
         📍 ${loc.specific}
     </button>`;
 }
@@ -198,6 +214,7 @@ const cityLabel = (loc.city && loc.city.trim().length > 0) ? loc.city : 'City';
 const isCityActive = tabsHTML === '' ? 'active' : '';
 
 tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
+    data-endpoint="city"
     data-query="${cityLabel}"
     data-city="${cityLabel}"
     data-country="${loc.country}">
@@ -233,8 +250,10 @@ tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
                 
                 const qName = evt.target.getAttribute('data-query');
                 const qCity = evt.target.getAttribute('data-city') || '';
+const qCity = evt.target.getAttribute('data-city') || '';
 const qCountry = evt.target.getAttribute('data-country') || '';
-fetchSimpleAI(qName, qCity, qCountry, contentDiv);
+const qEndpoint = evt.target.getAttribute('data-endpoint') || 'point';
+fetchSimpleAI(qEndpoint, qName, qCity, qCountry, contentDiv);
             };
         });
 
