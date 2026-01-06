@@ -49,6 +49,31 @@ async function getHierarchicalLocation(lat, lng) {
 
         const props = data.features[0].properties || {};
 
+console.log("[GEOAPIFY] reverse result:", {
+    lat, lng,
+    formatted: props.formatted,
+    name: props.name,
+    city: props.city,
+    county: props.county,
+    district: props.district,
+    city_district: props.city_district,
+    suburb: props.suburb,
+    municipality: props.municipality,
+    state: props.state,
+    state_district: props.state_district,
+    province: props.province,
+    region: props.region,
+    postcode: props.postcode,
+    street: props.street,
+    housenumber: props.housenumber,
+    country: props.country,
+    country_code: props.country_code,
+    lon: props.lon,
+    lat: props.lat,
+    // tamamen görmek için:
+    _all: props
+});
+
         const norm = (v) => (typeof v === "string" ? v.trim() : "");
         const looksLikeRegion = (v) => /region|bölgesi|bolgesi/i.test(norm(v));
 
@@ -59,16 +84,18 @@ async function getHierarchicalLocation(lat, lng) {
         if (specific && (specific === street || /^\d/.test(specific))) specific = null;
 
         // 2) Şehir/il (bölgeyi filtrele)
-        let city =
-            norm(props.city) ||
-            norm(props.state_district) ||
-            norm(props.province) ||
-            "";
-
         const state = norm(props.state);
-        if (!city && state && !looksLikeRegion(state)) city = state;
 
-        if (city && looksLikeRegion(city)) city = "";
+// Önce il seviyesini yakalamaya çalış (Antalya genelde state olur)
+// (Ama "Mediterranean Region" gibi region ise alma)
+let city =
+    (!looksLikeRegion(state) ? state : "") ||
+    norm(props.state_district) ||
+    norm(props.province) ||
+    norm(props.city) ||   // en son: bazen ilçe (Kepez) gelebiliyor
+    "";
+
+if (looksLikeRegion(city)) city = "";
 
         const country = norm(props.country) || "";
 
