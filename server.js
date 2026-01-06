@@ -65,7 +65,26 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
-
+app.post('/api/geoapify/nearby-places', async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng required' });
+    }
+    
+    const data = await geoapify.nearbyPlaces({
+      lat: parseFloat(lat),
+      lon: parseFloat(lng),
+      radius: 25000
+    });
+    
+    res.json(data);
+  } catch (e) {
+    console.error('[Nearby Places] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // --- BURAYA EKLE --- //
 

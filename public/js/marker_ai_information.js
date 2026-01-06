@@ -109,6 +109,7 @@ async function getHierarchicalLocation(lat, lng) {
 
 // 3. YAKIN YERLERİ GETİR (SADECE İSİMLER - AI YOK)
 // 3. YAKIN YERLERİ GETİR (SADECE İSİMLER - AI YOK)
+// fetchNearbyPlaceNames fonksiyonunu güncelle:
 async function fetchNearbyPlaceNames(lat, lng) {
   try {
     const response = await fetch('/api/geoapify/nearby-places', {
@@ -117,56 +118,24 @@ async function fetchNearbyPlaceNames(lat, lng) {
       body: JSON.stringify({ lat, lng })
     });
     
-    if (!response.ok) {
-      throw new Error('Nearby places fetch failed');
-    }
+    if (!response.ok) return [];
     
     const data = await response.json();
-    
     const places = [];
     
-    // Yerleşim yeri
     if (data.settlement && data.settlement.name) {
-      places.push({
-        name: data.settlement.name,
-        type: "settlement",
-        formatted: data.settlement.formatted || ""
-      });
+      places.push({ name: data.settlement.name, type: "settlement" });
     }
-    
-    // Doğa
     if (data.nature && data.nature.name) {
-      places.push({
-        name: data.nature.name,
-        type: "nature",
-        formatted: data.nature.formatted || ""
-      });
+      places.push({ name: data.nature.name, type: "nature" });
     }
-    
-    // Tarihi
     if (data.historic && data.historic.name) {
-      places.push({
-        name: data.historic.name,
-        type: "historic",
-        formatted: data.historic.formatted || ""
-      });
-    }
-    
-    // Eğer hiç yer yoksa, fallback göster
-    if (places.length === 0) {
-      console.warn("No nearby places found, using fallback");
-      return [
-        { name: "Karasu Köyü", type: "settlement", formatted: "" },
-        { name: "ABC Şelalesi", type: "nature", formatted: "" },
-        { name: "XYZ Antik Kenti", type: "historic", formatted: "" }
-      ];
+      places.push({ name: data.historic.name, type: "historic" });
     }
     
     return places;
-    
   } catch (error) {
     console.error("Nearby places error:", error);
-    // Hata durumunda boş döndür, butonlar gözükmez
     return [];
   }
 }
@@ -428,48 +397,3 @@ async function handleMapAIClick(e) {
 
 // geoapify.js dosyasının sonuna ekle:
 
-// YENİ: Yakın yerleri getir (3 kategori)
-async function nearbyPlaces({ lat, lon, radius = 25000 }) {
-  try {
-    // 1. Yerleşim
-    const settlement = await geoapifyGet("/v2/places", {
-      categories: "place.city,place.town,place.village,place.suburb",
-      filter: `circle:${lon},${lat},${radius}`,
-      limit: 1,
-      bias: `proximity:${lon},${lat}`
-    });
-
-    // 2. Doğa
-    const nature = await geoapifyGet("/v2/places", {
-      categories: "natural,leisure.park,beach",
-      filter: `circle:${lon},${lat},${radius}`,
-      limit: 1,
-      bias: `proximity:${lon},${lat}`
-    });
-
-    // 3. Tarihi
-    const historic = await geoapifyGet("/v2/places", {
-      categories: "historic,heritage,tourism.attraction,tourism.museum",
-      filter: `circle:${lon},${lat},${radius}`,
-      limit: 1,
-      bias: `proximity:${lon},${lat}`
-    });
-
-    return {
-      settlement: settlement.features?.[0]?.properties || null,
-      nature: nature.features?.[0]?.properties || null,
-      historic: historic.features?.[0]?.properties || null
-    };
-  } catch (error) {
-    console.error("Nearby places error:", error);
-    return { settlement: null, nature: null, historic: null };
-  }
-}
-
-// Export'a ekle:
-module.exports = {
-  autocomplete,
-  places,
-  nearbyCities,
-  nearbyPlaces  // YENİ
-};
