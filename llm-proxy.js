@@ -137,45 +137,32 @@ max_tokens: 200
 });
 
 
-/// --- ENDPOINT: POINT AI INFO (Hata Giderilmiş Versiyon) ---
+// --- ENDPOINT: POINT AI INFO ---
 router.post('/point-ai-info', async (req, res) => {
     const { point, city, country, facts } = req.body;
     if (!point || !city) return res.status(400).send('point and city are required');
 
-    const cacheKey = `POINTAI:${point}__${city}__${country || ""}`;
-    if (aiCache[cacheKey]) {
-        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
-            try { return res.json(await aiCache[cacheKey].promise); } catch { delete aiCache[cacheKey]; }
-        }
-    }
+    const cacheKey = `POINTAI:${point}__${city}`;
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
 
     const processingPromise = (async () => {
-        const context = country ? `${city}, ${country}` : city;
-        const safeFacts = JSON.stringify(facts || {}).slice(0, 3000);
-        const prompt = `ENGLISH only. Factual. POINT: "${point}", CITY: "${context}". FACTS: ${safeFacts}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
+        const factsJson = JSON.stringify(facts || {}).slice(0, 3000);
+        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
                 model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json",
-                options: { temperature: 0.1, num_predict: 180 }
+                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
             }, { timeout: 45000 });
             
-            const content = response.data?.message?.content || "{}";
-            const parsed = JSON.parse(content);
-
-            // [object Object] hatasını önleyen garanti çevirici
+            const parsed = JSON.parse(response.data.message.content || "{}");
             const ensureStr = (v) => {
                 if (!v) return "Info not available.";
                 if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
                 return String(v).trim();
             };
-
             return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
-        } catch (err) {
-            return { p1: "Info not available.", p2: "Info not available." };
-        }
+        } catch (err) { return { p1: "Info not available.", p2: "" }; }
     })();
 
     aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
@@ -183,33 +170,24 @@ router.post('/point-ai-info', async (req, res) => {
         const result = await processingPromise;
         aiCache[cacheKey] = { status: 'done', data: result };
         saveCacheToDisk();
-        res.setHeader('Access-Control-Allow-Origin', '*');
         res.json(result);
-    } catch (error) {
-        delete aiCache[cacheKey];
-        res.status(500).json({ error: 'AI Error' });
-    }
+    } catch (e) { res.status(500).json({ error: "AI Error" }); }
 });
 
+// --- ENDPOINT: NEARBY AI (Sadece Geoapify) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
     if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).send('lat/lng required');
 
     try {
         const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        const proximity = `${lng},${lat}`;
+        if (!GEOAPIFY_KEY) return res.status(500).send("GEOAPIFY_KEY missing");
 
-        const fetchPlaces = async (categories) => {
-            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${proximity},25000&bias=proximity:${proximity}&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        const fetchPlaces = async (cats) => {
+            const url = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
             const r = await axios.get(url, { timeout: 10000 });
-            const f = r.data?.features?.[0];
-            if (!f) return null;
-            
-            // İsim yoksa city veya suburb kullan, o da yoksa Unknown deme boş dön
-            const name = f.properties.name || f.properties.city || f.properties.suburb;
-            if (!name) return null;
-
-            return { name, facts: f.properties };
+            const f = r.data?.features?.[0]?.properties;
+            return f ? { name: f.name || f.city || f.formatted, facts: f } : null;
         };
 
         const [s, n, h] = await Promise.all([
@@ -217,11 +195,8 @@ router.post('/nearby-ai', async (req, res) => {
             fetchPlaces("natural,leisure.park,beach"),
             fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
         ]);
-
         res.json({ settlement: s, nature: n, historic: h });
-    } catch (e) {
-        res.status(500).json({ error: "Geoapify error" });
-    }
+    } catch (e) { res.status(500).send("Geoapify error"); }
 });
 
 // Chat stream (SSE) endpoint
