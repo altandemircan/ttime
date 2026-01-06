@@ -210,16 +210,16 @@ router.post('/nearby-ai', async (req, res) => {
             const resp = await axios.get(url, { timeout: 10000 });
             const features = resp.data?.features || [];
             // Sadece gerçek bir "name" içeren POI çek!
-            const validPlace = features.find(f =>
-                f.properties && typeof f.properties.name === "string" && f.properties.name.trim().length > 0
-            );
-            if (validPlace) {
-                return {
-                    name: validPlace.properties.name,
-                    facts: validPlace.properties
-                };
-            }
-            return null;
+            const validPlaces = features
+    .filter(f => f.properties && typeof f.properties.name === "string" && f.properties.name.trim().length > 0)
+    .slice(0, 3); // 3 tane gösterelim
+if (validPlaces.length > 0) {
+    return validPlaces.map(f => ({
+        name: f.properties.name,
+        facts: f.properties
+    }));
+}
+return [];
         } catch (error) {
             console.error(`[NEARBY AI] Error for ${categories}:`, error?.message);
             return null;
@@ -228,11 +228,15 @@ router.post('/nearby-ai', async (req, res) => {
 
     try {
         const [settlement, nature, historic] = await Promise.all([
-            fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
-            fetchCategory('natural.water,beach,leisure.park,tourism.national_park,natural.mountain,natural.forest,tourism.viewpoint,tourism.attraction', 20000),
-            fetchCategory('historic,heritage.unesco,archaeological_site,castle,memorial,museum,place_of_worship,fort,ruins', 25000)
-        ]);
-        res.json({ settlement, nature, historic });
+    fetchCategory('x', 15000),
+    fetchCategory('y', 20000),
+    fetchCategory('z', 25000)
+]);
+res.json({ 
+    settlement: settlement || [],
+    nature: nature || [],
+    historic: historic || []
+});
     } catch (e) {
         console.error('[NEARBY AI] General Error:', e);
         res.status(500).json({ error: 'Backend failure', detail: e.message });
