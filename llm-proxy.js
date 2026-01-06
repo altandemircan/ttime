@@ -177,12 +177,9 @@ router.post('/point-ai-info', async (req, res) => {
 });
 
 
-// --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
-// --- ENDPOINT:  NEARBY AI (FIXED VERSION) ---
-// --- ENDPOINT: NEARBY AI (FIXED VERSION - NO HIDDEN SPACES) ---
-// --- ENDPOINT: NEARBY AI (FIXED VERSION) ---
+// --- ENDPOINT:  NEARBY AI (TAMAMEN DÜZELTİLMİŞ VERSİYON) ---
 router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng } = req. body;
+    const { lat, lng } = req.body;
 
     // 1. Koordinat Kontrolü
     if (!lat || !lng) {
@@ -191,7 +188,7 @@ router.post('/nearby-ai', async (req, res) => {
     }
 
     // 2. API Key Kontrolü
-    const apiKey = process.env. GEOAPIFY_KEY;
+    const apiKey = process.env.GEOAPIFY_KEY;
     if (!apiKey) {
         console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined! ');
         return res.status(500).json({ 
@@ -202,38 +199,46 @@ router.post('/nearby-ai', async (req, res) => {
 
     console.log(`[NEARBY AI] 🔍 Searching nearby:  lat=${lat}, lng=${lng}`);
 
-    // 3. Yardımcı Fonksiyon: Kategoriden en iyi sonucu bul
+    // 3. Yardımcı Fonksiyon:  Kategoriden en iyi sonucu bul
     const fetchCategory = async (categories, radius) => {
-        // KRITIK:  URL'de HİÇ BOŞLUK OLMAMALI! 
-        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle: ${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
+        // KRİTİK: URL'de HİÇBİR BOŞLUK YOK - Template literal kullanılmıyor
+        const baseUrl = 'https://api.geoapify.com/v2/places';
+        const params = new URLSearchParams({
+            categories: categories,
+            filter: `circle:${lng},${lat},${radius}`,
+            bias: `proximity:${lng},${lat}`,
+            limit: '5',
+            apiKey: apiKey
+        });
         
-        console.log(`[NEARBY AI] Fetching: ${categories} (radius: ${radius}m)`);
-        console.log(`[NEARBY AI] URL: ${url. replace(apiKey, 'HIDDEN')}`);
+        const url = `${baseUrl}?${params. toString()}`;
+        
+        console.log(`[NEARBY AI] Fetching:  ${categories} (radius: ${radius}m)`);
         
         try {
             const response = await axios.get(url, { timeout: 10000 });
-            const features = response.data?.features || [];
+            const features = response.data?. features || [];
 
             console.log(`[NEARBY AI] Got ${features.length} features for ${categories}`);
 
             // İsmi olan ilk geçerli yeri bul
-            const validPlace = features. find(f => 
-                f.properties && (f.properties. name || f.properties.formatted)
+            const validPlace = features.find(f => 
+                f.properties && (f.properties.name || f. properties.formatted)
             );
 
             if (validPlace) {
                 const result = {
-                    name: validPlace.properties.name || validPlace. properties.city || "Unknown Place",
-                    facts: validPlace. properties
+                    name: validPlace.properties.name || validPlace.properties.city || "Unknown Place",
+                    facts: validPlace.properties
                 };
-                console. log(`[NEARBY AI] ✅ Found ${categories}: ${result.name}`);
+                console.log(`[NEARBY AI] ✅ Found ${categories}:  ${result.name}`);
                 return result;
             }
             
             console.log(`[NEARBY AI] ⚠️ No named results for ${categories}`);
             return null;
         } catch (error) {
-            console.error(`[NEARBY AI] ❌ Error fetching ${categories}: `, error.message);
+            console.error(`[NEARBY AI] ❌ Error fetching ${categories}:`, error.message);
             if (error.response) {
                 console.error(`[NEARBY AI] Response status: ${error.response.status}`);
                 console.error(`[NEARBY AI] Response data: `, error.response.data);
@@ -243,11 +248,11 @@ router.post('/nearby-ai', async (req, res) => {
     };
 
     try {
-        // 4. Paralel Sorgular
+        // 4. Paralel Sorgular - KATEGORİLERDE BOŞLUK YOK
         const [settlement, nature, historic] = await Promise.all([
-            fetchCategory("place.city,place. town,place.suburb,place. village", 15000),
-            fetchCategory("natural,leisure.park,beach,water,tourism.attraction", 20000),
-            fetchCategory("historic,tourism.attraction,tourism.museum,building.historic,tourism.sights", 25000)
+            fetchCategory('place. city,place.town,place.suburb,place.village', 15000),
+            fetchCategory('natural,leisure. park,beach,water,tourism. attraction', 20000),
+            fetchCategory('historic,tourism.attraction,tourism.museum,building. historic,tourism.sights', 25000)
         ]);
 
         const result = { settlement, nature, historic };
