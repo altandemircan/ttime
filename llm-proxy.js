@@ -143,41 +143,52 @@ router.post('/point-ai-info', async (req, res) => {
     if (!point || !city) return res.status(400).send('point and city are required');
 
     const cacheKey = `POINTAI:${point}__${city}__${country || ""}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+    if (aiCache[cacheKey]) {
+        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try { return res.json(await aiCache[cacheKey].promise); } catch { delete aiCache[cacheKey]; }
+        }
+    }
 
     const processingPromise = (async () => {
         const context = country ? `${city}, ${country}` : city;
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3000);
-        const prompt = `ENGLISH only. Factual travel guide. POINT: "${point}", CITY: "${context}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"short description", "p2":"practical info string"}.`;
-
+        const safeFacts = JSON.stringify(facts || {}).slice(0, 3000);
+        const prompt = `ENGLISH only. Factual. POINT: "${point}", CITY: "${context}". FACTS: ${safeFacts}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
                 model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
                 stream: false, format: "json",
-                options: { temperature: 0.1, num_predict: 150 }
-            }, { timeout: 40000 });
-
-            const parsed = JSON.parse(response.data.message.content || "{}");
+                options: { temperature: 0.1, num_predict: 180 }
+            }, { timeout: 45000 });
             
-            // [object Object] HATASINI ÖNLEYEN KISIM
-            const ensureString = (val) => {
-                if (!val) return "Info not available.";
-                if (typeof val === 'object') return JSON.stringify(val).replace(/[{}"]/g, ' ');
-                return String(val).trim() || "Info not available.";
+            const content = response.data?.message?.content || "{}";
+            const parsed = JSON.parse(content);
+
+            // [object Object] hatasını önleyen garanti çevirici
+            const ensureStr = (v) => {
+                if (!v) return "Info not available.";
+                if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
+                return String(v).trim();
             };
 
-            return { p1: ensureString(parsed.p1), p2: ensureString(parsed.p2) };
+            return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
         } catch (err) {
             return { p1: "Info not available.", p2: "Info not available." };
         }
     })();
 
     aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    const result = await processingPromise;
-    aiCache[cacheKey] = { status: 'done', data: result };
-    saveCacheToDisk();
-    res.json(result);
+    try {
+        const result = await processingPromise;
+        aiCache[cacheKey] = { status: 'done', data: result };
+        saveCacheToDisk();
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.json(result);
+    } catch (error) {
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'AI Error' });
+    }
 });
 
 router.post('/nearby-ai', async (req, res) => {
@@ -193,10 +204,12 @@ router.post('/nearby-ai', async (req, res) => {
             const r = await axios.get(url, { timeout: 10000 });
             const f = r.data?.features?.[0];
             if (!f) return null;
-            return {
-                name: f.properties.name || f.properties.city || f.properties.suburb || "Unknown",
-                facts: f.properties // Point AI Info'nun kullanabilmesi için tüm datayı gönderiyoruz
-            };
+            
+            // İsim yoksa city veya suburb kullan, o da yoksa Unknown deme boş dön
+            const name = f.properties.name || f.properties.city || f.properties.suburb;
+            if (!name) return null;
+
+            return { name, facts: f.properties };
         };
 
         const [s, n, h] = await Promise.all([
