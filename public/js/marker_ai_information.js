@@ -249,7 +249,7 @@ tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
                 evt.target.classList.add('active');
                 
                 const qName = evt.target.getAttribute('data-query');
-                const qCity = evt.target.getAttribute('data-city') || '';
+                
 const qCity = evt.target.getAttribute('data-city') || '';
 const qCountry = evt.target.getAttribute('data-country') || '';
 const qEndpoint = evt.target.getAttribute('data-endpoint') || 'point';
