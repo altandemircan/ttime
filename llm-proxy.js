@@ -174,7 +174,7 @@ router.post('/point-ai-info', async (req, res) => {
 
     // 2) Yeni işlem
     const processingPromise = (async () => {
-const activeModel = "mistral-nemo:latest";
+const activeModel = "llama3:8b";
         const context = aiCountry ? `${aiCity}, ${aiCountry}` : aiCity;
 
         console.log(`[AI START] Model: ${activeModel} | Point: ${aiPoint} | City: ${context}`);
