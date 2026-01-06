@@ -165,7 +165,7 @@ router.post('/point-ai-info', async (req, res) => {
             };
             return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
         } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
-    })(); 
+    })();
 
     aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
     try {
@@ -178,93 +178,73 @@ router.post('/point-ai-info', async (req, res) => {
 
 
 // --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
-// --- ENDPOINT: NEARBY AI (DEBUG VERSİYONU) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
-    console.log('------------------------------------------------');
-    console.log(`[NEARBY DEBUG] İstek geldi: Lat: ${lat}, Lng: ${lng}`);
 
-    // 1. Koordinat ve API Key Kontrolü
+    // 1. Koordinat Kontrolü
     if (!lat || !lng) {
-        console.error('[NEARBY DEBUG] HATA: Koordinatlar eksik!');
+        console.warn('[NEARBY AI] Missing coordinates');
         return res.json({ settlement: null, nature: null, historic: null });
     }
 
     const apiKey = process.env.GEOAPIFY_KEY;
     if (!apiKey) {
-        console.error('[NEARBY DEBUG] HATA: .env dosyasında GEOAPIFY_KEY bulunamadı!');
+        console.error('[NEARBY AI] Missing API KEY');
         return res.json({ settlement: null, nature: null, historic: null });
     }
 
-    // 2. Yardımcı Fonksiyon (Detaylı Loglama ile)
-    const fetchCategory = async (catName, categories, radius = 20000) => {
+    // 2. Yardımcı Fonksiyon: Kategoriden en iyi sonucu bul
+    const fetchCategory = async (categories, radius = 10000) => {
         try {
-            // URL oluşturma
-            const url = `https://api.geoapify.com/v2/places`;
-            const params = {
-                categories: categories,
-                filter: `circle:${lng},${lat},${radius}`,
-                bias: `proximity:${lng},${lat}`,
-                limit: 3,
-                apiKey: apiKey
-            };
-
-            console.log(`[NEARBY DEBUG] ${catName} aranıyor...`);
+            // Limit 5 yapıyoruz ki ilk sonuç isimsizse diğerine bakabilelim
+            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
             
-            // Axios ile istek at (Timeout süresini artırdık)
-            const response = await axios.get(url, { params, timeout: 10000 });
-            
+            const response = await axios.get(url, { timeout: 8000 });
             const features = response.data?.features || [];
-            console.log(`[NEARBY DEBUG] ${catName} sonuç sayısı: ${features.length}`);
 
             // İsmi olan ilk geçerli yeri bul
             const validPlace = features.find(f => f.properties && (f.properties.name || f.properties.formatted));
 
             if (validPlace) {
-                const pName = validPlace.properties.name || validPlace.properties.formatted;
-                console.log(`[NEARBY DEBUG] ✅ ${catName} BULUNDU: ${pName}`);
                 return {
-                    name: pName,
+                    name: validPlace.properties.name || validPlace.properties.city || "Unknown Place",
                     facts: validPlace.properties
                 };
             }
-            
-            console.warn(`[NEARBY DEBUG] ⚠️ ${catName} için sonuç döndü ama isimli yer yok.`);
             return null;
-
         } catch (error) {
-            // HATA DETAYINI YAKALA
-            if (error.response) {
-                // Sunucu cevap verdi ama hata kodu (401, 400, 500 vb.)
-                console.error(`[NEARBY DEBUG] ❌ ${catName} API Hatası: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
-            } else if (error.request) {
-                // İstek gitti ama cevap gelmedi (Network hatası)
-                console.error(`[NEARBY DEBUG] ❌ ${catName} Ağ Hatası (Cevap yok):`, error.message);
-            } else {
-                // Kod hatası
-                console.error(`[NEARBY DEBUG] ❌ ${catName} Kod Hatası:`, error.message);
-            }
+            console.error(`[NEARBY AI] Error fetching ${categories}:`, error.message);
             return null;
         }
     };
 
+    console.log(`[NEARBY AI] Searching nearby: ${lat}, ${lng}`);
+
     try {
-        // 3. Paralel Sorgular
-        // Kategorileri biraz daha genelleştirdim ki kesin sonuç dönsün
+        // 3. Paralel Sorgular (Yarıçapları kategoriye göre ayarladık)
         const [settlement, nature, historic] = await Promise.all([
-            fetchCategory("Settlement", "place", 15000), // Tüm 'place' kategorisi
-            fetchCategory("Nature", "natural,leisure.park,beach", 30000), // 30km yarıçap
-            fetchCategory("Historic", "historic,tourism,religion", 30000) // 30km yarıçap
+            // Yerleşim: 15km içinde şehir, kasaba, banliyö
+            fetchCategory("place.city,place.town,place.suburb,place.village", 15000),
+            
+            // Doğa: 20km içinde park, sahil, orman, su kenarı
+            fetchCategory("natural,leisure.park,beach,water", 20000),
+            
+            // Tarih: 20km içinde tarihi yerler, müzeler, ibadethaneler, kaleler
+            fetchCategory("historic,tourism.attraction,tourism.museum,religion.place_of_worship,building.historic,tourism.sights", 20000)
         ]);
 
         const result = { settlement, nature, historic };
+        console.log('[NEARBY AI] Result found:', 
+            `S: ${settlement?.name}, N: ${nature?.name}, H: ${historic?.name}`
+        );
+        
         res.json(result);
 
     } catch (e) {
-        console.error('[NEARBY DEBUG] Genel Promise Hatası:', e);
+        console.error('[NEARBY AI] General Error:', e);
         res.status(500).json({ error: e.message });
     }
-});
+}); 
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
