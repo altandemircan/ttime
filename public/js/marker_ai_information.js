@@ -298,49 +298,50 @@ if (endpointType === 'point' && facts && typeof facts === 'object') {
         console.log(`🚀 [Nearby] İstek gidiyor: ${nlat}, ${nlng}`);
 
         // DOĞRUDAN BACKEND'DEN 3 KATEGORİYİ ÇEKELİM
-        fetch('/llm/nearby-ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat: nlat, lng: nlng })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("📦 [Nearby] Sunucudan Gelen Veri:", data);
-            const holder = document.getElementById(nearbyHolderId);
-            const loadingMsg = document.getElementById(`nearby-loading-${nearbyHolderId}`);
-            if (loadingMsg) loadingMsg.remove();
+        fetch('/llm-proxy/nearby-ai', {  // Doğru prefix eklendi
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat: nlat, lng: nlng })
+})
+.then(response => {
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+})
+.then(data => {
+    console.log("📦 [Nearby] Sunucudan Gelen Veri:", data);
+    const holder = document.getElementById(nearbyHolderId);
+    const loadingMsg = document.getElementById(`nearby-loading-${nearbyHolderId}`);
+    if (loadingMsg) loadingMsg.remove();
 
-            if (data.settlement || data.nature || data.historic) {
-                let buttonsHTML = '';
-                const categories = [
-                    { key: 'settlement', icon: '🏙️', label: 'City' },
-                    { key: 'nature', icon: '🌳', label: 'Nature' },
-                    { key: 'historic', icon: '🏛️', label: 'Historic' }
-                ];
+    if (data.settlement || data.nature || data.historic) {
+        let buttonsHTML = '';
+        const categories = [
+            { key: 'settlement', icon: '🏙️', label: 'City' },
+            { key: 'nature', icon: '🌳', label: 'Nature' },
+            { key: 'historic', icon: '🏛️', label: 'Historic' }
+        ];
 
-                categories.forEach(cat => {
-    if (data[cat.key]) {
-        const btnPlaceName = data[cat.key].name.replace(/'/g, "\\'");
-        buttonsHTML += `
-            <button class="ai-nearby-btn" 
-                style="background:#f1f5f9; border:1px solid #cbd5e1; margin-bottom:5px; width:100%; text-align:left; padding:8px; border-radius:6px; cursor:pointer;"
-                onclick="this.parentElement.previousElementSibling.innerHTML = 'Searching...'; fetchSimpleAI('point', '${btnPlaceName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
-                ${cat.icon} <b>${cat.label}:</b> ${data[cat.key].name}
-            </button>`;
-    }
-});
-                holder.innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + buttonsHTML;
-                console.log("✅ [Nearby] Butonlar başarıyla oluşturuldu.");
-            } else {
-                console.warn("⚠️ [Nearby] Yakınlarda önemli bir nokta bulunamadı.");
-                holder.style.display = 'none';
+        categories.forEach(cat => {
+            if (data[cat.key]) {
+                const btnPlaceName = data[cat.key].name.replace(/'/g, "\\'");
+                buttonsHTML += `
+                    <button class="ai-nearby-btn" 
+                        style="background:#f1f5f9; border:1px solid #cbd5e1; margin-bottom:5px; width:100%; text-align:left; padding:8px; border-radius:6px; cursor:pointer;"
+                        onclick="fetchSimpleAI('point', '${btnPlaceName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
+                        ${cat.icon} <b>${cat.label}:</b> ${data[cat.key].name}
+                    </button>`;
             }
-        })
-        .catch(err => {
-            console.error("❌ [Nearby] Fetch Hatası:", err);
-            const holder = document.getElementById(nearbyHolderId);
-            if (holder) holder.style.display = 'none';
         });
+        holder.innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + buttonsHTML;
+    } else {
+        holder.style.display = 'none';
+    }
+})
+.catch(err => {
+    console.error("❌ [Nearby] Hata:", err);
+    const holder = document.getElementById(nearbyHolderId);
+    if (holder) holder.style.display = 'none';
+});
     }
 }
 
