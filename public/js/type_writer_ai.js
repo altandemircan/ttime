@@ -228,36 +228,51 @@ async function getHierarchicalLocation(lat, lng) {
     try {
         const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}&limit=1`);
         if (!resp.ok) return null;
-        
+
         const data = await resp.json();
         if (data.features && data.features.length > 0) {
             const props = data.features[0].properties;
-            
-            // --- HIERARCHY LOGIC ---
-            
-            // 1. SPECIFIC PLACE (e.g. Bodrum Castle)
+
+            // 1) SPECIFIC PLACE (e.g. Bodrum Castle)
             let specific = props.name || null;
-            // Filter out raw street names or numbers if needed
             if (specific && (specific === props.street || /^\d/.test(specific))) specific = null;
 
-            // 2. DISTRICT (e.g. Bodrum)
+            // 2) DISTRICT (e.g. Muratpaşa)
             let district = props.county || props.town || props.suburb || "";
-            
-            // 3. PROVINCE / CITY (e.g. Mugla)
-            let province = props.state || props.province || props.city || "";
 
-            // Fix overlap: If District name equals Province name (e.g. Center), rename it.
-            if (district === province) district = "City Center";
+            // Helper: Geoapify bazen state alanına "Mediterranean Region" gibi bölge basıyor
+            const looksLikeRegion = (v) => !!v && /region|bölgesi|bolgesi/i.test(v);
 
-            // Country (needed for AI context)
+            // 3) PROVINCE / CITY (e.g. Antalya)
+            // Öncelik: city/state_district -> province -> (en son) state (ama region değilse)
+            let province =
+                props.city ||
+                props.state_district ||
+                props.province ||
+                "";
+
+            // province hala yoksa: state'i sadece region değilse kullan
+            if (!province && props.state && !looksLikeRegion(props.state)) {
+                province = props.state;
+            }
+
+            // guard: province yanlışlıkla region olduysa city/county ile düzelt
+            if (looksLikeRegion(province)) {
+                province = props.city || props.county || "";
+            }
+
+            // Fix overlap: District name equals Province name
+            if (district && province && district === province) district = "City Center";
+
             const country = props.country || "";
 
             return { specific, district, province, country };
         }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+    }
     return null;
 }
-
 // 3. AI FETCH FUNCTION
 const aiSimpleCache = {};
 
