@@ -394,6 +394,3 @@ async function handleMapAIClick(e) {
         if (activeBtn) activeBtn.click();
     });
 }
-
-// geoapify.js dosyasının sonuna ekle:
-

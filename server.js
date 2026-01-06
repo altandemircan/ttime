@@ -65,25 +65,33 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
+// YENİ: Yakın yerler endpoint'i - TEST MOD
 app.post('/api/geoapify/nearby-places', async (req, res) => {
-  try {
-    const { lat, lng } = req.body;
-    
-    if (!lat || !lng) {
-      return res.status(400).json({ error: 'lat and lng required' });
+  console.log('[TEST Nearby] Called with:', req.body);
+  
+  const { lat, lng } = req.body;
+  
+  // TEST VERİSİ - Her zaman 3 yer döndür
+  const testData = {
+    settlement: { 
+      name: "Karasu Köyü",
+      formatted: "Karasu Village, Nevşehir, Turkey",
+      type: "village"
+    },
+    nature: { 
+      name: "Göreme Milli Parkı",
+      formatted: "Göreme National Park, Nevşehir, Turkey",
+      type: "national_park"
+    },
+    historic: { 
+      name: "Nevşehir Kalesi",
+      formatted: "Nevşehir Castle, Nevşehir, Turkey",
+      type: "castle"
     }
-    
-    const data = await geoapify.nearbyPlaces({
-      lat: parseFloat(lat),
-      lon: parseFloat(lng),
-      radius: 25000
-    });
-    
-    res.json(data);
-  } catch (e) {
-    console.error('[Nearby Places] Error:', e);
-    res.status(500).json({ error: e.message });
-  }
+  };
+  
+  console.log('[TEST Nearby] Returning test data');
+  res.json(testData);
 });
 
 // --- BURAYA EKLE --- //
