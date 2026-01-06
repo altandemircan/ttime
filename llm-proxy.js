@@ -139,7 +139,7 @@ max_tokens: 200
 
 // --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
 router.post('/point-ai-info', async (req, res) => {
-    const { point, city, country } = req.body;
+const { point, city, country, facts } = req.body;
 
     // point: mekan adı (ör: "Akdeniz Anadolu Lisesi")
     // city: şehir/il (ör: "Antalya")
@@ -179,24 +179,25 @@ const activeModel = "llama3:8b";
 
         console.log(`[AI START] Model: ${activeModel} | Point: ${aiPoint} | City: ${context}`);
 
-        const prompt = `
-You are a strictly factual travel assistant.
+const safeFacts = facts && typeof facts === "object" ? facts : {};
+const factsJson = JSON.stringify(safeFacts).slice(0, 4000); // aşırı büyümesin
 
-TASK:
-Give information about the POINT "${aiPoint}" located in "${context}".
+const prompt = `
+ENGLISH only. Be strictly factual.
+Use ONLY the provided FACTS. If something is missing in FACTS, say "Info not available".
+Do NOT invent phone numbers, opening hours, prices, or exact addresses.
 
-OUTPUT RULES:
-- Respond ONLY in ENGLISH.
-- Do NOT hallucinate. If you are not sure, write "Info not available".
-- Return ONLY valid JSON in this exact schema:
-{ "p1": "...", "p2": "..." }
+Return ONLY JSON: {"p1":"...","p2":"..."}.
 
-CONTENT RULES:
-- p1: 1 short paragraph describing what the place is (or what kind of place), in max ~2 sentences.
-- p2: 1 short paragraph with a practical visitor note (hours/entry/access/safety/etiquette) if known, otherwise "Info not available".
-- Do NOT include headings like "Summary/Tip/Highlight".
-- Do NOT include emojis.
-        `.trim();
+POINT: "${aiPoint}"
+CITY CONTEXT: "${context}"
+
+FACTS (trusted):
+${factsJson}
+
+p1: 1 paragraph (max ~2 sentences) describing what the place is + its location based on FACTS.formatted if available.
+p2: 1 paragraph with practical info ONLY if present in FACTS (phone, website, opening_hours). Otherwise "Info not available".
+`.trim();
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {

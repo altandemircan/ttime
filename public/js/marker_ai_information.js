@@ -112,7 +112,7 @@ if (looksLikeRegion(city)) city = "";
 // 3. AI FETCH FUNCTION (Aynı)
 const aiSimpleCache = {};
 
-async function fetchSimpleAI(endpointType, queryName, city, country, containerDiv) {
+async function fetchSimpleAI(endpointType, queryName, city, country, facts, containerDiv) {
     const cacheKey = `${endpointType}__${queryName}__${city}__${country}`;
     
     if (aiSimpleCache[cacheKey]) {
@@ -132,8 +132,8 @@ const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/po
 
 const body =
     endpointType === 'city'
-        ? { city, country }                 // şehir özeti
-        : { point: queryName, city, country }; // nokta özeti
+        ? { city, country }
+        : { point: queryName, city, country, facts: facts || {} };
 
 const response = await fetch(url, {
     method: 'POST',
@@ -280,7 +280,7 @@ tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
 const qCity = evt.target.getAttribute('data-city') || '';
 const qCountry = evt.target.getAttribute('data-country') || '';
 const qEndpoint = evt.target.getAttribute('data-endpoint') || 'point';
-fetchSimpleAI(qEndpoint, qName, qCity, qCountry, contentDiv);
+fetchSimpleAI(qEndpoint, qName, qCity, qCountry, loc.facts, contentDiv);
             };
         });
 
