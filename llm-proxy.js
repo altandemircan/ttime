@@ -207,75 +207,66 @@ router.post('/nearby-ai', async (req, res) => {
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
     
-    console.log('[NEARBY AI BULACAK] Request:', { lat, lng });
+    console.log('[NEARBY AI SIMPLE] Request:', { lat, lng });
     
     try {
         const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) {
-            return res.json({ 
-                settlement: { name: "Local Town", facts: {} },
-                nature: { name: "Nature Area", facts: {} },
-                historic: { name: "Historic Site", facts: {} }
-            });
-        }
-
-        // FONKSİYON: Bulana kadar ara (20km → 50km → 100km)
-        const findPlace = async (categories, radius = 20000) => {
-            for (let r of [20000, 50000, 100000]) { // 20km, 50km, 100km
-                try {
-                    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${r}&limit=5&apiKey=${GEOAPIFY_KEY}`;
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    
-                    if (data.features && data.features.length > 0) {
-                        // İsimi olan ilk yer bul
-                        for (const feature of data.features) {
-                            if (feature.properties?.name) {
-                                return {
-                                    name: feature.properties.name,
-                                    facts: feature.properties
-                                };
-                            }
-                        }
-                    }
-                } catch (e) {
-                    continue; // Bir sonraki radius'u dene
-                }
-            }
-            return null;
-        };
-
-        console.log('[NEARBY AI] Searching with increasing radius...');
+        if (!GEOAPIFY_KEY) throw new Error('No API key');
         
-        // 3 KATEGORİYİ PARALEL ARA
-        const [settlement, nature, historic] = await Promise.all([
-            findPlace("place.city,place.town,place.village,place.suburb,place.hamlet"),
-            findPlace("natural,leisure.park,beach,water"),
-            findPlace("historic,heritage,tourism.attraction,tourism.museum,building.historic,building.castle,building.religious")
-        ]);
-
-        // SONUÇ (bulamadıysa default)
+        // 1. TÜM YERLERİ ÇEK
+        const url = `https://api.geoapify.com/v2/places?filter=circle:${lng},${lat},50000&limit=30&apiKey=${GEOAPIFY_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        const features = data.features || [];
+        
+        console.log('[NEARBY AI] Places found:', features.length);
+        
+        // 2. KATEGORİLERE AYIR
+        const settlements = [];
+        const natures = [];
+        const historics = [];
+        
+        for (const feature of features) {
+            const props = feature.properties;
+            if (!props.name) continue;
+            
+            const cats = props.categories || '';
+            
+            if (cats.includes('place.')) {
+                settlements.push(props);
+            }
+            if (cats.includes('natural') || cats.includes('leisure.park')) {
+                natures.push(props);
+            }
+            if (cats.includes('historic') || cats.includes('tourism.attraction')) {
+                historics.push(props);
+            }
+        }
+        
+        // 3. İLKİNİ AL (bulamazsan generic)
         const result = {
-            settlement: settlement || { name: "Local Settlement", facts: {} },
-            nature: nature || { name: "Natural Area", facts: {} },
-            historic: historic || { name: "Historic Location", facts: {} }
+            settlement: settlements[0] ? { name: settlements[0].name, facts: settlements[0] } 
+                         : { name: "Local Area", facts: {} },
+            nature: natures[0] ? { name: natures[0].name, facts: natures[0] }
+                     : { name: "Green Space", facts: {} },
+            historic: historics[0] ? { name: historics[0].name, facts: historics[0] }
+                       : { name: "Historic Site", facts: {} }
         };
-
-        console.log('[NEARBY AI] FOUND:', {
+        
+        console.log('[NEARBY AI] Result:', {
             settlement: result.settlement.name,
             nature: result.nature.name,
             historic: result.historic.name
         });
-
+        
         res.json(result);
-
+        
     } catch (error) {
         console.error('[NEARBY AI] Error:', error);
-        // HATA DURUMUNDA KESİN 3 İSİM
         res.json({
-            settlement: { name: "Nearby Town", facts: {} },
-            nature: { name: "Local Park", facts: {} },
-            historic: { name: "Historic Monument", facts: {} }
+            settlement: { name: "Nearby Place", facts: {} },
+            nature: { name: "Park/Garden", facts: {} },
+            historic: { name: "Monument", facts: {} }
         });
     }
 });
