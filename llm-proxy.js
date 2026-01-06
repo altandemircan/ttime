@@ -120,6 +120,62 @@ router.post('/nearby-ai', async (req, res) => {
     } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
 });
 
+// backend'de (express route)
+router.post('/api/geoapify/places-nearby', async (req, res) => {
+    const { lat, lng } = req.body;
+    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+    
+    try {
+        // 1. Yerleşim yeri
+        const settlementUrl = `https://api.geoapify.com/v2/places?categories=place.city,place.town,place.village&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        
+        // 2. Doğa
+        const natureUrl = `https://api.geoapify.com/v2/places?categories=natural,leisure.park,beach&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        
+        // 3. Tarihi
+        const historicUrl = `https://api.geoapify.com/v2/places?categories=historic,heritage,tourism.attraction&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        
+        const [settlementRes, natureRes, historicRes] = await Promise.all([
+            axios.get(settlementUrl).catch(() => null),
+            axios.get(natureUrl).catch(() => null),
+            axios.get(historicUrl).catch(() => null)
+        ]);
+        
+        const places = [];
+        
+        // Yerleşim yeri
+        if (settlementRes?.data?.features?.[0]) {
+            const props = settlementRes.data.features[0].properties;
+            places.push({
+                name: props.name || "Nearby village",
+                type: "settlement"
+            });
+        }
+        
+        // Doğa
+        if (natureRes?.data?.features?.[0]) {
+            const props = natureRes.data.features[0].properties;
+            places.push({
+                name: props.name || "Nature area",
+                type: "nature"
+            });
+        }
+        
+        // Tarihi
+        if (historicRes?.data?.features?.[0]) {
+            const props = historicRes.data.features[0].properties;
+            places.push({
+                name: props.name || "Historic site",
+                type: "historic"
+            });
+        }
+        
+        res.json({ places });
+    } catch (error) {
+        res.json({ places: [] });
+    }
+});
+
 // --- CHAT STREAM (DOKUNULMADI) ---
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
