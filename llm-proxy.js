@@ -222,16 +222,16 @@ router.post('/nearby-ai', async (req, res) => {
 
     try {
         // 3. Paralel Sorgular (Yarıçapları kategoriye göre ayarladık)
-        const [settlement, nature, historic] = await Promise.all([
-            // Yerleşim: 15km içinde şehir, kasaba, banliyö
-            fetchCategory("place.city,place.town,place.suburb,place.village", 15000),
-            
-            // Doğa: 20km içinde park, sahil, orman, su kenarı
-            fetchCategory("natural,leisure.park,beach,water", 20000),
-            
-            // Tarih: 20km içinde tarihi yerler, müzeler, ibadethaneler, kaleler
-            fetchCategory("historic,tourism.attraction,tourism.museum,religion.place_of_worship,building.historic,tourism.sights", 20000)
-        ]);
+       const [settlement, nature, historic] = await Promise.all([
+    // Yerleşim (Settlement)
+    fetchCategory("place.city,place.town,place.suburb,place.village", 15000),
+    
+    // Doğa (Nature) - tourism.sight eklendi
+    fetchCategory("natural,leisure.park,beach,water,tourism.sight", 20000),
+    
+    // Tarih/Turizm (Historic) - kategoriler zenginleştirildi
+    fetchCategory("historic,tourism.attraction,tourism.museum,building.historic,tourism.sights", 25000) 
+]);
 
         const result = { settlement, nature, historic };
         console.log('[NEARBY AI] Result found:', 

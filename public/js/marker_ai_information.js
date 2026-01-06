@@ -298,20 +298,18 @@ if (endpointType === 'point' && facts && typeof facts === 'object') {
         console.log(`🚀 [Nearby] İstek gidiyor: ${nlat}, ${nlng}`);
 
         // DOĞRUDAN BACKEND'DEN 3 KATEGORİYİ ÇEKELİM
-        fetch('/llm-proxy/nearby-ai', {  // Doğru prefix eklendi
+     fetch('/llm-proxy/nearby-ai', { 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat: nlat, lng: nlng })
 })
-.then(response => {
-    if (!response.ok) throw new Error('Network response was not ok');
-    return response.json();
-})
+.then(response => response.json())
 .then(data => {
-    console.log("📦 [Nearby] Sunucudan Gelen Veri:", data);
+    console.log("📦 [Nearby] Veri geldi:", data);
     const holder = document.getElementById(nearbyHolderId);
-    const loadingMsg = document.getElementById(`nearby-loading-${nearbyHolderId}`);
-    if (loadingMsg) loadingMsg.remove();
+    if (document.getElementById(`nearby-loading-${nearbyHolderId}`)) {
+        document.getElementById(`nearby-loading-${nearbyHolderId}`).remove();
+    }
 
     if (data.settlement || data.nature || data.historic) {
         let buttonsHTML = '';
@@ -323,16 +321,17 @@ if (endpointType === 'point' && facts && typeof facts === 'object') {
 
         categories.forEach(cat => {
             if (data[cat.key]) {
-                const btnPlaceName = data[cat.key].name.replace(/'/g, "\\'");
+                const btnName = data[cat.key].name.replace(/'/g, "\\'");
                 buttonsHTML += `
                     <button class="ai-nearby-btn" 
                         style="background:#f1f5f9; border:1px solid #cbd5e1; margin-bottom:5px; width:100%; text-align:left; padding:8px; border-radius:6px; cursor:pointer;"
-                        onclick="fetchSimpleAI('point', '${btnPlaceName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
+                        onclick="fetchSimpleAI('point', '${btnName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
                         ${cat.icon} <b>${cat.label}:</b> ${data[cat.key].name}
                     </button>`;
             }
         });
         holder.innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + buttonsHTML;
+        holder.style.display = 'block';
     } else {
         holder.style.display = 'none';
     }
