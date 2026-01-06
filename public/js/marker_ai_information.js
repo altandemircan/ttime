@@ -251,13 +251,24 @@ async function fetchSimpleAI(endpointType, queryName, city, country, facts, cont
         `;
 
         // Point tabındaysak Nearby kısmını zorla başlat
+                // Point tabındaysak Nearby kısmını zorla başlat
         if (endpointType === 'point') {
             // facts içinden koordinatları garantileyelim
-            const lat = facts?.__lat || facts?.lat;
-            const lng = facts?.__lng || facts?.lng;
+            const latVal = facts?.__lat ??  facts?.lat;
+            const lngVal = facts?.__lng ??  facts?.lng;
             
-            if (lat && lng) {
-                renderNearbyButtons(parseFloat(lat), parseFloat(lng), city, country, containerDiv.querySelector('.nearby-section-target'));
+            console.log('[fetchSimpleAI] Point tab - checking coords:', { latVal, lngVal, facts });
+            
+            if (latVal !== undefined && lngVal !== undefined && ! isNaN(parseFloat(latVal)) && !isNaN(parseFloat(lngVal))) {
+                const nearbyTarget = containerDiv.querySelector('.nearby-section-target');
+                if (nearbyTarget) {
+                    console.log('[fetchSimpleAI] Calling renderNearbyButtons');
+                    renderNearbyButtons(parseFloat(latVal), parseFloat(lngVal), city, country, nearbyTarget);
+                } else {
+                    console.warn('[fetchSimpleAI] . nearby-section-target not found in containerDiv');
+                }
+            } else {
+                console.warn('[fetchSimpleAI] Invalid coordinates for nearby search');
             }
         }
 
@@ -271,21 +282,31 @@ async function renderNearbyButtons(lat, lng, city, country, targetDiv) {
 
     // Önce "Aranıyor" yazısını bas
     targetDiv.innerHTML = `
-        <div class="ai-nearby-buttons" style="margin-top:15px; border-top:1px solid #f1f5f9; padding-top:10px;">
+        <div class="ai-nearby-buttons" style="margin-top:15px; border-top:1px solid #f1f5f9; padding-top: 10px;">
             <div class="ai-nearby-title">📍 Nearby Exploration:</div>
             <div id="nearby-status-text" style="font-size:0.7rem; color:#94a3b8;">Searching surroundings...</div>
         </div>
     `;
 
     try {
+        console.log(`[renderNearbyButtons] Fetching for lat=${lat}, lng=${lng}`);
+        
         const res = await fetch('/llm-proxy/nearby-ai', { 
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lng })
+            headers: { 'Content-Type':  'application/json' },
+            body: JSON.stringify({ lat:  parseFloat(lat), lng: parseFloat(lng) })
         });
+        
+        if (! res.ok) {
+            console.error(`[renderNearbyButtons] HTTP Error: ${res.status}`);
+            throw new Error(`HTTP ${res.status}`);
+        }
+        
         const data = await res.json();
+        console.log('[renderNearbyButtons] Received data:', data);
 
-        const statusText = document.getElementById('nearby-status-text');
+        const nearbyButtonsContainer = targetDiv.querySelector('.ai-nearby-buttons');
+        const statusText = targetDiv.querySelector('#nearby-status-text');
         
         if (data && (data.settlement || data.nature || data.historic)) {
             let btnsHTML = '';
@@ -296,23 +317,30 @@ async function renderNearbyButtons(lat, lng, city, country, targetDiv) {
             ];
             
             cats.forEach(c => {
-                if (data[c.k]?.name) {
-                    const safeName = data[c.k].name.replace(/'/g, "\\'");
+                if (data[c.k] && data[c.k].name) {
+                    const safeName = data[c.k].name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const safeCity = (city || '').replace(/'/g, "\\'");
+                    const safeCountry = (country || '').replace(/'/g, "\\'");
                     btnsHTML += `
-                        <button class="ai-nearby-btn" onclick="fetchSimpleAI('point', '${safeName}', '${city}', '${country}', {__lat:${lat}, __lng:${lng}}, this.closest('.ai-simple-content'))">
-                            ${c.i} <b>${c.l}:</b> ${data[c.k].name}
+                        <button class="ai-nearby-btn" onclick="fetchSimpleAI('point', '${safeName}', '${safeCity}', '${safeCountry}', {__lat:${lat}, __lng:${lng}}, this. closest('.ai-simple-content'))">
+                            ${c.i} <b>${c.l}:</b> ${data[c. k].name}
                         </button>`;
                 }
             });
             
             // "Searching..." yazısını sil ve butonları bas
             if (statusText) statusText.remove();
-            targetDiv.querySelector('.ai-nearby-buttons').innerHTML += btnsHTML;
+            if (nearbyButtonsContainer && btnsHTML) {
+                nearbyButtonsContainer. innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + btnsHTML;
+            }
         } else {
+            console.log('[renderNearbyButtons] No results found');
             if (statusText) statusText.innerText = "No landmarks found nearby.";
         }
     } catch (err) {
-        if (targetDiv) targetDiv.innerHTML = "";
+        console.error('[renderNearbyButtons] Error:', err);
+        const statusText = targetDiv.querySelector('#nearby-status-text');
+        if (statusText) statusText.innerText = "Could not load nearby places. ";
     }
 }
 
