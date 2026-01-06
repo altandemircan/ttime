@@ -107,63 +107,40 @@ async function getHierarchicalLocation(lat, lng) {
     }
 }
 
+// marker_ai_information.js içindeki fetchNearbyPlaceNames fonksiyonu
+
 async function fetchNearbyPlaceNames(lat, lng) {
-    try {
-        const response = await fetch('/llm-proxy/nearby-ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lng })
-        });
+  try {
+    const response = await fetch('/llm-proxy/nearby-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng })
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const places = [];
+    const usedNames = new Set();
 
-        if (!response.ok) {
-            console.error('Nearby AI fetch failed:', response.status);
-            return [];
+    // Veri null gelse bile patlamaması için güvenli erişim (?.)
+    const checkAndAdd = (obj, type) => {
+        if (obj?.name && !usedNames.has(obj.name)) {
+            places.push({ name: obj.name, type: type });
+            usedNames.add(obj.name);
         }
+    };
 
-        const data = await response.json();
-        console.log('Nearby AI client response:', data);
-
-        const places = [];
-
-        // Settlement (Yerleşim) Kontrolü
-        if (data.settlement && data.settlement.name) {
-            places.push({ 
-                name: data.settlement.name, 
-                type: "settlement",
-                icon: "🏘️" // İstersen ikon ekleyebilirsin
-            });
-        }
-
-        // Nature (Doğa) Kontrolü
-        if (data.nature && data.nature.name) {
-            // Eğer doğa ile yerleşim ismi aynıysa (örn: Antalya Parkı vs Antalya Şehri) ekleme yapmayabilirsin
-            // Ama şimdilik hepsini ekleyelim.
-            if (!places.some(p => p.name === data.nature.name)) {
-                places.push({ 
-                    name: data.nature.name, 
-                    type: "nature",
-                    icon: "🌳"
-                });
-            }
-        }
-
-        // Historic (Tarih) Kontrolü
-        if (data.historic && data.historic.name) {
-            if (!places.some(p => p.name === data.historic.name)) {
-                places.push({ 
-                    name: data.historic.name, 
-                    type: "historic",
-                    icon: "🏛️"
-                });
-            }
-        }
-
-        return places;
-
-    } catch (error) {
-        console.error("fetchNearbyPlaceNames error:", error);
-        return [];
-    }
+    checkAndAdd(data.settlement, "settlement");
+    checkAndAdd(data.nature, "nature");
+    checkAndAdd(data.historic, "historic");
+    
+    return places;
+    
+  } catch (error) {
+    console.error("Client error:", error);
+    return [];
+  }
 }
 // 4. AI FETCH FUNCTION (AYNI)
 const aiSimpleCache = {};
