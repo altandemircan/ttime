@@ -23,7 +23,12 @@
         .ai-simple-tab.active { color: #8a4af3; border-bottom-color: #8a4af3; }
         
         /* CONTENT */
-        .ai-simple-content { min-height: 100px; font-size: 0.9rem; color: #334155; line-height: 1.5; }
+        .ai-simple-content { min-height: 100px;
+    font-size: 0.9rem;
+    color: #334155;
+    line-height: 1.8;
+    font-weight: 400;
+    text-align: left }
         .ai-simple-loading { padding: 20px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
         .ai-info-row { margin-bottom: 6px; }
         .ai-label { font-weight: 700; color: #475569; margin-right: 5px; }
@@ -39,56 +44,60 @@ async function getHierarchicalLocation(lat, lng) {
         if (!resp.ok) return null;
 
         const data = await resp.json();
-        if (data.features && data.features.length > 0) {
-            const props = data.features[0].properties;
-            
-            // ÇOK BASİT İŞLETME KONTROLÜ: Sadece açık işletme kategorilerini filtrele
-            const categories = (props.categories || '').toLowerCase();
-            if (categories.includes('commercial.supermarket') ||
-                categories.includes('commercial.convenience') ||
-                categories.includes('healthcare.pharmacy') ||
-                categories.includes('healthcare.doctor') ||
-                categories.includes('healthcare.clinic') ||
-                categories.includes('catering.fast_food') ||
-                categories.includes('service.financial.bank') ||
-                categories.includes('service.vehicle.car_repair')) {
-                return null; // İşletme ise AI gösterme
-            }
-            
-            // Sokak adı mı kontrol et (çok basit)
-            const name = props.name || '';
-            if (name && (name === props.street || /^\d+\s*\/?\s*\d*/.test(name))) {
-                // Sokak adı ise specific'i boş bırak
-                props.name = null;
-            }
-            
-            // Normal pars işlemi
-            let specific = props.name || null;
-            let district = props.county || props.town || props.suburb || "";
-            let province = props.city || props.state_district || props.province || "";
-            const country = props.country || "";
-            
-            // Province bölge ise temizle
-            if (/region|bölgesi|aegean|mediterranean/i.test(province)) {
-                province = props.city || props.county || "";
-            }
-            
-            // District ve province aynı ise
-            if (district && province && district === province) {
-                district = "City Center";
-            }
-            
-            // Eğer sadece sokak adı varsa ve başka hiçbir şey yoksa, turistik değil
-            if (!specific && !district && province) {
-                return { specific: null, district: null, province, country, isJustAddress: true };
-            }
-            
-            return { specific, district, province, country };
+        if (!data.features || data.features.length === 0) return null;
+
+        const props = data.features[0].properties || {};
+
+        // 1) SPECIFIC PLACE (mekan)
+        let specific = props.name || null;
+        if (specific && (specific === props.street || /^\d/.test(specific))) specific = null;
+
+        // Helpers
+        const norm = (v) => (typeof v === "string" ? v.trim() : "");
+        const looksLikeRegion = (v) => /region|bölgesi|bolgesi/i.test(norm(v));
+
+        // 2) DISTRICT (ilçe) - daha fazla alan dene
+        let district =
+            norm(props.county) ||
+            norm(props.district) ||
+            norm(props.city_district) ||
+            norm(props.municipality) ||
+            norm(props.town) ||
+            norm(props.suburb) ||
+            "";
+
+        // 3) PROVINCE / CITY (il) - state'i ilk sıradan çıkar
+        // Antalya gibi iller çoğu zaman city/state_district'te oluyor
+        let province =
+            norm(props.city) ||
+            norm(props.state_district) ||
+            norm(props.province) ||
+            "";
+
+        // Fallback: state ama region değilse
+        const state = norm(props.state);
+        if (!province && state && !looksLikeRegion(state)) {
+            province = state;
         }
+
+        // Guard: province yanlışlıkla region olduysa düzelt
+        if (province && looksLikeRegion(province)) {
+            province = norm(props.city) || norm(props.state_district) || "";
+        }
+
+        // Eğer district boş ama province doluysa, bazı kayıtlarda ilçe province'e düşebiliyor.
+        // Bu durumda district'i props.county/district/... setinden yine boşsa bırakıyoruz (zorlamıyoruz).
+
+        // Overlap fix
+        if (district && province && district === province) district = "City Center";
+
+        const country = norm(props.country) || "";
+
+        return { specific, district, province, country };
     } catch (e) {
         console.error(e);
+        return null;
     }
-    return null;
 }
 
 // 3. AI FETCH FUNCTION (Aynı)
