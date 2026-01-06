@@ -177,66 +177,74 @@ router.post('/point-ai-info', async (req, res) => {
 });
 
 
-// --- ENDPOINT: NEARBY AI (TEK VE GÜÇLÜ VERSİYON) ---
+// --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
-    
-    // Geçersiz koordinat kontrolü
+
+    // 1. Koordinat Kontrolü
     if (!lat || !lng) {
+        console.warn('[NEARBY AI] Missing coordinates');
         return res.json({ settlement: null, nature: null, historic: null });
     }
 
-    try {
-        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) throw new Error('No API key');
+    const apiKey = process.env.GEOAPIFY_KEY;
+    if (!apiKey) {
+        console.error('[NEARBY AI] Missing API KEY');
+        return res.json({ settlement: null, nature: null, historic: null });
+    }
 
-        // Yardımcı fonksiyon: Belirli kategorilerde EN YAKIN 1 sonucu getirir
-        const fetchCategory = async (categories) => {
-            try {
-                // Radius 20km (20000m) içinde arar
-                const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},20000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
-                const response = await axios.get(url, { timeout: 8000 }); // Axios kullanıyoruz
-                const feature = response.data?.features?.[0];
+    // 2. Yardımcı Fonksiyon: Kategoriden en iyi sonucu bul
+    const fetchCategory = async (categories, radius = 10000) => {
+        try {
+            // Limit 5 yapıyoruz ki ilk sonuç isimsizse diğerine bakabilelim
+            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
+            
+            const response = await axios.get(url, { timeout: 8000 });
+            const features = response.data?.features || [];
 
-                if (feature && feature.properties) {
-                    return {
-                        name: feature.properties.name || feature.properties.formatted,
-                        facts: feature.properties
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.error(`[NEARBY AI] Fetch Error for ${categories}:`, error.message);
-                return null;
+            // İsmi olan ilk geçerli yeri bul
+            const validPlace = features.find(f => f.properties && (f.properties.name || f.properties.formatted));
+
+            if (validPlace) {
+                return {
+                    name: validPlace.properties.name || validPlace.properties.city || "Unknown Place",
+                    facts: validPlace.properties
+                };
             }
-        };
+            return null;
+        } catch (error) {
+            console.error(`[NEARBY AI] Error fetching ${categories}:`, error.message);
+            return null;
+        }
+    };
 
-        // 3 Sorguyu Paralel At (Hız için)
+    console.log(`[NEARBY AI] Searching nearby: ${lat}, ${lng}`);
+
+    try {
+        // 3. Paralel Sorgular (Yarıçapları kategoriye göre ayarladık)
         const [settlement, nature, historic] = await Promise.all([
-            // 1. Yerleşim Yeri (Şehir, kasaba, köy)
-            fetchCategory("place.city,place.town,place.village,place.suburb"),
+            // Yerleşim: 15km içinde şehir, kasaba, banliyö
+            fetchCategory("place.city,place.town,place.suburb,place.village", 15000),
             
-            // 2. Doğa (Park, sahil, orman, su kenarı)
-            fetchCategory("natural,leisure.park,beach,water"),
+            // Doğa: 20km içinde park, sahil, orman, su kenarı
+            fetchCategory("natural,leisure.park,beach,water", 20000),
             
-            // 3. Tarih & Turizm (Müze, kale, anıt, dini yapı)
-            fetchCategory("historic,tourism.attraction,tourism.museum,religion.place_of_worship,building.historic")
+            // Tarih: 20km içinde tarihi yerler, müzeler, ibadethaneler, kaleler
+            fetchCategory("historic,tourism.attraction,tourism.museum,religion.place_of_worship,building.historic,tourism.sights", 20000)
         ]);
 
-        console.log(`[NEARBY AI] Results -> Set: ${settlement?.name}, Nat: ${nature?.name}, His: ${historic?.name}`);
+        const result = { settlement, nature, historic };
+        console.log('[NEARBY AI] Result found:', 
+            `S: ${settlement?.name}, N: ${nature?.name}, H: ${historic?.name}`
+        );
+        
+        res.json(result);
 
-        res.json({
-            settlement: settlement,
-            nature: nature,
-            historic: historic
-        });
-
-    } catch (error) {
-        console.error('[NEARBY AI] General Error:', error);
-        res.json({ settlement: null, nature: null, historic: null });
+    } catch (e) {
+        console.error('[NEARBY AI] General Error:', e);
+        res.status(500).json({ error: e.message });
     }
 });
-
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
