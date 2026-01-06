@@ -65,6 +65,7 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
+// YENİ: Yakın yerler endpoint'i
 app.post('/api/geoapify/nearby-places', async (req, res) => {
   try {
     const { lat, lng } = req.body;
@@ -89,11 +90,8 @@ app.post('/api/geoapify/nearby-places', async (req, res) => {
 // --- BURAYA EKLE --- //
 
 // OpenFreeMap TILE PROXY:
-// OpenFreeMap VECTOR TILE PROXY (GÜNCEL "planet/20251112_001001_pt" dataset!)
-
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
-  // DOĞRU YOL - planet versiyonunu burada kullan!
   const url = `https://tiles.openfreemap.org/planet/20251112_001001_pt/${z}/${x}/${y}.pbf`;
   try {
     const r = await fetch(url, {
@@ -122,9 +120,8 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
         "Referer": "https://triptime.ai/"
       }
     });
-    // DEBUG
     console.log(`[RASTER] Proxying: ${url} → Status: ${r.status}`);
-    if (r.status === 403) return res.status(403).send("Upstream returned 403 Forbidden (rate-limit, IP block, etc)");
+    if (r.status === 403) return res.status(403).send("Upstream returned 403 Forbidden");
     if (r.status === 404) return res.status(404).send("Upstream PNG not found (404)");
     if (!r.ok) return res.status(r.status).send(`Upstream error code: ${r.status}`);
     res.set('Content-Type', 'image/png');
@@ -135,7 +132,6 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
     res.status(500).send('Internal proxy error');
   }
 });
-
 
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
@@ -167,22 +163,19 @@ app.get('/api/geoapify/places', async (req, res) => {
 
 app.get('/api/elevation', async (req, res) => {
   const { locations } = req.query;
-
   const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
-  const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'merit_dem';
-
-  let batchSize = 120; // önce küçük
+  
   try {
     const coords = (locations || "").split('|').filter(Boolean);
     const resultsAll = [];
-
+    const batchSize = 120;
+    
     for (let i = 0; i < coords.length; i += batchSize) {
       const batch = coords.slice(i, i + batchSize).join('|');
-const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
-      console.log(`[Elevation BACKEND] Calling: ${url} with ${batch.split('|').length} coords`);
-
+      const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
+      
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 15s
+      const timeout = setTimeout(() => controller.abort(), 30000);
       let response;
       try {
         response = await fetch(url, { signal: controller.signal });
@@ -191,7 +184,6 @@ const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
       }
 
       if (!response.ok) {
-        console.warn(`[Elevation] OpenTopoData failed: ${response.status} batch ${batch}`);
         for (let j = i; j < i + batchSize && j < coords.length; j++) {
           resultsAll.push({ elevation: null });
         }
@@ -247,7 +239,7 @@ app.get('/test-root', (req, res) => {
 // 6. Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
+// 7. API 404 yakalayıcı
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });
 });
@@ -270,7 +262,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
-// Port (Nginx 3003’e bakıyorsa 3003 yap)
+// Port
 const PORT = process.env.PORT || 3004;
 
 app.listen(PORT, () => {
