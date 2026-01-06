@@ -138,7 +138,6 @@ max_tokens: 200
 
 
 // --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
-// --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
 router.post('/point-ai-info', async (req, res) => {
     const { point, city, country, facts } = req.body;
 
@@ -200,7 +199,7 @@ p2: practical info ONLY if present in FACTS (phone, website, opening_hours). Oth
                     top_p: 0.9,
                     num_predict: 140
                 }
-            });
+            }, { timeout: 40000 }); // Timeout eklendi
 
             let jsonText = '';
             if (typeof response.data === 'object' && response.data.message) {
@@ -267,38 +266,47 @@ router.post('/nearby-ai', async (req, res) => {
 
     const processingPromise = (async () => {
         const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) throw new Error("Missing GEOAPIFY_KEY env");
+        // 500 Hatası almamak için throw yerine loglayıp boş dönüyoruz
+        if (!GEOAPIFY_KEY) {
+            console.error("GEOAPIFY_KEY is missing in environment");
+            return { settlement: null, nature: null, historic: null };
+        }
 
         const proximity = `${lng},${lat}`;
 
         const fetchPlaces = async (categories) => {
-            const url =
-                `https://api.geoapify.com/v2/places?` +
-                `categories=${encodeURIComponent(categories)}` +
-                `&filter=circle:${proximity},25000` +
-                `&bias=proximity:${proximity}` +
-                `&limit=1` +
-                `&apiKey=${encodeURIComponent(GEOAPIFY_KEY)}`;
+            try {
+                const url =
+                    `https://api.geoapify.com/v2/places?` +
+                    `categories=${encodeURIComponent(categories)}` +
+                    `&filter=circle:${proximity},25000` +
+                    `&bias=proximity:${proximity}` +
+                    `&limit=1` +
+                    `&apiKey=${encodeURIComponent(GEOAPIFY_KEY)}`;
 
-            const r = await axios.get(url, { timeout: 15000 });
-            const f = r.data?.features?.[0];
-            if (!f) return null;
+                const r = await axios.get(url, { timeout: 10000 });
+                const f = r.data?.features?.[0];
+                if (!f) return null;
 
-            const p = f.properties || {};
-            return {
-                name: p.name || p.formatted || "Unknown",
-                formatted: p.formatted || "",
-                categories: p.categories || [],
-                place_id: p.place_id || "",
-                lat: f.geometry?.coordinates?.[1] ?? null,
-                lng: f.geometry?.coordinates?.[0] ?? null
-            };
+                const p = f.properties || {};
+                return {
+                    name: p.name || p.formatted || "Unknown",
+                    formatted: p.formatted || "",
+                    categories: p.categories || [],
+                    place_id: p.place_id || "",
+                    lat: f.geometry?.coordinates?.[1] ?? null,
+                    lng: f.geometry?.coordinates?.[0] ?? null
+                };
+            } catch (e) {
+                return null;
+            }
         };
 
         const settlementCategories = "place.village,place.town,place.hamlet,place.city";
         const natureCategories = "natural.water,natural.wood,leisure.park,beach,water,waterway,landuse.forest";
         const historicCategories = "historic,heritage,tourism.attraction,tourism.museum";
 
+        // Geoapify istekleri paralel kalabilir (hızlıdır)
         const [settlement, nature, historic] = await Promise.all([
             fetchPlaces(settlementCategories),
             fetchPlaces(natureCategories),
@@ -340,7 +348,7 @@ p2: 1 short practical note if possible from FACTS, otherwise "Info not available
                         top_p: 0.9,
                         num_predict: 120
                     }
-                });
+                }, { timeout: 30000 });
 
                 const jsonText = response.data?.message?.content || "";
                 const parsed = JSON.parse(jsonText);
@@ -358,11 +366,10 @@ p2: 1 short practical note if possible from FACTS, otherwise "Info not available
             }
         };
 
-        const [settlementAI, natureAI, historicAI] = await Promise.all([
-            askAI("Nearest settlement", settlement),
-            askAI("Nearest nature area", nature),
-            askAI("Nearest historic site", historic)
-        ]);
+        // KRİTİK: Ollama kilitlenmesin (504 almamak için) diye AI isteklerini SIRALI (Sequential) yapıyoruz
+        const settlementAI = await askAI("Nearest settlement", settlement);
+        const natureAI = await askAI("Nearest nature area", nature);
+        const historicAI = await askAI("Nearest historic site", historic);
 
         return { settlement: settlementAI, nature: natureAI, historic: historicAI };
     })();
@@ -377,7 +384,8 @@ p2: 1 short practical note if possible from FACTS, otherwise "Info not available
     } catch (error) {
         console.error(`[AI ERROR] ${cacheKey}:`, error.message);
         delete aiCache[cacheKey];
-        res.status(500).json({ error: 'Nearby AI Error' });
+        // 500 hatası yerine boş bir yapı dönüyoruz ki frontend çökmesin
+        res.status(200).json({ settlement: null, nature: null, historic: null });
     }
 });
 
