@@ -39,11 +39,68 @@ async function nearbyCities({ lat, lon, radius = 80000, limit = 10 }) {
     type: "city",
     radius,
     limit
-  });
+  }); 
 }
 
+// YENİ: Yakın yerleri getir (3 kategori)
+async function nearbyPlaces({ lat, lon, radius = 25000 }) {
+  try {
+    // 1. Yerleşim (köy, kasaba, şehir)
+    const settlement = await geoapifyGet("/v2/places", {
+      categories: "place.city,place.town,place.village,place.suburb",
+      filter: `circle:${lon},${lat},${radius}`,
+      limit: 1,
+      bias: `proximity:${lon},${lat}`
+    });
+
+    // 2. Doğa
+    const nature = await geoapifyGet("/v2/places", {
+      categories: "natural,leisure.park,beach",
+      filter: `circle:${lon},${lat},${radius}`,
+      limit: 1,
+      bias: `proximity:${lon},${lat}`
+    });
+
+    // 3. Tarihi
+    const historic = await geoapifyGet("/v2/places", {
+      categories: "historic,heritage,tourism.attraction,tourism.museum",
+      filter: `circle:${lon},${lat},${radius}`,
+      limit: 1,
+      bias: `proximity:${lon},${lat}`
+    });
+
+    return {
+      settlement: settlement.features?.[0]?.properties || null,
+      nature: nature.features?.[0]?.properties || null,
+      historic: historic.features?.[0]?.properties || null
+    };
+  } catch (error) {
+    console.error("Nearby places error:", error);
+    return { settlement: null, nature: null, historic: null };
+  }
+}
+
+// Router'a endpoint ekle
+router.post('/api/geoapify/nearby-places', async (req, res) => {
+  const { lat, lng } = req.body;
+  
+  if (!lat || !lng) {
+    return res.status(400).json({ error: "lat and lng required" });
+  }
+  
+  try {
+    const result = await nearbyPlaces({ lat, lon: lng, radius: 25000 });
+    res.json(result);
+  } catch (error) {
+    console.error("Nearby places endpoint error:", error);
+    res.status(500).json({ error: "Failed to fetch nearby places" });
+  }
+});
+
+// Export'a ekle:
 module.exports = {
   autocomplete,
   places,
-  nearbyCities
+  nearbyCities,
+  nearbyPlaces  // YENİ EKLENEN
 };

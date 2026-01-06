@@ -107,37 +107,69 @@ async function getHierarchicalLocation(lat, lng) {
     }
 }
 
-// 3. YAKIN YERLERİ GETİR (SADECE İSİMLER - AI YOK)
+
 async function fetchNearbyPlaceNames(lat, lng) {
-    try {
-        const response = await fetch('/api/geoapify/places-nearby', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lng })
-        });
-        
-        if (!response.ok) {
-            throw new Error('GeoApify fetch failed');
-        }
-        
-        const data = await response.json();
-        
-        // Eğer API yoksa, fallback olarak mock data
-        if (!data || data.error) {
-            console.warn("Using fallback nearby places");
-            return [
-                { name: "Karasu Köyü", type: "settlement" },
-                { name: "ABC Şelalesi", type: "nature" },
-                { name: "XYZ Antik Kenti", type: "historic" }
-            ];
-        }
-        
-        // API varsa formatla
-        return data.places || [];
-    } catch (error) {
-        console.error("Nearby places error:", error);
-        return []; // Boş döndür, butonlar gözükmez
+  try {
+    const response = await fetch('/api/geoapify/nearby-places', {
+      method: 'POST',  // veya GET kullanacaksan 'GET' yap
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng })
+    });
+    
+    if (!response.ok) {
+      console.error('Nearby places fetch failed:', response.status);
+      return [];
     }
+    
+    const data = await response.json();
+    
+    const places = [];
+    
+    // Yerleşim yeri
+    if (data.settlement && data.settlement.name) {
+      places.push({
+        name: data.settlement.name,
+        type: "settlement",
+        formatted: data.settlement.formatted || ""
+      });
+    }
+    
+    // Doğa
+    if (data.nature && data.nature.name) {
+      places.push({
+        name: data.nature.name,
+        type: "nature",
+        formatted: data.nature.formatted || ""
+      });
+    }
+    
+    // Tarihi
+    if (data.historic && data.historic.name) {
+      places.push({
+        name: data.historic.name,
+        type: "historic",
+        formatted: data.historic.formatted || ""
+      });
+    }
+    
+    // Eğer hiç yer yoksa, fallback göster (opsiyonel)
+    if (places.length === 0) {
+      console.warn("No nearby places found");
+      // İstersen fallback göster:
+      // return [
+      //   { name: "Karasu Köyü", type: "settlement", formatted: "" },
+      //   { name: "ABC Şelalesi", type: "nature", formatted: "" },
+      //   { name: "XYZ Antik Kenti", type: "historic", formatted: "" }
+      // ];
+      return []; // Boş döndür, butonlar gözükmez
+    }
+    
+    return places;
+    
+  } catch (error) {
+    console.error("Nearby places error:", error);
+    return [];
+  }
 }
 
 // 4. AI FETCH FUNCTION (AYNI)
