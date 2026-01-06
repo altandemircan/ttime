@@ -297,43 +297,46 @@ if (endpointType === 'point' && facts && typeof facts === 'object') {
 
         console.log(`🚀 [Nearby] İstek gidiyor: ${nlat}, ${nlng}`);
 
-        // DOĞRUDAN BACKEND'DEN 3 KATEGORİYİ ÇEKELİM
-     fetch('/llm-proxy/nearby-ai', { 
+fetch('/llm-proxy/nearby-ai', { 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat: nlat, lng: nlng })
 })
-.then(response => response.json())
+.then(response => {
+    if(!response.ok) throw new Error("Backend error");
+    return response.json();
+})
 .then(data => {
-    console.log("📦 [Nearby] Veri geldi:", data);
+    console.log("📦 [Nearby] Veri işleniyor:", data);
     const holder = document.getElementById(nearbyHolderId);
-    if (document.getElementById(`nearby-loading-${nearbyHolderId}`)) {
-        document.getElementById(`nearby-loading-${nearbyHolderId}`).remove();
-    }
+    if (!holder) return;
 
-    if (data.settlement || data.nature || data.historic) {
+    // Yükleniyor yazısını kaldır
+    const loadingMsg = document.getElementById(`nearby-loading-${nearbyHolderId}`);
+    if (loadingMsg) loadingMsg.remove();
+
+    if (data && (data.settlement || data.nature || data.historic)) {
         let buttonsHTML = '';
-        const categories = [
-            { key: 'settlement', icon: '🏙️', label: 'City' },
-            { key: 'nature', icon: '🌳', label: 'Nature' },
-            { key: 'historic', icon: '🏛️', label: 'Historic' }
+        const cats = [
+            { k: 'settlement', i: '🏙️', l: 'City' },
+            { k: 'nature', i: '🌳', l: 'Nature' },
+            { k: 'historic', i: '🏛️', l: 'Historic' }
         ];
 
-        categories.forEach(cat => {
-            if (data[cat.key]) {
-                const btnName = data[cat.key].name.replace(/'/g, "\\'");
+        cats.forEach(c => {
+            if (data[c.k] && data[c.k].name) {
+                const safeName = data[c.k].name.replace(/'/g, "\\'");
                 buttonsHTML += `
                     <button class="ai-nearby-btn" 
-                        style="background:#f1f5f9; border:1px solid #cbd5e1; margin-bottom:5px; width:100%; text-align:left; padding:8px; border-radius:6px; cursor:pointer;"
-                        onclick="fetchSimpleAI('point', '${btnName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
-                        ${cat.icon} <b>${cat.label}:</b> ${data[cat.key].name}
+                        onclick="fetchSimpleAI('point', '${safeName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
+                        ${c.i} <b>${c.l}:</b> ${data[c.k].name}
                     </button>`;
             }
         });
         holder.innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + buttonsHTML;
         holder.style.display = 'block';
     } else {
-        holder.style.display = 'none';
+        holder.style.display = 'none'; // Veri yoksa alanı gizle
     }
 })
 .catch(err => {
