@@ -221,14 +221,7 @@ const aiSimpleCache = {};
 async function fetchSimpleAI(endpointType, queryName, city, country, facts, containerDiv) {
     const cacheKey = `${endpointType}__${queryName.replace(/\s+/g, '_')}__${city}__${country}`;
     
-    if (aiSimpleCache[cacheKey]) {
-        containerDiv.innerHTML = aiSimpleCache[cacheKey];
-        if (endpointType === 'point') {
-            setTimeout(() => attachNearbySection(containerDiv, facts, city, country), 50);
-        }
-        return;
-    }
-
+    // 1. Loading
     containerDiv.innerHTML = `<div class="ai-simple-loading">Analyzing: <b>${queryName}</b>...</div>`; 
 
     try {
@@ -247,21 +240,25 @@ async function fetchSimpleAI(endpointType, queryName, city, country, facts, cont
         const p1 = endpointType === 'city' ? (data.summary || "No info.") : (data.p1 || "No info.");
         const p2 = endpointType === 'city' ? (data.tip || data.highlight || "") : (data.p2 || "");
 
-        const html = `
+        // Ana içeriği basıyoruz
+        containerDiv.innerHTML = `
             <div class="ai-response-wrapper">
                 <div class="ai-point-title">${endpointType === 'city' ? 'City' : 'Point'} AI Info:</div>
                 <p class="ai-point-p">${p1}</p>
                 ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
-                <div class="nearby-injection-point"></div> 
+                <div class="nearby-section-target"></div> 
             </div>
         `;
 
-        aiSimpleCache[cacheKey] = html;
-        containerDiv.innerHTML = html;
-
+        // Point tabındaysak Nearby kısmını zorla başlat
         if (endpointType === 'point') {
-            // DOM'un render edilmesi için kısa bir süre bekle
-            setTimeout(() => attachNearbySection(containerDiv, facts, city, country), 100);
+            // facts içinden koordinatları garantileyelim
+            const lat = facts?.__lat || facts?.lat;
+            const lng = facts?.__lng || facts?.lng;
+            
+            if (lat && lng) {
+                renderNearbyButtons(parseFloat(lat), parseFloat(lng), city, country, containerDiv.querySelector('.nearby-section-target'));
+            }
         }
 
     } catch (e) {
@@ -269,57 +266,54 @@ async function fetchSimpleAI(endpointType, queryName, city, country, facts, cont
     }
 }
 
-function attachNearbySection(containerDiv, facts, city, country) {
-    // Koordinat kontrolünü çok sıkı yapıyoruz
-    const lat = facts?.__lat || facts?.lat;
-    const lng = facts?.__lng || facts?.lng;
+async function renderNearbyButtons(lat, lng, city, country, targetDiv) {
+    if (!targetDiv) return;
 
-    if (!lat || !lng) {
-        console.error("❌ Koordinat eksik, Nearby başlatılamadı!", facts);
-        return;
-    }
-
-    const injectionPoint = containerDiv.querySelector('.nearby-injection-point');
-    if (!injectionPoint) {
-        console.error("❌ Injection point bulunamadı!");
-        return;
-    }
-
-    injectionPoint.innerHTML = `
+    // Önce "Aranıyor" yazısını bas
+    targetDiv.innerHTML = `
         <div class="ai-nearby-buttons" style="margin-top:15px; border-top:1px solid #f1f5f9; padding-top:10px;">
             <div class="ai-nearby-title">📍 Nearby Exploration:</div>
-            <div class="nearby-status" style="font-size:0.7rem; color:#94a3b8;">Searching surroundings...</div>
+            <div id="nearby-status-text" style="font-size:0.7rem; color:#94a3b8;">Searching surroundings...</div>
         </div>
     `;
 
-    fetch('/llm-proxy/nearby-ai', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: parseFloat(lat), lng: parseFloat(lng) })
-    })
-    .then(res => res.json())
-    .then(data => {
+    try {
+        const res = await fetch('/llm-proxy/nearby-ai', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng })
+        });
+        const data = await res.json();
+
+        const statusText = document.getElementById('nearby-status-text');
+        
         if (data && (data.settlement || data.nature || data.historic)) {
-            let btns = '';
-            const cats = [{k:'settlement', i:'🏙️', l:'City'}, {k:'nature', i:'🌳', l:'Nature'}, {k:'historic', i:'🏛️', l:'Historic'}];
+            let btnsHTML = '';
+            const cats = [
+                {k:'settlement', i:'🏙️', l:'City'}, 
+                {k:'nature', i:'🌳', l:'Nature'}, 
+                {k:'historic', i:'🏛️', l:'Historic'}
+            ];
             
             cats.forEach(c => {
                 if (data[c.k]?.name) {
-                    const sName = data[c.k].name.replace(/'/g, "\\'");
-                    btns += `
-                        <button class="ai-nearby-btn" onclick="fetchSimpleAI('point', '${sName}', '${city}', '${country}', {__lat:${lat}, __lng:${lng}}, this.closest('.ai-simple-content'))">
+                    const safeName = data[c.k].name.replace(/'/g, "\\'");
+                    btnsHTML += `
+                        <button class="ai-nearby-btn" onclick="fetchSimpleAI('point', '${safeName}', '${city}', '${country}', {__lat:${lat}, __lng:${lng}}, this.closest('.ai-simple-content'))">
                             ${c.i} <b>${c.l}:</b> ${data[c.k].name}
                         </button>`;
                 }
             });
-            injectionPoint.querySelector('.ai-nearby-buttons').innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + btns;
+            
+            // "Searching..." yazısını sil ve butonları bas
+            if (statusText) statusText.remove();
+            targetDiv.querySelector('.ai-nearby-buttons').innerHTML += btnsHTML;
         } else {
-            injectionPoint.innerHTML = `<div style="font-size:0.7rem; color:#94a3b8; margin-top:10px;">No landmarks found nearby.</div>`;
+            if (statusText) statusText.innerText = "No landmarks found nearby.";
         }
-    })
-    .catch(err => {
-        injectionPoint.innerHTML = ""; 
-    });
+    } catch (err) {
+        if (targetDiv) targetDiv.innerHTML = "";
+    }
 }
 
 // YARDIMCI FONKSİYON: Alt tarafa butonları enjekte eder
