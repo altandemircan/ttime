@@ -137,169 +137,77 @@ max_tokens: 200
 });
 
 
-// --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
+/// --- ENDPOINT: POINT AI INFO (Hata Giderilmiş Versiyon) ---
 router.post('/point-ai-info', async (req, res) => {
     const { point, city, country, facts } = req.body;
+    if (!point || !city) return res.status(400).send('point and city are required');
 
-    if (!point || !city) {
-        res.status(400).send('point and city are required');
-        return;
-    }
-
-    const norm = (v) => (typeof v === "string" ? v.trim() : "");
-    const aiPoint = norm(point);
-    const aiCity = norm(city);
-    const aiCountry = norm(country);
-
-    const cacheKey = `POINTAI:${aiPoint}__${aiCity}${aiCountry ? `__${aiCountry}` : ""}`;
-
-    if (aiCache[cacheKey]) {
-        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
-            try { return res.json(await aiCache[cacheKey].promise); } catch { delete aiCache[cacheKey]; }
-        }
-    }
+    const cacheKey = `POINTAI:${point}__${city}__${country || ""}`;
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
 
     const processingPromise = (async () => {
-        const activeModel = "llama3:8b";
-        const context = aiCountry ? `${aiCity}, ${aiCountry}` : aiCity;
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
-
-        const prompt = `
-            ENGLISH only. Factual travel guide.
-            POINT: "${aiPoint}"
-            CITY: "${context}"
-            FACTS: ${factsJson}
-            Return ONLY JSON: {"p1":"Description paragraph", "p2":"Practical info (phone, website, hours) as a single string"}.
-            If info is missing, use "Info not available".
-        `.trim();
+        const context = country ? `${city}, ${country}` : city;
+        const factsJson = JSON.stringify(facts || {}).slice(0, 3000);
+        const prompt = `ENGLISH only. Factual travel guide. POINT: "${point}", CITY: "${context}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"short description", "p2":"practical info string"}.`;
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: activeModel,
+                model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
-                stream: false,
-                format: "json",
-                options: { temperature: 0.1, num_predict: 180 }
+                stream: false, format: "json",
+                options: { temperature: 0.1, num_predict: 150 }
             }, { timeout: 40000 });
 
-            let content = response.data?.message?.content || "{}";
-            let parsed = {};
-            try {
-                parsed = JSON.parse(content);
-            } catch (e) {
-                const match = content.match(/\{[\s\S]*\}/);
-                if (match) parsed = JSON.parse(match[0]);
-            }
+            const parsed = JSON.parse(response.data.message.content || "{}");
             
-            // [object Object] hatasını KESİN önleyen güvenli çevirici
-            const safeString = (val) => {
-                if (val === null || val === undefined) return "Info not available.";
-                if (typeof val === 'object') {
-                    return Object.entries(val).map(([k, v]) => `${k}: ${v}`).join(", ") || "Info not available.";
-                }
-                const s = String(val).trim();
-                return (s === "" || s.toLowerCase() === "undefined") ? "Info not available." : s;
+            // [object Object] HATASINI ÖNLEYEN KISIM
+            const ensureString = (val) => {
+                if (!val) return "Info not available.";
+                if (typeof val === 'object') return JSON.stringify(val).replace(/[{}"]/g, ' ');
+                return String(val).trim() || "Info not available.";
             };
 
-            return {
-                p1: safeString(parsed.p1),
-                p2: safeString(parsed.p2)
-            };
+            return { p1: ensureString(parsed.p1), p2: ensureString(parsed.p2) };
         } catch (err) {
             return { p1: "Info not available.", p2: "Info not available." };
         }
     })();
 
     aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    try {
-        const result = await processingPromise;
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.json(result);
-    } catch (error) {
-        delete aiCache[cacheKey];
-        res.status(500).json({ error: 'AI Error' });
-    }
+    const result = await processingPromise;
+    aiCache[cacheKey] = { status: 'done', data: result };
+    saveCacheToDisk();
+    res.json(result);
 });
 
-// --- ENDPOINT: NEARBY AI (geoapify places + ai for 3 nearest items) ---
+// --- ENDPOINT: NEARBY AI (Sadece Geoapify İsimlerini Döndürür) ---
 router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng, city, country } = req.body;
-    if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).send('lat/lng required');
+    const { lat, lng } = req.body;
+    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+    if (!GEOAPIFY_KEY) return res.json({ settlement: null, nature: null, historic: null });
 
-    const cacheKey = `NEARBYAI:${lat.toFixed(4)},${lng.toFixed(4)}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+    const fetchPlaces = async (categories) => {
+        try {
+            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
+            const r = await axios.get(url, { timeout: 10000 });
+            const f = r.data?.features?.[0]?.properties;
+            if (!f) return null;
+            return { 
+                name: f.name || f.city || f.formatted, 
+                city: f.city || f.county || "", 
+                country: f.country || "", 
+                facts: f 
+            };
+        } catch (e) { return null; }
+    };
 
-    const processingPromise = (async () => {
-        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) return { settlement: null, nature: null, historic: null };
+    const [s, n, h] = await Promise.all([
+        fetchPlaces("place.city,place.town,place.village"),
+        fetchPlaces("natural,leisure.park,beach"),
+        fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
+    ]);
 
-        const proximity = `${lng},${lat}`; // lon,lat formatı
-
-        const fetchPlaces = async (categories) => {
-            try {
-                const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${proximity},25000&bias=proximity:${proximity}&limit=1&apiKey=${GEOAPIFY_KEY}`;
-                const r = await axios.get(url, { timeout: 12000 });
-                const f = r.data?.features?.[0];
-                if (!f) return null;
-                return { 
-                    name: f.properties.name || f.properties.city || f.properties.formatted || "Nearby Place", 
-                    formatted: f.properties.formatted || "" 
-                };
-            } catch (e) { return null; }
-        };
-
-        const [s, n, h] = await Promise.all([
-            fetchPlaces("place.city,place.town,place.suburb,place.village"),
-            fetchPlaces("natural,leisure.park,beach"),
-            fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
-        ]);
-
-        const askAI = async (typeLabel, item) => {
-            if (!item) return { item: null, ai: { p1: "Info not available." } };
-            
-            // YEDEK (Fallback): AI hata verirse Geoapify'dan gelen adresi göster
-            const fallbackContent = item.formatted || item.name || "Location found nearby.";
-
-            try {
-                const prompt = `Briefly describe "${item.name}" in "${city}" as a ${typeLabel}. English. Max 25 words. JSON: {"p1":"..."}`;
-                const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                    model: "llama3:8b",
-                    messages: [{ role: "user", content: prompt }],
-                    stream: false, format: "json",
-                    options: { temperature: 0.1, num_predict: 100 }
-                }, { timeout: 20000 });
-                
-                let content = response.data?.message?.content || "{}";
-                let parsed = JSON.parse(content);
-                const aiResult = (parsed.p1 && typeof parsed.p1 === 'string') ? parsed.p1.trim() : fallbackContent;
-                
-                return { item, ai: { p1: aiResult } };
-            } catch (e) { 
-                // AI hata verirse veya timeout olursa Geoapify bilgisini döndür
-                return { item, ai: { p1: fallbackContent } }; 
-            }
-        };
-
-        // Ollama'yı yormamak için AI isteklerini sırayla (sequential) yapıyoruz
-        const settlementAI = await askAI("Settlement", s);
-        const natureAI = await askAI("Nature Area", n);
-        const historicAI = await askAI("Historic Site", h);
-
-        return { settlement: settlementAI, nature: natureAI, historic: historicAI };
-    })();
-
-    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    try {
-        const result = await processingPromise;
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.json(result);
-    } catch (error) {
-        res.status(200).json({ settlement: null, nature: null, historic: null });
-    }
+    res.json({ settlement: s, nature: n, historic: h });
 });
 
 // Chat stream (SSE) endpoint
