@@ -178,73 +178,47 @@ router.post('/point-ai-info', async (req, res) => {
 
 
 // --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
+// --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
+// llm-proxy.js içinde bu kısmı bul ve komple değiştir
 router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng } = req.body;
+    try {
+        const { lat, lng } = req.body;
+        const apiKey = process.env.GEOAPIFY_KEY;
 
-    // 1. Koordinat Kontrolü
-    if (!lat || !lng) {
-        console.warn('[NEARBY AI] Missing coordinates');
-        return res.json({ settlement: null, nature: null, historic: null });
-    }
+        if (!lat || !lng) return res.status(400).json({ error: "Coords missing" });
 
-    const apiKey = process.env.GEOAPIFY_KEY;
-    if (!apiKey) {
-        console.error('[NEARBY AI] Missing API KEY');
-        return res.json({ settlement: null, nature: null, historic: null });
-    }
-
-    // 2. Yardımcı Fonksiyon: Kategoriden en iyi sonucu bul
-    const fetchCategory = async (categories, radius = 10000) => {
-        try {
-            // Limit 5 yapıyoruz ki ilk sonuç isimsizse diğerine bakabilelim
-            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
-            
-            const response = await axios.get(url, { timeout: 8000 });
-            const features = response.data?.features || [];
-
-            // İsmi olan ilk geçerli yeri bul
-            const validPlace = features.find(f => f.properties && (f.properties.name || f.properties.formatted));
-
-            if (validPlace) {
-                return {
-                    name: validPlace.properties.name || validPlace.properties.city || "Unknown Place",
-                    facts: validPlace.properties
-                };
+        // Tek tek kasmak yerine kategorileri optimize ettim
+        const fetchCategory = async (categories, radius) => {
+            // filter=circle:lng,lat,radius | bias=proximity:lng,lat (en yakın olanı başa getirir)
+            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=1&apiKey=${apiKey}`;
+            const resp = await axios.get(url);
+            if (resp.data.features && resp.data.features.length > 0) {
+                const p = resp.data.features[0].properties;
+                return { name: p.name || p.address_line1, facts: p };
             }
             return null;
-        } catch (error) {
-            console.error(`[NEARBY AI] Error fetching ${categories}:`, error.message);
-            return null;
-        }
-    };
+        };
 
-    console.log(`[NEARBY AI] Searching nearby: ${lat}, ${lng}`);
+        // Antalya'da boş dönmemesi için kategorileri ve mesafeleri güncelledik
+        const [settlement, nature, historic] = await Promise.all([
+            // En yakın yerleşim (Mahalle, Köy, Semt) - 10km yeterli
+            fetchCategory("place.suburb,place.village,place.town,place.city", 10000),
+            
+            // Doğa, Park, Plaj - 20km
+            fetchCategory("natural,leisure.park,beach,leisure.garden", 20000),
+            
+            // Tarih, Müze, Turistik Nokta - 20km
+            fetchCategory("historic,tourism.attraction,tourism.sights,religion.place_of_worship", 20000)
+        ]);
 
-    try {
-        // 3. Paralel Sorgular (Yarıçapları kategoriye göre ayarladık)
-       const [settlement, nature, historic] = await Promise.all([
-    // Yerleşim (Settlement)
-    fetchCategory("place.city,place.town,place.suburb,place.village", 15000),
-    
-    // Doğa (Nature) - tourism.sight eklendi
-    fetchCategory("natural,leisure.park,beach,water,tourism.sight", 20000),
-    
-    // Tarih/Turizm (Historic) - kategoriler zenginleştirildi
-    fetchCategory("historic,tourism.attraction,tourism.museum,building.historic,tourism.sights", 25000) 
-]);
+        console.log("📍 [Nearby API] Antalya Sonuçları:", { settlement: !!settlement, nature: !!nature, historic: !!historic });
 
-        const result = { settlement, nature, historic };
-        console.log('[NEARBY AI] Result found:', 
-            `S: ${settlement?.name}, N: ${nature?.name}, H: ${historic?.name}`
-        );
-        
-        res.json(result);
-
-    } catch (e) {
-        console.error('[NEARBY AI] General Error:', e);
-        res.status(500).json({ error: e.message });
+        res.json({ settlement, nature, historic });
+    } catch (error) {
+        console.error("❌ Nearby Error:", error.message);
+        res.status(500).json({ error: "Backend failure" });
     }
-}); 
+});
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
