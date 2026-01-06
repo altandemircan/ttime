@@ -142,6 +142,54 @@ async function fetchNearbyPlaceNames(lat, lng) {
     return [];
   }
 }
+async function fetchNearbyPlaces(lat, lng, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        const response = await fetch('/llm/nearby-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng })
+        });
+
+        const data = await response.json();
+        
+        // Eğer veri geldiyse Loading yazısını temizle ve butonları bas
+        if (data.settlement || data.nature || data.historic) {
+            container.style.display = 'block'; // Gizli paneli aç
+            container.innerHTML = '<div class="ai-nearby-title">📍 Nearby Exploration:</div>';
+            
+            const grid = document.createElement('div');
+            grid.className = 'ai-nearby-grid'; // CSS'de yan yana dizilmesi için
+
+            const categories = [
+                { key: 'settlement', icon: '🏙️', label: 'City/Town' },
+                { key: 'nature', icon: '🌳', label: 'Nature' },
+                { key: 'historic', icon: '🏛️', label: 'Historic' }
+            ];
+
+            categories.forEach(cat => {
+                if (data[cat.key]) {
+                    const btn = document.createElement('button');
+                    btn.className = 'ai-nearby-btn';
+                    btn.innerHTML = `<span>${cat.icon} ${data[cat.key].name}</span>`;
+                    btn.onclick = () => {
+                        // Burada AI'ya bu mekan hakkında soru sorabiliriz
+                        alert(`${data[cat.key].name} hakkında bilgi getiriliyor...`);
+                    };
+                    grid.appendChild(btn);
+                }
+            });
+            container.appendChild(grid);
+        } else {
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 0.75rem;">No nearby points found.</div>';
+        }
+    } catch (err) {
+        console.error("Nearby fetch error:", err);
+        container.style.display = 'none';
+    }
+}
 // 4. AI FETCH FUNCTION (AYNI)
 const aiSimpleCache = {};
 
