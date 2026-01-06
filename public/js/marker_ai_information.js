@@ -176,30 +176,84 @@ async function handleMapAIClick(e) {
     } catch (err) { console.error("Nearby tabs failed", err); }
 }
 
-// fetchSimpleAI artık çok daha sade, nearby tetiklemiyor çünkü her şey bir sekme!
-async function fetchSimpleAI(endpointType, queryName, city, country, facts, containerDiv) {
-    const cacheKey = `${endpointType}__${queryName}`;
-    if (aiSimpleCache[cacheKey]) { containerDiv.innerHTML = aiSimpleCache[cacheKey]; return; }
+// ... (Stiller ve handleMapAIClick başlangıcı aynı kalacak)
 
-    containerDiv.innerHTML = `<div class="ai-simple-loading">Analyzing <b>${queryName}</b>...</div>`;
+async function fetchSimpleAI(endpointType, queryName, city, country, facts, containerDiv) {
+    const cacheKey = `${endpointType}__${queryName}__${city}`;
+    
+    // Yükleniyor yazısı (Nearby butonlarını silmeden sadece üst kısmı güncellemek için)
+    containerDiv.innerHTML = `<div class="ai-simple-loading">Analyzing: <b>${queryName}</b>...</div>`;
 
     try {
-        const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
-        const response = await fetch(url, {
+        const response = await fetch(endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ point: queryName, city, country, facts })
         });
         const data = await response.json();
-        
-        const p1 = data.p1 || data.summary || "Info not available.";
-        const p2 = data.p2 || data.tip || "";
 
-        const html = `<div style="animation:fadeIn 0.3s ease;"><div class="ai-point-title">AI Info:</div><p class="ai-point-p">${p1}</p>${p2 && p2 !== "Info not available." ? `<p class="ai-point-p">${p2}</p>` : ''}</div>`;
+        // [object Object] hatasını önlemek için string kontrolü
+        const safeStr = (v) => (v && typeof v === 'object' ? JSON.stringify(v).replace(/[{}"]/g, '') : String(v || ""));
         
-        aiSimpleCache[cacheKey] = html;
-        containerDiv.innerHTML = html;
+        const p1 = safeStr(data.p1 || data.summary);
+        const p2 = safeStr(data.p2 || data.tip || data.highlight);
+
+        containerDiv.innerHTML = `
+            <div style="animation: fadeIn 0.3s ease;">
+                <div class="ai-point-title">AI Insight: ${queryName}</div>
+                <p class="ai-point-p">${p1}</p>
+                ${p2 && !p2.toLowerCase().includes("not available") ? `<p class="ai-point-p">${p2}</p>` : ``}
+            </div>
+            <div id="nearby-tabs-container" style="margin-top:15px; border-top:1px dashed #e2e8f0; padding-top:10px;"></div>
+        `;
+
+        // Sadece ana "Point" tıklandığında veya ilk açılışta Nearby sekmelerini getir
+        if (endpointType === 'point' && facts?.__lat) {
+            triggerNearbyTabs(facts, city, country, containerDiv);
+        }
     } catch (e) {
-        containerDiv.innerHTML = `<div style="color:#ef4444; padding:10px;">Connection Error.</div>`;
+        containerDiv.innerHTML = `<div style="color:#ef4444; padding:10px;">Timeout. Please try again.</div>`;
+    }
+}
+
+async function triggerNearbyTabs(facts, city, country, containerDiv) {
+    const holder = document.getElementById('nearby-tabs-container');
+    if (!holder) return;
+
+    try {
+        const resp = await fetch('/llm-proxy/nearby-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: facts.__lat, lng: facts.__lng })
+        });
+        const nearby = await resp.json();
+
+        let buttonsHTML = '<div style="font-size:0.75rem; color:#94a3b8; margin-bottom:5px; font-weight:600;">NEARBY EXPLORE:</div><div style="display:flex; gap:5px; flex-wrap:wrap;">';
+        
+        const createBtn = (label, data) => {
+            if (!data || !data.name) return '';
+            return `<button class="ai-simple-tab" 
+                style="font-size:0.7rem; padding:4px 8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; cursor:pointer;"
+                onclick="window.loadNearbyIntoAI('${data.name.replace(/'/g, "\\'")}', ${JSON.stringify(data.facts).replace(/"/g, '&quot;')})">
+                ${data.name}
+            </button>`;
+        };
+
+        buttonsHTML += createBtn("Settlement", nearby.settlement);
+        buttonsHTML += createBtn("Nature", nearby.nature);
+        buttonsHTML += createBtn("Historic", nearby.historic);
+        buttonsHTML += '</div>';
+
+        holder.innerHTML = buttonsHTML;
+
+        // Global fonksiyon olarak ata ki butonlar erişebilsin
+        window.loadNearbyIntoAI = (name, nearbyFacts) => {
+            // facts içine lat/lng'yi tekrar koyuyoruz ki o sekmeden de nearby tetiklenebilsin (opsiyonel)
+            const newFacts = { ...nearbyFacts, __lat: facts.__lat, __lng: facts.__lng };
+            fetchSimpleAI('point', name, city, country, newFacts, containerDiv);
+        };
+
+    } catch (e) {
+        holder.remove();
     }
 }
