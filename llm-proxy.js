@@ -165,7 +165,7 @@ router.post('/point-ai-info', async (req, res) => {
             };
             return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
         } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
-    })();
+    })(); 
 
     aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
     try {
