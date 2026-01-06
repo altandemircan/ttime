@@ -179,24 +179,12 @@ const activeModel = "mistral-nemo:latest";
 
         console.log(`[AI START] Model: ${activeModel} | Point: ${aiPoint} | City: ${context}`);
 
-        const prompt = `
-You are a strictly factual travel assistant.
-
-TASK:
-Give information about the POINT "${aiPoint}" located in "${context}".
-
-OUTPUT RULES:
-- Respond ONLY in ENGLISH.
-- Do NOT hallucinate. If you are not sure, write "Info not available".
-- Return ONLY valid JSON in this exact schema:
-{ "p1": "...", "p2": "..." }
-
-CONTENT RULES:
-- p1: 1 short paragraph describing what the place is (or what kind of place), in max ~2 sentences.
-- p2: 1 short paragraph with a practical visitor note (hours/entry/access/safety/etiquette) if known, otherwise "Info not available".
-- Do NOT include headings like "Summary/Tip/Highlight".
-- Do NOT include emojis.
-        `.trim();
+const prompt = `
+Answer in ENGLISH only. No hallucinations; if unsure say "Info not available".
+Return ONLY JSON: {"p1":"...","p2":"..."}.
+Point: "${aiPoint}" in "${context}".
+p1: what it is (max 2 sentences). p2: practical visitor note or "Info not available".
+`.trim();
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
