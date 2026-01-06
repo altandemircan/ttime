@@ -85,8 +85,8 @@ async function getHierarchicalLocation(lat, lng) {
 // 3. AI FETCH FUNCTION (Aynı)
 const aiSimpleCache = {};
 
-async function fetchSimpleAI(queryName, fullContext, containerDiv) {
-    const cacheKey = fullContext;
+async function fetchSimpleAI(queryName, city, country, containerDiv) {
+    const cacheKey = `${queryName}__${city}__${country}`;
     
     if (aiSimpleCache[cacheKey]) {
         containerDiv.innerHTML = aiSimpleCache[cacheKey];
@@ -108,36 +108,23 @@ const response = await fetch('/llm-proxy/point-ai-info', {
 // Biz point+city ayrı yollayalım (daha stabil)
 body: JSON.stringify({
     point: queryName,
-    city: fullContext,
-    country: ""
-})        });
+    city,
+    country
+})
+       });
 
         const data = await response.json();
-        
-         const pickText = (...vals) => {
-            for (const v of vals) {
-                if (typeof v === "string" && v.trim().length > 0) return v.trim();
-            }
-            return "";
-        };
 
-        const clamp100 = (s) => {
-            const t = (s || "").toString().trim().replace(/\s+/g, " ");
-            if (t.length <= 100) return t;
-            return t.slice(0, 97).trimEnd() + "...";
-        };
+const p1 = (data && typeof data.p1 === "string" && data.p1.trim().length > 0) ? data.p1.trim() : "Info not available.";
+const p2 = (data && typeof data.p2 === "string" && data.p2.trim().length > 0) ? data.p2.trim() : "Info not available.";
 
-        // 2 paragraf: 1) summary  2) tip/highlight fallback
-        const p1 = clamp100(pickText(data.summary, "No info available."));
-        const p2 = clamp100(pickText(data.tip, data.highlight, ""));
-
-        const html = `
-            <div style="animation: fadeIn 0.3s ease;">
-                <div class="ai-point-title">Point AI Info:</div>
-                <p class="ai-point-p">${p1}</p>
-                ${p2 ? `<p class="ai-point-p">${p2}</p>` : `<p class="ai-point-p"></p>`}
-            </div>
-        `;
+const html = `
+    <div style="animation: fadeIn 0.3s ease;">
+        <div class="ai-point-title">Point AI Info:</div>
+        <p class="ai-point-p">${p1}</p>
+        <p class="ai-point-p">${p2}</p>
+    </div>
+`;
 
         aiSimpleCache[cacheKey] = html;
         containerDiv.innerHTML = html;
@@ -200,7 +187,8 @@ let tabsHTML = '';
 if (loc.specific && loc.specific.trim().length > 0) {
     tabsHTML += `<button class="ai-simple-tab active"
         data-query="${loc.specific}"
-        data-context="${loc.specific}, ${loc.city}, ${loc.country}">
+        data-city="${loc.city}"
+data-country="${loc.country}">
         📍 ${loc.specific}
     </button>`;
 }
@@ -211,9 +199,10 @@ const isCityActive = tabsHTML === '' ? 'active' : '';
 
 tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
     data-query="${cityLabel}"
-    data-context="${cityLabel}, ${loc.country}">
+    data-city="${cityLabel}"
+    data-country="${loc.country}">
     🌍 ${cityLabel}
-</button>`;
+</button>`;;
     
     // UI oluştur
     const uiID = 'ai-ui-' + Date.now();
@@ -243,8 +232,9 @@ tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
                 evt.target.classList.add('active');
                 
                 const qName = evt.target.getAttribute('data-query');
-                const qContext = evt.target.getAttribute('data-context');
-                fetchSimpleAI(qName, qContext, contentDiv);
+                const qCity = evt.target.getAttribute('data-city') || '';
+const qCountry = evt.target.getAttribute('data-country') || '';
+fetchSimpleAI(qName, qCity, qCountry, contentDiv);
             };
         });
 
