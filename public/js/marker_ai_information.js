@@ -142,7 +142,7 @@ async function fetchSimpleAI(endpointType, queryName, city, country, facts, cont
     `; 
 
     try {
-const url = '/llm-proxy/plan-summary';
+const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
 
 const body =
     endpointType === 'city'
