@@ -180,34 +180,35 @@ router.post('/point-ai-info', async (req, res) => {
     res.json(result);
 });
 
-// --- ENDPOINT: NEARBY AI (Sadece Geoapify İsimlerini Döndürür) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
-    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-    if (!GEOAPIFY_KEY) return res.json({ settlement: null, nature: null, historic: null });
+    if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).send('lat/lng required');
 
-    const fetchPlaces = async (categories) => {
-        try {
-            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
+    try {
+        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+        const proximity = `${lng},${lat}`;
+
+        const fetchPlaces = async (categories) => {
+            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${proximity},25000&bias=proximity:${proximity}&limit=1&apiKey=${GEOAPIFY_KEY}`;
             const r = await axios.get(url, { timeout: 10000 });
-            const f = r.data?.features?.[0]?.properties;
+            const f = r.data?.features?.[0];
             if (!f) return null;
-            return { 
-                name: f.name || f.city || f.formatted, 
-                city: f.city || f.county || "", 
-                country: f.country || "", 
-                facts: f 
+            return {
+                name: f.properties.name || f.properties.city || f.properties.suburb || "Unknown",
+                facts: f.properties // Point AI Info'nun kullanabilmesi için tüm datayı gönderiyoruz
             };
-        } catch (e) { return null; }
-    };
+        };
 
-    const [s, n, h] = await Promise.all([
-        fetchPlaces("place.city,place.town,place.village"),
-        fetchPlaces("natural,leisure.park,beach"),
-        fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
-    ]);
+        const [s, n, h] = await Promise.all([
+            fetchPlaces("place.city,place.town,place.suburb,place.village"),
+            fetchPlaces("natural,leisure.park,beach"),
+            fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
+        ]);
 
-    res.json({ settlement: s, nature: n, historic: h });
+        res.json({ settlement: s, nature: n, historic: h });
+    } catch (e) {
+        res.status(500).json({ error: "Geoapify error" });
+    }
 });
 
 // Chat stream (SSE) endpoint
