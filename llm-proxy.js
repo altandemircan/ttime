@@ -240,88 +240,78 @@ p2: practical info ONLY if present in FACTS (phone, website, opening_hours). Oth
 
 // --- ENDPOINT: NEARBY AI (geoapify places + ai for 3 nearest items) ---
 router.post('/nearby-ai', async (req, res) => {
-  const { lat, lng, city, country } = req.body;
+    const { lat, lng, city, country } = req.body;
 
-  if (typeof lat !== 'number' || typeof lng !== 'number') {
-    return res.status(400).send('lat and lng are required (number)');
-  }
-
-  const norm = (v) => (typeof v === "string" ? v.trim() : "");
-  const nCity = norm(city);
-  const nCountry = norm(country);
-
-  const cacheKey = `NEARBYAI:${lat.toFixed(4)},${lng.toFixed(4)}__${nCity}__${nCountry}`;
-  console.log(`[AI REQ] ${cacheKey}`);
-
-  if (aiCache[cacheKey]) {
-    if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-    if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
-      try {
-        const data = await aiCache[cacheKey].promise;
-        return res.json(data);
-      } catch {
-        delete aiCache[cacheKey];
-      }
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        return res.status(400).send('lat and lng are required (number)');
     }
-  }
 
-  const processingPromise = (async () => {
-    console.log("[NEARBY-AI] GEOAPIFY_KEY present?", !!process.env.GEOAPIFY_KEY);
+    const norm = (v) => (typeof v === "string" ? v.trim() : "");
+    const nCity = norm(city);
+    const nCountry = norm(country);
 
-    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-    if (!GEOAPIFY_KEY) throw new Error("Missing GEOAPIFY_KEY env");
+    const cacheKey = `NEARBYAI:${lat.toFixed(4)},${lng.toFixed(4)}__${nCity}__${nCountry}`;
+    console.log(`[AI REQ] ${cacheKey}`);
 
-    const proximity = `${lng},${lat}`;
+    if (aiCache[cacheKey]) {
+        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try {
+                const data = await aiCache[cacheKey].promise;
+                return res.json(data);
+            } catch {
+                delete aiCache[cacheKey];
+            }
+        }
+    }
 
-    const fetchPlaces = async (label, categories) => {
-      const url =
-        `https://api.geoapify.com/v2/places?` +
-        `categories=${encodeURIComponent(categories)}` +
-        `&filter=circle:${proximity},25000` +
-        `&bias=proximity:${proximity}` +
-        `&limit=1` +
-        `&apiKey=${encodeURIComponent(GEOAPIFY_KEY)}`;
+    const processingPromise = (async () => {
+        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+        if (!GEOAPIFY_KEY) throw new Error("Missing GEOAPIFY_KEY env");
 
-      try {
-        const r = await axios.get(url, { timeout: 15000 });
-        const f = r.data?.features?.[0];
-        if (!f) return null;
+        const proximity = `${lng},${lat}`;
 
-        const p = f.properties || {};
-        return {
-          name: p.name || p.formatted || "Unknown",
-          formatted: p.formatted || "",
-          categories: p.categories || [],
-          place_id: p.place_id || "",
-          lat: f.geometry?.coordinates?.[1] ?? null,
-          lng: f.geometry?.coordinates?.[0] ?? null
+        const fetchPlaces = async (categories) => {
+            const url =
+                `https://api.geoapify.com/v2/places?` +
+                `categories=${encodeURIComponent(categories)}` +
+                `&filter=circle:${proximity},25000` +
+                `&bias=proximity:${proximity}` +
+                `&limit=1` +
+                `&apiKey=${encodeURIComponent(GEOAPIFY_KEY)}`;
+
+            const r = await axios.get(url, { timeout: 15000 });
+            const f = r.data?.features?.[0];
+            if (!f) return null;
+
+            const p = f.properties || {};
+            return {
+                name: p.name || p.formatted || "Unknown",
+                formatted: p.formatted || "",
+                categories: p.categories || [],
+                place_id: p.place_id || "",
+                lat: f.geometry?.coordinates?.[1] ?? null,
+                lng: f.geometry?.coordinates?.[0] ?? null
+            };
         };
-      } catch (err) {
-        // hangi kategori patladı görmek için
-        const status = err.response?.status;
-        const data = err.response?.data;
-        const msg = err.message || "Geoapify request failed";
-        throw new Error(`Geoapify places failed for ${label}: ${msg} (status=${status ?? "n/a"})`);
-      }
-    };
 
-    const settlementCategories = "place.village,place.town,place.hamlet,place.city";
-    const natureCategories = "natural.water,natural.wood,leisure.park,beach,water,waterway,landuse.forest";
-    const historicCategories = "historic,heritage,tourism.attraction,tourism.museum";
+        const settlementCategories = "place.village,place.town,place.hamlet,place.city";
+        const natureCategories = "natural.water,natural.wood,leisure.park,beach,water,waterway,landuse.forest";
+        const historicCategories = "historic,heritage,tourism.attraction,tourism.museum";
 
-    const [settlement, nature, historic] = await Promise.all([
-      fetchPlaces("settlement", settlementCategories),
-      fetchPlaces("nature", natureCategories),
-      fetchPlaces("historic", historicCategories)
-    ]);
+        const [settlement, nature, historic] = await Promise.all([
+            fetchPlaces(settlementCategories),
+            fetchPlaces(natureCategories),
+            fetchPlaces(historicCategories)
+        ]);
 
-    const activeModel = "llama3:8b";
+        const activeModel = "llama3:8b";
 
-    const makeNearbyPrompt = (typeLabel, item) => {
-      const ctx = nCountry ? `${nCity}, ${nCountry}` : (nCity || nCountry || "");
-      const factsJson = JSON.stringify(item || {}).slice(0, 2000);
+        const makeNearbyPrompt = (typeLabel, item) => {
+            const ctx = nCountry ? `${nCity}, ${nCountry}` : (nCity || nCountry || "");
+            const factsJson = JSON.stringify(item || {}).slice(0, 2000);
 
-      return `
+            return `
 ENGLISH only. Be strictly factual. Use ONLY the FACTS.
 Return ONLY JSON: {"p1":"...","p2":"..."}.
 
@@ -334,76 +324,61 @@ ${factsJson}
 p1: 1 short paragraph describing what it is + location (use formatted if present).
 p2: 1 short practical note if possible from FACTS, otherwise "Info not available".
 `.trim();
-    };
-
-    const askAI = async (typeLabel, item) => {
-      if (!item) return { item: null, ai: { p1: "Info not available.", p2: "Info not available." } };
-
-      try {
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-          model: activeModel,
-          messages: [{ role: "user", content: makeNearbyPrompt(typeLabel, item) }],
-          stream: false,
-          format: "json",
-          options: {
-            temperature: 0.1,
-            top_p: 0.9,
-            num_predict: 120
-          }
-        });
-
-        const jsonText = response.data?.message?.content || "";
-        let parsed;
-        try {
-          parsed = JSON.parse(jsonText);
-        } catch (e) {
-          console.error("[NEARBY-AI] JSON parse failed. Raw:", jsonText.slice(0, 400));
-          throw new Error("LLM returned invalid JSON for nearby-ai");
-        }
-
-        return {
-          item,
-          ai: {
-            p1: parsed?.p1 ? String(parsed.p1).trim() : "Info not available.",
-            p2: parsed?.p2 ? String(parsed.p2).trim() : "Info not available."
-          }
         };
-      } catch (err) {
-        console.error("LLM Error (nearby):", err.message);
-        return { item, ai: { p1: "Info not available.", p2: "Info not available." } };
-      }
-    };
 
-    const [settlementAI, natureAI, historicAI] = await Promise.all([
-      askAI("Nearest settlement", settlement),
-      askAI("Nearest nature area", nature),
-      askAI("Nearest historic site", historic)
-    ]);
+        const askAI = async (typeLabel, item) => {
+            if (!item) return { item: null, ai: { p1: "Info not available.", p2: "Info not available." } };
 
-    return { settlement: settlementAI, nature: natureAI, historic: historicAI };
-  })();
+            try {
+                const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                    model: activeModel,
+                    messages: [{ role: "user", content: makeNearbyPrompt(typeLabel, item) }],
+                    stream: false,
+                    format: "json",
+                    options: {
+                        temperature: 0.1,
+                        top_p: 0.9,
+                        num_predict: 120
+                    }
+                });
 
-  aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
+                const jsonText = response.data?.message?.content || "";
+                const parsed = JSON.parse(jsonText);
 
-  try {
-    const result = await processingPromise;
-    aiCache[cacheKey] = { status: 'done', data: result };
-    saveCacheToDisk();
-    res.json(result);
-  } catch (error) {
-    console.error(`[AI ERROR] ${cacheKey}:`, error.message);
-    console.error("[NEARBY-AI] FULL ERROR", error);
+                return {
+                    item, 
+                    ai: {
+                        p1: parsed?.p1 ? String(parsed.p1).trim() : "Info not available.",
+                        p2: parsed?.p2 ? String(parsed.p2).trim() : "Info not available."
+                    }
+                };
+            } catch (err) {
+                console.error("LLM Error (nearby):", err.message);
+                return { item, ai: { p1: "Info not available.", p2: "Info not available." } };
+            }
+        };
 
-    delete aiCache[cacheKey];
+        const [settlementAI, natureAI, historicAI] = await Promise.all([
+            askAI("Nearest settlement", settlement),
+            askAI("Nearest nature area", nature),
+            askAI("Nearest historic site", historic)
+        ]);
 
-    res.status(500).json({
-      error: 'Nearby AI Error',
-      message: error.message,
-      geoapify_status: error.response?.status,
-      geoapify_data: error.response?.data,
-      stack: (error.stack || "").split("\n").slice(0, 8).join("\n")
-    });
-  }
+        return { settlement: settlementAI, nature: natureAI, historic: historicAI };
+    })();
+
+    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
+
+    try {
+        const result = await processingPromise;
+        aiCache[cacheKey] = { status: 'done', data: result };
+        saveCacheToDisk();
+        res.json(result);
+    } catch (error) {
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'Nearby AI Error' });
+    }
 });
 
 // Chat stream (SSE) endpoint
