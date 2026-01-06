@@ -110,35 +110,49 @@ async function getHierarchicalLocation(lat, lng) {
 // marker_ai_information.js içindeki fetchNearbyPlaceNames fonksiyonu
 
 async function fetchNearbyPlaceNames(lat, lng) {
+  console.log(`📡 [Nearby AI] İstek gönderiliyor: Lat: ${lat}, Lng: ${lng}`);
+  
   try {
+    // server.js içindeki app.use('/llm-proxy', ...) tanımına uygun yol
     const response = await fetch('/llm-proxy/nearby-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lat, lng })
     });
     
-    if (!response.ok) return [];
+    if (!response.ok) {
+        console.error(`❌ [Nearby AI] Sunucu hatası: ${response.status}`);
+        return [];
+    }
     
     const data = await response.json();
+    console.log("📦 [Nearby AI] Gelen ham veri:", data);
+
     const places = [];
     const usedNames = new Set();
 
-    // Veri null gelse bile patlamaması için güvenli erişim (?.)
+    // Veri null gelse bile patlamaması için güvenli erişim
     const checkAndAdd = (obj, type) => {
-        if (obj?.name && !usedNames.has(obj.name)) {
-            places.push({ name: obj.name, type: type });
+        if (obj && obj.name && !usedNames.has(obj.name)) {
+            places.push({ 
+                name: obj.name, 
+                type: type,
+                details: obj.facts || {} // Varsa ek bilgileri sakla
+            });
             usedNames.add(obj.name);
         }
     };
 
+    // Backend'den gelen 3 kategori kontrol ediliyor
     checkAndAdd(data.settlement, "settlement");
     checkAndAdd(data.nature, "nature");
     checkAndAdd(data.historic, "historic");
     
+    console.log("✅ [Nearby AI] İşlenmiş yerler:", places);
     return places;
     
   } catch (error) {
-    console.error("Client error:", error);
+    console.error("❌ [Nearby AI] İstemci hatası:", error);
     return [];
   }
 }
@@ -305,15 +319,16 @@ if (endpointType === 'point' && facts && typeof facts === 'object') {
                 ];
 
                 categories.forEach(cat => {
-                    if (data[cat.key]) {
-                        buttonsHTML += `
-                            <button class="ai-nearby-btn" 
-                                style="background:#f1f5f9; border:1px solid #cbd5e1; margin-bottom:5px; width:100%; text-align:left; padding:8px; border-radius:6px; cursor:pointer;"
-                                onclick="fetchSimpleAI('point', '${data[cat.key].name.replace(/'/g, "\\'")}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, document.getElementById('${uiID}-content'))">
-                                ${cat.icon} <b>${cat.label}:</b> ${data[cat.key].name}
-                            </button>`;
-                    }
-                });
+    if (data[cat.key]) {
+        const btnPlaceName = data[cat.key].name.replace(/'/g, "\\'");
+        buttonsHTML += `
+            <button class="ai-nearby-btn" 
+                style="background:#f1f5f9; border:1px solid #cbd5e1; margin-bottom:5px; width:100%; text-align:left; padding:8px; border-radius:6px; cursor:pointer;"
+                onclick="this.parentElement.previousElementSibling.innerHTML = 'Searching...'; fetchSimpleAI('point', '${btnPlaceName}', '${city}', '${country}', {__lat:${nlat}, __lng:${nlng}}, this.closest('.ai-popup-simple').querySelector('.ai-simple-content'))">
+                ${cat.icon} <b>${cat.label}:</b> ${data[cat.key].name}
+            </button>`;
+    }
+});
                 holder.innerHTML = `<div class="ai-nearby-title">📍 Nearby Exploration:</div>` + buttonsHTML;
                 console.log("✅ [Nearby] Butonlar başarıyla oluşturuldu.");
             } else {
