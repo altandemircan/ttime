@@ -179,6 +179,7 @@ router.post('/point-ai-info', async (req, res) => {
 
 // --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
 // --- ENDPOINT:  NEARBY AI (FIXED VERSION) ---
+// --- ENDPOINT: NEARBY AI (FIXED VERSION - NO HIDDEN SPACES) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
 
@@ -190,7 +191,7 @@ router.post('/nearby-ai', async (req, res) => {
 
     // 2. API Key Kontrolü
     const apiKey = process.env.GEOAPIFY_KEY;
-    if (!apiKey) {
+    if (! apiKey) {
         console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined! ');
         return res.status(500).json({ 
             error: 'API key missing', 
@@ -200,43 +201,48 @@ router.post('/nearby-ai', async (req, res) => {
 
     console.log(`[NEARBY AI] 🔍 Searching nearby:  lat=${lat}, lng=${lng}`);
 
-    // 3. Yardımcı Fonksiyon:  Kategoriden en iyi sonucu bul
+    // 3. Yardımcı Fonksiyon: Kategoriden en iyi sonucu bul
     const fetchCategory = async (categories, radius = 10000) => {
-        // CRITICAL FIX: Remove ALL spaces from the URL - they were causing 400 errors
-        const url = `https://api.geoapify.com/v2/places? categories=${categories}&filter=circle: ${lng},${lat},${radius}&bias=proximity: ${lng},${lat}&limit=5&apiKey=${apiKey}`;
+        // FIXED: All spaces removed from URL
+        const url = `https://api.geoapify.com/v2/places? categories=${categories}&filter=circle: ${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
         
         console.log(`[NEARBY AI] Fetching: ${categories} (radius: ${radius}m)`);
+        console.log(`[NEARBY AI] URL: ${url. replace(apiKey, 'HIDDEN')}`);
         
         try {
             const response = await axios.get(url, { timeout: 8000 });
-            const features = response.data?. features || [];
+            const features = response.data?.features || [];
+
+            console.log(`[NEARBY AI] Response for ${categories}:  ${features.length} features found`);
 
             // İsmi olan ilk geçerli yeri bul
             const validPlace = features.find(f => 
-                f.properties && (f.properties.name || f. properties.formatted)
+                f.properties && (f.properties.name || f.properties.formatted)
             );
 
             if (validPlace) {
                 const result = {
                     name: validPlace.properties.name || validPlace.properties.city || "Unknown Place",
-                    facts: validPlace.properties
+                    facts:  validPlace.properties
                 };
                 console.log(`[NEARBY AI] ✅ Found ${categories}:  ${result.name}`);
                 return result;
             }
             
-            console.log(`[NEARBY AI] ⚠️ No results for ${categories}`);
+            console.log(`[NEARBY AI] ⚠️ No valid results for ${categories}`);
             return null;
         } catch (error) {
-            console.error(`[NEARBY AI] ❌ Error fetching ${categories}:`, error.message);
-            // Log the actual URL for debugging (hide API key)
-            console.error(`[NEARBY AI] URL was: ${url. replace(apiKey, 'HIDDEN')}`);
+            console.error(`[NEARBY AI] ❌ Error fetching ${categories}: `, error.message);
+            if (error.response) {
+                console.error(`[NEARBY AI] Response status: ${error.response.status}`);
+                console.error(`[NEARBY AI] Response data: `, error.response.data);
+            }
             return null;
         }
     };
 
     try {
-        // 4. Paralel Sorgular - CRITICAL:  NO SPACES IN CATEGORY NAMES! 
+        // 4. Paralel Sorgular - FIXED: No spaces in category names! 
         const [settlement, nature, historic] = await Promise.all([
             // Yerleşim (Settlement) - 15km
             fetchCategory("place.city,place.town,place.suburb,place.village", 15000),
@@ -245,7 +251,7 @@ router.post('/nearby-ai', async (req, res) => {
             fetchCategory("natural,leisure.park,beach,water,tourism.attraction", 20000),
             
             // Tarih/Turizm (Historic) - 25km
-            fetchCategory("historic,tourism.attraction,tourism. museum,building.historic,tourism. sights", 25000)
+            fetchCategory("historic,tourism.attraction,tourism.museum,building.historic,tourism.sights", 25000)
         ]);
 
         const result = { settlement, nature, historic };
@@ -256,11 +262,11 @@ router.post('/nearby-ai', async (req, res) => {
             `Historic: ${historic?.name || 'null'}`
         );
         
-        res.json(result);
+        res. json(result);
 
     } catch (e) {
         console.error('[NEARBY AI] ❌ General Error:', e.message, e.stack);
-        res.status(500).json({ error: 'Backend failure', detail: e.message });
+        res.status(500).json({ error: 'Backend failure', detail:  e.message });
     }
 });
 // Chat stream (SSE) endpoint
