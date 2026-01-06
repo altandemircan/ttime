@@ -65,33 +65,95 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
-// YENİ: Yakın yerler endpoint'i - TEST MOD
+// YENİ: Yakın yerler endpoint'i - GERÇEK
 app.post('/api/geoapify/nearby-places', async (req, res) => {
-  console.log('[TEST Nearby] Called with:', req.body);
-  
-  const { lat, lng } = req.body;
-  
-  // TEST VERİSİ - Her zaman 3 yer döndür
-  const testData = {
-    settlement: { 
-      name: "Karasu Köyü",
-      formatted: "Karasu Village, Nevşehir, Turkey",
-      type: "village"
-    },
-    nature: { 
-      name: "Göreme Milli Parkı",
-      formatted: "Göreme National Park, Nevşehir, Turkey",
-      type: "national_park"
-    },
-    historic: { 
-      name: "Nevşehir Kalesi",
-      formatted: "Nevşehir Castle, Nevşehir, Turkey",
-      type: "castle"
+  try {
+    const { lat, lng } = req.body;
+    console.log('[Nearby Places] Request:', { lat, lng });
+    
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng required' });
     }
-  };
-  
-  console.log('[TEST Nearby] Returning test data');
-  res.json(testData);
+    
+    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+    if (!GEOAPIFY_KEY) {
+      console.error('[Nearby Places] Geoapify API key missing!');
+      return res.status(500).json({ 
+        settlement: null, 
+        nature: null, 
+        historic: null 
+      });
+    }
+    
+    console.log('[Nearby Places] API Key:', GEOAPIFY_KEY.substring(0, 8) + '...');
+    
+    // 1. Yerleşim - DAHA GENİŞ KATEGORİ
+    const settlementUrl = `https://api.geoapify.com/v2/places?categories=place&filter=circle:${lng},${lat},30000&limit=1&bias=proximity:${lng},${lat}&apiKey=${GEOAPIFY_KEY}`;
+    
+    // 2. Doğa - DAHA GENİŞ
+    const natureUrl = `https://api.geoapify.com/v2/places?categories=natural,leisure,beach&filter=circle:${lng},${lat},30000&limit=1&bias=proximity:${lng},${lat}&apiKey=${GEOAPIFY_KEY}`;
+    
+    // 3. Tarihi - DAHA GENİŞ
+    const historicUrl = `https://api.geoapify.com/v2/places?categories=tourism,historic,heritage&filter=circle:${lng},${lat},30000&limit=1&bias=proximity:${lng},${lat}&apiKey=${GEOAPIFY_KEY}`;
+    
+    console.log('[Nearby Places] Fetching from Geoapify...');
+    
+    const [settlementRes, natureRes, historicRes] = await Promise.all([
+      fetch(settlementUrl, { timeout: 5000 }).then(r => r.json()).catch(err => {
+        console.error('[Nearby Places] Settlement error:', err.message);
+        return { features: [] };
+      }),
+      fetch(natureUrl, { timeout: 5000 }).then(r => r.json()).catch(err => {
+        console.error('[Nearby Places] Nature error:', err.message);
+        return { features: [] };
+      }),
+      fetch(historicUrl, { timeout: 5000 }).then(r => r.json()).catch(err => {
+        console.error('[Nearby Places] Historic error:', err.message);
+        return { features: [] };
+      })
+    ]);
+    
+    // Debug log
+    console.log('[Nearby Places] Results:', {
+      settlementCount: settlementRes.features?.length || 0,
+      natureCount: natureRes.features?.length || 0,
+      historicCount: historicRes.features?.length || 0
+    });
+    
+    const result = {
+      settlement: settlementRes.features?.[0]?.properties || null,
+      nature: natureRes.features?.[0]?.properties || null,
+      historic: historicRes.features?.[0]?.properties || null
+    };
+    
+    // Eğer hiç veri yoksa, test verisi döndür
+    if (!result.settlement && !result.nature && !result.historic) {
+      console.log('[Nearby Places] No data, returning fallback');
+      result.settlement = { 
+        name: "Nearby Village",
+        formatted: "Local village area"
+      };
+      result.nature = { 
+        name: "Natural Area",
+        formatted: "Nearby natural site"
+      };
+      result.historic = { 
+        name: "Historic Site",
+        formatted: "Local historic location"
+      };
+    }
+    
+    console.log('[Nearby Places] Final result:', result);
+    res.json(result);
+    
+  } catch (e) {
+    console.error('[Nearby Places] Global error:', e);
+    res.status(500).json({ 
+      settlement: null, 
+      nature: null, 
+      historic: null 
+    });
+  }
 });
 
 // --- BURAYA EKLE --- //
