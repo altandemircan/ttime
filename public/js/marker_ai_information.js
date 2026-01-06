@@ -3,8 +3,6 @@
 // =========================================================================
 
 // 1. CSS STYLES (Aynı kalacak)
-
-// 1. CSS STYLES
 (function addEnglishAIStyles() {
     const styleId = 'tt-ai-simple-styles-en';
     if (document.getElementById(styleId)) return;
@@ -25,158 +23,339 @@
         .ai-simple-tab.active { color: #8a4af3; border-bottom-color: #8a4af3; }
         
         /* CONTENT */
-        .ai-simple-content { min-height: 100px; font-size: 0.9rem; color: #334155; line-height: 1.8; font-weight: 400; text-align: left }
+        .ai-simple-content { min-height: 100px;
+    font-size: 0.9rem;
+    color: #334155;
+    line-height: 1.8;
+    font-weight: 400;
+    text-align: left }
         .ai-simple-loading { padding: 20px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
-        .ai-point-title { font-weight: 700; color: #0f172a; margin: 0 0 8px 0; font-size: 0.85rem; }
+    .ai-point-title { font-weight: 700; color: #0f172a; margin: 0 0 8px 0; font-size: 0.85rem; }
         .ai-point-p { margin: 0 0 10px 0; }
         .ai-point-p:last-child { margin-bottom: 0; }
         .ai-simple-footer { margin-top: 8px; font-size: 0.7rem; color: #cbd5e1; text-align: right; border-top: 1px solid #f8fafc; padding-top: 5px;}
-        
-        /* NEARBY BUTTONS */
-        .nearby-btn { 
-            font-size: 0.7rem; padding: 5px 10px; background: #f8fafc; border: 1px solid #e2e8f0; 
-            border-radius: 6px; cursor: pointer; color: #64748b; font-weight: 600; transition: all 0.2s;
-            margin-right: 5px; margin-bottom: 5px;
-        }
-        .nearby-btn:hover { background: #f1f5f9; color: #8a4af3; border-color: #8a4af3; }
     `;
     document.head.appendChild(style);
 })();
 
+// 2. BASİT LOCATION PARSER - SADECE TEMEL BİLGİLER
 async function getHierarchicalLocation(lat, lng) {
     try {
         const resp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}&limit=1`);
         if (!resp.ok) return null;
+
         const data = await resp.json();
         if (!data.features || data.features.length === 0) return null;
+
         const props = data.features[0].properties || {};
+
+console.log("[GEOAPIFY] reverse result:", {
+    lat, lng,
+    formatted: props.formatted,
+    name: props.name,
+    city: props.city,
+    county: props.county,
+    district: props.district,
+    city_district: props.city_district,
+    suburb: props.suburb,
+    municipality: props.municipality,
+    state: props.state,
+    state_district: props.state_district,
+    province: props.province,
+    region: props.region,
+    postcode: props.postcode,
+    street: props.street,
+    housenumber: props.housenumber,
+    country: props.country,
+    country_code: props.country_code,
+    lon: props.lon,
+    lat: props.lat,
+    // tamamen görmek için:
+    _all: props
+});
+
         const norm = (v) => (typeof v === "string" ? v.trim() : "");
+        const looksLikeRegion = (v) => /region|bölgesi|bolgesi/i.test(norm(v));
+
+        // 1) Nokta / mekan
         let specific = norm(props.name) || null;
-        if (specific && (specific === norm(props.street) || /^\d/.test(specific))) specific = null;
-        let city = norm(props.county) || norm(props.state) || norm(props.city) || "";
-        return { specific, city, country: norm(props.country), isJustAddress: !specific, facts: props };
-    } catch (e) { return null; }
+
+        const street = norm(props.street);
+        if (specific && (specific === street || /^\d/.test(specific))) specific = null;
+
+       // 2) Şehir/il: TR'de çoğu zaman county = il (Antalya), city = ilçe (Kepez)
+const county = norm(props.county);
+const state = norm(props.state);
+
+let city =
+    county ||
+    (!looksLikeRegion(state) ? state : "") ||
+    norm(props.state_district) ||
+    norm(props.province) ||
+    norm(props.city) ||
+    "";
+
+if (looksLikeRegion(city)) city = "";
+
+        const country = norm(props.country) || "";
+
+        // adres-only yakalama
+        const isJustAddress = !specific && (!!street || !!norm(props.housenumber) || !!norm(props.postcode));
+
+       const facts = {
+    formatted: props.formatted || "",
+    name: props.name || "",
+    street: props.street || "",
+    housenumber: props.housenumber || "",
+    postcode: props.postcode || "",
+    suburb: props.suburb || "",
+    city_raw: props.city || "",
+    county: props.county || "",
+    state: props.state || "",
+    country: props.country || "",
+    osm: (props.datasource && props.datasource.raw) ? props.datasource.raw : {}
+};
+
+return { specific, city, country, isJustAddress, facts };
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
 }
 
+// 3. AI FETCH FUNCTION (Aynı)
 const aiSimpleCache = {};
 
-// 3. AI FETCH FUNCTION
 async function fetchSimpleAI(endpointType, queryName, city, country, facts, containerDiv) {
-    const cacheKey = `${endpointType}__${queryName}__${city}`;
+    const cacheKey = `${endpointType}__${queryName}__${city}__${country}`;
+    
     if (aiSimpleCache[cacheKey]) {
         containerDiv.innerHTML = aiSimpleCache[cacheKey];
-        if (endpointType === 'point' && facts?.__lat) triggerNearbyTabs(facts, city, country, containerDiv);
         return;
     }
 
-    containerDiv.innerHTML = `<div class="ai-simple-loading">Analyzing <b>${queryName}</b>...</div>`;
+    containerDiv.innerHTML = `
+        <div class="ai-simple-loading">
+            <div class="spinner" style="display:inline-block; width:10px; height:10px; border:2px solid #ccc; border-top-color:#8a4af3; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+            <div style="margin-top:5px">Analyzing: <b>${queryName}</b></div>
+        </div>
+    `; 
 
     try {
-        const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ point: queryName, city, country, facts })
-        });
-        const data = await response.json();
+const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
 
-        // [object Object] hatasını önlemek için string kontrolü
-        const ensureStr = (v) => {
-            if (!v) return "";
-            if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
-            return String(v).trim();
-        };
-        
-        const p1 = ensureStr(data.p1 || data.summary || "Info not available.");
-        const p2 = ensureStr(data.p2 || data.tip || data.highlight || "");
+const body =
+    endpointType === 'city'
+        ? { city, country }
+        : { point: queryName, city, country, facts: facts || {} };
 
-        const contentHTML = `
-            <div style="animation: fadeIn 0.3s ease;">
-                <div class="ai-point-title">AI Insight: ${queryName}</div>
-                <p class="ai-point-p">${p1}</p>
-                ${p2 && !p2.toLowerCase().includes("not available") ? `<p class="ai-point-p">${p2}</p>` : ``}
+const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+});
+const data = await response.json();
+
+const norm = (s) => (typeof s === "string" ? s.trim() : "");
+const isNoInfo = (s) => /^info not available\.?$/i.test(norm(s));
+
+let p1 = "Info not available.";
+let p2 = "";
+
+if (endpointType === 'city') {
+    // plan-summary -> 2 paragraf: summary + (tip ya da highlight)
+    p1 = norm(data.summary) || "Info not available.";
+    p2 = norm(data.tip) || norm(data.highlight) || "";
+} else {
+    // point-ai-info -> p1/p2
+    p1 = norm(data.p1) || "Info not available.";
+    p2 = norm(data.p2) || "";
+}
+
+if (isNoInfo(p2)) p2 = "";
+
+const html = `
+    <div style="animation: fadeIn 0.3s ease;">
+        <div class="ai-point-title">Point AI Info:</div>
+        <p class="ai-point-p">${p1}</p>
+        ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
+    </div>
+`;
+
+       aiSimpleCache[cacheKey] = html;
+containerDiv.innerHTML = html;
+
+// Nearby AI sadece "point" tabında çalışsın
+if (endpointType === 'point' && facts && typeof facts === 'object') {
+    // lat/lng'yi facts içine koyacağız (aşağıda ekliyoruz)
+    const nlat = facts.__lat;
+    const nlng = facts.__lng;
+
+    if (typeof nlat === 'number' && typeof nlng === 'number') {
+        const nearbyHolderId = `nearby-${cacheKey.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+        containerDiv.insertAdjacentHTML('beforeend', `
+            <div id="${nearbyHolderId}" style="margin-top:10px;">
+                <p class="ai-point-p" style="color:#94a3b8;">Loading nearby places...</p>
             </div>
-            <div id="nearby-tabs-container" style="margin-top:15px; border-top:1px dashed #e2e8f0; padding-top:10px;"></div>
-        `;
+        `);
 
-        containerDiv.innerHTML = contentHTML;
-        aiSimpleCache[cacheKey] = contentHTML;
+        try {
+            const nearby = await fetchNearbyAI(nlat, nlng, city, country);
 
-        // Sadece Point tabında ve koordinat varsa alt tabları tetikle
-        if (endpointType === 'point' && facts?.__lat) {
-            triggerNearbyTabs(facts, city, country, containerDiv);
+            const renderBlock = (title, obj) => {
+                if (!obj || !obj.item) return `<p class="ai-point-p"><b>${title}:</b> Info not available.</p>`;
+                const name = obj.item.name || 'Unknown';
+                const p1 = (obj.ai && obj.ai.p1) ? obj.ai.p1 : "Info not available.";
+                const p2 = (obj.ai && obj.ai.p2 && !/^info not available\.?$/i.test(obj.ai.p2.trim())) ? obj.ai.p2 : "";
+                return `
+                    <p class="ai-point-p"><b>${title}:</b> ${name}</p>
+                    <p class="ai-point-p">${p1}</p>
+                    ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
+                `;
+            };
+
+            const htmlNearby = `
+                <div style="margin-top:10px;">
+                    ${renderBlock("Nearest settlement", nearby.settlement)}
+                    ${renderBlock("Nearest nature area", nearby.nature)}
+                    ${renderBlock("Nearest historic site", nearby.historic)}
+                </div>
+            `;
+
+            const holder = document.getElementById(nearbyHolderId);
+            if (holder) holder.innerHTML = htmlNearby;
+        } catch (err) {
+            const holder = document.getElementById(nearbyHolderId);
+            if (holder) holder.innerHTML = `<p class="ai-point-p" style="color:#ef4444;">Nearby lookup failed.</p>`;
         }
-    } catch (e) {
-        containerDiv.innerHTML = `<div style="color:#ef4444; padding:10px;">Timeout. Please try again.</div>`;
     }
 }
 
-async function triggerNearbyTabs(facts, city, country, containerDiv) {
-    const holder = document.getElementById('nearby-tabs-container');
-    if (!holder) return;
-
-    try {
-        const lat = facts.__lat;
-        const lng = facts.__lng;
-        const resp = await fetch('/llm-proxy/nearby-ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lng })
-        });
-        const nearby = await resp.json();
-
-        let buttonsHTML = '<div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px; font-weight:700;">NEARBY EXPLORE:</div><div style="display:flex; gap:2px; flex-wrap:wrap;">';
-        
-        const createBtn = (data) => {
-            if (!data || !data.name) return '';
-            const escapedName = data.name.replace(/'/g, "\\'");
-            const factsAttr = JSON.stringify(data.facts).replace(/"/g, '&quot;');
-            return `<button class="nearby-btn" onclick="window.loadNearbyIntoAI('${escapedName}', ${factsAttr})">${data.name}</button>`;
-        };
-
-        const b1 = createBtn(nearby.settlement);
-        const b2 = createBtn(nearby.nature);
-        const b3 = createBtn(nearby.historic);
-
-        if (!b1 && !b2 && !b3) { holder.remove(); return; }
-
-        buttonsHTML += b1 + b2 + b3 + '</div>';
-        holder.innerHTML = buttonsHTML;
-
-        window.loadNearbyIntoAI = (name, nearbyFacts) => {
-            const newFacts = { ...nearbyFacts, __lat: facts.__lat, __lng: facts.__lng };
-            fetchSimpleAI('point', name, city, country, newFacts, containerDiv);
-        };
-    } catch (e) { holder.remove(); }
+    } catch (e) {
+        containerDiv.innerHTML = `<div style="color:#ef4444; text-align:center; padding:10px; font-size:0.85rem;">Connection error.</div>`;
+    }
 }
-
+async function fetchNearbyAI(lat, lng, city, country) {
+    const response = await fetch('/llm-proxy/nearby-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, city, country })
+    });
+    return await response.json();
+}
 // 4. BASİT MAP CLICK HANDLER
 async function handleMapAIClick(e) {
     const map = e.target;
-    const popup = L.popup({ maxWidth: 320 }).setLatLng(e.latlng).setContent('Loading...').openOn(map);
+
+    // Spinner
+    const popup = L.popup({ maxWidth: 320 }).setLatLng(e.latlng)
+        .setContent('<div style="padding:10px; text-align:center; color:#64748b;">Acquiring location...</div>')
+        .openOn(map);
+
+    // Lokasyonu al
     const loc = await getHierarchicalLocation(e.latlng.lat, e.latlng.lng);
-    if (!loc) return;
-    loc.facts.__lat = e.latlng.lat; loc.facts.__lng = e.latlng.lng;
 
-    const uiID = 'ai-' + Date.now();
-    popup.setContent(`<div id="${uiID}" class="ai-popup-simple"><div class="ai-simple-tabs" id="${uiID}-t"></div><div id="${uiID}-c" class="ai-simple-content"></div><div class="ai-simple-footer">AI Travel Assistant</div></div>`);
+    // 1) Eğer null döndü - basit mesaj göster
+    if (!loc) {
+        popup.setContent(`
+            <div style="padding:20px; text-align:center;">
+                <div style="color:#475569; font-size:0.9rem; margin-bottom:10px;">
+                    🏪 Local Business
+                </div>
+                <div style="color:#64748b; font-size:0.85rem;">
+                    This appears to be a local business or service.
+                    For travel insights, try clicking on tourist attractions.
+                </div>
+            </div>
+        `);
+        return;
+    }
 
-    const tDiv = document.getElementById(uiID + '-t');
-    const cDiv = document.getElementById(uiID + '-c');
+    // Nearby için lat/lng'yi facts'e ekle (yoksa oluştur)
+    if (!loc.facts || typeof loc.facts !== 'object') loc.facts = {};
+    loc.facts.__lat = e.latlng.lat;
+    loc.facts.__lng = e.latlng.lng;
 
-    const addTab = (label, endp, active = false) => {
-        const b = document.createElement('button');
-        b.className = `ai-simple-tab ${active ? 'active' : ''}`;
-        b.innerHTML = label;
-        b.onclick = () => {
-            tDiv.querySelectorAll('.ai-simple-tab').forEach(x => x.classList.remove('active'));
-            b.classList.add('active');
-            fetchSimpleAI(endp, label.replace(/^[^\s]+\s/, ''), loc.city, loc.country, loc.facts, cDiv);
-        };
-        tDiv.appendChild(b);
-        if (active) b.click();
-    };
+    // 2) Eğer sadece adres bilgisi varsa
+    if (loc.isJustAddress) {
+        popup.setContent(`
+            <div style="padding:20px; text-align:center;">
+                <div style="color:#475569; font-size:0.9rem; margin-bottom:10px;">
+                    📍 ${loc.city || 'Location'}
+                </div>
+                <div style="color:#64748b; font-size:0.85rem;">
+                    Click on named places (beaches, museums, parks)
+                    for detailed travel information.
+                </div>
+            </div>
+        `);
+        return;
+    }
 
-    if (loc.specific) addTab(`📍 ${loc.specific}`, 'point', true);
-    addTab(`🌍 ${loc.city}`, 'city', !loc.specific);
+    // Tab butonlarını oluştur (SADECE 2 TAB: Nokta + Şehir)
+    let tabsHTML = '';
+
+    // TAB 1: Nokta (mekan)
+    if (loc.specific && loc.specific.trim().length > 0) {
+        tabsHTML += `<button class="ai-simple-tab active"
+            data-endpoint="point"
+            data-query="${loc.specific}"
+            data-city="${loc.city}"
+            data-country="${loc.country}">
+            📍 ${loc.specific}
+        </button>`;
+    }
+
+    // TAB 2: Şehir
+    const cityLabel = (loc.city && loc.city.trim().length > 0) ? loc.city : 'City';
+    const isCityActive = tabsHTML === '' ? 'active' : '';
+
+    tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
+        data-endpoint="city"
+        data-query="${cityLabel}"
+        data-city="${cityLabel}"
+        data-country="${loc.country}">
+        🌍 ${cityLabel}
+    </button>`;
+
+    // UI oluştur
+    const uiID = 'ai-ui-' + Date.now();
+    const contentHTML = `
+        <div id="${uiID}" class="ai-popup-simple">
+            <div class="ai-simple-tabs">
+                ${tabsHTML}
+            </div>
+            <div id="${uiID}-content" class="ai-simple-content"></div>
+            <div class="ai-simple-footer">AI Travel Assistant</div>
+        </div>
+    `;
+
+    popup.setContent(contentHTML);
+
+    // Tab interaksiyonu
+    requestAnimationFrame(() => {
+        const container = document.getElementById(uiID);
+        if (!container) return;
+
+        const contentDiv = document.getElementById(uiID + '-content');
+        const buttons = container.querySelectorAll('.ai-simple-tab');
+
+        buttons.forEach(btn => {
+            btn.onclick = (evt) => {
+                buttons.forEach(b => b.classList.remove('active'));
+                evt.target.classList.add('active');
+
+                const qName = evt.target.getAttribute('data-query') || '';
+                const qCity = evt.target.getAttribute('data-city') || '';
+                const qCountry = evt.target.getAttribute('data-country') || '';
+                const qEndpoint = evt.target.getAttribute('data-endpoint') || 'point';
+
+                fetchSimpleAI(qEndpoint, qName, qCity, qCountry, loc.facts, contentDiv);
+            };
+        });
+
+        // İlk tab'ı tetikle
+        const activeBtn = container.querySelector('.ai-simple-tab.active');
+        if (activeBtn) activeBtn.click();
+    });
 }
