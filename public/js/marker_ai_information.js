@@ -108,41 +108,63 @@ async function getHierarchicalLocation(lat, lng) {
 }
 
 async function fetchNearbyPlaceNames(lat, lng) {
-  try {
-    const response = await fetch('/llm-proxy/nearby-ai', {  // ← BU DOĞRU
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat, lng })
-    });
-    
-    if (!response.ok) {
-      console.error('Nearby AI fetch failed:', response.status);
-      return [];
-    }
-    
-    const data = await response.json();
-    console.log('Nearby AI response:', data);
-    
-    const places = [];
-    
-    if (data.settlement && data.settlement.name) {
-      places.push({ name: data.settlement.name, type: "settlement" });
-    }
-    if (data.nature && data.nature.name) {
-      places.push({ name: data.nature.name, type: "nature" });
-    }
-    if (data.historic && data.historic.name) {
-      places.push({ name: data.historic.name, type: "historic" });
-    }
-    
-    return places;
-    
-  } catch (error) {
-    console.error("fetchNearbyPlaceNames error:", error);
-    return [];
-  }
-}
+    try {
+        const response = await fetch('/llm-proxy/nearby-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng })
+        });
 
+        if (!response.ok) {
+            console.error('Nearby AI fetch failed:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        console.log('Nearby AI client response:', data);
+
+        const places = [];
+
+        // Settlement (Yerleşim) Kontrolü
+        if (data.settlement && data.settlement.name) {
+            places.push({ 
+                name: data.settlement.name, 
+                type: "settlement",
+                icon: "🏘️" // İstersen ikon ekleyebilirsin
+            });
+        }
+
+        // Nature (Doğa) Kontrolü
+        if (data.nature && data.nature.name) {
+            // Eğer doğa ile yerleşim ismi aynıysa (örn: Antalya Parkı vs Antalya Şehri) ekleme yapmayabilirsin
+            // Ama şimdilik hepsini ekleyelim.
+            if (!places.some(p => p.name === data.nature.name)) {
+                places.push({ 
+                    name: data.nature.name, 
+                    type: "nature",
+                    icon: "🌳"
+                });
+            }
+        }
+
+        // Historic (Tarih) Kontrolü
+        if (data.historic && data.historic.name) {
+            if (!places.some(p => p.name === data.historic.name)) {
+                places.push({ 
+                    name: data.historic.name, 
+                    type: "historic",
+                    icon: "🏛️"
+                });
+            }
+        }
+
+        return places;
+
+    } catch (error) {
+        console.error("fetchNearbyPlaceNames error:", error);
+        return [];
+    }
+}
 // 4. AI FETCH FUNCTION (AYNI)
 const aiSimpleCache = {};
 

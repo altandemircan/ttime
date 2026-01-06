@@ -176,98 +176,64 @@ router.post('/point-ai-info', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "AI Error" }); }
 });
 
-// --- ENDPOINT: NEARBY AI (GÜNCELLENDİ - 500 HATASI GİDERİLDİ) ---
-router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng } = req.body;
-    if (typeof lat !== 'number' || typeof lng !== 'number') return res.json({ settlement: null, nature: null, historic: null });
 
-    try {
-        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) return res.json({ settlement: null, nature: null, historic: null });
-
-        const fetchPlaces = async (cats) => {
-            try {
-                const url = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
-                const r = await axios.get(url, { timeout: 10000 });
-                const f = r.data?.features?.[0]?.properties;
-                return f ? { name: f.name || f.city || f.formatted, facts: f } : null;
-            } catch (e) { return null; }
-        };
-
-        const [s, n, h] = await Promise.all([
-            fetchPlaces("place.city,place.town,place.suburb,place.village"),
-            fetchPlaces("natural,leisure.park,beach"),
-            fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
-        ]);
-        res.json({ settlement: s, nature: n, historic: h });
-    } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
-});
-
-// --- ENDPOINT: NEARBY AI (DÜZELTİLMİŞ) ---
+// --- ENDPOINT: NEARBY AI (TEK VE GÜÇLÜ VERSİYON) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
     
-    console.log('[NEARBY AI SIMPLE] Request:', { lat, lng });
-    
+    // Geçersiz koordinat kontrolü
+    if (!lat || !lng) {
+        return res.json({ settlement: null, nature: null, historic: null });
+    }
+
     try {
         const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
         if (!GEOAPIFY_KEY) throw new Error('No API key');
-        
-        // 1. TÜM YERLERİ ÇEK
-        const url = `https://api.geoapify.com/v2/places?filter=circle:${lng},${lat},50000&limit=30&apiKey=${GEOAPIFY_KEY}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        const features = data.features || [];
-        
-        console.log('[NEARBY AI] Places found:', features.length);
-        
-        // 2. KATEGORİLERE AYIR
-        const settlements = [];
-        const natures = [];
-        const historics = [];
-        
-        for (const feature of features) {
-            const props = feature.properties;
-            if (!props.name) continue;
-            
-            const cats = props.categories || '';
-            
-            if (cats.includes('place.')) {
-                settlements.push(props);
+
+        // Yardımcı fonksiyon: Belirli kategorilerde EN YAKIN 1 sonucu getirir
+        const fetchCategory = async (categories) => {
+            try {
+                // Radius 20km (20000m) içinde arar
+                const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},20000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
+                const response = await axios.get(url, { timeout: 8000 }); // Axios kullanıyoruz
+                const feature = response.data?.features?.[0];
+
+                if (feature && feature.properties) {
+                    return {
+                        name: feature.properties.name || feature.properties.formatted,
+                        facts: feature.properties
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`[NEARBY AI] Fetch Error for ${categories}:`, error.message);
+                return null;
             }
-            if (cats.includes('natural') || cats.includes('leisure.park')) {
-                natures.push(props);
-            }
-            if (cats.includes('historic') || cats.includes('tourism.attraction')) {
-                historics.push(props);
-            }
-        }
-        
-        // 3. İLKİNİ AL (bulamazsan generic)
-        const result = {
-            settlement: settlements[0] ? { name: settlements[0].name, facts: settlements[0] } 
-                         : { name: "Local Area", facts: {} },
-            nature: natures[0] ? { name: natures[0].name, facts: natures[0] }
-                     : { name: "Green Space", facts: {} },
-            historic: historics[0] ? { name: historics[0].name, facts: historics[0] }
-                       : { name: "Historic Site", facts: {} }
         };
-        
-        console.log('[NEARBY AI] Result:', {
-            settlement: result.settlement.name,
-            nature: result.nature.name,
-            historic: result.historic.name
-        });
-        
-        res.json(result);
-        
-    } catch (error) {
-        console.error('[NEARBY AI] Error:', error);
+
+        // 3 Sorguyu Paralel At (Hız için)
+        const [settlement, nature, historic] = await Promise.all([
+            // 1. Yerleşim Yeri (Şehir, kasaba, köy)
+            fetchCategory("place.city,place.town,place.village,place.suburb"),
+            
+            // 2. Doğa (Park, sahil, orman, su kenarı)
+            fetchCategory("natural,leisure.park,beach,water"),
+            
+            // 3. Tarih & Turizm (Müze, kale, anıt, dini yapı)
+            fetchCategory("historic,tourism.attraction,tourism.museum,religion.place_of_worship,building.historic")
+        ]);
+
+        console.log(`[NEARBY AI] Results -> Set: ${settlement?.name}, Nat: ${nature?.name}, His: ${historic?.name}`);
+
         res.json({
-            settlement: { name: "Nearby Place", facts: {} },
-            nature: { name: "Park/Garden", facts: {} },
-            historic: { name: "Monument", facts: {} }
+            settlement: settlement,
+            nature: nature,
+            historic: historic
         });
+
+    } catch (error) {
+        console.error('[NEARBY AI] General Error:', error);
+        res.json({ settlement: null, nature: null, historic: null });
     }
 });
 
