@@ -215,8 +215,9 @@ router.post('/nearby-ai', async (req, res) => {
             console.log(`[NEARBY AI] [RESULT] ${features.length} feature(s)`);
 
             const validPlace = features.find(f =>
-                f.properties && (f.properties.name || f.properties.formatted)
-            );
+    f.properties && f.properties.name && f.properties.name.trim().length > 0
+);
+
 
             if (validPlace) {
                 console.log(`[NEARBY AI] ✅ Found: ${categories} → "${validPlace.properties.name || validPlace.properties.formatted}"`);
@@ -239,10 +240,10 @@ router.post('/nearby-ai', async (req, res) => {
 
     try {
         const [settlement, nature, historic] = await Promise.all([
-            fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
-            fetchCategory('natural,leisure.park,beach', 20000),
-            fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction', 25000)
-        ]);
+    fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
+    fetchCategory('natural.forest,natural.park,natural.water,natural.mountain,leisure.park,beach', 20000),
+    fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction,tourism.sights,tourism.sights.castle,tourism.sights.archaeological_site,tourism.sights.place_of_worship,tourism.museum', 25000)
+]);
         const result = { settlement, nature, historic };
         console.log(`[NEARBY AI] 📦 Final:`, JSON.stringify(result));
         res.json(result);
