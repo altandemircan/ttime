@@ -126,12 +126,9 @@ return { specific, city, country, isJustAddress, facts };
 // 3. AI FETCH FUNCTION (Aynı)
 const aiSimpleCache = {};
 
-// ... (Stiller ve getHierarchicalLocation aynı)
-
 async function fetchSimpleAI(endpointType, queryName, city, country, facts, containerDiv) {
     const cacheKey = `${endpointType}__${queryName}__${city}__${country}`;
     
-    // Cache varsa direkt göster ve çık
     if (aiSimpleCache[cacheKey]) {
         containerDiv.innerHTML = aiSimpleCache[cacheKey];
         return;
@@ -145,111 +142,107 @@ async function fetchSimpleAI(endpointType, queryName, city, country, facts, cont
     `; 
 
     try {
-        const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
-        const body = endpointType === 'city'
-            ? { city, country }
-            : { point: queryName, city, country, facts: facts || {} };
+const url = endpointType === 'city' ? '/llm-proxy/plan-summary' : '/llm-proxy/point-ai-info';
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        const data = await response.json();
+const body =
+    endpointType === 'city'
+        ? { city, country }
+        : { point: queryName, city, country, facts: facts || {} };
 
-        const norm = (s) => (typeof s === "string" ? s.trim() : "");
-        const isNoInfo = (s) => /^info not available\.?$/i.test(norm(s));
+const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+});
+const data = await response.json();
 
-        let p1 = "Info not available.";
-        let p2 = "";
+const norm = (s) => (typeof s === "string" ? s.trim() : "");
+const isNoInfo = (s) => /^info not available\.?$/i.test(norm(s));
 
-        if (endpointType === 'city') {
-            p1 = norm(data.summary) || "Info not available.";
-            p2 = norm(data.tip) || norm(data.highlight) || "";
-        } else {
-            p1 = norm(data.p1) || "Info not available.";
-            p2 = norm(data.p2) || "";
-        }
+let p1 = "Info not available.";
+let p2 = "";
 
-        if (isNoInfo(p2)) p2 = "";
+if (endpointType === 'city') {
+    // plan-summary -> 2 paragraf: summary + (tip ya da highlight)
+    p1 = norm(data.summary) || "Info not available.";
+    p2 = norm(data.tip) || norm(data.highlight) || "";
+} else {
+    // point-ai-info -> p1/p2
+    p1 = norm(data.p1) || "Info not available.";
+    p2 = norm(data.p2) || "";
+}
 
-        const htmlMain = `
-            <div style="animation: fadeIn 0.3s ease;">
-                <div class="ai-point-title">Point AI Info:</div>
-                <p class="ai-point-p">${p1}</p>
-                ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
+if (isNoInfo(p2)) p2 = "";
+
+const html = `
+    <div style="animation: fadeIn 0.3s ease;">
+        <div class="ai-point-title">Point AI Info:</div>
+        <p class="ai-point-p">${p1}</p>
+        ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
+    </div>
+`;
+
+       aiSimpleCache[cacheKey] = html;
+containerDiv.innerHTML = html;
+
+// Nearby AI sadece "point" tabında çalışsın
+if (endpointType === 'point' && facts && typeof facts === 'object') {
+    // lat/lng'yi facts içine koyacağız (aşağıda ekliyoruz)
+    const nlat = facts.__lat;
+    const nlng = facts.__lng;
+
+    if (typeof nlat === 'number' && typeof nlng === 'number') {
+        const nearbyHolderId = `nearby-${cacheKey.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+        containerDiv.insertAdjacentHTML('beforeend', `
+            <div id="${nearbyHolderId}" style="margin-top:10px;">
+                <p class="ai-point-p" style="color:#94a3b8;">Loading nearby places...</p>
             </div>
-        `;
+        `);
 
-        containerDiv.innerHTML = htmlMain;
+        try {
+            const nearby = await fetchNearbyAI(nlat, nlng, city, country);
 
-        // Nearby AI logic
-        if (endpointType === 'point' && facts && typeof facts === 'object') {
-            const nlat = facts.__lat;
-            const nlng = facts.__lng;
+            const renderBlock = (title, obj) => {
+                if (!obj || !obj.item) return `<p class="ai-point-p"><b>${title}:</b> Info not available.</p>`;
+                const name = obj.item.name || 'Unknown';
+                const p1 = (obj.ai && obj.ai.p1) ? obj.ai.p1 : "Info not available.";
+                const p2 = (obj.ai && obj.ai.p2 && !/^info not available\.?$/i.test(obj.ai.p2.trim())) ? obj.ai.p2 : "";
+                return `
+                    <p class="ai-point-p"><b>${title}:</b> ${name}</p>
+                    <p class="ai-point-p">${p1}</p>
+                    ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
+                `;
+            };
 
-            if (typeof nlat === 'number' && typeof nlng === 'number') {
-                const nearbyHolderId = `nearby-${cacheKey.replace(/[^a-zA-Z0-9_-]/g, '')}`;
-                containerDiv.insertAdjacentHTML('beforeend', `
-                    <div id="${nearbyHolderId}" style="margin-top:10px; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
-                        <p class="ai-point-p" style="color:#94a3b8; font-style: italic; font-size: 0.8rem;">Searching nearby attractions...</p>
-                    </div>
-                `);
+            const htmlNearby = `
+                <div style="margin-top:10px;">
+                    ${renderBlock("Nearest settlement", nearby.settlement)}
+                    ${renderBlock("Nearest nature area", nearby.nature)}
+                    ${renderBlock("Nearest historic site", nearby.historic)}
+                </div>
+            `;
 
-                try {
-                    const nearby = await fetchNearbyAI(nlat, nlng, city, country);
-
-                    const renderBlock = (title, obj) => {
-                        if (!obj || !obj.item) return `<p class="ai-point-p" style="font-size: 0.85rem;"><b>${title}:</b> Not found nearby.</p>`;
-                        const name = obj.item.name || 'Unknown';
-                        const aip1 = (obj.ai && obj.ai.p1) ? obj.ai.p1 : "Info not available.";
-                        return `
-                            <p class="ai-point-p" style="font-size: 0.85rem; margin-bottom: 2px;"><b>${title}:</b> ${name}</p>
-                            <p class="ai-point-p" style="font-size: 0.8rem; color: #64748b; line-height: 1.4; margin-bottom: 8px;">${aip1}</p>
-                        `;
-                    };
-
-                    const htmlNearby = `
-                        <div style="margin-top:5px;">
-                            ${renderBlock("Nearest settlement", nearby.settlement)}
-                            ${renderBlock("Nearest nature area", nearby.nature)}
-                            ${renderBlock("Nearest historic site", nearby.historic)}
-                        </div>
-                    `;
-
-                    const holder = document.getElementById(nearbyHolderId);
-                    if (holder) {
-                        holder.innerHTML = htmlNearby;
-                        // ÖNEMLİ: Nearby yüklendikten sonra cache'i güncelle
-                        aiSimpleCache[cacheKey] = containerDiv.innerHTML;
-                    }
-                } catch (err) {
-                    const holder = document.getElementById(nearbyHolderId);
-                    if (holder) holder.innerHTML = `<p class="ai-point-p" style="color:#94a3b8; font-size: 0.8rem;">Nearby information is currently unavailable.</p>`;
-                    aiSimpleCache[cacheKey] = containerDiv.innerHTML;
-                }
-            } else {
-                aiSimpleCache[cacheKey] = containerDiv.innerHTML;
-            }
-        } else {
-            aiSimpleCache[cacheKey] = containerDiv.innerHTML;
+            const holder = document.getElementById(nearbyHolderId);
+            if (holder) holder.innerHTML = htmlNearby;
+        } catch (err) {
+            const holder = document.getElementById(nearbyHolderId);
+            if (holder) holder.innerHTML = `<p class="ai-point-p" style="color:#ef4444;">Nearby lookup failed.</p>`;
         }
+    }
+}
 
     } catch (e) {
         containerDiv.innerHTML = `<div style="color:#ef4444; text-align:center; padding:10px; font-size:0.85rem;">Connection error.</div>`;
     }
 }
-
 async function fetchNearbyAI(lat, lng, city, country) {
     const response = await fetch('/llm-proxy/nearby-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat, lng, city, country })
     });
-    if (!response.ok) throw new Error("Nearby API failure");
     return await response.json();
 }
-// ... (Geri kalan kod aynı)
 // 4. BASİT MAP CLICK HANDLER
 async function handleMapAIClick(e) {
     const map = e.target;
