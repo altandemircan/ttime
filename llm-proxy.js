@@ -203,56 +203,75 @@ router.post('/nearby-ai', async (req, res) => {
     } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
 });
 
+// --- ENDPOINT: NEARBY AI (DÜZELTİLMİŞ) ---
 router.post('/nearby-ai', async (req, res) => {
-  const { lat, lng } = req.body;
-  
-  try {
-    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-    if (!GEOAPIFY_KEY) throw new Error('No API key');
+    const { lat, lng } = req.body;
     
-    // 3 KATEGORİ İÇİN AYRI AYRI ÇEK
-    const categories = [
-      "place.city,place.town,place.village",
-      "natural,leisure.park,beach",
-      "historic,heritage,tourism.attraction"
-    ];
+    console.log('[NEARBY AI] Request received:', { lat, lng });
     
-    const promises = categories.map(cat => {
-      const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
-      return fetch(url).then(r => r.json());
-    });
-    
-    const [settlementData, natureData, historicData] = await Promise.all(promises);
-    
-    // İSİMLERİ ÇIKART
-    const settlementName = settlementData.features?.[0]?.properties?.name || "Nearby Town";
-    const natureName = natureData.features?.[0]?.properties?.name || "Natural Area";
-    const historicName = historicData.features?.[0]?.properties?.name || "Historic Site";
-    
-    res.json({
-      settlement: {
-        name: settlementName,
-        facts: settlementData.features?.[0]?.properties || {}
-      },
-      nature: {
-        name: natureName,
-        facts: natureData.features?.[0]?.properties || {}
-      },
-      historic: {
-        name: historicName,
-        facts: historicData.features?.[0]?.properties || {}
-      }
-    });
-    
-  } catch (error) {
-    console.error('Nearby AI error:', error);
-    // HATA DURUMUNDA GENERIC İSİMLER
-    res.json({
-      settlement: { name: "Local Village", facts: {} },
-      nature: { name: "City Park", facts: {} },
-      historic: { name: "Old Monument", facts: {} }
-    });
-  }
+    try {
+        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+        if (!GEOAPIFY_KEY) {
+            console.error('[NEARBY AI] No API key');
+            return res.json({ 
+                settlement: { name: "Local Area", facts: {} },
+                nature: { name: "Park Area", facts: {} },
+                historic: { name: "Historic Site", facts: {} }
+            });
+        }
+
+        // 1. YERLEŞİM
+        const settlementUrl = `https://api.geoapify.com/v2/places?categories=place.city,place.town,place.village&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        
+        // 2. DOĞA
+        const natureUrl = `https://api.geoapify.com/v2/places?categories=natural,leisure.park,beach&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        
+        // 3. TARİHİ
+        const historicUrl = `https://api.geoapify.com/v2/places?categories=historic,heritage,tourism.attraction&filter=circle:${lng},${lat},20000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+        
+        console.log('[NEARBY AI] Fetching from Geoapify...');
+        
+        const [settlementRes, natureRes, historicRes] = await Promise.all([
+            fetch(settlementUrl).then(r => r.json()).catch(() => ({ features: [] })),
+            fetch(natureUrl).then(r => r.json()).catch(() => ({ features: [] })),
+            fetch(historicUrl).then(r => r.json()).catch(() => ({ features: [] }))
+        ]);
+
+        // Sonuçları formatla
+        const result = {
+            settlement: settlementRes.features?.[0]?.properties ? {
+                name: settlementRes.features[0].properties.name || "Nearby Town",
+                facts: settlementRes.features[0].properties
+            } : { name: "Local Village", facts: {} },
+            
+            nature: natureRes.features?.[0]?.properties ? {
+                name: natureRes.features[0].properties.name || "Park Area",
+                facts: natureRes.features[0].properties
+            } : { name: "Green Space", facts: {} },
+            
+            historic: historicRes.features?.[0]?.properties ? {
+                name: historicRes.features[0].properties.name || "Historic Site",
+                facts: historicRes.features[0].properties
+            } : { name: "Old Monument", facts: {} }
+        };
+
+        console.log('[NEARBY AI] Results:', {
+            settlement: result.settlement.name,
+            nature: result.nature.name,
+            historic: result.historic.name
+        });
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('[NEARBY AI] Error:', error.message);
+        // Hata durumunda da 3 isim döndür
+        res.json({
+            settlement: { name: "Local Town", facts: {} },
+            nature: { name: "City Park", facts: {} },
+            historic: { name: "Historic Building", facts: {} }
+        });
+    }
 });
 
 // Chat stream (SSE) endpoint

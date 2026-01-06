@@ -107,20 +107,22 @@ async function getHierarchicalLocation(lat, lng) {
     }
 }
 
-// 3. YAKIN YERLERİ GETİR (SADECE İSİMLER - AI YOK)
-// 3. YAKIN YERLERİ GETİR (SADECE İSİMLER - AI YOK)
-// fetchNearbyPlaceNames fonksiyonunu güncelle:
 async function fetchNearbyPlaceNames(lat, lng) {
   try {
-    const response = await fetch('/api/geoapify/nearby-places', {
+    const response = await fetch('/llm-proxy/nearby-ai', {  // ← BU DOĞRU
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lat, lng })
     });
     
-    if (!response.ok) return [];
+    if (!response.ok) {
+      console.error('Nearby AI fetch failed:', response.status);
+      return [];
+    }
     
     const data = await response.json();
+    console.log('Nearby AI response:', data);
+    
     const places = [];
     
     if (data.settlement && data.settlement.name) {
@@ -134,8 +136,9 @@ async function fetchNearbyPlaceNames(lat, lng) {
     }
     
     return places;
+    
   } catch (error) {
-    console.error("Nearby places error:", error);
+    console.error("fetchNearbyPlaceNames error:", error);
     return [];
   }
 }
@@ -394,3 +397,5 @@ async function handleMapAIClick(e) {
         if (activeBtn) activeBtn.click();
     });
 }
+
+
