@@ -247,12 +247,11 @@ router.post('/nearby-ai', async (req, res) => {
 
     // 4. Paralel Sorgular & JSON response
     try {
-      const [settlement, nature, historic] = await Promise.all([
+        const [settlement, nature, historic] = await Promise.all([
     fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
-    fetchCategory('natural,leisure.park,beach', 20000), // Veya dokümantasyona göre güncel isimleri
-    fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction', 25000) // Mümkün olana göre
+    fetchCategory('natural,leisure.park,beach', 20000), // bunlar için de Geoapify docs'a bak!
+    fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction', 25000)
 ]);
-
 
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
