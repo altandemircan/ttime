@@ -180,43 +180,86 @@ router.post('/point-ai-info', async (req, res) => {
 // --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
 // --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
 // llm-proxy.js içinde bu kısmı bul ve komple değiştir
+// --- ENDPOINT: NEARBY AI (GÜÇLENDİRİLMİŞ VERSİYON) ---
 router.post('/nearby-ai', async (req, res) => {
-    try {
-        const { lat, lng } = req.body;
-        const apiKey = process.env.GEOAPIFY_KEY;
+    const { lat, lng } = req. body;
 
-        if (!lat || !lng) return res.status(400).json({ error: "Coords missing" });
+    // 1. Koordinat Kontrolü
+    if (!lat || !lng) {
+        console.warn('[NEARBY AI] Missing coordinates');
+        return res.json({ settlement: null, nature: null, historic: null });
+    }
 
-        // Tek tek kasmak yerine kategorileri optimize ettim
-        const fetchCategory = async (categories, radius) => {
-            // filter=circle:lng,lat,radius | bias=proximity:lng,lat (en yakın olanı başa getirir)
-            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=1&apiKey=${apiKey}`;
-            const resp = await axios.get(url);
-            if (resp.data.features && resp.data.features.length > 0) {
-                const p = resp.data.features[0].properties;
-                return { name: p.name || p.address_line1, facts: p };
+    // 2. API Key Kontrolü (KRİTİK!)
+    const apiKey = process. env.GEOAPIFY_KEY;
+    if (!apiKey) {
+        console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined in environment variables! ');
+        return res.status(500).json({ 
+            error: 'API key missing', 
+            detail: 'GEOAPIFY_KEY environment variable is not set' 
+        });
+    }
+
+    console.log(`[NEARBY AI] 🔍 Searching nearby:  lat=${lat}, lng=${lng}`);
+
+    // 3. Yardımcı Fonksiyon:  Kategoriden en iyi sonucu bul
+    const fetchCategory = async (categories, radius = 10000) => {
+        const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity: ${lng},${lat}&limit=5&apiKey=${apiKey}`;
+        
+        console.log(`[NEARBY AI] Fetching:  ${categories} (radius: ${radius}m)`);
+        
+        try {
+            const response = await axios.get(url, { timeout: 8000 });
+            const features = response.data?. features || [];
+
+            // İsmi olan ilk geçerli yeri bul
+            const validPlace = features.find(f => 
+                f.properties && (f.properties.name || f. properties.formatted)
+            );
+
+            if (validPlace) {
+                const result = {
+                    name: validPlace.properties.name || validPlace.properties.city || "Unknown Place",
+                    facts: validPlace.properties
+                };
+                console.log(`[NEARBY AI] ✅ Found ${categories}:  ${result.name}`);
+                return result;
             }
+            
+            console.log(`[NEARBY AI] ⚠️ No results for ${categories}`);
             return null;
-        };
+        } catch (error) {
+            console.error(`[NEARBY AI] ❌ Error fetching ${categories}:`, error.message);
+            return null;
+        }
+    };
 
-        // Antalya'da boş dönmemesi için kategorileri ve mesafeleri güncelledik
+    try {
+        // 4. Paralel Sorgular
         const [settlement, nature, historic] = await Promise.all([
-            // En yakın yerleşim (Mahalle, Köy, Semt) - 10km yeterli
-            fetchCategory("place.suburb,place.village,place.town,place.city", 10000),
+            // Yerleşim (Settlement) - 15km
+            fetchCategory("place. city,place.town,place.suburb,place.village", 15000),
             
-            // Doğa, Park, Plaj - 20km
-            fetchCategory("natural,leisure.park,beach,leisure.garden", 20000),
+            // Doğa (Nature) - 20km
+            fetchCategory("natural,leisure.park,beach,water,tourism.attraction", 20000),
             
-            // Tarih, Müze, Turistik Nokta - 20km
-            fetchCategory("historic,tourism.attraction,tourism.sights,religion.place_of_worship", 20000)
+            // Tarih/Turizm (Historic) - 25km
+            fetchCategory("historic,tourism.attraction,tourism.museum,building. historic,tourism.sights", 25000)
         ]);
 
-        console.log("📍 [Nearby API] Antalya Sonuçları:", { settlement: !!settlement, nature: !!nature, historic: !!historic });
+        const result = { settlement, nature, historic };
+        
+        console.log('[NEARBY AI] 📦 Final Result:', 
+            `Settlement: ${settlement?.name || 'null'}, ` +
+            `Nature: ${nature?.name || 'null'}, ` +
+            `Historic: ${historic?.name || 'null'}`
+        );
+        
+        res.json(result);
 
-        res.json({ settlement, nature, historic });
-    } catch (error) {
-        console.error("❌ Nearby Error:", error.message);
-        res.status(500).json({ error: "Backend failure" });
+    } catch (e) {
+        console.error('[NEARBY AI] ❌ General Error:', e.message, e.stack);
+        res.status(500).json({ error: 'Backend failure', detail: e.message });
     }
 });
 // Chat stream (SSE) endpoint
