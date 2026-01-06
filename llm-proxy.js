@@ -247,22 +247,11 @@ router.post('/nearby-ai', async (req, res) => {
 
     // 4. Paralel Sorgular & JSON response
     try {
-        const [settlement, nature, historic] = await Promise.all([
-            fetchCategory('place.city,place.town,place.suburb,place.village', 15000),
-            fetchCategory('natural,leisure.park,beach,water,tourism.attraction', 20000),
-            fetchCategory('historic,tourism.attraction,tourism.museum,building.historic,tourism.sights', 25000)
-        ]);
-
-        const result = { settlement, nature, historic };
-        console.log(`[NEARBY AI] 📦 Final:`, JSON.stringify(result));
-
-        res.json(result);
-
-    } catch (e) {
-        console.error('[NEARBY AI] ❌ General Error:', e);
-        res.status(500).json({ error: 'Backend failure', detail: e.message });
-    }
-});
+      const [settlement, nature, historic] = await Promise.all([
+    fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
+    fetchCategory('natural,leisure.park,beach', 20000), // Veya dokümantasyona göre güncel isimleri
+    fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction', 25000) // Mümkün olana göre
+]);
 
 
 // Chat stream (SSE) endpoint
