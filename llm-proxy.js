@@ -182,77 +182,63 @@ router.post('/nearby-ai', async (req, res) => {
     const lng = parseFloat(req.body.lng);
 
     if (isNaN(lat) || isNaN(lng)) {
-        console.warn('[NEARBY AI] Missing or invalid coordinates', { lat: req.body.lat, lng: req.body.lng });
+        console.warn('[NEARBY AI] Invalid coordinates', { lat: req.body.lat, lng: req.body.lng });
         return res.json({ settlement: null, nature: null, historic: null, error: 'invalid_coordinates' });
     }
 
     const apiKey = process.env.GEOAPIFY_KEY;
     if (!apiKey) {
-        console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined!');
+        console.error('[NEARBY AI] NO API KEY!');
         return res.status(500).json({
             error: 'API key missing',
-            detail: 'GEOAPIFY_KEY environment variable is not set'
+            detail: 'GEOAPIFY_KEY env variable is not set'
         });
     }
-
-    console.log(`[NEARBY AI] 🔍 Searching: lat=${lat}, lng=${lng}`);
 
     const fetchCategory = async (categories, radius) => {
         const baseUrl = 'https://api.geoapify.com/v2/places';
         const params = new URLSearchParams({
-            categories: categories,
+            categories,
             filter: `circle:${lng},${lat},${radius}`,
             bias: `proximity:${lng},${lat}`,
-            limit: '5',
+            limit: '8',
             apiKey
         });
         const url = `${baseUrl}?${params.toString()}`;
+        console.log(`[NEARBY AI][REQ] ${url}`);
 
-        console.log(`[NEARBY AI] [REQ] ${url}`);
         try {
             const resp = await axios.get(url, { timeout: 10000 });
             const features = resp.data?.features || [];
-            console.log(`[NEARBY AI] [RESULT] ${features.length} feature(s)`);
-
+            // Sadece ismi olan gerçek POI'yi döndür
             const validPlace = features.find(f =>
-    f.properties && f.properties.name && f.properties.name.trim().length > 0
-);
-
-
+                f.properties && f.properties.name && f.properties.name.trim().length > 0
+            );
             if (validPlace) {
-                console.log(`[NEARBY AI] ✅ Found: ${categories} → "${validPlace.properties.name || validPlace.properties.formatted}"`);
                 return {
-                    name: validPlace.properties.name || validPlace.properties.formatted || "Unknown Place",
+                    name: validPlace.properties.name,
                     facts: validPlace.properties
                 };
             }
-            console.log(`[NEARBY AI] ⚠️ No named results for ${categories}`);
             return null;
         } catch (error) {
-            console.error(`[NEARBY AI] ❌ Error for ${categories}:`, error?.message);
-            if (error.response) {
-                console.error(`[NEARBY AI] Response status: ${error.response.status}`);
-                console.error(`[NEARBY AI] Response data:`, error.response.data);
-            }
+            console.error(`[NEARBY AI] Error for ${categories}:`, error?.message);
             return null;
         }
     };
 
     try {
         const [settlement, nature, historic] = await Promise.all([
-    fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
-    fetchCategory('natural.forest,natural.park,natural.water,natural.mountain,leisure.park,beach', 20000),
-    fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction,tourism.sights,tourism.sights.castle,tourism.sights.archaeological_site,tourism.sights.place_of_worship,tourism.museum', 25000)
-]);
-        const result = { settlement, nature, historic };
-        console.log(`[NEARBY AI] 📦 Final:`, JSON.stringify(result));
-        res.json(result);
+            fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
+            fetchCategory('natural.forest,natural.park,natural.water,natural.mountain,leisure.park,beach', 20000),
+            fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction,tourism.sights,tourism.sights.castle,tourism.sights.archaeological_site,tourism.sights.place_of_worship,tourism.museum', 25000)
+        ]);
+        res.json({ settlement, nature, historic });
     } catch (e) {
-        console.error('[NEARBY AI] ❌ General Error:', e);
+        console.error('[NEARBY AI] General Error:', e);
         res.status(500).json({ error: 'Backend failure', detail: e.message });
     }
 });
-
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
