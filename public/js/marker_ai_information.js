@@ -196,7 +196,12 @@ async function renderNearbyButtons(lat, lng, city, country, targetDiv) {
         const data = await res.json();
         const nearbyButtonsContainer = targetDiv.querySelector('.ai-nearby-buttons');
         const statusText = targetDiv.querySelector('#nearby-status-text');
-        if (data && (data.settlement || data.nature || data.historic)) {
+        // v3: Dizi olarak bekle!
+        if (
+            (Array.isArray(data.settlement) && data.settlement.length > 0) ||
+            (Array.isArray(data.nature) && data.nature.length > 0) ||
+            (Array.isArray(data.historic) && data.historic.length > 0)
+        ) {
             let btnsHTML = '';
             const cats = [
                 {k:'settlement', i:'🏙️', l:'City'}, 
@@ -204,18 +209,23 @@ async function renderNearbyButtons(lat, lng, city, country, targetDiv) {
                 {k:'historic', i:'🏛️', l:'Historic'}
             ];
             cats.forEach(c => {
-                if (data[c.k] && data[c.k].name) {
-                    const name = data[c.k].name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                const arr = Array.isArray(data[c.k]) ? data[c.k] : [];
+                arr.forEach(place => {
+                    const name = (place.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
                     const safeCity = (city || '').replace(/'/g, "\\'");
                     const safeCountry = (country || '').replace(/'/g, "\\'");
+                    // Facts'i JSON'a çevirip gönderebilirsin, ya da izole bırakabilirsin.
+                    // Koord verisini birleştir:
+                    let facts = JSON.stringify(Object.assign({}, place.facts || {}, {__lat:lat, __lng:lng}));
+                    // " buton içinde tıkırdama yapmasın diye JSON'u single-quoted string'e çek
                     btnsHTML += `
                         <button class="ai-nearby-btn"
                             style="display: block; width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.8rem;"
                             onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'"
-                            onclick="fetchSimpleAI('point', '${name}', '${safeCity}', '${safeCountry}', {__lat:${lat}, __lng:${lng}}, this.closest('.ai-simple-content'))">
-                            <span style="margin-right:5px;">${c.i}</span> <b>${c.l}:</b> ${data[c.k].name}
+                            onclick="fetchSimpleAI('point', '${name}', '${safeCity}', '${safeCountry}', ${facts.replace(/"/g,"'")}, this.closest('.ai-simple-content'))">
+                            <span style="margin-right:5px;">${c.i}</span> <b>${c.l}:</b> ${place.name}
                         </button>`;
-                }
+                });
             });
             if (btnsHTML) {
                 nearbyButtonsContainer.innerHTML = `<div class="ai-nearby-title" style="font-weight:700; font-size:0.85rem; margin-bottom:8px; color:#475569;">📍 Nearby Exploration:</div>` + btnsHTML;
