@@ -250,10 +250,10 @@ router.post('/nearby-ai', async (req, res) => {
     try {
         // 4. Paralel Sorgular - KATEGORİLERDE BOŞLUK YOK
         const [settlement, nature, historic] = await Promise.all([
-            fetchCategory('place. city,place.town,place.suburb,place.village', 15000),
-            fetchCategory('natural,leisure. park,beach,water,tourism. attraction', 20000),
-            fetchCategory('historic,tourism.attraction,tourism.museum,building. historic,tourism.sights', 25000)
-        ]);
+    fetchCategory('place.city,place.town,place.suburb,place.village', 15000),
+    fetchCategory('natural,leisure.park,beach,water,tourism.attraction', 20000),
+    fetchCategory('historic,tourism.attraction,tourism.museum,building.historic,tourism.sights', 25000)
+]);
 
         const result = { settlement, nature, historic };
         
