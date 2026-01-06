@@ -140,63 +140,57 @@ max_tokens: 200
 // --- ENDPOINT: POINT AI INFO ---
 router.post('/point-ai-info', async (req, res) => {
     const { point, city, country, facts } = req.body;
-    if (!point || !city) return res.status(400).send('point and city are required');
+    if (!point) return res.status(400).send('point required');
 
     const cacheKey = `POINTAI:${point}__${city}`;
     if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
 
-    const processingPromise = (async () => {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3000);
-        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
-            }, { timeout: 45000 });
-            
-            const parsed = JSON.parse(response.data.message.content || "{}");
-            const ensureStr = (v) => {
-                if (!v) return "Info not available.";
-                if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
-                return String(v).trim();
-            };
-            return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
-        } catch (err) { return { p1: "Info not available.", p2: "" }; }
-    })();
-
-    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
     try {
-        const result = await processingPromise;
+        const factsJson = JSON.stringify(facts || {}).slice(0, 3000);
+        const prompt = `ENGLISH only. Return JSON: {"p1":"description", "p2":"practical info"}. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}`;
+        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+            model: "llama3:8b",
+            messages: [{ role: "user", content: prompt }],
+            stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
+        }, { timeout: 45000 });
+        
+        const parsed = JSON.parse(response.data.message.content || "{}");
+        const ensureStr = (v) => {
+            if (!v) return "";
+            if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
+            return String(v).trim();
+        };
+        const result = { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
         aiCache[cacheKey] = { status: 'done', data: result };
         saveCacheToDisk();
         res.json(result);
-    } catch (e) { res.status(500).json({ error: "AI Error" }); }
+    } catch (err) { res.json({ p1: "Info not available.", p2: "" }); }
 });
 
-// --- ENDPOINT: NEARBY AI (Sadece Geoapify) ---
+// --- ENDPOINT: NEARBY AI (SADECE GEOAPIFY VERİSİ - AI YOK) ---
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
-    if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).send('lat/lng required');
+    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+    if (!GEOAPIFY_KEY) return res.json({ settlement: null, nature: null, historic: null });
 
-    try {
-        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) return res.status(500).send("GEOAPIFY_KEY missing");
-
-        const fetchPlaces = async (cats) => {
+    const fetchPlaces = async (cats) => {
+        try {
             const url = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
             const r = await axios.get(url, { timeout: 10000 });
             const f = r.data?.features?.[0]?.properties;
-            return f ? { name: f.name || f.city || f.formatted, facts: f } : null;
-        };
+            if (!f) return null;
+            return { name: f.name || f.city || f.suburb || f.formatted, facts: f };
+        } catch (e) { return null; }
+    };
 
+    try {
         const [s, n, h] = await Promise.all([
             fetchPlaces("place.city,place.town,place.suburb,place.village"),
             fetchPlaces("natural,leisure.park,beach"),
             fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
         ]);
         res.json({ settlement: s, nature: n, historic: h });
-    } catch (e) { res.status(500).send("Geoapify error"); }
+    } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
 });
 
 // Chat stream (SSE) endpoint
