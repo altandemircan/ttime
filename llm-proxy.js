@@ -177,21 +177,15 @@ router.post('/point-ai-info', async (req, res) => {
 });
 
 
-
-
-
 router.post('/nearby-ai', async (req, res) => {
-    // Body'den güvenli float olarak alıyoruz
     const lat = parseFloat(req.body.lat);
     const lng = parseFloat(req.body.lng);
 
-    // 1. Koordinat Kontrolü
     if (isNaN(lat) || isNaN(lng)) {
         console.warn('[NEARBY AI] Missing or invalid coordinates', { lat: req.body.lat, lng: req.body.lng });
         return res.json({ settlement: null, nature: null, historic: null, error: 'invalid_coordinates' });
     }
 
-    // 2. API Key Kontrolü
     const apiKey = process.env.GEOAPIFY_KEY;
     if (!apiKey) {
         console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined!');
@@ -203,7 +197,6 @@ router.post('/nearby-ai', async (req, res) => {
 
     console.log(`[NEARBY AI] 🔍 Searching: lat=${lat}, lng=${lng}`);
 
-    // 3. Kategori başına Geoapify kullanan fonksiyon
     const fetchCategory = async (categories, radius) => {
         const baseUrl = 'https://api.geoapify.com/v2/places';
         const params = new URLSearchParams({
@@ -221,7 +214,6 @@ router.post('/nearby-ai', async (req, res) => {
             const features = resp.data?.features || [];
             console.log(`[NEARBY AI] [RESULT] ${features.length} feature(s)`);
 
-            // İlk isimli/geçerli yeri bul
             const validPlace = features.find(f =>
                 f.properties && (f.properties.name || f.properties.formatted)
             );
@@ -245,13 +237,20 @@ router.post('/nearby-ai', async (req, res) => {
         }
     };
 
-    // 4. Paralel Sorgular & JSON response
     try {
         const [settlement, nature, historic] = await Promise.all([
-    fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
-    fetchCategory('natural,leisure.park,beach', 20000), // bunlar için de Geoapify docs'a bak!
-    fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction', 25000)
-]);
+            fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
+            fetchCategory('natural,leisure.park,beach', 20000),
+            fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction', 25000)
+        ]);
+        const result = { settlement, nature, historic };
+        console.log(`[NEARBY AI] 📦 Final:`, JSON.stringify(result));
+        res.json(result);
+    } catch (e) {
+        console.error('[NEARBY AI] ❌ General Error:', e);
+        res.status(500).json({ error: 'Backend failure', detail: e.message });
+    }
+});
 
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
