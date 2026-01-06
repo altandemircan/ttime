@@ -196,42 +196,40 @@ async function renderNearbyButtons(lat, lng, city, country, targetDiv) {
         const data = await res.json();
         const nearbyButtonsContainer = targetDiv.querySelector('.ai-nearby-buttons');
         const statusText = targetDiv.querySelector('#nearby-status-text');
-        // v3: Dizi olarak bekle!
-        if (
-            (Array.isArray(data.settlement) && data.settlement.length > 0) ||
-            (Array.isArray(data.nature) && data.nature.length > 0) ||
-            (Array.isArray(data.historic) && data.historic.length > 0)
-        ) {
-            let btnsHTML = '';
-            const cats = [
-                {k:'settlement', i:'🏙️', l:'City'}, 
-                {k:'nature', i:'🌳', l:'Nature'}, 
-                {k:'historic', i:'🏛️', l:'Historic'}
-            ];
-            cats.forEach(c => {
-                const arr = Array.isArray(data[c.k]) ? data[c.k] : [];
-                arr.forEach(place => {
-                    const name = (place.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        
+        // Her kategori için birden fazla sonuç destekleniyor (backend array döndürüyor)
+        // Sonuç dizilerini okuyoruz, varsa max 3 item göster.
+        const types = [
+            {k:'settlement', i:'🏙️', l:'City'},
+            {k:'nature', i:'🌳', l:'Nature'},
+            {k:'historic', i:'🏛️', l:'Historic'}
+        ];
+        let btnsHTML = '';
+        let totalFound = 0;
+
+        types.forEach(cat => {
+            const itemsArr = Array.isArray(data[cat.k]) ? data[cat.k] : (data[cat.k] ? [data[cat.k]] : []);
+            // Sadece ilk 3 tanesini göster (kategoride hep max 3)
+            itemsArr.slice(0, 3).forEach(item => {
+                if (item && item.name && typeof item.name === 'string' && item.name.trim().length > 0) {
+                    totalFound++;
+                    const name = item.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
                     const safeCity = (city || '').replace(/'/g, "\\'");
                     const safeCountry = (country || '').replace(/'/g, "\\'");
-                    // Facts'i JSON'a çevirip gönderebilirsin, ya da izole bırakabilirsin.
-                    // Koord verisini birleştir:
-                    let facts = JSON.stringify(Object.assign({}, place.facts || {}, {__lat:lat, __lng:lng}));
-                    // " buton içinde tıkırdama yapmasın diye JSON'u single-quoted string'e çek
+                    const factsObj = Object.assign({__lat: lat, __lng: lng}, item.facts || {});
                     btnsHTML += `
                         <button class="ai-nearby-btn"
                             style="display: block; width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.8rem;"
                             onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'"
-                            onclick="fetchSimpleAI('point', '${name}', '${safeCity}', '${safeCountry}', ${facts.replace(/"/g,"'")}, this.closest('.ai-simple-content'))">
-                            <span style="margin-right:5px;">${c.i}</span> <b>${c.l}:</b> ${place.name}
+                            onclick="fetchSimpleAI('point', '${name}', '${safeCity}', '${safeCountry}', ${JSON.stringify(factsObj)}, this.closest('.ai-simple-content'))">
+                            <span style="margin-right:5px;">${cat.i}</span> <b>${cat.l}:</b> ${item.name}
                         </button>`;
-                });
+                }
             });
-            if (btnsHTML) {
-                nearbyButtonsContainer.innerHTML = `<div class="ai-nearby-title" style="font-weight:700; font-size:0.85rem; margin-bottom:8px; color:#475569;">📍 Nearby Exploration:</div>` + btnsHTML;
-            } else {
-                if (statusText) statusText.innerText = "No specific landmarks found nearby.";
-            }
+        });
+
+        if (btnsHTML) {
+            nearbyButtonsContainer.innerHTML = `<div class="ai-nearby-title" style="font-weight:700; font-size:0.85rem; margin-bottom:8px; color:#475569;">📍 Nearby Exploration:</div>` + btnsHTML;
         } else {
             if (statusText) statusText.innerText = "No major landmarks found in this area.";
         }
