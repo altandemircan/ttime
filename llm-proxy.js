@@ -87,7 +87,7 @@ router.post('/plan-summary', async (req, res) => {
                 options: {
                     temperature: 0.1, // Llama 3 için düşük sıcaklık önemli
                     top_p: 0.9,
-                    max_tokens: 300
+max_tokens: 200
                 }
             });
 
@@ -207,7 +207,7 @@ CONTENT RULES:
                 options: {
                     temperature: 0.1,
                     top_p: 0.9,
-                    max_tokens: 220
+max_tokens: 140
                 }
             });
 
