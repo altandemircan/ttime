@@ -65,37 +65,7 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
-// YENİ: Yakın yerler endpoint'i - GERÇEK
-app.post('/api/geoapify/nearby-places', (req, res) => {
-  // KESİNLİKLE 3 İSİM DÖNDÜR
-  res.json({
-    settlement: { name: "Local Town", formatted: "" },
-    nature: { name: "City Park", formatted: "" },
-    historic: { name: "Old Mosque", formatted: "" }
-  });
-});
 
-async function getCityNameFromCoords(lat, lng) {
-  try {
-    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-    const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_KEY}`;
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.features && data.features.length > 0) {
-      const props = data.features[0].properties;
-      return props.city || props.county || props.state || "Unknown City";
-    }
-  } catch (e) {
-    console.error('City name error:', e);
-  }
-  return "Unknown";
-}
-// --- BURAYA EKLE --- //
-
-// OpenFreeMap TILE PROXY:
-// OpenFreeMap VECTOR TILE PROXY (GÜNCEL "planet/20251112_001001_pt" dataset!)
 
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
