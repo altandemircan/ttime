@@ -196,36 +196,25 @@ router.post('/nearby-ai', async (req, res) => {
     }
 
     const fetchCategory = async (categories, radius) => {
-        const baseUrl = 'https://api.geoapify.com/v2/places';
-        const params = new URLSearchParams({
-            categories,
-            filter: `circle:${lng},${lat},${radius}`,
-            bias: `proximity:${lng},${lat}`,
-            limit: '8',
-            apiKey
-        });
-        const url = `${baseUrl}?${params.toString()}`;
-        console.log(`[NEARBY AI][REQ] ${url}`);
-
-        try {
-            const resp = await axios.get(url, { timeout: 10000 });
-            const features = resp.data?.features || [];
-            // Sadece ismi olan gerçek POI'yi döndür
-            const validPlace = features.find(f =>
-                f.properties && f.properties.name && f.properties.name.trim().length > 0
-            );
-            if (validPlace) {
-                return {
-                    name: validPlace.properties.name,
-                    facts: validPlace.properties
-                };
-            }
-            return null;
-        } catch (error) {
-            console.error(`[NEARBY AI] Error for ${categories}:`, error?.message);
-            return null;
-        }
-    };
+    const baseUrl = 'https://api.geoapify.com/v2/places';
+    const params = new URLSearchParams({
+        categories,
+        filter: `circle:${lng},${lat},${radius}`,
+        bias: `proximity:${lng},${lat}`,
+        limit: '12', // Daha çok çek
+        apiKey
+    });
+    const url = `${baseUrl}?${params.toString()}`;
+    const resp = await axios.get(url, { timeout: 10000 });
+    const features = resp.data?.features || [];
+    return features
+        .filter(f => f.properties && f.properties.name && f.properties.name.trim().length > 0)
+        .slice(0, 3)
+        .map(f => ({
+            name: f.properties.name,
+            facts: f.properties
+        })) || null;
+};
 
     try {
         const [settlement, nature, historic] = await Promise.all([
