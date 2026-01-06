@@ -138,6 +138,47 @@ max_tokens: 200
 
 
 // --- ENDPOINT: POINT AI INFO (GÜNCELLENDİ) ---
+router.post('/point-ai-info', async (req, res) => {
+    const { point, city, country, facts } = req.body;
+    if (!point || !city) return res.status(400).send('point and city required');
+
+    const cacheKey = `POINTAI:${point}__${city}`;
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+
+    const processingPromise = (async () => {
+        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
+        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: "llama3:8b",
+                messages: [{ role: "user", content: prompt }],
+                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
+            }, { timeout: 45000 });
+            
+            const content = response.data?.message?.content || "{}";
+            const parsed = JSON.parse(content);
+
+            const ensureStr = (v) => {
+                if (!v) return "Info not available.";
+                if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
+                return String(v).trim();
+            };
+            return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
+        } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
+    })();
+
+    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
+    try {
+        const result = await processingPromise;
+        aiCache[cacheKey] = { status: 'done', data: result };
+        saveCacheToDisk();
+        res.json(result);
+    } catch (e) { res.status(500).json({ error: "AI Error" }); }
+});
+
+
+
+
 router.post('/nearby-ai', async (req, res) => {
   const lat = parseFloat(req.body.lat);
   const lng = parseFloat(req.body.lng);
@@ -146,91 +187,6 @@ router.post('/nearby-ai', async (req, res) => {
   const url = `https://api.geoapify.com/v2/places?categories=place.city&filter=circle:${lng},${lat},20000&limit=3&apiKey=${apiKey}`;
   const resp = await axios.get(url);
   res.json(resp.data);
-});
-
-
-
-
-router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng } = req.body;
-
-    // --- 1. Koordinat Kontrolü ---
-    if (typeof lat !== "number" || typeof lng !== "number" || isNaN(lat) || isNaN(lng)) {
-        console.warn('[NEARBY AI] Missing or invalid coordinates', { lat, lng });
-        return res.json({ settlement: null, nature: null, historic: null });
-    }
-
-    // --- 2. API Key Kontrolü ---
-    const apiKey = process.env.GEOAPIFY_KEY;
-    if (!apiKey) {
-        console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined!');
-        return res.status(500).json({
-            error: 'API key missing',
-            detail: 'GEOAPIFY_KEY environment variable is not set'
-        });
-    }
-
-    console.log(`[NEARBY AI] 🔍 Searching: lat=${lat}, lng=${lng}`);
-
-    // --- 3. Yardımcı: Kategoriden en iyi sonucu bul ---
-    const fetchCategory = async (categories, radius) => {
-        const baseUrl = 'https://api.geoapify.com/v2/places';
-        const params = new URLSearchParams({
-            categories: categories,
-            filter: `circle:${lng},${lat},${radius}`,
-            bias: `proximity:${lng},${lat}`,
-            limit: '5',
-            apiKey
-        });
-        const url = `${baseUrl}?${params.toString()}`;
-
-        console.log(`[NEARBY AI] [REQ] ${url}`);
-        try {
-            const resp = await axios.get(url, { timeout: 10000 });
-            const features = resp.data?.features || [];
-            console.log(`[NEARBY AI] [RESULT] ${features.length} feature(s)`);
-
-            // İlk isimli/geçerli yeri bul
-            const validPlace = features.find(f =>
-                f.properties && (f.properties.name || f.properties.formatted)
-            );
-
-            if (validPlace) {
-                console.log(`[NEARBY AI] ✅ Found: ${categories} → "${validPlace.properties.name || validPlace.properties.formatted}"`);
-                return {
-                    name: validPlace.properties.name || validPlace.properties.formatted || "Unknown Place",
-                    facts: validPlace.properties
-                };
-            }
-            console.log(`[NEARBY AI] ⚠️ No named results for ${categories}`);
-            return null;
-        } catch (error) {
-            console.error(`[NEARBY AI] ❌ Error for ${categories}:`, error?.message);
-            if (error.response) {
-                console.error(`[NEARBY AI] Response status: ${error.response.status}`);
-                console.error(`[NEARBY AI] Response data:`, error.response.data);
-            }
-            return null;
-        }
-    };
-
-    // --- 4. Paralel Sorgular ---
-    try {
-        const [settlement, nature, historic] = await Promise.all([
-            fetchCategory('place.city,place.town,place.suburb,place.village', 15000),
-            fetchCategory('natural,leisure.park,beach,water,tourism.attraction', 20000),
-            fetchCategory('historic,tourism.attraction,tourism.museum,building.historic,tourism.sights', 25000)
-        ]);
-
-        const result = { settlement, nature, historic };
-        console.log(`[NEARBY AI] 📦 Final:`, JSON.stringify(result));
-
-        res.json(result);
-
-    } catch (e) {
-        console.error('[NEARBY AI] ❌ General Error:', e);
-        res.status(500).json({ error: 'Backend failure', detail: e.message });
-    }
 });
 
 
