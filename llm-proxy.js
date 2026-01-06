@@ -4,116 +4,467 @@ const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 
+// --- AYARLAR ---
 const CACHE_FILE = path.join(__dirname, 'ai_cache_db.json');
 
+// --- BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
 let aiCache = {};
 if (fs.existsSync(CACHE_FILE)) {
     try {
         const rawData = fs.readFileSync(CACHE_FILE, 'utf8');
         aiCache = JSON.parse(rawData);
-    } catch (e) { aiCache = {}; }
+        console.log(`[AI SERVER] ${Object.keys(aiCache).length} kayıt diskten yüklendi.`);
+    } catch (e) {
+        aiCache = {};
+    }
 }
 
+// Helper: Diske Kaydet
 function saveCacheToDisk() {
+    // Sadece tamamlanmış verileri kaydet
     const dataToSave = {};
     for (const key in aiCache) {
-        if (aiCache[key].status === 'done') dataToSave[key] = aiCache[key];
+        if (aiCache[key].status === 'done') {
+            dataToSave[key] = aiCache[key];
+        }
     }
     fs.writeFileSync(CACHE_FILE, JSON.stringify(dataToSave, null, 2));
 }
 
-// --- ENDPOINT: PLAN SUMMARY ---
+// --- ENDPOINT ---
 router.post('/plan-summary', async (req, res) => {
     const { city, country } = req.body;
-    if (!city) return res.status(400).send('City is required');
+    if (!city) {
+        res.status(400).send('City is required');
+        return;
+    }
+
+    // Anahtar oluştur (Örn: "Rome-Italy")
     const cacheKey = country ? `${city}-${country}` : city;
+    console.log(`[AI REQ] ${cacheKey}`);
 
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+    // 1. KONTROL: Cache'de var mı?
+    if (aiCache[cacheKey]) {
+        // A) Hazırsa hemen ver
+        if (aiCache[cacheKey].status === 'done') {
+            return res.json(aiCache[cacheKey].data);
+        }
+        // B) Şu an başkası için hazırlanıyorsa bekle
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try {
+                const data = await aiCache[cacheKey].promise;
+                return res.json(data);
+            } catch (error) {
+                delete aiCache[cacheKey];
+            }
+        }
+    }
 
-    try {
-        const prompt = `Travel guide JSON: {"summary":"...", "tip":"...", "highlight":"..."}. City: ${city}, ${country || ''}`;
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "llama3:8b",
-            messages: [{ role: "user", content: prompt }],
-            stream: false, format: "json", options: { temperature: 0.1 }
-        }, { timeout: 45000 });
-        const result = JSON.parse(response.data.message.content || "{}");
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.json(result);
-    } catch (err) { res.json({ summary: "Info unavailable.", tip: "", highlight: "" }); }
-});
+    // 2. YENİ İŞLEM BAŞLAT (Burayı güncelliyoruz)
+    const processingPromise = (async () => {
+        const aiReqCity = country ? `${city}, ${country}` : city;
+         
+        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
+        console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
 
-// --- ENDPOINT: POINT AI INFO ---
-router.post('/point-ai-info', async (req, res) => {
-    const { point, city, country, facts } = req.body;
-    if (!point) return res.status(400).send('point required');
+        const prompt = `
+        You are a strictly factual travel guide. 
+        Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
+        RULES:
+        1. Do NOT hallucinate. If unknown, state "Info not available".
+        2. Verify landmarks are INSIDE "${aiReqCity}".
+        3. Respond ONLY with a valid JSON object:
+        { "summary": "...", "tip": "...", "highlight": "..." }
+        `.trim();
 
-    const cacheKey = `POINTAI:${point}__${city}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-
-    try {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3000);
-        const prompt = `ENGLISH only. Return JSON: {"p1":"description", "p2":"practical info"}. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}`;
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "llama3:8b",
-            messages: [{ role: "user", content: prompt }],
-            stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
-        }, { timeout: 45000 });
-        
-        const parsed = JSON.parse(response.data.message.content || "{}");
-        const ensureStr = (v) => {
-            if (!v) return "";
-            if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
-            return String(v).trim();
-        };
-        const result = { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.json(result);
-    } catch (err) { res.json({ p1: "Info not available.", p2: "" }); }
-});
-
-// --- ENDPOINT: NEARBY AI (SADECE GEOAPIFY VERİSİ - AI YOK) ---
-router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng } = req.body;
-    const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-    if (!GEOAPIFY_KEY) return res.json({ settlement: null, nature: null, historic: null });
-
-    const fetchPlaces = async (cats) => {
         try {
-            const url = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
-            const r = await axios.get(url, { timeout: 10000 });
-            const f = r.data?.features?.[0]?.properties;
-            if (!f) return null;
-            return { name: f.name || f.city || f.suburb || f.formatted, facts: f };
-        } catch (e) { return null; }
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: activeModel, // Yukarıdaki değişkeni kullanıyoruz
+                messages: [{ role: "user", content: prompt }],
+                stream: false,
+                format: "json",
+                options: {
+                    temperature: 0.1, // Llama 3 için düşük sıcaklık önemli
+                    top_p: 0.9,
+max_tokens: 200
+                }
+            });
+
+            // JSON Temizleme (Ollama format:json ile gelirse direkt parse edilebilir ama önlem kalsın)
+            let jsonText = '';
+            if (typeof response.data === 'object' && response.data.message) {
+                jsonText = response.data.message.content;
+            } else if (typeof response.data === 'string') {
+                const match = response.data.match(/\{[\s\S]*?\}/);
+                if (match) jsonText = match[0];
+            }
+
+            return JSON.parse(jsonText);
+        } catch (err) {
+            console.error("LLM Error:", err.message);
+            // Hata durumunda boş dön ki cache patlamasın
+            return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
+        }
+    })();
+
+    // 3. PENDING OLARAK İŞARETLE
+    aiCache[cacheKey] = {
+        status: 'pending',
+        promise: processingPromise
     };
 
+    // 4. BEKLE VE KAYDET
     try {
-        const [s, n, h] = await Promise.all([
-            fetchPlaces("place.city,place.town,place.suburb,place.village"),
-            fetchPlaces("natural,leisure.park,beach"),
-            fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
-        ]);
-        res.json({ settlement: s, nature: n, historic: h });
-    } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
+        const result = await processingPromise;
+        
+        aiCache[cacheKey] = {
+            status: 'done',
+            data: result
+        };
+        saveCacheToDisk(); // Kalıcı kaydet
+        console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.json(result);
+
+    } catch (error) {
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'AI Error' });
+    }
 });
 
+
+// --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
+// --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
+router.post('/point-ai-info', async (req, res) => {
+    const { point, city, country, facts } = req.body;
+
+    if (!point || !city) {
+        res.status(400).send('point and city are required');
+        return;
+    }
+
+    const norm = (v) => (typeof v === "string" ? v.trim() : "");
+    const aiPoint = norm(point);
+    const aiCity = norm(city);
+    const aiCountry = norm(country);
+
+    const cacheKey = `POINTAI:${aiPoint}__${aiCity}${aiCountry ? `__${aiCountry}` : ""}`;
+    console.log(`[AI REQ] ${cacheKey}`);
+
+    if (aiCache[cacheKey]) {
+        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try {
+                const data = await aiCache[cacheKey].promise;
+                return res.json(data);
+            } catch {
+                delete aiCache[cacheKey];
+            }
+        }
+    }
+
+    const processingPromise = (async () => {
+        const activeModel = "llama3:8b";
+        const context = aiCountry ? `${aiCity}, ${aiCountry}` : aiCity;
+
+        const safeFacts = facts && typeof facts === "object" ? facts : {};
+        const factsJson = JSON.stringify(safeFacts).slice(0, 4000);
+
+        const prompt = `
+ENGLISH only. Be strictly factual.
+Use ONLY the provided FACTS. If something is missing, say "Info not available".
+Do NOT invent phone numbers, opening hours, prices, or exact addresses.
+Return ONLY JSON: {"p1":"...","p2":"..."}.
+
+POINT: "${aiPoint}"
+CITY CONTEXT: "${context}"
+FACTS:
+${factsJson}
+
+p1: 1 short paragraph describing the place + location from FACTS.formatted if present.
+p2: practical info ONLY if present in FACTS (phone, website, opening_hours). Otherwise "Info not available".
+        `.trim();
+
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: activeModel,
+                messages: [{ role: "user", content: prompt }],
+                stream: false,
+                format: "json",
+                options: {
+                    temperature: 0.1,
+                    top_p: 0.9,
+                    num_predict: 140
+                }
+            });
+
+            let jsonText = '';
+            if (typeof response.data === 'object' && response.data.message) {
+                jsonText = response.data.message.content;
+            } else if (typeof response.data === 'string') {
+                const match = response.data.match(/\{[\s\S]*?\}/);
+                if (match) jsonText = match[0];
+            }
+
+            const parsed = JSON.parse(jsonText);
+            return {
+                p1: (parsed.p1 && String(parsed.p1).trim()) ? String(parsed.p1).trim() : "Info not available.",
+                p2: (parsed.p2 && String(parsed.p2).trim()) ? String(parsed.p2).trim() : "Info not available."
+            };
+        } catch (err) {
+            console.error("LLM Error:", err.message);
+            return { p1: "Info not available.", p2: "Info not available." };
+        }
+    })();
+
+    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
+
+    try {
+        const result = await processingPromise;
+        aiCache[cacheKey] = { status: 'done', data: result };
+        saveCacheToDisk();
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.json(result);
+    } catch (error) {
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'AI Error' });
+    }
+});
+
+// --- ENDPOINT: NEARBY AI (geoapify places + ai for 3 nearest items) ---
+router.post('/nearby-ai', async (req, res) => {
+    const { lat, lng, city, country } = req.body;
+
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        return res.status(400).send('lat and lng are required (number)');
+    }
+
+    const norm = (v) => (typeof v === "string" ? v.trim() : "");
+    const nCity = norm(city);
+    const nCountry = norm(country);
+
+    const cacheKey = `NEARBYAI:${lat.toFixed(4)},${lng.toFixed(4)}__${nCity}__${nCountry}`;
+    console.log(`[AI REQ] ${cacheKey}`);
+
+    if (aiCache[cacheKey]) {
+        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try {
+                const data = await aiCache[cacheKey].promise;
+                return res.json(data);
+            } catch {
+                delete aiCache[cacheKey];
+            }
+        }
+    }
+
+    const processingPromise = (async () => {
+        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+        if (!GEOAPIFY_KEY) throw new Error("Missing GEOAPIFY_KEY env");
+
+        const proximity = `${lng},${lat}`;
+
+        const fetchPlaces = async (categories) => {
+            const url =
+                `https://api.geoapify.com/v2/places?` +
+                `categories=${encodeURIComponent(categories)}` +
+                `&filter=circle:${proximity},25000` +
+                `&bias=proximity:${proximity}` +
+                `&limit=1` +
+                `&apiKey=${encodeURIComponent(GEOAPIFY_KEY)}`;
+
+            const r = await axios.get(url, { timeout: 15000 });
+            const f = r.data?.features?.[0];
+            if (!f) return null;
+
+            const p = f.properties || {};
+            return {
+                name: p.name || p.formatted || "Unknown",
+                formatted: p.formatted || "",
+                categories: p.categories || [],
+                place_id: p.place_id || "",
+                lat: f.geometry?.coordinates?.[1] ?? null,
+                lng: f.geometry?.coordinates?.[0] ?? null
+            };
+        };
+
+        const settlementCategories = "place.village,place.town,place.hamlet,place.city";
+        const natureCategories = "natural.water,natural.wood,leisure.park,beach,water,waterway,landuse.forest";
+        const historicCategories = "historic,heritage,tourism.attraction,tourism.museum";
+
+        const [settlement, nature, historic] = await Promise.all([
+            fetchPlaces(settlementCategories),
+            fetchPlaces(natureCategories),
+            fetchPlaces(historicCategories)
+        ]);
+
+        const activeModel = "llama3:8b";
+
+        const makeNearbyPrompt = (typeLabel, item) => {
+            const ctx = nCountry ? `${nCity}, ${nCountry}` : (nCity || nCountry || "");
+            const factsJson = JSON.stringify(item || {}).slice(0, 2000);
+
+            return `
+ENGLISH only. Be strictly factual. Use ONLY the FACTS.
+Return ONLY JSON: {"p1":"...","p2":"..."}.
+
+TYPE: ${typeLabel}
+CONTEXT: ${ctx}
+
+FACTS:
+${factsJson}
+
+p1: 1 short paragraph describing what it is + location (use formatted if present).
+p2: 1 short practical note if possible from FACTS, otherwise "Info not available".
+`.trim();
+        };
+
+        const askAI = async (typeLabel, item) => {
+            if (!item) return { item: null, ai: { p1: "Info not available.", p2: "Info not available." } };
+
+            try {
+                const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                    model: activeModel,
+                    messages: [{ role: "user", content: makeNearbyPrompt(typeLabel, item) }],
+                    stream: false,
+                    format: "json",
+                    options: {
+                        temperature: 0.1,
+                        top_p: 0.9,
+                        num_predict: 120
+                    }
+                });
+
+                const jsonText = response.data?.message?.content || "";
+                const parsed = JSON.parse(jsonText);
+
+                return {
+                    item, 
+                    ai: {
+                        p1: parsed?.p1 ? String(parsed.p1).trim() : "Info not available.",
+                        p2: parsed?.p2 ? String(parsed.p2).trim() : "Info not available."
+                    }
+                };
+            } catch (err) {
+                console.error("LLM Error (nearby):", err.message);
+                return { item, ai: { p1: "Info not available.", p2: "Info not available." } };
+            }
+        };
+
+        const [settlementAI, natureAI, historicAI] = await Promise.all([
+            askAI("Nearest settlement", settlement),
+            askAI("Nearest nature area", nature),
+            askAI("Nearest historic site", historic)
+        ]);
+
+        return { settlement: settlementAI, nature: natureAI, historic: historicAI };
+    })();
+
+    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
+
+    try {
+        const result = await processingPromise;
+        aiCache[cacheKey] = { status: 'done', data: result };
+        saveCacheToDisk();
+        res.json(result);
+    } catch (error) {
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'Nearby AI Error' });
+    }
+});
+
+// Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
+
+    let finished = false;
+
+    // Tüm mesaj geçmişini frontendden al
+    let userMessages = [];
     try {
-        const userMessages = JSON.parse(req.query.messages || "[]");
+        userMessages = JSON.parse(req.query.messages || "[]");
+    } catch (e) {
+        userMessages = [];
+    }
+
+    // System prompt'u her zaman en başa ekle!
+const systemPrompt = `
+You are a friendly and knowledgeable travel assistant.
+Help users discover and plan trips by providing clear, concise, and useful information about destinations, activities, food, transportation, hotels, and local tips.
+Give brief answers (maximum 150 characters) unless more detail is requested.
+If asked about something unrelated to travel, politely say you only answer travel-related questions.
+`;  
+
+    // Mesajları birleştir: system + diğer geçmiş
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
+    ];
+
+    const model = 'llama3:8b';
+
+    try {
         const ollama = await axios({
-            method: 'post', url: 'http://127.0.0.1:11434/api/chat',
-            data: { model: 'llama3:8b', messages: [{role:"system", content:"Travel assistant"}, ...userMessages], stream: true },
-            responseType: 'stream'
+            method: 'post',
+            url: 'http://127.0.0.1:11434/api/chat',
+            data: {
+                model,
+                messages,
+                stream: true,
+                max_tokens: 200 // Yanıtın 300 karakteri geçmemesi için yeterli
+            },
+            responseType: 'stream',
+            timeout: 180000 // 3 dakika
         });
-        ollama.data.on('data', c => res.write(`data: ${c.toString()}\n\n`));
-        ollama.data.on('end', () => { res.write('event: end\ndata: [DONE]\n\n'); res.end(); });
-    } catch (e) { res.end(); }
+
+        ollama.data.on('data', chunk => {
+            if (finished) return;
+            const str = chunk.toString().trim();
+            if (str) {
+                res.write(`data: ${str}\n\n`);
+            }
+        });
+
+        ollama.data.on('end', () => {
+            if (!finished) {
+                finished = true;
+                res.write('event: end\ndata: [DONE]\n\n');
+                res.end();
+            }
+        });
+
+        ollama.data.on('error', (err) => {
+            if (!finished) {
+                finished = true;
+                res.write(`event: error\ndata: ${err.message}\n\n`);
+                res.end();
+            }
+        });
+
+        req.on('close', () => {
+            if (!finished) {
+                finished = true;
+                res.end();
+            }
+        });
+    } catch (error) {
+        finished = true;
+        res.write(`event: error\ndata: ${error.message}\n\n`);
+        res.end();
+    }
 });
+
 
 module.exports = router;
