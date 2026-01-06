@@ -137,6 +137,129 @@ router.post('/plan-summary', async (req, res) => {
 });
 
 
+// --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
+router.post('/point-ai-info', async (req, res) => {
+    const { point, city, country } = req.body;
+
+    // point: mekan adı (ör: "Akdeniz Anadolu Lisesi")
+    // city: şehir/il (ör: "Antalya")
+    if (!point || !city) {
+        res.status(400).send('point and city are required');
+        return;
+    }
+
+    const norm = (v) => (typeof v === "string" ? v.trim() : "");
+    const aiPoint = norm(point);
+    const aiCity = norm(city);
+    const aiCountry = norm(country);
+
+    // cacheKey: ayrı prefix ile plan-summary ile karışmasın
+    const cacheKey = `POINTAI:${aiPoint}__${aiCity}${aiCountry ? `__${aiCountry}` : ""}`;
+    console.log(`[AI REQ] ${cacheKey}`);
+
+    // 1) Cache kontrol
+    if (aiCache[cacheKey]) {
+        if (aiCache[cacheKey].status === 'done') {
+            return res.json(aiCache[cacheKey].data);
+        }
+        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
+            try {
+                const data = await aiCache[cacheKey].promise;
+                return res.json(data);
+            } catch (error) {
+                delete aiCache[cacheKey];
+            }
+        }
+    }
+
+    // 2) Yeni işlem
+    const processingPromise = (async () => {
+        const activeModel = "llama3:8b";
+        const context = aiCountry ? `${aiCity}, ${aiCountry}` : aiCity;
+
+        console.log(`[AI START] Model: ${activeModel} | Point: ${aiPoint} | City: ${context}`);
+
+        const prompt = `
+You are a strictly factual travel assistant.
+
+TASK:
+Give information about the POINT "${aiPoint}" located in "${context}".
+
+OUTPUT RULES:
+- Respond ONLY in ENGLISH.
+- Do NOT hallucinate. If you are not sure, write "Info not available".
+- Return ONLY valid JSON in this exact schema:
+{ "p1": "...", "p2": "..." }
+
+CONTENT RULES:
+- p1: 1 short paragraph describing what the place is (or what kind of place), in max ~2 sentences.
+- p2: 1 short paragraph with a practical visitor note (hours/entry/access/safety/etiquette) if known, otherwise "Info not available".
+- Do NOT include headings like "Summary/Tip/Highlight".
+- Do NOT include emojis.
+        `.trim();
+
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: activeModel,
+                messages: [{ role: "user", content: prompt }],
+                stream: false,
+                format: "json",
+                options: {
+                    temperature: 0.1,
+                    top_p: 0.9,
+                    max_tokens: 220
+                }
+            });
+
+            let jsonText = '';
+            if (typeof response.data === 'object' && response.data.message) {
+                jsonText = response.data.message.content;
+            } else if (typeof response.data === 'string') {
+                const match = response.data.match(/\{[\s\S]*?\}/);
+                if (match) jsonText = match[0];
+            }
+
+            const parsed = JSON.parse(jsonText);
+
+            // küçük sağlamlaştırma
+            return {
+                p1: (parsed.p1 && String(parsed.p1).trim()) ? String(parsed.p1).trim() : "Info not available",
+                p2: (parsed.p2 && String(parsed.p2).trim()) ? String(parsed.p2).trim() : "Info not available"
+            };
+        } catch (err) {
+            console.error("LLM Error:", err.message);
+            return { p1: "Info not available.", p2: "Info not available." };
+        }
+    })();
+
+    // 3) pending işaretle
+    aiCache[cacheKey] = {
+        status: 'pending',
+        promise: processingPromise
+    };
+
+    // 4) bekle ve kaydet
+    try {
+        const result = await processingPromise;
+
+        aiCache[cacheKey] = {
+            status: 'done',
+            data: result
+        };
+        saveCacheToDisk();
+        console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.json(result);
+    } catch (error) {
+        console.error(`[AI ERROR] ${cacheKey}:`, error.message);
+        delete aiCache[cacheKey];
+        res.status(500).json({ error: 'AI Error' });
+    }
+});
+
+
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');

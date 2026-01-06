@@ -98,7 +98,7 @@ async function fetchSimpleAI(queryName, fullContext, containerDiv) {
             <div class="spinner" style="display:inline-block; width:10px; height:10px; border:2px solid #ccc; border-top-color:#8a4af3; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
             <div style="margin-top:5px">Analyzing: <b>${queryName}</b></div>
         </div>
-    `;
+    `; 
 
     try {
 const response = await fetch('/llm-proxy/point-ai-info', {
