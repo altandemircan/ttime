@@ -138,115 +138,166 @@ max_tokens: 200
 
 
 // --- ENDPOINT: POINT AI INFO (2 paragraphs, no labels) ---
-router.post('/point-ai-info', async (req, res) => {
-const { point, city, country, facts } = req.body;
+// --- ENDPOINT: NEARBY AI (geoapify places + ai for 3 nearest items) ---
+router.post('/nearby-ai', async (req, res) => {
+    const { lat, lng, city, country } = req.body;
 
-    // point: mekan adı (ör: "Akdeniz Anadolu Lisesi")
-    // city: şehir/il (ör: "Antalya")
-    if (!point || !city) {
-        res.status(400).send('point and city are required');
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        res.status(400).send('lat and lng are required (number)');
         return;
     }
 
     const norm = (v) => (typeof v === "string" ? v.trim() : "");
-    const aiPoint = norm(point);
-    const aiCity = norm(city);
-    const aiCountry = norm(country);
+    const nCity = norm(city);
+    const nCountry = norm(country);
 
-    // cacheKey: ayrı prefix ile plan-summary ile karışmasın
-    const cacheKey = `POINTAI:${aiPoint}__${aiCity}${aiCountry ? `__${aiCountry}` : ""}`;
+    // cache key: koordinatı biraz yuvarla ki cache patlamasın
+    const cacheKey = `NEARBYAI:${lat.toFixed(4)},${lng.toFixed(4)}__${nCity}__${nCountry}`;
     console.log(`[AI REQ] ${cacheKey}`);
 
-    // 1) Cache kontrol
     if (aiCache[cacheKey]) {
-        if (aiCache[cacheKey].status === 'done') {
-            return res.json(aiCache[cacheKey].data);
-        }
+        if (aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
         if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
             try {
                 const data = await aiCache[cacheKey].promise;
                 return res.json(data);
-            } catch (error) {
+            } catch {
                 delete aiCache[cacheKey];
             }
         }
     }
 
-    // 2) Yeni işlem
     const processingPromise = (async () => {
-const activeModel = "llama3:8b";
-        const context = aiCountry ? `${aiCity}, ${aiCountry}` : aiCity;
+        // 1) Geoapify'dan 3 farklı kategori için nearest bul
+        // Not: Senin projede zaten /api/geoapify/reverse var.
+        // Burada doğrudan Geoapify API key ile çağırman gerekir (mevcut implementasyona göre uyarlamalısın).
+        // Eğer sende Geoapify çağrılarını yapan helper varsa onu kullan.
+        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY; // bunu env'e koy
+        if (!GEOAPIFY_KEY) {
+            throw new Error("Missing GEOAPIFY_KEY env");
+        }
 
-        console.log(`[AI START] Model: ${activeModel} | Point: ${aiPoint} | City: ${context}`);
+        const proximity = `${lng},${lat}`;
 
-const safeFacts = facts && typeof facts === "object" ? facts : {};
-const factsJson = JSON.stringify(safeFacts).slice(0, 4000); // aşırı büyümesin
+        const fetchPlaces = async (categories) => {
+            const url =
+                `https://api.geoapify.com/v2/places?` +
+                `categories=${encodeURIComponent(categories)}` +
+                `&filter=circle:${proximity},25000` +
+                `&bias=proximity:${proximity}` +
+                `&limit=1` +
+                `&apiKey=${encodeURIComponent(GEOAPIFY_KEY)}`;
 
-const prompt = `
-ENGLISH only. Be strictly factual.
-Use ONLY the provided FACTS. If something is missing in FACTS, say "Info not available".
-Do NOT invent phone numbers, opening hours, prices, or exact addresses.
+            const r = await axios.get(url, { timeout: 15000 });
+            const f = r.data && r.data.features && r.data.features[0];
+            if (!f) return null;
 
+            const p = f.properties || {};
+            return {
+                name: p.name || p.formatted || "Unknown",
+                formatted: p.formatted || "",
+                categories: p.categories || [],
+                place_id: p.place_id || "",
+                lat: (f.geometry && f.geometry.coordinates) ? f.geometry.coordinates[1] : null,
+                lng: (f.geometry && f.geometry.coordinates) ? f.geometry.coordinates[0] : null
+            };
+        };
+
+        // Kategori setleri (Geoapify categories)
+        const settlementCategories =
+            "place.village,place.town,place.hamlet,place.city";
+        const natureCategories =
+            "natural.water,natural.wood,leisure.park,beach,water,waterway,landuse.forest";
+        const historicCategories =
+            "historic,heritage,tourism.attraction,tourism.museum";
+
+        const [settlement, nature, historic] = await Promise.all([
+            fetchPlaces(settlementCategories),
+            fetchPlaces(natureCategories),
+            fetchPlaces(historicCategories)
+        ]);
+
+        // 2) Bulduklarımız için AI üret (kısa p1/p2)
+        const activeModel = "llama3:8b";
+
+        const makeNearbyPrompt = (typeLabel, item) => {
+            const ctx = nCountry ? `${nCity}, ${nCountry}` : (nCity || nCountry || "");
+            const factsJson = JSON.stringify(item || {}).slice(0, 2000);
+
+            return `
+ENGLISH only. Be strictly factual. Use ONLY the FACTS.
 Return ONLY JSON: {"p1":"...","p2":"..."}.
 
-POINT: "${aiPoint}"
-CITY CONTEXT: "${context}"
+TYPE: ${typeLabel}
+CONTEXT: ${ctx}
 
-FACTS (trusted):
+FACTS:
 ${factsJson}
 
-p1: 1 paragraph (max ~2 sentences) describing what the place is + its location based on FACTS.formatted if available.
-p2: 1 paragraph with practical info ONLY if present in FACTS (phone, website, opening_hours). Otherwise "Info not available".
+p1: 1 short paragraph describing what it likely is + location (use formatted if present).
+p2: 1 short practical note for a visitor if possible from FACTS, otherwise "Info not available".
 `.trim();
+        };
 
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: activeModel,
-                messages: [{ role: "user", content: prompt }],
-                stream: false,
-                format: "json",
-                options: {
-                    temperature: 0.1,
-                    top_p: 0.9,
-max_tokens: 140
+        const askAI = async (typeLabel, item) => {
+            if (!item) return { item: null, ai: { p1: "Info not available.", p2: "Info not available." } };
+
+            const prompt = makeNearbyPrompt(typeLabel, item);
+
+            try {
+                const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                    model: activeModel,
+                    messages: [{ role: "user", content: prompt }],
+                    stream: false,
+                    format: "json",
+                    options: {
+                        temperature: 0.1,
+                        top_p: 0.9,
+                        num_predict: 120
+                    }
+                });
+
+                let jsonText = '';
+                if (typeof response.data === 'object' && response.data.message) {
+                    jsonText = response.data.message.content;
+                } else if (typeof response.data === 'string') {
+                    const match = response.data.match(/\{[\s\S]*?\}/);
+                    if (match) jsonText = match[0];
                 }
-            });
 
-            let jsonText = '';
-            if (typeof response.data === 'object' && response.data.message) {
-                jsonText = response.data.message.content;
-            } else if (typeof response.data === 'string') {
-                const match = response.data.match(/\{[\s\S]*?\}/);
-                if (match) jsonText = match[0];
+                const parsed = JSON.parse(jsonText);
+                return {
+                    item,
+                    ai: {
+                        p1: (parsed.p1 && String(parsed.p1).trim()) ? String(parsed.p1).trim() : "Info not available.",
+                        p2: (parsed.p2 && String(parsed.p2).trim()) ? String(parsed.p2).trim() : "Info not available."
+                    }
+                };
+            } catch (err) {
+                console.error("LLM Error (nearby):", err.message);
+                return { item, ai: { p1: "Info not available.", p2: "Info not available." } };
             }
+        };
 
-            const parsed = JSON.parse(jsonText);
+        const [settlementAI, natureAI, historicAI] = await Promise.all([
+            askAI("Nearest settlement", settlement),
+            askAI("Nearest nature area", nature),
+            askAI("Nearest historic site", historic)
+        ]);
 
-            // küçük sağlamlaştırma
-            return {
-                p1: (parsed.p1 && String(parsed.p1).trim()) ? String(parsed.p1).trim() : "Info not available",
-                p2: (parsed.p2 && String(parsed.p2).trim()) ? String(parsed.p2).trim() : "Info not available"
-            };
-        } catch (err) {
-            console.error("LLM Error:", err.message);
-            return { p1: "Info not available.", p2: "Info not available." };
-        }
+        return {
+            settlement: settlementAI,
+            nature: natureAI,
+            historic: historicAI
+        };
     })();
 
-    // 3) pending işaretle
-    aiCache[cacheKey] = {
-        status: 'pending',
-        promise: processingPromise
-    };
+    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
 
-    // 4) bekle ve kaydet
     try {
         const result = await processingPromise;
 
-        aiCache[cacheKey] = {
-            status: 'done',
-            data: result
-        };
+        aiCache[cacheKey] = { status: 'done', data: result };
         saveCacheToDisk();
         console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
 
@@ -256,7 +307,7 @@ max_tokens: 140
     } catch (error) {
         console.error(`[AI ERROR] ${cacheKey}:`, error.message);
         delete aiCache[cacheKey];
-        res.status(500).json({ error: 'AI Error' });
+        res.status(500).json({ error: 'Nearby AI Error' });
     }
 });
 
