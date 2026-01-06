@@ -137,46 +137,7 @@ max_tokens: 200
 });
 
 
-// --- ENDPOINT: POINT AI INFO (GÜNCELLENDİ) ---
-router.post('/point-ai-info', async (req, res) => {
-    const { point, city, country, facts } = req.body;
-    if (!point || !city) return res.status(400).send('point and city required');
-
-    const cacheKey = `POINTAI:${point}__${city}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-
-    const processingPromise = (async () => {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
-        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
-            }, { timeout: 45000 });
-            
-            const content = response.data?.message?.content || "{}";
-            const parsed = JSON.parse(content);
-
-            const ensureStr = (v) => {
-                if (!v) return "Info not available.";
-                if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
-                return String(v).trim();
-            };
-            return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
-        } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
-    })();
-
-    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    try {
-        const result = await processingPromise;
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.json(result);
-    } catch (e) { res.status(500).json({ error: "AI Error" }); }
-});
-
-
+ */
 router.post('/nearby-ai', async (req, res) => {
     const lat = parseFloat(req.body.lat);
     const lng = parseFloat(req.body.lng);
@@ -184,7 +145,6 @@ router.post('/nearby-ai', async (req, res) => {
     if (isNaN(lat) || isNaN(lng)) {
         return res.json({ settlement: null, nature: null, historic: null, error: 'invalid_coordinates' });
     }
-
     const apiKey = process.env.GEOAPIFY_KEY;
     if (!apiKey) {
         return res.status(500).json({
@@ -193,21 +153,27 @@ router.post('/nearby-ai', async (req, res) => {
         });
     }
 
-    // Burada categorylerin uzatılması önemli; POI içeren net kategoriler olmalı
+    // Ana kategori sorguları (POI envanteri bol, turistik türler seçildi)
     const categoryQueries = {
         settlement: 'populated_place.city,populated_place.town,populated_place.village,populated_place.suburb',
-        nature: 'natural.park,natural.forest,natural.water,leisure.park,beach,natural.mountain,tourism.sights.nature', // Doğayla ilgili ne varsa ekle
+        nature: 'natural.park,natural.forest,natural.water,leisure.park,beach,natural.mountain,tourism.sights.nature',
         historic: 'heritage.unesco,memorial,building.historic,tourism.attraction,tourism.sights.castle,tourism.sights.archaeological_site,tourism.museum,tourism.sights.place_of_worship'
     };
 
-    // Helper
+    // Alakasız sektörlerden koruma (market, benzinci, restaurant, pharmacy gibi olmayacak!)
+    const BAD_TYPES = [
+        'restaurant', 'bar', 'cafe', 'pharmacy', 'hospital', 'atm', 'bank', 'post',
+        'shop', 'gas_station', 'convenience', 'parking', 'supermarket', 'car_dealer'
+    ];
+
+    // Her kategori için POI seçici: Sadece isimli ve "iyi" tipler gelecek!
     const fetchBestPOI = async (categories, radius, excludeTypes = []) => {
         const baseUrl = 'https://api.geoapify.com/v2/places';
         const params = new URLSearchParams({
             categories,
             filter: `circle:${lng},${lat},${radius}`,
             bias: `proximity:${lng},${lat}`,
-            limit: '6',
+            limit: '8',
             apiKey
         });
 
@@ -215,20 +181,17 @@ router.post('/nearby-ai', async (req, res) => {
             const url = `${baseUrl}?${params.toString()}`;
             const resp = await axios.get(url, { timeout: 12000 });
             const features = resp.data?.features || [];
-            // Sadece adı olan VE türü uygun olanı ara
-            // Örneğin grocery, dövizci, restaurant, eczane, benzinci vs. göstermek istemeyiz
-            const BAD_TYPES = [
-                'restaurant', 'bar', 'cafe', 'pharmacy', 'hospital', 'atm', 'bank', 'post', 'shop', 'gas_station', 'convenience', 'parking', 'supermarket'
-            ];
-            return features.find(f => {
+            for (const f of features) {
                 const props = f.properties || {};
-                if (!props.name || props.name.length < 3) return false;
-                const catstr = (props.categories || []).join(',');
-                // Alakasız kategoriler
-                if (BAD_TYPES.some(bad => catstr.includes(bad))) return false;
-                if (excludeTypes && excludeTypes.length && (props.categories || []).some(ct => excludeTypes.includes(ct))) return false;
-                return true;
-            }) || null;
+                if (!props.name || props.name.length < 3) continue;
+                // Category ve/veya industry adı içeriyor mu kontrol et
+                const catarr = (props.categories || []).map(x => x.toLowerCase());
+                if (BAD_TYPES.some(bad => catarr.some(cat => cat.includes(bad)))) continue;
+                if (excludeTypes.length && catarr.some(cat => excludeTypes.includes(cat))) continue;
+                // Gerçekten POI ise döndür
+                return f;
+            }
+            return null;
         } catch (err) {
             return null;
         }
