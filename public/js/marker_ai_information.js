@@ -236,12 +236,18 @@ if (endpointType === 'point' && facts && typeof facts === 'object') {
     }
 }
 async function fetchNearbyAI(lat, lng, city, country) {
-    const response = await fetch('/llm-proxy/nearby-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng, city, country })
-    });
-    return await response.json();
+  const response = await fetch('/llm-proxy/nearby-ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lng, city, country })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text);
+  }
+
+  return await response.json();
 }
 // 4. BASİT MAP CLICK HANDLER
 async function handleMapAIClick(e) {
