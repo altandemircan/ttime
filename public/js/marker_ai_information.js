@@ -146,6 +146,15 @@ async function fetchNearbyPlaces(lat, lng, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // Paneli görünür yapalım ki yüklendiğini görelim
+    container.style.display = 'block';
+    container.innerHTML = `
+        <div class="ai-nearby-title">📍 Nearby Exploration:</div>
+        <div id="nearby-loading" style="color: #94a3b8; font-size: 0.75rem; padding: 10px; text-align: center;">
+            Searching surroundings...
+        </div>
+    `;
+
     try {
         const response = await fetch('/llm/nearby-ai', {
             method: 'POST',
@@ -154,40 +163,42 @@ async function fetchNearbyPlaces(lat, lng, containerId) {
         });
 
         const data = await response.json();
-        
-        // Eğer veri geldiyse Loading yazısını temizle ve butonları bas
-        if (data.settlement || data.nature || data.historic) {
-            container.style.display = 'block'; // Gizli paneli aç
-            container.innerHTML = '<div class="ai-nearby-title">📍 Nearby Exploration:</div>';
-            
-            const grid = document.createElement('div');
-            grid.className = 'ai-nearby-grid'; // CSS'de yan yana dizilmesi için
+        const loadingDiv = document.getElementById('nearby-loading');
+        if (loadingDiv) loadingDiv.remove();
 
-            const categories = [
-                { key: 'settlement', icon: '🏙️', label: 'City/Town' },
-                { key: 'nature', icon: '🌳', label: 'Nature' },
-                { key: 'historic', icon: '🏛️', label: 'Historic' }
+        // Veri kontrolü
+        if (data.settlement || data.nature || data.historic) {
+            const grid = document.createElement('div');
+            grid.className = 'ai-nearby-grid';
+            grid.style.cssText = "display: flex; flex-direction: column; gap: 8px; margin-top: 8px;";
+
+            const items = [
+                { key: 'settlement', icon: '🏙️', label: 'Settlement' },
+                { key: 'nature', icon: '🌳', label: 'Nature/Parks' },
+                { key: 'historic', icon: '🏛️', label: 'Historic/Tourism' }
             ];
 
-            categories.forEach(cat => {
-                if (data[cat.key]) {
+            items.forEach(item => {
+                if (data[item.key]) {
                     const btn = document.createElement('button');
                     btn.className = 'ai-nearby-btn';
-                    btn.innerHTML = `<span>${cat.icon} ${data[cat.key].name}</span>`;
+                    btn.style.cssText = "background: #1e293b; border: 1px solid #334155; color: white; padding: 8px; border-radius: 6px; text-align: left; cursor: pointer; font-size: 0.85rem;";
+                    btn.innerHTML = `<strong>${item.icon} ${item.label}:</strong> ${data[item.key].name}`;
+                    
+                    // Butona tıklandığında AI'ya sorsun
                     btn.onclick = () => {
-                        // Burada AI'ya bu mekan hakkında soru sorabiliriz
-                        alert(`${data[cat.key].name} hakkında bilgi getiriliyor...`);
+                        alert(`${data[item.key].name} hakkında detaylı bilgi hazırlanıyor...`);
                     };
                     grid.appendChild(btn);
                 }
             });
             container.appendChild(grid);
         } else {
-            container.innerHTML = '<div style="color: #94a3b8; font-size: 0.75rem;">No nearby points found.</div>';
+            container.innerHTML += '<div style="color: #ef4444; font-size: 0.75rem; padding: 5px;">No significant nearby places found.</div>';
         }
     } catch (err) {
-        console.error("Nearby fetch error:", err);
-        container.style.display = 'none';
+        console.error("Nearby Error:", err);
+        container.innerHTML = '<div style="color: #ef4444; font-size: 0.75rem;">Error loading nearby data.</div>';
     }
 }
 // 4. AI FETCH FUNCTION (AYNI)
