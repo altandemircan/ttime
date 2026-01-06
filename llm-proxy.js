@@ -203,6 +203,51 @@ router.post('/nearby-ai', async (req, res) => {
     } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
 });
 
+router.post('/nearby-ai', async (req, res) => {
+    const { lat, lng, city, country } = req.body;
+    
+    try {
+        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
+        
+        // GeoApify API çağrısı
+        const categories = [
+            "place.city,place.town,place.village",
+            "natural,leisure.park,beach", 
+            "historic,heritage,tourism.attraction"
+        ];
+        
+        const results = await Promise.all(
+            categories.map(cat => {
+                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},30000&limit=1&apiKey=${GEOAPIFY_KEY}`;
+                return fetch(url).then(r => r.json());
+            })
+        );
+        
+        res.json({
+            settlement: {
+                name: results[0]?.features?.[0]?.properties?.name || "Nearby Village",
+                facts: results[0]?.features?.[0]?.properties || {}
+            },
+            nature: {
+                name: results[1]?.features?.[0]?.properties?.name || "Natural Area", 
+                facts: results[1]?.features?.[0]?.properties || {}
+            },
+            historic: {
+                name: results[2]?.features?.[0]?.properties?.name || "Historic Site",
+                facts: results[2]?.features?.[0]?.properties || {}
+            }
+        });
+        
+    } catch (error) {
+        // Hata durumunda test verisi
+        res.json({
+            settlement: { name: "Local Town", facts: {} },
+            nature: { name: "City Park", facts: {} },
+            historic: { name: "Old Mosque", facts: {} }
+        });
+    }
+});
+
 // Chat stream (SSE) endpoint
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
