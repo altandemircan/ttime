@@ -101,11 +101,16 @@ async function fetchSimpleAI(queryName, fullContext, containerDiv) {
     `;
 
     try {
-        const response = await fetch('/llm-proxy/plan-summary', {
+const response = await fetch('/llm-proxy/point-ai-info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: fullContext, country: "" }) 
-        });
+// fullContext şu formatta geliyor: "Point, City, Country" veya "City, Country"
+// Biz point+city ayrı yollayalım (daha stabil)
+body: JSON.stringify({
+    point: queryName,
+    city: fullContext,
+    country: ""
+})        });
 
         const data = await response.json();
         
