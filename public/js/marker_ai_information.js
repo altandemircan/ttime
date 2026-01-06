@@ -30,8 +30,9 @@
     font-weight: 400;
     text-align: left }
         .ai-simple-loading { padding: 20px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
-        .ai-info-row { margin-bottom: 6px; }
-        .ai-label { font-weight: 700; color: #475569; margin-right: 5px; }
+    .ai-point-title { font-weight: 700; color: #0f172a; margin: 0 0 8px 0; font-size: 0.85rem; }
+        .ai-point-p { margin: 0 0 10px 0; }
+        .ai-point-p:last-child { margin-bottom: 0; }
         .ai-simple-footer { margin-top: 8px; font-size: 0.7rem; color: #cbd5e1; text-align: right; border-top: 1px solid #f8fafc; padding-top: 5px;}
     `;
     document.head.appendChild(style);
@@ -108,11 +109,28 @@ async function fetchSimpleAI(queryName, fullContext, containerDiv) {
 
         const data = await response.json();
         
+         const pickText = (...vals) => {
+            for (const v of vals) {
+                if (typeof v === "string" && v.trim().length > 0) return v.trim();
+            }
+            return "";
+        };
+
+        const clamp100 = (s) => {
+            const t = (s || "").toString().trim().replace(/\s+/g, " ");
+            if (t.length <= 100) return t;
+            return t.slice(0, 97).trimEnd() + "...";
+        };
+
+        // 2 paragraf: 1) summary  2) tip/highlight fallback
+        const p1 = clamp100(pickText(data.summary, "No info available."));
+        const p2 = clamp100(pickText(data.tip, data.highlight, ""));
+
         const html = `
             <div style="animation: fadeIn 0.3s ease;">
-                <div class="ai-info-row"><span class="ai-label">📝 Summary:</span>${data.summary || 'No info available.'}</div>
-                ${data.tip ? `<div class="ai-info-row"><span class="ai-label">💡 Tip:</span>${data.tip}</div>` : ''}
-                ${data.highlight ? `<div class="ai-info-row"><span class="ai-label">✨ Highlight:</span>${data.highlight}</div>` : ''}
+                <div class="ai-point-title">Point AI Info:</div>
+                <p class="ai-point-p">${p1}</p>
+                ${p2 ? `<p class="ai-point-p">${p2}</p>` : `<p class="ai-point-p"></p>`}
             </div>
         `;
 
