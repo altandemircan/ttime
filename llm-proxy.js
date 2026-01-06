@@ -182,49 +182,70 @@ router.post('/nearby-ai', async (req, res) => {
     const lng = parseFloat(req.body.lng);
 
     if (isNaN(lat) || isNaN(lng)) {
-        console.warn('[NEARBY AI] Invalid coordinates', { lat: req.body.lat, lng: req.body.lng });
         return res.json({ settlement: null, nature: null, historic: null, error: 'invalid_coordinates' });
     }
 
     const apiKey = process.env.GEOAPIFY_KEY;
     if (!apiKey) {
-        console.error('[NEARBY AI] NO API KEY!');
         return res.status(500).json({
             error: 'API key missing',
-            detail: 'GEOAPIFY_KEY env variable is not set'
+            detail: 'GEOAPIFY_KEY environment variable is not set'
         });
     }
 
-    const fetchCategory = async (categories, radius) => {
-    const baseUrl = 'https://api.geoapify.com/v2/places';
-    const params = new URLSearchParams({
-        categories,
-        filter: `circle:${lng},${lat},${radius}`,
-        bias: `proximity:${lng},${lat}`,
-        limit: '12', // Daha çok çek
-        apiKey
-    });
-    const url = `${baseUrl}?${params.toString()}`;
-    const resp = await axios.get(url, { timeout: 10000 });
-    const features = resp.data?.features || [];
-    return features
-        .filter(f => f.properties && f.properties.name && f.properties.name.trim().length > 0)
-        .slice(0, 3)
-        .map(f => ({
-            name: f.properties.name,
-            facts: f.properties
-        })) || null;
-};
+    // Burada categorylerin uzatılması önemli; POI içeren net kategoriler olmalı
+    const categoryQueries = {
+        settlement: 'populated_place.city,populated_place.town,populated_place.village,populated_place.suburb',
+        nature: 'natural.park,natural.forest,natural.water,leisure.park,beach,natural.mountain,tourism.sights.nature', // Doğayla ilgili ne varsa ekle
+        historic: 'heritage.unesco,memorial,building.historic,tourism.attraction,tourism.sights.castle,tourism.sights.archaeological_site,tourism.museum,tourism.sights.place_of_worship'
+    };
+
+    // Helper
+    const fetchBestPOI = async (categories, radius, excludeTypes = []) => {
+        const baseUrl = 'https://api.geoapify.com/v2/places';
+        const params = new URLSearchParams({
+            categories,
+            filter: `circle:${lng},${lat},${radius}`,
+            bias: `proximity:${lng},${lat}`,
+            limit: '6',
+            apiKey
+        });
+
+        try {
+            const url = `${baseUrl}?${params.toString()}`;
+            const resp = await axios.get(url, { timeout: 12000 });
+            const features = resp.data?.features || [];
+            // Sadece adı olan VE türü uygun olanı ara
+            // Örneğin grocery, dövizci, restaurant, eczane, benzinci vs. göstermek istemeyiz
+            const BAD_TYPES = [
+                'restaurant', 'bar', 'cafe', 'pharmacy', 'hospital', 'atm', 'bank', 'post', 'shop', 'gas_station', 'convenience', 'parking', 'supermarket'
+            ];
+            return features.find(f => {
+                const props = f.properties || {};
+                if (!props.name || props.name.length < 3) return false;
+                const catstr = (props.categories || []).join(',');
+                // Alakasız kategoriler
+                if (BAD_TYPES.some(bad => catstr.includes(bad))) return false;
+                if (excludeTypes && excludeTypes.length && (props.categories || []).some(ct => excludeTypes.includes(ct))) return false;
+                return true;
+            }) || null;
+        } catch (err) {
+            return null;
+        }
+    };
 
     try {
         const [settlement, nature, historic] = await Promise.all([
-            fetchCategory('populated_place.city,populated_place.town,populated_place.village,populated_place.suburb', 15000),
-            fetchCategory('natural.forest,natural.park,natural.water,natural.mountain,leisure.park,beach', 20000),
-            fetchCategory('heritage.unesco,memorial,building.historic,tourism.attraction,tourism.sights,tourism.sights.castle,tourism.sights.archaeological_site,tourism.sights.place_of_worship,tourism.museum', 25000)
+            fetchBestPOI(categoryQueries.settlement, 15000),
+            fetchBestPOI(categoryQueries.nature, 20000),
+            fetchBestPOI(categoryQueries.historic, 25000)
         ]);
-        res.json({ settlement, nature, historic });
+        res.json({
+            settlement: settlement ? { name: settlement.properties.name, facts: settlement.properties } : null,
+            nature: nature ? { name: nature.properties.name, facts: nature.properties } : null,
+            historic: historic ? { name: historic.properties.name, facts: historic.properties } : null
+        });
     } catch (e) {
-        console.error('[NEARBY AI] General Error:', e);
         res.status(500).json({ error: 'Backend failure', detail: e.message });
     }
 });
