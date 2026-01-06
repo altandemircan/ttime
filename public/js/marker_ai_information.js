@@ -182,18 +182,71 @@ const html = `
     </div>
 `;
 
-        aiSimpleCache[cacheKey] = html;
-        containerDiv.innerHTML = html;
+       aiSimpleCache[cacheKey] = html;
+containerDiv.innerHTML = html;
+
+// Nearby AI sadece "point" tabında çalışsın
+if (endpointType === 'point' && facts && typeof facts === 'object') {
+    // lat/lng'yi facts içine koyacağız (aşağıda ekliyoruz)
+    const nlat = facts.__lat;
+    const nlng = facts.__lng;
+
+    if (typeof nlat === 'number' && typeof nlng === 'number') {
+        const nearbyHolderId = `nearby-${cacheKey.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+        containerDiv.insertAdjacentHTML('beforeend', `
+            <div id="${nearbyHolderId}" style="margin-top:10px;">
+                <p class="ai-point-p" style="color:#94a3b8;">Loading nearby places...</p>
+            </div>
+        `);
+
+        try {
+            const nearby = await fetchNearbyAI(nlat, nlng, city, country);
+
+            const renderBlock = (title, obj) => {
+                if (!obj || !obj.item) return `<p class="ai-point-p"><b>${title}:</b> Info not available.</p>`;
+                const name = obj.item.name || 'Unknown';
+                const p1 = (obj.ai && obj.ai.p1) ? obj.ai.p1 : "Info not available.";
+                const p2 = (obj.ai && obj.ai.p2 && !/^info not available\.?$/i.test(obj.ai.p2.trim())) ? obj.ai.p2 : "";
+                return `
+                    <p class="ai-point-p"><b>${title}:</b> ${name}</p>
+                    <p class="ai-point-p">${p1}</p>
+                    ${p2 ? `<p class="ai-point-p">${p2}</p>` : ``}
+                `;
+            };
+
+            const htmlNearby = `
+                <div style="margin-top:10px;">
+                    ${renderBlock("Nearest settlement", nearby.settlement)}
+                    ${renderBlock("Nearest nature area", nearby.nature)}
+                    ${renderBlock("Nearest historic site", nearby.historic)}
+                </div>
+            `;
+
+            const holder = document.getElementById(nearbyHolderId);
+            if (holder) holder.innerHTML = htmlNearby;
+        } catch (err) {
+            const holder = document.getElementById(nearbyHolderId);
+            if (holder) holder.innerHTML = `<p class="ai-point-p" style="color:#ef4444;">Nearby lookup failed.</p>`;
+        }
+    }
+}
 
     } catch (e) {
         containerDiv.innerHTML = `<div style="color:#ef4444; text-align:center; padding:10px; font-size:0.85rem;">Connection error.</div>`;
     }
 }
-
+async function fetchNearbyAI(lat, lng, city, country) {
+    const response = await fetch('/llm-proxy/nearby-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, city, country })
+    });
+    return await response.json();
+}
 // 4. BASİT MAP CLICK HANDLER
 async function handleMapAIClick(e) {
     const map = e.target;
-    
+
     // Spinner
     const popup = L.popup({ maxWidth: 320 }).setLatLng(e.latlng)
         .setContent('<div style="padding:10px; text-align:center; color:#64748b;">Acquiring location...</div>')
@@ -201,8 +254,8 @@ async function handleMapAIClick(e) {
 
     // Lokasyonu al
     const loc = await getHierarchicalLocation(e.latlng.lat, e.latlng.lng);
-    
-    // 1) Eğer null döndü (işletme ise) - basit mesaj göster
+
+    // 1) Eğer null döndü - basit mesaj göster
     if (!loc) {
         popup.setContent(`
             <div style="padding:20px; text-align:center;">
@@ -217,51 +270,54 @@ async function handleMapAIClick(e) {
         `);
         return;
     }
-    
-    // 2) Eğer sadece adres bilgisi varsa (sokak vs.)
+
+    // Nearby için lat/lng'yi facts'e ekle (yoksa oluştur)
+    if (!loc.facts || typeof loc.facts !== 'object') loc.facts = {};
+    loc.facts.__lat = e.latlng.lat;
+    loc.facts.__lng = e.latlng.lng;
+
+    // 2) Eğer sadece adres bilgisi varsa
     if (loc.isJustAddress) {
         popup.setContent(`
             <div style="padding:20px; text-align:center;">
                 <div style="color:#475569; font-size:0.9rem; margin-bottom:10px;">
-📍 ${loc.city || 'Location'}
-                                    </div>
+                    📍 ${loc.city || 'Location'}
+                </div>
                 <div style="color:#64748b; font-size:0.85rem;">
-                    Click on named places (beaches, museums, parks) 
+                    Click on named places (beaches, museums, parks)
                     for detailed travel information.
                 </div>
             </div>
         `);
         return;
     }
-    
-    // 3) NORMAL TURİSTİK YER İSE DEVAM
-    
+
     // Tab butonlarını oluştur (SADECE 2 TAB: Nokta + Şehir)
-let tabsHTML = '';
+    let tabsHTML = '';
 
-// TAB 1: Nokta (mekan) varsa
-if (loc.specific && loc.specific.trim().length > 0) {
-    tabsHTML += `<button class="ai-simple-tab active"
-    data-endpoint="point"
-    data-query="${loc.specific}"
-    data-city="${loc.city}"
-    data-country="${loc.country}">
-        📍 ${loc.specific}
+    // TAB 1: Nokta (mekan)
+    if (loc.specific && loc.specific.trim().length > 0) {
+        tabsHTML += `<button class="ai-simple-tab active"
+            data-endpoint="point"
+            data-query="${loc.specific}"
+            data-city="${loc.city}"
+            data-country="${loc.country}">
+            📍 ${loc.specific}
+        </button>`;
+    }
+
+    // TAB 2: Şehir
+    const cityLabel = (loc.city && loc.city.trim().length > 0) ? loc.city : 'City';
+    const isCityActive = tabsHTML === '' ? 'active' : '';
+
+    tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
+        data-endpoint="city"
+        data-query="${cityLabel}"
+        data-city="${cityLabel}"
+        data-country="${loc.country}">
+        🌍 ${cityLabel}
     </button>`;
-}
 
-// TAB 2: Şehir (varsa göster, yoksa "City")
-const cityLabel = (loc.city && loc.city.trim().length > 0) ? loc.city : 'City';
-const isCityActive = tabsHTML === '' ? 'active' : '';
-
-tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
-    data-endpoint="city"
-    data-query="${cityLabel}"
-    data-city="${cityLabel}"
-    data-country="${loc.country}">
-    🌍 ${cityLabel}
-</button>`;;
-    
     // UI oluştur
     const uiID = 'ai-ui-' + Date.now();
     const contentHTML = `
@@ -275,11 +331,11 @@ tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
     `;
 
     popup.setContent(contentHTML);
-    
+
     // Tab interaksiyonu
     requestAnimationFrame(() => {
         const container = document.getElementById(uiID);
-        if(!container) return;
+        if (!container) return;
 
         const contentDiv = document.getElementById(uiID + '-content');
         const buttons = container.querySelectorAll('.ai-simple-tab');
@@ -288,13 +344,13 @@ tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
             btn.onclick = (evt) => {
                 buttons.forEach(b => b.classList.remove('active'));
                 evt.target.classList.add('active');
-                
-                const qName = evt.target.getAttribute('data-query');
-                
-const qCity = evt.target.getAttribute('data-city') || '';
-const qCountry = evt.target.getAttribute('data-country') || '';
-const qEndpoint = evt.target.getAttribute('data-endpoint') || 'point';
-fetchSimpleAI(qEndpoint, qName, qCity, qCountry, loc.facts, contentDiv);
+
+                const qName = evt.target.getAttribute('data-query') || '';
+                const qCity = evt.target.getAttribute('data-city') || '';
+                const qCountry = evt.target.getAttribute('data-country') || '';
+                const qEndpoint = evt.target.getAttribute('data-endpoint') || 'point';
+
+                fetchSimpleAI(qEndpoint, qName, qCity, qCountry, loc.facts, contentDiv);
             };
         });
 
