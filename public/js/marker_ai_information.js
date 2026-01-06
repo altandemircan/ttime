@@ -48,52 +48,33 @@ async function getHierarchicalLocation(lat, lng) {
 
         const props = data.features[0].properties || {};
 
-        // 1) SPECIFIC PLACE (mekan)
-        let specific = props.name || null;
-        if (specific && (specific === props.street || /^\d/.test(specific))) specific = null;
-
-        // Helpers
         const norm = (v) => (typeof v === "string" ? v.trim() : "");
         const looksLikeRegion = (v) => /region|bölgesi|bolgesi/i.test(norm(v));
 
-        // 2) DISTRICT (ilçe) - daha fazla alan dene
-        let district =
-            norm(props.county) ||
-            norm(props.district) ||
-            norm(props.city_district) ||
-            norm(props.municipality) ||
-            norm(props.town) ||
-            norm(props.suburb) ||
-            "";
+        // 1) Nokta / mekan
+        let specific = norm(props.name) || null;
 
-        // 3) PROVINCE / CITY (il) - state'i ilk sıradan çıkar
-        // Antalya gibi iller çoğu zaman city/state_district'te oluyor
-        let province =
+        const street = norm(props.street);
+        if (specific && (specific === street || /^\d/.test(specific))) specific = null;
+
+        // 2) Şehir/il (bölgeyi filtrele)
+        let city =
             norm(props.city) ||
             norm(props.state_district) ||
             norm(props.province) ||
             "";
 
-        // Fallback: state ama region değilse
         const state = norm(props.state);
-        if (!province && state && !looksLikeRegion(state)) {
-            province = state;
-        }
+        if (!city && state && !looksLikeRegion(state)) city = state;
 
-        // Guard: province yanlışlıkla region olduysa düzelt
-        if (province && looksLikeRegion(province)) {
-            province = norm(props.city) || norm(props.state_district) || "";
-        }
-
-        // Eğer district boş ama province doluysa, bazı kayıtlarda ilçe province'e düşebiliyor.
-        // Bu durumda district'i props.county/district/... setinden yine boşsa bırakıyoruz (zorlamıyoruz).
-
-        // Overlap fix
-        if (district && province && district === province) district = "City Center";
+        if (city && looksLikeRegion(city)) city = "";
 
         const country = norm(props.country) || "";
 
-        return { specific, district, province, country };
+        // adres-only yakalama
+        const isJustAddress = !specific && (!!street || !!norm(props.housenumber) || !!norm(props.postcode));
+
+        return { specific, city, country, isJustAddress };
     } catch (e) {
         console.error(e);
         return null;
@@ -176,8 +157,8 @@ async function handleMapAIClick(e) {
         popup.setContent(`
             <div style="padding:20px; text-align:center;">
                 <div style="color:#475569; font-size:0.9rem; margin-bottom:10px;">
-                    📍 ${loc.province || 'Location'}
-                </div>
+📍 ${loc.city || 'Location'}
+                                    </div>
                 <div style="color:#64748b; font-size:0.85rem;">
                     Click on named places (beaches, museums, parks) 
                     for detailed travel information.
@@ -189,35 +170,27 @@ async function handleMapAIClick(e) {
     
     // 3) NORMAL TURİSTİK YER İSE DEVAM
     
-    // Tab butonlarını oluştur
-    let tabsHTML = '';
-    
-    // TAB 1: Specific place (eğer varsa ve boş değilse)
-    if (loc.specific && loc.specific.trim().length > 0) {
-        tabsHTML += `<button class="ai-simple-tab active" 
-            data-query="${loc.specific}" 
-            data-context="${loc.specific}, ${loc.district}, ${loc.province}, ${loc.country}">
-            📍 ${loc.specific}
-        </button>`;
-    }
-    
-    // TAB 2: District (eğer varsa ve province'den farklıysa)
-    if (loc.district && loc.district.trim().length > 0 && loc.district !== loc.province) {
-        const isActive = tabsHTML === '' ? 'active' : '';
-        tabsHTML += `<button class="ai-simple-tab ${isActive}" 
-            data-query="${loc.district}" 
-            data-context="${loc.district}, ${loc.province}, ${loc.country}">
-            🏙️ ${loc.district}
-        </button>`;
-    }
-    
-    // TAB 3: Province (her zaman)
-    const isCityActive = tabsHTML === '' ? 'active' : '';
-    tabsHTML += `<button class="ai-simple-tab ${isCityActive}" 
-        data-query="${loc.province}" 
-        data-context="${loc.province}, ${loc.country}">
-        🌍 ${loc.province}
+    // Tab butonlarını oluştur (SADECE 2 TAB: Nokta + Şehir)
+let tabsHTML = '';
+
+// TAB 1: Nokta (mekan) varsa
+if (loc.specific && loc.specific.trim().length > 0) {
+    tabsHTML += `<button class="ai-simple-tab active"
+        data-query="${loc.specific}"
+        data-context="${loc.specific}, ${loc.city}, ${loc.country}">
+        📍 ${loc.specific}
     </button>`;
+}
+
+// TAB 2: Şehir (varsa göster, yoksa "City")
+const cityLabel = (loc.city && loc.city.trim().length > 0) ? loc.city : 'City';
+const isCityActive = tabsHTML === '' ? 'active' : '';
+
+tabsHTML += `<button class="ai-simple-tab ${isCityActive}"
+    data-query="${cityLabel}"
+    data-context="${cityLabel}, ${loc.country}">
+    🌍 ${cityLabel}
+</button>`;
     
     // UI oluştur
     const uiID = 'ai-ui-' + Date.now();
