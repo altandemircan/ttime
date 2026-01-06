@@ -93,32 +93,7 @@ router.post('/point-ai-info', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "AI Error" }); }
 });
 
-// --- ENDPOINT: NEARBY AI (GÜNCELLENDİ - 500 HATASI GİDERİLDİ) ---
-router.post('/nearby-ai', async (req, res) => {
-    const { lat, lng } = req.body;
-    if (typeof lat !== 'number' || typeof lng !== 'number') return res.json({ settlement: null, nature: null, historic: null });
 
-    try {
-        const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY;
-        if (!GEOAPIFY_KEY) return res.json({ settlement: null, nature: null, historic: null });
-
-        const fetchPlaces = async (cats) => {
-            try {
-                const url = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${lng},${lat},25000&bias=proximity:${lng},${lat}&limit=1&apiKey=${GEOAPIFY_KEY}`;
-                const r = await axios.get(url, { timeout: 10000 });
-                const f = r.data?.features?.[0]?.properties;
-                return f ? { name: f.name || f.city || f.formatted, facts: f } : null;
-            } catch (e) { return null; }
-        };
-
-        const [s, n, h] = await Promise.all([
-            fetchPlaces("place.city,place.town,place.suburb,place.village"),
-            fetchPlaces("natural,leisure.park,beach"),
-            fetchPlaces("historic,heritage,tourism.attraction,tourism.museum")
-        ]);
-        res.json({ settlement: s, nature: n, historic: h });
-    } catch (e) { res.json({ settlement: null, nature: null, historic: null }); }
-});
 
 // backend'de (express route)
 router.post('/api/geoapify/places-nearby', async (req, res) => {
