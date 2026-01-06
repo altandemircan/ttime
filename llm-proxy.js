@@ -138,42 +138,14 @@ max_tokens: 200
 
 
 // --- ENDPOINT: POINT AI INFO (GÜNCELLENDİ) ---
-router.post('/point-ai-info', async (req, res) => {
-    const { point, city, country, facts } = req.body;
-    if (!point || !city) return res.status(400).send('point and city required');
+router.post('/nearby-ai', async (req, res) => {
+  const lat = parseFloat(req.body.lat);
+  const lng = parseFloat(req.body.lng);
+  const apiKey = process.env.GEOAPIFY_KEY;
 
-    const cacheKey = `POINTAI:${point}__${city}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-
-    const processingPromise = (async () => {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
-        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
-            }, { timeout: 45000 });
-            
-            const content = response.data?.message?.content || "{}";
-            const parsed = JSON.parse(content);
-
-            const ensureStr = (v) => {
-                if (!v) return "Info not available.";
-                if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
-                return String(v).trim();
-            };
-            return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
-        } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
-    })();
-
-    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    try {
-        const result = await processingPromise;
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.json(result);
-    } catch (e) { res.status(500).json({ error: "AI Error" }); }
+  const url = `https://api.geoapify.com/v2/places?categories=place.city&filter=circle:${lng},${lat},20000&limit=3&apiKey=${apiKey}`;
+  const resp = await axios.get(url);
+  res.json(resp.data);
 });
 
 
