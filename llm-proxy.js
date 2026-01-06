@@ -179,14 +179,89 @@ router.post('/point-ai-info', async (req, res) => {
 
 
 
-router.post('/nearby-ai', async (req, res) => {
-  const lat = parseFloat(req.body.lat);
-  const lng = parseFloat(req.body.lng);
-  const apiKey = process.env.GEOAPIFY_KEY;
 
-  const url = `https://api.geoapify.com/v2/places?categories=place.city&filter=circle:${lng},${lat},20000&limit=3&apiKey=${apiKey}`;
-  const resp = await axios.get(url);
-  res.json(resp.data);
+router.post('/nearby-ai', async (req, res) => {
+    // Body'den güvenli float olarak alıyoruz
+    const lat = parseFloat(req.body.lat);
+    const lng = parseFloat(req.body.lng);
+
+    // 1. Koordinat Kontrolü
+    if (isNaN(lat) || isNaN(lng)) {
+        console.warn('[NEARBY AI] Missing or invalid coordinates', { lat: req.body.lat, lng: req.body.lng });
+        return res.json({ settlement: null, nature: null, historic: null, error: 'invalid_coordinates' });
+    }
+
+    // 2. API Key Kontrolü
+    const apiKey = process.env.GEOAPIFY_KEY;
+    if (!apiKey) {
+        console.error('[NEARBY AI] ❌ GEOAPIFY_KEY is not defined!');
+        return res.status(500).json({
+            error: 'API key missing',
+            detail: 'GEOAPIFY_KEY environment variable is not set'
+        });
+    }
+
+    console.log(`[NEARBY AI] 🔍 Searching: lat=${lat}, lng=${lng}`);
+
+    // 3. Kategori başına Geoapify kullanan fonksiyon
+    const fetchCategory = async (categories, radius) => {
+        const baseUrl = 'https://api.geoapify.com/v2/places';
+        const params = new URLSearchParams({
+            categories: categories,
+            filter: `circle:${lng},${lat},${radius}`,
+            bias: `proximity:${lng},${lat}`,
+            limit: '5',
+            apiKey
+        });
+        const url = `${baseUrl}?${params.toString()}`;
+
+        console.log(`[NEARBY AI] [REQ] ${url}`);
+        try {
+            const resp = await axios.get(url, { timeout: 10000 });
+            const features = resp.data?.features || [];
+            console.log(`[NEARBY AI] [RESULT] ${features.length} feature(s)`);
+
+            // İlk isimli/geçerli yeri bul
+            const validPlace = features.find(f =>
+                f.properties && (f.properties.name || f.properties.formatted)
+            );
+
+            if (validPlace) {
+                console.log(`[NEARBY AI] ✅ Found: ${categories} → "${validPlace.properties.name || validPlace.properties.formatted}"`);
+                return {
+                    name: validPlace.properties.name || validPlace.properties.formatted || "Unknown Place",
+                    facts: validPlace.properties
+                };
+            }
+            console.log(`[NEARBY AI] ⚠️ No named results for ${categories}`);
+            return null;
+        } catch (error) {
+            console.error(`[NEARBY AI] ❌ Error for ${categories}:`, error?.message);
+            if (error.response) {
+                console.error(`[NEARBY AI] Response status: ${error.response.status}`);
+                console.error(`[NEARBY AI] Response data:`, error.response.data);
+            }
+            return null;
+        }
+    };
+
+    // 4. Paralel Sorgular & JSON response
+    try {
+        const [settlement, nature, historic] = await Promise.all([
+            fetchCategory('place.city,place.town,place.suburb,place.village', 15000),
+            fetchCategory('natural,leisure.park,beach,water,tourism.attraction', 20000),
+            fetchCategory('historic,tourism.attraction,tourism.museum,building.historic,tourism.sights', 25000)
+        ]);
+
+        const result = { settlement, nature, historic };
+        console.log(`[NEARBY AI] 📦 Final:`, JSON.stringify(result));
+
+        res.json(result);
+
+    } catch (e) {
+        console.error('[NEARBY AI] ❌ General Error:', e);
+        res.status(500).json({ error: 'Backend failure', detail: e.message });
+    }
 });
 
 
