@@ -83,16 +83,16 @@ console.log("[GEOAPIFY] reverse result:", {
         const street = norm(props.street);
         if (specific && (specific === street || /^\d/.test(specific))) specific = null;
 
-        // 2) Şehir/il (bölgeyi filtrele)
-        const state = norm(props.state);
+       // 2) Şehir/il: TR'de çoğu zaman county = il (Antalya), city = ilçe (Kepez)
+const county = norm(props.county);
+const state = norm(props.state);
 
-// Önce il seviyesini yakalamaya çalış (Antalya genelde state olur)
-// (Ama "Mediterranean Region" gibi region ise alma)
 let city =
+    county ||
     (!looksLikeRegion(state) ? state : "") ||
     norm(props.state_district) ||
     norm(props.province) ||
-    norm(props.city) ||   // en son: bazen ilçe (Kepez) gelebiliyor
+    norm(props.city) ||
     "";
 
 if (looksLikeRegion(city)) city = "";
@@ -102,7 +102,21 @@ if (looksLikeRegion(city)) city = "";
         // adres-only yakalama
         const isJustAddress = !specific && (!!street || !!norm(props.housenumber) || !!norm(props.postcode));
 
-        return { specific, city, country, isJustAddress };
+       const facts = {
+    formatted: props.formatted || "",
+    name: props.name || "",
+    street: props.street || "",
+    housenumber: props.housenumber || "",
+    postcode: props.postcode || "",
+    suburb: props.suburb || "",
+    city_raw: props.city || "",
+    county: props.county || "",
+    state: props.state || "",
+    country: props.country || "",
+    osm: (props.datasource && props.datasource.raw) ? props.datasource.raw : {}
+};
+
+return { specific, city, country, isJustAddress, facts };
     } catch (e) {
         console.error(e);
         return null;
