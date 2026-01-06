@@ -177,10 +177,7 @@ router.post('/point-ai-info', async (req, res) => {
 });
 
 
-// --- ENDPOINT:  NEARBY AI (TAMAMEN DÜZELTİLMİŞ VERSİYON) ---
-const express = require('express');
-const axios = require('axios');
-const router = express.Router();
+
 
 router.post('/nearby-ai', async (req, res) => {
     const { lat, lng } = req.body;
