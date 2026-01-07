@@ -136,102 +136,6 @@ max_tokens: 200
     }
 });
 
-router.post('/clicked-ai', async (req, res) => {
-    const { point, city, lat, lng, facts } = req.body;
-
-    const getPointInfo = async () => {
-        // Kategori bilgisini temizle (cafe, restaurant, hospital vb.)
-        const rawCategory = facts?.category || facts?.type || "place";
-        const cleanCategory = rawCategory.replace(/\./g, ' ').toUpperCase();
-
-        const cleanFacts = { 
-            latitude: lat, 
-            longitude: lng, 
-            full_address_context: city,
-            place_type: cleanCategory 
-        };
-        
-        if (facts) {
-            Object.keys(facts).forEach(k => {
-                if (facts[k] && facts[k] !== 'unknown' && typeof facts[k] !== 'object') {
-                    cleanFacts[k] = facts[k];
-                }
-            });
-        }
-
-        // PROMPT: Kategoriyi balyoz gibi vuran yeni yapı
-const prompt = `[Strict Instructions]
-1. Task: Act as a local guide for the point: "${point}".
-2. Location: This point is located in "${city}".
-3. Category: This is a ${cleanCategory}.
-4. Output Format: JSON ONLY {"p1": "...", "p2": "..."}
-
-[Content Rules]
-- "p1" must be exactly 2 sentences.
-- You MUST mention the city/district name exactly as written in "${city}".
-- Do NOT mention "Denizli" or any other city unless it is in the Reference Location.
-- If you don't have specific historical data for "${point}", simply describe it as a local ${cleanCategory} serving the "${city}" area.
-- "p2" is a 1-sentence tip. If unknown, leave it as "".
-
-Reference Location: "${city}"`;
-
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, 
-                format: "json", 
-                options: { 
-                    temperature: 0.1, // SALLAMAYI KES: Daha tutarlı sonuç için düşürdük
-                    num_predict: 150,
-                    top_p: 0.9
-                }
-            }, { timeout: 25000 });
-
-            let content = response.data?.message?.content || "{}";
-            const result = JSON.parse(content);
-
-            // Placeholder temizliği
-            if (result.p1 && result.p1.includes('[')) result.p1 = result.p1.replace(/\[.*?\]/g, '').trim();
-            if (result.p2 && result.p2.includes('[')) result.p2 = "";
-
-            return result;
-        } catch (err) { 
-            return { 
-                p1: `Explore the local atmosphere of this ${cleanCategory.toLowerCase()} in ${city.split(',')[0]}.`, 
-                p2: "" 
-            }; 
-        }
-    };
-
-    // 2. NEARBY MANTIĞI (Kategorilere göre 15km - 25km arası arama)
-    const getNearby = async () => {
-        const apiKey = process.env.GEOAPIFY_KEY;
-        const fetchCat = async (cat, rad) => {
-            try {
-                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},${rad}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
-                const resp = await axios.get(url, { timeout: 10000 });
-                return (resp.data?.features || [])
-                    .filter(f => f.properties && f.properties.name && f.properties.name !== point)
-                    .slice(0, 2).map(f => ({ name: f.properties.name, facts: f.properties }));
-            } catch (e) { return []; }
-        };
-        const [s, n, h] = await Promise.all([
-            fetchCat('administrative.area.city', 15000),
-            fetchCat('natural', 20000),
-            fetchCat('tourism', 25000)
-        ]);
-        return { settlement: s, nature: n, historic: h };
-    };
-
-    try {
-        const [aiResult, nearbyResult] = await Promise.all([getPointInfo(), getNearby()]);
-        res.json({ ...aiResult, nearby: nearbyResult });
-    } catch (e) {
-        res.status(500).json({ error: "Fetch failed" });
-    }
-});
-
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -316,5 +220,267 @@ If asked about something unrelated to travel, politely say you only answer trave
     }
 });
 
+router.post('/clicked-ai', async (req, res) => {
+    const { point, city, lat, lng, facts } = req.body;
+
+    // POSTA KODU ve GEREKSİZ BİLGİLERİ TEMİZLEME FONKSİYONU
+    const cleanFactsData = (facts) => {
+        const cleanFacts = { 
+            latitude: lat, 
+            longitude: lng,
+            place_type: "place"
+        };
+        
+        // Anahtar kelimeleri kontrol et (cafe, restaurant, museum vb.)
+        const typeKeywords = ['category', 'type', 'class', 'kind'];
+        let foundType = "place";
+        
+        if (facts) {
+            Object.keys(facts).forEach(k => {
+                const value = facts[k];
+                
+                // Posta kodu (postcode, postal_code, zip) ve gereksiz alanları atla
+                if (k.toLowerCase().includes('post') || 
+                    k.toLowerCase().includes('zip') ||
+                    k.toLowerCase().includes('code') ||
+                    k === 'country_code' ||
+                    k === 'countrycode' ||
+                    k === 'osm_id' ||
+                    k === 'datasource' ||
+                    k === 'place_id') {
+                    return;
+                }
+                
+                // Tür/ kategori bilgisini bul
+                if (typeKeywords.includes(k.toLowerCase()) && value && value !== 'unknown') {
+                    foundType = value;
+                }
+                
+                // Diğer yararlı bilgileri ekle
+                if (value && value !== 'unknown' && typeof value !== 'object' && value.toString().trim() !== '') {
+                    // Adres parçalarını kontrol et (posta kodları içermesin)
+                    if (typeof value === 'string') {
+                        const postalCodePattern = /\b\d{5}\b|\b\d{4}\s?[A-Z]{2}\b/i;
+                        if (postalCodePattern.test(value)) {
+                            return;
+                        }
+                    }
+                    cleanFacts[k] = value;
+                }
+            });
+        }
+        
+        // Kategoriyi temizle ve standardize et
+        const rawCategory = foundType.replace(/\./g, ' ').toUpperCase();
+        const categoryMap = {
+            'CAFE': 'cafe',
+            'RESTAURANT': 'restaurant', 
+            'HOTEL': 'hotel',
+            'MUSEUM': 'museum',
+            'PARK': 'park',
+            'HOSPITAL': 'hospital',
+            'SHOP': 'shop',
+            'MARKET': 'market',
+            'BAKERY': 'bakery',
+            'PHARMACY': 'pharmacy',
+            'UNIVERSITY': 'university',
+            'SCHOOL': 'school',
+            'CHURCH': 'church',
+            'MOSQUE': 'mosque',
+            'TEMPLE': 'temple',
+            'BEACH': 'beach',
+            'LAKE': 'lake',
+            'MOUNTAIN': 'mountain',
+            'CASTLE': 'castle',
+            'HISTORICAL': 'historical site',
+            'ARCHAEOLOGICAL': 'archaeological site'
+        };
+        
+        const cleanCategory = categoryMap[rawCategory] || rawCategory.toLowerCase();
+        cleanFacts.place_type = cleanCategory;
+        
+        // Şehir bilgisini temizle (posta kodlarını çıkar)
+        let cleanCity = city || "";
+        if (cleanCity) {
+            const postalCodePattern = /\b\d{5}\b|\b\d{4}\s?[A-Z]{2}\b/i;
+            cleanCity = cleanCity.replace(postalCodePattern, '').replace(/,\s*,/g, ',').trim();
+            cleanCity = cleanCity.replace(/^,\s*|\s*,$/g, ''); // Baştaki/sondaki virgülleri temizle
+        }
+        
+        cleanFacts.full_address_context = cleanCity;
+        
+        return { cleanFacts, cleanCategory, cleanCity };
+    };
+
+    const getPointInfo = async () => {
+        const { cleanFacts, cleanCategory, cleanCity } = cleanFactsData(facts || {});
+        
+        // DAHA KALİTELİ PROMPT YAPISI
+        const prompt = `[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
+1. ROLE: You are a professional local tour guide with deep knowledge of the area.
+2. POINT: "${point}"
+3. LOCATION: "${cleanCity || 'this location'}"
+4. CATEGORY: ${cleanCategory}
+5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
+
+[OUTPUT REQUIREMENTS]
+- Return ONLY valid JSON: {"p1": "text", "p2": "text"}
+- "p1": Exactly 2 informative sentences about this place.
+- "p2": 1 practical tip or recommendation (or empty string if none).
+
+[CONTENT RULES]
+- ALWAYS mention "${cleanCity.split(',')[0]}" in p1 if city is provided.
+- NEVER mention postal codes, zip codes, or administrative codes.
+- Focus on: atmosphere, local significance, architectural style, typical visitors.
+- If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
+- Use natural, engaging language but stay factual.
+- Avoid generic phrases like "is a place" or "is located".
+- Do NOT invent names, dates, or events unless in facts.
+- For nature spots: mention landscape, flora/fauna, activities.
+- For businesses: mention typical offerings, ambiance, clientele.
+- For historical sites: mention period, significance, preservation.
+- Tips (p2): practical advice like "Visit early to avoid crowds" or "Try the local specialty".
+
+[EXAMPLE FORMAT]
+Good: {"p1": "This historic cafe in Beyoglu has been serving traditional Turkish coffee since 1950. Its antique decor and central location make it popular with both locals and tourists.", "p2": "Try their signature Turkish delight with the coffee."}
+Bad: {"p1": "This is a cafe. It is located in Istanbul.", "p2": ""}
+
+Now generate for: ${point} in ${cleanCity} (${cleanCategory})`;
+
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: "llama3:8b",
+                messages: [{ role: "user", content: prompt }],
+                stream: false, 
+                format: "json", 
+                options: { 
+                    temperature: 0.3, // Biraz yaratıcılık ama fazla değil
+                    num_predict: 120,
+                    top_k: 10,
+                    top_p: 0.9,
+                    repeat_penalty: 1.1
+                }
+            }, { timeout: 30000 });
+
+            let content = response.data?.message?.content || "{}";
+            
+            // JSON temizliği
+            try {
+                // JSON dışı karakterleri temizle
+                const jsonMatch = content.match(/\{[\s\S]*\}/);
+                if (jsonMatch) content = jsonMatch[0];
+                
+                const result = JSON.parse(content);
+                
+                // Placeholder ve gereksiz ifadeleri temizle
+                if (result.p1) {
+                    result.p1 = result.p1
+                        .replace(/\[.*?\]/g, '')
+                        .replace(/\(.*?\)/g, '')
+                        .replace(/\b(?:postal code|zip code|post code)\s*\d*/gi, '')
+                        .replace(/this is a\s+/gi, '')
+                        .replace(/\s+\./g, '.')
+                        .replace(/\.\./g, '.')
+                        .trim();
+                    
+                    // Cümle sayısını kontrol et
+                    const sentences = result.p1.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                    if (sentences.length !== 2) {
+                        // Cümleleri ayarla
+                        if (sentences.length > 2) {
+                            result.p1 = sentences.slice(0, 2).join('. ') + '.';
+                        } else if (sentences.length === 1) {
+                            result.p1 = sentences[0] + '. This ' + cleanCategory + ' offers a local experience in ' + cleanCity.split(',')[0] + '.';
+                        }
+                    }
+                }
+                
+                if (result.p2) {
+                    result.p2 = result.p2
+                        .replace(/\[.*?\]/g, '')
+                        .replace(/note:/gi, '')
+                        .replace(/tip:/gi, '')
+                        .replace(/recommendation:/gi, '')
+                        .trim();
+                    
+                    if (result.p2.toLowerCase().includes('unknown') || 
+                        result.p2.length < 10 || 
+                        result.p2.toLowerCase().includes('no specific')) {
+                        result.p2 = "";
+                    }
+                }
+                
+                return result;
+                
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                // Fallback response
+                const cityName = cleanCity.split(',')[0] || 'the area';
+                return { 
+                    p1: `This ${cleanCategory} in ${cityName} offers local character and atmosphere. It serves as a notable spot for both residents and visitors exploring ${cityName}.`, 
+                    p2: "" 
+                };
+            }
+            
+        } catch (err) { 
+            console.error('AI API error:', err);
+            const cityName = (cleanCity || city || '').split(',')[0] || 'the area';
+            return { 
+                p1: `Explore the local atmosphere of this ${cleanCategory} in ${cityName}. The spot offers a glimpse into daily life and the surrounding area.`, 
+                p2: "" 
+            }; 
+        }
+    };
+
+    // 2. NEARBY MANTIĞI (Aynı kalabilir)
+    const getNearby = async () => {
+        const apiKey = process.env.GEOAPIFY_KEY;
+        const fetchCat = async (cat, rad) => {
+            try {
+                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},${rad}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
+                const resp = await axios.get(url, { timeout: 10000 });
+                return (resp.data?.features || [])
+                    .filter(f => f.properties && f.properties.name && f.properties.name !== point)
+                    .slice(0, 2).map(f => ({ 
+                        name: f.properties.name, 
+                        facts: f.properties,
+                        lat: f.properties.lat,
+                        lon: f.properties.lon
+                    }));
+            } catch (e) { return []; }
+        };
+        const [s, n, h] = await Promise.all([
+            fetchCat('administrative.area.city', 15000),
+            fetchCat('natural', 20000),
+            fetchCat('tourism', 25000)
+        ]);
+        return { settlement: s, nature: n, historic: h };
+    };
+
+    try {
+        const [aiResult, nearbyResult] = await Promise.all([getPointInfo(), getNearby()]);
+        
+        // Yanıtı iyileştir
+        const enhancedResult = {
+            ...aiResult,
+            nearby: nearbyResult,
+            metadata: {
+                point: point,
+                city: cleanFactsData(facts || {}).cleanCity,
+                category: cleanFactsData(facts || {}).cleanCategory,
+                coordinates: { lat, lng }
+            }
+        };
+        
+        res.json(enhancedResult);
+    } catch (e) {
+        console.error('Overall fetch failed:', e);
+        res.status(500).json({ 
+            error: "Fetch failed",
+            p1: `Discover this location in ${city ? city.split(',')[0] : 'the area'}.`, 
+            p2: "" 
+        });
+    }
+});
 
 module.exports = router;
