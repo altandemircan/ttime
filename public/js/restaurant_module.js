@@ -573,40 +573,38 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
             placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
         }
 
-        const addPointSection = `
-            <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-                <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                    <div class="point-image" style="width: 42px; height: 42px; position: relative;">
-                       <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
-                    </div>
-                    <div class="point-info" style="flex: 1; min-width: 0;">
-                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                            <span id="point-name-display" style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
-                            <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-                            <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                        </div>
-                        <div class="point-address" style="display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 11px;
-    color: #666;
-    line-height: 1.2;
-    font-weight: 400;">
-                            ${pointInfo.address || 'Selected location'}
-                        </div>
-                        <div id="ai-point-description" style="margin-top: 8px; font-size: 11px; color: #444; font-style: italic; border-top: 1px dashed #ddd; padding-top: 6px; line-height: 1.3;">
-                            <span class="ai-loading" style="color: #999;">✨ AI is thinking...</span>
-                        </div>
-                    </div>
-                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                        <div style="font-size: 11px; color: #999; text-align: center;">Clicked</div>
-                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
-                    </div>
+      const addPointSection = `
+    <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
+        <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+            
+            <div class="point-image" style="width: 42px; height: 42px; position: relative; flex-shrink: 0;">
+                <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
+            </div>
+
+            <div class="point-info" style="flex: 1; min-width: 0;">
+                <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                    <span id="point-name-display" style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
+                    <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
+                    <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                </div>
+                <div class="point-address" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 11px; color: #666; line-height: 1.2;">
+                    ${pointInfo.address || 'Selected location'}
                 </div>
             </div>
-        `;
+
+            <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                <div style="font-size: 10px; color: #999; text-align: center;">Clicked</div>
+                <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 30px; height: 30px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
+            </div>
+
+            <div id="ai-point-description" style="width: 100%; margin-top: 4px; font-size: 11px; color: #444; font-style: italic; border-top: 1px dashed #ddd; padding-top: 8px; line-height: 1.4;">
+                <span class="ai-loading" style="color: #999;">✨ AI is thinking...</span>
+            </div>
+            
+        </div>
+    </div>
+`;
 
         const restaurantBtnHtml = `
             <div style="text-align:center; margin: 20px 0 4px 0;">
