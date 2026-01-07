@@ -519,41 +519,43 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                 const currentCity = window.selectedCity || "Turkey";
 
                 // --- DÖNGÜ BAŞLANGICI (index buraya eklendi) ---
-                placesHtml = results.map((f, index) => {
-                    const p = f.properties;
-                    const name = p.name || "(No name)";
-                    const address = p.formatted || "";
-                    const photo = photos[index] || PLACEHOLDER_IMG;
-                    const distStr = f.distance < 1000 ? `${Math.round(f.distance)} m` : `${(f.distance / 1000).toFixed(2)} km`;
-                    
-                    // XSS ve tırnak hatasını önlemek için ismi temizle
-                    const safeName = name.replace(/'/g, "\\'");
+               placesHtml = results.map((f, index) => {
+    const p = f.properties;
+    const name = p.name || "(No name)";
+    const address = p.formatted || "";
+    const photo = photos[index] || PLACEHOLDER_IMG;
+    const distStr = f.distance < 1000 ? `${Math.round(f.distance)} m` : `${(f.distance / 1000).toFixed(2)} km`;
+    
+    const safeName = name.replace(/'/g, "\\'");
+    const currentCity = window.selectedCity || "Turkey";
 
-                    return `
-                    <li class="nearby-place-item">
-                        <div class="nearby-place-image" style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
-                            <img id="nearby-img-1-${index}" src="${photo}" alt="${name}" class="nearby-place-img" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">
-                            
-                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${currentCity}', {}, 'ai-info-${index}')" 
-                                 style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;"
-                                 title="Get AI Info">
-                                <span style="font-size: 10px; color: white;">✨</span>
-                            </div>
-                        </div>
-                        
-                        <div class="nearby-place-info" style="flex: 1; min-width: 0; margin-left: 10px;">
-                            <div class="nearby-place-name" style="font-weight: 500; font-size: 13px;">${name}</div>
-                            <div class="nearby-place-address" style="font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${address}</div>
-                            
-                            <div id="ai-info-${index}" style="width: 100%;"></div>
-                        </div>
-                        
-                        <div class="nearby-place-actions" style="text-align: right; flex-shrink: 0;">
-                            <div class="nearby-place-distance" style="font-size: 10px; color: #999; margin-bottom: 4px;">${distStr}</div>
-                            <button class="nearby-place-add-btn" onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #eee; cursor: pointer;">+</button>
-                        </div>
-                    </li>`;
-                }).join('');
+    return `
+    <li class="nearby-place-wrapper" style="list-style: none; margin-bottom: 12px;">
+        <div class="nearby-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+            <div class="nearby-place-image" style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+                <img id="nearby-img-1-${index}" src="${photo}" alt="${name}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
+                
+                <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${currentCity}', {}, 'ai-info-${index}')" 
+                     style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+                    <span style="font-size: 10px; color: white;">✨</span>
+                </div>
+            </div>
+            
+            <div class="nearby-place-info" style="flex: 1; min-width: 0;">
+                <div class="nearby-place-name" style="font-weight: 500; font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</div>
+                <div class="nearby-place-address" style="font-size: 11px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
+            </div>
+            
+            <div class="nearby-place-actions" style="display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0;">
+                <div style="font-size: 10px; color: #999;">${distStr}</div>
+                <button class="nearby-place-add-btn" onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" 
+                        style="width: 28px; height: 28px; background: #eee; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
+            </div>
+        </div>
+
+        <div id="ai-info-${index}" style="width: 100%; font-size: 11px; color: #444; line-height: 1.4;"></div>
+    </li>`;
+}).join('');
             } else {
                 placesHtml = "<li class='nearby-no-results'>No places found within 500 meters.</li>";
             }
