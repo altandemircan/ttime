@@ -137,151 +137,79 @@ max_tokens: 200
 });
 
 
-router.post('/point-ai-info', async (req, res) => {
-    const { point, city, country, facts } = req.body;
-    if (!point || !city) return res.status(400).send('point and city required');
+router.post('/clicked-ai', async (req, res) => {
+    const { point, city, country, lat, lng, facts } = req.body;
+    
+    // Koordinatları ve temel bilgileri kontrol et
+    if (!point || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
+        return res.status(400).json({ error: 'Point, lat and lng are required' });
+    }
 
-    const cacheKey = `POINTAI:${point}__${city}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+    const cacheKey = `CLICKED_FULL:${point}__${lat}__${lng}`;
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') {
+        return res.json(aiCache[cacheKey].data);
+    }
 
-    const processingPromise = (async () => {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
-        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
+    // 1. FONKSİYON: Geoapify'dan Çevre Mekanları Getir
+    const fetchNearbyFromGeo = async (categories, radius) => {
+        const apiKey = process.env.GEOAPIFY_KEY;
+        try {
+            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
+            const resp = await axios.get(url, { timeout: 8000 });
+            return (resp.data?.features || [])
+                .filter(f => f.properties?.name)
+                .slice(0, 3)
+                .map(f => ({ name: f.properties.name, facts: f.properties }));
+        } catch (e) { return []; }
+    };
+
+    // 2. FONKSİYON: AI'dan Açıklama Al
+    const fetchAIDescription = async () => {
+        const factsJson = JSON.stringify(facts || {}).slice(0, 1000);
+        const prompt = `ENGLISH only. You are a travel guide. 
+        POINT: "${point}", CITY: "${city || 'unknown'}". 
+        CONTEXT: ${factsJson}. 
+        Return ONLY JSON: {"p1":"brief history/description", "p2":"practical visit tip"}`;
+        
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
                 model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
-            }, { timeout: 45000 });
-            
-            const content = response.data?.message?.content || "{}";
-            const parsed = JSON.parse(content);
-
-            const ensureStr = (v) => {
-                if (!v) return "Info not available.";
-                if (typeof v === 'object') return JSON.stringify(v).replace(/[{}"]/g, ' ');
-                return String(v).trim();
-            };
-            return { p1: ensureStr(parsed.p1), p2: ensureStr(parsed.p2) };
-        } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
-    })();
-
-    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    try {
-        const result = await processingPromise;
-        aiCache[cacheKey] = { status: 'done', data: result };
-        saveCacheToDisk();
-        res.json(result);
-    } catch (e) { res.status(500).json({ error: "AI Error" }); }
-});
-
-
-router.post('/nearby-ai', async (req, res) => {
-    const lat = parseFloat(req.body.lat);
-    const lng = parseFloat(req.body.lng);
-
-    if (isNaN(lat) || isNaN(lng)) {
-        console.warn('[NEARBY AI] Invalid coordinates', { lat: req.body.lat, lng: req.body.lng });
-        return res.json({ settlement: null, nature: null, historic: null, error: 'invalid_coordinates' });
-    }
-
-    const apiKey = process.env.GEOAPIFY_KEY;
-    if (!apiKey) {
-        console.error('[NEARBY AI] NO API KEY!');
-        return res.status(500).json({
-            error: 'API key missing',
-            detail: 'GEOAPIFY_KEY env variable is not set'
-        });
-    }
-
-    const fetchCategory = async (categories, radius) => {
-        const baseUrl = 'https://api.geoapify.com/v2/places';
-        const params = new URLSearchParams({
-            categories,
-            filter: `circle:${lng},${lat},${radius}`,
-            bias: `proximity:${lng},${lat}`,
-            limit: '10',
-            apiKey
-        });
-        const url = `${baseUrl}?${params.toString()}`;
-        console.log(`[NEARBY AI][REQ] ${url}`);
-
-        try {
-            const resp = await axios.get(url, { timeout: 10000 });
-            const features = resp.data?.features || [];
-            // Sadece gerçek bir "name" içeren POI çek!
-            const validPlaces = features
-    .filter(f => f.properties && typeof f.properties.name === "string" && f.properties.name.trim().length > 0)
-    .slice(0, 3); // 3 tane gösterelim
-if (validPlaces.length > 0) {
-    return validPlaces.map(f => ({
-        name: f.properties.name,
-        facts: f.properties
-    }));
-}
-return [];
-        } catch (error) {
-            console.error(`[NEARBY AI] Error for ${categories}:`, error?.message);
-            return null;
+                stream: false, format: "json", options: { temperature: 0.2, num_predict: 200 }
+            }, { timeout: 25000 });
+            return JSON.parse(response.data?.message?.content || "{}");
+        } catch (e) { 
+            return { p1: "Description not available.", p2: "" }; 
         }
     };
 
     try {
-        const [settlement, nature, historic] = await Promise.all([
-    fetchCategory('x', 15000),
-    fetchCategory('y', 20000),
-    fetchCategory('z', 25000)
-]);
-res.json({ 
-    settlement: settlement || [],
-    nature: nature || [],
-    historic: historic || []
-});
-    } catch (e) {
-        console.error('[NEARBY AI] General Error:', e);
-        res.status(500).json({ error: 'Backend failure', detail: e.message });
-    }
-});
-// Chat stream (SSE) endpoint
+        // AI ve Çevre Mekan isteklerini PARALEL başlat (Vakit kazan)
+        const [aiData, settlement, nature, historic] = await Promise.all([
+            fetchAIDescription(),
+            fetchNearbyFromGeo('administrative.area.city,administrative.area.town', 15000),
+            fetchNearbyFromGeo('natural,leisure.park,leisure.garden', 15000),
+            fetchNearbyFromGeo('tourism.attraction,historic', 20000)
+        ]);
 
+        const finalResult = {
+            description: aiData.p1,
+            tip: aiData.p2,
+            nearby: {
+                settlement,
+                nature,
+                historic
+            }
+        };
 
-router.post('/clicked-ai', async (req, res) => {
-    const { point, city } = req.body;
-    if (!point || !city) return res.status(400).send('point and city required');
-
-    const cacheKey = `CLICKEDAI:${point}__${city}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
-
-    const processingPromise = (async () => {
-        const prompt = `ENGLISH only. You are a travel guide. Provide a very brief (max 2 sentences) interesting description for "${point}" in "${city}". Return ONLY JSON: {"description": "..."}`;
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.3, num_predict: 150 }
-            }, { timeout: 30000 });
-
-            const content = response.data?.message?.content || "{}";
-            return JSON.parse(content);
-        } catch (err) { 
-            return { description: "Information not available for this spot." }; 
-        }
-    })();
-
-    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
-    try {
-        const result = await processingPromise;
-        
-        aiCache[cacheKey] = { status: 'done', data: result };
+        // Cache'le ve Gönder
+        aiCache[cacheKey] = { status: 'done', data: finalResult };
         saveCacheToDisk();
-
-        // Yanıtı garantiye alıyoruz
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        return res.json(result); // result burada { description: "..." } olmalı
+        res.json(finalResult);
 
     } catch (e) {
-        console.error("Backend Error:", e);
-        res.status(500).json({ error: "AI Error" });
+        console.error("Clicked-AI Error:", e);
+        res.status(500).json({ error: "Combined fetch failed" });
     }
 });
 
