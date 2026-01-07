@@ -1179,7 +1179,7 @@ alert("An error occurred while fetching restaurants. Please try again.");
 
 
 
-async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
+async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
     // 1. Önce kesinlikle eskileri temizle
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
