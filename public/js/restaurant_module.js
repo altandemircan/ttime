@@ -461,11 +461,9 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         closeNearbyPopup();
     }
 
-    // PROXY KULLANIMI: Direct API key removed
     const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
     const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=20`;
 
-    // Loading popup göster - Marker'ı showCustomPopup koyuyor, burada TEKRAR KOYMA!
     const loadingContent = `
         <div class="nearby-loading-message">
             <div class="nearby-loading-spinner"></div>
@@ -473,10 +471,8 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         </div>
     `;
     
-    // showCustomPopup hem popup'ı açar HEM DE pulse marker'ı haritaya koyar.
     showCustomPopup(lat, lng, map, loadingContent, false);
 
-    // Haritayı merkeze al (Marker'ı showCustomPopup koyduğu için sadece pan/fly yapıyoruz)
     const isMapLibre = !!map.addSource;
     if (isMapLibre) {
          map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
@@ -487,7 +483,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     }
 
     try {
-        // Nokta ismini bul (Reverse Geocoding)
         let pointInfo = { name: "Selected Point", address: "" };
         try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
 
@@ -506,159 +501,136 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                 .slice(0, 10);
 
             if (results.length > 0) {
-                try {
-                    photos = await Promise.all(results.map(async (f) => {
-                        const name = f.properties.name || "";
-                        const cityQuery = name + " " + (window.selectedCity || "");
-                        try {
-                            let imageUrl = null;
-                            if (typeof getPexelsImage === "function") {
-                                imageUrl = await getPexelsImage(cityQuery);
-                            }
-                            if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
-                                return imageUrl;
-                            }
-                            if (typeof getPixabayImage === "function") {
-                                imageUrl = await getPixabayImage(name);
-                                if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) {
-                                    return imageUrl;
-                                }
-                            }
-                            return PLACEHOLDER_IMG;
-                        } catch (error) {
-                            return PLACEHOLDER_IMG;
-                        }
-                    }));
-                } catch (photoError) {
-                    photos = results.map(() => PLACEHOLDER_IMG);
-                }
+                // Fotoğrafları çek
+                photos = await Promise.all(results.map(async (f) => {
+                    const name = f.properties.name || "";
+                    const cityQuery = name + " " + (window.selectedCity || "");
+                    try {
+                        let imageUrl = null;
+                        if (typeof getPexelsImage === "function") imageUrl = await getPexelsImage(cityQuery);
+                        if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
+                        if (typeof getPixabayImage === "function") imageUrl = await getPixabayImage(name);
+                        if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
+                        return PLACEHOLDER_IMG;
+                    } catch (error) { return PLACEHOLDER_IMG; }
+                }));
 
-                placesHtml = results.map((f, idx) => {
-                    const name = f.properties.name || "(İsim yok)";
-                    const adr = f.properties.formatted || "";
-                    const photo = photos[idx] || PLACEHOLDER_IMG;
-                    const distStr = f.distance < 1000
-                        ? `${Math.round(f.distance)} m`
-                        : `${(f.distance / 1000).toFixed(2)} km`;
+                // Şehir ismini al
+                const currentCity = window.selectedCity || "Turkey";
 
-                    const placeLat = f.properties.lat || f.geometry.coordinates[1];
-                    const placeLng = f.properties.lon || f.geometry.coordinates[0];
-                    const imgId = `nearby-img-${day}-${idx}`;
+                // --- DÖNGÜ BAŞLANGICI (index buraya eklendi) ---
+                placesHtml = results.map((f, index) => {
+                    const p = f.properties;
+                    const name = p.name || "(No name)";
+                    const address = p.formatted || "";
+                    const photo = photos[index] || PLACEHOLDER_IMG;
+                    const distStr = f.distance < 1000 ? `${Math.round(f.distance)} m` : `${(f.distance / 1000).toFixed(2)} km`;
+                    
+                    // XSS ve tırnak hatasını önlemek için ismi temizle
+                    const safeName = name.replace(/'/g, "\\'");
 
                     return `
-                       <li class="nearby-place-item">
-    <div class="nearby-place-image" style="position: relative;">
-        <img id="nearby-img-1-${index}" src="${imgUrl}" alt="${item.name}" class="nearby-place-img">
-        
-        <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${item.name.replace(/'/g, "\\'")}', ${item.lat}, ${item.lng}, '${city}', {}, 'ai-info-${index}')" 
-             style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;"
-             title="Get AI Info">
-            <span style="font-size: 10px; color: white;">✨</span>
-        </div>
-    </div>
-    
-    <div class="nearby-place-info">
-        <div class="nearby-place-name">${item.name}</div>
-        <div class="nearby-place-address">${item.address}</div>
-        
-        <div id="ai-info-${index}" style="width: 100%;"></div>
-    </div>
-    
-    <div class="nearby-place-actions">
-        <div class="nearby-place-distance">${item.distance}</div>
-        <button class="nearby-place-add-btn" onclick="...">+</button>
-    </div>
-</li>`;
+                    <li class="nearby-place-item">
+                        <div class="nearby-place-image" style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+                            <img id="nearby-img-1-${index}" src="${photo}" alt="${name}" class="nearby-place-img" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">
+                            
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${currentCity}', {}, 'ai-info-${index}')" 
+                                 style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;"
+                                 title="Get AI Info">
+                                <span style="font-size: 10px; color: white;">✨</span>
+                            </div>
+                        </div>
+                        
+                        <div class="nearby-place-info" style="flex: 1; min-width: 0; margin-left: 10px;">
+                            <div class="nearby-place-name" style="font-weight: 500; font-size: 13px;">${name}</div>
+                            <div class="nearby-place-address" style="font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${address}</div>
+                            
+                            <div id="ai-info-${index}" style="width: 100%;"></div>
+                        </div>
+                        
+                        <div class="nearby-place-actions" style="text-align: right; flex-shrink: 0;">
+                            <div class="nearby-place-distance" style="font-size: 10px; color: #999; margin-bottom: 4px;">${distStr}</div>
+                            <button class="nearby-place-add-btn" onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #eee; cursor: pointer;">+</button>
+                        </div>
+                    </li>`;
                 }).join('');
             } else {
-                placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
+                placesHtml = "<li class='nearby-no-results'>No places found within 500 meters.</li>";
             }
         } else {
-            placesHtml = "<li class='nearby-no-results'>No places found within 500 meters in this area.</li>";
+            placesHtml = "<li class='nearby-no-results'>No places found within 500 meters.</li>";
         }
 
-      const addPointSection = `
-    <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-        <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-            
-            <div class="point-image" style="width: 42px; height: 42px; position: relative; flex-shrink: 0;">
-                <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
-            </div>
-
-            <div class="point-info" style="flex: 1; min-width: 0;">
-                <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                    <span id="point-name-display" style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
-                    <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-                    <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+        const addPointSection = `
+            <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
+                <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                    <div class="point-image" style="width: 42px; height: 42px; position: relative; flex-shrink: 0;">
+                        <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
+                    </div>
+                    <div class="point-info" style="flex: 1; min-width: 0;">
+                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                            <span id="point-name-display" style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
+                            <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
+                            <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                        </div>
+                        <div class="point-address" style="font-size: 11px; color: #666; line-height: 1.2;">
+                            ${pointInfo.address || 'Selected location'}
+                        </div>
+                    </div>
+                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                        <div style="font-size: 10px; color: #999;">Clicked</div>
+                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 30px; height: 30px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; cursor: pointer;">+</button>
+                    </div>
+                    <div id="ai-point-description" style="width: 100%; margin-top: 4px; border-top: 1px dashed #ddd; padding-top: 8px;">
+                        </div>
                 </div>
-                <div class="point-address" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 11px; color: #666; line-height: 1.2;">
-                    ${pointInfo.address || 'Selected location'}
-                </div>
             </div>
+        `;
 
-            <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                <div style="font-size: 10px; color: #999; text-align: center;">Clicked</div>
-                <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 30px; height: 30px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
-            </div>
-
-            <div id="ai-point-description" style="width: 100%; margin-top: 4px; font-size: 11px; color: #444; border-top: 1px dashed #ddd; padding-top: 8px; line-height: 1.4;">
-                <span class="ai-loading" style="color: #999;">✨ AI is thinking...</span>
-            </div>
-            
-        </div>
-    </div>
-`;
-
-        const restaurantBtnHtml = `
+        const html = `
+            <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 10px;">📍 Nearby Places</div>
+            ${addPointSection}
+            <ul class="nearby-places-list" style="list-style: none; padding: 0; margin: 0;">${placesHtml}</ul>
             <div style="text-align:center; margin: 20px 0 4px 0;">
-                <button id="show-restaurants-btn" style="padding:10px 18px;border-radius:9px;background:#8a4af3;color:#fff;font-size:15px;font-weight:bold;cursor:pointer;">
+                <button id="show-restaurants-btn" style="padding:10px 18px; border-radius:9px; background:#8a4af3; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
                     🍽️ Show Restaurants
                 </button>
             </div>
         `;
 
-        const html = `
-            <div class="nearby-popup-title">📍 Nearby Places</div>
-            ${addPointSection}
-            <ul class="nearby-places-list">${placesHtml}</ul>
-            ${restaurantBtnHtml}
-        `;
-
         showCustomPopup(lat, lng, map, html, true);
 
-        // --- BUTTON EVENT LISTENER ---
+        // Event listener for Restaurant button
         setTimeout(() => {
             const btn = document.getElementById("show-restaurants-btn");
             if (btn) {
                 btn.onclick = function() {
-                    // Restoranları gösterirken mevcut popup'ı ve markerı temizle
                     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
                     showNearbyRestaurants(lat, lng, map, day);
                 };
             }
         }, 250);
 
+        // Global kayıtlar
         window._lastNearbyPlaces = results;
         window._lastNearbyPhotos = photos;
         window._lastNearbyDay = day;
-       window._currentPointInfo = pointInfo;
+        window._currentPointInfo = pointInfo;
         loadClickedPointImage(pointInfo.name);
 
-        // AI Açıklamasını Başlat (Şehir ismini temizleyerek gönderir)
+        // --- ANA NOKTA İÇİN OTOMATİK AI ÇAĞRISI ---
         const cityName = window.selectedCity || "Turkey";
-        if (pointInfo.name && pointInfo.name !== "Selected Point") {
-            fetchClickedPointAI(pointInfo.name, cityName);
-        } else if (pointInfo.address) {
-            // İsim yoksa adresten ilk parçayı al
-            const firstPart = pointInfo.address.split(',')[0];
-            fetchClickedPointAI(firstPart, cityName);
+        const aiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") ? pointInfo.name : (pointInfo.address ? pointInfo.address.split(',')[0] : null);
+        
+        if (aiSearchName) {
+            // fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId)
+            fetchClickedPointAI(aiSearchName, lat, lng, cityName, {}, 'ai-point-description');
         }
 
     } catch (error) {
         console.error('Nearby places fetch error:', error);
-        const errorContent = '<div class="nearby-error-message">An error occurred while loading nearby places.</div>';
-        showCustomPopup(lat, lng, map, errorContent, true);
+        showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
     }
 }
 
