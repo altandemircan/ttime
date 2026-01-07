@@ -1178,9 +1178,13 @@ alert("An error occurred while fetching restaurants. Please try again.");
 
 
 
-
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
+    
+    // nature kontrolü - DOĞA KATEGORİSİ
+    if (cats.includes('park') || cats.includes('garden') || cats.includes('forest')) {
+        return 'nature';
+    }
     
     if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
         return 'markets';
@@ -1267,17 +1271,17 @@ let categorizedPlaces = {
     restaurants: [],
     hotels: [],
     markets: [],
-    entertainment: []
+    entertainment: [],
+    nature: []  // YENİ KATEGORİ
 };
 
-// VE BURADA DA markets KULLAN
 const tabTitles = {
     restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
     hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
     markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length },
+    nature: { icon: "🌳", title: "Nature", count: categorizedPlaces.nature.length }  // YENİ KATEGORİ
 };
-
 
         let allPlaces = [];
         let placeIdToIndexMap = {};
@@ -1303,19 +1307,20 @@ const tabTitles = {
             });
 
             // Kategorilere ayır - BASİT YÖNTEM
-           allPlaces.forEach(place => {
+allPlaces.forEach(place => {
     const cat = place.category;
     if (cat === 'restaurant') {
         categorizedPlaces.restaurants.push(place);
     } else if (cat === 'hotel') {
         categorizedPlaces.hotels.push(place);
-    } else if (cat === 'markets') {  // <-- 'markets' diye kontrol et
+    } else if (cat === 'markets') {
         categorizedPlaces.markets.push(place);
     } else if (cat === 'entertainment') {
         categorizedPlaces.entertainment.push(place);
+    } else if (cat === 'nature') {
+        categorizedPlaces.nature.push(place);  // YENİ KATEGORİ
     }
 });
-
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
 
