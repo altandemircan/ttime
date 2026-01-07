@@ -158,19 +158,18 @@ const getPointInfo = async () => {
     }
     const factsJson = JSON.stringify(cleanFacts);
 
-const prompt = `Task: Local Expert Guide. Language: English.
-Place Name: "${point}"
-Full Address for Reference: "${city}"
+const prompt = `Task: Local Neighborhood Expert. Language: English.
+Point of Interest: "${point}"
+Reference Location: "${city}"
 Coordinates: ${lat}, ${lng}
 
 STRICT CONTENT RULES:
-1. "p1": Write a 2-sentence description. You MUST explicitly mention the CITY NAME (Antalya) or DISTRICT from the address.
-2. DO NOT include specific street names or house numbers in the sentences. 
-3. Focus: If "${point}" is a local mosque or spot in Antalya, describe its importance to the local community there. 
-4. "p2": One short practical tip. Leave empty "" if you don't have a real one.
-5. NO placeholders like "[insert...]", NO "Global" word, NO robotic "Located in..." intros.
-
-Return ONLY JSON: {"p1": "...", "p2": "..."}`;
+1. "p1": Write a 2-sentence description. You MUST identify the location using ONLY the names provided in Reference Location: "${city}".
+2. ZERO TOLERANCE FOR HALLUCINATION: Do NOT assume any city name. Look strictly at the "${city}" variable.
+3. Use the specific city or district name found in "${city}" within your sentences.
+4. DO NOT mention street names, building numbers, or full addresses.
+5. "p2": One practical tip. Leave it as an empty string "" if you don't have a verified tip for this specific spot.
+6. Return ONLY JSON: {"p1": "...", "p2": "..."}`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
