@@ -160,21 +160,20 @@ router.post('/clicked-ai', async (req, res) => {
         }
 
         // PROMPT: Kategoriyi balyoz gibi vuran yeni yapı
-        const prompt = `Task: Local Neighborhood Expert. Language: English.
-Target Name: "${point}"
-Category/Type: ${cleanCategory}
-Reference Location: "${city}"
-Coordinates: ${lat}, ${lng}
+const prompt = `[Strict Instructions]
+1. Task: Act as a local guide for the point: "${point}".
+2. Location: This point is located in "${city}".
+3. Category: This is a ${cleanCategory}.
+4. Output Format: JSON ONLY {"p1": "...", "p2": "..."}
 
-STRICT CONTENT RULES:
-1. "p1": You MUST describe "${point}" as a ${cleanCategory}. Do not invent historical importance if it is a local business like a cafe or shop.
-2. Use ONLY the city or district names provided in "${city}" for location. 
-3. ZERO TOLERANCE: Do not assume any city. If it's in Denizli, do not say Antalya.
-4. NO street names or building numbers in sentences.
-5. "p2": One short practical tip for a ${cleanCategory} visitor. If you don't have a specific real tip, leave it as "".
-6. Style: Natural, not robotic. NO "Located in the heart of" or "Experience the rich culture" clichés.
+[Content Rules]
+- "p1" must be exactly 2 sentences.
+- You MUST mention the city/district name exactly as written in "${city}".
+- Do NOT mention "Denizli" or any other city unless it is in the Reference Location.
+- If you don't have specific historical data for "${point}", simply describe it as a local ${cleanCategory} serving the "${city}" area.
+- "p2" is a 1-sentence tip. If unknown, leave it as "".
 
-Return ONLY JSON: {"p1": "...", "p2": "..."}`;
+Reference Location: "${city}"`;
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {

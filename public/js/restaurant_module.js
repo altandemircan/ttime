@@ -642,8 +642,10 @@ let locationParts = [];
         }
 
         const fullAddressContext = locationParts
-            .filter((v, i, a) => v && a.indexOf(v) === i)
-            .join(', ');
+    .filter((v, i, a) => v && a.indexOf(v) === i)
+    .join(', ');
+
+console.log("AI'ya giden şehir verisi:", fullAddressContext); // Burayı kontrol et, içinde Denizli var mı?
 
         // Değişken ismini finalAiSearchName yaparak çakışmayı önledik
         const finalAiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") 
