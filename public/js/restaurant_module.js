@@ -1303,12 +1303,7 @@ allPlaces.forEach(place => {
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
 
             // BU SATIRLARI EKLE:
-console.log('Kategori dağılımı:', {
-    restaurants: categorizedPlaces.restaurants.length,
-    hotels: categorizedPlaces.hotels.length,
-    markets: categorizedPlaces.markets.length,  // <-- shops yerine markets
-    entertainment: categorizedPlaces.entertainment.length
-});
+
 // Her yer için kategori bilgisini de logla
 allPlaces.slice(0, 5).forEach((p, i) => {
     console.log(`Yer ${i}: ${p.properties.name} - Kategori: ${p.category} - API Kategorileri: ${p.properties.categories}`);
