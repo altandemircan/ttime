@@ -702,7 +702,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 };
 
 // Daha spesifik kategori listesi
-const allCategories = "catering.restaurant,accommodation,catering.cafe.coffee_shop,catering.cafe.coffee,catering.cafe,leisure,entertainment";
+const allCategories = "catering.restaurant,accommodation,catering.cafe,leisure,entertainment";
     const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
 
     const loadingContent = `
