@@ -137,37 +137,72 @@ max_tokens: 200
 });
 
 router.post('/clicked-ai', async (req, res) => {
-    const { point, city, country, lat, lng, facts } = req.body;
+    const { point, city, lat, lng, facts } = req.body;
     
-    // 1. MEVCUT POINT-AI MANTIĞI (Aynen kopyalandı)
-    const getPointInfo = async () => {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
-        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
-            }, { timeout: 45000 });
-            const content = response.data?.message?.content || "{}";
-            return JSON.parse(content);
-        } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
+    // 1. POINT-AI MANTIĞI (TEMİZLENMİŞ)
+   // Backend prompt ve veri hazırlığı
+const getPointInfo = async () => {
+    // facts içindeki her şeyi kullan ama koordinatları da ekle ki AI haritadaki yeri bilsin
+    const cleanFacts = { 
+        lat, 
+        lng, 
+        context_city: city 
     };
+    
+    if (facts) {
+        Object.keys(facts).forEach(k => {
+            if (facts[k] && facts[k] !== 'unknown') cleanFacts[k] = facts[k];
+        });
+    }
+    const factsJson = JSON.stringify(cleanFacts).slice(0, 3000);
 
-    // 2. MEVCUT NEARBY-AI MANTIĞI (Aynen kopyalandı)
+    const prompt = `ENGLISH only. You are a local travel expert.
+PLACE: "${point}"
+LOCATION CONTEXT: "${city}" (Coordinates: ${lat}, ${lng})
+ADDITIONAL DATA: ${factsJson}
+
+TASK:
+1. "p1": A 2-sentence expert description. If it's a specific local spot (like a mosque or cafe in a specific district), mention its vibe relative to that specific area.
+2. "p2": A practical tip or a unique local detail.
+
+STRICT RULES:
+- If you don't have specific info about THIS exact location at these coordinates, provide a helpful general description of what this TYPE of place offers in "${city}".
+- NEVER use placeholders like "[insert address]", "N/A", or "Contact: unknown".
+- Use the provided LOCATION CONTEXT: "${city}" to identify the exact spot. 
+- If ${city} is empty, use coordinates to determine the general region.
+- If no practical tip is possible, leave "p2" empty.
+- Return ONLY JSON: {"p1":"...", "p2":"..."}`;
+
+    try {
+        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+            model: "llama3:8b",
+            messages: [{ role: "user", content: prompt }],
+            stream: false, 
+            format: "json", 
+            options: { temperature: 0.2, num_predict: 250 } // Sıcaklığı biraz artırdık ki daha doğal konuşsun
+        }, { timeout: 30000 });
+
+        const content = response.data?.message?.content || "{}";
+        return JSON.parse(content);
+    } catch (err) { 
+        return { p1: "Explore the local atmosphere and unique offerings of this spot in " + city + ".", p2: "" }; 
+    }
+};
+
+    // 2. NEARBY MANTIĞI
     const getNearby = async () => {
         const apiKey = process.env.GEOAPIFY_KEY;
         const fetchCat = async (cat, rad) => {
             try {
-                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},${rad}&bias=proximity:${lng},${lat}&limit=10&apiKey=${apiKey}`;
+                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},${rad}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
                 const resp = await axios.get(url, { timeout: 10000 });
                 return (resp.data?.features || [])
-                    .filter(f => f.properties && f.properties.name)
-                    .slice(0, 3).map(f => ({ name: f.properties.name, facts: f.properties }));
+                    .filter(f => f.properties && f.properties.name && f.properties.name !== point)
+                    .slice(0, 2).map(f => ({ name: f.properties.name, facts: f.properties }));
             } catch (e) { return []; }
         };
         const [s, n, h] = await Promise.all([
-            fetchCat('administrative.area.city', 15000), // x, y, z yerine senin kategorilerin
+            fetchCat('administrative.area.city', 15000),
             fetchCat('natural', 20000),
             fetchCat('tourism', 25000)
         ]);
@@ -175,16 +210,10 @@ router.post('/clicked-ai', async (req, res) => {
     };
 
     try {
-        // İkisini aynı anda çalıştır
         const [aiResult, nearbyResult] = await Promise.all([getPointInfo(), getNearby()]);
-        
-        // Frontend'in beklediği formatta birleştir
-        res.json({
-            ...aiResult,
-            nearby: nearbyResult
-        });
+        res.json({ ...aiResult, nearby: nearbyResult });
     } catch (e) {
-        res.status(500).json({ error: "Combined fetch failed" });
+        res.status(500).json({ error: "Fetch failed" });
     }
 });
 
