@@ -694,15 +694,14 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     }
 
     // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
-    const categoryGroups = {
+   const categoryGroups = {
     "restaurants": "catering.restaurant",
     "hotels": "accommodation",
-    "cafes": "catering.cafe.coffee_shop,catering.cafe.coffee,catering.cafe",
+    "cafes": "catering", // GENEL catering kategorisi - kesin çalışır
     "entertainment": "leisure,entertainment"
 };
 
-// Daha spesifik kategori listesi
-const allCategories = "catering.restaurant,accommodation,catering.cafe,leisure,entertainment";
+const allCategories = "catering.restaurant,accommodation,catering,leisure,entertainment";
     const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
 
     const loadingContent = `
@@ -1099,14 +1098,21 @@ function getSimplePlaceCategory(feature) {
         return 'hotel';
     }
     
-    if (categories.includes('cafe') || categories.includes('coffee') || categories.includes('coffee_shop')) {
-    return 'cafe';
-}
+    // GENİŞLETİLMİŞ CAFE KONTROLÜ
+    if (categories.includes('cafe') || 
+        categories.includes('coffee') || 
+        categories.includes('coffee_shop') ||
+        categories.includes('bakery') ||
+        categories.includes('dessert') ||
+        categories.includes('ice_cream') ||
+        categories.includes('tea')) {
+        return 'cafe';
+    }
     
     if (categories.includes('park') || categories.includes('cinema') || 
         categories.includes('museum') || categories.includes('entertainment') ||
         categories.includes('leisure')) {
-        return 'entertainment';
+        return 'enttainment';
     }
     
     // Varsayılan - en yaygın olan restaurant
