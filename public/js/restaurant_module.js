@@ -1236,8 +1236,15 @@ if (data.features && data.features.length > 0) {
         console.log(`  ${i}: ${f.properties.name}`);
         console.log(`     Kategoriler: ${f.properties.categories}`);
         if (f.properties.categories) {
-            console.log(`     Listesi: ${f.properties.categories.split(',')}`);
-        }
+    const cats = f.properties.categories;
+    if (typeof cats === 'string') {
+        console.log(`     Listesi: ${cats.split(',')}`);
+    } else if (Array.isArray(cats)) {
+        console.log(`     Listesi:`, cats);
+    } else {
+        console.log(`     Bilinmeyen tip:`, cats);
+    }
+}
     });
 }
 // === BURAYA KADAR ===
