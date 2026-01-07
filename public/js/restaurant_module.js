@@ -476,7 +476,6 @@ function getSimplePlaceCategory(f) {
     }
     
     return 'restaurant';
-}eturn 'restaurant';
 }
 
 
