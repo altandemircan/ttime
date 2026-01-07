@@ -1457,26 +1457,39 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 
 async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
     const descDiv = document.getElementById('ai-point-description');
-    
+    if (!descDiv) return;
+
     try {
         const response = await fetch('/llm-proxy/clicked-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ point: pointName, lat, lng, city, facts })
+            body: JSON.stringify({ point: pointName, city, lat, lng, facts })
         });
         
         const data = await response.json();
         
-        // 1. AI Açıklamasını Yazdır
-        descDiv.innerHTML = `
-            <div style="margin-bottom: 8px;">${data.description}</div>
-            ${data.tip ? `<div style="color: #1976d2; font-weight: 500;">💡 Tip: ${data.tip}</div>` : ''}
+        // AI Bilgisi (P1 ve P2)
+        let html = `<div style="margin-bottom:8px;">${data.p1}</div>`;
+        if (data.p2) html += `<div style="font-style: italic; color: #666; font-size: 10px;">💡 ${data.p2}</div>`;
+
+        // Nearby Butonları (Eğer varsa)
+        if (data.nearby) {
+            html += `<div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:8px;">`;
+            const allNearby = [...data.nearby.settlement, ...data.nearby.nature, ...data.nearby.historic];
             
-            <div class="nearby-grid" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
-                ${data.nearby.historic.map(h => `<button class="nearby-btn">🏛️ ${h.name}</button>`).join('')}
-                ${data.nearby.nature.map(n => `<button class="nearby-btn">🌳 ${n.name}</button>`).join('')}
-            </div>
-        `;
+            allNearby.forEach(item => {
+                html += `
+                    <button class="ai-nearby-btn" 
+                        style="display:block; width:100%; text-align:left; background:#fff; border:1px solid #eee; margin-bottom:4px; padding:4px 8px; font-size:10px; border-radius:4px; cursor:pointer;"
+                        onclick="window.showNearbyPlacesPopup(${item.facts.lat}, ${item.facts.lon})">
+                        📍 ${item.name}
+                    </button>`;
+            });
+            html += `</div>`;
+        }
+
+        descDiv.innerHTML = html;
+        
     } catch (e) {
         descDiv.innerHTML = "AI could not load information.";
     }

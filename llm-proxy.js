@@ -136,79 +136,54 @@ max_tokens: 200
     }
 });
 
-
 router.post('/clicked-ai', async (req, res) => {
     const { point, city, country, lat, lng, facts } = req.body;
     
-    // Koordinatları ve temel bilgileri kontrol et
-    if (!point || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
-        return res.status(400).json({ error: 'Point, lat and lng are required' });
-    }
-
-    const cacheKey = `CLICKED_FULL:${point}__${lat}__${lng}`;
-    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') {
-        return res.json(aiCache[cacheKey].data);
-    }
-
-    // 1. FONKSİYON: Geoapify'dan Çevre Mekanları Getir
-    const fetchNearbyFromGeo = async (categories, radius) => {
-        const apiKey = process.env.GEOAPIFY_KEY;
-        try {
-            const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lng},${lat},${radius}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
-            const resp = await axios.get(url, { timeout: 8000 });
-            return (resp.data?.features || [])
-                .filter(f => f.properties?.name)
-                .slice(0, 3)
-                .map(f => ({ name: f.properties.name, facts: f.properties }));
-        } catch (e) { return []; }
-    };
-
-    // 2. FONKSİYON: AI'dan Açıklama Al
-    const fetchAIDescription = async () => {
-        const factsJson = JSON.stringify(facts || {}).slice(0, 1000);
-        const prompt = `ENGLISH only. You are a travel guide. 
-        POINT: "${point}", CITY: "${city || 'unknown'}". 
-        CONTEXT: ${factsJson}. 
-        Return ONLY JSON: {"p1":"brief history/description", "p2":"practical visit tip"}`;
-        
+    // 1. MEVCUT POINT-AI MANTIĞI (Aynen kopyalandı)
+    const getPointInfo = async () => {
+        const factsJson = JSON.stringify(facts || {}).slice(0, 3500);
+        const prompt = `ENGLISH only. POINT: "${point}", CITY: "${city}". FACTS: ${factsJson}. Return ONLY JSON: {"p1":"description", "p2":"practical info"}.`;
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
                 model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
-                stream: false, format: "json", options: { temperature: 0.2, num_predict: 200 }
-            }, { timeout: 25000 });
-            return JSON.parse(response.data?.message?.content || "{}");
-        } catch (e) { 
-            return { p1: "Description not available.", p2: "" }; 
-        }
+                stream: false, format: "json", options: { temperature: 0.1, num_predict: 180 }
+            }, { timeout: 45000 });
+            const content = response.data?.message?.content || "{}";
+            return JSON.parse(content);
+        } catch (err) { return { p1: "Info not available.", p2: "Info not available." }; }
+    };
+
+    // 2. MEVCUT NEARBY-AI MANTIĞI (Aynen kopyalandı)
+    const getNearby = async () => {
+        const apiKey = process.env.GEOAPIFY_KEY;
+        const fetchCat = async (cat, rad) => {
+            try {
+                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},${rad}&bias=proximity:${lng},${lat}&limit=10&apiKey=${apiKey}`;
+                const resp = await axios.get(url, { timeout: 10000 });
+                return (resp.data?.features || [])
+                    .filter(f => f.properties && f.properties.name)
+                    .slice(0, 3).map(f => ({ name: f.properties.name, facts: f.properties }));
+            } catch (e) { return []; }
+        };
+        const [s, n, h] = await Promise.all([
+            fetchCat('administrative.area.city', 15000), // x, y, z yerine senin kategorilerin
+            fetchCat('natural', 20000),
+            fetchCat('tourism', 25000)
+        ]);
+        return { settlement: s, nature: n, historic: h };
     };
 
     try {
-        // AI ve Çevre Mekan isteklerini PARALEL başlat (Vakit kazan)
-        const [aiData, settlement, nature, historic] = await Promise.all([
-            fetchAIDescription(),
-            fetchNearbyFromGeo('administrative.area.city,administrative.area.town', 15000),
-            fetchNearbyFromGeo('natural,leisure.park,leisure.garden', 15000),
-            fetchNearbyFromGeo('tourism.attraction,historic', 20000)
-        ]);
-
-        const finalResult = {
-            description: aiData.p1,
-            tip: aiData.p2,
-            nearby: {
-                settlement,
-                nature,
-                historic
-            }
-        };
-
-        // Cache'le ve Gönder
-        aiCache[cacheKey] = { status: 'done', data: finalResult };
-        saveCacheToDisk();
-        res.json(finalResult);
-
+        // İkisini aynı anda çalıştır
+        const [aiResult, nearbyResult] = await Promise.all([getPointInfo(), getNearby()]);
+        
+        // Frontend'in beklediği formatta birleştir
+        res.json({
+            ...aiResult,
+            nearby: nearbyResult
+        });
     } catch (e) {
-        console.error("Clicked-AI Error:", e);
         res.status(500).json({ error: "Combined fetch failed" });
     }
 });
