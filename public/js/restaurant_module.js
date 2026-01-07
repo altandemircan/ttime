@@ -462,14 +462,9 @@ function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
     // shops kontrolü - DAHA GENİŞ YAP
-    if (cats.includes('commercial') || 
-        cats.includes('shop') || 
-        cats.includes('market') || 
-        cats.includes('store') ||
-        cats.includes('mall') ||
-        cats.includes('supermarket')) {
-        return 'shops';
-    }
+  if (cats.includes('commercial') || cats.includes('shop') || cats.includes('market') || cats.includes('store')) {
+    return 'stores';  // 'shops' yerine 'stores'
+}
     
     // entertainment kontrolü  
     if (cats.includes('entertainment') || cats.includes('leisure')) {
@@ -1285,7 +1280,7 @@ let categorizedPlaces = {
 const tabTitles = {
     restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
     hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    stores: { icon: "🛍️", title: "Stores", count: categorizedPlaces.stores.length },  // shops yerine stores
+    stores: { icon: "🛍️", title: "Stores", count: categorizedPlaces.stores.length },
     entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
 };
         let allPlaces = [];
