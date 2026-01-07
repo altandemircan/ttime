@@ -621,32 +621,83 @@ return `
         loadClickedPointImage(pointInfo.name);
 
 
-// 1. Dinamik Şehir Belirleme: Asla el yazısıyla şehir ismi ekleme!
-let currentCityName = "";
-if (pointInfo && (pointInfo.county || pointInfo.city)) {
-    currentCityName = pointInfo.county || pointInfo.city;
-} else if (window.selectedCity) {
-    currentCityName = window.selectedCity;
-} else if (pointInfo && pointInfo.address) {
-    // Eğer pointInfo dolu ama county/city yoksa, adresteki son parçalardan şehri ayıkla
-    const addrParts = pointInfo.address.split(',');
-    currentCityName = addrParts.length > 2 ? addrParts[addrParts.length - 2].trim() : "";
-}
+// // 1. Dinamik Şehir Belirleme: Asla el yazısıyla şehir ismi ekleme!
+// let currentCityName = "";
+// if (pointInfo && (pointInfo.county || pointInfo.city)) {
+//     currentCityName = pointInfo.county || pointInfo.city;
+// } else if (window.selectedCity) {
+//     currentCityName = window.selectedCity;
+// } else if (pointInfo && pointInfo.address) {
+//     // Eğer pointInfo dolu ama county/city yoksa, adresteki son parçalardan şehri ayıkla
+//     const addrParts = pointInfo.address.split(',');
+//     currentCityName = addrParts.length > 2 ? addrParts[addrParts.length - 2].trim() : "";
+// }
 
-// 2. locationParts Oluşturma
-let locationParts = [
-    pointInfo?.suburb,
-    pointInfo?.city || pointInfo?.town,
-    currentCityName,
-    pointInfo?.country || "Turkey"
-];
+// // 2. locationParts Oluşturma
+// let locationParts = [
+//     pointInfo?.suburb,
+//     pointInfo?.city || pointInfo?.town,
+//     currentCityName,
+//     pointInfo?.country || "Turkey"
+// ];
 
-// 3. Temizlik: Sadece dolu olanları ve "Unknown" içermeyenleri birleştir
-const fullAddressContext = locationParts
-    .filter((v, i, a) => v && a.indexOf(v) === i && !v.toLowerCase().includes('unknown'))
-    .join(', ');
+// // 3. Temizlik: Sadece dolu olanları ve "Unknown" içermeyenleri birleştir
+// const fullAddressContext = locationParts
+//     .filter((v, i, a) => v && a.indexOf(v) === i && !v.toLowerCase().includes('unknown'))
+//     .join(', ');
 
-console.log("AI'ya giden dinamik context:", fullAddressContext);
+// console.log("AI'ya giden dinamik context:", fullAddressContext);
+
+
+
+
+        // 1. Dinamik Şehir Belirleme: POSTA KODU TEMİZLİĞİ EKLENDİ
+    let currentCityName = "";
+    if (pointInfo && (pointInfo.county || pointInfo.city)) {
+        currentCityName = pointInfo.county || pointInfo.city;
+    } else if (window.selectedCity) {
+        currentCityName = window.selectedCity;
+    } else if (pointInfo && pointInfo.address) {
+        const addrParts = pointInfo.address.split(',');
+        currentCityName = addrParts.length > 2 ? addrParts[addrParts.length - 2].trim() : "";
+    }
+    
+    // POSTA KODU TEMİZLİĞİ
+    const cleanCityName = (cityName) => {
+        if (!cityName) return "";
+        // Posta kodlarını ve numaraları temizle
+        return cityName
+            .replace(/\b\d{5}\b/g, '') // 5 haneli posta kodu
+            .replace(/\b\d{4}\s?[A-Z]{2}\b/gi, '') // 4 haneli + harf
+            .replace(/\b\d+\b/g, '') // Diğer numaralar
+            .replace(/,\s*,/g, ',')
+            .replace(/^\s*,\s*|\s*,\s*$/g, '')
+            .trim();
+    };
+    
+    // 2. locationParts Oluşturma (temizlenmiş)
+    let locationParts = [
+        pointInfo?.suburb,
+        pointInfo?.city || pointInfo?.town,
+        cleanCityName(currentCityName),
+        pointInfo?.country || "Turkey"
+    ];
+    
+    // 3. Temizlik
+    const fullAddressContext = locationParts
+        .filter((v, i, a) => v && v.toString().trim() !== '' && 
+                a.indexOf(v) === i && 
+                !v.toString().toLowerCase().includes('unknown') &&
+                !/\b\d{5}\b/.test(v)) // Posta kodu kontrolü
+        .join(', ');
+    
+    console.log("AI'ya giden temiz context:", fullAddressContext);
+
+
+
+
+
+
 
 // 4. Eğer hala context boşsa, AI uydurmasın diye sadece ismi gönder
 const finalAiSearchName = (pointInfo?.name && pointInfo?.name !== "Selected Point") 
@@ -1463,58 +1514,174 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 let aiAbortController = null;
 let aiDebounceTimeout = null;
 
+// async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
+//     const descDiv = document.getElementById(targetDivId);
+//     if (!descDiv) return;
+
+//     // İçerik varsa veya yükleniyorsa tekrar çalıştırma
+//     if ((descDiv.innerHTML.trim() !== "" && descDiv.style.display !== 'none') || descDiv.querySelector('.ai-spinner')) {
+//     if (!descDiv.querySelector('.ai-spinner')) return; 
+// }
+
+//     if (targetDivId === 'ai-point-description') {
+//         clearTimeout(aiDebounceTimeout);
+//         if (aiAbortController) aiAbortController.abort();
+//         aiAbortController = new AbortController();
+//     }
+
+//     // STANDART SADE LOADING
+//     descDiv.style.display = 'block';
+//     descDiv.innerHTML = `
+//         <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
+//             <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
+//             <div style="font-size: 11px; font-weight: 500; text-transform: uppercase;">AI is analyzing...</div>
+//         </div>
+//         <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+//     `;
+
+//     const triggerFetch = async () => {
+//         try {
+//             const response = await fetch('/llm-proxy/clicked-ai', {
+//                 method: 'POST',
+//                 signal: (targetDivId === 'ai-point-description') ? aiAbortController.signal : null,
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ point: pointName, city, lat, lng, facts })
+//             });
+//             const data = await response.json();
+
+//             // STANDART SADE SONUÇ (İtalik kaldırıldı)
+//             descDiv.innerHTML = `
+//                 <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
+//                     <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
+//                     ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
+//                     <div style="padding: 8px 10px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 6px;">
+//                         <span style="font-size: 12px;">✨</span>
+//                         <div style="color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
+//                     </div>` : ''}
+//                 </div>`;
+//         } catch (e) {
+//             if (e.name === 'AbortError') return;
+//             descDiv.innerHTML = ""; 
+//             descDiv.style.display = 'none';
+//         }
+//     };
+
+//     if (targetDivId === 'ai-point-description') aiDebounceTimeout = setTimeout(triggerFetch, 400);
+//     else triggerFetch();
+// }
+
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
-
-    // İçerik varsa veya yükleniyorsa tekrar çalıştırma
-    if ((descDiv.innerHTML.trim() !== "" && descDiv.style.display !== 'none') || descDiv.querySelector('.ai-spinner')) {
-    if (!descDiv.querySelector('.ai-spinner')) return; 
-}
-
+    
+    // Çoklu istek koruması geliştirildi
+    if (descDiv.dataset.loading === 'true' && !descDiv.querySelector('.ai-spinner')) {
+        return;
+    }
+    
     if (targetDivId === 'ai-point-description') {
         clearTimeout(aiDebounceTimeout);
         if (aiAbortController) aiAbortController.abort();
         aiAbortController = new AbortController();
     }
-
-    // STANDART SADE LOADING
+    
+    // Şehir bilgisini temizle (posta kodlarından)
+    const cleanCityContext = (context) => {
+        if (!context) return "";
+        return context
+            .replace(/\b\d{5}\b/g, '')
+            .replace(/\b\d{4}\s?[A-Z]{2}\b/gi, '')
+            .replace(/,\s*,/g, ',')
+            .replace(/^\s*,\s*|\s*,\s*$/g, '')
+            .trim();
+    };
+    
+    // Loading state
+    descDiv.dataset.loading = 'true';
     descDiv.style.display = 'block';
     descDiv.innerHTML = `
         <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
             <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-            <div style="font-size: 11px; font-weight: 500; text-transform: uppercase;">AI is analyzing...</div>
+            <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666;">Analyzing location...</div>
         </div>
         <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     `;
-
+    
     const triggerFetch = async () => {
         try {
+            // Şehir context'ini temizle
+            const cleanedCity = cleanCityContext(city);
+            
             const response = await fetch('/llm-proxy/clicked-ai', {
                 method: 'POST',
                 signal: (targetDivId === 'ai-point-description') ? aiAbortController.signal : null,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ point: pointName, city, lat, lng, facts })
+                body: JSON.stringify({ 
+                    point: pointName, 
+                    city: cleanedCity, 
+                    lat, 
+                    lng, 
+                    facts 
+                })
             });
+            
             const data = await response.json();
-
-            // STANDART SADE SONUÇ (İtalik kaldırıldı)
+            
+            // Başarılı yanıt işleme
+            descDiv.dataset.loading = 'false';
+            
+            // Yanıtı formatla
+            let p1Content = data.p1 || `Explore ${pointName} in ${cleanedCity.split(',')[0] || 'this area'}.`;
+            let p2Content = data.p2 || '';
+            
+            // P1'i düzgün cümlelere böl
+            const sentences = p1Content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            if (sentences.length === 1) {
+                p1Content = sentences[0] + '. Discover this location and its surroundings.';
+            }
+            
+            // HTML oluştur
             descDiv.innerHTML = `
-                <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
-                    <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
-                    ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
-                    <div style="padding: 8px 10px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 6px;">
-                        <span style="font-size: 12px;">✨</span>
-                        <div style="color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
+                <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
+                    <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa; background: #fdfdfe;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
+                            <div style="flex: 1;">${p1Content}</div>
+                        </div>
+                    </div>
+                    ${p2Content ? `
+                    <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px; border-top: 1px dashed #eaeaea;">
+                        <span style="font-size: 12px; color: #ff9800;">💡</span>
+                        <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
+                            <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
+                            ${p2Content}
+                        </div>
                     </div>` : ''}
                 </div>`;
+                
         } catch (e) {
-            if (e.name === 'AbortError') return;
-            descDiv.innerHTML = ""; 
-            descDiv.style.display = 'none';
+            if (e.name === 'AbortError') {
+                descDiv.innerHTML = "";
+                descDiv.style.display = 'none';
+                return;
+            }
+            
+            console.error('AI fetch error:', e);
+            descDiv.dataset.loading = 'false';
+            descDiv.innerHTML = `
+                <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
+                    <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
+                    <small style="color: #999;">Try clicking another location</small>
+                </div>`;
         }
     };
-
-    if (targetDivId === 'ai-point-description') aiDebounceTimeout = setTimeout(triggerFetch, 400);
-    else triggerFetch();
+    
+    // Debounce süresini biraz artıralım daha stabil olsun
+    const debounceTime = targetDivId === 'ai-point-description' ? 600 : 0;
+    
+    if (targetDivId === 'ai-point-description') {
+        aiDebounceTimeout = setTimeout(triggerFetch, debounceTime);
+    } else {
+        triggerFetch();
+    }
 }
