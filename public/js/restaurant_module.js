@@ -643,6 +643,11 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         window._currentPointInfo = pointInfo;
         loadClickedPointImage(pointInfo.name);
 
+        // --- BURAYI GÜNCELLE ---
+const cityName = window.selectedCity || (pointInfo.address ? pointInfo.address.split(',')[0] : "Konya");
+fetchClickedPointAI(pointInfo.name, cityName);
+// -----------------------
+
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         const errorContent = '<div class="nearby-error-message">An error occurred while loading nearby places.</div>';
