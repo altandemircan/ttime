@@ -1596,11 +1596,20 @@ allPlaces.slice(0, 5).forEach((p, i) => {
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
+    // ÖNCE markets
+    if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
+        return 'markets';
+    }
+    
+    // SONRA entertainment
+    if (cats.includes('entertainment') || cats.includes('leisure')) {
+        return 'entertainment';
+    }
+    
+    // diğerleri...
     if (cats.includes('park') || cats.includes('garden')) return 'parks';
     if (cats.includes('museum') || cats.includes('gallery')) return 'museums';
-    if (cats.includes('entertainment') || cats.includes('leisure')) return 'entertainment';  // entertainment geri
     if (cats.includes('shop') || cats.includes('mall')) return 'shopping';
-    if (cats.includes('commercial') || cats.includes('market')) return 'markets';
     if (cats.includes('station') || cats.includes('transport')) return 'transport';
     if (cats.includes('restaurant') || cats.includes('food')) return 'restaurant';
     if (cats.includes('accommodation') || cats.includes('hotel')) return 'hotel';
