@@ -530,11 +530,12 @@ placesHtml = results.map((f, index) => {
     const locationContext = p.city || p.country || "Global";
 
    // BUL VE DEĞİŞTİR: results.map içindeki return bloğu
+// BUL VE DEĞİŞTİR: results.map içindeki return
 return `
-<li class="nearby-place-wrapper" style="list-style: none; margin-bottom: 12px;">
+<li style="list-style: none; margin-bottom: 12px;">
     <div class="nearby-place-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
         
-        <div class="nearby-place-image" style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+        <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
             <img src="${photo}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
             <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-info-${index}')" 
                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
@@ -542,7 +543,7 @@ return `
             </div>
         </div>
 
-        <div class="nearby-place-info" style="flex: 1; min-width: 0;">
+        <div style="flex: 1; min-width: 0;">
             <div style="font-weight: 600; font-size: 13px; color: #333;">${name}</div>
             <div style="font-size: 11px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.formatted || ""}</div>
         </div>
@@ -1438,24 +1439,23 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
 
-    // 1. Mükerrer Tıklama Kontrolü: İçerik varsa veya şu an yükleniyorsa dur.
+    // İçerik varsa veya yükleniyorsa tekrar çalıştırma
     if (descDiv.innerHTML.includes('background: white') || descDiv.querySelector('.ai-spinner')) {
         return; 
     }
 
-    // 2. Debounce & Abort (Sadece ana nokta description alanı için)
     if (targetDivId === 'ai-point-description') {
         clearTimeout(aiDebounceTimeout);
         if (aiAbortController) aiAbortController.abort();
         aiAbortController = new AbortController();
     }
 
-    // 3. STANDART LOADING TASARIMI (Hem ana nokta hem liste için aynı)
-    descDiv.style.display = 'block'; // Gizliyse görünür yap
+    // STANDART SADE LOADING
+    descDiv.style.display = 'block';
     descDiv.innerHTML = `
         <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; margin-top: 8px; width: 100%; box-sizing: border-box;">
             <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-            <div style="font-size: 10px; font-weight: 700; color: #8a4af3; text-transform: uppercase; letter-spacing: 0.5px;">AI is analyzing ${pointName}...</div>
+            <div style="font-size: 10px; font-weight: 700; color: #8a4af3; text-transform: uppercase;">AI is analyzing...</div>
         </div>
         <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     `;
@@ -1470,25 +1470,23 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             });
             const data = await response.json();
 
-            // 4. STANDART SONUÇ TASARIMI
+            // STANDART SADE SONUÇ (İtalik kaldırıldı)
             descDiv.innerHTML = `
                 <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
                     <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
                     ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
                     <div style="padding: 8px 10px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 6px;">
                         <span style="font-size: 12px;">✨</span>
-                        <div style="font-style: italic; color: #666; font-size: 10px;">${data.p2}</div>
+                        <div style="color: #666; font-size: 10px; line-height: 1.4;">${data.p2}</div>
                     </div>` : ''}
                 </div>`;
         } catch (e) {
             if (e.name === 'AbortError') return;
-            console.error("AI Fetch Error:", e);
             descDiv.innerHTML = ""; 
             descDiv.style.display = 'none';
         }
     };
 
-    // Ana nokta ise biraz bekle (harita hareketinin bitmesi için), liste butonu ise hemen çalış.
     if (targetDivId === 'ai-point-description') aiDebounceTimeout = setTimeout(triggerFetch, 400);
     else triggerFetch();
 }
