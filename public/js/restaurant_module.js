@@ -461,8 +461,13 @@ function attachClickNearbySearch(map, day, options = {}) {
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
-    // shops kontrolü
-    if (cats.includes('commercial.') || cats.includes('shop')) {
+    // shops kontrolü - DAHA GENİŞ YAP
+    if (cats.includes('commercial') || 
+        cats.includes('shop') || 
+        cats.includes('market') || 
+        cats.includes('store') ||
+        cats.includes('mall') ||
+        cats.includes('supermarket')) {
         return 'shops';
     }
     
@@ -1269,11 +1274,19 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
         });
 
         // Kategorilere göre yerleri grupla
-        let categorizedPlaces = {
+let categorizedPlaces = {
     restaurants: [],
     hotels: [],
-    shops: [],
+    stores: [],  // shops yerine stores
     entertainment: []
+};
+
+// tabTitles da güncelle:
+const tabTitles = {
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    stores: { icon: "🛍️", title: "Stores", count: categorizedPlaces.stores.length },  // shops yerine stores
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
 };
         let allPlaces = [];
         let placeIdToIndexMap = {};
