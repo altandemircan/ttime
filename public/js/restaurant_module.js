@@ -527,9 +527,7 @@ placesHtml = results.map((f, index) => {
     const photo = photos[index] || PLACEHOLDER_IMG;
     const distStr = f.distance < 1000 ? `${Math.round(f.distance)} m` : `${(f.distance / 1000).toFixed(2)} km`;
     const safeName = name.replace(/'/g, "\\'");
-    const locationContext = p.city || p.country || "Global";
-
-   // BUL VE DEĞİŞTİR: results.map içindeki return bloğu
+const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');   // BUL VE DEĞİŞTİR: results.map içindeki return bloğu
 // BUL VE DEĞİŞTİR: results.map içindeki return
 return `
 <li style="list-style: none; margin-bottom: 12px;">
@@ -622,12 +620,17 @@ return `
         window._currentPointInfo = pointInfo;
         loadClickedPointImage(pointInfo.name);
 
-        // --- ANA NOKTA İÇİN OTOMATİK AI ÇAĞRISI ---
-       const aiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") ? pointInfo.name : (pointInfo.address ? pointInfo.address.split(',')[0] : null);
-const dynamicContext = pointInfo.country || "Global";
+// Cadde/Sokak bilgilerini eleyip sadece AI'nın bilmesi gereken bölge isimlerini gönderiyoruz
+const fullAddressContext = [
+    pointInfo.suburb, // Mahalle/Semt
+    pointInfo.city || pointInfo.town || pointInfo.state, // Şehir
+    pointInfo.country // Ülke
+].filter(Boolean).join(', ');
+
+const aiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") ? pointInfo.name : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
 
 if (aiSearchName) {
-    fetchClickedPointAI(aiSearchName, lat, lng, dynamicContext, {}, 'ai-point-description');
+    fetchClickedPointAI(aiSearchName, lat, lng, fullAddressContext, {}, 'ai-point-description');
 }
 
     } catch (error) {
@@ -1440,9 +1443,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     if (!descDiv) return;
 
     // İçerik varsa veya yükleniyorsa tekrar çalıştırma
-    if (descDiv.innerHTML.includes('background: white') || descDiv.querySelector('.ai-spinner')) {
-        return; 
-    }
+    if ((descDiv.innerHTML.trim() !== "" && descDiv.style.display !== 'none') || descDiv.querySelector('.ai-spinner')) {
+    if (!descDiv.querySelector('.ai-spinner')) return; 
+}
 
     if (targetDivId === 'ai-point-description') {
         clearTimeout(aiDebounceTimeout);
