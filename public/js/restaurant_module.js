@@ -1574,10 +1574,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 1000) { // 100
     categoryGroups.historic = allResults;
 }
 
-            // İlk item için fotoğraf yükle
-            await loadClickedPointImage(pointInfo.name);
-        }
-
         // Tab HTML'sini oluştur
         const tabsHtml = `
             <div class="nearby-tabs" style="display: flex; gap: 8px; margin: 12px 0; border-bottom: 1px solid #eee; padding-bottom: 8px;">
