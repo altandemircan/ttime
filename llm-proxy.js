@@ -158,16 +158,17 @@ const getPointInfo = async () => {
     }
     const factsJson = JSON.stringify(cleanFacts);
 
-const prompt = `Task: Local Neighborhood Expert. Language: English.
-Place: "${point}"
-Specific Location: "${city}" (Coordinates: ${lat}, ${lng})
+const prompt = `Task: Local Expert Guide. Language: English.
+Place Name: "${point}"
+Full Address for Reference: "${city}"
+Coordinates: ${lat}, ${lng}
 
-STRICT RULES FOR CONTENT:
-1. "p1": You MUST mention the specific city or district from "${city}" in the description. Do NOT use vague terms like "this region" or "this city". Be specific (e.g., "Located in Antalya's ${city.split(',')[0]} area..."). 
-2. Write 2 sentences about the place's vibe. If you don't know the specific history of "${point}", describe it based on its real-world location on Tonguç Caddesi/Antalya context.
-3. "p2": Give a practical local tip. If you don't have one, leave it empty "".
-4. NO placeholders (e.g., [insert...]), NO "Global" word.
-5. NO robotic phrases like "Located in the heart of...". Talk like a local who lives there.
+STRICT CONTENT RULES:
+1. "p1": Write a 2-sentence description. You MUST explicitly mention the CITY NAME (Antalya) or DISTRICT from the address.
+2. DO NOT include specific street names or house numbers in the sentences. 
+3. Focus: If "${point}" is a local mosque or spot in Antalya, describe its importance to the local community there. 
+4. "p2": One short practical tip. Leave empty "" if you don't have a real one.
+5. NO placeholders like "[insert...]", NO "Global" word, NO robotic "Located in..." intros.
 
 Return ONLY JSON: {"p1": "...", "p2": "..."}`;
 
