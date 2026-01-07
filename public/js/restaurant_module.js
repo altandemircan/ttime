@@ -457,34 +457,31 @@ function attachClickNearbySearch(map, day, options = {}) {
 
 
 // BASİT VE ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
-function getSimplePlaceCategory(feature) {
-    const categories = feature.properties.categories || "";
+// GÜNCEL getSimplePlaceCategory FONKSİYONU (kısa ve basit)
+function getSimplePlaceCategory(f) {
+    const cats = f.properties.categories || "";
     
-    // Çok basit kategori eşleştirme
-    if (categories.includes('restaurant') || categories.includes('fast_food')) {
+    // shops kontrolü
+    if (cats.includes('commercial.') || cats.includes('shop')) {
+        return 'shops';
+    }
+    
+    // entertainment kontrolü  
+    if (cats.includes('entertainment') || cats.includes('leisure')) {
+        return 'entertainment';
+    }
+    
+    // restaurant kontrolü
+    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
         return 'restaurant';
     }
     
-    if (categories.includes('hotel') || categories.includes('accommodation')) {
+    // hotel kontrolü
+    if (cats.includes('accommodation') || cats.includes('hotel')) {
         return 'hotel';
     }
     
-    // GENİŞLETİLMİŞ CAFE KONTROLÜ
-  if (categories.includes('supermarket') || 
-    categories.includes('convenience') || 
-    categories.includes('clothing') ||
-    categories.includes('shopping_mall') ||
-    categories.includes('commercial')) {
-    return 'shops';
-}
-    
-    if (categories.includes('park') || categories.includes('cinema') || 
-        categories.includes('museum') || categories.includes('entertainment') ||
-        categories.includes('leisure')) {
-        return 'enttainment';
-    }
-    
-    // Varsayılan - en yaygın olan restaurant
+    // varsayılan
     return 'restaurant';
 }
 
@@ -1317,6 +1314,19 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
 
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
+
+            // BU SATIRLARI EKLE:
+console.log('Kategori dağılımı:', {
+    restaurants: categorizedPlaces.restaurants.length,
+    hotels: categorizedPlaces.hotels.length,
+    shops: categorizedPlaces.shops.length,
+    entertainment: categorizedPlaces.entertainment.length
+});
+
+// Her yer için kategori bilgisini de logla
+allPlaces.slice(0, 5).forEach((p, i) => {
+    console.log(`Yer ${i}: ${p.properties.name} - Kategori: ${p.category} - API Kategorileri: ${p.properties.categories}`);
+});
 
             // Her kategori için maksimum 5 yer göster
             Object.keys(categorizedPlaces).forEach(key => {
