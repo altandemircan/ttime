@@ -1178,33 +1178,6 @@ alert("An error occurred while fetching restaurants. Please try again.");
 
 
 
-function getSimplePlaceCategory(f) {
-    const cats = f.properties.categories || "";
-    
-    // nature kontrolü - DOĞA KATEGORİSİ
-    if (cats.includes('park') || cats.includes('garden') || cats.includes('forest')) {
-        return 'nature';
-    }
-    
-    if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
-        return 'markets';
-    }
-    
-    if (cats.includes('entertainment') || cats.includes('leisure')) {
-        return 'entertainment';
-    }
-    
-    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
-        return 'restaurant';
-    }
-    
-    if (cats.includes('accommodation') || cats.includes('hotel')) {
-        return 'hotel';
-    }
-    
-    return 'restaurant';
-}
-
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     // 1. Önce kesinlikle eskileri temizle
@@ -1266,22 +1239,46 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
         });
 
         // Kategorilere göre yerleri grupla
-// BURASI markets OLSUN
 let categorizedPlaces = {
     restaurants: [],
     hotels: [],
     markets: [],
-    entertainment: [],
-    nature: []  // YENİ KATEGORİ
+    cafes: [],
+    parks: [],
+    museums: [],
+    shopping: [],
+    transport: []
 };
 
 const tabTitles = {
     restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
     hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
     markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length },
-    nature: { icon: "🌳", title: "Nature", count: categorizedPlaces.nature.length }  // YENİ KATEGORİ
+    cafes: { icon: "☕", title: "Cafes", count: categorizedPlaces.cafes.length },
+    parks: { icon: "🌳", title: "Parks", count: categorizedPlaces.parks.length },
+    museums: { icon: "🏛️", title: "Museums", count: categorizedPlaces.museums.length },
+    shopping: { icon: "🛍️", title: "Shopping", count: categorizedPlaces.shopping.length },
+    transport: { icon: "🚆", title: "Transport", count: categorizedPlaces.transport.length }
 };
+
+
+
+function getSimplePlaceCategory(f) {
+    const cats = f.properties.categories || "";
+    
+    if (cats.includes('park') || cats.includes('garden')) return 'parks';
+    if (cats.includes('museum') || cats.includes('gallery')) return 'museums';
+    if (cats.includes('cafe') || cats.includes('coffee')) return 'cafes';
+    if (cats.includes('shop') || cats.includes('mall')) return 'shopping';
+    if (cats.includes('commercial') || cats.includes('market')) return 'markets';
+    if (cats.includes('station') || cats.includes('transport')) return 'transport';
+    if (cats.includes('restaurant') || cats.includes('food')) return 'restaurant';
+    if (cats.includes('accommodation') || cats.includes('hotel')) return 'hotel';
+    
+    return 'restaurant';
+}
+
+
 
         let allPlaces = [];
         let placeIdToIndexMap = {};
@@ -1309,17 +1306,14 @@ const tabTitles = {
             // Kategorilere ayır - BASİT YÖNTEM
 allPlaces.forEach(place => {
     const cat = place.category;
-    if (cat === 'restaurant') {
-        categorizedPlaces.restaurants.push(place);
-    } else if (cat === 'hotel') {
-        categorizedPlaces.hotels.push(place);
-    } else if (cat === 'markets') {
-        categorizedPlaces.markets.push(place);
-    } else if (cat === 'entertainment') {
-        categorizedPlaces.entertainment.push(place);
-    } else if (cat === 'nature') {
-        categorizedPlaces.nature.push(place);  // YENİ KATEGORİ
-    }
+    if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
+    else if (cat === 'hotel') categorizedPlaces.hotels.push(place);
+    else if (cat === 'markets') categorizedPlaces.markets.push(place);
+    else if (cat === 'cafes') categorizedPlaces.cafes.push(place);
+    else if (cat === 'parks') categorizedPlaces.parks.push(place);
+    else if (cat === 'museums') categorizedPlaces.museums.push(place);
+    else if (cat === 'shopping') categorizedPlaces.shopping.push(place);
+    else if (cat === 'transport') categorizedPlaces.transport.push(place);
 });
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
