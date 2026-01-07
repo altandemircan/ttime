@@ -1263,23 +1263,16 @@ let categorizedPlaces = {
     restaurants: [],
     hotels: [],
     markets: [],
-    entertainment: [],  // cafes yerine entertainment
-    parks: [],
-    museums: [],
-    shopping: [],
-    transport: []
+    entertainment: []
 };
 
 const tabTitles = {
     restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
     hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
     markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length },  // cafes yerine
-    parks: { icon: "🌳", title: "Parks", count: categorizedPlaces.parks.length },
-    museums: { icon: "🏛️", title: "Museums", count: categorizedPlaces.museums.length },
-    shopping: { icon: "🛍️", title: "Shopping", count: categorizedPlaces.shopping.length },
-    transport: { icon: "🚆", title: "Transport", count: categorizedPlaces.transport.length }
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
 };
+
 
 
 
@@ -1312,11 +1305,7 @@ allPlaces.forEach(place => {
     if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
     else if (cat === 'hotel') categorizedPlaces.hotels.push(place);
     else if (cat === 'markets') categorizedPlaces.markets.push(place);
-    else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);  // cafes yerine
-    else if (cat === 'parks') categorizedPlaces.parks.push(place);
-    else if (cat === 'museums') categorizedPlaces.museums.push(place);
-    else if (cat === 'shopping') categorizedPlaces.shopping.push(place);
-    else if (cat === 'transport') categorizedPlaces.transport.push(place);
+    else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);
 });
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
@@ -1616,42 +1605,22 @@ allPlaces.slice(0, 5).forEach((p, i) => {
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
-    // 1. ÖNCE MARKETS (çalışıyor)
-    if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
+    // 1. MARKETS
+    if (cats.includes('commercial') || cats.includes('market')) {
         return 'markets';
     }
     
-    // 2. ENTERTAINMENT (çalışıyor)
+    // 2. ENTERTAINMENT
     if (cats.includes('entertainment') || cats.includes('leisure')) {
         return 'entertainment';
     }
     
-    // 3. PARKS - leisure.park olarak geliyor
-    if (cats.includes('leisure.park') || cats.includes('park')) {
-        return 'parks';
-    }
-    
-    // 4. MUSEUMS - entertainment.museum olarak geliyor
-    if (cats.includes('museum') || cats.includes('gallery') || cats.includes('entertainment.museum')) {
-        return 'museums';
-    }
-    
-    // 5. SHOPPING - commercial.clothing gibi
-    if (cats.includes('commercial.clothing') || cats.includes('commercial.shopping') || cats.includes('mall')) {
-        return 'shopping';
-    }
-    
-    // 6. TRANSPORT
-    if (cats.includes('transport') || cats.includes('station') || cats.includes('bus') || cats.includes('railway')) {
-        return 'transport';
-    }
-    
-    // 7. RESTAURANT
-    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food') || cats.includes('catering')) {
+    // 3. RESTAURANT
+    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
         return 'restaurant';
     }
     
-    // 8. HOTEL
+    // 4. HOTEL
     if (cats.includes('accommodation') || cats.includes('hotel')) {
         return 'hotel';
     }
