@@ -1187,15 +1187,18 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
     // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
 const categoryGroups = {
-    "restaurants": "catering.restaurant",
+    "restaurants": "catering.restaurant,catering.cafe,catering.fast_food",
     "hotels": "accommodation",
-    "shops": "commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall",
-    "entertainment": "leisure,entertainment"
+    "markets": "commercial.supermarket,commercial.convenience",
+    "entertainment": "leisure,entertainment",
+    "parks": "leisure.park",
+    "museums": "entertainment.museum,entertainment.culture",
+    "shopping": "commercial.clothing,commercial.shopping_mall",
+    "transport": "transport,railway,bus"
 };
 
-const allCategories = "catering.restaurant,accommodation,commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall,leisure,entertainment";
-    const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
-
+// Tümünü birleştir
+const allCategories = Object.values(categoryGroups).join(',');
     const loadingContent = `
         <div class="nearby-loading-message">
             <div class="nearby-loading-spinner"></div>
