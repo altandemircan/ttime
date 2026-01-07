@@ -456,32 +456,27 @@ function attachClickNearbySearch(map, day, options = {}) {
 }
 
 
-// BASİT VE ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
-// GÜNCEL getSimplePlaceCategory FONKSİYONU (kısa ve basit)
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
-    // shops kontrolü - BASİT VE ETKİLİ
-    if (cats.includes('commercial')) {
-        return 'shops';
+    if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
+        return 'markets';
     }
     
-    // entertainment  
     if (cats.includes('entertainment') || cats.includes('leisure')) {
         return 'entertainment';
     }
     
-    // restaurant
     if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
         return 'restaurant';
     }
     
-    // hotel
     if (cats.includes('accommodation') || cats.includes('hotel')) {
         return 'hotel';
     }
     
     return 'restaurant';
+}eturn 'restaurant';
 }
 
 
@@ -1271,9 +1266,18 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
 let categorizedPlaces = {
     restaurants: [],
     hotels: [],
-    shops: [],
+    markets: [],  // shops yerine markets
     entertainment: []
 };
+
+const tabTitles = {
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+};
+
+
         let allPlaces = [];
         let placeIdToIndexMap = {};
         
@@ -1360,13 +1364,7 @@ allPlaces.slice(0, 5).forEach((p, i) => {
             </div>
         `;
 
-        // Tab başlıkları ve içerikleri oluştur
-      const tabTitles = {
-    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    shops: { icon: "🛍️", title: "Shops", count: categorizedPlaces.shops.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-};
+
 
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
