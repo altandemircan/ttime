@@ -271,11 +271,18 @@ router.post('/clicked-ai', async (req, res) => {
     aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
     try {
         const result = await processingPromise;
+        
         aiCache[cacheKey] = { status: 'done', data: result };
         saveCacheToDisk();
-        res.json(result);
-    } catch (e) { res.status(500).json({ error: "AI Error" }); }
-});
+
+        // Yanıtı garantiye alıyoruz
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        return res.json(result); // result burada { description: "..." } olmalı
+
+    } catch (e) {
+        console.error("Backend Error:", e);
+        res.status(500).json({ error: "AI Error" });
+    }
 
 
 router.get('/chat-stream', async (req, res) => {
