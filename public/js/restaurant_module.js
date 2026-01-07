@@ -1596,23 +1596,45 @@ allPlaces.slice(0, 5).forEach((p, i) => {
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
-    // ÖNCE markets
+    // 1. ÖNCE MARKETS (çalışıyor)
     if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
         return 'markets';
     }
     
-    // SONRA entertainment
+    // 2. ENTERTAINMENT (çalışıyor)
     if (cats.includes('entertainment') || cats.includes('leisure')) {
         return 'entertainment';
     }
     
-    // diğerleri...
-    if (cats.includes('park') || cats.includes('garden')) return 'parks';
-    if (cats.includes('museum') || cats.includes('gallery')) return 'museums';
-    if (cats.includes('shop') || cats.includes('mall')) return 'shopping';
-    if (cats.includes('station') || cats.includes('transport')) return 'transport';
-    if (cats.includes('restaurant') || cats.includes('food')) return 'restaurant';
-    if (cats.includes('accommodation') || cats.includes('hotel')) return 'hotel';
+    // 3. PARKS - leisure.park olarak geliyor
+    if (cats.includes('leisure.park') || cats.includes('park')) {
+        return 'parks';
+    }
+    
+    // 4. MUSEUMS - entertainment.museum olarak geliyor
+    if (cats.includes('museum') || cats.includes('gallery') || cats.includes('entertainment.museum')) {
+        return 'museums';
+    }
+    
+    // 5. SHOPPING - commercial.clothing gibi
+    if (cats.includes('commercial.clothing') || cats.includes('commercial.shopping') || cats.includes('mall')) {
+        return 'shopping';
+    }
+    
+    // 6. TRANSPORT
+    if (cats.includes('transport') || cats.includes('station') || cats.includes('bus') || cats.includes('railway')) {
+        return 'transport';
+    }
+    
+    // 7. RESTAURANT
+    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food') || cats.includes('catering')) {
+        return 'restaurant';
+    }
+    
+    // 8. HOTEL
+    if (cats.includes('accommodation') || cats.includes('hotel')) {
+        return 'hotel';
+    }
     
     return 'restaurant';
 }
