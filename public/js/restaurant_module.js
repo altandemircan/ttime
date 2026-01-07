@@ -1467,7 +1467,7 @@ async function fetchClickedPointAI(pointName, city) {
     try {
         // Not: URL projenin yapısına göre '/api/clicked-ai' veya '/proxy/clicked-ai' olabilir.
         // marker_ai_information.js '/proxy/' kullanıyorsa burayı da öyle yapın.
-        const response = await fetch('/proxy/clicked-ai', { 
+        const response = await fetch('/llm-proxy/clicked-ai', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
