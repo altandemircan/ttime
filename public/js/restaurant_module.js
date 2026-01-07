@@ -1557,8 +1557,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 1000) { // 100
             historic: []
         };
 
-       // Basit versiyona geçelim:
-if (data.features && data.features.length > 0) {
+        if (data.features && data.features.length > 0) {
     allResults = data.features
         .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
         .map(f => ({ 
