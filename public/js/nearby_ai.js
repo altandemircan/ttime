@@ -862,6 +862,270 @@ alert("An error occurred during the search.");
     }
 }
 
+
+
+// restaurant_module.js dosyasının sonuna ekleyin veya mevcut kodun içine yerleştirin
+
+// ============================================
+// 1. HOTELS FONKSİYONLARI
+// ============================================
+
+async function showNearbyHotels(lat, lng, map, day) {
+    const isMapLibre = !!map.addSource;
+    
+    if (map.__hotelLayers) {
+        map.__hotelLayers.forEach(l => l.remove());
+        map.__hotelLayers = [];
+    }
+    
+    if (window._hotel3DLayers) {
+        window._hotel3DLayers.forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+            if (map.getSource(id)) map.removeSource(id);
+        });
+        window._hotel3DLayers = [];
+    }
+    
+    if (window._hotel3DMarkers) {
+        window._hotel3DMarkers.forEach(m => m.remove());
+        window._hotel3DMarkers = [];
+    }
+    
+    const url = `/api/geoapify/places?categories=accommodation&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+    
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        
+        if (!data.features || data.features.length === 0) {
+            alert("No hotels found nearby.");
+            return;
+        }
+        
+        data.features.forEach((f, idx) => {
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            const imgId = `hotel-img-${idx}-${Date.now()}`;
+            
+            let popupContent = getFastHotelPopupHTML(f, imgId, day);
+            
+            if (isMapLibre) {
+                window._hotel3DLayers = window._hotel3DLayers || [];
+                window._hotel3DMarkers = window._hotel3DMarkers || [];
+                
+                const sourceId = `hotel-line-src-${idx}`;
+                const layerId = `hotel-line-layer-${idx}`;
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+                        }
+                    });
+                    map.addLayer({
+                        id: layerId,
+                        type: 'line',
+                        source: sourceId,
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: { 'line-color': '#1976d2', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
+                    });
+                    window._hotel3DLayers.push(layerId);
+                    window._hotel3DLayers.push(sourceId);
+                }
+                
+                const el = document.createElement('div');
+                el.innerHTML = getBlueHotelMarkerHtml();
+                el.className = 'custom-3d-marker-element';
+                el.style.cursor = 'pointer';
+                el.style.zIndex = '2000';
+                
+                const popup = new maplibregl.Popup({ 
+                    offset: 25, 
+                    maxWidth: '360px',
+                    closeButton: true,
+                    className: 'tt-unified-popup'
+                }).setHTML(popupContent);
+                
+                popup.on('open', () => {
+                    handleHotelPopupImageLoading(f, imgId);
+                });
+                
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([pLng, pLat])
+                    .setPopup(popup)
+                    .addTo(map);
+                
+                el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
+                window._hotel3DMarkers.push(marker);
+            } else {
+                map.__hotelLayers = map.__hotelLayers || [];
+                
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+                    color: "#1976d2", weight: 4, opacity: 0.95, dashArray: "8,8" 
+                }).addTo(map);
+                map.__hotelLayers.push(line);
+                
+                const marker = L.marker([pLat, pLng], {
+                    icon: L.divIcon({ 
+                        html: getBlueHotelMarkerHtml(), 
+                        className: "", 
+                        iconSize: [32,32], 
+                        iconAnchor: [16,16] 
+                    })
+                }).addTo(map);
+                map.__hotelLayers.push(marker);
+                
+                marker.bindPopup(popupContent, { maxWidth: 341 });
+                marker.on("popupopen", function() { 
+                    handleHotelPopupImageLoading(f, imgId);
+                });
+            }
+        });
+        
+    } catch (err) {
+        console.error(err);
+        alert("Error fetching hotels.");
+    }
+}
+
+function getFastHotelPopupHTML(f, imgId, day) {
+    const name = f.properties.name || "Hotel";
+    const address = f.properties.formatted || "";
+    const lat = f.properties.lat;
+    const lon = f.properties.lon;
+    
+    const safeName = name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    const safeAddress = address.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    
+    return `
+      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 0px;">
+        <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
+          <img id="${imgId}" class="hidden-img" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+          <div class="img-loading-spinner" id="${imgId}-spin"></div>
+        </div>
+        <div class="point-info" style="flex: 1; min-width: 0;">
+          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
+          </div>
+          <div class="point-address" style="display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 11px;
+            color: #666;
+            line-height: 1.2;
+            font-weight: 400;
+            text-align: left;">${safeAddress}</div>
+        </div>
+        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <button class="add-point-to-cart-btn"
+            onclick="window.addHotelToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon})"
+            style="width: 32px; height: 32px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            +
+          </button>
+        </div>
+      </div>
+    `;
+}
+
+function getBlueHotelMarkerHtml() {
+    return `
+      <div class="custom-marker-outer" style="
+        position:relative;
+        width:32px;height:32px;
+        background:#1976d2;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 2px 8px #888;
+        border:2px solid #fff;
+      ">
+        <img src="https://www.svgrepo.com/show/327200/hotel.svg"
+             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="Hotel">
+      </div>
+    `;
+}
+
+window.addHotelToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    window.currentDay = parseInt(day);
+    
+    const img = document.getElementById(imgId);
+    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+        ? img.src
+        : '/img/hotel_icon.svg';
+        
+    addToCart(
+        name,
+        imgSrc,
+        day,
+        "Hotel",
+        address,
+        null, null, null, null,
+        { lat: Number(lat), lng: Number(lon) },
+        ""
+    );
+    
+    if (window._maplibre3DInstance) {
+        if (window._hotel3DLayers) {
+            window._hotel3DLayers.forEach(id => {
+                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+            });
+            window._hotel3DLayers = [];
+        }
+        if (window._hotel3DMarkers) {
+            window._hotel3DMarkers.forEach(m => m.remove());
+            window._hotel3DMarkers = [];
+        }
+    }
+    
+    const allMaps = [];
+    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+    
+    allMaps.forEach(map => {
+        if (map && map.__hotelLayers) {
+            map.__hotelLayers.forEach(l => {
+               try { l.remove(); } catch(e) {}
+            });
+            map.__hotelLayers = [];
+        }
+    });
+    
+    alert(`${name} added to your trip!`);
+};
+
+function handleHotelPopupImageLoading(f, imgId) {
+    getImageForPlace(f.properties.name, "hotel", window.selectedCity || "")
+        .then(src => {
+            const img = document.getElementById(imgId);
+            const spin = document.getElementById(imgId + "-spin");
+            if (img && src) {
+                img.src = src;
+                img.classList.remove("hidden-img");
+                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
+            }
+            if (img) {
+                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
+                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
+            } else if (spin) {
+                spin.style.display = "none";
+            }
+        })
+        .catch(() => {
+            const spin = document.getElementById(imgId + "-spin");
+            const img = document.getElementById(imgId);
+            if (spin) spin.style.display = "none";
+            if (img) img.classList.add("hidden-img");
+        });
+}
+
+// ============================================
+// 2. MARKETS FONKSİYONLARI
+// ============================================
+
 async function showNearbyMarkets(lat, lng, map, day) {
     const isMapLibre = !!map.addSource;
     
@@ -940,7 +1204,7 @@ async function showNearbyMarkets(lat, lng, map, day) {
                 }).setHTML(popupContent);
                 
                 popup.on('open', () => {
-                    if (typeof handleMarketPopupImageLoading === 'function') handleMarketPopupImageLoading(f, imgId);
+                    handleMarketPopupImageLoading(f, imgId);
                 });
                 
                 const marker = new maplibregl.Marker({ element: el })
@@ -970,7 +1234,7 @@ async function showNearbyMarkets(lat, lng, map, day) {
                 
                 marker.bindPopup(popupContent, { maxWidth: 341 });
                 marker.on("popupopen", function() { 
-                    if (typeof handleMarketPopupImageLoading === 'function') handleMarketPopupImageLoading(f, imgId); 
+                    handleMarketPopupImageLoading(f, imgId);
                 });
             }
         });
@@ -1089,6 +1353,35 @@ window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) 
     alert(`${name} added to your trip!`);
 };
 
+function handleMarketPopupImageLoading(f, imgId) {
+    getImageForPlace(f.properties.name, "market", window.selectedCity || "")
+        .then(src => {
+            const img = document.getElementById(imgId);
+            const spin = document.getElementById(imgId + "-spin");
+            if (img && src) {
+                img.src = src;
+                img.classList.remove("hidden-img");
+                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
+            }
+            if (img) {
+                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
+                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
+            } else if (spin) {
+                spin.style.display = "none";
+            }
+        })
+        .catch(() => {
+            const spin = document.getElementById(imgId + "-spin");
+            const img = document.getElementById(imgId);
+            if (spin) spin.style.display = "none";
+            if (img) img.classList.add("hidden-img");
+        });
+}
+
+// ============================================
+// 3. ENTERTAINMENT FONKSİYONLARI
+// ============================================
+
 async function showNearbyEntertainment(lat, lng, map, day) {
     const isMapLibre = !!map.addSource;
     
@@ -1167,7 +1460,7 @@ async function showNearbyEntertainment(lat, lng, map, day) {
                 }).setHTML(popupContent);
                 
                 popup.on('open', () => {
-                    if (typeof handleEntertainmentPopupImageLoading === 'function') handleEntertainmentPopupImageLoading(f, imgId);
+                    handleEntertainmentPopupImageLoading(f, imgId);
                 });
                 
                 const marker = new maplibregl.Marker({ element: el })
@@ -1197,7 +1490,7 @@ async function showNearbyEntertainment(lat, lng, map, day) {
                 
                 marker.bindPopup(popupContent, { maxWidth: 341 });
                 marker.on("popupopen", function() { 
-                    if (typeof handleEntertainmentPopupImageLoading === 'function') handleEntertainmentPopupImageLoading(f, imgId); 
+                    handleEntertainmentPopupImageLoading(f, imgId);
                 });
             }
         });
@@ -1316,31 +1609,6 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
     alert(`${name} added to your trip!`);
 };
 
-function handleMarketPopupImageLoading(f, imgId) {
-    getImageForPlace(f.properties.name, "market", window.selectedCity || "")
-        .then(src => {
-            const img = document.getElementById(imgId);
-            const spin = document.getElementById(imgId + "-spin");
-            if (img && src) {
-                img.src = src;
-                img.classList.remove("hidden-img");
-                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
-            }
-            if (img) {
-                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
-                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
-            } else if (spin) {
-                spin.style.display = "none";
-            }
-        })
-        .catch(() => {
-            const spin = document.getElementById(imgId + "-spin");
-            const img = document.getElementById(imgId);
-            if (spin) spin.style.display = "none";
-            if (img) img.classList.add("hidden-img");
-        });
-}
-
 function handleEntertainmentPopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "entertainment", window.selectedCity || "")
         .then(src => {
@@ -1365,6 +1633,8 @@ function handleEntertainmentPopupImageLoading(f, imgId) {
             if (img) img.classList.add("hidden-img");
         });
 }
+
+
 
 // Shows nearest restaurants/cafes/bars when the route polyline is clicked
 function addRoutePolylineWithClick(map, coords) {
