@@ -598,7 +598,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                 <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 30px; height: 30px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
             </div>
 
-            <div id="ai-point-description" style="width: 100%; margin-top: 4px; font-size: 11px; color: #444; font-style: italic; border-top: 1px dashed #ddd; padding-top: 8px; line-height: 1.4;">
+            <div id="ai-point-description" style="width: 100%; margin-top: 4px; font-size: 11px; color: #444; border-top: 1px dashed #ddd; padding-top: 8px; line-height: 1.4;">
                 <span class="ai-loading" style="color: #999;">✨ AI is thinking...</span>
             </div>
             
@@ -1499,7 +1499,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
                     ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
                     <div style="padding: 10px 12px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 8px;">
                         <span style="font-size: 14px;">✨</span>
-                        <div style="font-style: italic; color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
+                        <div style=" color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
                     </div>` : ''}
                 </div>
             `;
