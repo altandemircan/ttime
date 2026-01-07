@@ -282,6 +282,8 @@ router.post('/clicked-ai', async (req, res) => {
     } catch (e) {
         console.error("Backend Error:", e);
         res.status(500).json({ error: "AI Error" });
+    }
+});
 
 
 router.get('/chat-stream', async (req, res) => {
