@@ -1455,37 +1455,29 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 }
 
 
-async function fetchClickedPointAI(pointName, city) {
+async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
     const descDiv = document.getElementById('ai-point-description');
-    if (!descDiv) return;
-
-    // İstek parametrelerini temizleyelim (Derebucak, Konya gibi)
-    console.log("AI Request started for:", pointName, city);
-
+    
     try {
-        // Not: URL projenin yapısına göre '/api/clicked-ai' veya '/proxy/clicked-ai' olabilir.
-        // marker_ai_information.js '/proxy/' kullanıyorsa burayı da öyle yapın.
-        const response = await fetch('/llm-proxy/clicked-ai', { 
+        const response = await fetch('/llm-proxy/clicked-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                point: pointName, 
-                city: city 
-            })
+            body: JSON.stringify({ point: pointName, lat, lng, city, facts })
         });
-
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
+        
         const data = await response.json();
-
-        if (data && data.description) {
-            // Başarıyla geldiyse içeriği bas
-            descDiv.innerHTML = `✨ ${data.description}`;
-        } else {
-            descDiv.innerHTML = "✨ No specific info found for this spot.";
-        }
-    } catch (err) {
-        console.error("Clicked AI Fetch Error:", err);
-        descDiv.innerHTML = "✨ Info unavailable at the moment.";
+        
+        // 1. AI Açıklamasını Yazdır
+        descDiv.innerHTML = `
+            <div style="margin-bottom: 8px;">${data.description}</div>
+            ${data.tip ? `<div style="color: #1976d2; font-weight: 500;">💡 Tip: ${data.tip}</div>` : ''}
+            
+            <div class="nearby-grid" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+                ${data.nearby.historic.map(h => `<button class="nearby-btn">🏛️ ${h.name}</button>`).join('')}
+                ${data.nearby.nature.map(n => `<button class="nearby-btn">🌳 ${n.name}</button>`).join('')}
+            </div>
+        `;
+    } catch (e) {
+        descDiv.innerHTML = "AI could not load information.";
     }
 }
