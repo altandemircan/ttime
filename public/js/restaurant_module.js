@@ -1229,6 +1229,19 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
         
         const data = await resp.json();
 
+        // === BU SATIRLARI EKLE (DEBUG İÇİN) ===
+if (data.features && data.features.length > 0) {
+    console.log('API Kategorileri Örneği (ilk 3 yer):');
+    data.features.slice(0, 3).forEach((f, i) => {
+        console.log(`  ${i}: ${f.properties.name}`);
+        console.log(`     Kategoriler: ${f.properties.categories}`);
+        if (f.properties.categories) {
+            console.log(`     Listesi: ${f.properties.categories.split(',')}`);
+        }
+    });
+}
+// === BURAYA KADAR ===
+
         // DEBUG: Gelen datayı konsola yazdır
         console.log('Geoapify Response:', {
             totalFeatures: data.features?.length || 0,
