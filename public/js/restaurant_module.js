@@ -694,15 +694,15 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     }
 
     // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
-   const categoryGroups = {
+    const categoryGroups = {
     "restaurants": "catering.restaurant",
     "hotels": "accommodation",
-    "cafes": "catering.cafe.tea,catering.cafe.dessert,catering.cafe.cake,catering.cafe.ice_cream,catering.bakery",
+    "cafes": "catering.cafe.coffee_shop,catering.cafe.coffee,catering.cafe",
     "entertainment": "leisure,entertainment"
 };
 
-// Daha güvenli kategori listesi - sadece ana kategoriler
-const allCategories = "catering.restaurant,accommodation,catering.cafe,catering.bakery,leisure,entertainment";
+// Daha spesifik kategori listesi
+const allCategories = "catering.restaurant,accommodation,catering.cafe,leisure,entertainment";
     const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
 
     const loadingContent = `
@@ -830,11 +830,12 @@ const allCategories = "catering.restaurant,accommodation,catering.cafe,catering.
 
         // Tab başlıkları ve içerikleri oluştur
         const tabTitles = {
-    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    cafes: { icon: "☕", title: "Coffee & Dessert", count: categorizedPlaces.cafes.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-};
+            restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+            hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+            cafes: { icon: "☕", title: "Cafes", count: categorizedPlaces.cafes.length },
+            entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+        };
+
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
         let maxCount = 0;
