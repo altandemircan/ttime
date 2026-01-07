@@ -1268,14 +1268,6 @@ let categorizedPlaces = {
 
 
 
-// === BU SATIRLARI KATEGORİLERE AYIRDIKTAN SONRA EKLE ===
-const tabTitles = {
-    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-};
-// === BURAYA KADAR ===
 
 // DEBUG: Kategori sayıları
 console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
@@ -1313,6 +1305,14 @@ allPlaces.forEach(place => {
     else if (cat === 'markets') categorizedPlaces.markets.push(place);
     else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);
 });
+
+// === BURAYA EKLE (kategorilere ayırdıktan SONRA) ===
+const tabTitles = {
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+};
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
 
