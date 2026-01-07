@@ -694,14 +694,14 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     }
 
     // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
-   const categoryGroups = {
+const categoryGroups = {
     "restaurants": "catering.restaurant",
     "hotels": "accommodation",
-    "cafes": "catering", // GENEL catering kategorisi - kesin çalışır
+    "shops": "commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall",
     "entertainment": "leisure,entertainment"
 };
 
-const allCategories = "catering.restaurant,accommodation,catering,leisure,entertainment";
+const allCategories = "catering.restaurant,accommodation,commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall,leisure,entertainment";
     const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
 
     const loadingContent = `
@@ -748,12 +748,11 @@ const allCategories = "catering.restaurant,accommodation,catering,leisure,entert
 
         // Kategorilere göre yerleri grupla
         let categorizedPlaces = {
-            restaurants: [],
-            hotels: [],
-            cafes: [],
-            entertainment: []
-        };
-
+    restaurants: [],
+    hotels: [],
+    shops: [],
+    entertainment: []
+};
         let allPlaces = [];
         let placeIdToIndexMap = {};
         
@@ -828,12 +827,12 @@ const allCategories = "catering.restaurant,accommodation,catering,leisure,entert
         `;
 
         // Tab başlıkları ve içerikleri oluştur
-        const tabTitles = {
-            restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-            hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-            cafes: { icon: "☕", title: "Cafes", count: categorizedPlaces.cafes.length },
-            entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-        };
+      const tabTitles = {
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    shops: { icon: "🛍️", title: "Shops", count: categorizedPlaces.shops.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+};
 
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
@@ -1099,15 +1098,13 @@ function getSimplePlaceCategory(feature) {
     }
     
     // GENİŞLETİLMİŞ CAFE KONTROLÜ
-    if (categories.includes('cafe') || 
-        categories.includes('coffee') || 
-        categories.includes('coffee_shop') ||
-        categories.includes('bakery') ||
-        categories.includes('dessert') ||
-        categories.includes('ice_cream') ||
-        categories.includes('tea')) {
-        return 'cafe';
-    }
+  if (categories.includes('supermarket') || 
+    categories.includes('convenience') || 
+    categories.includes('clothing') ||
+    categories.includes('shopping_mall') ||
+    categories.includes('commercial')) {
+    return 'shops';
+}
     
     if (categories.includes('park') || categories.includes('cinema') || 
         categories.includes('museum') || categories.includes('entertainment') ||
