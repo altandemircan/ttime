@@ -697,12 +697,12 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     const categoryGroups = {
         "restaurants": "catering.restaurant",
         "hotels": "accommodation",
-        "cafes": "catering.cafe",
+        "cafes": "catering.coffee_shop",
         "entertainment": "leisure,entertainment"
     };
     
     // Daha basit kategori listesi
-    const allCategories = "catering.restaurant,accommodation,catering.cafe,leisure,entertainment";
+    const allCategories = "catering.restaurant,accommodation,catering.coffee_shop,leisure,entertainment";
     const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
 
     const loadingContent = `
