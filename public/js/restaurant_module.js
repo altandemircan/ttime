@@ -1176,6 +1176,110 @@ alert("An error occurred while fetching restaurants. Please try again.");
     });
 }
 
+function getSimplePlaceCategory(f) {
+    const cats = f.properties.categories || "";
+    
+    // 1. MARKETS
+    if (cats.includes('commercial') || cats.includes('market')) {
+        return 'markets';
+    }
+    
+    // 2. ENTERTAINMENT
+    if (cats.includes('entertainment') || cats.includes('leisure')) {
+        return 'entertainment';
+    }
+    
+    // 3. RESTAURANT
+    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
+        return 'restaurant';
+    }
+    
+    // 4. HOTEL
+    if (cats.includes('accommodation') || cats.includes('hotel')) {
+        return 'hotel';
+    }
+    
+    return 'restaurant';
+}
+
+async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
+  const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
+  if (!geoCategory) {
+    return [];
+  }
+  const coords = await getCityCoordinates(city);
+  if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
+    return [];
+  }
+  const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
+  let resp, data;
+  try {
+    resp = await fetch(url);
+    data = await resp.json();
+  } catch (e) {
+    return [];
+  }
+ if (data.features && data.features.length > 0) {
+    const filtered = data.features.filter(f =>
+      !!f.properties.name && f.properties.name.trim().length > 2
+    );
+    const result = filtered.map(f => {
+      const props = f.properties || {};
+      let lat = Number(
+        props.lat ??
+        props.latitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[1])
+      );
+      let lon = Number(
+        props.lon ??
+        props.longitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
+      );
+      if (!Number.isFinite(lat)) lat = null;
+      if (!Number.isFinite(lon)) lon = null;
+      return {
+        name: props.name,
+        name_en: props.name_en,
+        name_latin: props.name_latin,
+        address: props.formatted || "",
+        lat,
+        lon,
+        location: (lat !== null && lon !== null) ? { lat, lng: lon } : null,
+        website: props.website || '',
+        opening_hours: props.opening_hours || '',
+        categories: props.categories || [],
+        city: city,
+        properties: props
+      };
+    });
+
+       console.log('getPlacesForCategory:', {
+      city,
+      category,
+      radius,
+      limit,
+      places: result.map(p => ({
+        name: p.name,
+        lat: p.lat,
+        lon: p.lon,
+        address: p.address,
+        categories: p.categories
+      }))
+    });
+
+    // ---- BURAYA EKLE ----
+    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
+    const sorted = result.sort((a, b) => {
+      const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
+      const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
+      return da - db;
+    });
+    return sorted;
+
+  }
+  return [];
+}
+
 
 
 
@@ -1328,6 +1432,14 @@ allPlaces.slice(0, 5).forEach((p, i) => {
                 categorizedPlaces[key] = categorizedPlaces[key].slice(0, 5);
             });
         }
+
+          // === BU SATIRI BURAYA EKLE ===
+        const tabTitles = {
+            restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+            hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+            markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
+            entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+        };
 
         // Tıkalanan nokta bölümü
         const addPointSection = `
@@ -1608,114 +1720,10 @@ allPlaces.slice(0, 5).forEach((p, i) => {
     }
 }
 
-function getSimplePlaceCategory(f) {
-    const cats = f.properties.categories || "";
-    
-    // 1. MARKETS
-    if (cats.includes('commercial') || cats.includes('market')) {
-        return 'markets';
-    }
-    
-    // 2. ENTERTAINMENT
-    if (cats.includes('entertainment') || cats.includes('leisure')) {
-        return 'entertainment';
-    }
-    
-    // 3. RESTAURANT
-    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
-        return 'restaurant';
-    }
-    
-    // 4. HOTEL
-    if (cats.includes('accommodation') || cats.includes('hotel')) {
-        return 'hotel';
-    }
-    
-    return 'restaurant';
-}
 
-async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
-  const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
-  if (!geoCategory) {
-    return [];
-  }
-  const coords = await getCityCoordinates(city);
-  if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
-    return [];
-  }
-  const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
-  let resp, data;
-  try {
-    resp = await fetch(url);
-    data = await resp.json();
-  } catch (e) {
-    return [];
-  }
- if (data.features && data.features.length > 0) {
-    const filtered = data.features.filter(f =>
-      !!f.properties.name && f.properties.name.trim().length > 2
-    );
-    const result = filtered.map(f => {
-      const props = f.properties || {};
-      let lat = Number(
-        props.lat ??
-        props.latitude ??
-        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[1])
-      );
-      let lon = Number(
-        props.lon ??
-        props.longitude ??
-        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
-      );
-      if (!Number.isFinite(lat)) lat = null;
-      if (!Number.isFinite(lon)) lon = null;
-      return {
-        name: props.name,
-        name_en: props.name_en,
-        name_latin: props.name_latin,
-        address: props.formatted || "",
-        lat,
-        lon,
-        location: (lat !== null && lon !== null) ? { lat, lng: lon } : null,
-        website: props.website || '',
-        opening_hours: props.opening_hours || '',
-        categories: props.categories || [],
-        city: city,
-        properties: props
-      };
-    });
-
-       console.log('getPlacesForCategory:', {
-      city,
-      category,
-      radius,
-      limit,
-      places: result.map(p => ({
-        name: p.name,
-        lat: p.lat,
-        lon: p.lon,
-        address: p.address,
-        categories: p.categories
-      }))
-    });
-
-    // ---- BURAYA EKLE ----
-    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
-    const sorted = result.sort((a, b) => {
-      const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
-      const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
-      return da - db;
-    });
-    return sorted;
-
-  }
-  return [];
-}
 
 let aiAbortController = null;
 let aiDebounceTimeout = null;
-
-
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
