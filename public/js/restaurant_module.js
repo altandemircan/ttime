@@ -912,47 +912,47 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                         pl.properties.name === p.name
                     );
                     
-                    tabContentsHtml += `
-                        <div class="category-place-item" 
-                             style="display: flex; align-items: center; gap: 12px; padding: 10px; 
-                                    background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
-                                    border: 1px solid #eee;">
-                            <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
-                                <img src="${photo}" 
-                                     alt="${name}"
-                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                                <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, '${aiIconId}')" 
-                                     style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                                    <span style="font-size: 10px; color: white;">✨</span>
-                                </div>
-                            </div>
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600; font-size: 13px; color: #333; 
-                                            margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-                                    ${name}
-                                </div>
-                                <div style="font-size: 11px; color: #777; overflow: hidden; 
-                                            text-overflow: ellipsis; white-space: nowrap;">
-                                    ${p.formatted || ""}
-                                </div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; align-items: center; 
-                                        gap: 4px; flex-shrink: 0;">
-                                <div style="font-size: 10px; color: #999; white-space: nowrap;">
-                                    ${distStr}
-                                </div>
-                                <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
-                                        style="width: 30px; height: 30px; background: #fff; 
-                                               border: 1px solid #ddd; border-radius: 50%; 
-                                               cursor: pointer; color: #1976d2; font-weight: bold; 
-                                               font-size: 16px; display: flex; align-items: center; 
-                                               justify-content: center;">
-                                    +
-                                </button>
-                            </div>
-                            <div id="${aiIconId}" style="width: 100%; display: none; margin-top: 4px;"></div>
-                        </div>
-                    `;
+                    // Tab içeriklerindeki AI ikonu için (showNearbyPlacesPopup fonksiyonu içinde)
+tabContentsHtml += `
+    <div class="category-place-item" 
+         style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
+                border: 1px solid #eee;">
+        <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+            <img src="${photo}" 
+                 alt="${name}"
+                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
+                 style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+                <span style="font-size: 10px; color: white;">✨</span>
+            </div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 600; font-size: 13px; color: #333; 
+                        margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+                ${name}
+            </div>
+            <div style="font-size: 11px; color: #777; overflow: hidden; 
+                        text-overflow: ellipsis; white-space: nowrap;">
+                ${p.formatted || ""}
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; 
+                    gap: 4px; flex-shrink: 0;">
+            <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                ${distStr}
+            </div>
+            <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
+                    style="width: 30px; height: 30px; background: #fff; 
+                           border: 1px solid #ddd; border-radius: 50%; 
+                           cursor: pointer; color: #1976d2; font-weight: bold; 
+                           font-size: 16px; display: flex; align-items: center; 
+                           justify-content: center;">
+                +
+            </button>
+        </div>
+    </div>
+`;
                 });
             }
             
@@ -1944,12 +1944,22 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
     
+    // Eğer targetDivId ai-icon- ile başlıyorsa (alt itemlardaki AI ikonu)
+    // O zaman bilgiyi üstteki ai-point-description div'ine gönder
+    const isIconClick = targetDivId.startsWith('ai-icon-');
+    const mainAiDiv = document.getElementById('ai-point-description');
+    
+    // Eğer alt itemdaki AI ikonuna tıklandıysa, üstteki div'i kullan
+    const targetElement = isIconClick ? mainAiDiv : descDiv;
+    
+    if (!targetElement) return;
+    
     // Çoklu istek koruması geliştirildi
-    if (descDiv.dataset.loading === 'true' && !descDiv.querySelector('.ai-spinner')) {
+    if (targetElement.dataset.loading === 'true' && !targetElement.querySelector('.ai-spinner')) {
         return;
     }
     
-    if (targetDivId === 'ai-point-description') {
+    if (targetDivId === 'ai-point-description' || isIconClick) {
         clearTimeout(aiDebounceTimeout);
         if (aiAbortController) aiAbortController.abort();
         aiAbortController = new AbortController();
@@ -1967,12 +1977,12 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     };
     
     // Loading state
-    descDiv.dataset.loading = 'true';
-    descDiv.style.display = 'block';
-    descDiv.innerHTML = `
+    targetElement.dataset.loading = 'true';
+    targetElement.style.display = 'block';
+    targetElement.innerHTML = `
         <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
             <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-            <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666;">Analyzing location...</div>
+            <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666;">Analyzing ${pointName}...</div>
         </div>
         <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     `;
@@ -1984,7 +1994,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             
             const response = await fetch('/llm-proxy/clicked-ai', {
                 method: 'POST',
-                signal: (targetDivId === 'ai-point-description') ? aiAbortController.signal : null,
+                signal: (targetDivId === 'ai-point-description' || isIconClick) ? aiAbortController.signal : null,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     point: pointName, 
@@ -1998,7 +2008,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             const data = await response.json();
             
             // Başarılı yanıt işleme
-            descDiv.dataset.loading = 'false';
+            targetElement.dataset.loading = 'false';
             
             // Yanıtı formatla
             let p1Content = data.p1 || `Explore ${pointName} in ${cleanedCity.split(',')[0] || 'this area'}.`;
@@ -2011,12 +2021,15 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             }
             
             // HTML oluştur
-            descDiv.innerHTML = `
+            targetElement.innerHTML = `
                 <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
                     <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa; background: #fdfdfe;">
                         <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
                             <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
-                            <div style="flex: 1;">${p1Content}</div>
+                            <div style="flex: 1;">
+                                <strong style="color: #333; font-size: 12px; display: block; margin-bottom: 2px;">${pointName}</strong>
+                                ${p1Content}
+                            </div>
                         </div>
                     </div>
                     ${p2Content ? `
@@ -2031,14 +2044,14 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 
         } catch (e) {
             if (e.name === 'AbortError') {
-                descDiv.innerHTML = "";
-                descDiv.style.display = 'none';
+                targetElement.innerHTML = "";
+                targetElement.style.display = 'none';
                 return;
             }
             
             console.error('AI fetch error:', e);
-            descDiv.dataset.loading = 'false';
-            descDiv.innerHTML = `
+            targetElement.dataset.loading = 'false';
+            targetElement.innerHTML = `
                 <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
                     <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
                     <small style="color: #999;">Try clicking another location</small>
@@ -2047,9 +2060,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     };
     
     // Debounce süresini biraz artıralım daha stabil olsun
-    const debounceTime = targetDivId === 'ai-point-description' ? 600 : 0;
+    const debounceTime = (targetDivId === 'ai-point-description' || isIconClick) ? 600 : 0;
     
-    if (targetDivId === 'ai-point-description') {
+    if (targetDivId === 'ai-point-description' || isIconClick) {
         aiDebounceTimeout = setTimeout(triggerFetch, debounceTime);
     } else {
         triggerFetch();
