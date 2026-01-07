@@ -1266,14 +1266,7 @@ let categorizedPlaces = {
     entertainment: []
 };
 
-// Kategorilere ayır - BASİT YÖNTEM
-allPlaces.forEach(place => {
-    const cat = place.category;
-    if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
-    else if (cat === 'hotel') categorizedPlaces.hotels.push(place);
-    else if (cat === 'markets') categorizedPlaces.markets.push(place);
-    else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);
-});
+
 
 // === BU SATIRLARI KATEGORİLERE AYIRDIKTAN SONRA EKLE ===
 const tabTitles = {
