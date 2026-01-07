@@ -621,11 +621,35 @@ return `
         loadClickedPointImage(pointInfo.name);
 
 // Cadde/Sokak bilgilerini eleyip sadece AI'nın bilmesi gereken bölge isimlerini gönderiyoruz
-const fullAddressContext = [
-    pointInfo.suburb, 
-    pointInfo.city || pointInfo.town || pointInfo.state, 
-    pointInfo.country
-].filter((v, i, a) => v && a.indexOf(v) === i).join(', ');
+let locationParts = [];
+
+if (pointInfo.country_code === 'tr' || (pointInfo.country && pointInfo.country.toLowerCase() === 'turkey')) {
+    // TÜRKİYE ÖZEL: County = İl, City/Town = İlçe
+    locationParts = [
+        pointInfo.suburb,   // Mahalle
+        pointInfo.city || pointInfo.town, // İlçe
+        pointInfo.county,   // İL (Antalya, Denizli vb.)
+        pointInfo.country   // Ülke
+    ];
+} else {
+    // DÜNYA GENELİ STANDART: City = Şehir
+    locationParts = [
+        pointInfo.suburb,
+        pointInfo.city || pointInfo.town,
+        pointInfo.state,
+        pointInfo.country
+    ];
+}
+
+const fullAddressContext = locationParts
+    .filter((v, i, a) => v && a.indexOf(v) === i)
+    .join(', ');
+
+const aiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") ? pointInfo.name : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
+
+if (aiSearchName) {
+    fetchClickedPointAI(aiSearchName, lat, lng, fullAddressContext, {}, 'ai-point-description');
+}
 
 const aiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") ? pointInfo.name : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
 
