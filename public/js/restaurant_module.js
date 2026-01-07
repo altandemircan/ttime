@@ -1263,22 +1263,6 @@ const tabTitles = {
 
 
 
-function getSimplePlaceCategory(f) {
-    const cats = f.properties.categories || "";
-    
-    if (cats.includes('park') || cats.includes('garden')) return 'parks';
-    if (cats.includes('museum') || cats.includes('gallery')) return 'museums';
-    if (cats.includes('cafe') || cats.includes('coffee')) return 'cafes';
-    if (cats.includes('shop') || cats.includes('mall')) return 'shopping';
-    if (cats.includes('commercial') || cats.includes('market')) return 'markets';
-    if (cats.includes('station') || cats.includes('transport')) return 'transport';
-    if (cats.includes('restaurant') || cats.includes('food')) return 'restaurant';
-    if (cats.includes('accommodation') || cats.includes('hotel')) return 'hotel';
-    
-    return 'restaurant';
-}
-
-
 
         let allPlaces = [];
         let placeIdToIndexMap = {};
@@ -1614,6 +1598,22 @@ allPlaces.slice(0, 5).forEach((p, i) => {
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
     }
 }
+
+function getSimplePlaceCategory(f) {
+    const cats = f.properties.categories || "";
+    
+    if (cats.includes('park') || cats.includes('garden')) return 'parks';
+    if (cats.includes('museum') || cats.includes('gallery')) return 'museums';
+    if (cats.includes('cafe') || cats.includes('coffee')) return 'cafes';
+    if (cats.includes('shop') || cats.includes('mall')) return 'shopping';
+    if (cats.includes('commercial') || cats.includes('market')) return 'markets';
+    if (cats.includes('station') || cats.includes('transport')) return 'transport';
+    if (cats.includes('restaurant') || cats.includes('food')) return 'restaurant';
+    if (cats.includes('accommodation') || cats.includes('hotel')) return 'hotel';
+    
+    return 'restaurant';
+}
+
 
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
