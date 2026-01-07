@@ -640,13 +640,18 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         window._lastNearbyPlaces = results;
         window._lastNearbyPhotos = photos;
         window._lastNearbyDay = day;
-        window._currentPointInfo = pointInfo;
+       window._currentPointInfo = pointInfo;
         loadClickedPointImage(pointInfo.name);
 
-        // --- BURAYI GÜNCELLE ---
-const cityName = window.selectedCity || (pointInfo.address ? pointInfo.address.split(',')[0] : "Konya");
-fetchClickedPointAI(pointInfo.name, cityName);
-// -----------------------
+        // AI Açıklamasını Başlat (Şehir ismini temizleyerek gönderir)
+        const cityName = window.selectedCity || "Turkey";
+        if (pointInfo.name && pointInfo.name !== "Selected Point") {
+            fetchClickedPointAI(pointInfo.name, cityName);
+        } else if (pointInfo.address) {
+            // İsim yoksa adresten ilk parçayı al
+            const firstPart = pointInfo.address.split(',')[0];
+            fetchClickedPointAI(firstPart, cityName);
+        }
 
     } catch (error) {
         console.error('Nearby places fetch error:', error);
@@ -1462,7 +1467,7 @@ async function fetchClickedPointAI(pointName, city) {
     try {
         // Not: URL projenin yapısına göre '/api/clicked-ai' veya '/proxy/clicked-ai' olabilir.
         // marker_ai_information.js '/proxy/' kullanıyorsa burayı da öyle yapın.
-        const response = await fetch('/api/clicked-ai', { 
+        const response = await fetch('/proxy/clicked-ai', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
