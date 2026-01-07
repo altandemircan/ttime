@@ -913,6 +913,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                     );
                     
                     // Tab içeriklerindeki AI ikonu için (showNearbyPlacesPopup fonksiyonu içinde)
+// showNearbyPlacesPopup fonksiyonunun sonunda, tab içeriklerindeki AI ikonları için:
 tabContentsHtml += `
     <div class="category-place-item" 
          style="display: flex; align-items: center; gap: 12px; padding: 10px; 
@@ -922,7 +923,17 @@ tabContentsHtml += `
             <img src="${photo}" 
                  alt="${name}"
                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
+            <div onclick="event.stopPropagation(); 
+                          // Önce ana itemin başlığını güncelle
+                          const pointNameDisplay = document.getElementById('point-name-display');
+                          if (pointNameDisplay) {
+                              pointNameDisplay.dataset.originalName = pointNameDisplay.textContent;
+                              pointNameDisplay.textContent = '${safeName}';
+                              const nameInput = document.getElementById('point-name-input');
+                              if (nameInput) nameInput.value = '${safeName}';
+                          }
+                          // Sonra AI bilgisini getir
+                          window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
                 <span style="font-size: 10px; color: white;">✨</span>
             </div>
@@ -1954,6 +1965,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     
     if (!targetElement) return;
     
+    // Ana itemin başlığını bul
+    const pointNameDisplay = document.getElementById('point-name-display');
+    
     // Çoklu istek koruması geliştirildi
     if (targetElement.dataset.loading === 'true' && !targetElement.querySelector('.ai-spinner')) {
         return;
@@ -2020,6 +2034,25 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 p1Content = sentences[0] + '. Discover this location and its surroundings.';
             }
             
+            // Eğer alt itemlardan birine tıklandıysa, ana itemin başlığını güncelle
+            if (isIconClick && pointNameDisplay) {
+                // Ana itemin başlığını değiştir (geçici olarak)
+                const originalName = pointNameDisplay.dataset.originalName || pointNameDisplay.textContent;
+                pointNameDisplay.dataset.originalName = originalName;
+                pointNameDisplay.textContent = pointName;
+                
+                // Ayrıca input alanını da güncelle
+                const nameInput = document.getElementById('point-name-input');
+                if (nameInput) {
+                    nameInput.value = pointName;
+                }
+                
+                // AI bilgisi kapatıldığında orijinal isme dönmek için
+                // (isteğe bağlı - bu kısmı kaldırabilirsiniz)
+                targetElement.dataset.isForeignItem = 'true';
+                targetElement.dataset.originalPointName = originalName;
+            }
+            
             // HTML oluştur
             targetElement.innerHTML = `
                 <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
@@ -2027,7 +2060,14 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                         <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
                             <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
                             <div style="flex: 1;">
-                                <strong style="color: #333; font-size: 12px; display: block; margin-bottom: 2px;">${pointName}</strong>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <strong style="color: #333; font-size: 12px;">${pointName}</strong>
+                                    ${isIconClick ? `
+                                    <button onclick="restoreOriginalPointName()" style="background: none; border: none; font-size: 11px; color: #666; cursor: pointer; padding: 2px 6px;">
+                                        ← Back to selected point
+                                    </button>
+                                    ` : ''}
+                                </div>
                                 ${p1Content}
                             </div>
                         </div>
@@ -2056,6 +2096,29 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                     <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
                     <small style="color: #999;">Try clicking another location</small>
                 </div>`;
+        }
+    };
+    
+    // Back to selected point fonksiyonu
+    window.restoreOriginalPointName = function() {
+        const pointNameDisplay = document.getElementById('point-name-display');
+        const aiDiv = document.getElementById('ai-point-description');
+        
+        if (pointNameDisplay && pointNameDisplay.dataset.originalName) {
+            pointNameDisplay.textContent = pointNameDisplay.dataset.originalName;
+            
+            // Input alanını da güncelle
+            const nameInput = document.getElementById('point-name-input');
+            if (nameInput) {
+                nameInput.value = pointNameDisplay.dataset.originalName;
+            }
+        }
+        
+        // AI div'ini temizle
+        if (aiDiv) {
+            aiDiv.innerHTML = '';
+            aiDiv.style.display = 'none';
+            aiDiv.dataset.loading = 'false';
         }
     };
     
