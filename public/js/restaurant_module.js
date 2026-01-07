@@ -526,7 +526,7 @@ placesHtml = results.map((f, index) => {
     const photo = photos[index] || PLACEHOLDER_IMG;
     const distStr = f.distance < 1000 ? `${Math.round(f.distance)} m` : `${(f.distance / 1000).toFixed(2)} km`;
     const safeName = name.replace(/'/g, "\\'");
-    const locationContext = p.city || p.country || "Global"; // Dinamik ülke/şehir
+    const locationContext = p.city || p.country || "Global";
 
     return `
     <li class="nearby-place-wrapper" style="list-style: none; margin-bottom: 15px;">
@@ -542,12 +542,13 @@ placesHtml = results.map((f, index) => {
                 <div style="font-weight: 600; font-size: 13px;">${name}</div>
                 <div style="font-size: 11px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.formatted || ""}</div>
             </div>
-            <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+            <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; gap: 2px;">
                 <div style="font-size: 10px; color: #999;">${distStr}</div>
-                <button onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" style="width: 28px; height: 28px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2;">+</button>
+                <button onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" style="width: 28px; height: 28px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold;">+</button>
             </div>
         </div>
-        <div id="ai-info-${index}" style="width: 100%;"></div>
+        
+        <div id="ai-info-${index}" style="width: 100%; margin-top: 2px;"></div>
     </li>`;
 }).join('');
             } else {
@@ -1428,10 +1429,14 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 let aiAbortController = null;
 let aiDebounceTimeout = null;
 
-// BUL VE DEĞİŞTİR: fetchClickedPointAI
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
+
+    // EĞER İÇİ DOLUYSA (ve loading değilse) ÇALIŞMA: Aynı butona basınca tekrar üretmez
+    if (descDiv.innerHTML.includes('background: white') || descDiv.querySelector('.ai-spinner')) {
+        if (!descDiv.querySelector('.ai-spinner')) return; // Zaten içerik varsa çık
+    }
 
     if (targetDivId === 'ai-point-description') {
         clearTimeout(aiDebounceTimeout);
@@ -1456,6 +1461,8 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 body: JSON.stringify({ point: pointName, city, lat, lng, facts })
             });
             const data = await response.json();
+            
+            // TAM İSTEDİĞİN DİV YAPISI
             descDiv.innerHTML = `
                 <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 5px;">
                     <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
@@ -1467,7 +1474,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 </div>`;
         } catch (e) {
             if (e.name === 'AbortError') return;
-            descDiv.innerHTML = "";
+            descDiv.innerHTML = ""; 
         }
     };
 
