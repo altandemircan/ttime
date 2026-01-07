@@ -693,7 +693,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         closeNearbyPopup();
     }
 
-    // Kategorileri gruplara ayıralım
+    // Kategorilere göre yerleri grupla
     const categoryGroups = {
         "restaurants": "catering.restaurant,catering.fast_food",
         "hotels": "accommodation.hotel",
@@ -737,6 +737,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         };
 
         let allPlaces = [];
+        let placeIdToIndexMap = {}; // Yer ID'sini indekse eşleştirmek için
         
         if (data.features && data.features.length > 0) {
             allPlaces = data.features
@@ -748,6 +749,12 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                     category: getPlaceCategory(f, categoryGroups)
                 }))
                 .sort((a, b) => a.distance - b.distance);
+
+            // Her yer için benzersiz ID oluştur
+            allPlaces.forEach((place, index) => {
+                const placeId = place.properties.place_id || `place-${index}`;
+                placeIdToIndexMap[placeId] = index;
+            });
 
             // Kategorilere ayır
             allPlaces.forEach(place => {
@@ -898,6 +905,13 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                     // AI ikonu ekle (stock foto yanında)
                     const aiIconId = `ai-icon-${key}-${index}`;
                     
+                    // Yer ID'sini kullanarak allPlaces içindeki indeksi bul
+                    const placeId = p.place_id || `place-${key}-${index}`;
+                    const allPlacesIndex = placeIdToIndexMap[placeId] || allPlaces.findIndex(pl => 
+                        pl.properties.place_id === p.place_id || 
+                        pl.properties.name === p.name
+                    );
+                    
                     tabContentsHtml += `
                         <div class="category-place-item" 
                              style="display: flex; align-items: center; gap: 12px; padding: 10px; 
@@ -927,7 +941,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                                 <div style="font-size: 10px; color: #999; white-space: nowrap;">
                                     ${distStr}
                                 </div>
-                                <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlaces.indexOf(place)}, ${day}, '${p.lat}', '${p.lon}')"
+                                <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
                                         style="width: 30px; height: 30px; background: #fff; 
                                                border: 1px solid #ddd; border-radius: 50%; 
                                                cursor: pointer; color: #1976d2; font-weight: bold; 
@@ -974,13 +988,25 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         // Global kayıtlar - fotoğrafları da kaydet
         window._lastNearbyPlaces = allPlaces;
         window._lastNearbyPhotos = [];
-        // Tüm fotoğrafları tek bir diziye ekle
+        
+        // Tüm fotoğrafları kaydet (daha basit yöntem)
         allPlaces.forEach((place, index) => {
-            const key = place.category;
-            const catIndex = categorizedPlaces[key].indexOf(place);
-            if (catIndex !== -1 && categorizedPhotos[key]) {
-                window._lastNearbyPhotos[index] = categorizedPhotos[key][catIndex];
-            }
+            // Yer ID'sini kullanarak kategorize edilmiş fotoğrafı bul
+            const placeId = place.properties.place_id || `place-${index}`;
+            let foundPhoto = PLACEHOLDER_IMG;
+            
+            // Kategorilere göre arama yap
+            Object.keys(categorizedPlaces).forEach(key => {
+                const catIndex = categorizedPlaces[key].findIndex(p => 
+                    p.properties.place_id === place.properties.place_id ||
+                    p.properties.name === place.properties.name
+                );
+                if (catIndex !== -1 && categorizedPhotos[key] && categorizedPhotos[key][catIndex]) {
+                    foundPhoto = categorizedPhotos[key][catIndex];
+                }
+            });
+            
+            window._lastNearbyPhotos[index] = foundPhoto;
         });
         
         window._lastNearbyDay = day;
@@ -1038,24 +1064,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
     }
-}
-
-// Yardımcı fonksiyon: Yerin kategorisini belirle
-function getPlaceCategory(feature, categoryGroups) {
-    const categories = feature.properties.categories || "";
-    
-    if (categories.includes('restaurant') || categories.includes('fast_food')) {
-        return 'restaurant';
-    } else if (categories.includes('hotel')) {
-        return 'hotel';
-    } else if (categories.includes('cafe')) {
-        return 'cafe';
-    } else if (categories.includes('park') || categories.includes('cinema') || categories.includes('entertainment')) {
-        return 'entertainment';
-    }
-    
-    // Varsayılan olarak restoran
-    return 'restaurant';
 }
 
 // Yardımcı fonksiyon: Yerin kategorisini belirle
