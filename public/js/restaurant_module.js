@@ -1243,7 +1243,7 @@ let categorizedPlaces = {
     restaurants: [],
     hotels: [],
     markets: [],
-    cafes: [],
+    entertainment: [],  // cafes yerine entertainment
     parks: [],
     museums: [],
     shopping: [],
@@ -1254,13 +1254,12 @@ const tabTitles = {
     restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
     hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
     markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-    cafes: { icon: "☕", title: "Cafes", count: categorizedPlaces.cafes.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length },  // cafes yerine
     parks: { icon: "🌳", title: "Parks", count: categorizedPlaces.parks.length },
     museums: { icon: "🏛️", title: "Museums", count: categorizedPlaces.museums.length },
     shopping: { icon: "🛍️", title: "Shopping", count: categorizedPlaces.shopping.length },
     transport: { icon: "🚆", title: "Transport", count: categorizedPlaces.transport.length }
 };
-
 
 
 
@@ -1293,7 +1292,7 @@ allPlaces.forEach(place => {
     if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
     else if (cat === 'hotel') categorizedPlaces.hotels.push(place);
     else if (cat === 'markets') categorizedPlaces.markets.push(place);
-    else if (cat === 'cafes') categorizedPlaces.cafes.push(place);
+    else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);  // cafes yerine
     else if (cat === 'parks') categorizedPlaces.parks.push(place);
     else if (cat === 'museums') categorizedPlaces.museums.push(place);
     else if (cat === 'shopping') categorizedPlaces.shopping.push(place);
@@ -1599,7 +1598,7 @@ function getSimplePlaceCategory(f) {
     
     if (cats.includes('park') || cats.includes('garden')) return 'parks';
     if (cats.includes('museum') || cats.includes('gallery')) return 'museums';
-    if (cats.includes('cafe') || cats.includes('coffee')) return 'cafes';
+    if (cats.includes('entertainment') || cats.includes('leisure')) return 'entertainment';  // entertainment geri
     if (cats.includes('shop') || cats.includes('mall')) return 'shopping';
     if (cats.includes('commercial') || cats.includes('market')) return 'markets';
     if (cats.includes('station') || cats.includes('transport')) return 'transport';
@@ -1608,7 +1607,6 @@ function getSimplePlaceCategory(f) {
     
     return 'restaurant';
 }
-
 
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
