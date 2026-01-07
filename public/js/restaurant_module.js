@@ -1447,19 +1447,28 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 }
 
 
-async function fetchClickedPointAI(name, city) {
+// Tıklanan yer için AI açıklamasını çeker ve div'e yazar
+async function fetchClickedPointAI(pointName, city) {
     const descDiv = document.getElementById('ai-point-description');
+    if (!descDiv) return;
+
     try {
-        const response = await fetch('/api/clicked-ai', { // Proxy yoluna göre ayarla
+        const response = await fetch('/api/clicked-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, city })
+            body: JSON.stringify({ point: pointName, city: city })
         });
+        
+        if (!response.ok) throw new Error('AI Fetch Failed');
+        
         const data = await response.json();
-        if (descDiv) {
+        if (data && data.description) {
             descDiv.innerHTML = `✨ ${data.description}`;
+        } else {
+            descDiv.innerHTML = "✨ Description not available.";
         }
     } catch (err) {
-        if (descDiv) descDiv.innerHTML = "Info not available.";
+        console.error("Clicked AI Error:", err);
+        descDiv.innerHTML = "✨ Information currently unavailable.";
     }
 }
