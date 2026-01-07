@@ -455,635 +455,6 @@ function attachClickNearbySearch(map, day, options = {}) {
   map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
 
-// async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-//     // 1. Önce kesinlikle eskileri temizle
-//     if (typeof closeNearbyPopup === 'function') {
-//         closeNearbyPopup();
-//     }
-
-//     const categories = "accommodation.hotel,catering.restaurant,catering.cafe,leisure.park,entertainment.cinema";
-//     const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=20`;
-
-//     const loadingContent = `
-//         <div class="nearby-loading-message">
-//             <div class="nearby-loading-spinner"></div>
-//             <small class="nearby-loading-text">Searching nearby...</small>
-//         </div>
-//     `;
-    
-//     showCustomPopup(lat, lng, map, loadingContent, false);
-
-//     const isMapLibre = !!map.addSource;
-//     if (isMapLibre) {
-//          map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
-//     } else {
-//          const currentZoom = map.getZoom();
-//          if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
-//          else map.panTo([lat, lng], { animate: true, duration: 0.4 });
-//     }
-
-//     try {
-//         let pointInfo = { name: "Selected Point", address: "" };
-//         try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
-
-//         const resp = await fetch(url);
-//         const data = await resp.json();
-
-//         let results = [];
-//         let photos = [];
-//         let placesHtml = "";
-
-//         if (data.features && data.features.length > 0) {
-//             results = data.features
-//                 .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
-//                 .map(f => ({ ...f, distance: haversine(lat, lng, f.properties.lat, f.properties.lon) }))
-//                 .sort((a, b) => a.distance - b.distance)
-//                 .slice(0, 10);
-
-//             if (results.length > 0) {
-//                 // Fotoğrafları çek
-//                 photos = await Promise.all(results.map(async (f) => {
-//                     const name = f.properties.name || "";
-//                     const cityQuery = name + " " + (window.selectedCity || "");
-//                     try {
-//                         let imageUrl = null;
-//                         if (typeof getPexelsImage === "function") imageUrl = await getPexelsImage(cityQuery);
-//                         if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
-//                         if (typeof getPixabayImage === "function") imageUrl = await getPixabayImage(name);
-//                         if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
-//                         return PLACEHOLDER_IMG;
-//                     } catch (error) { return PLACEHOLDER_IMG; }
-//                 }));
-
-//                 // Şehir ismini al
-//                 const currentCity = window.selectedCity || "Turkey";
-
-//                 // --- DÖNGÜ BAŞLANGICI (index buraya eklendi) ---
-// // BUL VE DEĞİŞTİR: results.map döngüsü
-// // BUL VE DEĞİŞTİR: results.map döngüsü
-// placesHtml = results.map((f, index) => {
-//     const p = f.properties;
-//     const name = p.name || "(No name)";
-//     const photo = photos[index] || PLACEHOLDER_IMG;
-//     const distStr = f.distance < 1000 ? `${Math.round(f.distance)} m` : `${(f.distance / 1000).toFixed(2)} km`;
-//     const safeName = name.replace(/'/g, "\\'");
-// const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');   // BUL VE DEĞİŞTİR: results.map içindeki return bloğu
-// // BUL VE DEĞİŞTİR: results.map içindeki return
-// return `
-// <li style="list-style: none; margin-bottom: 12px;">
-//     <div class="nearby-place-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-        
-//         <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
-//             <img src="${photo}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
-//             <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-info-${index}')" 
-//                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-//                 <span style="font-size: 10px; color: white;">✨</span>
-//             </div>
-//         </div>
-
-//         <div style="flex: 1; min-width: 0;">
-//             <div style="font-weight: 600; font-size: 13px; color: #333;">${name}</div>
-//             <div style="font-size: 11px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.formatted || ""}</div>
-//         </div>
-
-//         <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; gap: 2px;">
-//             <div style="font-size: 10px; color: #999;">${distStr}</div>
-//             <button onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" style="width: 28px; height: 28px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold;">+</button>
-//         </div>
-
-//         <div id="ai-info-${index}" style="width: 100%; display: none;"></div>
-//     </div>
-// </li>`;
-// }).join('');
-//             } else {
-//                 placesHtml = "<li class='nearby-no-results'>No places found within 500 meters.</li>";
-//             }
-//         } else {
-//             placesHtml = "<li class='nearby-no-results'>No places found within 500 meters.</li>";
-//         }
-
-//         const addPointSection = `
-//             <div class="add-point-section" style="margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px;">
-//                 <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-//                     <div class="point-image" style="width: 42px; height: 42px; position: relative; flex-shrink: 0;">
-//                         <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-//                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px;">📍</div>
-//                     </div>
-//                     <div class="point-info" style="flex: 1; min-width: 0;">
-//                         <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-//                             <span id="point-name-display" style="font-weight: 500; font-size: 14px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
-//                             <button onclick="window.editPointName()" style="background: none; border: none; font-size: 12px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-//                             <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-//                         </div>
-//                         <div class="point-address" style="font-size: 11px; color: #666; line-height: 1.2;">
-//                             ${pointInfo.address || 'Selected location'}
-//                         </div>
-//                     </div>
-//                     <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-//                         <div style="font-size: 10px; color: #999;">Clicked</div>
-//                         <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 30px; height: 30px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 16px; cursor: pointer;">+</button>
-//                     </div>
-//                     <div id="ai-point-description" style="width: 100%; margin-top: 4px; border-top: 1px dashed #ddd; padding-top: 8px;">
-//                         </div>
-//                 </div>
-//             </div>
-//         `;
-
-//         const html = `
-//             <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 10px;">📍 Nearby Places</div>
-//             ${addPointSection}
-//             <ul class="nearby-places-list" style="list-style: none; padding: 0; margin: 0;">${placesHtml}</ul>
-//             <div style="text-align:center; margin: 20px 0 4px 0;">
-//                 <button id="show-restaurants-btn" style="padding:10px 18px; border-radius:9px; background:#8a4af3; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
-//                     🍽️ Show Restaurants
-//                 </button>
-//             </div>
-//         `;
-
-//         showCustomPopup(lat, lng, map, html, true);
-
-//         // Event listener for Restaurant button
-//         setTimeout(() => {
-//             const btn = document.getElementById("show-restaurants-btn");
-//             if (btn) {
-//                 btn.onclick = function() {
-//                     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-//                     showNearbyRestaurants(lat, lng, map, day);
-//                 };
-//             }
-//         }, 250);
-
-//         // Global kayıtlar
-//         window._lastNearbyPlaces = results;
-//         window._lastNearbyPhotos = photos;
-//         window._lastNearbyDay = day;
-//         window._currentPointInfo = pointInfo;
-//         loadClickedPointImage(pointInfo.name);
-
-
-
-
-//         // 1. Dinamik Şehir Belirleme: POSTA KODU TEMİZLİĞİ EKLENDİ
-//     let currentCityName = "";
-//     if (pointInfo && (pointInfo.county || pointInfo.city)) {
-//         currentCityName = pointInfo.county || pointInfo.city;
-//     } else if (window.selectedCity) {
-//         currentCityName = window.selectedCity;
-//     } else if (pointInfo && pointInfo.address) {
-//         const addrParts = pointInfo.address.split(',');
-//         currentCityName = addrParts.length > 2 ? addrParts[addrParts.length - 2].trim() : "";
-//     }
-    
-//     // POSTA KODU TEMİZLİĞİ
-//     const cleanCityName = (cityName) => {
-//         if (!cityName) return "";
-//         // Posta kodlarını ve numaraları temizle
-//         return cityName
-//             .replace(/\b\d{5}\b/g, '') // 5 haneli posta kodu
-//             .replace(/\b\d{4}\s?[A-Z]{2}\b/gi, '') // 4 haneli + harf
-//             .replace(/\b\d+\b/g, '') // Diğer numaralar
-//             .replace(/,\s*,/g, ',')
-//             .replace(/^\s*,\s*|\s*,\s*$/g, '')
-//             .trim();
-//     };
-    
-//     // 2. locationParts Oluşturma (temizlenmiş)
-//     let locationParts = [
-//         pointInfo?.suburb,
-//         pointInfo?.city || pointInfo?.town,
-//         cleanCityName(currentCityName),
-//         pointInfo?.country || "Turkey"
-//     ];
-    
-//     // 3. Temizlik
-//     const fullAddressContext = locationParts
-//         .filter((v, i, a) => v && v.toString().trim() !== '' && 
-//                 a.indexOf(v) === i && 
-//                 !v.toString().toLowerCase().includes('unknown') &&
-//                 !/\b\d{5}\b/.test(v)) // Posta kodu kontrolü
-//         .join(', ');
-    
-//     console.log("AI'ya giden temiz context:", fullAddressContext);
-
-
-
-
-
-
-
-// // 4. Eğer hala context boşsa, AI uydurmasın diye sadece ismi gönder
-// const finalAiSearchName = (pointInfo?.name && pointInfo?.name !== "Selected Point") 
-//     ? pointInfo.name 
-//     : (pointInfo?.address ? pointInfo.address.split(',')[0] : "");
-
-// if (finalAiSearchName) {
-//     const category = pointInfo?.category || pointInfo?.type || "place"; 
-//     window.fetchClickedPointAI(finalAiSearchName, lat, lng, fullAddressContext, { category }, 'ai-point-description');
-// }
-
-//     } catch (error) {
-//         console.error('Nearby places fetch error:', error);
-//         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
-//     }
-// }
-
-async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
-    // 1. Önce kesinlikle eskileri temizle
-    if (typeof closeNearbyPopup === 'function') {
-        closeNearbyPopup();
-    }
-
-    // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
-const categoryGroups = {
-    "restaurants": "catering.restaurant",
-    "hotels": "accommodation",
-    "shops": "commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall",
-    "entertainment": "leisure,entertainment"
-};
-
-const allCategories = "catering.restaurant,accommodation,commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall,leisure,entertainment";
-    const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
-
-    const loadingContent = `
-        <div class="nearby-loading-message">
-            <div class="nearby-loading-spinner"></div>
-            <small class="nearby-loading-text">Searching nearby places...</small>
-        </div>
-    `;
-    
-    showCustomPopup(lat, lng, map, loadingContent, false);
-
-    const isMapLibre = !!map.addSource;
-    if (isMapLibre) {
-         map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
-    } else {
-         const currentZoom = map.getZoom();
-         if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
-         else map.panTo([lat, lng], { animate: true, duration: 0.4 });
-    }
-
-    try {
-        let pointInfo = { name: "Selected Point", address: "" };
-        try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
-
-        const resp = await fetch(url);
-        
-        // HTTP hata kontrolü
-        if (!resp.ok) {
-            console.error('API Error:', resp.status, resp.statusText);
-            showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
-            return;
-        }
-        
-        const data = await resp.json();
-
-        // DEBUG: Gelen datayı konsola yazdır
-        console.log('Geoapify Response:', {
-            totalFeatures: data.features?.length || 0,
-            features: data.features?.slice(0, 3).map(f => ({
-                name: f.properties.name,
-                categories: f.properties.categories
-            }))
-        });
-
-        // Kategorilere göre yerleri grupla
-        let categorizedPlaces = {
-            restaurants: [],
-            hotels: [],
-            cafes: [],
-            entertainment: []
-        };
-
-        let allPlaces = [];
-        let placeIdToIndexMap = {};
-        
-        if (data.features && data.features.length > 0) {
-            allPlaces = data.features
-                .filter(f => {
-                    const hasName = !!f.properties.name && f.properties.name.trim().length > 2;
-                    return hasName;
-                })
-                .map(f => ({ 
-                    ...f, 
-                    distance: haversine(lat, lng, f.properties.lat, f.properties.lon),
-                    // BASİT KATEGORİ BELİRLEME
-                    category: getSimplePlaceCategory(f)
-                }))
-                .sort((a, b) => a.distance - b.distance);
-
-            // Her yer için benzersiz ID oluştur
-            allPlaces.forEach((place, index) => {
-                const placeId = place.properties.place_id || `place-${index}`;
-                placeIdToIndexMap[placeId] = index;
-            });
-
-            // Kategorilere ayır - BASİT YÖNTEM
-            allPlaces.forEach(place => {
-                const cat = place.category;
-                if (cat === 'restaurant') {
-                    categorizedPlaces.restaurants.push(place);
-                } else if (cat === 'hotel') {
-                    categorizedPlaces.hotels.push(place);
-                } else if (cat === 'cafe') {
-                    categorizedPlaces.cafes.push(place);
-                } else if (cat === 'entertainment') {
-                    categorizedPlaces.entertainment.push(place);
-                }
-            });
-
-            // DEBUG: Kategori sayıları
-            console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
-
-            // Her kategori için maksimum 5 yer göster
-            Object.keys(categorizedPlaces).forEach(key => {
-                categorizedPlaces[key] = categorizedPlaces[key].slice(0, 5);
-            });
-        }
-
-        // Tıkalanan nokta bölümü
-        const addPointSection = `
-            <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
-                <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                    <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
-                        <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
-                    </div>
-                    <div class="point-info" style="flex: 1; min-width: 0;">
-                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
-                            <button onclick="window.editPointName()" style="background: none; border: none; font-size: 13px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-                            <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
-                        </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
-                            ${pointInfo.address || 'Selected location'}
-                        </div>
-                    </div>
-                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 11px; color: #999;">Selected</div>
-                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
-                    </div>
-                    <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
-                </div>
-            </div>
-        `;
-
-        // Tab başlıkları ve içerikleri oluştur
-        const tabTitles = {
-            restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-            hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-            cafes: { icon: "☕", title: "Cafes", count: categorizedPlaces.cafes.length },
-            entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-        };
-
-        // Aktif tab belirle (en fazla içeriğe sahip olan)
-        let activeTab = 'restaurants';
-        let maxCount = 0;
-        Object.keys(tabTitles).forEach(key => {
-            if (categorizedPlaces[key].length > maxCount) {
-                maxCount = categorizedPlaces[key].length;
-                activeTab = key;
-            }
-        });
-
-        // Tab HTML'ini oluştur
-        let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
-        
-        Object.keys(tabTitles).forEach(key => {
-            const tab = tabTitles[key];
-            const isActive = key === activeTab;
-            const badgeStyle = tab.count > 0 ? 'background: #4caf50; color: white;' : 'background: #ccc; color: #666;';
-            
-            tabsHtml += `
-                <button class="category-tab ${isActive ? 'active' : ''}" 
-                        data-tab="${key}"
-                        style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
-                               border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
-                               cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
-                               display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 16px;">${tab.icon}</div>
-                    <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
-                    <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
-                        ${tab.count}
-                    </div>
-                </button>
-            `;
-        });
-        
-        tabsHtml += '</div>';
-
-        // Fotoğrafları önceden çekmek için promise'lar oluştur
-        let photoPromises = {};
-        Object.keys(categorizedPlaces).forEach(key => {
-            photoPromises[key] = categorizedPlaces[key].map(async (place) => {
-                const name = place.properties.name || "";
-                const cityQuery = name + " " + (window.selectedCity || "");
-                try {
-                    let imageUrl = null;
-                    if (typeof getPexelsImage === "function") imageUrl = await getPexelsImage(cityQuery);
-                    if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
-                    if (typeof getPixabayImage === "function") imageUrl = await getPixabayImage(name);
-                    if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
-                    return PLACEHOLDER_IMG;
-                } catch (error) { return PLACEHOLDER_IMG; }
-            });
-        });
-
-        // Fotoğrafları çek
-        let categorizedPhotos = {};
-        for (const key in photoPromises) {
-            categorizedPhotos[key] = await Promise.all(photoPromises[key]);
-        }
-
-        // Tab içerikleri için container
-        let tabContentsHtml = '<div class="tab-contents">';
-        
-        Object.keys(categorizedPlaces).forEach(key => {
-            const places = categorizedPlaces[key];
-            const photos = categorizedPhotos[key] || [];
-            const isActive = key === activeTab;
-            
-            tabContentsHtml += `
-                <div class="tab-content ${isActive ? 'active' : ''}" 
-                     data-tab="${key}"
-                     style="display: ${isActive ? 'block' : 'none'};">
-            `;
-            
-            if (places.length === 0) {
-                tabContentsHtml += `
-                    <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
-                        <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
-                        No ${tabTitles[key].title.toLowerCase()} found in this area
-                    </div>
-                `;
-            } else {
-                // Yerleri listele
-                places.forEach((place, index) => {
-                    const p = place.properties;
-                    const name = p.name || "(No name)";
-                    const photo = photos[index] || PLACEHOLDER_IMG;
-                    const distStr = place.distance < 1000 ? 
-                        `${Math.round(place.distance)} m` : 
-                        `${(place.distance / 1000).toFixed(2)} km`;
-                    const safeName = name.replace(/'/g, "\\'");
-                    const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');
-                    
-                    // Yer ID'sini kullanarak allPlaces içindeki indeksi bul
-                    const placeId = p.place_id || `place-${key}-${index}`;
-                    const allPlacesIndex = placeIdToIndexMap[placeId] || allPlaces.findIndex(pl => 
-                        pl.properties.place_id === p.place_id || 
-                        pl.properties.name === p.name
-                    );
-                    
-                    tabContentsHtml += `
-                        <div class="category-place-item" 
-                             style="display: flex; align-items: center; gap: 12px; padding: 10px; 
-                                    background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
-                                    border: 1px solid #eee;">
-                            <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
-                                <img src="${photo}" 
-                                     alt="${name}"
-                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                                <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
-                                     style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                                    <span style="font-size: 10px; color: white;">✨</span>
-                                </div>
-                            </div>
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600; font-size: 13px; color: #333; 
-                                            margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-                                    ${name}
-                                </div>
-                                <div style="font-size: 11px; color: #777; overflow: hidden; 
-                                            text-overflow: ellipsis; white-space: nowrap;">
-                                    ${p.formatted || ""}
-                                </div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; align-items: center; 
-                                        gap: 4px; flex-shrink: 0;">
-                                <div style="font-size: 10px; color: #999; white-space: nowrap;">
-                                    ${distStr}
-                                </div>
-                                <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
-                                        style="width: 30px; height: 30px; background: #fff; 
-                                               border: 1px solid #ddd; border-radius: 50%; 
-                                               cursor: pointer; color: #1976d2; font-weight: bold; 
-                                               font-size: 16px; display: flex; align-items: center; 
-                                               justify-content: center;">
-                                    +
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            
-            tabContentsHtml += '</div>';
-        });
-        
-        tabContentsHtml += '</div>';
-
-        // SHOW RESTAURANTS BUTTON
-        const showRestaurantsButton = `
-            <div style="text-align:center; margin: 20px 0 4px 0;">
-                <button id="show-restaurants-btn" style="padding:10px 18px; border-radius:9px; background:#8a4af3; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
-                    🍽️ Show Restaurants
-                </button>
-            </div>
-        `;
-
-        // Popup HTML'ini birleştir
-        const html = `
-            <div style="max-width: 380px;">
-                <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                    📍 Nearby Places
-                </div>
-                ${addPointSection}
-                ${tabsHtml}
-                ${tabContentsHtml}
-                ${showRestaurantsButton}
-            </div>
-        `;
-
-        showCustomPopup(lat, lng, map, html, true);
-
-        // Global kayıtlar
-        window._lastNearbyPlaces = allPlaces;
-        window._lastNearbyPhotos = [];
-        
-        // Tüm fotoğrafları kaydet
-        allPlaces.forEach((place, index) => {
-            let foundPhoto = PLACEHOLDER_IMG;
-            
-            // Kategorilere göre arama yap
-            Object.keys(categorizedPlaces).forEach(key => {
-                const catIndex = categorizedPlaces[key].findIndex(p => 
-                    p.properties.place_id === place.properties.place_id ||
-                    p.properties.name === place.properties.name
-                );
-                if (catIndex !== -1 && categorizedPhotos[key] && categorizedPhotos[key][catIndex]) {
-                    foundPhoto = categorizedPhotos[key][catIndex];
-                }
-            });
-            
-            window._lastNearbyPhotos[index] = foundPhoto;
-        });
-        
-        window._lastNearbyDay = day;
-        window._currentPointInfo = pointInfo;
-        
-        // Tıklanan nokta için AI açıklama
-        loadClickedPointImage(pointInfo.name);
-        
-        // Tab değiştirme işlevselliği ekle
-        setTimeout(() => {
-            document.querySelectorAll('.category-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.dataset.tab;
-                    
-                    // Aktif tab sınıfını güncelle
-                    document.querySelectorAll('.category-tab').forEach(t => {
-                        t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
-                        t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
-                        t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
-                        t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
-                    });
-                    
-                    // İçerikleri göster/gizle
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
-                    });
-                });
-            });
-
-            // SHOW RESTAURANTS BUTTON EVENT LISTENER
-            const btn = document.getElementById("show-restaurants-btn");
-            if (btn) {
-                btn.onclick = function() {
-                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-                    showNearbyRestaurants(lat, lng, map, day);
-                };
-            }
-        }, 250);
-
-        // Şehir bilgisi ve AI açıklaması
-        let currentCityName = window.selectedCity || "";
-        if (pointInfo && (pointInfo.county || pointInfo.city)) {
-            currentCityName = pointInfo.county || pointInfo.city;
-        }
-        
-        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-            const category = pointInfo?.category || pointInfo?.type || "place"; 
-            const locationContext = [pointInfo?.suburb, pointInfo?.city, currentCityName, pointInfo?.country || "Turkey"]
-                .filter(Boolean).join(', ');
-            
-            window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
-        }
-
-    } catch (error) {
-        console.error('Nearby places fetch error:', error);
-        showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
-    }
-}
 
 // BASİT VE ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
 function getSimplePlaceCategory(feature) {
@@ -1099,15 +470,13 @@ function getSimplePlaceCategory(feature) {
     }
     
     // GENİŞLETİLMİŞ CAFE KONTROLÜ
-    if (categories.includes('cafe') || 
-        categories.includes('coffee') || 
-        categories.includes('coffee_shop') ||
-        categories.includes('bakery') ||
-        categories.includes('dessert') ||
-        categories.includes('ice_cream') ||
-        categories.includes('tea')) {
-        return 'cafe';
-    }
+  if (categories.includes('supermarket') || 
+    categories.includes('convenience') || 
+    categories.includes('clothing') ||
+    categories.includes('shopping_mall') ||
+    categories.includes('commercial')) {
+    return 'shops';
+}
     
     if (categories.includes('park') || categories.includes('cinema') || 
         categories.includes('museum') || categories.includes('entertainment') ||
@@ -1838,6 +1207,408 @@ alert("An error occurred while fetching restaurants. Please try again.");
     });
 }
 
+
+
+
+
+
+async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
+    // 1. Önce kesinlikle eskileri temizle
+    if (typeof closeNearbyPopup === 'function') {
+        closeNearbyPopup();
+    }
+
+    // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
+const categoryGroups = {
+    "restaurants": "catering.restaurant",
+    "hotels": "accommodation",
+    "shops": "commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall",
+    "entertainment": "leisure,entertainment"
+};
+
+const allCategories = "catering.restaurant,accommodation,commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall,leisure,entertainment";
+    const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
+
+    const loadingContent = `
+        <div class="nearby-loading-message">
+            <div class="nearby-loading-spinner"></div>
+            <small class="nearby-loading-text">Searching nearby places...</small>
+        </div>
+    `;
+    
+    showCustomPopup(lat, lng, map, loadingContent, false);
+
+    const isMapLibre = !!map.addSource;
+    if (isMapLibre) {
+         map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
+    } else {
+         const currentZoom = map.getZoom();
+         if (currentZoom < 14) map.flyTo([lat, lng], 15, { duration: 0.5 });
+         else map.panTo([lat, lng], { animate: true, duration: 0.4 });
+    }
+
+    try {
+        let pointInfo = { name: "Selected Point", address: "" };
+        try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
+
+        const resp = await fetch(url);
+        
+        // HTTP hata kontrolü
+        if (!resp.ok) {
+            console.error('API Error:', resp.status, resp.statusText);
+            showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
+            return;
+        }
+        
+        const data = await resp.json();
+
+        // DEBUG: Gelen datayı konsola yazdır
+        console.log('Geoapify Response:', {
+            totalFeatures: data.features?.length || 0,
+            features: data.features?.slice(0, 3).map(f => ({
+                name: f.properties.name,
+                categories: f.properties.categories
+            }))
+        });
+
+        // Kategorilere göre yerleri grupla
+        let categorizedPlaces = {
+    restaurants: [],
+    hotels: [],
+    shops: [],
+    entertainment: []
+};
+        let allPlaces = [];
+        let placeIdToIndexMap = {};
+        
+        if (data.features && data.features.length > 0) {
+            allPlaces = data.features
+                .filter(f => {
+                    const hasName = !!f.properties.name && f.properties.name.trim().length > 2;
+                    return hasName;
+                })
+                .map(f => ({ 
+                    ...f, 
+                    distance: haversine(lat, lng, f.properties.lat, f.properties.lon),
+                    // BASİT KATEGORİ BELİRLEME
+                    category: getSimplePlaceCategory(f)
+                }))
+                .sort((a, b) => a.distance - b.distance);
+
+            // Her yer için benzersiz ID oluştur
+            allPlaces.forEach((place, index) => {
+                const placeId = place.properties.place_id || `place-${index}`;
+                placeIdToIndexMap[placeId] = index;
+            });
+
+            // Kategorilere ayır - BASİT YÖNTEM
+            allPlaces.forEach(place => {
+                const cat = place.category;
+                if (cat === 'restaurant') {
+                    categorizedPlaces.restaurants.push(place);
+                } else if (cat === 'hotel') {
+                    categorizedPlaces.hotels.push(place);
+                } else if (cat === 'cafe') {
+                    categorizedPlaces.cafes.push(place);
+                } else if (cat === 'entertainment') {
+                    categorizedPlaces.entertainment.push(place);
+                }
+            });
+
+            // DEBUG: Kategori sayıları
+            console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
+
+            // Her kategori için maksimum 5 yer göster
+            Object.keys(categorizedPlaces).forEach(key => {
+                categorizedPlaces[key] = categorizedPlaces[key].slice(0, 5);
+            });
+        }
+
+        // Tıkalanan nokta bölümü
+        const addPointSection = `
+            <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
+                <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                    <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
+                        <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
+                    </div>
+                    <div class="point-info" style="flex: 1; min-width: 0;">
+                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
+                            <button onclick="window.editPointName()" style="background: none; border: none; font-size: 13px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
+                            <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
+                            ${pointInfo.address || 'Selected location'}
+                        </div>
+                    </div>
+                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                        <div style="font-size: 11px; color: #999;">Selected</div>
+                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
+                    </div>
+                    <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
+                </div>
+            </div>
+        `;
+
+        // Tab başlıkları ve içerikleri oluştur
+      const tabTitles = {
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    shops: { icon: "🛍️", title: "Shops", count: categorizedPlaces.shops.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+};
+
+        // Aktif tab belirle (en fazla içeriğe sahip olan)
+        let activeTab = 'restaurants';
+        let maxCount = 0;
+        Object.keys(tabTitles).forEach(key => {
+            if (categorizedPlaces[key].length > maxCount) {
+                maxCount = categorizedPlaces[key].length;
+                activeTab = key;
+            }
+        });
+
+        // Tab HTML'ini oluştur
+        let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
+        
+        Object.keys(tabTitles).forEach(key => {
+            const tab = tabTitles[key];
+            const isActive = key === activeTab;
+            const badgeStyle = tab.count > 0 ? 'background: #4caf50; color: white;' : 'background: #ccc; color: #666;';
+            
+            tabsHtml += `
+                <button class="category-tab ${isActive ? 'active' : ''}" 
+                        data-tab="${key}"
+                        style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
+                               border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
+                               cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
+                               display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="font-size: 16px;">${tab.icon}</div>
+                    <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
+                    <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
+                        ${tab.count}
+                    </div>
+                </button>
+            `;
+        });
+        
+        tabsHtml += '</div>';
+
+        // Fotoğrafları önceden çekmek için promise'lar oluştur
+        let photoPromises = {};
+        Object.keys(categorizedPlaces).forEach(key => {
+            photoPromises[key] = categorizedPlaces[key].map(async (place) => {
+                const name = place.properties.name || "";
+                const cityQuery = name + " " + (window.selectedCity || "");
+                try {
+                    let imageUrl = null;
+                    if (typeof getPexelsImage === "function") imageUrl = await getPexelsImage(cityQuery);
+                    if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
+                    if (typeof getPixabayImage === "function") imageUrl = await getPixabayImage(name);
+                    if (imageUrl && imageUrl !== PLACEHOLDER_IMG && await isImageValid(imageUrl)) return imageUrl;
+                    return PLACEHOLDER_IMG;
+                } catch (error) { return PLACEHOLDER_IMG; }
+            });
+        });
+
+        // Fotoğrafları çek
+        let categorizedPhotos = {};
+        for (const key in photoPromises) {
+            categorizedPhotos[key] = await Promise.all(photoPromises[key]);
+        }
+
+        // Tab içerikleri için container
+        let tabContentsHtml = '<div class="tab-contents">';
+        
+        Object.keys(categorizedPlaces).forEach(key => {
+            const places = categorizedPlaces[key];
+            const photos = categorizedPhotos[key] || [];
+            const isActive = key === activeTab;
+            
+            tabContentsHtml += `
+                <div class="tab-content ${isActive ? 'active' : ''}" 
+                     data-tab="${key}"
+                     style="display: ${isActive ? 'block' : 'none'};">
+            `;
+            
+            if (places.length === 0) {
+                tabContentsHtml += `
+                    <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
+                        No ${tabTitles[key].title.toLowerCase()} found in this area
+                    </div>
+                `;
+            } else {
+                // Yerleri listele
+                places.forEach((place, index) => {
+                    const p = place.properties;
+                    const name = p.name || "(No name)";
+                    const photo = photos[index] || PLACEHOLDER_IMG;
+                    const distStr = place.distance < 1000 ? 
+                        `${Math.round(place.distance)} m` : 
+                        `${(place.distance / 1000).toFixed(2)} km`;
+                    const safeName = name.replace(/'/g, "\\'");
+                    const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');
+                    
+                    // Yer ID'sini kullanarak allPlaces içindeki indeksi bul
+                    const placeId = p.place_id || `place-${key}-${index}`;
+                    const allPlacesIndex = placeIdToIndexMap[placeId] || allPlaces.findIndex(pl => 
+                        pl.properties.place_id === p.place_id || 
+                        pl.properties.name === p.name
+                    );
+                    
+                    tabContentsHtml += `
+                        <div class="category-place-item" 
+                             style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                                    background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
+                                    border: 1px solid #eee;">
+                            <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+                                <img src="${photo}" 
+                                     alt="${name}"
+                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                                <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
+                                     style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+                                    <span style="font-size: 10px; color: white;">✨</span>
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; font-size: 13px; color: #333; 
+                                            margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+                                    ${name}
+                                </div>
+                                <div style="font-size: 11px; color: #777; overflow: hidden; 
+                                            text-overflow: ellipsis; white-space: nowrap;">
+                                    ${p.formatted || ""}
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center; 
+                                        gap: 4px; flex-shrink: 0;">
+                                <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                                    ${distStr}
+                                </div>
+                                <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
+                                        style="width: 30px; height: 30px; background: #fff; 
+                                               border: 1px solid #ddd; border-radius: 50%; 
+                                               cursor: pointer; color: #1976d2; font-weight: bold; 
+                                               font-size: 16px; display: flex; align-items: center; 
+                                               justify-content: center;">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            tabContentsHtml += '</div>';
+        });
+        
+        tabContentsHtml += '</div>';
+
+        // SHOW RESTAURANTS BUTTON
+        const showRestaurantsButton = `
+            <div style="text-align:center; margin: 20px 0 4px 0;">
+                <button id="show-restaurants-btn" style="padding:10px 18px; border-radius:9px; background:#8a4af3; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
+                    🍽️ Show Restaurants
+                </button>
+            </div>
+        `;
+
+        // Popup HTML'ini birleştir
+        const html = `
+            <div style="max-width: 380px;">
+                <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
+                    📍 Nearby Places
+                </div>
+                ${addPointSection}
+                ${tabsHtml}
+                ${tabContentsHtml}
+                ${showRestaurantsButton}
+            </div>
+        `;
+
+        showCustomPopup(lat, lng, map, html, true);
+
+        // Global kayıtlar
+        window._lastNearbyPlaces = allPlaces;
+        window._lastNearbyPhotos = [];
+        
+        // Tüm fotoğrafları kaydet
+        allPlaces.forEach((place, index) => {
+            let foundPhoto = PLACEHOLDER_IMG;
+            
+            // Kategorilere göre arama yap
+            Object.keys(categorizedPlaces).forEach(key => {
+                const catIndex = categorizedPlaces[key].findIndex(p => 
+                    p.properties.place_id === place.properties.place_id ||
+                    p.properties.name === place.properties.name
+                );
+                if (catIndex !== -1 && categorizedPhotos[key] && categorizedPhotos[key][catIndex]) {
+                    foundPhoto = categorizedPhotos[key][catIndex];
+                }
+            });
+            
+            window._lastNearbyPhotos[index] = foundPhoto;
+        });
+        
+        window._lastNearbyDay = day;
+        window._currentPointInfo = pointInfo;
+        
+        // Tıklanan nokta için AI açıklama
+        loadClickedPointImage(pointInfo.name);
+        
+        // Tab değiştirme işlevselliği ekle
+        setTimeout(() => {
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    
+                    // Aktif tab sınıfını güncelle
+                    document.querySelectorAll('.category-tab').forEach(t => {
+                        t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
+                        t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
+                        t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
+                        t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
+                    });
+                    
+                    // İçerikleri göster/gizle
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
+                    });
+                });
+            });
+
+            // SHOW RESTAURANTS BUTTON EVENT LISTENER
+            const btn = document.getElementById("show-restaurants-btn");
+            if (btn) {
+                btn.onclick = function() {
+                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+                    showNearbyRestaurants(lat, lng, map, day);
+                };
+            }
+        }, 250);
+
+        // Şehir bilgisi ve AI açıklaması
+        let currentCityName = window.selectedCity || "";
+        if (pointInfo && (pointInfo.county || pointInfo.city)) {
+            currentCityName = pointInfo.county || pointInfo.city;
+        }
+        
+        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+            const category = pointInfo?.category || pointInfo?.type || "place"; 
+            const locationContext = [pointInfo?.suburb, pointInfo?.city, currentCityName, pointInfo?.country || "Turkey"]
+                .filter(Boolean).join(', ');
+            
+            window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
+        }
+
+    } catch (error) {
+        console.error('Nearby places fetch error:', error);
+        showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
+    }
+}
+
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
@@ -1919,61 +1690,6 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 let aiAbortController = null;
 let aiDebounceTimeout = null;
 
-// async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
-//     const descDiv = document.getElementById(targetDivId);
-//     if (!descDiv) return;
-
-//     // İçerik varsa veya yükleniyorsa tekrar çalıştırma
-//     if ((descDiv.innerHTML.trim() !== "" && descDiv.style.display !== 'none') || descDiv.querySelector('.ai-spinner')) {
-//     if (!descDiv.querySelector('.ai-spinner')) return; 
-// }
-
-//     if (targetDivId === 'ai-point-description') {
-//         clearTimeout(aiDebounceTimeout);
-//         if (aiAbortController) aiAbortController.abort();
-//         aiAbortController = new AbortController();
-//     }
-
-//     // STANDART SADE LOADING
-//     descDiv.style.display = 'block';
-//     descDiv.innerHTML = `
-//         <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
-//             <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-//             <div style="font-size: 11px; font-weight: 500; text-transform: uppercase;">AI is analyzing...</div>
-//         </div>
-//         <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-//     `;
-
-//     const triggerFetch = async () => {
-//         try {
-//             const response = await fetch('/llm-proxy/clicked-ai', {
-//                 method: 'POST',
-//                 signal: (targetDivId === 'ai-point-description') ? aiAbortController.signal : null,
-//                 headers: { 'Content-Type': 'application/json' },
-//                 body: JSON.stringify({ point: pointName, city, lat, lng, facts })
-//             });
-//             const data = await response.json();
-
-//             // STANDART SADE SONUÇ (İtalik kaldırıldı)
-//             descDiv.innerHTML = `
-//                 <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
-//                     <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
-//                     ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
-//                     <div style="padding: 8px 10px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 6px;">
-//                         <span style="font-size: 12px;">✨</span>
-//                         <div style="color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
-//                     </div>` : ''}
-//                 </div>`;
-//         } catch (e) {
-//             if (e.name === 'AbortError') return;
-//             descDiv.innerHTML = ""; 
-//             descDiv.style.display = 'none';
-//         }
-//     };
-
-//     if (targetDivId === 'ai-point-description') aiDebounceTimeout = setTimeout(triggerFetch, 400);
-//     else triggerFetch();
-// }
 
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
@@ -2054,6 +1770,16 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 p1Content = sentences[0] + '. Discover this location and its surroundings.';
             }
             
+            // allPlacesIndex'i bul - AI ikonuna tıklandığında çalışan yerin indeksini bul
+            let allPlacesIndex = -1;
+            if (isIconClick && window._lastNearbyPlaces) {
+                // targetDivId'den indeksi çıkar (örnek: "ai-icon-2")
+                const idxMatch = targetDivId.match(/ai-icon-(\d+)/);
+                if (idxMatch) {
+                    allPlacesIndex = parseInt(idxMatch[1]);
+                }
+            }
+            
             // HTML oluştur - İKİ AYRI BÖLÜM
             targetElement.innerHTML = `
                 <div style="margin-top: 12px; width: 100%;">
@@ -2097,12 +1823,12 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                         </div>` : ''}
                         
                         <!-- Ekleme Butonu (sadece alt itemlar için) -->
-                        ${isIconClick ? `
+                        ${isIconClick && allPlacesIndex !== -1 ? `
                         <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
-                            <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${lat}', '${lng}')"
+                            <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
                                     style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                                 <span>+</span>
-                                Add "${pointName}" to Day ${day}
+                                Add "${pointName}" to Day ${window._lastNearbyDay || 1}
                             </button>
                         </div>
                         ` : ''}
@@ -2134,4 +1860,4 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     } else {
         triggerFetch();
     }
-}
+} // <--- FONKSİYONUN KAPANMASI
