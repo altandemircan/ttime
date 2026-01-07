@@ -243,6 +243,41 @@ res.json({
     }
 });
 // Chat stream (SSE) endpoint
+
+
+router.post('/clicked-ai', async (req, res) => {
+    const { point, city } = req.body;
+    if (!point || !city) return res.status(400).send('point and city required');
+
+    const cacheKey = `CLICKEDAI:${point}__${city}`;
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') return res.json(aiCache[cacheKey].data);
+
+    const processingPromise = (async () => {
+        const prompt = `ENGLISH only. You are a travel guide. Provide a very brief (max 2 sentences) interesting description for "${point}" in "${city}". Return ONLY JSON: {"description": "..."}`;
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: "llama3:8b",
+                messages: [{ role: "user", content: prompt }],
+                stream: false, format: "json", options: { temperature: 0.3, num_predict: 150 }
+            }, { timeout: 30000 });
+
+            const content = response.data?.message?.content || "{}";
+            return JSON.parse(content);
+        } catch (err) { 
+            return { description: "Information not available for this spot." }; 
+        }
+    })();
+
+    aiCache[cacheKey] = { status: 'pending', promise: processingPromise };
+    try {
+        const result = await processingPromise;
+        aiCache[cacheKey] = { status: 'done', data: result };
+        saveCacheToDisk();
+        res.json(result);
+    } catch (e) { res.status(500).json({ error: "AI Error" }); }
+});
+
+
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
