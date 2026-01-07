@@ -7352,14 +7352,7 @@ async function expandMap(containerId, day) {
         dragging: true
     });
 
-  // === [CRITICAL FIX] AI CLICK LISTENER BURAYA EKLENMELİ ===
-    // Harita oluşturuldu, artık 'expandedMapInstance' kullanılabilir.
-    if (typeof handleMapAIClick === 'function') {
-        expandedMapInstance.off('click', handleMapAIClick); // Varsa eskisini temizle
-        expandedMapInstance.on('click', handleMapAIClick);  // Yenisini ekle
-        console.log("🤖 AI Map Click Listener Attached for Day:", day);
-    }
-    // ==========================================================
+ 
 
     // === [CRITICAL FIX] TILE LAYER AYARLAMA VE AGRESİF TEMİZLİK ===
     function setExpandedMapTile(styleKey) {
