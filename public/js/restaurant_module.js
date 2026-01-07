@@ -776,31 +776,32 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         }
 
         // Tıkalanan nokta bölümü
-        const addPointSection = `
-            <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
-                <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                    <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
-                        <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
-                    </div>
-                    <div class="point-info" style="flex: 1; min-width: 0;">
-                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
-                            <button onclick="window.editPointName()" style="background: none; border: none; font-size: 13px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-                            <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
-                        </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
-                            ${pointInfo.address || 'Selected location'}
-                        </div>
-                    </div>
-                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 11px; color: #999;">Selected</div>
-                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
-                    </div>
-                    <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
+       // Tıkalanan nokta bölümünü daha minimalist yapalım
+const addPointSection = `
+    <div class="add-point-section" style="margin-bottom: 16px;">
+        <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e0e0e0;">
+            <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
+                <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
+            </div>
+            <div class="point-info" style="flex: 1; min-width: 0;">
+                <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
+                    <button onclick="window.editPointName()" style="background: none; border: none; font-size: 13px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
+                    <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
+                    ${pointInfo.address || 'Selected location'}
                 </div>
             </div>
-        `;
+            <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
+                <div style="font-size: 11px; color: #999; margin-top: 2px;">Add</div>
+            </div>
+        </div>
+        <div id="ai-point-description" style="width: 100%;"></div>
+    </div>
+`;
 
         // Tab başlıkları ve içerikleri oluştur
         const tabTitles = {
@@ -914,6 +915,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                     
                     // Tab içeriklerindeki AI ikonu için (showNearbyPlacesPopup fonksiyonu içinde)
 // showNearbyPlacesPopup fonksiyonunun sonunda, tab içeriklerindeki AI ikonları için:
+// Tab içeriklerindeki AI ikonu
 tabContentsHtml += `
     <div class="category-place-item" 
          style="display: flex; align-items: center; gap: 12px; padding: 10px; 
@@ -923,17 +925,7 @@ tabContentsHtml += `
             <img src="${photo}" 
                  alt="${name}"
                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-            <div onclick="event.stopPropagation(); 
-                          // Önce ana itemin başlığını güncelle
-                          const pointNameDisplay = document.getElementById('point-name-display');
-                          if (pointNameDisplay) {
-                              pointNameDisplay.dataset.originalName = pointNameDisplay.textContent;
-                              pointNameDisplay.textContent = '${safeName}';
-                              const nameInput = document.getElementById('point-name-input');
-                              if (nameInput) nameInput.value = '${safeName}';
-                          }
-                          // Sonra AI bilgisini getir
-                          window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
+            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
                 <span style="font-size: 10px; color: white;">✨</span>
             </div>
@@ -1956,7 +1948,6 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     if (!descDiv) return;
     
     // Eğer targetDivId ai-icon- ile başlıyorsa (alt itemlardaki AI ikonu)
-    // O zaman bilgiyi üstteki ai-point-description div'ine gönder
     const isIconClick = targetDivId.startsWith('ai-icon-');
     const mainAiDiv = document.getElementById('ai-point-description');
     
@@ -1965,10 +1956,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     
     if (!targetElement) return;
     
-    // Ana itemin başlığını bul
-    const pointNameDisplay = document.getElementById('point-name-display');
-    
-    // Çoklu istek koruması geliştirildi
+    // Çoklu istek koruması
     if (targetElement.dataset.loading === 'true' && !targetElement.querySelector('.ai-spinner')) {
         return;
     }
@@ -1979,7 +1967,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         aiAbortController = new AbortController();
     }
     
-    // Şehir bilgisini temizle (posta kodlarından)
+    // Şehir bilgisini temizle
     const cleanCityContext = (context) => {
         if (!context) return "";
         return context
@@ -2034,52 +2022,59 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 p1Content = sentences[0] + '. Discover this location and its surroundings.';
             }
             
-            // Eğer alt itemlardan birine tıklandıysa, ana itemin başlığını güncelle
-            if (isIconClick && pointNameDisplay) {
-                // Ana itemin başlığını değiştir (geçici olarak)
-                const originalName = pointNameDisplay.dataset.originalName || pointNameDisplay.textContent;
-                pointNameDisplay.dataset.originalName = originalName;
-                pointNameDisplay.textContent = pointName;
-                
-                // Ayrıca input alanını da güncelle
-                const nameInput = document.getElementById('point-name-input');
-                if (nameInput) {
-                    nameInput.value = pointName;
-                }
-                
-                // AI bilgisi kapatıldığında orijinal isme dönmek için
-                // (isteğe bağlı - bu kısmı kaldırabilirsiniz)
-                targetElement.dataset.isForeignItem = 'true';
-                targetElement.dataset.originalPointName = originalName;
-            }
-            
-            // HTML oluştur
+            // HTML oluştur - İKİ AYRI BÖLÜM
             targetElement.innerHTML = `
-                <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; margin-top: 8px; width: 100%; box-sizing: border-box;">
-                    <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa; background: #fdfdfe;">
-                        <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
-                            <div style="flex: 1;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <strong style="color: #333; font-size: 12px;">${pointName}</strong>
-                                    ${isIconClick ? `
-                                    <button onclick="restoreOriginalPointName()" style="background: none; border: none; font-size: 11px; color: #666; cursor: pointer; padding: 2px 6px;">
-                                        ← Back to selected point
-                                    </button>
-                                    ` : ''}
-                                </div>
-                                ${p1Content}
-                            </div>
+                <div style="margin-top: 12px; width: 100%;">
+                    <!-- Seçili Nokta Bölümü -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <div style="width: 24px; height: 24px; background: #1976d2; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">📍</div>
+                            <div style="font-weight: 600; font-size: 13px; color: #333;">Selected Point</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; line-height: 1.4;">
+                            This is the location you clicked on the map. You can add it to your trip or explore nearby places.
                         </div>
                     </div>
-                    ${p2Content ? `
-                    <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px; border-top: 1px dashed #eaeaea;">
-                        <span style="font-size: 12px; color: #ff9800;">💡</span>
-                        <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
-                            <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
-                            ${p2Content}
+                    
+                    <!-- AI Analiz Edilen Yer Bölümü -->
+                    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
+                        <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
+                                    <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Analysis</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>` : ''}
+                        
+                        <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
+                                <div style="flex: 1;">${p1Content}</div>
+                            </div>
+                        </div>
+                        
+                        ${p2Content ? `
+                        <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="font-size: 12px; color: #ff9800;">💡</span>
+                            <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
+                                <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
+                                ${p2Content}
+                            </div>
+                        </div>` : ''}
+                        
+                        <!-- Ekleme Butonu (sadece alt itemlar için) -->
+                        ${isIconClick ? `
+                        <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
+                            <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${lat}', '${lng}')"
+                                    style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <span>+</span>
+                                Add "${pointName}" to Day ${day}
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
                 </div>`;
                 
         } catch (e) {
@@ -2099,30 +2094,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         }
     };
     
-    // Back to selected point fonksiyonu
-    window.restoreOriginalPointName = function() {
-        const pointNameDisplay = document.getElementById('point-name-display');
-        const aiDiv = document.getElementById('ai-point-description');
-        
-        if (pointNameDisplay && pointNameDisplay.dataset.originalName) {
-            pointNameDisplay.textContent = pointNameDisplay.dataset.originalName;
-            
-            // Input alanını da güncelle
-            const nameInput = document.getElementById('point-name-input');
-            if (nameInput) {
-                nameInput.value = pointNameDisplay.dataset.originalName;
-            }
-        }
-        
-        // AI div'ini temizle
-        if (aiDiv) {
-            aiDiv.innerHTML = '';
-            aiDiv.style.display = 'none';
-            aiDiv.dataset.loading = 'false';
-        }
-    };
-    
-    // Debounce süresini biraz artıralım daha stabil olsun
+    // Debounce süresi
     const debounceTime = (targetDivId === 'ai-point-description' || isIconClick) ? 600 : 0;
     
     if (targetDivId === 'ai-point-description' || isIconClick) {
