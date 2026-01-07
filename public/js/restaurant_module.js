@@ -620,8 +620,7 @@ return `
         window._currentPointInfo = pointInfo;
         loadClickedPointImage(pointInfo.name);
 
-// Cadde/Sokak bilgilerini eleyip sadece AI'nın bilmesi gereken bölge isimlerini gönderiyoruz
-let locationParts = [];
+
 
         // 1. Önce pointInfo'nun gelmesini bekle, gelmezse fallback oluştur
 if (!pointInfo || (!pointInfo.county && !pointInfo.city)) {
