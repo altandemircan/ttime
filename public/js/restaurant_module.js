@@ -1499,7 +1499,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
                     ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
                     <div style="padding: 10px 12px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 8px;">
                         <span style="font-size: 14px;">✨</span>
-                        <div style="font-style: italic; color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
+                        <div style=" color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
                     </div>` : ''}
                 </div>
             `;
