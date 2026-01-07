@@ -1451,26 +1451,33 @@ async function fetchClickedPointAI(pointName, city) {
     const descDiv = document.getElementById('ai-point-description');
     if (!descDiv) return;
 
+    // İstek parametrelerini temizleyelim (Derebucak, Konya gibi)
+    console.log("AI Request started for:", pointName, city);
+
     try {
-        // 'http://localhost:3000' kısmını projenizin gerçek adresiyle değiştirin 
-        // veya doğrudan '/api/clicked-ai' deneyin
+        // Not: URL projenin yapısına göre '/api/clicked-ai' veya '/proxy/clicked-ai' olabilir.
+        // marker_ai_information.js '/proxy/' kullanıyorsa burayı da öyle yapın.
         const response = await fetch('/api/clicked-ai', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ point: pointName, city: city })
+            body: JSON.stringify({ 
+                point: pointName, 
+                city: city 
+            })
         });
-        
-        if (!response.ok) throw new Error('Network response was not ok');
-        
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
         const data = await response.json();
-        
+
         if (data && data.description) {
+            // Başarıyla geldiyse içeriği bas
             descDiv.innerHTML = `✨ ${data.description}`;
         } else {
-            descDiv.innerHTML = "✨ Description not found.";
+            descDiv.innerHTML = "✨ No specific info found for this spot.";
         }
     } catch (err) {
-        console.error("AI Fetch Error:", err);
+        console.error("Clicked AI Fetch Error:", err);
         descDiv.innerHTML = "✨ Info unavailable at the moment.";
     }
 }
