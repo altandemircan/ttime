@@ -456,27 +456,6 @@ function attachClickNearbySearch(map, day, options = {}) {
 }
 
 
-function getSimplePlaceCategory(f) {
-    const cats = f.properties.categories || "";
-    
-    if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
-        return 'markets';
-    }
-    
-    if (cats.includes('entertainment') || cats.includes('leisure')) {
-        return 'entertainment';
-    }
-    
-    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
-        return 'restaurant';
-    }
-    
-    if (cats.includes('accommodation') || cats.includes('hotel')) {
-        return 'hotel';
-    }
-    
-    return 'restaurant';
-}
 
 
 async function showNearbyRestaurants(lat, lng, map, day) {
@@ -1200,6 +1179,27 @@ alert("An error occurred while fetching restaurants. Please try again.");
 
 
 
+function getSimplePlaceCategory(f) {
+    const cats = f.properties.categories || "";
+    
+    if (cats.includes('commercial') || cats.includes('market') || cats.includes('supermarket')) {
+        return 'markets';
+    }
+    
+    if (cats.includes('entertainment') || cats.includes('leisure')) {
+        return 'entertainment';
+    }
+    
+    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
+        return 'restaurant';
+    }
+    
+    if (cats.includes('accommodation') || cats.includes('hotel')) {
+        return 'hotel';
+    }
+    
+    return 'restaurant';
+}
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
@@ -1262,13 +1262,15 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
         });
 
         // Kategorilere göre yerleri grupla
+// BURASI markets OLSUN
 let categorizedPlaces = {
     restaurants: [],
     hotels: [],
-    markets: [],  // shops yerine markets
+    markets: [],
     entertainment: []
 };
 
+// VE BURADA DA markets KULLAN
 const tabTitles = {
     restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
     hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
