@@ -158,21 +158,22 @@ const getPointInfo = async () => {
     }
     const factsJson = JSON.stringify(cleanFacts);
 
-    const prompt = `Task: expert travel guide. Language: English.
+const prompt = `Task: Local expert travel guide. Language: English.
 Place Name: "${point}"
-Location: "${city}"
+Mandatory Location: "${city}"
 Coordinates: ${lat}, ${lng}
-System Data: ${factsJson}
+
+CRITICAL: Focus ONLY on "${point}" at these exact coordinates within "${city}". 
+Ignore any other places with the same name in different regions. 
 
 Goal: Provide a 2-sentence description (p1) and a short tip (p2).
 
-STRICT INSTRUCTIONS:
-1. NEVER use generic placeholders like "[insert...]", "N/A", or "Contact details".
-2. NEVER use the word "Global". If you don't know the city, use the specific area names provided in Location: "${city}".
-3. Accuracy: You are at coordinates ${lat}, ${lng}. Focus only on this specific neighborhood in ${city}.
-4. If the exact place is unknown to you, describe the general atmosphere of this street/district and what a visitor can expect from a place like "${point}" in this part of ${city}.
-5. Style: Natural, human-like, not robotic.
-6. JSON format only: {"p1": "...", "p2": "..."}`;
+STRICT RULES:
+1. "p1": Write a 2-sentence description. Use the neighborhood context of "${city}". If specific history is unknown for this exact spot, describe its architectural character and the local atmosphere of this district in "${city}".
+2. "p2": Provide one practical tip. If unknown, leave it as an empty string "".
+3. DO NOT use placeholders like "[insert...]", "N/A", or "Contact info".
+4. DO NOT use the word "Global".
+5. Return ONLY JSON: {"p1": "...", "p2": "..."}`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
