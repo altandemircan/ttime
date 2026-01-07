@@ -1374,14 +1374,6 @@ allPlaces.slice(0, 5).forEach((p, i) => {
             </div>
         `;
 
-        // Tab başlıkları ve içerikleri oluştur
-      const tabTitles = {
-    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    shops: { icon: "🛍️", title: "Shops", count: categorizedPlaces.shops.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-};
-
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
         let maxCount = 0;
