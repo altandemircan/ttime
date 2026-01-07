@@ -1057,6 +1057,7 @@ function getPlaceCategory(feature, categoryGroups) {
     // Varsayılan olarak restoran
     return 'restaurant';
 }
+
 // Yardımcı fonksiyon: Yerin kategorisini belirle
 function getPlaceCategory(feature, categoryGroups) {
     const categories = feature.properties.categories || "";
