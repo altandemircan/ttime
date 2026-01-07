@@ -1455,7 +1455,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     descDiv.innerHTML = `
         <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; margin-top: 8px; width: 100%; box-sizing: border-box;">
             <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-            <div style="font-size: 10px; font-weight: 700; color: #8a4af3; text-transform: uppercase;">AI is analyzing...</div>
+            <div style="font-size: 1rem; font-weight: 600;  text-transform: uppercase;">AI is analyzing...</div>
         </div>
         <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     `;
