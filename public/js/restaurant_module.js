@@ -596,6 +596,9 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     font-weight: 400;">
                             ${pointInfo.address || 'Selected location'}
                         </div>
+                        <div id="ai-point-description" style="margin-top: 8px; font-size: 11px; color: #444; font-style: italic; border-top: 1px dashed #ddd; padding-top: 6px; line-height: 1.3;">
+                            <span class="ai-loading" style="color: #999;">✨ AI is thinking...</span>
+                        </div>
                     </div>
                     <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
                         <div style="font-size: 11px; color: #999; text-align: center;">Clicked</div>
@@ -1441,4 +1444,22 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 
   }
   return [];
+}
+
+
+async function fetchClickedPointAI(name, city) {
+    const descDiv = document.getElementById('ai-point-description');
+    try {
+        const response = await fetch('/api/clicked-ai', { // Proxy yoluna göre ayarla
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, city })
+        });
+        const data = await response.json();
+        if (descDiv) {
+            descDiv.innerHTML = `✨ ${data.description}`;
+        }
+    } catch (err) {
+        if (descDiv) descDiv.innerHTML = "Info not available.";
+    }
 }
