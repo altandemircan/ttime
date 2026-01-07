@@ -1455,6 +1455,7 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 }
 
 
+// Fonksiyonun dışında bu değişkenlerin tanımlı olduğundan emin ol
 let aiAbortController = null;
 let aiDebounceTimeout = null;
 
@@ -1462,12 +1463,21 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
     const descDiv = document.getElementById('ai-point-description');
     if (!descDiv) return;
 
+    // 1. Önceki bekleyen süreci ve yoldaki isteği iptal et
     clearTimeout(aiDebounceTimeout);
     if (aiAbortController) aiAbortController.abort();
     aiAbortController = new AbortController();
 
-    descDiv.innerHTML = `<div style="font-size:11px; color:#888; padding:5px;">🤖 AI is thinking...</div>`;
+    // 2. MODERN YÜKLENİYOR TASARIMI (Robot ikonu yerine profesyonel spinner)
+    descDiv.innerHTML = `
+        <div style="padding: 15px; text-align: center; background: rgba(248, 249, 250, 0.8); border-radius: 12px; border: 1px solid #eef2f7; margin-bottom: 10px;">
+            <div class="ai-spinner" style="width: 22px; height: 22px; border: 2.5px solid #4c6ef5; border-top: 2.5px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 10px;"></div>
+            <div style="font-size: 10px; font-weight: 700; color: #4c6ef5; letter-spacing: 1px; text-transform: uppercase;">Exploring Location Details...</div>
+        </div>
+        <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+    `;
 
+    // 3. DEBOUNCE: 400ms boyunca yeni tık gelmezse başla
     aiDebounceTimeout = setTimeout(async () => {
         try {
             const response = await fetch('/llm-proxy/clicked-ai', {
@@ -1479,25 +1489,35 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
 
             const data = await response.json();
 
-            // Saf AI içeriğini oluştur
-            let html = `<div style="margin-bottom:8px; line-height:1.4;">${data.p1}</div>`;
-            
-            // Eğer p2 doluysa ve unknown içermiyorsa ekle
-            if (data.p2 && !data.p2.toLowerCase().includes('unknown')) {
-                html += `<div style="font-style: italic; color: #666; font-size: 10px; border-left: 2px solid #ddd; padding-left: 5px;">💡 ${data.p2}</div>`;
-            }
+            // 4. MODERN SONUÇ TASARIMI
+            let html = `
+                <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;">
+                    <div style="padding: 12px; font-size: 13px; line-height: 1.6; color: #333; border-bottom: 1px solid #f8f9fa;">
+                        ${data.p1}
+                    </div>
+                    
+                    ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
+                    <div style="padding: 10px 12px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 14px;">✨</span>
+                        <div style="font-style: italic; color: #666; font-size: 11px; line-height: 1.4;">${data.p2}</div>
+                    </div>` : ''}
+                </div>
+            `;
 
-            // Nearby Butonları
+            // 5. NEARBY BUTONLARI (Kompakt ve Modern Butonlar)
             if (data.nearby) {
                 const allNearby = [...data.nearby.settlement, ...data.nearby.nature, ...data.nearby.historic];
                 if (allNearby.length > 0) {
-                    html += `<div style="margin-top:10px; border-top:1px dashed #eee; padding-top:8px;">`;
+                    html += `<div style="margin-top: 12px; display: grid; gap: 6px;">`;
                     allNearby.forEach(item => {
                         html += `
                             <button class="ai-nearby-btn" 
-                                style="display:block; width:100%; text-align:left; background:#f9f9f9; border:1px solid #eee; margin-bottom:4px; padding:4px 8px; font-size:10px; border-radius:4px; cursor:pointer;"
-                                onclick="window.showNearbyPlacesPopup(${item.facts.lat}, ${item.facts.lon})">
-                                📍 ${item.name}
+                                onclick="window.showNearbyPlacesPopup(${item.facts.lat}, ${item.facts.lon})"
+                                style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; background: #fff; border: 1px solid #ececf1; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 11px; color: #444; font-weight: 500;"
+                                onmouseover="this.style.background='#f8f9fa'; this.style.borderColor='#d1d1d6'"
+                                onmouseout="this.style.background='#fff'; this.style.borderColor='#ececf1'">
+                                <span style="color: #4c6ef5;">📍</span>
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
                             </button>`;
                     });
                     html += `</div>`;
@@ -1507,8 +1527,10 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
             descDiv.innerHTML = html;
 
         } catch (e) {
+            // İptal edilen istekler için hata basmıyoruz
             if (e.name === 'AbortError') return;
-            descDiv.innerHTML = "<div style='font-size:10px; color:red;'>AI offline.</div>";
+            console.error("AI Fetch Error:", e);
+            descDiv.innerHTML = "<div style='padding:10px; font-size:11px; color:#fa5252; background:#fff5f5; border-radius:8px;'>AI information is currently unavailable.</div>";
         }
     }, 400); 
 }
