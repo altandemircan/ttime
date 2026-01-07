@@ -1303,18 +1303,18 @@ const tabTitles = {
             });
 
             // Kategorilere ayır - BASİT YÖNTEM
-            allPlaces.forEach(place => {
-                const cat = place.category;
-                if (cat === 'restaurant') {
-                    categorizedPlaces.restaurants.push(place);
-                } else if (cat === 'hotel') {
-                    categorizedPlaces.hotels.push(place);
-                } else if (cat === 'cafe') {
-                    categorizedPlaces.cafes.push(place);
-                } else if (cat === 'entertainment') {
-                    categorizedPlaces.entertainment.push(place);
-                }
-            });
+           allPlaces.forEach(place => {
+    const cat = place.category;
+    if (cat === 'restaurant') {
+        categorizedPlaces.restaurants.push(place);
+    } else if (cat === 'hotel') {
+        categorizedPlaces.hotels.push(place);
+    } else if (cat === 'markets') {  // <-- 'markets' diye kontrol et
+        categorizedPlaces.markets.push(place);
+    } else if (cat === 'entertainment') {
+        categorizedPlaces.entertainment.push(place);
+    }
+});
 
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
@@ -1323,10 +1323,9 @@ const tabTitles = {
 console.log('Kategori dağılımı:', {
     restaurants: categorizedPlaces.restaurants.length,
     hotels: categorizedPlaces.hotels.length,
-    shops: categorizedPlaces.shops.length,
+    markets: categorizedPlaces.markets.length,  // <-- shops yerine markets
     entertainment: categorizedPlaces.entertainment.length
 });
-
 // Her yer için kategori bilgisini de logla
 allPlaces.slice(0, 5).forEach((p, i) => {
     console.log(`Yer ${i}: ${p.properties.name} - Kategori: ${p.category} - API Kategorileri: ${p.properties.categories}`);
