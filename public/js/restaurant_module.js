@@ -693,15 +693,17 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         closeNearbyPopup();
     }
 
-    // Kategorileri doğru şekilde ayıralım - Geoapify kategori formatına uygun
+    // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
     const categoryGroups = {
-        "restaurants": "catering.restaurant,catering.fast_food",
-        "hotels": "accommodation.hotel,accommodation.guest_house,accommodation.hostel",
-        "cafes": "catering.cafe,catering.coffee_shop",
-        "entertainment": "leisure.park,entertainment.cinema,entertainment.museum,leisure.sports_centre"
+        "restaurants": "catering.restaurant",
+        "hotels": "accommodation",
+        "cafes": "catering.cafe",
+        "entertainment": "leisure,entertainment"
     };
     
-    const url = `/api/geoapify/places?categories=${Object.values(categoryGroups).join(',')}&lat=${lat}&lon=${lng}&radius=${radius}&limit=50`;
+    // Daha basit kategori listesi
+    const allCategories = "catering.restaurant,accommodation,catering.cafe,leisure,entertainment";
+    const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=30`;
 
     const loadingContent = `
         <div class="nearby-loading-message">
@@ -726,17 +728,23 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
 
         const resp = await fetch(url);
+        
+        // HTTP hata kontrolü
+        if (!resp.ok) {
+            console.error('API Error:', resp.status, resp.statusText);
+            showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
+            return;
+        }
+        
         const data = await resp.json();
 
         // DEBUG: Gelen datayı konsola yazdır
         console.log('Geoapify Response:', {
             totalFeatures: data.features?.length || 0,
-            features: data.features?.map(f => ({
+            features: data.features?.slice(0, 3).map(f => ({
                 name: f.properties.name,
-                categories: f.properties.categories,
-                type: f.properties.type
-            })),
-            categoriesFound: data.features?.map(f => f.properties.categories).filter(Boolean)
+                categories: f.properties.categories
+            }))
         });
 
         // Kategorilere göre yerleri grupla
@@ -754,59 +762,38 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
             allPlaces = data.features
                 .filter(f => {
                     const hasName = !!f.properties.name && f.properties.name.trim().length > 2;
-                    const categories = f.properties.categories || '';
-                    
-                    // DEBUG: Filtreleme sırasında log
-                    if (!hasName) {
-                        console.log('Filtered out - no name:', f.properties);
-                    }
-                    
                     return hasName;
                 })
                 .map(f => ({ 
                     ...f, 
                     distance: haversine(lat, lng, f.properties.lat, f.properties.lon),
-                    // Kategori belirle - GÜNCELLENMİŞ FONKSİYON
-                    category: getPlaceCategory(f)
+                    // BASİT KATEGORİ BELİRLEME
+                    category: getSimplePlaceCategory(f)
                 }))
                 .sort((a, b) => a.distance - b.distance);
 
-            // DEBUG: Kategorilendirme sonrası
-            console.log('Categorized places:', allPlaces.map(p => ({
-                name: p.properties.name,
-                category: p.category,
-                categories: p.properties.categories
-            })));
-
             // Her yer için benzersiz ID oluştur
             allPlaces.forEach((place, index) => {
-                const placeId = place.properties.place_id || `place-${index}-${Date.now()}`;
+                const placeId = place.properties.place_id || `place-${index}`;
                 placeIdToIndexMap[placeId] = index;
             });
 
-            // Kategorilere ayır
+            // Kategorilere ayır - BASİT YÖNTEM
             allPlaces.forEach(place => {
-                if (place.category === 'restaurant') {
+                const cat = place.category;
+                if (cat === 'restaurant') {
                     categorizedPlaces.restaurants.push(place);
-                } else if (place.category === 'hotel') {
+                } else if (cat === 'hotel') {
                     categorizedPlaces.hotels.push(place);
-                } else if (place.category === 'cafe') {
+                } else if (cat === 'cafe') {
                     categorizedPlaces.cafes.push(place);
-                } else if (place.category === 'entertainment') {
+                } else if (cat === 'entertainment') {
                     categorizedPlaces.entertainment.push(place);
-                } else {
-                    // Kategori belirlenemeyen yerleri restaurants'a ekle (varsayılan)
-                    categorizedPlaces.restaurants.push(place);
                 }
             });
 
             // DEBUG: Kategori sayıları
-            console.log('Category counts:', {
-                restaurants: categorizedPlaces.restaurants.length,
-                hotels: categorizedPlaces.hotels.length,
-                cafes: categorizedPlaces.cafes.length,
-                entertainment: categorizedPlaces.entertainment.length
-            });
+            console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
 
             // Her kategori için maksimum 5 yer göster
             Object.keys(categorizedPlaces).forEach(key => {
@@ -908,7 +895,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
             categorizedPhotos[key] = await Promise.all(photoPromises[key]);
         }
 
-        // Tab içerikleri için container - STOCK FOTO EKLİ
+        // Tab içerikleri için container
         let tabContentsHtml = '<div class="tab-contents">';
         
         Object.keys(categorizedPlaces).forEach(key => {
@@ -930,7 +917,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                     </div>
                 `;
             } else {
-                // Yerleri listele - STOCK FOTO EKLİ
+                // Yerleri listele
                 places.forEach((place, index) => {
                     const p = place.properties;
                     const name = p.name || "(No name)";
@@ -940,9 +927,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                         `${(place.distance / 1000).toFixed(2)} km`;
                     const safeName = name.replace(/'/g, "\\'");
                     const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');
-                    
-                    // AI ikonu ekle (stock foto yanında)
-                    const aiIconId = `ai-icon-${key}-${index}`;
                     
                     // Yer ID'sini kullanarak allPlaces içindeki indeksi bul
                     const placeId = p.place_id || `place-${key}-${index}`;
@@ -999,7 +983,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         
         tabContentsHtml += '</div>';
 
-        // SHOW RESTAURANTS BUTTON - ORİJİNALİ KORUYORUZ
+        // SHOW RESTAURANTS BUTTON
         const showRestaurantsButton = `
             <div style="text-align:center; margin: 20px 0 4px 0;">
                 <button id="show-restaurants-btn" style="padding:10px 18px; border-radius:9px; background:#8a4af3; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
@@ -1023,14 +1007,12 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
         showCustomPopup(lat, lng, map, html, true);
 
-        // Global kayıtlar - fotoğrafları da kaydet
+        // Global kayıtlar
         window._lastNearbyPlaces = allPlaces;
         window._lastNearbyPhotos = [];
         
         // Tüm fotoğrafları kaydet
         allPlaces.forEach((place, index) => {
-            // Yer ID'sini kullanarak kategorize edilmiş fotoğrafı bul
-            const placeId = place.properties.place_id || `place-${index}`;
             let foundPhoto = PLACEHOLDER_IMG;
             
             // Kategorilere göre arama yap
@@ -1074,7 +1056,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                 });
             });
 
-            // SHOW RESTAURANTS BUTTON EVENT LISTENER - ORİJİNALİ KORUYORUZ
+            // SHOW RESTAURANTS BUTTON EVENT LISTENER
             const btn = document.getElementById("show-restaurants-btn");
             if (btn) {
                 btn.onclick = function() {
@@ -1104,85 +1086,33 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
     }
 }
 
-// YENİ VE DÜZGÜN ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
-function getPlaceCategory(feature) {
+// BASİT VE ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
+function getSimplePlaceCategory(feature) {
     const categories = feature.properties.categories || "";
-    const name = feature.properties.name || "";
     
-    // Debug için
-    console.log('Category check:', { name, categories });
-    
-    // Otel/Hotel kontrolü
-    if (categories.includes('hotel') || 
-        categories.includes('accommodation') ||
-        name.toLowerCase().includes('hotel') ||
-        name.toLowerCase().includes('otel') ||
-        name.toLowerCase().includes('motel') ||
-        name.toLowerCase().includes('hostel') ||
-        name.toLowerCase().includes('pansiyon') ||
-        name.toLowerCase().includes('conrad') ||
-        name.toLowerCase().includes('hilton') ||
-        name.toLowerCase().includes('marriott') ||
-        name.toLowerCase().includes('sheraton')) {
-        console.log('→ Category: hotel', name);
-        return 'hotel';
-    }
-    
-    // Cafe kontrolü
-    if (categories.includes('cafe') || 
-        categories.includes('coffee') ||
-        categories.includes('coffee_shop') ||
-        name.toLowerCase().includes('cafe') ||
-        name.toLowerCase().includes('café') ||
-        name.toLowerCase().includes('kahve') ||
-        name.toLowerCase().includes('starbucks') ||
-        name.toLowerCase().includes('coffee') ||
-        name.toLowerCase().includes('kafe')) {
-        console.log('→ Category: cafe', name);
-        return 'cafe';
-    }
-    
-    // Restaurant kontrolü
-    if (categories.includes('restaurant') || 
-        categories.includes('fast_food') ||
-        categories.includes('catering') ||
-        name.toLowerCase().includes('restaurant') ||
-        name.toLowerCase().includes('restoran') ||
-        name.toLowerCase().includes('lokanta') ||
-        name.toLowerCase().includes('kebap') ||
-        name.toLowerCase().includes('pizza') ||
-        name.toLowerCase().includes('burger') ||
-        name.toLowerCase().includes('büfe') ||
-        name.toLowerCase().includes('diner') ||
-        name.toLowerCase().includes('bistro')) {
-        console.log('→ Category: restaurant', name);
+    // Çok basit kategori eşleştirme
+    if (categories.includes('restaurant') || categories.includes('fast_food')) {
         return 'restaurant';
     }
     
-    // Eğlence kontrolü
-    if (categories.includes('park') || 
-        categories.includes('cinema') ||
-        categories.includes('museum') ||
-        categories.includes('theatre') ||
-        categories.includes('entertainment') ||
-        categories.includes('leisure') ||
-        categories.includes('sports') ||
-        name.toLowerCase().includes('park') ||
-        name.toLowerCase().includes('sinema') ||
-        name.toLowerCase().includes('museum') ||
-        name.toLowerCase().includes('müze') ||
-        name.toLowerCase().includes('theatre') ||
-        name.toLowerCase().includes('tiyatro') ||
-        name.toLowerCase().includes('stadium') ||
-        name.toLowerCase().includes('spor')) {
-        console.log('→ Category: entertainment', name);
+    if (categories.includes('hotel') || categories.includes('accommodation')) {
+        return 'hotel';
+    }
+    
+    if (categories.includes('cafe') || categories.includes('coffee')) {
+        return 'cafe';
+    }
+    
+    if (categories.includes('park') || categories.includes('cinema') || 
+        categories.includes('museum') || categories.includes('entertainment') ||
+        categories.includes('leisure')) {
         return 'entertainment';
     }
     
-    // Varsayılan olarak restaurant (en yaygın kategori)
-    console.log('→ Category: default restaurant', name);
+    // Varsayılan - en yaygın olan restaurant
     return 'restaurant';
 }
+
 
 async function showNearbyRestaurants(lat, lng, map, day) {
     // ---------------------------------------------------------
