@@ -142,36 +142,37 @@ router.post('/clicked-ai', async (req, res) => {
     // 1. POINT-AI MANTIĞI (TEMİZLENMİŞ)
    // Backend prompt ve veri hazırlığı
 const getPointInfo = async () => {
-    // facts içindeki her şeyi kullan ama koordinatları da ekle ki AI haritadaki yeri bilsin
+    // Veriyi temizle ve koordinat odaklı hale getir
     const cleanFacts = { 
-        lat, 
-        lng, 
-        context_city: city 
+        latitude: lat, 
+        longitude: lng, 
+        full_address_context: city 
     };
     
     if (facts) {
         Object.keys(facts).forEach(k => {
-            if (facts[k] && facts[k] !== 'unknown') cleanFacts[k] = facts[k];
+            if (facts[k] && facts[k] !== 'unknown' && typeof facts[k] !== 'object') {
+                cleanFacts[k] = facts[k];
+            }
         });
     }
-    const factsJson = JSON.stringify(cleanFacts).slice(0, 3000);
+    const factsJson = JSON.stringify(cleanFacts);
 
-    const prompt = `ENGLISH only. You are a local travel expert.
-PLACE: "${point}"
-LOCATION CONTEXT: "${city}" (Coordinates: ${lat}, ${lng})
-ADDITIONAL DATA: ${factsJson}
+    const prompt = `Task: expert travel guide. Language: English.
+Place Name: "${point}"
+Location: "${city}"
+Coordinates: ${lat}, ${lng}
+System Data: ${factsJson}
 
-TASK:
-1. "p1": A 2-sentence expert description. If it's a specific local spot (like a mosque or cafe in a specific district), mention its vibe relative to that specific area.
-2. "p2": A practical tip or a unique local detail.
+Goal: Provide a 2-sentence description (p1) and a short tip (p2).
 
-STRICT RULES:
-- If you don't have specific info about THIS exact location at these coordinates, provide a helpful general description of what this TYPE of place offers in "${city}".
-- NEVER use placeholders like "[insert address]", "N/A", or "Contact: unknown".
-- Use the provided LOCATION CONTEXT: "${city}" to identify the exact spot. 
-- If ${city} is empty, use coordinates to determine the general region.
-- If no practical tip is possible, leave "p2" empty.
-- Return ONLY JSON: {"p1":"...", "p2":"..."}`;
+STRICT INSTRUCTIONS:
+1. NEVER use generic placeholders like "[insert...]", "N/A", or "Contact details".
+2. NEVER use the word "Global". If you don't know the city, use the specific area names provided in Location: "${city}".
+3. Accuracy: You are at coordinates ${lat}, ${lng}. Focus only on this specific neighborhood in ${city}.
+4. If the exact place is unknown to you, describe the general atmosphere of this street/district and what a visitor can expect from a place like "${point}" in this part of ${city}.
+5. Style: Natural, human-like, not robotic.
+6. JSON format only: {"p1": "...", "p2": "..."}`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
@@ -179,13 +180,26 @@ STRICT RULES:
             messages: [{ role: "user", content: prompt }],
             stream: false, 
             format: "json", 
-            options: { temperature: 0.2, num_predict: 250 } // Sıcaklığı biraz artırdık ki daha doğal konuşsun
-        }, { timeout: 30000 });
+            options: { 
+                temperature: 0.3, // Biraz daha yaratıcı ama kontrollü
+                num_predict: 200,
+                top_p: 0.9
+            }
+        }, { timeout: 25000 });
 
-        const content = response.data?.message?.content || "{}";
-        return JSON.parse(content);
+        let content = response.data?.message?.content || "{}";
+        const result = JSON.parse(content);
+
+        // Final Temizlik: Eğer AI yine de placeholder sızdırdıysa temizle
+        if (result.p1 && result.p1.includes('[')) result.p1 = result.p1.replace(/\[.*?\]/g, '').trim();
+        if (result.p2 && result.p2.includes('[')) result.p2 = "";
+
+        return result;
     } catch (err) { 
-        return { p1: "Explore the local atmosphere and unique offerings of this spot in " + city + ".", p2: "" }; 
+        return { 
+            p1: `Discover the local charm of ${point || 'this location'} in ${city || 'this area'}.`, 
+            p2: "" 
+        }; 
     }
 };
 
