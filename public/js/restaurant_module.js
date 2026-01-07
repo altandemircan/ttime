@@ -1558,23 +1558,16 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 1000) { // 100
         };
 
         if (data.features && data.features.length > 0) {
-            // Tüm sonuçları işle ve kategorilere ayır
-            allResults = data.features
-                .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
-                .map(f => ({ 
-                    ...f, 
-                    distance: haversine(lat, lng, f.properties.lat, f.properties.lon),
-                    category: getCategoryFromProperties(f.properties)
-                }))
-                .sort((a, b) => a.distance - b.distance);
-
-            // Kategorilere ayır (her kategori için max 5)
-            allResults.forEach(f => {
-                const cat = f.category;
-                if (categoryGroups[cat] && categoryGroups[cat].length < 5) {
-                    categoryGroups[cat].push(f);
-                }
+        console.log("API Response sample:", data.features[0].properties);
+        
+        // DEBUG: Tüm kategorileri logla
+        data.features.forEach((f, i) => {
+            console.log(`Item ${i}:`, {
+                name: f.properties.name,
+                categories: f.properties.categories,
+                types: f.properties.datasource?.raw
             });
+        });
 
             // İlk item için fotoğraf yükle
             await loadClickedPointImage(pointInfo.name);
@@ -1741,12 +1734,19 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 1000) { // 100
 
 // Yardımcı fonksiyon: Özelliklerden kategori belirle
 function getCategoryFromProperties(properties) {
+    console.log("Properties for categorization:", properties);
+    
     const cats = properties.categories || '';
-    if (cats.includes('accommodation.hotel')) return 'hotel';
-    if (cats.includes('tourism.sights')) return 'sights';
-    if (cats.includes('tourism.museum')) return 'museum';
-    if (cats.includes('historic')) return 'historic';
-    return 'hotel'; // fallback
+    console.log("Categories string:", cats);
+    
+    // Basit kontrol
+    if (cats.includes('hotel') || cats.includes('accommodation')) return 'hotel';
+    if (cats.includes('sights') || cats.includes('attraction')) return 'sights';
+    if (cats.includes('museum')) return 'museum';
+    if (cats.includes('historic') || cats.includes('archaeological')) return 'historic';
+    
+    console.log("No category match, defaulting to hotel");
+    return 'hotel';
 }
 
 // Yardımcı fonksiyon: Kategori öğelerini render et
