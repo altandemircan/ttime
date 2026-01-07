@@ -457,102 +457,31 @@ function attachClickNearbySearch(map, day, options = {}) {
 
 
 // BASİT VE ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
-// GÜNCELLENMİŞ VE ÇALIŞAN KATEGORİ BELİRLEME FONKSİYONU
-function getSimplePlaceCategory(feature) {
-    const categories = (feature.properties.categories || "").toLowerCase();
-    const name = (feature.properties.name || "").toLowerCase();
+// GÜNCEL getSimplePlaceCategory FONKSİYONU (kısa ve basit)
+function getSimplePlaceCategory(f) {
+    const cats = f.properties.categories || "";
     
-    // RESTAURANT KONTROLÜ
-    if (categories.includes('restaurant') || 
-        categories.includes('fast_food') ||
-        categories.includes('food') ||
-        categories.includes('dining') ||
-        categories.includes('catering') ||
-        name.includes('restaurant') ||
-        name.includes('restoran') ||
-        name.includes('lokanta') ||
-        name.includes('kafe') ||
-        name.includes('cafe')) {
-        return 'restaurant';
-    }
-    
-    // HOTEL KONTROLÜ
-    if (categories.includes('hotel') || 
-        categories.includes('accommodation') ||
-        categories.includes('hostel') ||
-        categories.includes('motel') ||
-        categories.includes('guest') ||
-        categories.includes('lodging') ||
-        name.includes('hotel') ||
-        name.includes('otel') ||
-        name.includes('pansiyon')) {
-        return 'hotel';
-    }
-    
-    // SHOP (MAĞAZA) KONTROLÜ
-    if (categories.includes('commercial') ||
-        categories.includes('shop') ||
-        categories.includes('store') ||
-        categories.includes('market') ||
-        categories.includes('mall') ||
-        categories.includes('supermarket') ||
-        categories.includes('convenience') ||
-        categories.includes('clothing') ||
-        categories.includes('fashion') ||
-        categories.includes('shopping') ||
-        name.includes('market') ||
-        name.includes('marketi') ||
-        name.includes('mağaza') ||
-        name.includes('shop') ||
-        name.includes('store') ||
-        name.includes('avm') ||
-        name.includes('alışveriş')) {
+    // shops kontrolü
+    if (cats.includes('commercial.') || cats.includes('shop')) {
         return 'shops';
     }
     
-    // ENTERTAINMENT (EĞLENCE) KONTROLÜ
-    if (categories.includes('entertainment') ||
-        categories.includes('leisure') ||
-        categories.includes('cinema') ||
-        categories.includes('theatre') ||
-        categories.includes('museum') ||
-        categories.includes('gallery') ||
-        categories.includes('park') ||
-        categories.includes('garden') ||
-        categories.includes('amusement') ||
-        categories.includes('nightclub') ||
-        categories.includes('bar') ||
-        categories.includes('pub') ||
-        categories.includes('club') ||
-        categories.includes('attraction') ||
-        name.includes('sinema') ||
-        name.includes('tiyatro') ||
-        name.includes('müze') ||
-        name.includes('park') ||
-        name.includes('bahçe') ||
-        name.includes('bar') ||
-        name.includes('pub') ||
-        name.includes('gece kulübü')) {
+    // entertainment kontrolü  
+    if (cats.includes('entertainment') || cats.includes('leisure')) {
         return 'entertainment';
     }
     
-    // CAFE KONTROLÜ (isteğe bağlı, eğer cafe ayrı kategori istiyorsanız)
-    if (categories.includes('cafe') || 
-        categories.includes('coffee') || 
-        categories.includes('coffee_shop') ||
-        categories.includes('bakery') ||
-        categories.includes('dessert') ||
-        categories.includes('ice_cream') ||
-        categories.includes('tea') ||
-        name.includes('cafe') ||
-        name.includes('kahve') ||
-        name.includes('pastane') ||
-        name.includes('dondurma') ||
-        name.includes('çay')) {
-        return 'restaurant'; // veya 'cafe' olarak ayrı kategori istiyorsanız
+    // restaurant kontrolü
+    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
+        return 'restaurant';
     }
     
-    // Varsayılan olarak restaurant döndür
+    // hotel kontrolü
+    if (cats.includes('accommodation') || cats.includes('hotel')) {
+        return 'hotel';
+    }
+    
+    // varsayılan
     return 'restaurant';
 }
 
@@ -1370,21 +1299,34 @@ const allCategories = "catering.restaurant,accommodation,commercial.supermarket,
             });
 
             // Kategorilere ayır - BASİT YÖNTEM
-           allPlaces.forEach(place => {
-    const cat = place.category;
-    if (cat === 'restaurant') {
-        categorizedPlaces.restaurants.push(place);
-    } else if (cat === 'hotel') {
-        categorizedPlaces.hotels.push(place);
-    } else if (cat === 'shops') {
-        categorizedPlaces.shops.push(place);
-    } else if (cat === 'entertainment') {
-        categorizedPlaces.entertainment.push(place);
-    }
+            allPlaces.forEach(place => {
+                const cat = place.category;
+                if (cat === 'restaurant') {
+                    categorizedPlaces.restaurants.push(place);
+                } else if (cat === 'hotel') {
+                    categorizedPlaces.hotels.push(place);
+                } else if (cat === 'cafe') {
+                    categorizedPlaces.cafes.push(place);
+                } else if (cat === 'entertainment') {
+                    categorizedPlaces.entertainment.push(place);
+                }
             });
 
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
+
+            // BU SATIRLARI EKLE:
+console.log('Kategori dağılımı:', {
+    restaurants: categorizedPlaces.restaurants.length,
+    hotels: categorizedPlaces.hotels.length,
+    shops: categorizedPlaces.shops.length,
+    entertainment: categorizedPlaces.entertainment.length
+});
+
+// Her yer için kategori bilgisini de logla
+allPlaces.slice(0, 5).forEach((p, i) => {
+    console.log(`Yer ${i}: ${p.properties.name} - Kategori: ${p.category} - API Kategorileri: ${p.properties.categories}`);
+});
 
             // Her kategori için maksimum 5 yer göster
             Object.keys(categorizedPlaces).forEach(key => {
@@ -1754,51 +1696,6 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
   }
   return [];
 }
-
-
-const categoryMapping = {
-    // Commercial/Shops
-    'commercial.supermarket': 'shops',
-    'commercial.convenience': 'shops',
-    'commercial.clothing': 'shops',
-    'commercial.shopping_mall': 'shops',
-    'commercial.department_store': 'shops',
-    
-    // Entertainment
-    'leisure.park': 'entertainment',
-    'entertainment.cinema': 'entertainment',
-    'entertainment.museum': 'entertainment',
-    'entertainment.theatre': 'entertainment',
-    'entertainment.culture': 'entertainment',
-    'leisure.sports': 'entertainment',
-    
-    // Restaurants
-    'catering.restaurant': 'restaurant',
-    'catering.fast_food': 'restaurant',
-    'catering.cafe': 'restaurant', // veya 'cafe'
-    
-    // Hotels
-    'accommodation.hotel': 'hotel',
-    'accommodation.hostel': 'hotel',
-    'accommodation.motel': 'hotel'
-};
-
-function getCategoryFromMapping(feature) {
-    if (!feature.properties.categories) return 'restaurant';
-    
-    const cats = feature.properties.categories.split(',');
-    for (const cat of cats) {
-        if (categoryMapping[cat]) {
-            return categoryMapping[cat];
-        }
-    }
-    
-    // Eşleşme bulamazsa varsayılan
-    return 'restaurant';
-}
-
-
-
 
 let aiAbortController = null;
 let aiDebounceTimeout = null;
