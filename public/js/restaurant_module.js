@@ -520,6 +520,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
                 // --- DÖNGÜ BAŞLANGICI (index buraya eklendi) ---
 // BUL VE DEĞİŞTİR: results.map döngüsü
+// BUL VE DEĞİŞTİR: results.map döngüsü
 placesHtml = results.map((f, index) => {
     const p = f.properties;
     const name = p.name || "(No name)";
@@ -529,8 +530,9 @@ placesHtml = results.map((f, index) => {
     const locationContext = p.city || p.country || "Global";
 
     return `
-    <li class="nearby-place-wrapper" style="list-style: none; margin-bottom: 15px;">
-        <div class="nearby-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+    <li class="nearby-place-wrapper" style="list-style: none; margin-bottom: 12px;">
+        <div class="nearby-place-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+            
             <div class="nearby-place-image" style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
                 <img src="${photo}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
                 <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-info-${index}')" 
@@ -538,18 +540,20 @@ placesHtml = results.map((f, index) => {
                     <span style="font-size: 10px; color: white;">✨</span>
                 </div>
             </div>
+
             <div class="nearby-place-info" style="flex: 1; min-width: 0;">
-                <div style="font-weight: 600; font-size: 13px;">${name}</div>
+                <div style="font-weight: 600; font-size: 13px; color: #333;">${name}</div>
                 <div style="font-size: 11px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.formatted || ""}</div>
             </div>
+
             <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; gap: 2px;">
                 <div style="font-size: 10px; color: #999;">${distStr}</div>
                 <button onclick="window.addNearbyPlaceToTripFromPopup(${index}, ${day}, '${p.lat}', '${p.lon}')" style="width: 28px; height: 28px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold;">+</button>
             </div>
+
+            <div id="ai-info-${index}" style="width: 100%; margin-top: 4px; border-top: 1px dashed #ddd; padding-top: 8px; display: none;"></div>
         </div>
-        
-        <div id="ai-info-${index}" style="width: 100%; margin-top: 2px;"></div>
-    </li>`;
+        </li>`;
 }).join('');
             } else {
                 placesHtml = "<li class='nearby-no-results'>No places found within 500 meters.</li>";
@@ -1460,18 +1464,20 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ point: pointName, city, lat, lng, facts })
             });
-            const data = await response.json();
-            
-            // TAM İSTEDİĞİN DİV YAPISI
-            descDiv.innerHTML = `
-                <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 5px;">
-                    <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
-                    ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
-                    <div style="padding: 8px 10px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 6px;">
-                        <span style="font-size: 12px;">✨</span>
-                        <div style="font-style: italic; color: #666; font-size: 10px;">${data.p2}</div>
-                    </div>` : ''}
-                </div>`;
+           const data = await response.json();
+
+// Div gizliyse göster (Listede kart içinde olduğu için)
+descDiv.style.display = 'block';
+
+descDiv.innerHTML = `
+    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; margin-top: 5px;">
+        <div style="padding: 10px; font-size: 12px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">${data.p1}</div>
+        ${(data.p2 && !data.p2.toLowerCase().includes('unknown')) ? `
+        <div style="padding: 8px 10px; background: #fdfdfe; display: flex; align-items: flex-start; gap: 6px;">
+            <span style="font-size: 12px;">✨</span>
+            <div style="font-style: italic; color: #666; font-size: 10px;">${data.p2}</div>
+        </div>` : ''}
+    </div>`;
         } catch (e) {
             if (e.name === 'AbortError') return;
             descDiv.innerHTML = ""; 
