@@ -138,69 +138,74 @@ max_tokens: 200
 
 router.post('/clicked-ai', async (req, res) => {
     const { point, city, lat, lng, facts } = req.body;
-    
-    // 1. POINT-AI MANTIĞI (TEMİZLENMİŞ)
-   // Backend prompt ve veri hazırlığı
-const getPointInfo = async () => {
-    // Veriyi temizle ve koordinat odaklı hale getir
-    const cleanFacts = { 
-        latitude: lat, 
-        longitude: lng, 
-        full_address_context: city 
-    };
-    
-    if (facts) {
-        Object.keys(facts).forEach(k => {
-            if (facts[k] && facts[k] !== 'unknown' && typeof facts[k] !== 'object') {
-                cleanFacts[k] = facts[k];
-            }
-        });
-    }
-    const factsJson = JSON.stringify(cleanFacts);
 
-const prompt = `Task: Local Neighborhood Expert. Language: English.
-Point of Interest: "${point}"
+    const getPointInfo = async () => {
+        // Kategori bilgisini temizle (cafe, restaurant, hospital vb.)
+        const rawCategory = facts?.category || facts?.type || "place";
+        const cleanCategory = rawCategory.replace(/\./g, ' ').toUpperCase();
+
+        const cleanFacts = { 
+            latitude: lat, 
+            longitude: lng, 
+            full_address_context: city,
+            place_type: cleanCategory 
+        };
+        
+        if (facts) {
+            Object.keys(facts).forEach(k => {
+                if (facts[k] && facts[k] !== 'unknown' && typeof facts[k] !== 'object') {
+                    cleanFacts[k] = facts[k];
+                }
+            });
+        }
+
+        // PROMPT: Kategoriyi balyoz gibi vuran yeni yapı
+        const prompt = `Task: Local Neighborhood Expert. Language: English.
+Target Name: "${point}"
+Category/Type: ${cleanCategory}
 Reference Location: "${city}"
 Coordinates: ${lat}, ${lng}
 
 STRICT CONTENT RULES:
-1. "p1": Write a 2-sentence description. You MUST identify the location using ONLY the names provided in Reference Location: "${city}".
-2. ZERO TOLERANCE FOR HALLUCINATION: Do NOT assume any city name. Look strictly at the "${city}" variable.
-3. Use the specific city or district name found in "${city}" within your sentences.
-4. DO NOT mention street names, building numbers, or full addresses.
-5. "p2": One practical tip. Leave it as an empty string "" if you don't have a verified tip for this specific spot.
-6. Return ONLY JSON: {"p1": "...", "p2": "..."}`;
+1. "p1": You MUST describe "${point}" as a ${cleanCategory}. Do not invent historical importance if it is a local business like a cafe or shop.
+2. Use ONLY the city or district names provided in "${city}" for location. 
+3. ZERO TOLERANCE: Do not assume any city. If it's in Denizli, do not say Antalya.
+4. NO street names or building numbers in sentences.
+5. "p2": One short practical tip for a ${cleanCategory} visitor. If you don't have a specific real tip, leave it as "".
+6. Style: Natural, not robotic. NO "Located in the heart of" or "Experience the rich culture" clichés.
 
-    try {
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "llama3:8b",
-            messages: [{ role: "user", content: prompt }],
-            stream: false, 
-            format: "json", 
-            options: { 
-                temperature: 0.3, // Biraz daha yaratıcı ama kontrollü
-                num_predict: 200,
-                top_p: 0.9
-            }
-        }, { timeout: 25000 });
+Return ONLY JSON: {"p1": "...", "p2": "..."}`;
 
-        let content = response.data?.message?.content || "{}";
-        const result = JSON.parse(content);
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+                model: "llama3:8b",
+                messages: [{ role: "user", content: prompt }],
+                stream: false, 
+                format: "json", 
+                options: { 
+                    temperature: 0.1, // SALLAMAYI KES: Daha tutarlı sonuç için düşürdük
+                    num_predict: 150,
+                    top_p: 0.9
+                }
+            }, { timeout: 25000 });
 
-        // Final Temizlik: Eğer AI yine de placeholder sızdırdıysa temizle
-        if (result.p1 && result.p1.includes('[')) result.p1 = result.p1.replace(/\[.*?\]/g, '').trim();
-        if (result.p2 && result.p2.includes('[')) result.p2 = "";
+            let content = response.data?.message?.content || "{}";
+            const result = JSON.parse(content);
 
-        return result;
-    } catch (err) { 
-        return { 
-            p1: `Discover the local charm of ${point || 'this location'} in ${city || 'this area'}.`, 
-            p2: "" 
-        }; 
-    }
-};
+            // Placeholder temizliği
+            if (result.p1 && result.p1.includes('[')) result.p1 = result.p1.replace(/\[.*?\]/g, '').trim();
+            if (result.p2 && result.p2.includes('[')) result.p2 = "";
 
-    // 2. NEARBY MANTIĞI
+            return result;
+        } catch (err) { 
+            return { 
+                p1: `Explore the local atmosphere of this ${cleanCategory.toLowerCase()} in ${city.split(',')[0]}.`, 
+                p2: "" 
+            }; 
+        }
+    };
+
+    // 2. NEARBY MANTIĞI (Kategorilere göre 15km - 25km arası arama)
     const getNearby = async () => {
         const apiKey = process.env.GEOAPIFY_KEY;
         const fetchCat = async (cat, rad) => {
@@ -227,7 +232,6 @@ STRICT CONTENT RULES:
         res.status(500).json({ error: "Fetch failed" });
     }
 });
-
 
 router.get('/chat-stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
