@@ -621,53 +621,40 @@ return `
         loadClickedPointImage(pointInfo.name);
 
 
-
-        // 1. Önce pointInfo'nun gelmesini bekle, gelmezse fallback oluştur
-if (!pointInfo || (!pointInfo.county && !pointInfo.city)) {
-    pointInfo = { 
-        ...pointInfo,
-        // window.selectedCity senin ana ekranında seçili olan şehirdir (Antalya, Denizli vb.)
-        county: window.selectedCity || "Unknown City", 
-        country: "Turkey"
-    };
+// 1. Dinamik Şehir Belirleme: Asla el yazısıyla şehir ismi ekleme!
+let currentCityName = "";
+if (pointInfo && (pointInfo.county || pointInfo.city)) {
+    currentCityName = pointInfo.county || pointInfo.city;
+} else if (window.selectedCity) {
+    currentCityName = window.selectedCity;
+} else if (pointInfo && pointInfo.address) {
+    // Eğer pointInfo dolu ama county/city yoksa, adresteki son parçalardan şehri ayıkla
+    const addrParts = pointInfo.address.split(',');
+    currentCityName = addrParts.length > 2 ? addrParts[addrParts.length - 2].trim() : "";
 }
 
-let locationParts = [];
+// 2. locationParts Oluşturma
+let locationParts = [
+    pointInfo?.suburb,
+    pointInfo?.city || pointInfo?.town,
+    currentCityName,
+    pointInfo?.country || "Turkey"
+];
 
-// 2. Türkiye Kontrolü (County = İl mantığına sadık kalarak)
-const isTurkey = pointInfo.country_code === 'tr' || 
-                 (pointInfo.country && pointInfo.country.toLowerCase() === 'turkey') ||
-                 (window.selectedCity); // Güvenlik katmanı
-
-if (isTurkey) {
-    locationParts = [
-        pointInfo.suburb,
-        pointInfo.city || pointInfo.town,
-        pointInfo.county || window.selectedCity, // İl bilgisini asla boş bırakma
-        "Turkey"
-    ];
-} else {
-    locationParts = [
-        pointInfo.suburb,
-        pointInfo.city || pointInfo.town,
-        pointInfo.state,
-        pointInfo.country
-    ];
-}
-
+// 3. Temizlik: Sadece dolu olanları ve "Unknown" içermeyenleri birleştir
 const fullAddressContext = locationParts
-    .filter((v, i, a) => v && a.indexOf(v) === i)
+    .filter((v, i, a) => v && a.indexOf(v) === i && !v.toLowerCase().includes('unknown'))
     .join(', ');
 
-// KRİTİK LOG: Burası hala boş geliyorsa fetchClickedPointAI hiç çalışmamalı
 console.log("AI'ya giden dinamik context:", fullAddressContext);
 
-const finalAiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") 
+// 4. Eğer hala context boşsa, AI uydurmasın diye sadece ismi gönder
+const finalAiSearchName = (pointInfo?.name && pointInfo?.name !== "Selected Point") 
     ? pointInfo.name 
-    : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
+    : (pointInfo?.address ? pointInfo.address.split(',')[0] : "");
 
-if (finalAiSearchName && fullAddressContext) {
-    const category = pointInfo.category || pointInfo.type || ""; 
+if (finalAiSearchName) {
+    const category = pointInfo?.category || pointInfo?.type || "place"; 
     window.fetchClickedPointAI(finalAiSearchName, lat, lng, fullAddressContext, { category }, 'ai-point-description');
 }
 
