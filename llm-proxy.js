@@ -158,22 +158,18 @@ const getPointInfo = async () => {
     }
     const factsJson = JSON.stringify(cleanFacts);
 
-const prompt = `Task: Local expert travel guide. Language: English.
-Place Name: "${point}"
-Mandatory Location: "${city}"
-Coordinates: ${lat}, ${lng}
+const prompt = `Task: Local Neighborhood Expert. Language: English.
+Place: "${point}"
+Specific Location: "${city}" (Coordinates: ${lat}, ${lng})
 
-CRITICAL: Focus ONLY on "${point}" at these exact coordinates within "${city}". 
-Ignore any other places with the same name in different regions. 
+STRICT RULES FOR CONTENT:
+1. "p1": You MUST mention the specific city or district from "${city}" in the description. Do NOT use vague terms like "this region" or "this city". Be specific (e.g., "Located in Antalya's ${city.split(',')[0]} area..."). 
+2. Write 2 sentences about the place's vibe. If you don't know the specific history of "${point}", describe it based on its real-world location on Tonguç Caddesi/Antalya context.
+3. "p2": Give a practical local tip. If you don't have one, leave it empty "".
+4. NO placeholders (e.g., [insert...]), NO "Global" word.
+5. NO robotic phrases like "Located in the heart of...". Talk like a local who lives there.
 
-Goal: Provide a 2-sentence description (p1) and a short tip (p2).
-
-STRICT RULES:
-1. "p1": Write a 2-sentence description. Use the neighborhood context of "${city}". If specific history is unknown for this exact spot, describe its architectural character and the local atmosphere of this district in "${city}".
-2. "p2": Provide one practical tip. If unknown, leave it as an empty string "".
-3. DO NOT use placeholders like "[insert...]", "N/A", or "Contact info".
-4. DO NOT use the word "Global".
-5. Return ONLY JSON: {"p1": "...", "p2": "..."}`;
+Return ONLY JSON: {"p1": "...", "p2": "..."}`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
