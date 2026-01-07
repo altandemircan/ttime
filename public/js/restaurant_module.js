@@ -768,7 +768,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
             });
         }
 
-        // Tıkalanan nokta bölümü (değişmedi)
+        // Tıkalanan nokta bölümü
         const addPointSection = `
             <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
                 <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -921,6 +921,15 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         
         tabContentsHtml += '</div>';
 
+        // SHOW RESTAURANTS BUTTON - ORİJİNALİ KORUYORUZ
+        const showRestaurantsButton = `
+            <div style="text-align:center; margin: 20px 0 4px 0;">
+                <button id="show-restaurants-btn" style="padding:10px 18px; border-radius:9px; background:#8a4af3; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
+                    🍽️ Show Restaurants
+                </button>
+            </div>
+        `;
+
         // Popup HTML'ini birleştir
         const html = `
             <div style="max-width: 380px;">
@@ -930,6 +939,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                 ${addPointSection}
                 ${tabsHtml}
                 ${tabContentsHtml}
+                ${showRestaurantsButton}
             </div>
         `;
 
@@ -937,7 +947,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
 
         // Global kayıtlar
         window._lastNearbyPlaces = allPlaces;
-        window._lastNearbyPhotos = []; // Fotoğrafları tab içinde lazım olursa ekleyebiliriz
+        window._lastNearbyPhotos = [];
         window._lastNearbyDay = day;
         window._currentPointInfo = pointInfo;
         
@@ -964,7 +974,16 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
                     });
                 });
             });
-        }, 100);
+
+            // SHOW RESTAURANTS BUTTON EVENT LISTENER - ORİJİNALİ KORUYORUZ
+            const btn = document.getElementById("show-restaurants-btn");
+            if (btn) {
+                btn.onclick = function() {
+                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+                    showNearbyRestaurants(lat, lng, map, day);
+                };
+            }
+        }, 250);
 
         // Şehir bilgisi ve AI açıklaması
         let currentCityName = window.selectedCity || "";
@@ -984,6 +1003,24 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 500) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
     }
+}
+
+// Yardımcı fonksiyon: Yerin kategorisini belirle
+function getPlaceCategory(feature, categoryGroups) {
+    const categories = feature.properties.categories || "";
+    
+    if (categories.includes('restaurant') || categories.includes('fast_food')) {
+        return 'restaurant';
+    } else if (categories.includes('hotel')) {
+        return 'hotel';
+    } else if (categories.includes('cafe')) {
+        return 'cafe';
+    } else if (categories.includes('park') || categories.includes('cinema') || categories.includes('entertainment')) {
+        return 'entertainment';
+    }
+    
+    // Varsayılan olarak restoran
+    return 'restaurant';
 }
 
 // Yardımcı fonksiyon: Yerin kategorisini belirle
