@@ -1557,17 +1557,23 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 1000) { // 100
             historic: []
         };
 
-        if (data.features && data.features.length > 0) {
-        console.log("API Response sample:", data.features[0].properties);
-        
-        // DEBUG: Tüm kategorileri logla
-        data.features.forEach((f, i) => {
-            console.log(`Item ${i}:`, {
-                name: f.properties.name,
-                categories: f.properties.categories,
-                types: f.properties.datasource?.raw
-            });
-        });
+       // Basit versiyona geçelim:
+if (data.features && data.features.length > 0) {
+    allResults = data.features
+        .filter(f => !!f.properties.name && f.properties.name.trim().length > 2)
+        .map(f => ({ 
+            ...f, 
+            distance: haversine(lat, lng, f.properties.lat, f.properties.lon)
+        }))
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10); // En yakın 10'u göster
+    
+    // Tüm sonuçları tek grup olarak göster
+    categoryGroups.hotel = allResults;
+    categoryGroups.sights = allResults;
+    categoryGroups.museum = allResults;
+    categoryGroups.historic = allResults;
+}
 
             // İlk item için fotoğraf yükle
             await loadClickedPointImage(pointInfo.name);
