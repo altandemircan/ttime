@@ -622,10 +622,10 @@ return `
 
 // Cadde/Sokak bilgilerini eleyip sadece AI'nın bilmesi gereken bölge isimlerini gönderiyoruz
 const fullAddressContext = [
-    pointInfo.suburb, // Mahalle/Semt
-    pointInfo.city || pointInfo.town || pointInfo.state, // Şehir
-    pointInfo.country // Ülke
-].filter(Boolean).join(', ');
+    pointInfo.suburb, 
+    pointInfo.city || pointInfo.town || pointInfo.state, 
+    pointInfo.country
+].filter((v, i, a) => v && a.indexOf(v) === i).join(', ');
 
 const aiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") ? pointInfo.name : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
 
