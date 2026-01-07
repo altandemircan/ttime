@@ -623,40 +623,54 @@ return `
 // Cadde/Sokak bilgilerini eleyip sadece AI'nın bilmesi gereken bölge isimlerini gönderiyoruz
 let locationParts = [];
 
-        if (pointInfo.country_code === 'tr' || (pointInfo.country && pointInfo.country.toLowerCase() === 'turkey')) {
-            // TÜRKİYE ÖZEL: County = İl, City/Town = İlçe
-            locationParts = [
-                pointInfo.suburb,   // Mahalle
-                pointInfo.city || pointInfo.town, // İlçe
-                pointInfo.county,   // İL (Antalya, Denizli vb.)
-                pointInfo.country   // Ülke
-            ];
-        } else {
-            // DÜNYA GENELİ STANDART: City = Şehir
-            locationParts = [
-                pointInfo.suburb,
-                pointInfo.city || pointInfo.town,
-                pointInfo.state,
-                pointInfo.country
-            ];
-        }
+        // 1. Önce pointInfo'nun gelmesini bekle, gelmezse fallback oluştur
+if (!pointInfo || (!pointInfo.county && !pointInfo.city)) {
+    pointInfo = { 
+        ...pointInfo,
+        // window.selectedCity senin ana ekranında seçili olan şehirdir (Antalya, Denizli vb.)
+        county: window.selectedCity || "Unknown City", 
+        country: "Turkey"
+    };
+}
 
-        const fullAddressContext = locationParts
+let locationParts = [];
+
+// 2. Türkiye Kontrolü (County = İl mantığına sadık kalarak)
+const isTurkey = pointInfo.country_code === 'tr' || 
+                 (pointInfo.country && pointInfo.country.toLowerCase() === 'turkey') ||
+                 (window.selectedCity); // Güvenlik katmanı
+
+if (isTurkey) {
+    locationParts = [
+        pointInfo.suburb,
+        pointInfo.city || pointInfo.town,
+        pointInfo.county || window.selectedCity, // İl bilgisini asla boş bırakma
+        "Turkey"
+    ];
+} else {
+    locationParts = [
+        pointInfo.suburb,
+        pointInfo.city || pointInfo.town,
+        pointInfo.state,
+        pointInfo.country
+    ];
+}
+
+const fullAddressContext = locationParts
     .filter((v, i, a) => v && a.indexOf(v) === i)
     .join(', ');
 
-console.log("AI'ya giden şehir verisi:", fullAddressContext); // Burayı kontrol et, içinde Denizli var mı?
+// KRİTİK LOG: Burası hala boş geliyorsa fetchClickedPointAI hiç çalışmamalı
+console.log("AI'ya giden dinamik context:", fullAddressContext);
 
-        // Değişken ismini finalAiSearchName yaparak çakışmayı önledik
-        const finalAiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") 
-            ? pointInfo.name 
-            : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
+const finalAiSearchName = (pointInfo.name && pointInfo.name !== "Selected Point") 
+    ? pointInfo.name 
+    : (pointInfo.address ? pointInfo.address.split(',')[0] : "");
 
-        if (finalAiSearchName) {
-            // pointInfo içinden kategoriyi al (cafe, restaurant, hotel vb.)
-            const category = pointInfo.category || pointInfo.type || ""; 
-            window.fetchClickedPointAI(finalAiSearchName, lat, lng, fullAddressContext, { category }, 'ai-point-description');
-        }
+if (finalAiSearchName && fullAddressContext) {
+    const category = pointInfo.category || pointInfo.type || ""; 
+    window.fetchClickedPointAI(finalAiSearchName, lat, lng, fullAddressContext, { category }, 'ai-point-description');
+}
 
     } catch (error) {
         console.error('Nearby places fetch error:', error);
