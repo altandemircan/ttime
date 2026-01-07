@@ -1455,42 +1455,68 @@ async function getPlacesForCategory(city, category, limit = 5, radius = 3000, co
 }
 
 
+// Fonksiyonun dışında, bu değişkenleri tanımlıyoruz (kalıcı olması için)
+let aiAbortController = null;
+let aiDebounceTimeout = null;
+
 async function fetchClickedPointAI(pointName, lat, lng, city, facts) {
     const descDiv = document.getElementById('ai-point-description');
     if (!descDiv) return;
 
-    try {
-        const response = await fetch('/llm-proxy/clicked-ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ point: pointName, city, lat, lng, facts })
-        });
-        
-        const data = await response.json();
-        
-        // AI Bilgisi (P1 ve P2)
-        let html = `<div style="margin-bottom:8px;">${data.p1}</div>`;
-        if (data.p2) html += `<div style="font-style: italic; color: #666; font-size: 10px;">💡 ${data.p2}</div>`;
+    // 1. Önceki bekleyen (debounce) işlemi temizle
+    clearTimeout(aiDebounceTimeout);
 
-        // Nearby Butonları (Eğer varsa)
-        if (data.nearby) {
-            html += `<div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:8px;">`;
-            const allNearby = [...data.nearby.settlement, ...data.nearby.nature, ...data.nearby.historic];
-            
-            allNearby.forEach(item => {
-                html += `
-                    <button class="ai-nearby-btn" 
-                        style="display:block; width:100%; text-align:left; background:#fff; border:1px solid #eee; margin-bottom:4px; padding:4px 8px; font-size:10px; border-radius:4px; cursor:pointer;"
-                        onclick="window.showNearbyPlacesPopup(${item.facts.lat}, ${item.facts.lon})">
-                        📍 ${item.name}
-                    </button>`;
-            });
-            html += `</div>`;
-        }
-
-        descDiv.innerHTML = html;
-        
-    } catch (e) {
-        descDiv.innerHTML = "AI could not load information.";
+    // 2. Eğer halihazırda bir AI isteği yoldaysa (network aşamasındaysa), onu iptal et
+    if (aiAbortController) {
+        aiAbortController.abort();
     }
+
+    // 3. Yeni bir iptal kontrolcüsü oluştur
+    aiAbortController = new AbortController();
+
+    // 4. Ekranda hemen bir yükleniyor ibaresi göster (Kullanıcı etkileşimi hissetsin)
+    descDiv.innerHTML = `<div style="font-size:11px; color:#888;">🤖 AI is thinking...</div>`;
+
+    // 5. DEBOUNCE: 400ms bekle, yeni bir tıklama gelmezse asıl isteği gönder
+    aiDebounceTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch('/llm-proxy/clicked-ai', {
+                method: 'POST',
+                signal: aiAbortController.signal, // Bu isteği iptal edilebilir yapıyoruz
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ point: pointName, city, lat, lng, facts })
+            });
+
+            const data = await response.json();
+
+            // AI Bilgisi (P1 ve P2)
+            let html = `<div style="margin-bottom:8px;">${data.p1}</div>`;
+            if (data.p2) html += `<div style="font-style: italic; color: #666; font-size: 10px;">💡 ${data.p2}</div>`;
+
+            // Nearby Butonları
+            if (data.nearby) {
+                html += `<div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:8px;">`;
+                const allNearby = [...data.nearby.settlement, ...data.nearby.nature, ...data.nearby.historic];
+                allNearby.forEach(item => {
+                    html += `
+                        <button class="ai-nearby-btn" 
+                            style="display:block; width:100%; text-align:left; background:#fff; border:1px solid #eee; margin-bottom:4px; padding:4px 8px; font-size:10px; border-radius:4px; cursor:pointer;"
+                            onclick="window.showNearbyPlacesPopup(${item.facts.lat}, ${item.facts.lon})">
+                            📍 ${item.name}
+                        </button>`;
+                });
+                html += `</div>`;
+            }
+
+            descDiv.innerHTML = html;
+
+        } catch (e) {
+            // Eğer hata "iptal edildiği için" oluştuysa, ekrana hata basma (sessizce öl)
+            if (e.name === 'AbortError') {
+                console.log("Önceki AI isteği yenisi başladığı için iptal edildi.");
+                return;
+            }
+            descDiv.innerHTML = "AI could not load information.";
+        }
+    }, 400); // 400ms ideal bir gecikmedir
 }
