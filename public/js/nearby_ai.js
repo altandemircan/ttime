@@ -1617,8 +1617,21 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
             <button class="show-category-btn" 
                     data-category="${key}"
-                    style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
-                Show more
+                    style="padding: 10px;
+    margin: 16px 0;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #5588d0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;">
+                Show more on the map
             </button>
         </div>
     `;
