@@ -208,59 +208,60 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
     
+    // FIXED CSS EKLENDİ
+    popupContainer.style.cssText = `
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 400px;
+        max-width: 95vw;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        z-index: 10000;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    `;
+    
     const closeButtonHtml = showCloseButton ? `
-        <button onclick="closeNearbyPopup()" class="nearby-popup-close-btn" title="Close">×</button>
+        <button onclick="closeNearbyPopup()" class="nearby-popup-close-btn" title="Close" style="
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        ">×</button>
     ` : '';
     
-    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
+    // Kaydırılabilir içerik
+    const scrollableContent = `
+        <div style="
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-top: 16px;
+        ">
+            ${content}
+        </div>
+    `;
+    
+    popupContainer.innerHTML = `${closeButtonHtml}${scrollableContent}`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
-    
-    // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
-    
-    // 1. Temizlik
-    if (window._nearbyPulseMarker) { 
-        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
-        window._nearbyPulseMarker = null; 
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
-        window._nearbyPulseMarker3D = null;
-    }
-
-    // 2. Marker HTML
-    const pulseHtml = `
-      <div class="nearby-pulse-marker">
-        <div class="nearby-pulse-core"></div>
-        <div class="nearby-pulse-ring"></div>
-        <div class="nearby-pulse-ring2"></div>
-      </div>
-    `;
-
-    // 3. Harita Tipine Göre Ekleme
-    const isMapLibre = !!map.addSource; // MapLibre kontrolü
-
-    if (isMapLibre) {
-        // --- 3D MOD (MapLibre) ---
-        const el = document.createElement('div');
-        el.className = 'nearby-pulse-icon-wrapper'; // CSS class
-        el.innerHTML = pulseHtml;
-        
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .addTo(map);
-            
-    } else {
-        // --- 2D MOD (Leaflet) ---
-        const pulseIcon = L.divIcon({
-            html: pulseHtml,
-            className: 'nearby-pulse-icon-wrapper',
-            iconSize: [18,18],
-            iconAnchor: [9,9]
-        });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
-    }
-}
 
 // Popup kapatma fonksiyonu
 // Popup kapatma fonksiyonunu güncelle (tüm kategorileri temizleyecek şekilde)
@@ -1731,7 +1732,13 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             currentCityName = pointInfo.county || pointInfo.city;
         }
         
-        
+        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+            const category = pointInfo?.category || pointInfo?.type || "place"; 
+            const locationContext = [pointInfo?.suburb, pointInfo?.city, currentCityName, pointInfo?.country || "Turkey"]
+                .filter(Boolean).join(', ');
+            
+            window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
+        }
 
     } catch (error) {
         console.error('Nearby places fetch error:', error);
