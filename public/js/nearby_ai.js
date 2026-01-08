@@ -1731,13 +1731,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             currentCityName = pointInfo.county || pointInfo.city;
         }
         
-        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-            const category = pointInfo?.category || pointInfo?.type || "place"; 
-            const locationContext = [pointInfo?.suburb, pointInfo?.city, currentCityName, pointInfo?.country || "Turkey"]
-                .filter(Boolean).join(', ');
-            
-            window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
-        }
+        
 
     } catch (error) {
         console.error('Nearby places fetch error:', error);
