@@ -117,47 +117,6 @@ async function loadClickedPointImage(pointName) {
     }
 }
 
-// Nokta adını düzenleme fonksiyonu
-window.editPointName = function() {
-    const displaySpan = document.getElementById('point-name-display');
-    const inputField = document.getElementById('point-name-input');
-    
-    if (!displaySpan || !inputField) return;
-    
-    // Display'i gizle, input'u göster
-    displaySpan.style.display = 'none';
-    inputField.style.display = 'flex';
-    inputField.focus();
-    inputField.select();
-    
-    // Enter veya blur ile kaydet
-    const saveEdit = function() {
-        const newName = inputField.value.trim();
-        if (newName) {
-            displaySpan.textContent = newName;
-            if (window._currentPointInfo) {
-                window._currentPointInfo.name = newName;
-            }
-        }
-        // Input'u gizle, display'i göster
-        inputField.style.display = 'none';
-        displaySpan.style.display = 'block';
-    };
-    
-    inputField.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            saveEdit();
-        } else if (e.key === 'Escape') {
-            // İptal et - orijinal değeri koru
-            inputField.value = displaySpan.textContent;
-            inputField.style.display = 'none';
-            displaySpan.style.display = 'block';
-        }
-    });
-    
-    inputField.addEventListener('blur', saveEdit);
-};
-
 // Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
 window.addClickedPointToCart = async function(lat, lng, day) {
     try {
@@ -1490,9 +1449,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                     </div>
                     <div class="point-info" style="flex: 1; min-width: 0;">
                         <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.editPointName()">${pointInfo.name}</span>
-                            <button onclick="window.editPointName()" style="background: none; border: none; font-size: 13px; cursor: pointer; color: #666; padding: 2px;">✏️</button>
-                            <input type="text" id="point-name-input" value="${pointInfo.name}" style="display: none; flex: 1; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
                         </div>
                         <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
                             ${pointInfo.address || 'Selected location'}
