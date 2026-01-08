@@ -5325,26 +5325,24 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 /* Custom Nearby Popup Styling */
 #custom-nearby-popup {
-        width: 375px;
-    scrollbar-width: thin;
+     scrollbar-width: thin;
     scrollbar-color: #8a4af3 #f1f1f1;
     position: fixed;
     top: 60px;
-    bottom: 0;
+    /* bottom: 0; */
     right: 0;
     height: 100%;
-    padding: 20px;
+    /* padding: 20px; */
     z-index: 1000;
     background: #fff;
     overflow-y: auto;
-    max-height: calc(100vh - 100px);
+    /* max-height: calc(100vh - 100px); */
     padding-top: 20px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     flex-wrap: nowrap;
-  
-    transition: 0.3s ease;
+    transition: 0.3s ease
 }
 
 /* Scrollbar styling */
