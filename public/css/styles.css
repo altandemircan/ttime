@@ -5329,7 +5329,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     scrollbar-color: #8a4af3 #f1f1f1;
     position: fixed;
     top: 60px;
-    /* bottom: 0; */
+    width: 415px;
     right: 0;
     height: 100%;
     /* padding: 20px; */
