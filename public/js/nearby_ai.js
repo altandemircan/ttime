@@ -120,10 +120,9 @@ async function loadClickedPointImage(pointName) {
 // Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
 window.addClickedPointToCart = async function(lat, lng, day) {
     try {
-        window.currentDay = parseInt(day);
+        window.currentDay = parseInt(day); // Gün sabitleme
 
-        const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };
-        const placeName = pointInfo.name;
+const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };        const placeName = pointInfo.name;
         
         let imageUrl = "img/placeholder.png";
         if (typeof getPexelsImage === "function") {
@@ -151,7 +150,6 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         console.error('Error adding point:', error);
     }
 };
-
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 if (typeof updateCart === "function") updateCart();
 
@@ -1441,6 +1439,10 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
     entertainment: { text: "Show more", color: "#1976d2" }
 };
 
+        // Tıkalanan nokta bölümü
+        const addPointSection = `
+    <div id="ai-point-description" style="margin-bottom: 16px;"></div>
+`;
 
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
@@ -1611,7 +1613,8 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                 <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
                     📍 Nearby Places
                 </div>
-                 ${tabsHtml}
+                ${addPointSection}
+                ${tabsHtml}
                 ${tabContentsHtml}
             </div>
         `;
@@ -1641,7 +1644,9 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         window._lastNearbyDay = day;
         window._currentPointInfo = pointInfo;
 
-       setTimeout(() => {
+        loadClickedPointImage(pointInfo.name);
+
+        setTimeout(() => {
             document.querySelectorAll('.category-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     const tabId = this.dataset.tab;
@@ -1705,7 +1710,14 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             currentCityName = pointInfo.county || pointInfo.city;
         }
         
-   
+        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+            const category = pointInfo?.category || pointInfo?.type || "place"; 
+            const locationContext = [pointInfo?.suburb, pointInfo?.city, currentCityName, pointInfo?.country || "Turkey"]
+                .filter(Boolean).join(', ');
+            
+            window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
+        }
+
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
