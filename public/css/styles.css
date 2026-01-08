@@ -5343,7 +5343,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     flex-direction: column;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    right: -415px;
+  
     transition: 0.3s ease;
 }
 
