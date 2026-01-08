@@ -1840,7 +1840,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             
             // HTML oluştur - İKİ AYRI BÖLÜM
             targetElement.innerHTML = `
-                <div style="margin-top: 12px; width: 100%;">
+                <div style="margin-top: 4px; width: 100%;">
                     
                     
                     <!-- AI Analiz Edilen Yer Bölümü -->
