@@ -1573,9 +1573,9 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                     tabContentsHtml += `
                         <div class="category-place-item" 
                              style="display: flex; align-items: center; gap: 12px; padding: 10px; 
-                                    background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
+                                    background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; 
                                     border: 1px solid #eee;">
-                            <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+                            <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
                                 <img src="${photo}" 
                                      alt="${name}"
                                      style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
