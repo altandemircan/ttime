@@ -208,58 +208,11 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
     
-    // FIXED CSS EKLENDİ
-    popupContainer.style.cssText = `
-        position: fixed;
-        top: 20px;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 400px;
-        max-width: 95vw;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-        z-index: 10000;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    `;
-    
     const closeButtonHtml = showCloseButton ? `
-        <button onclick="closeNearbyPopup()" class="nearby-popup-close-btn" title="Close" style="
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 32px;
-            height: 32px;
-            background: rgba(255,255,255,0.9);
-            border: none;
-            border-radius: 50%;
-            font-size: 24px;
-            color: #333;
-            cursor: pointer;
-            z-index: 10001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        ">×</button>
+        <button onclick="closeNearbyPopup()" class="nearby-popup-close-btn" title="Close">×</button>
     ` : '';
     
-    // Kaydırılabilir içerik
-    const scrollableContent = `
-        <div style="
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            padding-top: 16px;
-        ">
-            ${content}
-        </div>
-    `;
-    
-    popupContainer.innerHTML = `${closeButtonHtml}${scrollableContent}`;
+    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
     
