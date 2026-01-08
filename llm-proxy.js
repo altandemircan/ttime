@@ -337,7 +337,7 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
                 format: "json", 
                 options: { 
                     temperature: 0.1, // Biraz yaratıcılık ama fazla değil
-                    num_predict: 150,
+                    num_predict: 80,
                     top_k: 10,
                     top_p: 0.9,
                     repeat_penalty: 1.1
