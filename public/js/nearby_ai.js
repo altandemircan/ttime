@@ -262,6 +262,52 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     popupContainer.innerHTML = `${closeButtonHtml}${scrollableContent}`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
+    
+    // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
+    
+    // 1. Temizlik
+    if (window._nearbyPulseMarker) { 
+        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
+        window._nearbyPulseMarker = null; 
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
+        window._nearbyPulseMarker3D = null;
+    }
+
+    // 2. Marker HTML
+    const pulseHtml = `
+      <div class="nearby-pulse-marker">
+        <div class="nearby-pulse-core"></div>
+        <div class="nearby-pulse-ring"></div>
+        <div class="nearby-pulse-ring2"></div>
+      </div>
+    `;
+
+    // 3. Harita Tipine Göre Ekleme
+    const isMapLibre = !!map.addSource; // MapLibre kontrolü
+
+    if (isMapLibre) {
+        // --- 3D MOD (MapLibre) ---
+        const el = document.createElement('div');
+        el.className = 'nearby-pulse-icon-wrapper'; // CSS class
+        el.innerHTML = pulseHtml;
+        
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
+            .setLngLat([lng, lat])
+            .addTo(map);
+            
+    } else {
+        // --- 2D MOD (Leaflet) ---
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'nearby-pulse-icon-wrapper',
+            iconSize: [18,18],
+            iconAnchor: [9,9]
+        });
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+    }
+}
 
 // Popup kapatma fonksiyonu
 // Popup kapatma fonksiyonunu güncelle (tüm kategorileri temizleyecek şekilde)
