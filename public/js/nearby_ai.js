@@ -1448,7 +1448,10 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
                     </div>
                     <div class="point-info" style="flex: 1; min-width: 0;">
-                   
+                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; cursor: pointer; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
+                            
+                                                    </div>
                         <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
                             ${pointInfo.address || 'Selected location'}
                         </div>
