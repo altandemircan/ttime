@@ -1,3 +1,6 @@
 git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
 
 git checkout public/index.html && git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
+
+elevation start için
+pm2 start elevation_api.py --interpreter python3 --name elevation-api
