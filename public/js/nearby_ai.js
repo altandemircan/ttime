@@ -1611,10 +1611,10 @@ Object.keys(categorizedPlaces).forEach(key => {
     }
     
     const buttonLabels = {
-        restaurants: { text: "Show Restaurants", color: "#1976d2" },
-        hotels: { text: "Show Hotels", color: "#1976d2" },
-        markets: { text: "Show Markets", color: "#1976d2" },
-        entertainment: { text: "Show Entertainment", color: "#1976d2" }
+        restaurants: { text: "Show more restaurants", color: "#1976d2" },
+        hotels: { text: "Show more hotels", color: "#1976d2" },
+        markets: { text: "Show more markets", color: "#1976d2" },
+        entertainment: { text: "Show more entertainment", color: "#1976d2" }
     };    
     const buttonConfig = buttonLabels[key] || buttonLabels.restaurants;
     
