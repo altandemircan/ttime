@@ -458,206 +458,206 @@ function attachClickNearbySearch(map, day, options = {}) {
 
 
 
-async function showNearbyRestaurants(lat, lng, map, day) {
-    // ---------------------------------------------------------
-    // 1. CSS ENJEKSİYONU: 3D MAP POPUP TASARIMINI 2D İLE EŞİTLEME
-    // ---------------------------------------------------------
-    if (!document.getElementById('tt-popup-unified-styles')) {
-        const style = document.createElement('style');
-        style.id = 'tt-popup-unified-styles';
-        style.innerHTML = `
-            /* MapLibre (3D) Popup Konteynerini Sıfırla */
-            .maplibregl-popup-content {
-                padding: 0 !important;
-                background: transparent !important; /* İçerik kendi arkaplanına sahip */
-                border-radius: 8px !important;
-                box-shadow: 0 3px 14px rgba(0,0,0,0.4) !important;
-                width: 341px !important; /* Leaflet ile aynı genişlik */
-                max-width: 360px !important;
-            }
+// async function showNearbyRestaurants(lat, lng, map, day) {
+//     // ---------------------------------------------------------
+//     // 1. CSS ENJEKSİYONU: 3D MAP POPUP TASARIMINI 2D İLE EŞİTLEME
+//     // ---------------------------------------------------------
+//     if (!document.getElementById('tt-popup-unified-styles')) {
+//         const style = document.createElement('style');
+//         style.id = 'tt-popup-unified-styles';
+//         style.innerHTML = `
+//             /* MapLibre (3D) Popup Konteynerini Sıfırla */
+//             .maplibregl-popup-content {
+//                 padding: 0 !important;
+//                 background: transparent !important; /* İçerik kendi arkaplanına sahip */
+//                 border-radius: 8px !important;
+//                 box-shadow: 0 3px 14px rgba(0,0,0,0.4) !important;
+//                 width: 341px !important; /* Leaflet ile aynı genişlik */
+//                 max-width: 360px !important;
+//             }
 
-            /* MapLibre Kapatma Butonunu Leaflet Tarzı Yap */
-            .maplibregl-popup-close-button {
-                font-size: 18px;
-                color: #c3c3c3; /* Leaflet grideki 'x' rengi */
-                right: 10px;
-                top: 10px;
-                background: transparent;
-                border: none;
-                z-index: 10;
-                font-family: sans-serif;
-            }
-            .maplibregl-popup-close-button:hover {
-                color: #555;
-                background-color: transparent;
-            }
+//             /* MapLibre Kapatma Butonunu Leaflet Tarzı Yap */
+//             .maplibregl-popup-close-button {
+//                 font-size: 18px;
+//                 color: #c3c3c3; /* Leaflet grideki 'x' rengi */
+//                 right: 10px;
+//                 top: 10px;
+//                 background: transparent;
+//                 border: none;
+//                 z-index: 10;
+//                 font-family: sans-serif;
+//             }
+//             .maplibregl-popup-close-button:hover {
+//                 color: #555;
+//                 background-color: transparent;
+//             }
 
-            /* Ok İşaretinin (Tip) Rengini İçerik Rengiyle (#f8f9fa) Eşle */
-            .maplibregl-popup-anchor-top .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-                border-bottom-color: #f8f9fa !important;
-            }
-            .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-            .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-                border-top-color: #f8f9fa !important;
-            }
-            .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-                border-right-color: #f8f9fa !important;
-            }
-            .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-                border-left-color: #f8f9fa !important;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    // ---------------------------------------------------------
+//             /* Ok İşaretinin (Tip) Rengini İçerik Rengiyle (#f8f9fa) Eşle */
+//             .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+//             .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+//             .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+//                 border-bottom-color: #f8f9fa !important;
+//             }
+//             .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+//             .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+//             .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+//                 border-top-color: #f8f9fa !important;
+//             }
+//             .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+//                 border-right-color: #f8f9fa !important;
+//             }
+//             .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+//                 border-left-color: #f8f9fa !important;
+//             }
+//         `;
+//         document.head.appendChild(style);
+//     }
+//     // ---------------------------------------------------------
 
-    const isMapLibre = !!map.addSource; // MapLibre kontrolü
+//     const isMapLibre = !!map.addSource; // MapLibre kontrolü
 
-    // 2D Temizliği (Leaflet)
-    if (map.__restaurantLayers) {
-        map.__restaurantLayers.forEach(l => l.remove());
-        map.__restaurantLayers = [];
-    }
-    // 3D Temizliği (MapLibre)
-    if (window._restaurant3DLayers) {
-        window._restaurant3DLayers.forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        window._restaurant3DLayers = [];
-    }
-    if (window._restaurant3DMarkers) {
-        window._restaurant3DMarkers.forEach(m => m.remove());
-        window._restaurant3DMarkers = [];
-    }
+//     // 2D Temizliği (Leaflet)
+//     if (map.__restaurantLayers) {
+//         map.__restaurantLayers.forEach(l => l.remove());
+//         map.__restaurantLayers = [];
+//     }
+//     // 3D Temizliği (MapLibre)
+//     if (window._restaurant3DLayers) {
+//         window._restaurant3DLayers.forEach(id => {
+//             if (map.getLayer(id)) map.removeLayer(id);
+//             if (map.getSource(id)) map.removeSource(id);
+//         });
+//         window._restaurant3DLayers = [];
+//     }
+//     if (window._restaurant3DMarkers) {
+//         window._restaurant3DMarkers.forEach(m => m.remove());
+//         window._restaurant3DMarkers = [];
+//     }
 
-    // PROXY KULLANIMI: API Key yerine Proxy
-    const url = `/api/geoapify/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+//     // PROXY KULLANIMI: API Key yerine Proxy
+//     const url = `/api/geoapify/places?categories=catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
 
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
+//     try {
+//         const resp = await fetch(url);
+//         const data = await resp.json();
         
-        if (!data.features || data.features.length === 0) {
-            alert("No restaurants found nearby.");
-            return;
-        }
+//         if (!data.features || data.features.length === 0) {
+//             alert("No restaurants found nearby.");
+//             return;
+//         }
 
-        data.features.forEach((f, idx) => {
-            // Koordinatları al
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            const imgId = `rest-img-${idx}-${Date.now()}`; 
+//         data.features.forEach((f, idx) => {
+//             // Koordinatları al
+//             const pLng = f.properties.lon;
+//             const pLat = f.properties.lat;
+//             const imgId = `rest-img-${idx}-${Date.now()}`; 
 
-            // İçerik HTML'i (Her ikisi için ortak)
-            // Not: getFastRestaurantPopupHTML fonksiyonun mevcut ve doğru çalışıyor olmalı
-            let popupContent = "";
-            if (typeof getFastRestaurantPopupHTML === 'function') {
-                popupContent = getFastRestaurantPopupHTML(f, imgId, day);
-            } else {
-                popupContent = `<b>${f.properties.name || "Restaurant"}</b>`;
-            }
+//             // İçerik HTML'i (Her ikisi için ortak)
+//             // Not: getFastRestaurantPopupHTML fonksiyonun mevcut ve doğru çalışıyor olmalı
+//             let popupContent = "";
+//             if (typeof getFastRestaurantPopupHTML === 'function') {
+//                 popupContent = getFastRestaurantPopupHTML(f, imgId, day);
+//             } else {
+//                 popupContent = `<b>${f.properties.name || "Restaurant"}</b>`;
+//             }
 
-            if (isMapLibre) {
-                // ==========================================
-                // --- 3D HARİTA (MapLibre) ---
-                // ==========================================
-                window._restaurant3DLayers = window._restaurant3DLayers || [];
-                window._restaurant3DMarkers = window._restaurant3DMarkers || [];
+//             if (isMapLibre) {
+//                 // ==========================================
+//                 // --- 3D HARİTA (MapLibre) ---
+//                 // ==========================================
+//                 window._restaurant3DLayers = window._restaurant3DLayers || [];
+//                 window._restaurant3DMarkers = window._restaurant3DMarkers || [];
 
-                // Yeşil Çizgi
-                const sourceId = `rest-line-src-${idx}`;
-                const layerId = `rest-line-layer-${idx}`;
-                if (!map.getSource(sourceId)) {
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] } // [lng, lat]
-                        }
-                    });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#22bb33', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
-                    });
-                    window._restaurant3DLayers.push(layerId);
-                    window._restaurant3DLayers.push(sourceId);
-                }
+//                 // Yeşil Çizgi
+//                 const sourceId = `rest-line-src-${idx}`;
+//                 const layerId = `rest-line-layer-${idx}`;
+//                 if (!map.getSource(sourceId)) {
+//                     map.addSource(sourceId, {
+//                         type: 'geojson',
+//                         data: {
+//                             type: 'Feature',
+//                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] } // [lng, lat]
+//                         }
+//                     });
+//                     map.addLayer({
+//                         id: layerId,
+//                         type: 'line',
+//                         source: sourceId,
+//                         layout: { 'line-join': 'round', 'line-cap': 'round' },
+//                         paint: { 'line-color': '#22bb33', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
+//                     });
+//                     window._restaurant3DLayers.push(layerId);
+//                     window._restaurant3DLayers.push(sourceId);
+//                 }
 
-                // Marker Elementi
-                const el = document.createElement('div');
-                if (typeof getPurpleRestaurantMarkerHtml === 'function') {
-                    el.innerHTML = getPurpleRestaurantMarkerHtml(); 
-                } else {
-                    el.style.cssText = 'background:#8a4af3;width:32px;height:32px;border-radius:50%;border:2px solid white;';
-                }
-                el.className = 'custom-3d-marker-element';
-                el.style.cursor = 'pointer';
-                el.style.zIndex = '2000';
+//                 // Marker Elementi
+//                 const el = document.createElement('div');
+//                 if (typeof getPurpleRestaurantMarkerHtml === 'function') {
+//                     el.innerHTML = getPurpleRestaurantMarkerHtml(); 
+//                 } else {
+//                     el.style.cssText = 'background:#8a4af3;width:32px;height:32px;border-radius:50%;border:2px solid white;';
+//                 }
+//                 el.className = 'custom-3d-marker-element';
+//                 el.style.cursor = 'pointer';
+//                 el.style.zIndex = '2000';
 
-                // Popup (CSS ile Leaflet'e benzetildi)
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px', 
-                    closeButton: true,
-                    className: 'tt-unified-popup' // CSS hedeflemesi için
-                }).setHTML(popupContent);
+//                 // Popup (CSS ile Leaflet'e benzetildi)
+//                 const popup = new maplibregl.Popup({ 
+//                     offset: 25, 
+//                     maxWidth: '360px', 
+//                     closeButton: true,
+//                     className: 'tt-unified-popup' // CSS hedeflemesi için
+//                 }).setHTML(popupContent);
 
-                popup.on('open', () => {
-                    if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId);
-                });
+//                 popup.on('open', () => {
+//                     if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId);
+//                 });
 
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
-                    .setPopup(popup)
-                    .addTo(map);
+//                 const marker = new maplibregl.Marker({ element: el })
+//                     .setLngLat([pLng, pLat])
+//                     .setPopup(popup)
+//                     .addTo(map);
                 
-                // Manuel tıklama kontrolü
-                el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
-                window._restaurant3DMarkers.push(marker);
+//                 // Manuel tıklama kontrolü
+//                 el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
+//                 window._restaurant3DMarkers.push(marker);
 
-            } else {
-                // ==========================================
-                // --- 2D HARİTA (Leaflet) ---
-                // ==========================================
-                map.__restaurantLayers = map.__restaurantLayers || [];
+//             } else {
+//                 // ==========================================
+//                 // --- 2D HARİTA (Leaflet) ---
+//                 // ==========================================
+//                 map.__restaurantLayers = map.__restaurantLayers || [];
                 
-                // DÜZELTME: [Lat, Lng] sırasını zorla
-                // lat, lng = Kullanıcı konumu
-                // pLat, pLng = Restoran konumu
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8" 
-                }).addTo(map);
-                map.__restaurantLayers.push(line);
+//                 // DÜZELTME: [Lat, Lng] sırasını zorla
+//                 // lat, lng = Kullanıcı konumu
+//                 // pLat, pLng = Restoran konumu
+//                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+//                     color: "#22bb33", weight: 4, opacity: 0.95, dashArray: "8,8" 
+//                 }).addTo(map);
+//                 map.__restaurantLayers.push(line);
 
-                const iconHtml = (typeof getPurpleRestaurantMarkerHtml === 'function') 
-                    ? getPurpleRestaurantMarkerHtml() 
-                    : '<div style="background:purple;width:20px;height:20px;"></div>';
+//                 const iconHtml = (typeof getPurpleRestaurantMarkerHtml === 'function') 
+//                     ? getPurpleRestaurantMarkerHtml() 
+//                     : '<div style="background:purple;width:20px;height:20px;"></div>';
 
-                const marker = L.marker([pLat, pLng], {
-                    icon: L.divIcon({ html: iconHtml, className: "", iconSize: [32,32], iconAnchor: [16,16] })
-                }).addTo(map);
-                map.__restaurantLayers.push(marker);
+//                 const marker = L.marker([pLat, pLng], {
+//                     icon: L.divIcon({ html: iconHtml, className: "", iconSize: [32,32], iconAnchor: [16,16] })
+//                 }).addTo(map);
+//                 map.__restaurantLayers.push(marker);
 
-                marker.bindPopup(popupContent, { maxWidth: 341 }); // Leaflet standardı
+//                 marker.bindPopup(popupContent, { maxWidth: 341 }); // Leaflet standardı
                 
-                marker.on("popupopen", function() { 
-                    if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId); 
-                });
-            }
-        });
+//                 marker.on("popupopen", function() { 
+//                     if (typeof handlePopupImageLoading === 'function') handlePopupImageLoading(f, imgId); 
+//                 });
+//             }
+//         });
 
-    } catch (err) {
-        console.error(err);
-        alert("Error fetching restaurants.");
-    }
-}
+//     } catch (err) {
+//         console.error(err);
+//         alert("Error fetching restaurants.");
+//     }
+// }
 
 function getFastRestaurantPopupHTML(f, imgId, day) {
     // Spinner CSS'ini garanti et
@@ -737,62 +737,62 @@ function ensureSpinnerCSS() {
     document.head.appendChild(style);
 }
 
-window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-    // 1. Önce Current Day'i sabitle (Karışıklığı önler)
-    window.currentDay = parseInt(day);
+// window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+//     // 1. Önce Current Day'i sabitle (Karışıklığı önler)
+//     window.currentDay = parseInt(day);
 
-    const img = document.getElementById(imgId);
-    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
-        ? img.src
-        : '/img/restaurant_icon.svg';
+//     const img = document.getElementById(imgId);
+//     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+//         ? img.src
+//         : '/img/restaurant_icon.svg';
         
-    // 2. Sepete Ekle
-    // addToCart fonksiyonu zaten updateCart'ı çağırır (silent parametresi verilmediği sürece)
-    // Bu yüzden buradaki manuel updateCart() çağrısını kaldırıyoruz.
-    addToCart(
-        name,
-        imgSrc,
-        day,
-        "Restaurant",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
+//     // 2. Sepete Ekle
+//     // addToCart fonksiyonu zaten updateCart'ı çağırır (silent parametresi verilmediği sürece)
+//     // Bu yüzden buradaki manuel updateCart() çağrısını kaldırıyoruz.
+//     addToCart(
+//         name,
+//         imgSrc,
+//         day,
+//         "Restaurant",
+//         address,
+//         null, null, null, null,
+//         { lat: Number(lat), lng: Number(lon) },
+//         ""
+//     );
     
-    // updateCart() BURADAN SİLİNDİ! addToCart zaten yapıyor.
+//     // updateCart() BURADAN SİLİNDİ! addToCart zaten yapıyor.
 
-    // 3. 3D Marker Temizliği
-    if (window._maplibre3DInstance) {
-        if (window._restaurant3DLayers) {
-            window._restaurant3DLayers.forEach(id => {
-                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
-                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
-            });
-            window._restaurant3DLayers = [];
-        }
-        if (window._restaurant3DMarkers) {
-            window._restaurant3DMarkers.forEach(m => m.remove());
-            window._restaurant3DMarkers = [];
-        }
-    }
+//     // 3. 3D Marker Temizliği
+//     if (window._maplibre3DInstance) {
+//         if (window._restaurant3DLayers) {
+//             window._restaurant3DLayers.forEach(id => {
+//                 if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+//                 if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+//             });
+//             window._restaurant3DLayers = [];
+//         }
+//         if (window._restaurant3DMarkers) {
+//             window._restaurant3DMarkers.forEach(m => m.remove());
+//             window._restaurant3DMarkers = [];
+//         }
+//     }
 
-    // 4. 2D Marker Temizliği
-    const allMaps = [];
-    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
-    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+//     // 4. 2D Marker Temizliği
+//     const allMaps = [];
+//     if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+//     if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
     
-    allMaps.forEach(map => {
-        if (map && map.__restaurantLayers) {
-            map.__restaurantLayers.forEach(l => {
-               try { l.remove(); } catch(e) {}
-            });
-            map.__restaurantLayers = [];
-        }
-    });
+//     allMaps.forEach(map => {
+//         if (map && map.__restaurantLayers) {
+//             map.__restaurantLayers.forEach(l => {
+//                try { l.remove(); } catch(e) {}
+//             });
+//             map.__restaurantLayers = [];
+//         }
+//     });
 
-    alert(`${name} gezi planına eklendi!`);
-};
+//     alert(`${name} gezi planına eklendi!`);
+// };
 
 function getRedRestaurantMarkerHtml() {
     return `
@@ -870,124 +870,124 @@ alert("An error occurred during the search.");
 // 1. HOTELS FONKSİYONLARI
 // ============================================
 
-async function showNearbyHotels(lat, lng, map, day) {
-    const isMapLibre = !!map.addSource;
+// async function showNearbyHotels(lat, lng, map, day) {
+//     const isMapLibre = !!map.addSource;
     
-    if (map.__hotelLayers) {
-        map.__hotelLayers.forEach(l => l.remove());
-        map.__hotelLayers = [];
-    }
+//     if (map.__hotelLayers) {
+//         map.__hotelLayers.forEach(l => l.remove());
+//         map.__hotelLayers = [];
+//     }
     
-    if (window._hotel3DLayers) {
-        window._hotel3DLayers.forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        window._hotel3DLayers = [];
-    }
+//     if (window._hotel3DLayers) {
+//         window._hotel3DLayers.forEach(id => {
+//             if (map.getLayer(id)) map.removeLayer(id);
+//             if (map.getSource(id)) map.removeSource(id);
+//         });
+//         window._hotel3DLayers = [];
+//     }
     
-    if (window._hotel3DMarkers) {
-        window._hotel3DMarkers.forEach(m => m.remove());
-        window._hotel3DMarkers = [];
-    }
+//     if (window._hotel3DMarkers) {
+//         window._hotel3DMarkers.forEach(m => m.remove());
+//         window._hotel3DMarkers = [];
+//     }
     
-    const url = `/api/geoapify/places?categories=accommodation&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+//     const url = `/api/geoapify/places?categories=accommodation&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
     
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
+//     try {
+//         const resp = await fetch(url);
+//         const data = await resp.json();
         
-        if (!data.features || data.features.length === 0) {
-            alert("No hotels found nearby.");
-            return;
-        }
+//         if (!data.features || data.features.length === 0) {
+//             alert("No hotels found nearby.");
+//             return;
+//         }
         
-        data.features.forEach((f, idx) => {
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            const imgId = `hotel-img-${idx}-${Date.now()}`;
+//         data.features.forEach((f, idx) => {
+//             const pLng = f.properties.lon;
+//             const pLat = f.properties.lat;
+//             const imgId = `hotel-img-${idx}-${Date.now()}`;
             
-            let popupContent = getFastHotelPopupHTML(f, imgId, day);
+//             let popupContent = getFastHotelPopupHTML(f, imgId, day);
             
-            if (isMapLibre) {
-                window._hotel3DLayers = window._hotel3DLayers || [];
-                window._hotel3DMarkers = window._hotel3DMarkers || [];
+//             if (isMapLibre) {
+//                 window._hotel3DLayers = window._hotel3DLayers || [];
+//                 window._hotel3DMarkers = window._hotel3DMarkers || [];
                 
-                const sourceId = `hotel-line-src-${idx}`;
-                const layerId = `hotel-line-layer-${idx}`;
-                if (!map.getSource(sourceId)) {
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
-                        }
-                    });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#1976d2', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
-                    });
-                    window._hotel3DLayers.push(layerId);
-                    window._hotel3DLayers.push(sourceId);
-                }
+//                 const sourceId = `hotel-line-src-${idx}`;
+//                 const layerId = `hotel-line-layer-${idx}`;
+//                 if (!map.getSource(sourceId)) {
+//                     map.addSource(sourceId, {
+//                         type: 'geojson',
+//                         data: {
+//                             type: 'Feature',
+//                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+//                         }
+//                     });
+//                     map.addLayer({
+//                         id: layerId,
+//                         type: 'line',
+//                         source: sourceId,
+//                         layout: { 'line-join': 'round', 'line-cap': 'round' },
+//                         paint: { 'line-color': '#1976d2', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
+//                     });
+//                     window._hotel3DLayers.push(layerId);
+//                     window._hotel3DLayers.push(sourceId);
+//                 }
                 
-                const el = document.createElement('div');
-                el.innerHTML = getBlueHotelMarkerHtml();
-                el.className = 'custom-3d-marker-element';
-                el.style.cursor = 'pointer';
-                el.style.zIndex = '2000';
+//                 const el = document.createElement('div');
+//                 el.innerHTML = getBlueHotelMarkerHtml();
+//                 el.className = 'custom-3d-marker-element';
+//                 el.style.cursor = 'pointer';
+//                 el.style.zIndex = '2000';
                 
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px',
-                    closeButton: true,
-                    className: 'tt-unified-popup'
-                }).setHTML(popupContent);
+//                 const popup = new maplibregl.Popup({ 
+//                     offset: 25, 
+//                     maxWidth: '360px',
+//                     closeButton: true,
+//                     className: 'tt-unified-popup'
+//                 }).setHTML(popupContent);
                 
-                popup.on('open', () => {
-                    handleHotelPopupImageLoading(f, imgId);
-                });
+//                 popup.on('open', () => {
+//                     handleHotelPopupImageLoading(f, imgId);
+//                 });
                 
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
-                    .setPopup(popup)
-                    .addTo(map);
+//                 const marker = new maplibregl.Marker({ element: el })
+//                     .setLngLat([pLng, pLat])
+//                     .setPopup(popup)
+//                     .addTo(map);
                 
-                el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
-                window._hotel3DMarkers.push(marker);
-            } else {
-                map.__hotelLayers = map.__hotelLayers || [];
+//                 el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
+//                 window._hotel3DMarkers.push(marker);
+//             } else {
+//                 map.__hotelLayers = map.__hotelLayers || [];
                 
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: "#1976d2", weight: 4, opacity: 0.95, dashArray: "8,8" 
-                }).addTo(map);
-                map.__hotelLayers.push(line);
+//                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+//                     color: "#1976d2", weight: 4, opacity: 0.95, dashArray: "8,8" 
+//                 }).addTo(map);
+//                 map.__hotelLayers.push(line);
                 
-                const marker = L.marker([pLat, pLng], {
-                    icon: L.divIcon({ 
-                        html: getBlueHotelMarkerHtml(), 
-                        className: "", 
-                        iconSize: [32,32], 
-                        iconAnchor: [16,16] 
-                    })
-                }).addTo(map);
-                map.__hotelLayers.push(marker);
+//                 const marker = L.marker([pLat, pLng], {
+//                     icon: L.divIcon({ 
+//                         html: getBlueHotelMarkerHtml(), 
+//                         className: "", 
+//                         iconSize: [32,32], 
+//                         iconAnchor: [16,16] 
+//                     })
+//                 }).addTo(map);
+//                 map.__hotelLayers.push(marker);
                 
-                marker.bindPopup(popupContent, { maxWidth: 341 });
-                marker.on("popupopen", function() { 
-                    handleHotelPopupImageLoading(f, imgId);
-                });
-            }
-        });
+//                 marker.bindPopup(popupContent, { maxWidth: 341 });
+//                 marker.on("popupopen", function() { 
+//                     handleHotelPopupImageLoading(f, imgId);
+//                 });
+//             }
+//         });
         
-    } catch (err) {
-        console.error(err);
-        alert("Error fetching hotels.");
-    }
-}
+//     } catch (err) {
+//         console.error(err);
+//         alert("Error fetching hotels.");
+//     }
+// }
 
 function getFastHotelPopupHTML(f, imgId, day) {
     const name = f.properties.name || "Hotel";
@@ -1048,54 +1048,54 @@ function getBlueHotelMarkerHtml() {
     `;
 }
 
-window.addHotelToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-    window.currentDay = parseInt(day);
+// window.addHotelToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+//     window.currentDay = parseInt(day);
     
-    const img = document.getElementById(imgId);
-    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
-        ? img.src
-        : '/img/hotel_icon.svg';
+//     const img = document.getElementById(imgId);
+//     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+//         ? img.src
+//         : '/img/hotel_icon.svg';
         
-    addToCart(
-        name,
-        imgSrc,
-        day,
-        "Hotel",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
+//     addToCart(
+//         name,
+//         imgSrc,
+//         day,
+//         "Hotel",
+//         address,
+//         null, null, null, null,
+//         { lat: Number(lat), lng: Number(lon) },
+//         ""
+//     );
     
-    if (window._maplibre3DInstance) {
-        if (window._hotel3DLayers) {
-            window._hotel3DLayers.forEach(id => {
-                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
-                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
-            });
-            window._hotel3DLayers = [];
-        }
-        if (window._hotel3DMarkers) {
-            window._hotel3DMarkers.forEach(m => m.remove());
-            window._hotel3DMarkers = [];
-        }
-    }
+//     if (window._maplibre3DInstance) {
+//         if (window._hotel3DLayers) {
+//             window._hotel3DLayers.forEach(id => {
+//                 if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+//                 if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+//             });
+//             window._hotel3DLayers = [];
+//         }
+//         if (window._hotel3DMarkers) {
+//             window._hotel3DMarkers.forEach(m => m.remove());
+//             window._hotel3DMarkers = [];
+//         }
+//     }
     
-    const allMaps = [];
-    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
-    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+//     const allMaps = [];
+//     if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+//     if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
     
-    allMaps.forEach(map => {
-        if (map && map.__hotelLayers) {
-            map.__hotelLayers.forEach(l => {
-               try { l.remove(); } catch(e) {}
-            });
-            map.__hotelLayers = [];
-        }
-    });
+//     allMaps.forEach(map => {
+//         if (map && map.__hotelLayers) {
+//             map.__hotelLayers.forEach(l => {
+//                try { l.remove(); } catch(e) {}
+//             });
+//             map.__hotelLayers = [];
+//         }
+//     });
     
-    alert(`${name} added to your trip!`);
-};
+//     alert(`${name} added to your trip!`);
+// };
 
 function handleHotelPopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "hotel", window.selectedCity || "")
@@ -1126,124 +1126,124 @@ function handleHotelPopupImageLoading(f, imgId) {
 // 2. MARKETS FONKSİYONLARI
 // ============================================
 
-async function showNearbyMarkets(lat, lng, map, day) {
-    const isMapLibre = !!map.addSource;
+// async function showNearbyMarkets(lat, lng, map, day) {
+//     const isMapLibre = !!map.addSource;
     
-    if (map.__marketLayers) {
-        map.__marketLayers.forEach(l => l.remove());
-        map.__marketLayers = [];
-    }
+//     if (map.__marketLayers) {
+//         map.__marketLayers.forEach(l => l.remove());
+//         map.__marketLayers = [];
+//     }
     
-    if (window._market3DLayers) {
-        window._market3DLayers.forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        window._market3DLayers = [];
-    }
+//     if (window._market3DLayers) {
+//         window._market3DLayers.forEach(id => {
+//             if (map.getLayer(id)) map.removeLayer(id);
+//             if (map.getSource(id)) map.removeSource(id);
+//         });
+//         window._market3DLayers = [];
+//     }
     
-    if (window._market3DMarkers) {
-        window._market3DMarkers.forEach(m => m.remove());
-        window._market3DMarkers = [];
-    }
+//     if (window._market3DMarkers) {
+//         window._market3DMarkers.forEach(m => m.remove());
+//         window._market3DMarkers = [];
+//     }
     
-    const url = `/api/geoapify/places?categories=commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+//     const url = `/api/geoapify/places?categories=commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
     
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
+//     try {
+//         const resp = await fetch(url);
+//         const data = await resp.json();
         
-        if (!data.features || data.features.length === 0) {
-            alert("No markets found nearby.");
-            return;
-        }
+//         if (!data.features || data.features.length === 0) {
+//             alert("No markets found nearby.");
+//             return;
+//         }
         
-        data.features.forEach((f, idx) => {
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            const imgId = `market-img-${idx}-${Date.now()}`;
+//         data.features.forEach((f, idx) => {
+//             const pLng = f.properties.lon;
+//             const pLat = f.properties.lat;
+//             const imgId = `market-img-${idx}-${Date.now()}`;
             
-            let popupContent = getFastMarketPopupHTML(f, imgId, day);
+//             let popupContent = getFastMarketPopupHTML(f, imgId, day);
             
-            if (isMapLibre) {
-                window._market3DLayers = window._market3DLayers || [];
-                window._market3DMarkers = window._market3DMarkers || [];
+//             if (isMapLibre) {
+//                 window._market3DLayers = window._market3DLayers || [];
+//                 window._market3DMarkers = window._market3DMarkers || [];
                 
-                const sourceId = `market-line-src-${idx}`;
-                const layerId = `market-line-layer-${idx}`;
-                if (!map.getSource(sourceId)) {
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
-                        }
-                    });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#4caf50', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
-                    });
-                    window._market3DLayers.push(layerId);
-                    window._market3DLayers.push(sourceId);
-                }
+//                 const sourceId = `market-line-src-${idx}`;
+//                 const layerId = `market-line-layer-${idx}`;
+//                 if (!map.getSource(sourceId)) {
+//                     map.addSource(sourceId, {
+//                         type: 'geojson',
+//                         data: {
+//                             type: 'Feature',
+//                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+//                         }
+//                     });
+//                     map.addLayer({
+//                         id: layerId,
+//                         type: 'line',
+//                         source: sourceId,
+//                         layout: { 'line-join': 'round', 'line-cap': 'round' },
+//                         paint: { 'line-color': '#4caf50', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
+//                     });
+//                     window._market3DLayers.push(layerId);
+//                     window._market3DLayers.push(sourceId);
+//                 }
                 
-                const el = document.createElement('div');
-                el.innerHTML = getGreenMarketMarkerHtml();
-                el.className = 'custom-3d-marker-element';
-                el.style.cursor = 'pointer';
-                el.style.zIndex = '2000';
+//                 const el = document.createElement('div');
+//                 el.innerHTML = getGreenMarketMarkerHtml();
+//                 el.className = 'custom-3d-marker-element';
+//                 el.style.cursor = 'pointer';
+//                 el.style.zIndex = '2000';
                 
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px',
-                    closeButton: true,
-                    className: 'tt-unified-popup'
-                }).setHTML(popupContent);
+//                 const popup = new maplibregl.Popup({ 
+//                     offset: 25, 
+//                     maxWidth: '360px',
+//                     closeButton: true,
+//                     className: 'tt-unified-popup'
+//                 }).setHTML(popupContent);
                 
-                popup.on('open', () => {
-                    handleMarketPopupImageLoading(f, imgId);
-                });
+//                 popup.on('open', () => {
+//                     handleMarketPopupImageLoading(f, imgId);
+//                 });
                 
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
-                    .setPopup(popup)
-                    .addTo(map);
+//                 const marker = new maplibregl.Marker({ element: el })
+//                     .setLngLat([pLng, pLat])
+//                     .setPopup(popup)
+//                     .addTo(map);
                 
-                el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
-                window._market3DMarkers.push(marker);
-            } else {
-                map.__marketLayers = map.__marketLayers || [];
+//                 el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
+//                 window._market3DMarkers.push(marker);
+//             } else {
+//                 map.__marketLayers = map.__marketLayers || [];
                 
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: "#4caf50", weight: 4, opacity: 0.95, dashArray: "8,8" 
-                }).addTo(map);
-                map.__marketLayers.push(line);
+//                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+//                     color: "#4caf50", weight: 4, opacity: 0.95, dashArray: "8,8" 
+//                 }).addTo(map);
+//                 map.__marketLayers.push(line);
                 
-                const marker = L.marker([pLat, pLng], {
-                    icon: L.divIcon({ 
-                        html: getGreenMarketMarkerHtml(), 
-                        className: "", 
-                        iconSize: [32,32], 
-                        iconAnchor: [16,16] 
-                    })
-                }).addTo(map);
-                map.__marketLayers.push(marker);
+//                 const marker = L.marker([pLat, pLng], {
+//                     icon: L.divIcon({ 
+//                         html: getGreenMarketMarkerHtml(), 
+//                         className: "", 
+//                         iconSize: [32,32], 
+//                         iconAnchor: [16,16] 
+//                     })
+//                 }).addTo(map);
+//                 map.__marketLayers.push(marker);
                 
-                marker.bindPopup(popupContent, { maxWidth: 341 });
-                marker.on("popupopen", function() { 
-                    handleMarketPopupImageLoading(f, imgId);
-                });
-            }
-        });
+//                 marker.bindPopup(popupContent, { maxWidth: 341 });
+//                 marker.on("popupopen", function() { 
+//                     handleMarketPopupImageLoading(f, imgId);
+//                 });
+//             }
+//         });
         
-    } catch (err) {
-        console.error(err);
-        alert("Error fetching markets.");
-    }
-}
+//     } catch (err) {
+//         console.error(err);
+//         alert("Error fetching markets.");
+//     }
+// }
 
 function getFastMarketPopupHTML(f, imgId, day) {
     const name = f.properties.name || "Market";
@@ -1304,54 +1304,54 @@ function getGreenMarketMarkerHtml() {
     `;
 }
 
-window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-    window.currentDay = parseInt(day);
+// window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+//     window.currentDay = parseInt(day);
     
-    const img = document.getElementById(imgId);
-    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
-        ? img.src
-        : '/img/market_icon.svg';
+//     const img = document.getElementById(imgId);
+//     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+//         ? img.src
+//         : '/img/market_icon.svg';
         
-    addToCart(
-        name,
-        imgSrc,
-        day,
-        "Market",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
+//     addToCart(
+//         name,
+//         imgSrc,
+//         day,
+//         "Market",
+//         address,
+//         null, null, null, null,
+//         { lat: Number(lat), lng: Number(lon) },
+//         ""
+//     );
     
-    if (window._maplibre3DInstance) {
-        if (window._market3DLayers) {
-            window._market3DLayers.forEach(id => {
-                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
-                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
-            });
-            window._market3DLayers = [];
-        }
-        if (window._market3DMarkers) {
-            window._market3DMarkers.forEach(m => m.remove());
-            window._market3DMarkers = [];
-        }
-    }
+//     if (window._maplibre3DInstance) {
+//         if (window._market3DLayers) {
+//             window._market3DLayers.forEach(id => {
+//                 if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+//                 if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+//             });
+//             window._market3DLayers = [];
+//         }
+//         if (window._market3DMarkers) {
+//             window._market3DMarkers.forEach(m => m.remove());
+//             window._market3DMarkers = [];
+//         }
+//     }
     
-    const allMaps = [];
-    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
-    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+//     const allMaps = [];
+//     if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+//     if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
     
-    allMaps.forEach(map => {
-        if (map && map.__marketLayers) {
-            map.__marketLayers.forEach(l => {
-               try { l.remove(); } catch(e) {}
-            });
-            map.__marketLayers = [];
-        }
-    });
+//     allMaps.forEach(map => {
+//         if (map && map.__marketLayers) {
+//             map.__marketLayers.forEach(l => {
+//                try { l.remove(); } catch(e) {}
+//             });
+//             map.__marketLayers = [];
+//         }
+//     });
     
-    alert(`${name} added to your trip!`);
-};
+//     alert(`${name} added to your trip!`);
+// };
 
 function handleMarketPopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "market", window.selectedCity || "")
@@ -1382,124 +1382,124 @@ function handleMarketPopupImageLoading(f, imgId) {
 // 3. ENTERTAINMENT FONKSİYONLARI
 // ============================================
 
-async function showNearbyEntertainment(lat, lng, map, day) {
-    const isMapLibre = !!map.addSource;
+// async function showNearbyEntertainment(lat, lng, map, day) {
+//     const isMapLibre = !!map.addSource;
     
-    if (map.__entertainmentLayers) {
-        map.__entertainmentLayers.forEach(l => l.remove());
-        map.__entertainmentLayers = [];
-    }
+//     if (map.__entertainmentLayers) {
+//         map.__entertainmentLayers.forEach(l => l.remove());
+//         map.__entertainmentLayers = [];
+//     }
     
-    if (window._entertainment3DLayers) {
-        window._entertainment3DLayers.forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        window._entertainment3DLayers = [];
-    }
+//     if (window._entertainment3DLayers) {
+//         window._entertainment3DLayers.forEach(id => {
+//             if (map.getLayer(id)) map.removeLayer(id);
+//             if (map.getSource(id)) map.removeSource(id);
+//         });
+//         window._entertainment3DLayers = [];
+//     }
     
-    if (window._entertainment3DMarkers) {
-        window._entertainment3DMarkers.forEach(m => m.remove());
-        window._entertainment3DMarkers = [];
-    }
+//     if (window._entertainment3DMarkers) {
+//         window._entertainment3DMarkers.forEach(m => m.remove());
+//         window._entertainment3DMarkers = [];
+//     }
     
-    const url = `/api/geoapify/places?categories=entertainment,leisure&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+//     const url = `/api/geoapify/places?categories=entertainment,leisure&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
     
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
+//     try {
+//         const resp = await fetch(url);
+//         const data = await resp.json();
         
-        if (!data.features || data.features.length === 0) {
-            alert("No entertainment venues found nearby.");
-            return;
-        }
+//         if (!data.features || data.features.length === 0) {
+//             alert("No entertainment venues found nearby.");
+//             return;
+//         }
         
-        data.features.forEach((f, idx) => {
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            const imgId = `entertainment-img-${idx}-${Date.now()}`;
+//         data.features.forEach((f, idx) => {
+//             const pLng = f.properties.lon;
+//             const pLat = f.properties.lat;
+//             const imgId = `entertainment-img-${idx}-${Date.now()}`;
             
-            let popupContent = getFastEntertainmentPopupHTML(f, imgId, day);
+//             let popupContent = getFastEntertainmentPopupHTML(f, imgId, day);
             
-            if (isMapLibre) {
-                window._entertainment3DLayers = window._entertainment3DLayers || [];
-                window._entertainment3DMarkers = window._entertainment3DMarkers || [];
+//             if (isMapLibre) {
+//                 window._entertainment3DLayers = window._entertainment3DLayers || [];
+//                 window._entertainment3DMarkers = window._entertainment3DMarkers || [];
                 
-                const sourceId = `entertainment-line-src-${idx}`;
-                const layerId = `entertainment-line-layer-${idx}`;
-                if (!map.getSource(sourceId)) {
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
-                        }
-                    });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#ff9800', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
-                    });
-                    window._entertainment3DLayers.push(layerId);
-                    window._entertainment3DLayers.push(sourceId);
-                }
+//                 const sourceId = `entertainment-line-src-${idx}`;
+//                 const layerId = `entertainment-line-layer-${idx}`;
+//                 if (!map.getSource(sourceId)) {
+//                     map.addSource(sourceId, {
+//                         type: 'geojson',
+//                         data: {
+//                             type: 'Feature',
+//                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+//                         }
+//                     });
+//                     map.addLayer({
+//                         id: layerId,
+//                         type: 'line',
+//                         source: sourceId,
+//                         layout: { 'line-join': 'round', 'line-cap': 'round' },
+//                         paint: { 'line-color': '#ff9800', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [2, 2] }
+//                     });
+//                     window._entertainment3DLayers.push(layerId);
+//                     window._entertainment3DLayers.push(sourceId);
+//                 }
                 
-                const el = document.createElement('div');
-                el.innerHTML = getOrangeEntertainmentMarkerHtml();
-                el.className = 'custom-3d-marker-element';
-                el.style.cursor = 'pointer';
-                el.style.zIndex = '2000';
+//                 const el = document.createElement('div');
+//                 el.innerHTML = getOrangeEntertainmentMarkerHtml();
+//                 el.className = 'custom-3d-marker-element';
+//                 el.style.cursor = 'pointer';
+//                 el.style.zIndex = '2000';
                 
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px',
-                    closeButton: true,
-                    className: 'tt-unified-popup'
-                }).setHTML(popupContent);
+//                 const popup = new maplibregl.Popup({ 
+//                     offset: 25, 
+//                     maxWidth: '360px',
+//                     closeButton: true,
+//                     className: 'tt-unified-popup'
+//                 }).setHTML(popupContent);
                 
-                popup.on('open', () => {
-                    handleEntertainmentPopupImageLoading(f, imgId);
-                });
+//                 popup.on('open', () => {
+//                     handleEntertainmentPopupImageLoading(f, imgId);
+//                 });
                 
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
-                    .setPopup(popup)
-                    .addTo(map);
+//                 const marker = new maplibregl.Marker({ element: el })
+//                     .setLngLat([pLng, pLat])
+//                     .setPopup(popup)
+//                     .addTo(map);
                 
-                el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
-                window._entertainment3DMarkers.push(marker);
-            } else {
-                map.__entertainmentLayers = map.__entertainmentLayers || [];
+//                 el.addEventListener('click', (e) => { e.stopPropagation(); marker.togglePopup(); });
+//                 window._entertainment3DMarkers.push(marker);
+//             } else {
+//                 map.__entertainmentLayers = map.__entertainmentLayers || [];
                 
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: "#ff9800", weight: 4, opacity: 0.95, dashArray: "8,8" 
-                }).addTo(map);
-                map.__entertainmentLayers.push(line);
+//                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+//                     color: "#ff9800", weight: 4, opacity: 0.95, dashArray: "8,8" 
+//                 }).addTo(map);
+//                 map.__entertainmentLayers.push(line);
                 
-                const marker = L.marker([pLat, pLng], {
-                    icon: L.divIcon({ 
-                        html: getOrangeEntertainmentMarkerHtml(), 
-                        className: "", 
-                        iconSize: [32,32], 
-                        iconAnchor: [16,16] 
-                    })
-                }).addTo(map);
-                map.__entertainmentLayers.push(marker);
+//                 const marker = L.marker([pLat, pLng], {
+//                     icon: L.divIcon({ 
+//                         html: getOrangeEntertainmentMarkerHtml(), 
+//                         className: "", 
+//                         iconSize: [32,32], 
+//                         iconAnchor: [16,16] 
+//                     })
+//                 }).addTo(map);
+//                 map.__entertainmentLayers.push(marker);
                 
-                marker.bindPopup(popupContent, { maxWidth: 341 });
-                marker.on("popupopen", function() { 
-                    handleEntertainmentPopupImageLoading(f, imgId);
-                });
-            }
-        });
+//                 marker.bindPopup(popupContent, { maxWidth: 341 });
+//                 marker.on("popupopen", function() { 
+//                     handleEntertainmentPopupImageLoading(f, imgId);
+//                 });
+//             }
+//         });
         
-    } catch (err) {
-        console.error(err);
-        alert("Error fetching entertainment venues.");
-    }
-}
+//     } catch (err) {
+//         console.error(err);
+//         alert("Error fetching entertainment venues.");
+//     }
+// }
 
 function getFastEntertainmentPopupHTML(f, imgId, day) {
     const name = f.properties.name || "Entertainment";
@@ -1560,54 +1560,54 @@ function getOrangeEntertainmentMarkerHtml() {
     `;
 }
 
-window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-    window.currentDay = parseInt(day);
+// window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+//     window.currentDay = parseInt(day);
     
-    const img = document.getElementById(imgId);
-    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
-        ? img.src
-        : '/img/entertainment_icon.svg';
+//     const img = document.getElementById(imgId);
+//     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+//         ? img.src
+//         : '/img/entertainment_icon.svg';
         
-    addToCart(
-        name,
-        imgSrc,
-        day,
-        "Entertainment",
-        address,
-        null, null, null, null,
-        { lat: Number(lat), lng: Number(lon) },
-        ""
-    );
+//     addToCart(
+//         name,
+//         imgSrc,
+//         day,
+//         "Entertainment",
+//         address,
+//         null, null, null, null,
+//         { lat: Number(lat), lng: Number(lon) },
+//         ""
+//     );
     
-    if (window._maplibre3DInstance) {
-        if (window._entertainment3DLayers) {
-            window._entertainment3DLayers.forEach(id => {
-                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
-                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
-            });
-            window._entertainment3DLayers = [];
-        }
-        if (window._entertainment3DMarkers) {
-            window._entertainment3DMarkers.forEach(m => m.remove());
-            window._entertainment3DMarkers = [];
-        }
-    }
+//     if (window._maplibre3DInstance) {
+//         if (window._entertainment3DLayers) {
+//             window._entertainment3DLayers.forEach(id => {
+//                 if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+//                 if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+//             });
+//             window._entertainment3DLayers = [];
+//         }
+//         if (window._entertainment3DMarkers) {
+//             window._entertainment3DMarkers.forEach(m => m.remove());
+//             window._entertainment3DMarkers = [];
+//         }
+//     }
     
-    const allMaps = [];
-    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
-    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+//     const allMaps = [];
+//     if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+//     if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
     
-    allMaps.forEach(map => {
-        if (map && map.__entertainmentLayers) {
-            map.__entertainmentLayers.forEach(l => {
-               try { l.remove(); } catch(e) {}
-            });
-            map.__entertainmentLayers = [];
-        }
-    });
+//     allMaps.forEach(map => {
+//         if (map && map.__entertainmentLayers) {
+//             map.__entertainmentLayers.forEach(l => {
+//                try { l.remove(); } catch(e) {}
+//             });
+//             map.__entertainmentLayers = [];
+//         }
+//     });
     
-    alert(`${name} added to your trip!`);
-};
+//     alert(`${name} added to your trip!`);
+// };
 
 function handleEntertainmentPopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "entertainment", window.selectedCity || "")
@@ -2387,25 +2387,25 @@ Object.keys(categorizedPlaces).forEach(key => {
     }
     
     const buttonLabels = {
-        restaurants: { text: "Show Restaurants", icon: "🍽️", color: "#8a4af3" },
-        hotels: { text: "Show Hotels", icon: "🏨", color: "#1976d2" },
-        markets: { text: "Show Markets", icon: "🛒", color: "#4caf50" },
-        entertainment: { text: "Show Entertainment", icon: "🎭", color: "#ff9800" }
-    };
+    restaurants: { text: "Show Restaurants", icon: "🍽️", color: "#1976d2" },
+    hotels: { text: "Show Hotels", icon: "🏨", color: "#1976d2" },
+    markets: { text: "Show Markets", icon: "🛒", color: "#1976d2" },
+    entertainment: { text: "Show Entertainment", icon: "🎭", color: "#1976d2" }
+};
     
     const buttonConfig = buttonLabels[key] || buttonLabels.restaurants;
     
     if (places.length > 0) {
-        tabContentsHtml += `
-            <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
-                <button class="show-category-btn" 
-                        data-category="${key}"
-                        style="padding:10px 18px; border-radius:9px; background:${buttonConfig.color}; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
-                    ${buttonConfig.icon} ${buttonConfig.text}
-                </button>
-            </div>
-        `;
-    }
+    tabContentsHtml += `
+        <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
+            <button class="show-category-btn" 
+                    data-category="${key}"
+                    style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
+                ${buttonConfig.icon} ${buttonConfig.text}
+            </button>
+        </div>
+    `;
+}
     
     tabContentsHtml += '</div>';
 });
@@ -2682,3 +2682,386 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         triggerFetch();
     }
 } // <--- FONKSİYONUN KAPANMASI
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================
+// TEKİL FONKSİYON: Tüm kategoriler için ortak fonksiyon
+// ============================================
+
+async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
+    const isMapLibre = !!map.addSource;
+    
+    // Kategori konfigürasyonları
+    const categoryConfig = {
+        'restaurants': {
+            apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
+            color: '#1976d2',
+            iconUrl: 'https://www.svgrepo.com/show/327200/restaurant-sharp.svg',
+            buttonText: '🍽️ Show Restaurants',
+            placeholderIcon: '/img/restaurant_icon.svg',
+            layerPrefix: 'restaurant'
+        },
+        'hotels': {
+            apiCategories: 'accommodation',
+            color: '#1976d2',
+            iconUrl: 'https://www.svgrepo.com/show/327200/hotel.svg',
+            buttonText: '🏨 Show Hotels',
+            placeholderIcon: '/img/hotel_icon.svg',
+            layerPrefix: 'hotel'
+        },
+        'markets': {
+            apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
+            color: '#1976d2',
+            iconUrl: 'https://www.svgrepo.com/show/327200/shopping-cart.svg',
+            buttonText: '🛒 Show Markets',
+            placeholderIcon: '/img/market_icon.svg',
+            layerPrefix: 'market'
+        },
+        'entertainment': {
+            apiCategories: 'entertainment,leisure',
+            color: '#1976d2',
+            iconUrl: 'https://www.svgrepo.com/show/327200/theater.svg',
+            buttonText: '🎭 Show Entertainment',
+            placeholderIcon: '/img/entertainment_icon.svg',
+            layerPrefix: 'entertainment'
+        }
+    };
+    
+    const config = categoryConfig[categoryType] || categoryConfig.restaurants;
+    
+    // Temizlik
+    const layerKey = `__${config.layerPrefix}Layers`;
+    const marker3DKey = `_${config.layerPrefix}3DMarkers`;
+    const layer3DKey = `_${config.layerPrefix}3DLayers`;
+    
+    if (map[layerKey]) {
+        map[layerKey].forEach(l => l.remove());
+        map[layerKey] = [];
+    }
+    
+    if (window[layer3DKey]) {
+        window[layer3DKey].forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+            if (map.getSource(id)) map.removeSource(id);
+        });
+        window[layer3DKey] = [];
+    }
+    
+    if (window[marker3DKey]) {
+        window[marker3DKey].forEach(m => m.remove());
+        window[marker3DKey] = [];
+    }
+    
+    // API'den veri çek
+    const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+    
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        
+        if (!data.features || data.features.length === 0) {
+            alert(`No ${categoryType} found nearby.`);
+            return;
+        }
+        
+        data.features.forEach((f, idx) => {
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            const imgId = `${config.layerPrefix}-img-${idx}-${Date.now()}`;
+            
+            let popupContent = getFastPlacePopupHTML(f, imgId, day, config);
+            
+            if (isMapLibre) {
+                // 3D HARİTA (MapLibre)
+                window[layer3DKey] = window[layer3DKey] || [];
+                window[marker3DKey] = window[marker3DKey] || [];
+                
+                // Çizgi ekle
+                const sourceId = `${config.layerPrefix}-line-src-${idx}`;
+                const layerId = `${config.layerPrefix}-line-layer-${idx}`;
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+                        }
+                    });
+                    map.addLayer({
+                        id: layerId,
+                        type: 'line',
+                        source: sourceId,
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: { 
+                            'line-color': config.color, 
+                            'line-width': 4, 
+                            'line-opacity': 0.8, 
+                            'line-dasharray': [2, 2] 
+                        }
+                    });
+                    window[layer3DKey].push(layerId, sourceId);
+                }
+                
+                // Marker ekle
+                const el = document.createElement('div');
+                el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType);
+                el.className = 'custom-3d-marker-element';
+                el.style.cursor = 'pointer';
+                el.style.zIndex = '2000';
+                
+                const popup = new maplibregl.Popup({ 
+                    offset: 25, 
+                    maxWidth: '360px',
+                    closeButton: true,
+                    className: 'tt-unified-popup'
+                }).setHTML(popupContent);
+                
+                popup.on('open', () => {
+                    handlePlacePopupImageLoading(f, imgId, categoryType);
+                });
+                
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([pLng, pLat])
+                    .setPopup(popup)
+                    .addTo(map);
+                
+                el.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    marker.togglePopup(); 
+                });
+                window[marker3DKey].push(marker);
+            } else {
+                // 2D HARİTA (Leaflet)
+                map[layerKey] = map[layerKey] || [];
+                
+                // Çizgi
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+                    color: config.color, 
+                    weight: 4, 
+                    opacity: 0.95, 
+                    dashArray: "8,8" 
+                }).addTo(map);
+                map[layerKey].push(line);
+                
+                // Marker
+                const marker = L.marker([pLat, pLng], {
+                    icon: L.divIcon({ 
+                        html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType), 
+                        className: "", 
+                        iconSize: [32,32], 
+                        iconAnchor: [16,16] 
+                    })
+                }).addTo(map);
+                map[layerKey].push(marker);
+                
+                marker.bindPopup(popupContent, { maxWidth: 341 });
+                marker.on("popupopen", function() { 
+                    handlePlacePopupImageLoading(f, imgId, categoryType);
+                });
+            }
+        });
+        
+    } catch (err) {
+        console.error(err);
+        alert(`Error fetching ${categoryType}.`);
+    }
+}
+
+// Yardımcı fonksiyon: Kategoriye göre marker HTML'i
+function getCategoryMarkerHtml(color, iconUrl, categoryType) {
+    return `
+      <div class="custom-marker-outer" style="
+        position:relative;
+        width:32px;height:32px;
+        background:${color};
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 2px 8px #888;
+        border:2px solid #fff;
+      ">
+        <img src="${iconUrl}"
+             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="${categoryType}">
+      </div>
+    `;
+}
+
+// Yardımcı fonksiyon: Popup HTML'i
+function getFastPlacePopupHTML(f, imgId, day, config) {
+    const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
+    const address = f.properties.formatted || "";
+    const lat = f.properties.lat;
+    const lon = f.properties.lon;
+    
+    const safeName = name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    const safeAddress = address.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    
+    return `
+      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 0px;">
+        <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
+          <img id="${imgId}" class="hidden-img" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+          <div class="img-loading-spinner" id="${imgId}-spin"></div>
+        </div>
+        <div class="point-info" style="flex: 1; min-width: 0;">
+          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
+          </div>
+          <div class="point-address" style="display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 11px;
+            color: #666;
+            line-height: 1.2;
+            font-weight: 400;
+            text-align: left;">${safeAddress}</div>
+        </div>
+        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <button class="add-point-to-cart-btn"
+            onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon}, '${config.layerPrefix}')"
+            style="width: 32px; height: 32px; background: ${config.color}; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            +
+          </button>
+        </div>
+      </div>
+    `;
+}
+
+// Yardımcı fonksiyon: Popup açıldığında resim yükleme
+function handlePlacePopupImageLoading(f, imgId, categoryType) {
+    getImageForPlace(f.properties.name, categoryType, window.selectedCity || "")
+        .then(src => {
+            const img = document.getElementById(imgId);
+            const spin = document.getElementById(imgId + "-spin");
+            if (img && src) {
+                img.src = src;
+                img.classList.remove("hidden-img");
+                if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
+            }
+            if (img) {
+                img.onload = () => { if (spin) spin.style.display = "none"; img.classList.remove("hidden-img"); };
+                img.onerror = () => { if (spin) spin.style.display = "none"; img.classList.add("hidden-img"); };
+            } else if (spin) {
+                spin.style.display = "none";
+            }
+        })
+        .catch(() => {
+            const spin = document.getElementById(imgId + "-spin");
+            const img = document.getElementById(imgId);
+            if (spin) spin.style.display = "none";
+            if (img) img.classList.add("hidden-img");
+        });
+}
+
+// Sepete ekleme fonksiyonu (tüm kategoriler için)
+window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, categoryType) {
+    window.currentDay = parseInt(day);
+    
+    const categoryIcons = {
+        'restaurant': '/img/restaurant_icon.svg',
+        'hotel': '/img/hotel_icon.svg',
+        'market': '/img/market_icon.svg',
+        'entertainment': '/img/entertainment_icon.svg'
+    };
+    
+    const img = document.getElementById(imgId);
+    const defaultIcon = categoryIcons[categoryType] || '/img/placeholder.png';
+    const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
+        ? img.src
+        : defaultIcon;
+    
+    // Sepete ekle
+    addToCart(
+        name,
+        imgSrc,
+        day,
+        categoryType.charAt(0).toUpperCase() + categoryType.slice(1),
+        address,
+        null, null, null, null,
+        { lat: Number(lat), lng: Number(lon) },
+        ""
+    );
+    
+    // Temizlik
+    const layer3DKey = `_${categoryType}3DLayers`;
+    const marker3DKey = `_${categoryType}3DMarkers`;
+    
+    if (window._maplibre3DInstance) {
+        if (window[layer3DKey]) {
+            window[layer3DKey].forEach(id => {
+                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+            });
+            window[layer3DKey] = [];
+        }
+        if (window[marker3DKey]) {
+            window[marker3DKey].forEach(m => m.remove());
+            window[marker3DKey] = [];
+        }
+    }
+    
+    const allMaps = [];
+    if (window.leafletMaps) allMaps.push(...Object.values(window.leafletMaps));
+    if (window.expandedMaps) allMaps.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+    
+    allMaps.forEach(map => {
+        const layerKey = `__${categoryType}Layers`;
+        if (map && map[layerKey]) {
+            map[layerKey].forEach(l => {
+               try { l.remove(); } catch(e) {}
+            });
+            map[layerKey] = [];
+        }
+    });
+    
+    alert(`${name} added to your trip!`);
+};
+
+// ============================================
+// ESKİ FONKSİYONLARI YENİ TEKİL FONKSİYONLARA YÖNLENDİR
+// ============================================
+
+async function showNearbyRestaurants(lat, lng, map, day) {
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
+}
+
+async function showNearbyHotels(lat, lng, map, day) {
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'hotels');
+}
+
+async function showNearbyMarkets(lat, lng, map, day) {
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'markets');
+}
+
+async function showNearbyEntertainment(lat, lng, map, day) {
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment');
+}
+
+// Eski fonksiyonları yeni fonksiyona yönlendir (geriye dönük uyumluluk)
+window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'restaurant');
+};
+
+window.addHotelToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'hotel');
+};
+
+window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'market');
+};
+
+window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
+    return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'entertainment');
+};
