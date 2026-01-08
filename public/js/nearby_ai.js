@@ -1610,13 +1610,7 @@ Object.keys(categorizedPlaces).forEach(key => {
         });
     }
     
-    const buttonLabels = {
-    restaurants: { text: "Show Restaurants", icon: "🍽️", color: "#1976d2" },
-    hotels: { text: "Show Hotels", icon: "🏨", color: "#1976d2" },
-    markets: { text: "Show Markets", icon: "🛒", color: "#1976d2" },
-    entertainment: { text: "Show Entertainment", icon: "🎭", color: "#1976d2" }
-};
-    
+
     const buttonConfig = buttonLabels[key] || buttonLabels.restaurants;
     
     if (places.length > 0) {
