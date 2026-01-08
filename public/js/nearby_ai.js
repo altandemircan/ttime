@@ -1611,25 +1611,24 @@ Object.keys(categorizedPlaces).forEach(key => {
     }
     
     const buttonLabels = {
-    restaurants: { text: "Show Restaurants", icon: "🍽️", color: "#1976d2" },
-    hotels: { text: "Show Hotels", icon: "🏨", color: "#1976d2" },
-    markets: { text: "Show Markets", icon: "🛒", color: "#1976d2" },
-    entertainment: { text: "Show Entertainment", icon: "🎭", color: "#1976d2" }
-};
-    
+        restaurants: { text: "Show Restaurants", color: "#1976d2" },
+        hotels: { text: "Show Hotels", color: "#1976d2" },
+        markets: { text: "Show Markets", color: "#1976d2" },
+        entertainment: { text: "Show Entertainment", color: "#1976d2" }
+    };    
     const buttonConfig = buttonLabels[key] || buttonLabels.restaurants;
     
     if (places.length > 0) {
-    tabContentsHtml += `
-        <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
-            <button class="show-category-btn" 
-                    data-category="${key}"
-                    style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
-                ${buttonConfig.icon} ${buttonConfig.text}
-            </button>
-        </div>
-    `;
-}   
+        tabContentsHtml += `
+            <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
+                <button class="show-category-btn" 
+                        data-category="${key}"
+                        style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
+                    ${buttonConfig.text}
+                </button>
+            </div>
+        `;
+    }
     
     tabContentsHtml += '</div>';
 });
