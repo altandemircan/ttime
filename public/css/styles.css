@@ -5458,7 +5458,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     font-weight: bold;
     font-size: 16px;
     margin-bottom: 15px;
-    text-align: center;
+   
     color: #1976d2;
     border-bottom: 2px solid #e3f2fd;
     padding-bottom: 10px;

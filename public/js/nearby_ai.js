@@ -1619,10 +1619,18 @@ Object.keys(categorizedPlaces).forEach(key => {
     `;
     
     if (places.length === 0) {
+        // YER BULUNMAZSA GENİŞ ALAN ARAMA BUTONU
         tabContentsHtml += `
             <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
                 <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
                 No ${tabTitles[key].title.toLowerCase()} found in this area
+                <div style="margin-top: 16px;">
+                    <button class="search-wider-btn" 
+                            data-category="${key}"
+                            style="padding:10px 18px; border-radius:9px; background:#ff9800; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
+                        🔍 Search wider area
+                    </button>
+                </div>
             </div>
         `;
     } else {
@@ -2317,19 +2325,19 @@ window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, c
 // ============================================
 
 async function showNearbyRestaurants(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', 1000);
 }
 
 async function showNearbyHotels(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'hotels');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', 1000);
 }
 
 async function showNearbyMarkets(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'markets');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'markets', 1000);
 }
 
 async function showNearbyEntertainment(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', 1000);
 }
 
 // Eski fonksiyonları yeni fonksiyona yönlendir (geriye dönük uyumluluk)
