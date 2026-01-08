@@ -1167,7 +1167,7 @@ function addRouteWithRestaurantClick(expandedMap, geojson) {
         const lat = e.latlng.lat, lng = e.latlng.lng;
         const categories = "catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub";
         // PROXY KULLANIMI
-        const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+        const url = `/api/geoapify/places?categories=${categories}&lat=${lat}&lon=${lng}&radius=1000&limit=50`;
         try {
             const resp = await fetch(url);
             const data = await resp.json();
