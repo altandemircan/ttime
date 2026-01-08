@@ -502,58 +502,7 @@ function getFastRestaurantPopupHTML(f, imgId, day) {
     `;
 }
 
-function ensureSpinnerCSS() {
-    if (document.getElementById('img-loading-spinner-style')) return;
-    const style = document.createElement('style');
-    style.id = 'img-loading-spinner-style';
-    style.innerHTML = `
-    .img-loading-spinner {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 32px; height: 32px;
-      border: 4px solid #eee;
-      border-top: 4px solid #1976d2;
-      border-radius: 50%;
-      animation: img-spin 1s linear infinite;
-      z-index: 2;
-    }
-    @keyframes img-spin {
-      to { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-    .hidden-img { display: none !important; }
-    `;
-    document.head.appendChild(style);
-}
 
-
-function getRedRestaurantMarkerHtml() {
-    return `
-      <div class="custom-marker-outer red" style="position:relative;">
-        <span class="custom-marker-label">R</span>
-      </div>
-    `;
-}
-
-// Returns custom purple restaurant marker HTML
-function getPurpleRestaurantMarkerHtml() {
-    return `
-      <div class="custom-marker-outer" style="
-        position:relative;
-        width:32px;height:32px;
-        background:#8a4af3;
-        border-radius:50%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        box-shadow:0 2px 8px #888;
-        border:2px solid #fff;
-      ">
-        <img src="https://www.svgrepo.com/show/327200/restaurant-sharp.svg"
-             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="Restaurant">
-      </div>
-    `;
-}
 
 // Add restaurant to trip/cart (called from popup button)
 window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
@@ -570,30 +519,6 @@ window.addRestaurantToTrip = function(name, image, address, day, lat, lon) {
     if (typeof updateCart === "function") updateCart();
     alert(`${name} added to your trip!`);
 };
-
-async function searchRestaurantsAt(lat, lng, map) {
-    // PROXY KULLANIMI: API Key removed
-    const bufferMeters = 1000; // 1 km çap
-    const url = `/api/geoapify/places?categories=catering.restaurant&lat=${lat}&lon=${lng}&radius=${bufferMeters}&limit=50`;
-    
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
-        if (!data.features || data.features.length === 0) {
-            alert("Bu alanda restoran bulunamadı!");
-            return;
-        }
-        data.features.forEach(f => {
-            L.marker([f.properties.lat, f.properties.lon])
-                .addTo(map)
-                .bindPopup(`<b>${f.properties.name || "Restoran"}</b>`);
-        });
-        alert(`Bu alanda ${data.features.length} restoran bulundu.`);
-    } catch(e) {
-        console.error("Search error:", e);
-alert("An error occurred during the search.");
-    }
-}
 
 
 function getFastHotelPopupHTML(f, imgId, day) {
