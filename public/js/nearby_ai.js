@@ -1406,26 +1406,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         
         const data = await resp.json();
 
-        // === BU SATIRLARI EKLE (DEBUG İÇİN) ===
-if (data.features && data.features.length > 0) {
-    console.log('API Kategorileri Örneği (ilk 3 yer):');
-    data.features.slice(0, 3).forEach((f, i) => {
-        console.log(`  ${i}: ${f.properties.name}`);
-        console.log(`     Kategoriler: ${f.properties.categories}`);
-        if (f.properties.categories) {
-    const cats = f.properties.categories;
-    if (typeof cats === 'string') {
-        console.log(`     Listesi: ${cats.split(',')}`);
-    } else if (Array.isArray(cats)) {
-        console.log(`     Listesi:`, cats);
-    } else {
-        console.log(`     Bilinmeyen tip:`, cats);
-    }
-}
-    });
-}
-// === BURAYA KADAR ===
-
         // DEBUG: Gelen datayı konsola yazdır
         console.log('Geoapify Response:', {
             totalFeatures: data.features?.length || 0,
@@ -1436,20 +1416,12 @@ if (data.features && data.features.length > 0) {
         });
 
         // Kategorilere göre yerleri grupla
-let categorizedPlaces = {
-    restaurants: [],
-    hotels: [],
-    markets: [],
-    entertainment: []
-};
-
-
-
-
-// DEBUG: Kategori sayıları
-console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
-
-
+        let categorizedPlaces = {
+            restaurants: [],
+            hotels: [],
+            markets: [],
+            entertainment: []
+        };
 
         let allPlaces = [];
         let placeIdToIndexMap = {};
@@ -1475,30 +1447,16 @@ console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: c
             });
 
             // Kategorilere ayır - BASİT YÖNTEM
-allPlaces.forEach(place => {
-    const cat = place.category;
-    if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
-    else if (cat === 'hotel') categorizedPlaces.hotels.push(place);
-    else if (cat === 'markets') categorizedPlaces.markets.push(place);
-    else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);
-});
+            allPlaces.forEach(place => {
+                const cat = place.category;
+                if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
+                else if (cat === 'hotel') categorizedPlaces.hotels.push(place);
+                else if (cat === 'markets') categorizedPlaces.markets.push(place);
+                else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);
+            });
 
-// === BURAYA EKLE (kategorilere ayırdıktan SONRA) ===
-const tabTitles = {
-    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-};
             // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
-
-            // BU SATIRLARI EKLE:
-
-// Her yer için kategori bilgisini de logla
-allPlaces.slice(0, 5).forEach((p, i) => {
-    console.log(`Yer ${i}: ${p.properties.name} - Kategori: ${p.category} - API Kategorileri: ${p.properties.categories}`);
-});
 
             // Her kategori için maksimum 5 yer göster
             Object.keys(categorizedPlaces).forEach(key => {
@@ -1506,12 +1464,20 @@ allPlaces.slice(0, 5).forEach((p, i) => {
             });
         }
 
-          // === BU SATIRI BURAYA EKLE ===
+        // Tab başlıkları
         const tabTitles = {
             restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
             hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
             markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
             entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+        };
+
+        // Buton etiketleri
+        const buttonLabels = {
+            restaurants: { text: "Show more restaurants", color: "#1976d2" },
+            hotels: { text: "Show more hotels", color: "#1976d2" },
+            markets: { text: "Show more markets", color: "#1976d2" },
+            entertainment: { text: "Show more entertainment", color: "#1976d2" }
         };
 
         // Tıkalanan nokta bölümü
@@ -1540,8 +1506,6 @@ allPlaces.slice(0, 5).forEach((p, i) => {
                 </div>
             </div>
         `;
-
-
 
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
@@ -1602,189 +1566,207 @@ allPlaces.slice(0, 5).forEach((p, i) => {
             categorizedPhotos[key] = await Promise.all(photoPromises[key]);
         }
 
-       // ... mevcut kod ...
+        // Tab içerikleri için container
+        let tabContentsHtml = '<div class="tab-contents">';
 
-// Tab içerikleri için container
-let tabContentsHtml = '<div class="tab-contents">';
-
-Object.keys(categorizedPlaces).forEach(key => {
-    const places = categorizedPlaces[key];
-    const photos = categorizedPhotos[key] || [];
-    const isActive = key === activeTab;
-    
-    tabContentsHtml += `
-        <div class="tab-content ${isActive ? 'active' : ''}" 
-             data-tab="${key}"
-             style="display: ${isActive ? 'block' : 'none'};">
-    `;
-    
-    if (places.length === 0) {
-        tabContentsHtml += `
-            <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
-                <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
-                No ${tabTitles[key].title.toLowerCase()} found in this area
-            </div>
-        `;
-    } else {
-        places.forEach((place, index) => {
-            const p = place.properties;
-            const name = p.name || "(No name)";
-            const photo = photos[index] || PLACEHOLDER_IMG;
-            const distStr = place.distance < 1000 ? 
-                `${Math.round(place.distance)} m` : 
-                `${(place.distance / 1000).toFixed(2)} km`;
-            const safeName = name.replace(/'/g, "\\'");
-            const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');
-            
-            const placeId = p.place_id || `place-${key}-${index}`;
-            const allPlacesIndex = placeIdToIndexMap[placeId] || allPlaces.findIndex(pl => 
-                pl.properties.place_id === p.place_id || 
-                pl.properties.name === p.name
-            );
+        Object.keys(categorizedPlaces).forEach(key => {
+            const places = categorizedPlaces[key];
+            const photos = categorizedPhotos[key] || [];
+            const isActive = key === activeTab;
+            const buttonConfig = buttonLabels[key] || buttonLabels.restaurants;
             
             tabContentsHtml += `
-                <div class="category-place-item" 
-                     style="display: flex; align-items: center; gap: 12px; padding: 10px; 
-                            background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
-                            border: 1px solid #eee;">
-                    <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
-                        <img src="${photo}" 
-                             alt="${name}"
-                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                        <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
-                             style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                            <span style="font-size: 10px; color: white;">✨</span>
+                <div class="tab-content ${isActive ? 'active' : ''}" 
+                     data-tab="${key}"
+                     style="display: ${isActive ? 'block' : 'none'};">
+            `;
+            
+            if (places.length === 0) {
+                // YER BULUNMAZSA GENİŞ ALAN ARAMA BUTONU
+                tabContentsHtml += `
+                    <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
+                        No ${tabTitles[key].title.toLowerCase()} found in this area
+                        <div style="margin-top: 16px;">
+                            <button class="search-wider-btn" 
+                                    data-category="${key}"
+                                    style="padding:10px 18px; border-radius:9px; background:#ff9800; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
+                                🔍 Search wider area
+                            </button>
                         </div>
                     </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: 13px; color: #333; 
-                                    margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-                            ${name}
+                `;
+            } else {
+                places.forEach((place, index) => {
+                    const p = place.properties;
+                    const name = p.name || "(No name)";
+                    const photo = photos[index] || PLACEHOLDER_IMG;
+                    const distStr = place.distance < 1000 ? 
+                        `${Math.round(place.distance)} m` : 
+                        `${(place.distance / 1000).toFixed(2)} km`;
+                    const safeName = name.replace(/'/g, "\\'");
+                    const locationContext = [p.suburb, p.city, p.country].filter(Boolean).join(', ');
+                    
+                    const placeId = p.place_id || `place-${key}-${index}`;
+                    const allPlacesIndex = placeIdToIndexMap[placeId] || allPlaces.findIndex(pl => 
+                        pl.properties.place_id === p.place_id || 
+                        pl.properties.name === p.name
+                    );
+                    
+                    tabContentsHtml += `
+                        <div class="category-place-item" 
+                             style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                                    background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; 
+                                    border: 1px solid #eee;">
+                            <div style="position: relative; width: 42px; height: 42px; flex-shrink: 0;">
+                                <img src="${photo}" 
+                                     alt="${name}"
+                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                                <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
+                                     style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+                                    <span style="font-size: 10px; color: white;">✨</span>
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; font-size: 13px; color: #333; 
+                                            margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+                                    ${name}
+                                </div>
+                                <div style="font-size: 11px; color: #777; overflow: hidden; 
+                                            text-overflow: ellipsis; white-space: nowrap;">
+                                    ${p.formatted || ""}
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center; 
+                                        gap: 4px; flex-shrink: 0;">
+                                <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                                    ${distStr}
+                                </div>
+                                <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
+                                        style="width: 30px; height: 30px; background: #fff; 
+                                               border: 1px solid #ddd; border-radius: 50%; 
+                                               cursor: pointer; color: #1976d2; font-weight: bold; 
+                                               font-size: 16px; display: flex; align-items: center; 
+                                               justify-content: center;">
+                                    +
+                                </button>
+                            </div>
                         </div>
-                        <div style="font-size: 11px; color: #777; overflow: hidden; 
-                                    text-overflow: ellipsis; white-space: nowrap;">
-                            ${p.formatted || ""}
-                        </div>
-                    </div>
-                    <div style="display: flex; flex-direction: column; align-items: center; 
-                                gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 10px; color: #999; white-space: nowrap;">
-                            ${distStr}
-                        </div>
-                        <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${day}, '${p.lat}', '${p.lon}')"
-                                style="width: 30px; height: 30px; background: #fff; 
-                                       border: 1px solid #ddd; border-radius: 50%; 
-                                       cursor: pointer; color: #1976d2; font-weight: bold; 
-                                       font-size: 16px; display: flex; align-items: center; 
-                                       justify-content: center;">
-                            +
+                    `;
+                });
+                
+                // Yer bulunursa "Show more" butonu
+                tabContentsHtml += `
+                    <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
+                        <button class="show-category-btn" 
+                                data-category="${key}"
+                                style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
+                            ${buttonConfig.text}
                         </button>
                     </div>
-                </div>
-            `;
+                `;
+            }
+            
+            tabContentsHtml += '</div>';
         });
-    }
-    
-    const buttonLabels = {
-        restaurants: { text: "Show more restaurants", color: "#1976d2" },
-        hotels: { text: "Show more hotels", color: "#1976d2" },
-        markets: { text: "Show more markets", color: "#1976d2" },
-        entertainment: { text: "Show more entertainment", color: "#1976d2" }
-    };    
-    const buttonConfig = buttonLabels[key] || buttonLabels.restaurants;
-    
-    if (places.length > 0) {
-        tabContentsHtml += `
-            <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
-                <button class="show-category-btn" 
-                        data-category="${key}"
-                        style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:15px; font-weight:bold; cursor:pointer; border:none;">
-                    ${buttonConfig.text}
-                </button>
+
+        tabContentsHtml += '</div>';
+
+        const html = `
+            <div style="max-width: 380px;">
+                <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
+                    📍 Nearby Places
+                </div>
+                ${addPointSection}
+                ${tabsHtml}
+                ${tabContentsHtml}
             </div>
         `;
-    }
-    
-    tabContentsHtml += '</div>';
-});
 
-tabContentsHtml += '</div>';
+        showCustomPopup(lat, lng, map, html, true);
 
-const html = `
-    <div style="max-width: 380px;">
-        <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-            📍 Nearby Places
-        </div>
-        ${addPointSection}
-        ${tabsHtml}
-        ${tabContentsHtml}
-    </div>
-`;
+        // Global kayıtlar
+        window._lastNearbyPlaces = allPlaces;
+        window._lastNearbyPhotos = [];
 
-showCustomPopup(lat, lng, map, html, true);
-
-// Global kayıtlar
-window._lastNearbyPlaces = allPlaces;
-window._lastNearbyPhotos = [];
-
-allPlaces.forEach((place, index) => {
-    let foundPhoto = PLACEHOLDER_IMG;
-    
-    Object.keys(categorizedPlaces).forEach(key => {
-        const catIndex = categorizedPlaces[key].findIndex(p => 
-            p.properties.place_id === place.properties.place_id ||
-            p.properties.name === place.properties.name
-        );
-        if (catIndex !== -1 && categorizedPhotos[key] && categorizedPhotos[key][catIndex]) {
-            foundPhoto = categorizedPhotos[key][catIndex];
-        }
-    });
-    
-    window._lastNearbyPhotos[index] = foundPhoto;
-});
-
-window._lastNearbyDay = day;
-window._currentPointInfo = pointInfo;
-
-loadClickedPointImage(pointInfo.name);
-
-setTimeout(() => {
-    document.querySelectorAll('.category-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
+        allPlaces.forEach((place, index) => {
+            let foundPhoto = PLACEHOLDER_IMG;
             
-            document.querySelectorAll('.category-tab').forEach(t => {
-                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
-                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
-                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
-                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
+            Object.keys(categorizedPlaces).forEach(key => {
+                const catIndex = categorizedPlaces[key].findIndex(p => 
+                    p.properties.place_id === place.properties.place_id ||
+                    p.properties.name === place.properties.name
+                );
+                if (catIndex !== -1 && categorizedPhotos[key] && categorizedPhotos[key][catIndex]) {
+                    foundPhoto = categorizedPhotos[key][catIndex];
+                }
             });
             
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
-            });
+            window._lastNearbyPhotos[index] = foundPhoto;
         });
-    });
 
-    document.querySelectorAll('.show-category-btn').forEach(btn => {
-        btn.onclick = function() {
-            const category = this.dataset.category;
-            
-            if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-            
-            if (category === 'restaurants') {
-                showNearbyRestaurants(lat, lng, map, day);
-            } else if (category === 'hotels') {
-                showNearbyHotels(lat, lng, map, day);
-            } else if (category === 'markets') {
-                showNearbyMarkets(lat, lng, map, day);
-            } else if (category === 'entertainment') {
-                showNearbyEntertainment(lat, lng, map, day);
-            }
-        };
-    });
-}, 250);
+        window._lastNearbyDay = day;
+        window._currentPointInfo = pointInfo;
 
+        loadClickedPointImage(pointInfo.name);
+
+        setTimeout(() => {
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    
+                    document.querySelectorAll('.category-tab').forEach(t => {
+                        t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
+                        t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
+                        t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
+                        t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
+                    });
+                    
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
+                    });
+                });
+            });
+
+            document.querySelectorAll('.show-category-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const category = this.dataset.category;
+                    
+                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+                    
+                    if (category === 'restaurants') {
+                        showNearbyRestaurants(lat, lng, map, day);
+                    } else if (category === 'hotels') {
+                        showNearbyHotels(lat, lng, map, day);
+                    } else if (category === 'markets') {
+                        showNearbyMarkets(lat, lng, map, day);
+                    } else if (category === 'entertainment') {
+                        showNearbyEntertainment(lat, lng, map, day);
+                    }
+                };
+            });
+
+            // "Search wider area" butonları için event handler
+            document.querySelectorAll('.search-wider-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const category = this.dataset.category;
+                    const widerRadius = 5000;   // Daha geniş alan (5km)
+                    
+                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+                    
+                    // Daha geniş alanda arama yap
+                    if (category === 'restaurants') {
+                        showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
+                    } else if (category === 'hotels') {
+                        showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
+                    } else if (category === 'markets') {
+                        showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
+                    } else if (category === 'entertainment') {
+                        showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
+                    }
+                };
+            });
+        }, 250);
 
         // Şehir bilgisi ve AI açıklaması
         let currentCityName = window.selectedCity || "";
@@ -2317,19 +2299,19 @@ window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, c
 // ============================================
 
 async function showNearbyRestaurants(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', 1000);
 }
 
 async function showNearbyHotels(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'hotels');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', 1000);
 }
 
 async function showNearbyMarkets(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'markets');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'markets', 1000);
 }
 
 async function showNearbyEntertainment(lat, lng, map, day) {
-    return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment');
+    return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', 1000);
 }
 
 // Eski fonksiyonları yeni fonksiyona yönlendir (geriye dönük uyumluluk)
