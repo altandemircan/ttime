@@ -1589,7 +1589,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                                             margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
                                     ${name}
                                 </div>
-                                <div style="font-size: 11px; color: #777; overflow: hidden; 
+                                <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                                             text-overflow: ellipsis; white-space: nowrap;">
                                     ${p.formatted || ""}
                                 </div>
