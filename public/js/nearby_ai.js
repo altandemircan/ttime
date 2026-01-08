@@ -1474,11 +1474,11 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
 
         // Buton etiketleri
         const buttonLabels = {
-            restaurants: { text: "Show more restaurants", color: "#1976d2" },
-            hotels: { text: "Show more hotels", color: "#1976d2" },
-            markets: { text: "Show more markets", color: "#1976d2" },
-            entertainment: { text: "Show more entertainment", color: "#1976d2" }
-        };
+    restaurants: { text: "Show more", color: "#1976d2" },
+    hotels: { text: "Show more", color: "#1976d2" },
+    markets: { text: "Show more", color: "#1976d2" },
+    entertainment: { text: "Show more", color: "#1976d2" }
+};
 
         // Tıkalanan nokta bölümü
         const addPointSection = `
@@ -1582,21 +1582,20 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             `;
             
             if (places.length === 0) {
-                // YER BULUNMAZSA GENİŞ ALAN ARAMA BUTONU
-                tabContentsHtml += `
-                    <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
-                        <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
-                        No ${tabTitles[key].title.toLowerCase()} found in this area
-                        <div style="margin-top: 16px;">
-                            <button class="search-wider-btn" 
-                                    data-category="${key}"
-                                    style="padding:10px 18px; border-radius:9px; background:#ff9800; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
-                                🔍 Search wider area
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else {
+    tabContentsHtml += `
+        <div style="text-align: center; padding: 30px 20px; color: #999; font-size: 13px;">
+            <div style="font-size: 24px; margin-bottom: 8px;">${tabTitles[key].icon}</div>
+            No ${tabTitles[key].title.toLowerCase()} found in this area
+            <div style="margin-top: 16px;">
+                <button class="search-wider-btn" 
+                        data-category="${key}"
+                        style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
+                    Search wider area
+                </button>
+            </div>
+        </div>
+    `;
+} else {
                 places.forEach((place, index) => {
                     const p = place.properties;
                     const name = p.name || "(No name)";
@@ -1657,15 +1656,15 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                 
                 // Yer bulunursa "Show more" butonu
                 tabContentsHtml += `
-                    <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
-                        <button class="show-category-btn" 
-                                data-category="${key}"
-                                style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
-                            ${buttonConfig.text}
-                        </button>
-                    </div>
-                `;
-            }
+        <div style="text-align:center; margin: 20px 0 4px 0; padding-top: 12px; border-top: 1px solid #eee;">
+            <button class="show-category-btn" 
+                    data-category="${key}"
+                    style="padding:10px 18px; border-radius:9px; background:#1976d2; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; border:none;">
+                Show more
+            </button>
+        </div>
+    `;
+}
             
             tabContentsHtml += '</div>';
         });
