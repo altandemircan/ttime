@@ -349,13 +349,13 @@ Now generate for: ${point} in ${cleanCity} (${cleanCategory})`;
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
+                model: "gemma2:9b",
                 messages: [{ role: "user", content: prompt }],
                 stream: false, 
                 format: "json", 
                 options: { 
-                    temperature: 0.3, // Biraz yaratıcılık ama fazla değil
-                    num_predict: 120,
+                    temperature: 0.1, // Biraz yaratıcılık ama fazla değil
+                    num_predict: 150,
                     top_k: 10,
                     top_p: 0.9,
                     repeat_penalty: 1.1
