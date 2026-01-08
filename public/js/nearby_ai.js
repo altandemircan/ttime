@@ -1444,7 +1444,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
                 <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
                     <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
-                        <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                        <img id="clicked-point-img" src="img/placeholder.png" alt="Clicked Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
                     </div>
                     <div class="point-info" style="flex: 1; min-width: 0;">
@@ -1457,7 +1457,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                         </div>
                     </div>
                     <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 11px; color: #999;">Selected</div>
+                        <div style="font-size: 11px; color: #999;">Clicked</div>
                         <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
                     </div>
                     <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
@@ -1841,16 +1841,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             // HTML oluştur - İKİ AYRI BÖLÜM
             targetElement.innerHTML = `
                 <div style="margin-top: 12px; width: 100%;">
-                    <!-- Seçili Nokta Bölümü -->
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                            <div style="width: 24px; height: 24px; background: #1976d2; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">📍</div>
-                            <div style="font-weight: 600; font-size: 13px; color: #333;">Selected Point</div>
-                        </div>
-                        <div style="font-size: 12px; color: #666; line-height: 1.4;">
-                            This is the location you clicked on the map. You can add it to your trip or explore nearby places.
-                        </div>
-                    </div>
+                    
                     
                     <!-- AI Analiz Edilen Yer Bölümü -->
                     <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
