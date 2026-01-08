@@ -316,46 +316,28 @@ router.post('/clicked-ai', async (req, res) => {
         const { cleanFacts, cleanCategory, cleanCity } = cleanFactsData(facts || {});
         
         // DAHA KALİTELİ PROMPT YAPISI
-        const prompt = `[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
-1. ROLE: You are a professional local tour guide with deep knowledge of the area.
-2. POINT: "${point}"
-3. LOCATION: "${cleanCity || 'this location'}"
-4. CATEGORY: ${cleanCategory}
-5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
+       const prompt = `Task: Act as a local guide. Return JSON only.
+Data: ${point}, ${cleanCity.split(',')[0]}, ${cleanCategory}.
+Facts: ${JSON.stringify(cleanFacts)}
 
-[OUTPUT REQUIREMENTS]
-- Return ONLY valid JSON: {"p1": "text", "p2": "text"}
-- "p1": Exactly 2 informative sentences about this place.
-- "p2": 1 practical tip or recommendation (or empty string if none).
+Format: {"p1": "sentence1. sentence2.", "p2": "tip"}
 
-[CONTENT RULES]
-- ALWAYS mention "${cleanCity.split(',')[0]}" in p1 if city is provided.
-- NEVER mention postal codes, zip codes, or administrative codes.
-- Focus on: atmosphere, local significance, architectural style, typical visitors.
-- If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
-- Use natural, engaging language but stay factual.
-- Avoid generic phrases like "is a place" or "is located".
-- Do NOT invent names, dates, or events unless in facts.
-- For nature spots: mention landscape, flora/fauna, activities.
-- For businesses: mention typical offerings, ambiance, clientele.
-- For historical sites: mention period, significance, preservation.
-- Tips (p2): practical advice like "Visit early to avoid crowds" or "Try the local specialty".
+Rules:
+- p1: 2 sentences about atmosphere/significance in ${cleanCity.split(',')[0]}.
+- p2: 1 short tip.
+- No postal codes. No generic "is a place" filler.
 
-[EXAMPLE FORMAT]
-Good: {"p1": "This historic cafe in Beyoglu has been serving traditional Turkish coffee since 1950. Its antique decor and central location make it popular with both locals and tourists.", "p2": "Try their signature Turkish delight with the coffee."}
-Bad: {"p1": "This is a cafe. It is located in Istanbul.", "p2": ""}
-
-Now generate for: ${point} in ${cleanCity} (${cleanCategory})`;
+Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of ${cleanCity.split(',')[0]} with its unique local charm. Visitors often praise the welcoming atmosphere and its central role in the neighborhood.", "p2": "Best visited during late afternoon for the best view."}`;
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
+                model: "gemma2:9b",
                 messages: [{ role: "user", content: prompt }],
                 stream: false, 
                 format: "json", 
                 options: { 
-                    temperature: 0.3, // Biraz yaratıcılık ama fazla değil
-                    num_predict: 120,
+                    temperature: 0.1, // Biraz yaratıcılık ama fazla değil
+                    num_predict: 150,
                     top_k: 10,
                     top_p: 0.9,
                     repeat_penalty: 1.1
