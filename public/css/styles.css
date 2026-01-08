@@ -5295,7 +5295,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     right: 430px;
     width: 380px;
     max-width: calc(100vw - 40px);
-    max-height: calc(100vh - 80px);
+    max-height: calc(100vh - 20px);
     background: #fff;
     border-radius: 6px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
