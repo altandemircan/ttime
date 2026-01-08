@@ -120,9 +120,10 @@ async function loadClickedPointImage(pointName) {
 // Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
 window.addClickedPointToCart = async function(lat, lng, day) {
     try {
-        window.currentDay = parseInt(day); // Gün sabitleme
+        window.currentDay = parseInt(day);
 
-const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };        const placeName = pointInfo.name;
+        const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };
+        const placeName = pointInfo.name;
         
         let imageUrl = "img/placeholder.png";
         if (typeof getPexelsImage === "function") {
@@ -150,6 +151,7 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
         console.error('Error adding point:', error);
     }
 };
+
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 if (typeof updateCart === "function") updateCart();
 
@@ -1439,30 +1441,6 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
     entertainment: { text: "Show more", color: "#1976d2" }
 };
 
-        // Tıkalanan nokta bölümü
-        const addPointSection = `
-            <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
-                <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                    <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
-                        <img id="clicked-point-img" src="img/placeholder.png" alt="Selected Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
-                    </div>
-                    <div class="point-info" style="flex: 1; min-width: 0;">
-                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
-                        </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
-                            ${pointInfo.address || 'Selected location'}
-                        </div>
-                    </div>
-                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 11px; color: #999;">Selected</div>
-                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
-                    </div>
-                    <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
-                </div>
-            </div>
-        `;
 
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
@@ -1633,8 +1611,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
                 <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
                     📍 Nearby Places
                 </div>
-                ${addPointSection}
-                ${tabsHtml}
+                 ${tabsHtml}
                 ${tabContentsHtml}
             </div>
         `;
@@ -1664,9 +1641,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         window._lastNearbyDay = day;
         window._currentPointInfo = pointInfo;
 
-        loadClickedPointImage(pointInfo.name);
-
-        setTimeout(() => {
+       setTimeout(() => {
             document.querySelectorAll('.category-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     const tabId = this.dataset.tab;
@@ -1730,14 +1705,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             currentCityName = pointInfo.county || pointInfo.city;
         }
         
-        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-            const category = pointInfo?.category || pointInfo?.type || "place"; 
-            const locationContext = [pointInfo?.suburb, pointInfo?.city, currentCityName, pointInfo?.country || "Turkey"]
-                .filter(Boolean).join(', ');
-            
-            window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
-        }
-
+   
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
