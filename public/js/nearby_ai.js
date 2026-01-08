@@ -151,53 +151,6 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
     }
 };
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
-if (typeof updateCart === "function") updateCart();
-
-// FIX: addToCart fonksiyonunu da güncelleyelim
-window.addNearbyPlaceToTripFromPopup = async function(idx, day, placeLat, placeLng) {
-    if (!window._lastNearbyPlaces || !window._lastNearbyPlaces[idx]) return;
-    
-    // 1. Current Day'i sabitle
-    window.currentDay = parseInt(day);
-
-    const f = window._lastNearbyPlaces[idx];
-    const photo = (window._lastNearbyPhotos && window._lastNearbyPhotos[idx]) ? window._lastNearbyPhotos[idx] : "img/placeholder.png";
-    const actualLat = parseFloat(placeLat);
-    const actualLng = parseFloat(placeLng);
-    
-    console.log(`Adding place: ${f.properties.name}`);
-    
-    // 2. addToCart (updateCart'ı bu tetikleyecek)
-    addToCart(
-        f.properties.name || "Unnamed",
-        photo,
-        day,
-        "Place",
-        f.properties.formatted || "",
-        null, null,
-        f.properties.opening_hours || "",
-        null,
-        { lat: actualLat, lng: actualLng },
-        f.properties.website || ""
-    );
-    
-    // updateCart() BURADAN SİLİNDİ!
-
-    closeNearbyPopup();
-
-    // 3. Expanded map varsa başarı popup'ı
-    const expandedMapData = Object.values(window.expandedMaps || {}).find(m => m.day == day);
-    if (expandedMapData && expandedMapData.expandedMap) {
-        const map = expandedMapData.expandedMap;
-        L.popup()
-            .setLatLng([actualLat, actualLng])
-            .setContent(`<div style="text-align:center;"><b>${f.properties.name}</b><br><small style="color:#4caf50;">✓ Added!</small></div>`)
-            .openOn(map);
-        setTimeout(() => map.closePopup(), 2000);
-        // İsteğe bağlı: map.setView([actualLat, actualLng], map.getZoom(), { animate: true });
-    }
-};
-if (typeof updateCart === "function") updateCart();
 
 // Custom popup sistemi - Hem 2D hem 3D uyumlu
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
@@ -569,83 +522,7 @@ function getSimplePlaceCategory(f) {
     return 'restaurant';
 }
 
-async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
-  const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
-  if (!geoCategory) {
-    return [];
-  }
-  const coords = await getCityCoordinates(city);
-  if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
-    return [];
-  }
-  const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
-  let resp, data;
-  try {
-    resp = await fetch(url);
-    data = await resp.json();
-  } catch (e) {
-    return [];
-  }
- if (data.features && data.features.length > 0) {
-    const filtered = data.features.filter(f =>
-      !!f.properties.name && f.properties.name.trim().length > 2
-    );
-    const result = filtered.map(f => {
-      const props = f.properties || {};
-      let lat = Number(
-        props.lat ??
-        props.latitude ??
-        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[1])
-      );
-      let lon = Number(
-        props.lon ??
-        props.longitude ??
-        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
-      );
-      if (!Number.isFinite(lat)) lat = null;
-      if (!Number.isFinite(lon)) lon = null;
-      return {
-        name: props.name,
-        name_en: props.name_en,
-        name_latin: props.name_latin,
-        address: props.formatted || "",
-        lat,
-        lon,
-        location: (lat !== null && lon !== null) ? { lat, lng: lon } : null,
-        website: props.website || '',
-        opening_hours: props.opening_hours || '',
-        categories: props.categories || [],
-        city: city,
-        properties: props
-      };
-    });
 
-       console.log('getPlacesForCategory:', {
-      city,
-      category,
-      radius,
-      limit,
-      places: result.map(p => ({
-        name: p.name,
-        lat: p.lat,
-        lon: p.lon,
-        address: p.address,
-        categories: p.categories
-      }))
-    });
-
-    // ---- BURAYA EKLE ----
-    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
-    const sorted = result.sort((a, b) => {
-      const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
-      const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
-      return da - db;
-    });
-    return sorted;
-
-  }
-  return [];
-}
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
