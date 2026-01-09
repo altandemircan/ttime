@@ -5505,7 +5505,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .nearby-popup-content {
     padding: 20px;
     overflow-y: auto;
-    max-height: calc(100vh - 40px);
+    max-height: calc(100vh);
 }
 
 .nearby-no-results {
