@@ -856,7 +856,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         tabContentsHtml += '</div>';
 
         const html = `
-            <div style="max-width: 360px;">
+            <div>
                 <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
                     📍 Nearby Places
                 </div>
