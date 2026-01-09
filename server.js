@@ -65,10 +65,7 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
-// --- BURAYA EKLE --- //
 
-// OpenFreeMap TILE PROXY:
-// OpenFreeMap VECTOR TILE PROXY (GÜNCEL "planet/20251112_001001_pt" dataset!)
 
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;

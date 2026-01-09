@@ -4423,7 +4423,83 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     setTimeout(function() { map.invalidateSize(); }, 120);
 }
 
+async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
+  const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
+  if (!geoCategory) {
+    return [];
+  }
+  const coords = await getCityCoordinates(city);
+  if (!coords || !coords.lat || !coords.lon || isNaN(coords.lat) || isNaN(coords.lon)) {
+    return [];
+  }
+  const url = `/api/geoapify/places?categories=${geoCategory}&lon=${coords.lon}&lat=${coords.lat}&radius=${radius}&limit=${limit}`;
+  let resp, data;
+  try {
+    resp = await fetch(url);
+    data = await resp.json();
+  } catch (e) {
+    return [];
+  }
+ if (data.features && data.features.length > 0) {
+    const filtered = data.features.filter(f =>
+      !!f.properties.name && f.properties.name.trim().length > 2
+    );
+    const result = filtered.map(f => {
+      const props = f.properties || {};
+      let lat = Number(
+        props.lat ??
+        props.latitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[1])
+      );
+      let lon = Number(
+        props.lon ??
+        props.longitude ??
+        (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0])
+      );
+      if (!Number.isFinite(lat)) lat = null;
+      if (!Number.isFinite(lon)) lon = null;
+      return {
+        name: props.name,
+        name_en: props.name_en,
+        name_latin: props.name_latin,
+        address: props.formatted || "",
+        lat,
+        lon,
+        location: (lat !== null && lon !== null) ? { lat, lng: lon } : null,
+        website: props.website || '',
+        opening_hours: props.opening_hours || '',
+        categories: props.categories || [],
+        city: city,
+        properties: props
+      };
+    });
 
+       console.log('getPlacesForCategory:', {
+      city,
+      category,
+      radius,
+      limit,
+      places: result.map(p => ({
+        name: p.name,
+        lat: p.lat,
+        lon: p.lon,
+        address: p.address,
+        categories: p.categories
+      }))
+    });
+
+    // ---- BURAYA EKLE ----
+    // Sıralamayı şehir merkezine en yakın olanı öne alacak şekilde yap!
+    const sorted = result.sort((a, b) => {
+      const da = haversine(a.lat, a.lon, coords.lat, coords.lon);
+      const db = haversine(b.lat, b.lon, coords.lat, coords.lon);
+      return da - db;
+    });
+    return sorted;
+
+  }
+  return [];
+}
 async function updateCart() {
 
     // [PERFORMANS] Eski item haritalarını temizle
@@ -7039,6 +7115,8 @@ async function expandMap(containerId, day) {
 
     if (window.expandedMaps && window.expandedMaps[containerId]) return;
 
+
+
     if (window.expandedMaps) {
         Object.keys(window.expandedMaps).forEach(otherId => {
             if (otherId !== containerId) {
@@ -7349,6 +7427,8 @@ async function expandMap(containerId, day) {
         renderer: L.canvas({ padding: 0.5 }),
         dragging: true
     });
+
+ 
 
     // === [CRITICAL FIX] TILE LAYER AYARLAMA VE AGRESİF TEMİZLİK ===
     function setExpandedMapTile(styleKey) {
@@ -12117,3 +12197,4 @@ document.addEventListener("DOMContentLoaded", function() {
         inputEl.setAttribute("placeholder", "Enter destination & duration (Max 60 chars)"); // İsterseniz placeholder'ı da güncelleyin
     }
 });
+
