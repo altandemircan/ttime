@@ -551,33 +551,42 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100%;
-        min-height: 300px;
-        padding: 40px;
-        text-align: center;
+        height: 100vh;
+        min-height: 100%;
+        width: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: white;
     ">
         <div style="
             width: 60px;
             height: 60px;
-            border: 4px solid #f3f3f3;
+            border: 4px solid rgba(25, 118, 210, 0.1);
             border-top: 4px solid #1976d2;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         "></div>
         <div style="
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             color: #333;
             margin-bottom: 8px;
+            text-align: center;
         ">
             Searching nearby places
         </div>
         <div style="
-            font-size: 13px;
+            font-size: 14px;
             color: #666;
-            max-width: 250px;
+            max-width: 280px;
             line-height: 1.5;
+            text-align: center;
         ">
             Looking for restaurants, hotels, markets and entertainment spots...
         </div>
@@ -587,11 +596,21 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        @media (max-width: 768px) {
+            .nearby-loading-spinner {
+                width: 50px;
+                height: 50px;
+                border-width: 3px;
+            }
+            .nearby-loading-text {
+                font-size: 16px;
+            }
+        }
     </style>
 `;
 
 showCustomPopup(lat, lng, map, loadingContent, false);
-
     const isMapLibre = !!map.addSource;
     if (isMapLibre) {
          map.flyTo({ center: [lng, lat], zoom: 15, speed: 0.8 });
