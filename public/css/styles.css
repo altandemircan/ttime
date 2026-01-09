@@ -5331,8 +5331,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     top: 60px;
     width: 415px;
     right: 0;
-    height: 100%;
-   
+    height: 100%;   
     z-index: 1008;
     background: #fff;
     overflow-y: auto;
@@ -5394,7 +5393,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 /* Mobile responsive */
 @media (max-width: 480px) {
     #custom-nearby-popup {
-        top: 10px !important;
+        top: 0px !important;
         right: 0px !important;
         left: 0px !important;
         width: auto !important;
