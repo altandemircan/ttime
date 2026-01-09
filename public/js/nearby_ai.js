@@ -546,13 +546,51 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
     const url = `/api/geoapify/places?categories=${allCategories}&lat=${lat}&lon=${lng}&radius=${radius}&limit=20`;
 
     const loadingContent = `
-        <div class="nearby-loading-message">
-            <div class="nearby-loading-spinner"></div>
-            <small class="nearby-loading-text">Searching nearby places...</small>
+    <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 300px;
+        padding: 40px;
+        text-align: center;
+    ">
+        <div style="
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        "></div>
+        <div style="
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        ">
+            Searching nearby places
         </div>
-    `;
-    
-    showCustomPopup(lat, lng, map, loadingContent, false);
+        <div style="
+            font-size: 13px;
+            color: #666;
+            max-width: 250px;
+            line-height: 1.5;
+        ">
+            Looking for restaurants, hotels, markets and entertainment spots...
+        </div>
+    </div>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+`;
+
+showCustomPopup(lat, lng, map, loadingContent, false);
 
     const isMapLibre = !!map.addSource;
     if (isMapLibre) {
