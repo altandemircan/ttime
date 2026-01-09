@@ -562,6 +562,7 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
         right: 0;
         bottom: 0;
         background: white;
+            padding-bottom: 80px;
     ">
         <div style="
             width: 60px;
