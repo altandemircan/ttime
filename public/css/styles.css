@@ -5336,7 +5336,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     background: #fff;
     overflow-y: auto;
     /* max-height: calc(100vh - 100px); */
-    padding-top: 20px;
+    /*padding-top: 20px;*/
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
