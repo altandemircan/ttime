@@ -5317,7 +5317,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
         transform: translateX(100%);
     }
 }
-
+ 
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -5333,7 +5333,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     right: 0;
     height: 100%;
     /* padding: 20px; */
-    z-index: 1000;
+    z-index: 1008;
     background: #fff;
     overflow-y: auto;
     /* max-height: calc(100vh - 100px); */
