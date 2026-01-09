@@ -5395,8 +5395,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 @media (max-width: 480px) {
     #custom-nearby-popup {
         top: 10px !important;
-        right: 10px !important;
-        left: 10px !important;
+        right: 0px !important;
+        left: 0px !important;
         width: auto !important;
         max-width: none !important;
     }
