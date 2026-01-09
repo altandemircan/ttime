@@ -162,7 +162,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     popupContainer.id = 'custom-nearby-popup';
     
     const closeButtonHtml = showCloseButton ? `
-        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close">×</button>
+        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
     ` : '';
     
     popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
