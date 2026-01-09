@@ -565,16 +565,16 @@ async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
             padding-bottom: 80px;
     ">
         <div style="
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(25, 118, 210, 0.1);
-            border-top: 4px solid #1976d2;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            width: 36px;
+    height: 36px;
+    border: 4px solid rgba(25, 118, 210, 0.1);
+    border-top: 4px solid #1976d2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
         "></div>
         <div style="
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
             margin-bottom: 8px;
