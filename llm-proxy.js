@@ -342,7 +342,7 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
                     top_p: 0.9,
                     repeat_penalty: 1.1
                 }
-            }, { timeout: 30000 });
+            }, { timeout: 10000 });
 
             let content = response.data?.message?.content || "{}";
             
