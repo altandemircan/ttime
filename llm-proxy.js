@@ -221,18 +221,55 @@ If asked about something unrelated to travel, politely say you only answer trave
 });
     
 
-const fallbacks = {
-    'cafe': `The inviting aroma of coffee fills the air as soft chatter creates a cozy atmosphere perfect for lingering over a hot drink.`,
-    'restaurant': `Sizzling sounds from the kitchen mix with tantalizing aromas, promising a memorable culinary journey through local flavors.`,
-    'park': `Dappled sunlight filters through leaves while the distant sounds of the city fade into peaceful natural surroundings.`,
-    'museum': `Silence hangs respectfully in air filled with history, where each exhibit tells a story waiting to be discovered.`,
-    'shop': `Carefully curated displays invite browsing, with each item telling a story of local craftsmanship and tradition.`,
-    'hotel': `A welcoming ambiance offers respite from exploration, blending comfort with a sense of local character.`,
-    'historic': `Whispers of the past seem to echo through aged stones, connecting visitors to generations of stories.`,
-    'bar': `Low lighting and lively conversations create an energetic yet intimate setting for evening relaxation.`,
-    'bakery': `The irresistible scent of fresh bread and pastries wafts through the air, tempting every passerby.`,
-    'market': `A vibrant tapestry of colors, sounds, and scents showcases the authentic rhythm of daily local life.`,
-    'landmark': `A sense of discovery and significance lingers here, offering a memorable highlight for any traveler.`
-};
+const axios = require('axios');
+
+router.post('/clicked-ai', async (req, res) => {
+    const { point, city } = req.body;
+
+    // Basit seyahat promptu
+    const prompt = `You are a travel writer.
+Write a short, sensory, non-generic 2-sentence description about "${point}" in ${city}.
+Give your answer in this JSON:
+{
+  "p1": "First sensory sentence here...",
+  "p2": "Local tip or practical sentence here"
+}
+`;
+
+    try {
+        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
+            model: "llama3:8b", 
+            prompt: prompt,
+            stream: false,
+            options: {
+                temperature: 0.7,
+                top_p: 0.9,
+                repeat_penalty: 1.1,
+                num_predict: 120
+            }
+        }, { timeout: 60000 });
+
+        let content = response.data?.response || "{}";
+
+        // Sadece JSON'u çıkar
+        const jsonMatch = content.match(/\{[\s\S]*?\}/);
+        let result = { p1: "", p2: "" };
+        if (jsonMatch) {
+            result = JSON.parse(jsonMatch[0]);
+        }
+
+        res.json({
+            p1: result.p1,
+            p2: result.p2
+        });
+
+    } catch (e) {
+        res.json({ 
+            p1: "No information available.",
+            p2: ""
+        });
+    }
+});
+
 
 module.exports = router;
