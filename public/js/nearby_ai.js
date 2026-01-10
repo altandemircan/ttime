@@ -1071,13 +1071,58 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     // Loading state
     targetElement.dataset.loading = 'true';
     targetElement.style.display = 'block';
-    targetElement.innerHTML = `
-        <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
-            <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-            <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666;">Analyzing place AI<br> ${pointName}...</div>
-        </div>
-        <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-    `;
+    
+    // Aşamalı loading göstergesi için zamanlayıcılar
+    let phase = 1;
+    const loadingMessages = [
+        { text: "Loading AI analyzer...", icon: "🔄" },
+        { text: `Analyzing ${pointName}...`, icon: "🔍" },
+        { text: "Getting information from sources...", icon: "📚" },
+        { text: "Almost ready...", icon: "⚡" }
+    ];
+    
+    // İlk loading ekranını göster
+    const showLoadingPhase = (phaseNum) => {
+        const message = loadingMessages[phaseNum - 1];
+        targetElement.innerHTML = `
+            <div style="padding: 16px; text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%); border-radius: 12px; margin-top: 8px; width: 100%; box-sizing: border-box; border: 1px solid #e0e7ff;">
+                <div style="margin-bottom: 16px;">
+                    <div class="ai-spinner" style="width: 24px; height: 24px; border: 3px solid #8a4af3; border-top: 3px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 12px;"></div>
+                    ${phaseNum > 1 ? loadingMessages.slice(0, phaseNum - 1).map(msg => `
+                        <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 8px; border-left: 3px solid #8a4af3; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="font-size: 14px;">${msg.icon}</span>
+                            <div style="font-size: 12px; font-weight: 500; color: #555;">${msg.text}</div>
+                        </div>
+                    `).join('') : ''}
+                    <div style="margin-top: ${phaseNum > 1 ? '12px' : '0'}; padding: 10px; background: linear-gradient(135deg, #8a4af3 0%, #6c2bd9 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; color: white;">
+                        <span style="font-size: 16px;">${message.icon}</span>
+                        <div style="font-size: 13px; font-weight: 600;">${message.text}</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 4px; margin-top: 12px;">
+                    ${[1, 2, 3, 4].map(num => `
+                        <div style="width: 20px; height: 4px; background: ${num <= phaseNum ? '#8a4af3' : '#e0e0e0'}; border-radius: 2px; transition: background 0.3s;"></div>
+                    `).join('')}
+                </div>
+                <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #8a4af3; margin-top: 8px; letter-spacing: 0.5px;">
+                    Phase ${phaseNum} of 4
+                </div>
+            </div>
+            <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        `;
+    };
+    
+    showLoadingPhase(1);
+    
+    // Aşamaları zamanla
+    const loadingTimers = [];
+    for (let i = 2; i <= 4; i++) {
+        const timer = setTimeout(() => {
+            phase = i;
+            showLoadingPhase(i);
+        }, (i - 1) * 3000); // Her aşama için 3 saniye
+        loadingTimers.push(timer);
+    }
     
     const triggerFetch = async () => {
         try {
@@ -1098,6 +1143,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             });
             
             const data = await response.json();
+            
+            // Loading timers temizle
+            loadingTimers.forEach(timer => clearTimeout(timer));
             
             // Başarılı yanıt işleme
             targetElement.dataset.loading = 'false';
@@ -1122,19 +1170,19 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 }
             }
             
-            // HTML oluştur - İKİ AYRI BÖLÜM
+            // Başarılı sonuç ekranı - animasyonla geçiş
             targetElement.innerHTML = `
-                <div style="margin-top: 4px; width: 100%;">
+                <div style="margin-top: 4px; width: 100%; animation: fadeIn 0.5s ease-out;">
                     
                     
                     <!-- AI Analiz Edilen Yer Bölümü -->
                     <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
                         <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
+                                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #8a4af3 0%, #6c2bd9 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
                                 <div>
                                     <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
-                                    <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Analysis</div>
+                                    <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Analysis Complete</div>
                                 </div>
                             </div>
                         </div>
@@ -1159,16 +1207,27 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                         ${isIconClick && allPlacesIndex !== -1 ? `
                         <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
                             <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
-                                    style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                                <span>+</span>
+                                    style="padding: 8px 16px; background: linear-gradient(135deg, #8a4af3 0%, #6c2bd9 100%); color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;"
+                                    onmouseover="this.style.transform='scale(1.02)'"
+                                    onmouseout="this.style.transform='scale(1)'">
+                                <span style="font-size: 16px;">+</span>
                                 Add "${pointName}" to Day ${window._lastNearbyDay || 1}
                             </button>
                         </div>
                         ` : ''}
                     </div>
-                </div>`;
+                </div>
+                <style>
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(10px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                </style>`;
                 
         } catch (e) {
+            // Loading timers temizle
+            loadingTimers.forEach(timer => clearTimeout(timer));
+            
             if (e.name === 'AbortError') {
                 targetElement.innerHTML = "";
                 targetElement.style.display = 'none';
@@ -1178,22 +1237,33 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             console.error('AI fetch error:', e);
             targetElement.dataset.loading = 'false';
             targetElement.innerHTML = `
-                <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
-                    <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
-                    <small style="color: #999;">Try clicking another location</small>
-                </div>`;
+                <div style="padding: 16px; text-align: center; background: linear-gradient(135deg, #fff8f8 0%, #ffeaea 100%); border-radius: 12px; margin-top: 8px; width: 100%; box-sizing: border-box; border: 1px solid #ffcccc; animation: fadeIn 0.5s ease-out;">
+                    <div style="width: 48px; height: 48px; background: #ff6b6b; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: white; font-size: 20px;">⚠️</div>
+                    <div style="font-weight: 600; color: #d32f2f; margin-bottom: 4px;">Information Unavailable</div>
+                    <div style="color: #666; font-size: 13px; margin-bottom: 12px;">We couldn't retrieve details for this location.</div>
+                    <button onclick="fetchClickedPointAI('${pointName}', '${lat}', '${lng}', '${city}', '${facts}', '${targetDivId}')"
+                            style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                        Try Again
+                    </button>
+                </div>
+                <style>
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(10px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                </style>`;
         }
     };
     
-    // Debounce süresi
-    const debounceTime = (targetDivId === 'ai-point-description' || isIconClick) ? 600 : 0;
+    // Debounce süresi (son aşamadan sonra API isteğini başlat)
+    const debounceTime = (targetDivId === 'ai-point-description' || isIconClick) ? 9000 : 0; // 4 phase * 3000ms - biraz buffer
     
     if (targetDivId === 'ai-point-description' || isIconClick) {
         aiDebounceTimeout = setTimeout(triggerFetch, debounceTime);
     } else {
         triggerFetch();
     }
-} // <--- FONKSİYONUN KAPANMASI
+}
 
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
