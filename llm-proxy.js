@@ -79,7 +79,7 @@ router.post('/plan-summary', async (req, res) => {
         `.trim();
 
         try {
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+            const response = await axios.post('http://127.0.0.1:11434/api/generate', {
                 model: activeModel, // Yukarıdaki değişkeni kullanıyoruz
                 messages: [{ role: "user", content: prompt }],
                 stream: false,
