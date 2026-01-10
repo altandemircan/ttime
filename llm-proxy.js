@@ -153,6 +153,11 @@ router.get('/chat-stream', async (req, res) => {
         userMessages = [];
     }
 
+    const point = req.query.point || "";
+const cleanCity = req.query.city || "";
+const cleanCategory = req.query.category || "";
+const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
+
     // System prompt'u her zaman en başa ekle!
       const prompt = `[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
     1. ROLE: You are a professional local tour guide with deep knowledge of the area.
