@@ -219,7 +219,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         res.end();
     }
 });
-
+    
 
 router.post('/clicked-ai', async (req, res) => {
     const { point, city, lat, lng, facts } = req.body;
@@ -290,7 +290,7 @@ EXAMPLE for a cafe in Paris:
 }`;
 
     try {
-        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
             model: "llama3:8b", 
             messages: [{ 
                 role: "user", 
