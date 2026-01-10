@@ -1145,21 +1145,8 @@ const triggerFetch = async () => {
     }
 };
 
-// API'yi HEMEN çağır (loading gösterilirken)
 if (targetDivId === 'ai-point-description' || isIconClick) {
-    aiDebounceTimeout = setTimeout(triggerFetch, 600); // Debounce süresi
-} else {
-    triggerFetch(); // Hemen başlat
-}
-    
-    // Tüm loading aşamaları bittikten sonra API'yi çağır
-    const totalLoadingTime = loadingPhases.reduce((sum, phase) => sum + phase.duration, 0);
-    
-    if (targetDivId === 'ai-point-description' || isIconClick) {
-        aiDebounceTimeout = setTimeout(triggerFetch, totalLoadingTime);
-    } else {
-        triggerFetch();
-    }
+    aiDebounceTimeout = setTimeout(triggerFetch, 600); // SADECE BİR KERE
 }
 
 
