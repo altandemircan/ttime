@@ -1033,299 +1033,198 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
 let aiAbortController = null;
 let aiDebounceTimeout = null;
-// fetchClickedPointAI fonksiyonunu geliştir
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
-    // Debounce kontrolü
-    if (window._lastAIRequest && 
-        window._lastAIRequest.point === pointName && 
-        window._lastAIRequest.time > Date.now() - 3000) {
+    
+    const isIconClick = targetDivId.startsWith('ai-icon-');
+    const mainAiDiv = document.getElementById('ai-point-description');
+    const targetElement = isIconClick ? mainAiDiv : descDiv;
+    
+    if (!targetElement) return;
+    
+    if (targetElement.dataset.loading === 'true' && !targetElement.querySelector('.ai-spinner')) {
         return;
     }
     
-    window._lastAIRequest = {
-        point: pointName,
-        time: Date.now()
+    if (targetDivId === 'ai-point-description' || isIconClick) {
+        clearTimeout(aiDebounceTimeout);
+        if (aiAbortController) aiAbortController.abort();
+        aiAbortController = new AbortController();
+    }
+    
+    const cleanCityContext = (context) => {
+        if (!context) return "";
+        return context
+            .replace(/\b\d{5}\b/g, '')
+            .replace(/\b\d{4}\s?[A-Z]{2}\b/gi, '')
+            .replace(/,\s*,/g, ',')
+            .replace(/^\s*,\s*|\s*,\s*$/g, '')
+            .trim();
     };
     
-    // Abort previous request
-    if (window._aiAbortController) {
-        window._aiAbortController.abort();
-    }
-    window._aiAbortController = new AbortController();
-    
     // Loading state
-    descDiv.innerHTML = `
-        <div class="ai-loading-container">
-            <div class="ai-spinner"></div>
-            <div class="ai-loading-text">Crafting authentic travel insight...</div>
-            <div class="ai-loading-subtext">Analyzing ${pointName}</div>
-        </div>
-    `;
-    descDiv.style.display = 'block';
+    targetElement.dataset.loading = 'true';
+    targetElement.style.display = 'block';
     
-      try {
+    // Aşamalı loading mesajları
+    const loadingPhases = [
+        { duration: 5000, text: `Loading AI analysis...` },
+        { duration: 5000, text: `Analyzing ${pointName}...` },
+        { duration: 5000, text: `Creating information ...` },
+        { duration: 5000, text: `Finalizing analysis...` }
+    ];
+    
+    let currentPhase = 0;
+    const loadingTimers = [];
+    
+    const showLoadingPhase = (phaseIndex) => {
+        const phase = loadingPhases[phaseIndex];
+        const previousPhases = loadingPhases.slice(0, phaseIndex);
+        
+        targetElement.innerHTML = `
+            <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
+                <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
+                
+                ${previousPhases.map((p, idx) => `
+                    <div style="font-size: 10px; color: #666; margin-bottom: 4px; opacity: 0.7;">
+                        ✓ ${p.text}
+                    </div>
+                `).join('')}
+                
+                <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666; margin-top: ${phaseIndex > 0 ? '8px' : '0'};">
+                    ${phase.text}
+                </div>
+            </div>
+            <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        `;
+    };
+    
+    // İlk loading göster
+    showLoadingPhase(0);
+    currentPhase = 0;
+    
+    // Sonraki aşamaları planla
+    for (let i = 1; i < loadingPhases.length; i++) {
+        const timer = setTimeout(() => {
+            currentPhase = i;
+            showLoadingPhase(i);
+        }, loadingPhases.slice(0, i).reduce((sum, phase) => sum + phase.duration, 0));
+        loadingTimers.push(timer);
+    }
+    
+   // API çağrısını HEMEN başlat (loading'den bağımsız)
+const triggerFetch = async () => {
+    try {
+        const cleanedCity = cleanCityContext(city);
+        
+        console.time('AI-API-Response');
         const response = await fetch('/llm-proxy/clicked-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                point: pointName,
-                city: city,
-                lat: lat,
-                lng: lng,
-                facts: facts || {}
-            }),
-            signal: window._aiAbortController.signal
+            body: JSON.stringify({ 
+                point: pointName, 
+                city: cleanedCity, 
+                lat, 
+                lng, 
+                facts 
+            })
         });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
+        console.timeEnd('AI-API-Response');
+        
+        console.log('API Response status:', response.status);
         const data = await response.json();
+        // ... API Data received kısmından sonrası ...
 
-        // Sadece AI cevabı
-        descDiv.innerHTML = `
-            <div>
-                <strong>${pointName}</strong>
-                <div>${data.p1 ? data.p1 : "No info."}</div>
-                ${data.p2 ? `<div style="margin-top:6px;color:#888;">❤️ <em>${data.p2}</em></div>` : ""}
-             
+// ... API Data received logundan hemen sonra ...
+
+console.log('API Data received:', data);
+
+// Loading temizle
+loadingTimers.forEach(timer => clearTimeout(timer));
+targetElement.dataset.loading = 'false';
+
+// İÇERİK
+// Sunucu zaten temizlenmiş veri gönderiyor, ek işlem yapmıyoruz.
+let p1Content = data.p1;
+let p2Content = data.p2;
+
+// Çok nadir durumlarda (Server tamamen boş dönerse) son koruma
+if (!p1Content || p1Content.length < 5) {
+    p1Content = `${pointName} is located in ${city || 'the area'}. Explore the surroundings to discover more.`;
+}
+
+// HTML OLUŞTURMA (Tasarımınız)
+targetElement.innerHTML = `
+    <div style="margin-top: 4px; width: 100%;">
+        <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
+            <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div>
+                    </div>
+                </div>
             </div>
-        `;
-    } catch (error) {
-        descDiv.innerHTML = `<i>Travel insights temporarily unavailable</i>`;
+            
+            <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
+                    <div style="flex: 1;">${p1Content}</div>
+                </div>
+            </div>
+            
+            ${p2Content ? `
+            <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
+                <span style="font-size: 12px; color: #ff9800;">💡</span>
+                <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
+                    <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
+                    ${p2Content}
+                </div>
+            </div>` : ''}
+            
+             ${isIconClick && allPlacesIndex !== -1 ? `
+                <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
+                    <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
+                            style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>+</span> Add to Trip
+                    </button>
+                </div>
+            ` : ''}
+        </div>
+    </div>`;
+
+// ...
+        
+        console.log('targetElement after update:', targetElement);
+        console.log('Update complete!');
+        
+    } catch (e) {
+        console.error('AI fetch error:', e);
+        
+        // Loading timers temizle
+        loadingTimers.forEach(timer => clearTimeout(timer));
+        
+        if (e.name === 'AbortError') {
+            console.log('Request aborted');
+            targetElement.innerHTML = "";
+            targetElement.style.display = 'none';
+            return;
+        }
+        
+        targetElement.dataset.loading = 'false';
+        targetElement.innerHTML = `
+            <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
+                <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
+                <small style="color: #999;">Try clicking another location</small>
+            </div>`;
     }
+};
 
+if (targetDivId === 'ai-point-description' || isIconClick) {
+    aiDebounceTimeout = setTimeout(triggerFetch, 600); // SADECE BİR KERE
 }
-
-// Refresh function
-async function refreshAIDescription(pointName, lat, lng, city) {
-    const descDiv = document.getElementById('ai-point-description');
-    if (!descDiv) return;
-    
-    // Add refresh animation
-    descDiv.classList.add('refreshing');
-    
-    // Call AI again
-    await fetchClickedPointAI(pointName, lat, lng, city, {}, 'ai-point-description');
-    
-    // Remove animation
-    setTimeout(() => {
-        descDiv.classList.remove('refreshing');
-    }, 500);
-}
-
-// Add CSS for better styling
-const aiStyles = `
-.ai-loading-container {
-    padding: 16px;
-    text-align: center;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 12px;
-    margin: 8px 0;
-}
-
-.ai-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #8a4af3;
-    border-top: 3px solid transparent;
-    border-radius: 50%;
-    animation: ai-spin 0.8s linear infinite;
-    margin: 0 auto 12px;
-}
-
-.ai-loading-text {
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.ai-loading-subtext {
-    font-size: 12px;
-    color: #666;
-}
-
-.ai-insight-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    border: 1px solid #e9ecef;
-    margin: 8px 0;
-}
-
-.ai-header {
-    display: flex;
-    align-items: center;
-    padding: 14px 16px;
-    background: linear-gradient(135deg, #8a4af3 0%, #6c3bd1 100%);
-    color: white;
-}
-
-.ai-icon {
-    font-size: 20px;
-    margin-right: 12px;
-}
-
-.ai-title h4 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.ai-subtitle {
-    font-size: 11px;
-    opacity: 0.9;
-}
-
-.ai-category-badge {
-    margin-left: auto;
-    background: rgba(255,255,255,0.2);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.ai-content {
-    padding: 16px;
-}
-
-.ai-sentence {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.ai-icon-small {
-    color: #8a4af3;
-    font-size: 14px;
-    margin-top: 2px;
-}
-
-.ai-sentence p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #333;
-    flex: 1;
-}
-
-.ai-tip {
-    background: #fff8e1;
-    border: 1px solid #ffecb3;
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 12px;
-}
-
-.ai-tip-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 6px;
-}
-
-.ai-tip-icon {
-    color: #ff9800;
-}
-
-.ai-tip-text {
-    margin: 0;
-    font-size: 13px;
-    color: #5d4037;
-    line-height: 1.4;
-}
-
-.ai-fallback-note {
-    font-size: 11px;
-    color: #999;
-    text-align: center;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed #eee;
-}
-
-.ai-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    background: #f8f9fa;
-    border-top: 1px solid #e9ecef;
-}
-
-.ai-model-info {
-    font-size: 11px;
-    color: #666;
-}
-
-.ai-refresh-btn {
-    background: transparent;
-    border: 1px solid #8a4af3;
-    color: #8a4af3;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.ai-refresh-btn:hover {
-    background: #8a4af3;
-    color: white;
-}
-
-.ai-error {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: #fff3cd;
-    border: 1px solid #ffecb5;
-    border-radius: 8px;
-    color: #856404;
-}
-
-.ai-error-icon {
-    font-size: 20px;
-}
-
-.ai-error-text p {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.ai-error-text small {
-    font-size: 12px;
-    opacity: 0.8;
-}
-
-@keyframes ai-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.refreshing {
-    animation: pulse 0.5s ease-in-out;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-`;
-
-// Inject styles
-if (!document.querySelector('#ai-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'ai-styles';
-    styleEl.textContent = aiStyles;
-    document.head.appendChild(styleEl);
 }
 
 
