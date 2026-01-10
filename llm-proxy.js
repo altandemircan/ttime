@@ -331,7 +331,7 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
 
         try {
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "gemma2:9b",
+                model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
                 stream: false, 
                 format: "json", 
