@@ -1136,28 +1136,25 @@ const triggerFetch = async () => {
         const data = await response.json();
         // ... API Data received kısmından sonrası ...
 
+// ... API Data received logundan hemen sonra ...
+
 console.log('API Data received:', data);
 
-// Loading timers temizle
+// Loading temizle
 loadingTimers.forEach(timer => clearTimeout(timer));
 targetElement.dataset.loading = 'false';
 
-// İÇERİK İŞLEME
+// İÇERİK
+// Sunucu zaten temizlenmiş veri gönderiyor, ek işlem yapmıyoruz.
 let p1Content = data.p1;
 let p2Content = data.p2;
 
-// Eğer içerik çok kısaysa veya boşsa client-side bir şeyler uydur
-if (!p1Content || p1Content.length < 20) {
-    p1Content = `Discover ${pointName}, a notable ${facts.amenity || 'location'} in the heart of ${city}. It reflects the unique atmosphere of the region.`;
+// Çok nadir durumlarda (Server tamamen boş dönerse) son koruma
+if (!p1Content || p1Content.length < 5) {
+    p1Content = `${pointName} is located in ${city || 'the area'}. Explore the surroundings to discover more.`;
 }
 
-// "Operates as a place" gibi kötü cümleleri yakala ve sil (AI yine de yaparsa diye)
-if (p1Content.includes("operates as a place") || p1Content.includes("is a establishment")) {
-    p1Content = p1Content.replace("operates as a place", "is a distinct location")
-                         .replace("is a establishment", "is a local spot");
-}
-
-// HTML Render kısmı (Orijinal tasarımınızla aynı)
+// HTML OLUŞTURMA (Tasarımınız)
 targetElement.innerHTML = `
     <div style="margin-top: 4px; width: 100%;">
         <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
@@ -1166,7 +1163,7 @@ targetElement.innerHTML = `
                     <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
                     <div>
                         <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
-                        <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div> 
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div>
                     </div>
                 </div>
             </div>
@@ -1182,18 +1179,18 @@ targetElement.innerHTML = `
             <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
                 <span style="font-size: 12px; color: #ff9800;">💡</span>
                 <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
-                    <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
+                    <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
                     ${p2Content}
                 </div>
             </div>` : ''}
             
-            ${isIconClick && allPlacesIndex !== -1 ? `
-            <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
-                 <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
-                        style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    <span>+</span> Add "${pointName}" to Day ${window._lastNearbyDay || 1}
-                </button>
-            </div>
+             ${isIconClick && allPlacesIndex !== -1 ? `
+                <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
+                    <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
+                            style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>+</span> Add to Trip
+                    </button>
+                </div>
             ` : ''}
         </div>
     </div>`;

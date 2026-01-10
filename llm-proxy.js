@@ -220,412 +220,131 @@ If asked about something unrelated to travel, politely say you only answer trave
     }
 });
 
+
+
+
 router.post('/clicked-ai', async (req, res) => {
     const { point, city, lat, lng, facts } = req.body;
 
-    // POSTA KODU ve GEREKSİZ BİLGİLERİ TEMİZLEME FONKSİYONU
-    const cleanFactsData = (facts) => {
-        const cleanFacts = { 
-            latitude: lat, 
-            longitude: lng,
-            place_type: "place"
-        };
-        
-        // Anahtar kelimeleri kontrol et (cafe, restaurant, museum vb.)
-        const typeKeywords = ['category', 'type', 'class', 'kind'];
-        let foundType = "place";
-        
+    // 1. DİNAMİK KATEGORİ ANALİZİ (Şehir isminden bağımsız)
+    const extractCategoryInfo = () => {
+        // Varsayılan değerler
+        let category = "landmark";
+        let subDetails = "";
+
         if (facts) {
-            Object.keys(facts).forEach(k => {
-                const value = facts[k];
-                
-                // Posta kodu (postcode, postal_code, zip) ve gereksiz alanları atla
-                if (k.toLowerCase().includes('post') || 
-                    k.toLowerCase().includes('zip') ||
-                    k.toLowerCase().includes('code') ||
-                    k === 'country_code' ||
-                    k === 'countrycode' ||
-                    k === 'osm_id' ||
-                    k === 'datasource' ||
-                    k === 'place_id') {
-                    return;
+            // OSM verisinden en anlamlı etiketi bulmaya çalış
+            const keys = ['amenity', 'tourism', 'leisure', 'historic', 'shop', 'building', 'cuisine'];
+            
+            for (const key of keys) {
+                if (facts[key] && facts[key] !== 'yes') {
+                    // Örn: amenity="cafe" -> category="cafe"
+                    category = facts[key].replace(/_/g, ' ');
+                    
+                    // Eğer 'cuisine' varsa detaya ekle (Örn: "italian")
+                    if (facts.cuisine) subDetails += ` serving ${facts.cuisine.replace(/_/g, ' ')} cuisine`;
+                    break;
                 }
-                
-                // Tür/ kategori bilgisini bul
-                if (typeKeywords.includes(k.toLowerCase()) && value && value !== 'unknown') {
-                    foundType = value;
-                }
-                
-                // Diğer yararlı bilgileri ekle
-                if (value && value !== 'unknown' && typeof value !== 'object' && value.toString().trim() !== '') {
-                    // Adres parçalarını kontrol et (posta kodları içermesin)
-                    if (typeof value === 'string') {
-                        const postalCodePattern = /\b\d{5}\b|\b\d{4}\s?[A-Z]{2}\b/i;
-                        if (postalCodePattern.test(value)) {
-                            return;
-                        }
-                    }
-                    cleanFacts[k] = value;
-                }
-            });
+            }
         }
         
-        // Kategoriyi temizle ve standardize et
-        const rawCategory = foundType.replace(/\./g, ' ').toUpperCase();
-        const categoryMap = {
-            'CAFE': 'cafe',
-            'RESTAURANT': 'restaurant', 
-            'HOTEL': 'hotel',
-            'MUSEUM': 'museum',
-            'PARK': 'park',
-            'HOSPITAL': 'hospital',
-            'SHOP': 'shop',
-            'MARKET': 'market',
-            'BAKERY': 'bakery',
-            'PHARMACY': 'pharmacy',
-            'UNIVERSITY': 'university',
-            'SCHOOL': 'school',
-            'CHURCH': 'church',
-            'MOSQUE': 'mosque',
-            'TEMPLE': 'temple',
-            'BEACH': 'beach',
-            'LAKE': 'lake',
-            'MOUNTAIN': 'mountain',
-            'CASTLE': 'castle',
-            'HISTORICAL': 'historical site',
-            'ARCHAEOLOGICAL': 'archaeological site'
-        };
-        
-        const cleanCategory = categoryMap[rawCategory] || rawCategory.toLowerCase();
-        cleanFacts.place_type = cleanCategory;
-        
-        // Şehir bilgisini temizle (posta kodlarını çıkar)
-        let cleanCity = city || "";
-        if (cleanCity) {
-            const postalCodePattern = /\b\d{5}\b|\b\d{4}\s?[A-Z]{2}\b/i;
-            cleanCity = cleanCity.replace(postalCodePattern, '').replace(/,\s*,/g, ',').trim();
-            cleanCity = cleanCity.replace(/^,\s*|\s*,$/g, ''); // Baştaki/sondaki virgülleri temizle
-        }
-        
-        cleanFacts.full_address_context = cleanCity;
-        
-        return { cleanFacts, cleanCategory, cleanCity };
+        return { category, subDetails };
     };
 
-const getPointInfo = async () => {
-    const { cleanFacts, cleanCategory, cleanCity } = cleanFactsData(facts || {});
-    
-    // ÇOK DAHA SPESİFİK VE KALİTELİ PROMPT
-    const prompt = `# ROLE: Expert Local Historian & Culture Guide
+    const { category, subDetails } = extractCategoryInfo();
+    const cleanCity = city ? city.split(',')[0].trim() : "the area";
 
-# TASK: Create UNIQUE, SPECIFIC descriptions for ${point} in ${cleanCity.split(',')[0] || cleanCity || 'the area'}.
+    // 2. EVRENSEL PROMPT (Universal Prompt)
+    // Şehir ismi veya özel isim geçirmeden, sadece kategoriye odaklanan kurallar.
+    const prompt = `# ROLE: Travel Writer & Urban Explorer
 
-# FACTS ABOUT THIS PLACE:
-${Object.entries(cleanFacts)
-  .filter(([key]) => !['latitude', 'longitude', 'place_type'].includes(key))
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}
+# TASK: 
+Write a short, engaging description for "${point}".
 
-# CATEGORY CONTEXT:
-- Place type: ${cleanCategory}
-- Location context: ${cleanCity}
+# DATA:
+- **Category:** ${category} ${subDetails}
+- **Location:** ${cleanCity}
+- **Coordinates:** ${lat}, ${lng}
 
-# CRITICAL RULES:
-1. **NO GENERIC PHRASES** - Avoid: "great experience", "unique atmosphere", "worth visiting", "nice place", "good spot"
-2. **BE SPECIFIC** - Mention actual features, architectural styles, historical periods, specific materials
-3. **USE FACTS** - Incorporate details from the FACTS section above
-4. **CONTEXTUALIZE** - Relate to ${cleanCity.split(',')[0] || 'the area'}'s history/culture
-5. **DIFFERENTIATE** - Make it distinct from other ${cleanCategory}s
- 
-# STRUCTURE:
-## For HISTORICAL/ARCHAEOLOGICAL SITES:
-- Sentence 1: Historical significance, period, architectural features
-- Sentence 2: Current state, preservation, visitor experience
-- Tip: Practical advice about access, guides, best viewing
+# STRICT RULES (DO NOT IGNORE):
+1. **FORBIDDEN PHRASES:** Never use "operates as a place", "is an establishment", "located in", "facility", "serves as".
+2. **TONE:** Atmospheric, observant, and useful. Use sensory words (visuals, mood).
+3. **UNKNOWN PLACES:** If you don't know this *exact* place, describe what a generic ${category} represents in an urban setting. 
+   - *Example (Unknown Cafe):* "A welcoming spot for locals to gather, offering a break from the city pace with fresh brews and conversation."
+   - *Example (Unknown Park):* "A green refuge within the urban landscape, providing open space for recreation and a breath of fresh air."
+4. **FORMAT:**
+   - **Sentence 1:** Describes the vibe/function naturally.
+   - **Sentence 2:** Adds a detail about its role in daily life or atmosphere.
+   - **Tip:** A generic but useful practical tip (max 8 words).
 
-## For RESTAURANTS/CAFES:
-- Sentence 1: Cuisine type, specialty dishes, chef's approach
-- Sentence 2: Ambiance, decor style, clientele, location vibe
-- Tip: What to order, best time, reservation advice
-
-## For GOVERNMENT/CONSULATES:
-- Sentence 1: Architectural style, historical importance, function
-- Sentence 2: Visitor services, security features, significance
-- Tip: Procedure advice, documents needed, timing
-
-## For MARKETS/SHOPS:
-- Sentence 1: Products sold, vendor types, market layout
-- Sentence 2: Local importance, trading hours, bargaining culture
-- Tip: Best buys, bargaining tips, peak hours
-
-## For NATURAL SITES:
-- Sentence 1: Geological/ecological features, formation, size
-- Sentence 2: Views, trails, flora/fauna, seasonal changes
-- Tip: Best season, equipment needed, photography spots
-
-## DEFAULT (other categories):
-- Sentence 1: Distinctive features that make THIS place different
-- Sentence 2: Local significance, practical function, community role
-- Tip: Practical local knowledge
-
-# OUTPUT FORMAT (JSON only):
+# OUTPUT JSON ONLY:
 {
-  "p1": "[Two SPECIFIC, FACT-BASED sentences. Use concrete details. Max 200 characters total]",
-  "p2": "[One PRACTICAL, ACTIONABLE tip. 10-30 words. Empty if genuinely no tip]"
-}
-
-# EXAMPLES OF GOOD VS BAD:
-
-BAD (generic): "This restaurant offers great food and unique atmosphere."
-GOOD (specific): "Specializing in Aegean mezes, this family-run taverna uses olive oil from local groves. Their outdoor terrace overlooks the old harbor, popular with fishermen at sunset."
-
-BAD (generic): "This historical site has a unique atmosphere worth visiting."
-GOOD (specific): "Built during the Roman era, these baths feature original mosaic floors depicting marine life. The hypocaust heating system remains partially intact beneath the stone slabs."
-
-BAD (generic): "This market is a great place to shop."
-GOOD (specific): "Vendors here sell mountain herbs harvested from nearby Taurus slopes, alongside handwoven goat-hair textiles. The market operates only on Fridays, continuing a centuries-old trading tradition."
-
-# NOW CREATE FOR: ${point} (${cleanCategory})`;
+  "p1": "Your 2 sentences here.",
+  "p2": "Short tip here."
+}`;
 
     try {
-        console.time('Gemma2-API-Call');
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "gemma2:9b",
-            messages: [{ 
-                role: "user", 
-                content: prompt 
-            }],
-            stream: false, 
-            format: "json", 
-            options: { 
-                temperature: 0.4, // Biraz daha yaratıcı ama kontrollü
-                num_predict: 150, // Daha uzun yanıt için
-                top_k: 30, // Daha fazla varyasyon
+            model: "gemma2:9b", 
+            messages: [{ role: "user", content: prompt }],
+            stream: false,
+            format: "json",
+            options: {
+                temperature: 0.8, // Daha doğal dil için yüksek sıcaklık
                 top_p: 0.9,
-                repeat_penalty: 1.15, // Tekrarları önle
-                presence_penalty: 0.2, // Çeşitlilik
-                frequency_penalty: 0.2 // Sık kelimeleri azalt
+                repeat_penalty: 1.2, // Kendini tekrar etmeyi önler
+                num_predict: 100 // Kısa ve öz yanıt
             }
-        }, { 
-            timeout: 12000, // 12 saniye
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        console.timeEnd('Gemma2-API-Call');
-        console.log('Gemma2 response received for:', point, 'Category:', cleanCategory);
+        }, { timeout: 12000 });
 
         let content = response.data?.message?.content || "{}";
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) content = jsonMatch[0];
         
-        try {
-            // JSON extraction
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) content = jsonMatch[0];
-            
-            const result = JSON.parse(content);
-            
-            // ADVANCED QUALITY ENHANCEMENT
-            if (result.p1) {
-                // Generic phrase detection and replacement
-                const genericPhrases = [
-                    { pattern: /great experience/gi, replace: '' },
-                    { pattern: /unique atmosphere/gi, replace: '' },
-                    { pattern: /worth (visiting|seeing|exploring)/gi, replace: '' },
-                    { pattern: /nice place/gi, replace: '' },
-                    { pattern: /good spot/gi, replace: '' },
-                    { pattern: /beautiful views?/gi, replace: 'panoramic vistas' },
-                    { pattern: /delicious food/gi, replace: 'regional cuisine' },
-                    { pattern: /friendly people/gi, replace: 'local community' },
-                    { pattern: /rich history/gi, replace: 'historical legacy' },
-                    { pattern: /cultural significance/gi, replace: 'cultural heritage' }
-                ];
-                
-                genericPhrases.forEach(({ pattern, replace }) => {
-                    result.p1 = result.p1.replace(pattern, replace);
-                });
-                
-                // Ensure specificity
-                const specificEnhancements = {
-                    'restaurant': ` featuring ${['wood-fired', 'stone-oven', 'charcoal-grilled', 'slow-cooked'][Math.floor(Math.random()*4)]} dishes`,
-                    'cafe': ` with ${['hand-pulled', 'pour-over', 'traditional Turkish', 'specialty'][Math.floor(Math.random()*4)]} coffee preparation`,
-                    'historical': ` from the ${['Roman', 'Byzantine', 'Ottoman', 'Hellenistic'][Math.floor(Math.random()*4)]} period`,
-                    'market': ` offering ${['seasonal', 'organic', 'locally-sourced', 'artisanal'][Math.floor(Math.random()*4)]} products`,
-                    'hotel': ` in ${['neo-classical', 'Ottoman-era', 'modern minimalist', 'traditional'][Math.floor(Math.random()*4)]} style`
-                };
-                
-                if (specificEnhancements[cleanCategory] && !result.p1.includes(specificEnhancements[cleanCategory].substring(2, 20))) {
-                    // Add enhancement if not already specific enough
-                    const sentences = result.p1.split(/[.!?]+/).filter(s => s.trim().length > 10);
-                    if (sentences.length > 0) {
-                        sentences[0] += specificEnhancements[cleanCategory];
-                        result.p1 = sentences.join('. ') + '.';
-                    }
-                }
-                
-                // Formatting cleanup
-                result.p1 = result.p1
-                    .replace(/\s+\./g, '.')
-                    .replace(/\.\./g, '.')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                
-                // Capitalize first letter
-                result.p1 = result.p1.charAt(0).toUpperCase() + result.p1.slice(1);
-                
-                // Ensure it ends with period
-                if (!result.p1.endsWith('.')) result.p1 += '.';
-                
-                // Check for specificity (should have concrete nouns/adjectives)
-                const concreteWords = ['marble', 'stone', 'wood', 'terraced', 'vaulted', 'arched', 
-                                      'mosaic', 'fresco', 'handcrafted', 'family-run', 'centuries-old',
-                                      'olive grove', 'coastal', 'mountain', 'riverside', 'courtyard'];
-                
-                const hasConcreteDetails = concreteWords.some(word => 
-                    result.p1.toLowerCase().includes(word)
-                );
-                
-                if (!hasConcreteDetails && result.p1.length > 50) {
-                    // Add concrete detail if missing
-                    const details = {
-                        'restaurant': ' using locally-sourced ingredients',
-                        'cafe': ' with traditional brewing methods',
-                        'historical': ' featuring original architectural elements',
-                        'market': ' in a historic trading quarter',
-                        'hotel': ' with period furnishings'
-                    };
-                    
-                    if (details[cleanCategory]) {
-                        result.p1 = result.p1.replace(/\.$/, '') + details[cleanCategory] + '.';
-                    }
-                }
-            }
-            
-            // Tip enhancement
-            if (result.p2) {
-                // Remove generic tip starters
-                result.p2 = result.p2
-                    .replace(/^(tip|note|recommendation|advice|pro tip):\s*/gi, '')
-                    .replace(/^[-•*]\s*/g, '')
-                    .trim();
-                
-                // Make it actionable
-                const actionablePrefixes = [
-                    'For the best experience, ',
-                    'Visitors should ',
-                    'Consider ',
-                    'To fully appreciate, ',
-                    'Local knowledge: '
-                ];
-                
-                if (!actionablePrefixes.some(prefix => result.p2.toLowerCase().startsWith(prefix.toLowerCase().slice(0, 10)))) {
-                    const randomPrefix = actionablePrefixes[Math.floor(Math.random() * actionablePrefixes.length)];
-                    result.p2 = randomPrefix + result.p2.charAt(0).toLowerCase() + result.p2.slice(1);
-                }
-                
-                // Capitalize and punctuate
-                result.p2 = result.p2.charAt(0).toUpperCase() + result.p2.slice(1);
-                if (!result.p2.endsWith('.')) result.p2 += '.';
-                
-                // Quality check
-                const badTips = ['no specific', 'not sure', 'unknown', 'none', 'n/a', 'check locally'];
-                if (badTips.some(bad => result.p2.toLowerCase().includes(bad)) || result.p2.length < 15) {
-                    result.p2 = "";
-                }
-            }
-            
-            console.log('ENHANCED AI result:', {
-                category: cleanCategory,
-                p1_length: result.p1?.length || 0,
-                p2_length: result.p2?.length || 0,
-                p1_preview: result.p1?.substring(0, 100) + '...',
-                has_concrete: result.p1 ? concreteWords.some(w => result.p1.toLowerCase().includes(w)) : false
-            });
-            
-            return result;
-            
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError.message, 'Raw:', content.substring(0, 200));
-            
-            // HIGH-QUALITY FALLBACK BASED ON CATEGORY
-            const cityName = cleanCity.split(',')[0] || 'the area';
-            const fallbacks = {
-                'restaurant': {
-                    p1: `${point} serves regional ${cleanCity.includes('Antalya') ? 'Mediterranean' : 'Anatolian'} cuisine, with recipes passed through generations. The dining space reflects local architectural traditions through its ${['stone arches', 'wooden beams', 'terraced layout', 'courtyard setting'][Math.floor(Math.random()*4)]}.`,
-                    p2: `${['Try their signature meze platter', 'Order the daily catch', 'Sample house-made preserves', 'Ask for seasonal specialties'][Math.floor(Math.random()*4)]} for an authentic taste.`
-                },
-                'historical': {
-                    p1: `This site preserves ${['Roman mosaic floors', 'Byzantine fresco fragments', 'Ottoman stonework', 'Hellenistic architectural elements'][Math.floor(Math.random()*4)]}. Archaeological excavations reveal layers of settlement dating back centuries in this region.`,
-                    p2: `${['Morning light best illuminates the details', 'Local guides provide historical context', 'Wear sturdy shoes for uneven surfaces', 'Combine with nearby related sites'][Math.floor(Math.random()*4)]}.`
-                },
-                'consulate': {
-                    p1: `The consular building showcases ${['neoclassical facade details', 'diplomatic compound architecture', 'secure perimeter design', 'formal reception areas'][Math.floor(Math.random()*4)]}. It functions as a diplomatic hub facilitating international relations and citizen services.`,
-                    p2: `${['Check specific document requirements online first', 'Morning appointments have shorter wait times', 'Bring original documents with copies', 'Verify holiday closures in advance'][Math.floor(Math.random()*4)]}.`
-                },
-                'market': {
-                    p1: `Vendors here specialize in ${['mountain herbs from Taurus slopes', 'coastal fishery products', 'regional olive oil varieties', 'handwoven textiles'][Math.floor(Math.random()*4)]}. The market layout follows traditional trading patterns established over generations.`,
-                    p2: `${['Early hours offer freshest selections', 'Learn basic bargaining phrases', 'Cash preferred by most vendors', 'Explore side alleys for specialty items'][Math.floor(Math.random()*4)]}.`
-                }
-            };
-            
-            const fallback = fallbacks[cleanCategory] || {
-                p1: `${point} represents ${cleanCategory} traditions in ${cityName}, featuring ${['local craftsmanship', 'regional materials', 'community-focused design', 'historically-informed architecture'][Math.floor(Math.random()*4)]}. Its function integrates with daily life and cultural practices of the area.`,
-                p2: `${['Observe local usage patterns', 'Respect operational customs', 'Engage with caretakers when appropriate', 'Document with permission'][Math.floor(Math.random()*4)]}.`
-            };
-            
-            return fallback;
-        }
-        
-    } catch (err) { 
-        console.error('AI API error:', err.message);
-        
-        // Premium fallback - still high quality
-        const cityName = (cleanCity || city || '').split(',')[0] || 'the area';
-        const categorySpecific = {
-            'restaurant': `serving authentic ${cityName.includes('Antalya') ? 'Mediterranean' : 'regional'} cuisine`,
-            'historical': `featuring well-preserved architectural elements from multiple historical periods`,
-            'consulate': `functioning as a diplomatic mission with distinctive institutional architecture`,
-            'market': `offering locally-produced goods in traditional trading formats`,
-            'cafe': `preparing coffee using regional methods and locally-roasted beans`,
-            'hotel': `providing accommodation that reflects local hospitality traditions`,
-            'museum': `curating collections specific to ${cityName}'s historical and cultural heritage`
-        };
-        
-        return { 
-            p1: `${point} operates as a ${cleanCategory} ${categorySpecific[cleanCategory] || 'with distinctive local characteristics'}. The establishment contributes to ${cityName}'s urban fabric and cultural landscape through its specialized function.`, 
-            p2: `Consult local sources for current operational details and visitor guidelines.` 
-        }; 
-    }
-};
+        const result = JSON.parse(content);
 
-    try {
-        console.time('Total-AI-Request');
-        const aiResult = await getPointInfo();
-        console.timeEnd('Total-AI-Request');
-        
-        // BASİT YANIT - NEARBY YOK
-        const result = {
-            p1: aiResult.p1,
-            p2: aiResult.p2,
-            metadata: {
-                point: point,
-                city: cleanFactsData(facts || {}).cleanCity,
-                category: cleanFactsData(facts || {}).cleanCategory,
-                coordinates: { lat, lng },
-                generated: true
-            }
-        };
-        
-        console.log('AI response ready:', result.p1.substring(0, 50) + '...');
-        res.json(result);
-        
+        // Robotik cevap yakalama filtresi (Son güvenlik önlemi)
+        if (result.p1 && (result.p1.includes("operates as") || result.p1.includes("is a place"))) {
+             throw new Error("Robotic output detected");
+        }
+
+        res.json({
+            p1: result.p1 || `${point} is a distinctive ${category} in ${cleanCity}, contributing to the local atmosphere.`,
+            p2: result.p2 || "Check local listings for hours.",
+            metadata: { generated: true }
+        });
+
     } catch (e) {
-        console.error('Overall fetch failed:', e.message);
-        // ÇOK HIZLI ERROR RESPONSE
+        console.error('AI Processing Error:', e.message);
+        
+        // 3. KATEGORİ BAZLI GENERIC FALLBACK (Yedek)
+        // AI çökerse kategoriye göre mantıklı bir İngilizce cümle döndürür.
+        const fallbacks = {
+            'cafe': `A local spot in ${cleanCity} perfect for enjoying a beverage and taking a moment to relax.`,
+            'restaurant': `A dining destination offering a taste of culinary traditions in a comfortable setting.`,
+            'park': `An open green space providing a natural escape within the city environment.`,
+            'museum': `A cultural institution preserving history and heritage, offering insights into the past.`,
+            'shop': `A commercial location contributing to the daily rhythm and trade of the neighborhood.`,
+            'hotel': `Accommodation providing hospitality and a base for exploring the surrounding area.`,
+            'historic': `A site of historical significance, standing as a testament to the region's past.`
+        };
+
+        // Kategori adını içeren en uygun yedeği bul
+        let bestFallback = `${point} is a notable location in ${cleanCity}, adding to the character of the neighborhood.`;
+        
+        Object.keys(fallbacks).forEach(key => {
+            if (category.toLowerCase().includes(key)) bestFallback = fallbacks[key];
+        });
+
         res.json({ 
-            p1: `${point} is a location worth exploring.`, 
-            p2: "",
-            error: "quick_fallback"
+            p1: bestFallback, 
+            p2: "Verify opening hours before visiting.",
+            error: "fallback_active"
         });
     }
 });
+
+
+
 
 module.exports = router;
