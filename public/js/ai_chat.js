@@ -453,15 +453,34 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Bitiş (Normal Görsel)
                 aiImg.src = '/img/avatar_aiio.png';
 
-                let out = "";
-try {
-    const json = JSON.parse(fullText);
-    out = json.p1 || "";
-    if (json.p2) out += "<br><b>Tip:</b> " + json.p2;
-} catch {
-    out = fullText;
-}
-aiContent.innerHTML = out;
+                // 1. Karakter limiti uygula (ör: 700)
+                let displayText = fullText.trim();
+                const MAX_CHARS = 500;
+                if (displayText.length > MAX_CHARS) {
+                    // Cümlenin tam ortasından kes (kelime bütünlüğü korumak için)
+                    const cut = displayText.slice(0, MAX_CHARS);
+                    displayText = cut.slice(0, cut.lastIndexOf('.') + 1); // Son cümlede bitir
+                    if (displayText.length < 50) displayText = cut + '...';
+                }
+
+                // 2. Okunabilir HTML'ye çevir
+                displayText = displayText
+                    .replace(/\n{2,}/g, '</p><p>')      // Çift boşluk-paragraf 
+                    .replace(/\n/g, '<br>')             // Tek satır geçişlerine <br>
+                    .replace(/- /g, '<li>')             // Bullet için
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // **kalın** yapısını bolda çevir
+
+                // Eğer bullet varsa, <ul> içine sar (isteğe göre)
+                if (displayText.includes('<li>')) {
+                    displayText = displayText.replace(/(<li>.*?)(?=<li>|$)/g, '$1</li>');
+                    displayText = '<ul style="margin-top:3px;">'+displayText+'</ul>';
+                }
+                displayText = '<p>' + displayText + '</p>';
+                displayText = displayText.replace(/(<\/ul>)(<p>)/g, '$1'); // paragraflar bulletları bölmesin
+
+                aiContent.innerHTML = displayText;
+
+
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
         });
