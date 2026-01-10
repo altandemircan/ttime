@@ -244,8 +244,9 @@ const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
         });
     } catch (error) {
         finished = true;
-        res.write(`event: error\ndata: ${error.message}\n\n`);
+        res.write(`event: error\ndata: ${error?.response?.data?.error || error.message}\n\n`);
         res.end();
+        console.error('[OLLAMA ERROR]', error?.response?.data || error);
     }
 }); 
 
