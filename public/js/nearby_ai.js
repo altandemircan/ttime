@@ -1071,7 +1071,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     const loadingPhases = [
         { duration: 5000, text: `Loading AI analysis...` },
         { duration: 5000, text: `Analyzing ${pointName}...` },
-        { duration: 5000, text: `Creating information about ${pointName}...` },
+        { duration: 5000, text: `Creating information ...` },
         { duration: 5000, text: `Finalizing analysis...` }
     ];
     
