@@ -1134,83 +1134,71 @@ const triggerFetch = async () => {
         
         console.log('API Response status:', response.status);
         const data = await response.json();
-        console.log('API Data received:', data);
-        
-        // Loading timers temizle (API cevabı geldi)
-        console.log('Clearing loading timers...');
-        loadingTimers.forEach(timer => {
-            console.log('Clearing timer:', timer);
-            clearTimeout(timer);
-        });
-        
-        // Başarılı yanıt işleme
-        console.log('Setting loading to false...');
-        targetElement.dataset.loading = 'false';
-        
-        let p1Content = data.p1 || `Explore ${pointName} in ${cleanedCity.split(',')[0] || 'this area'}.`;
-        let p2Content = data.p2 || '';
-        
-        console.log('p1Content:', p1Content);
-        console.log('p2Content:', p2Content);
-        
-        const sentences = p1Content.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        if (sentences.length === 1) {
-            p1Content = sentences[0] + '. Discover this location and its surroundings.';
-        }
-        
-        let allPlacesIndex = -1;
-        if (isIconClick && window._lastNearbyPlaces) {
-            const idxMatch = targetDivId.match(/ai-icon-(\d+)/);
-            if (idxMatch) {
-                allPlacesIndex = parseInt(idxMatch[1]);
-            }
-        }
-        
-        console.log('targetElement before update:', targetElement);
-        console.log('targetElement.id:', targetElement.id);
-        
-        // ORİJİNAL TASARIM
-        targetElement.innerHTML = `
-            <div style="margin-top: 4px; width: 100%;">
-                <!-- AI Analiz Edilen Yer Bölümü -->
-                <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
-                    <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
-                            <div>
-                                <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
-                                <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Analysis</div>
-                            </div>
-                        </div>
+        // ... API Data received kısmından sonrası ...
+
+console.log('API Data received:', data);
+
+// Loading timers temizle
+loadingTimers.forEach(timer => clearTimeout(timer));
+targetElement.dataset.loading = 'false';
+
+// İÇERİK İŞLEME
+let p1Content = data.p1;
+let p2Content = data.p2;
+
+// Eğer içerik çok kısaysa veya boşsa client-side bir şeyler uydur
+if (!p1Content || p1Content.length < 20) {
+    p1Content = `Discover ${pointName}, a notable ${facts.amenity || 'location'} in the heart of ${city}. It reflects the unique atmosphere of the region.`;
+}
+
+// "Operates as a place" gibi kötü cümleleri yakala ve sil (AI yine de yaparsa diye)
+if (p1Content.includes("operates as a place") || p1Content.includes("is a establishment")) {
+    p1Content = p1Content.replace("operates as a place", "is a distinct location")
+                         .replace("is a establishment", "is a local spot");
+}
+
+// HTML Render kısmı (Orijinal tasarımınızla aynı)
+targetElement.innerHTML = `
+    <div style="margin-top: 4px; width: 100%;">
+        <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
+            <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div> 
                     </div>
-                    
-                    <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
-                        <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
-                            <div style="flex: 1;">${p1Content}</div>
-                        </div>
-                    </div>
-                    
-                    ${p2Content ? `
-                    <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
-                        <span style="font-size: 12px; color: #ff9800;">💡</span>
-                        <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
-                            <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
-                            ${p2Content}
-                        </div>
-                    </div>` : ''}
-                    
-                    ${isIconClick && allPlacesIndex !== -1 ? `
-                    <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
-                        <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
-                                style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                            <span>+</span>
-                            Add "${pointName}" to Day ${window._lastNearbyDay || 1}
-                        </button>
-                    </div>
-                    ` : ''}
                 </div>
-            </div>`;
+            </div>
+            
+            <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
+                    <div style="flex: 1;">${p1Content}</div>
+                </div>
+            </div>
+            
+            ${p2Content ? `
+            <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
+                <span style="font-size: 12px; color: #ff9800;">💡</span>
+                <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
+                    <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
+                    ${p2Content}
+                </div>
+            </div>` : ''}
+            
+            ${isIconClick && allPlacesIndex !== -1 ? `
+            <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
+                 <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
+                        style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>+</span> Add "${pointName}" to Day ${window._lastNearbyDay || 1}
+                </button>
+            </div>
+            ` : ''}
+        </div>
+    </div>`;
+
+// ...
         
         console.log('targetElement after update:', targetElement);
         console.log('Update complete!');

@@ -336,7 +336,7 @@ ${Object.entries(cleanFacts)
 3. **USE FACTS** - Incorporate details from the FACTS section above
 4. **CONTEXTUALIZE** - Relate to ${cleanCity.split(',')[0] || 'the area'}'s history/culture
 5. **DIFFERENTIATE** - Make it distinct from other ${cleanCategory}s
-
+ 
 # STRUCTURE:
 ## For HISTORICAL/ARCHAEOLOGICAL SITES:
 - Sentence 1: Historical significance, period, architectural features
