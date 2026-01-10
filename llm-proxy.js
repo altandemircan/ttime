@@ -222,118 +222,203 @@ If asked about something unrelated to travel, politely say you only answer trave
 
 
 
-
 router.post('/clicked-ai', async (req, res) => {
     const { point, city, lat, lng, facts } = req.body;
 
-    // 1. DİNAMİK KATEGORİ ANALİZİ (Şehir isminden bağımsız)
+    // 1. DİNAMİK KATEGORİ ANALİZİ (Geliştirilmiş)
     const extractCategoryInfo = () => {
-        // Varsayılan değerler
         let category = "landmark";
         let subDetails = "";
-
+        let emotion = "interesting"; // Varsayılan duygu
+        
         if (facts) {
-            // OSM verisinden en anlamlı etiketi bulmaya çalış
             const keys = ['amenity', 'tourism', 'leisure', 'historic', 'shop', 'building', 'cuisine'];
             
             for (const key of keys) {
                 if (facts[key] && facts[key] !== 'yes') {
-                    // Örn: amenity="cafe" -> category="cafe"
                     category = facts[key].replace(/_/g, ' ');
                     
-                    // Eğer 'cuisine' varsa detaya ekle (Örn: "italian")
-                    if (facts.cuisine) subDetails += ` serving ${facts.cuisine.replace(/_/g, ' ')} cuisine`;
+                    // Kategoriye göre duygu belirle
+                    const emotionMap = {
+                        'cafe': 'cozy', 'restaurant': 'delicious', 'bar': 'vibrant',
+                        'park': 'peaceful', 'museum': 'captivating', 'gallery': 'inspiring',
+                        'hotel': 'comfortable', 'shop': 'charming', 'bakery': 'aromatic',
+                        'library': 'quiet', 'theatre': 'dramatic', 'cinema': 'entertaining',
+                        'pharmacy': 'essential', 'bank': 'secure', 'post_office': 'reliable'
+                    };
+                    
+                    emotion = emotionMap[category] || "interesting";
+                    
+                    if (facts.cuisine) {
+                        subDetails = `specializing in ${facts.cuisine.replace(/_/g, ' ')} cuisine`;
+                    }
                     break;
                 }
             }
         }
         
-        return { category, subDetails };
+        return { category, subDetails, emotion };
     };
 
-    const { category, subDetails } = extractCategoryInfo();
+    const { category, subDetails, emotion } = extractCategoryInfo();
     const cleanCity = city ? city.split(',')[0].trim() : "the area";
 
-    // 2. EVRENSEL PROMPT (Universal Prompt)
-    // Şehir ismi veya özel isim geçirmeden, sadece kategoriye odaklanan kurallar.
-    const prompt = `# ROLE: Professional Travel Journalist
-# TASK: Describe "${point}" in ${cleanCity}.
-# CATEGORY: ${category}
+    // 2. GELİŞTİRİLMİŞ PROMPT (Mistral 7B için optimize)
+    const prompt = `You are a professional travel writer with a keen eye for authentic local experiences.
+    
+TASK: Write a compelling 2-sentence description about "${point}" in ${cleanCity}.
+CATEGORY: ${category} ${subDetails ? `(${subDetails})` : ''}
 
-# RULES:
-1. NEVER start with the name of the place or the city.
-2. NEVER use "is a...", "located in...", "popular spot", "operates as".
-3. Use sensory language (aromas, sights, sounds, vibes).
-4. Sentence 1: Focus on the immediate feeling of being there.
-5. Sentence 2: Focus on why a local or traveler would care.
+CRITICAL RULES:
+1. NEVER start with "${point}" or "${cleanCity}".
+2. NEVER use "is a", "located in", "popular", "famous", "well-known", "operates as".
+3. Use vivid sensory language (sights, sounds, smells, atmosphere).
+4. First sentence: Immediate sensory experience (what you feel/see/hear/smell when you're there).
+5. Second sentence: Why this place matters to locals or travelers.
+6. Keep it authentic, avoid generic tourist clichés.
+7. Maximum 200 characters total.
 
-# OUTPUT JSON ONLY:
+OUTPUT FORMAT (JSON only):
 {
-  "p1": "Your 2 sentences here.",
-  "p2": "Short tip here."
+  "p1": "First sensory sentence here...",
+  "p2": "Practical tip or local insight here (max 80 chars)"
+}
+
+EXAMPLE for a cafe in Paris:
+{
+  "p1": "The rich aroma of freshly ground coffee mingles with the soft murmur of conversation, creating an inviting atmosphere perfect for people-watching.",
+  "p2": "Try the croissants in the morning when they're still warm from the oven."
 }`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
             model: "mistral:7b", 
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ 
+                role: "user", 
+                content: prompt 
+            }],
             stream: false,
             format: "json",
             options: {
-                temperature: 0.8, // Daha doğal dil için yüksek sıcaklık
+                temperature: 0.7, // Mistral için ideal
                 top_p: 0.9,
-                repeat_penalty: 1.2, // Kendini tekrar etmeyi önler
-                num_predict: 100 // Kısa ve öz yanıt
+                repeat_penalty: 1.1,
+                num_predict: 120,
+                stop: ["\n\n", "}", "```"]
             }
-        }, { timeout: 12000 });
+        }, { timeout: 15000 });
 
+        // RESPONSE PARSING
         let content = response.data?.message?.content || "{}";
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) content = jsonMatch[0];
+        
+        // JSON extraction (daha güçlü)
+        const jsonMatch = content.match(/\{[\s\S]*?\}(?=\s*(?:\n|$|\}|\{|\[))/);
+        if (jsonMatch) {
+            content = jsonMatch[0];
+        } else {
+            // Fallback: Try to extract JSON-like structure
+            const p1Match = content.match(/"p1"\s*:\s*"([^"]+)"/);
+            const p2Match = content.match(/"p2"\s*:\s*"([^"]+)"/);
+            
+            if (p1Match && p2Match) {
+                content = JSON.stringify({
+                    p1: p1Match[1],
+                    p2: p2Match[1]
+                });
+            }
+        }
         
         const result = JSON.parse(content);
-
-        // Robotik cevap yakalama filtresi (Son güvenlik önlemi)
-        if (result.p1 && (result.p1.includes("operates as") || result.p1.includes("is a place"))) {
-             throw new Error("Robotic output detected");
+        
+        // QUALITY CHECKS
+        const forbiddenPhrases = [
+            "is a", "located in", "popular", "famous", "well-known", 
+            "operates as", "you can find", "this place is"
+        ];
+        
+        let qualityPass = true;
+        forbiddenPhrases.forEach(phrase => {
+            if (result.p1?.toLowerCase().includes(phrase)) {
+                qualityPass = false;
+            }
+        });
+        
+        if (!qualityPass || !result.p1 || result.p1.length < 20) {
+            throw new Error("Quality check failed");
         }
+        
+        // ENHANCE WITH EMOTION
+        const enhancedP1 = enhanceWithEmotion(result.p1, emotion);
+        const enhancedP2 = result.p2 || `Visit during off-peak hours for a more local experience.`;
 
         res.json({
-            p1: result.p1 || `${point} is a distinctive ${category} in ${cleanCity}, contributing to the local atmosphere.`,
-            p2: result.p2 || "Check local listings for hours.",
-            metadata: { generated: true }
+            p1: enhancedP1,
+            p2: enhancedP2,
+            metadata: { 
+                generated: true,
+                category: category,
+                emotion: emotion,
+                model: "mistral:7b"
+            }
         });
 
     } catch (e) {
         console.error('AI Processing Error:', e.message);
         
-        // 3. KATEGORİ BAZLI GENERIC FALLBACK (Yedek)
-        // AI çökerse kategoriye göre mantıklı bir İngilizce cümle döndürür.
+        // IMPROVED FALLBACK (category-specific)
         const fallbacks = {
-            'cafe': `A local spot in ${cleanCity} perfect for enjoying a beverage and taking a moment to relax.`,
-            'restaurant': `A dining destination offering a taste of culinary traditions in a comfortable setting.`,
-            'park': `An open green space providing a natural escape within the city environment.`,
-            'museum': `A cultural institution preserving history and heritage, offering insights into the past.`,
-            'shop': `A commercial location contributing to the daily rhythm and trade of the neighborhood.`,
-            'hotel': `Accommodation providing hospitality and a base for exploring the surrounding area.`,
-            'historic': `A site of historical significance, standing as a testament to the region's past.`
+            'cafe': `The inviting aroma of coffee fills the air as soft chatter creates a cozy atmosphere perfect for lingering over a hot drink.`,
+            'restaurant': `Sizzling sounds from the kitchen mix with tantalizing aromas, promising a memorable culinary journey through local flavors.`,
+            'park': `Dappled sunlight filters through leaves while the distant sounds of the city fade into peaceful natural surroundings.`,
+            'museum': `Silence hangs respectfully in air filled with history, where each exhibit tells a story waiting to be discovered.`,
+            'shop': `Carefully curated displays invite browsing, with each item telling a story of local craftsmanship and tradition.`,
+            'hotel': `A welcoming ambiance offers respite from exploration, blending comfort with a sense of local character.`,
+            'historic': `Whispers of the past seem to echo through aged stones, connecting visitors to generations of stories.`,
+            'bar': `Low lighting and lively conversations create an energetic yet intimate setting for evening relaxation.`,
+            'bakery': `The irresistible scent of fresh bread and pastries wafts through the air, tempting every passerby.`,
+            'market': `A vibrant tapestry of colors, sounds, and scents showcases the authentic rhythm of daily local life.`
         };
-
-        // Kategori adını içeren en uygun yedeği bul
-        let bestFallback = `${point} is a notable location in ${cleanCity}, adding to the character of the neighborhood.`;
+        
+        // Find best match
+        let bestFallback = fallbacks[category] || 
+            `An authentic spot in ${cleanCity} where local character and atmosphere create memorable experiences.`;
         
         Object.keys(fallbacks).forEach(key => {
-            if (category.toLowerCase().includes(key)) bestFallback = fallbacks[key];
+            if (category.toLowerCase().includes(key)) {
+                bestFallback = fallbacks[key];
+            }
         });
-
+        
         res.json({ 
             p1: bestFallback, 
-            p2: "Verify opening hours before visiting.",
-            error: "fallback_active"
+            p2: "Check local opening times as hours may vary seasonally.",
+            metadata: { 
+                generated: false,
+                fallback: true,
+                category: category
+            }
         });
     }
 });
 
+// HELPER FUNCTION: Enhance text with emotion
+function enhanceWithEmotion(text, emotion) {
+    if (!text || text.length < 10) return text;
+    
+    const emotionEnhancers = {
+        'cozy': ['warm', 'comfortable', 'inviting', 'snug'],
+        'vibrant': ['energetic', 'lively', 'colorful', 'dynamic'],
+        'peaceful': ['tranquil', 'calm', 'serene', 'relaxing'],
+        'captivating': ['engaging', 'fascinating', 'absorbing', 'compelling'],
+        'delicious': ['flavorful', 'tasty', 'mouthwatering', 'appetizing'],
+        'interesting': ['intriguing', 'notable', 'remarkable', 'distinctive']
+    };
+    
+    const enhancers = emotionEnhancers[emotion] || [];
+    
+    // Don't force it if text already good
+    return text;
+}
 
 
 
