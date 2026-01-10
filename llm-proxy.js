@@ -262,7 +262,7 @@ router.post('/clicked-ai', async (req, res) => {
     const { category, subDetails, emotion } = extractCategoryInfo();
     const cleanCity = city ? city.split(',')[0].trim() : "the area";
 
-    // 2. GELİŞTİRİLMİŞ PROMPT (Mistral 7B için optimize)
+    // 2. GELİŞTİRİLMİŞ PROMPT
     const prompt = `You are a professional travel writer with a keen eye for authentic local experiences.
     
 TASK: Write a compelling 2-sentence description about "${point}" in ${cleanCity}.
@@ -290,27 +290,25 @@ EXAMPLE for a cafe in Paris:
 }`;
 
     try {
+        // DEĞİŞTİRİLDİ: /api/chat -> /api/generate
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
             model: "llama3:8b", 
-            messages: [{ 
-                role: "user", 
-                content: prompt 
-            }],
+            prompt: prompt,  // DEĞİŞTİRİLDİ: messages -> prompt
             stream: false,
-            format: "json",
             options: {
-                temperature: 0.7, // Mistral için ideal
+                temperature: 0.7,
                 top_p: 0.9,
                 repeat_penalty: 1.1,
-                num_predict: 120,
-                stop: ["\n\n", "}", "```"]
+                num_predict: 120
             }
-        }, { timeout: 15000 });
+        }, { timeout: 60000 }); // Timeout artırıldı
 
-        // RESPONSE PARSING
-        let content = response.data?.message?.content || "{}";
+        // RESPONSE PARSING - DEĞİŞTİRİLDİ
+        let content = response.data?.response || "{}";
         
-        // JSON extraction (daha güçlü)
+        console.log('[AI RAW RESPONSE]', content);
+        
+        // JSON extraction
         const jsonMatch = content.match(/\{[\s\S]*?\}(?=\s*(?:\n|$|\}|\{|\[))/);
         if (jsonMatch) {
             content = jsonMatch[0];
@@ -399,26 +397,6 @@ EXAMPLE for a cafe in Paris:
         });
     }
 });
-
-// HELPER FUNCTION: Enhance text with emotion
-function enhanceWithEmotion(text, emotion) {
-    if (!text || text.length < 10) return text;
-    
-    const emotionEnhancers = {
-        'cozy': ['warm', 'comfortable', 'inviting', 'snug'],
-        'vibrant': ['energetic', 'lively', 'colorful', 'dynamic'],
-        'peaceful': ['tranquil', 'calm', 'serene', 'relaxing'],
-        'captivating': ['engaging', 'fascinating', 'absorbing', 'compelling'],
-        'delicious': ['flavorful', 'tasty', 'mouthwatering', 'appetizing'],
-        'interesting': ['intriguing', 'notable', 'remarkable', 'distinctive']
-    };
-    
-    const enhancers = emotionEnhancers[emotion] || [];
-    
-    // Don't force it if text already good
-    return text;
-}
-
 
 
 module.exports = router;
