@@ -1069,10 +1069,10 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     
     // Aşamalı loading mesajları
     const loadingPhases = [
-        { duration: 3000, text: `Loading AI analysis...` },
-        { duration: 3000, text: `Analyzing ${pointName}...` },
-        { duration: 3000, text: `Getting information about ${pointName}...` },
-        { duration: 3000, text: `Finalizing analysis...` }
+        { duration: 5000, text: `Loading AI analysis...` },
+        { duration: 5000, text: `Analyzing ${pointName}...` },
+        { duration: 5000, text: `Creating information about ${pointName}...` },
+        { duration: 5000, text: `Finalizing analysis...` }
     ];
     
     let currentPhase = 0;
@@ -1095,12 +1095,6 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666; margin-top: ${phaseIndex > 0 ? '8px' : '0'};">
                     ${phase.text}
                 </div>
-                
-                ${phaseIndex < loadingPhases.length - 1 ? `
-                <div style="font-size: 9px; color: #999; margin-top: 4px;">
-                    Phase ${phaseIndex + 1} of ${loadingPhases.length}
-                </div>
-                ` : ''}
             </div>
             <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
         `;
@@ -1160,7 +1154,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 }
             }
             
-            // ORİJİNAL TASARIM - SADECE İÇERİK DEĞİŞTİ
+            // ORİJİNAL TASARIM
             targetElement.innerHTML = `
                 <div style="margin-top: 4px; width: 100%;">
                     
@@ -1226,7 +1220,6 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     };
     
     // Tüm loading aşamaları bittikten sonra API'yi çağır
-    // (Toplam 12 saniye bekler, ama API genelde daha önce cevap verir)
     const totalLoadingTime = loadingPhases.reduce((sum, phase) => sum + phase.duration, 0);
     
     if (targetDivId === 'ai-point-description' || isIconClick) {
