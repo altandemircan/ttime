@@ -255,6 +255,6 @@ Return ONLY valid JSON: {"p1": "First sentence", "p2": "Local tip"}
         console.error("AI error:", e.message);
         res.json({ p1: "", p2: "" });
     }
-});
+}); 
 
 module.exports = router;
