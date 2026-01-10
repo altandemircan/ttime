@@ -256,26 +256,16 @@ router.post('/clicked-ai', async (req, res) => {
 
     // 2. EVRENSEL PROMPT (Universal Prompt)
     // Şehir ismi veya özel isim geçirmeden, sadece kategoriye odaklanan kurallar.
-    const prompt = `# ROLE: Travel Writer & Urban Explorer
+    const prompt = `# ROLE: Professional Travel Journalist
+# TASK: Describe "${point}" in ${cleanCity}.
+# CATEGORY: ${category}
 
-# TASK: 
-Write a short, engaging description for "${point}".
-
-# DATA:
-- **Category:** ${category} ${subDetails}
-- **Location:** ${cleanCity}
-- **Coordinates:** ${lat}, ${lng}
-
-# STRICT RULES (DO NOT IGNORE):
-1. **FORBIDDEN PHRASES:** Never use "operates as a place", "is an establishment", "located in", "facility", "serves as".
-2. **TONE:** Atmospheric, observant, and useful. Use sensory words (visuals, mood).
-3. **UNKNOWN PLACES:** If you don't know this *exact* place, describe what a generic ${category} represents in an urban setting. 
-   - *Example (Unknown Cafe):* "A welcoming spot for locals to gather, offering a break from the city pace with fresh brews and conversation."
-   - *Example (Unknown Park):* "A green refuge within the urban landscape, providing open space for recreation and a breath of fresh air."
-4. **FORMAT:**
-   - **Sentence 1:** Describes the vibe/function naturally.
-   - **Sentence 2:** Adds a detail about its role in daily life or atmosphere.
-   - **Tip:** A generic but useful practical tip (max 8 words).
+# RULES:
+1. NEVER start with the name of the place or the city.
+2. NEVER use "is a...", "located in...", "popular spot", "operates as".
+3. Use sensory language (aromas, sights, sounds, vibes).
+4. Sentence 1: Focus on the immediate feeling of being there.
+5. Sentence 2: Focus on why a local or traveler would care.
 
 # OUTPUT JSON ONLY:
 {
