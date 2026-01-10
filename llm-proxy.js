@@ -18,7 +18,7 @@ if (fs.existsSync(CACHE_FILE)) {
         aiCache = {};
     }
 }
-
+ 
 // Helper: Diske Kaydet
 function saveCacheToDisk() {
     // Sadece tamamlanmış verileri kaydet
