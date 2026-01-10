@@ -1088,10 +1088,8 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             <div>
                 <strong>${pointName}</strong>
                 <div>${data.p1 ? data.p1 : "No info."}</div>
-                ${data.p2 ? `<div style="margin-top:6px;color:#888;">💡 <em>${data.p2}</em></div>` : ""}
-                ${data.metadata?.generated === false
-                    ? `<div style="margin-top:8px;font-size:11px;color:#f80;">Standard description (fallback)</div>`
-                    : ""}
+                ${data.p2 ? `<div style="margin-top:6px;color:#888;">❤️ <em>${data.p2}</em></div>` : ""}
+             
             </div>
         `;
     } catch (error) {
