@@ -1037,7 +1037,6 @@ let aiDebounceTimeout = null;
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
-    
     // Debounce kontrolü
     if (window._lastAIRequest && 
         window._lastAIRequest.point === pointName && 
@@ -1066,86 +1065,39 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     `;
     descDiv.style.display = 'block';
     
-    try {
-        console.time('AI-Generation');
+      try {
         const response = await fetch('/llm-proxy/clicked-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                point: pointName, 
-                city: city, 
-                lat: lat, 
-                lng: lng, 
+            body: JSON.stringify({
+                point: pointName,
+                city: city,
+                lat: lat,
+                lng: lng,
                 facts: facts || {}
             }),
             signal: window._aiAbortController.signal
         });
-        
+
         if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
+
         const data = await response.json();
-        console.timeEnd('AI-Generation');
-        
-        // Display result with better UI
+
+        // Sadece AI cevabı
         descDiv.innerHTML = `
-            <div class="ai-insight-card">
-                <div class="ai-header">
-                    <div class="ai-icon">✨</div>
-                    <div class="ai-title">
-                        <h4>${pointName}</h4>
-                        <span class="ai-subtitle">AI Travel Insight</span>
-                    </div>
-                    ${data.metadata?.category ? 
-                        `<span class="ai-category-badge">${data.metadata.category}</span>` : ''}
-                </div>
-                
-                <div class="ai-content">
-                    <div class="ai-description">
-                        <div class="ai-sentence">
-                            <span class="ai-icon-small">📍</span>
-                            <p>${data.p1}</p>
-                        </div>
-                    </div>
-                    
-                    ${data.p2 ? `
-                    <div class="ai-tip">
-                        <div class="ai-tip-header">
-                            <span class="ai-tip-icon">💡</span>
-                            <strong>Local Tip</strong>
-                        </div>
-                        <p class="ai-tip-text">${data.p2}</p>
-                    </div>` : ''}
-                    
-                    ${data.metadata?.generated === false ? 
-                        `<div class="ai-fallback-note">Standard description provided</div>` : ''}
-                </div>
-                
-                <div class="ai-footer">
-                    <small class="ai-model-info">Powered by Mistral 7B</small>
-                    <button class="ai-refresh-btn" onclick="refreshAIDescription('${pointName}', ${lat}, ${lng}, '${city}')">
-                        🔄 Regenerate
-                    </button>
-                </div>
+            <div>
+                <strong>${pointName}</strong>
+                <div>${data.p1 ? data.p1 : "No info."}</div>
+                ${data.p2 ? `<div style="margin-top:6px;color:#888;">💡 <em>${data.p2}</em></div>` : ""}
+                ${data.metadata?.generated === false
+                    ? `<div style="margin-top:8px;font-size:11px;color:#f80;">Standard description (fallback)</div>`
+                    : ""}
             </div>
         `;
-        
     } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('AI request aborted');
-            return;
-        }
-        
-        console.error('AI fetch error:', error);
-        descDiv.innerHTML = `
-            <div class="ai-error">
-                <div class="ai-error-icon">⚠️</div>
-                <div class="ai-error-text">
-                    <p>Travel insights temporarily unavailable</p>
-                    <small>Try again in a moment</small>
-                </div>
-            </div>
-        `;
+        descDiv.innerHTML = `<i>Travel insights temporarily unavailable</i>`;
     }
+
 }
 
 // Refresh function
