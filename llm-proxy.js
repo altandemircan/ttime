@@ -187,7 +187,7 @@ router.get('/chat-stream', async (req, res) => {
 
     // Mesajları birleştir: system + diğer geçmiş
     const messages = [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: prompt },
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
