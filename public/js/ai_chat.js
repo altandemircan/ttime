@@ -453,11 +453,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Bitiş (Normal Görsel)
                 aiImg.src = '/img/avatar_aiio.png';
 
-                if (typeof markdownToHtml === 'function') {
-                    aiContent.innerHTML = markdownToHtml(fullText);
-                } else {
-                    aiContent.innerHTML = fullText;
-                }
+                let out = "";
+try {
+    const json = JSON.parse(fullText);
+    out = json.p1 || "";
+    if (json.p2) out += "<br><b>Tip:</b> " + json.p2;
+} catch {
+    out = fullText;
+}
+aiContent.innerHTML = out;
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
         });
