@@ -1118,10 +1118,8 @@ const triggerFetch = async () => {
     try {
         const cleanedCity = cleanCityContext(city);
         
-        console.time('AI-API-Response');
         const response = await fetch('/llm-proxy/clicked-ai', {
             method: 'POST',
-            signal: (targetDivId === 'ai-point-description' || isIconClick) ? aiAbortController.signal : null,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 point: pointName, 
@@ -1131,17 +1129,24 @@ const triggerFetch = async () => {
                 facts 
             })
         });
-        console.timeEnd('AI-API-Response');
         
         const data = await response.json();
         
-        // Loading timers temizle (API cevabı geldi)
+        // Loading timers temizle
         loadingTimers.forEach(timer => clearTimeout(timer));
         
-        // Sonuçları göster...
+        // ÇOK BASİT BİR SONUÇ GÖSTER
+        targetElement.innerHTML = `
+            <div style="padding: 12px; background: white; border-radius: 8px; margin-top: 8px; border: 1px solid #e0e0e0;">
+                <div style="font-weight: bold; color: #8a4af3; margin-bottom: 8px;">${pointName}</div>
+                <div style="color: #333;">${data.p1 || 'No description available.'}</div>
+                ${data.p2 ? `<div style="margin-top: 8px; color: #666; font-size: 12px;">💡 ${data.p2}</div>` : ''}
+            </div>
+        `;
         
     } catch (e) {
-        // Hata durumu...
+        console.error('Error:', e);
+        targetElement.innerHTML = `<div style="padding: 10px; color: #f00;">Error: ${e.message}</div>`;
     }
 };
 
