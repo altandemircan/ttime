@@ -1113,111 +1113,44 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         loadingTimers.push(timer);
     }
     
-    const triggerFetch = async () => {
-        try {
-            const cleanedCity = cleanCityContext(city);
-            
-            const response = await fetch('/llm-proxy/clicked-ai', {
-                method: 'POST',
-                signal: (targetDivId === 'ai-point-description' || isIconClick) ? aiAbortController.signal : null,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    point: pointName, 
-                    city: cleanedCity, 
-                    lat, 
-                    lng, 
-                    facts 
-                })
-            });
-            
-            const data = await response.json();
-            
-            // Loading timers temizle
-            loadingTimers.forEach(timer => clearTimeout(timer));
-            
-            // Başarılı yanıt işleme
-            targetElement.dataset.loading = 'false';
-            
-            let p1Content = data.p1 || `Explore ${pointName} in ${cleanedCity.split(',')[0] || 'this area'}.`;
-            let p2Content = data.p2 || '';
-            
-            const sentences = p1Content.split(/[.!?]+/).filter(s => s.trim().length > 0);
-            if (sentences.length === 1) {
-                p1Content = sentences[0] + '. Discover this location and its surroundings.';
-            }
-            
-            let allPlacesIndex = -1;
-            if (isIconClick && window._lastNearbyPlaces) {
-                const idxMatch = targetDivId.match(/ai-icon-(\d+)/);
-                if (idxMatch) {
-                    allPlacesIndex = parseInt(idxMatch[1]);
-                }
-            }
-            
-            // ORİJİNAL TASARIM
-            targetElement.innerHTML = `
-                <div style="margin-top: 4px; width: 100%;">
-                    
-                    
-                    <!-- AI Analiz Edilen Yer Bölümü -->
-                    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
-                        <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
-                                <div>
-                                    <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
-                                    <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Analysis</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
-                            <div style="display: flex; align-items: flex-start; gap: 8px;">
-                                <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
-                                <div style="flex: 1;">${p1Content}</div>
-                            </div>
-                        </div>
-                        
-                        ${p2Content ? `
-                        <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
-                            <span style="font-size: 12px; color: #ff9800;">💡</span>
-                            <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
-                                <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Local Tip</strong>
-                                ${p2Content}
-                            </div>
-                        </div>` : ''}
-                        
-                        ${isIconClick && allPlacesIndex !== -1 ? `
-                        <div style="padding: 10px 12px; border-top: 1px solid #f0f0f0; text-align: center;">
-                            <button onclick="window.addNearbyPlaceToTripFromPopup(${allPlacesIndex}, ${window._lastNearbyDay || 1}, '${lat}', '${lng}')"
-                                    style="padding: 8px 16px; background: #8a4af3; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                                <span>+</span>
-                                Add "${pointName}" to Day ${window._lastNearbyDay || 1}
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>`;
-                
-        } catch (e) {
-            // Loading timers temizle
-            loadingTimers.forEach(timer => clearTimeout(timer));
-            
-            if (e.name === 'AbortError') {
-                targetElement.innerHTML = "";
-                targetElement.style.display = 'none';
-                return;
-            }
-            
-            console.error('AI fetch error:', e);
-            targetElement.dataset.loading = 'false';
-            targetElement.innerHTML = `
-                <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
-                    <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
-                    <small style="color: #999;">Try clicking another location</small>
-                </div>`;
-        }
-    };
+   // API çağrısını HEMEN başlat (loading'den bağımsız)
+const triggerFetch = async () => {
+    try {
+        const cleanedCity = cleanCityContext(city);
+        
+        console.time('AI-API-Response');
+        const response = await fetch('/llm-proxy/clicked-ai', {
+            method: 'POST',
+            signal: (targetDivId === 'ai-point-description' || isIconClick) ? aiAbortController.signal : null,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                point: pointName, 
+                city: cleanedCity, 
+                lat, 
+                lng, 
+                facts 
+            })
+        });
+        console.timeEnd('AI-API-Response');
+        
+        const data = await response.json();
+        
+        // Loading timers temizle (API cevabı geldi)
+        loadingTimers.forEach(timer => clearTimeout(timer));
+        
+        // Sonuçları göster...
+        
+    } catch (e) {
+        // Hata durumu...
+    }
+};
+
+// API'yi HEMEN çağır (loading gösterilirken)
+if (targetDivId === 'ai-point-description' || isIconClick) {
+    aiDebounceTimeout = setTimeout(triggerFetch, 600); // Debounce süresi
+} else {
+    triggerFetch(); // Hemen başlat
+}
     
     // Tüm loading aşamaları bittikten sonra API'yi çağır
     const totalLoadingTime = loadingPhases.reduce((sum, phase) => sum + phase.duration, 0);
