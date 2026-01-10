@@ -65,7 +65,7 @@ router.post('/plan-summary', async (req, res) => {
         const aiReqCity = country ? `${city}, ${country}` : city;
          
         // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-        const activeModel = "mistral:7b"; // Kullandığın model ismini buraya yaz
+        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
         console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
 
         const prompt = `
@@ -167,7 +167,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
-    const model = 'mistral:7b';
+    const model = 'llama3:8b';
 
     try {
         const ollama = await axios({
@@ -292,7 +292,7 @@ EXAMPLE for a cafe in Paris:
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-            model: "mistral:7b", 
+            model: "llama3:8b", 
             messages: [{ 
                 role: "user", 
                 content: prompt 
@@ -358,7 +358,7 @@ EXAMPLE for a cafe in Paris:
                 generated: true,
                 category: category,
                 emotion: emotion,
-                model: "mistral:7b"
+                model: "llama3:8b"
             }
         });
 
