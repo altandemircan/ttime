@@ -65,7 +65,7 @@ router.post('/plan-summary', async (req, res) => {
         const aiReqCity = country ? `${city}, ${country}` : city;
          
         // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
+        const activeModel = "gemma2:9b"; // Kullandığın model ismini buraya yaz
         console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
 
         const prompt = `
@@ -167,7 +167,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
-    const model = 'llama3:8b';
+    const model = 'gemma2:9b';
 
     try {
         const ollama = await axios({
