@@ -229,7 +229,14 @@ app.use('/api', (req, res) => {
 });
 
 // 8. SPA fallback (en sona)
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/llm-proxy')) {
+    return res.status(404).end();
+  }
+
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
