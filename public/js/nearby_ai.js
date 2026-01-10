@@ -1148,6 +1148,7 @@ const triggerFetch = async () => {
 if (targetDivId === 'ai-point-description' || isIconClick) {
     aiDebounceTimeout = setTimeout(triggerFetch, 600); // SADECE BİR KERE
 }
+}
 
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
