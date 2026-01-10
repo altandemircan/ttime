@@ -218,7 +218,7 @@ If asked about something unrelated to travel, politely say you only answer trave
         res.write(`event: error\ndata: ${error.message}\n\n`);
         res.end();
     }
-});
+}); 
 
 router.post('/clicked-ai', async (req, res) => {
     const { point, city } = req.body;
