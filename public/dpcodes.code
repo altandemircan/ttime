@@ -1,6 +1,13 @@
+DEPLOY
 git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
 
-git checkout public/index.html && git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
 
-elevation start için
+ELEVATION START
 pm2 start elevation_api.py --interpreter python3 --name elevation-api
+
+
+DOCKER CAR YOKSA
+docker run -d --name osrm-tr-car -p 5003:5000 \
+  -v /data/osrm/car:/data \
+  osrm/osrm-backend \
+  osrm-routed --algorithm mld /data/turkey.osrm
