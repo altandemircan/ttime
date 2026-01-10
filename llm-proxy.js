@@ -315,34 +315,29 @@ router.post('/clicked-ai', async (req, res) => {
     const getPointInfo = async () => {
         const { cleanFacts, cleanCategory, cleanCity } = cleanFactsData(facts || {});
         
-        // DAHA KALİTELİ PROMPT YAPISI
-       const prompt = `Task: Act as a local guide. Return JSON only.
-Data: ${point}, ${cleanCity.split(',')[0]}, ${cleanCategory}.
-Facts: ${JSON.stringify(cleanFacts)}
-
-Format: {"p1": "sentence1. sentence2.", "p2": "tip"}
-
-Rules:
-- p1: 2 sentences about atmosphere/significance in ${cleanCity.split(',')[0]}.
-- p2: 1 short tip.
-- No postal codes. No generic "is a place" filler.
-
-Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of ${cleanCity.split(',')[0]} with its unique local charm. Visitors often praise the welcoming atmosphere and its central role in the neighborhood.", "p2": "Best visited during late afternoon for the best view."}`;
+        // ÇOK DAHA BASİT PROMPT - HIZLI CEVAP İÇİN
+        const prompt = `Briefly describe ${point} in ${cleanCity.split(',')[0] || 'the area'}. 
+        Category: ${cleanCategory}. 
+        Respond in JSON: {"p1": "Two short sentences about this place.", "p2": "One practical tip or nothing if no tip."}`;
 
         try {
+            console.time('Llama-API-Call');
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
                 model: "llama3:8b",
                 messages: [{ role: "user", content: prompt }],
                 stream: false, 
                 format: "json", 
                 options: { 
-                    temperature: 0.1, // Biraz yaratıcılık ama fazla değil
-                    num_predict: 80,
-                    top_k: 10,
-                    top_p: 0.9,
-                    repeat_penalty: 1.1
+                    temperature: 0.1,
+                    num_predict: 60, // DAHA AZ TOKEN
+                    top_k: 5, // DAHA AZ SEÇENEK
+                    top_p: 0.8,
+                    repeat_penalty: 1.0
                 }
-            }, { timeout: 10000 });
+            }, { timeout: 8000 }); // 8 SANİYE TIMEOUT
+
+            console.timeEnd('Llama-API-Call');
+            console.log('Llama response received');
 
             let content = response.data?.message?.content || "{}";
             
@@ -359,7 +354,8 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
                     result.p1 = result.p1
                         .replace(/\[.*?\]/g, '')
                         .replace(/\(.*?\)/g, '')
-                        .replace(/\b(?:postal code|zip code|post code)\s*\d*/gi, '')
+                        .replace(/postal code/gi, '')
+                        .replace(/zip code/gi, '')
                         .replace(/this is a\s+/gi, '')
                         .replace(/\s+\./g, '.')
                         .replace(/\.\./g, '.')
@@ -368,11 +364,10 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
                     // Cümle sayısını kontrol et
                     const sentences = result.p1.split(/[.!?]+/).filter(s => s.trim().length > 0);
                     if (sentences.length !== 2) {
-                        // Cümleleri ayarla
                         if (sentences.length > 2) {
                             result.p1 = sentences.slice(0, 2).join('. ') + '.';
                         } else if (sentences.length === 1) {
-                            result.p1 = sentences[0] + '. This ' + cleanCategory + ' offers a local experience in ' + cleanCity.split(',')[0] + '.';
+                            result.p1 = sentences[0] + '. A local spot in ' + (cleanCity.split(',')[0] || 'the area') + '.';
                         }
                     }
                 }
@@ -380,14 +375,13 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
                 if (result.p2) {
                     result.p2 = result.p2
                         .replace(/\[.*?\]/g, '')
-                        .replace(/note:/gi, '')
-                        .replace(/tip:/gi, '')
-                        .replace(/recommendation:/gi, '')
+                        .replace(/\b(?:note|tip|recommendation):\s*/gi, '')
                         .trim();
                     
                     if (result.p2.toLowerCase().includes('unknown') || 
                         result.p2.length < 10 || 
-                        result.p2.toLowerCase().includes('no specific')) {
+                        result.p2.toLowerCase().includes('no specific') ||
+                        result.p2.toLowerCase().includes('not specified')) {
                         result.p2 = "";
                     }
                 }
@@ -396,71 +390,53 @@ Example: {"p1": "This authentic ${cleanCategory} captures the vibrant spirit of 
                 
             } catch (parseError) {
                 console.error('JSON parse error:', parseError);
-                // Fallback response
+                // ÇOK BASİT FALLBACK
                 const cityName = cleanCity.split(',')[0] || 'the area';
                 return { 
-                    p1: `This ${cleanCategory} in ${cityName} offers local character and atmosphere. It serves as a notable spot for both residents and visitors exploring ${cityName}.`, 
+                    p1: `${point} is a ${cleanCategory} in ${cityName}.`, 
                     p2: "" 
                 };
             }
             
         } catch (err) { 
-            console.error('AI API error:', err);
+            console.error('AI API error:', err.message);
+            // ÇOK HIZLI FALLBACK
             const cityName = (cleanCity || city || '').split(',')[0] || 'the area';
             return { 
-                p1: `Explore the local atmosphere of this ${cleanCategory} in ${cityName}. The spot offers a glimpse into daily life and the surrounding area.`, 
+                p1: `${point} in ${cityName}.`, 
                 p2: "" 
             }; 
         }
     };
 
-    // 2. NEARBY MANTIĞI (Aynı kalabilir)
-    const getNearby = async () => {
-        const apiKey = process.env.GEOAPIFY_KEY;
-        const fetchCat = async (cat, rad) => {
-            try {
-                const url = `https://api.geoapify.com/v2/places?categories=${cat}&filter=circle:${lng},${lat},${rad}&bias=proximity:${lng},${lat}&limit=5&apiKey=${apiKey}`;
-                const resp = await axios.get(url, { timeout: 10000 });
-                return (resp.data?.features || [])
-                    .filter(f => f.properties && f.properties.name && f.properties.name !== point)
-                    .slice(0, 2).map(f => ({ 
-                        name: f.properties.name, 
-                        facts: f.properties,
-                        lat: f.properties.lat,
-                        lon: f.properties.lon
-                    }));
-            } catch (e) { return []; }
-        };
-        const [s, n, h] = await Promise.all([
-            fetchCat('administrative.area.city', 15000),
-            fetchCat('natural', 20000),
-            fetchCat('tourism', 25000)
-        ]);
-        return { settlement: s, nature: n, historic: h };
-    };
-
     try {
-        const [aiResult, nearbyResult] = await Promise.all([getPointInfo(), getNearby()]);
+        console.time('Total-AI-Request');
+        const aiResult = await getPointInfo();
+        console.timeEnd('Total-AI-Request');
         
-        // Yanıtı iyileştir
-        const enhancedResult = {
-            ...aiResult,
-            nearby: nearbyResult,
+        // BASİT YANIT - NEARBY YOK
+        const result = {
+            p1: aiResult.p1,
+            p2: aiResult.p2,
             metadata: {
                 point: point,
                 city: cleanFactsData(facts || {}).cleanCity,
                 category: cleanFactsData(facts || {}).cleanCategory,
-                coordinates: { lat, lng }
+                coordinates: { lat, lng },
+                generated: true
             }
         };
         
-        res.json(enhancedResult);
+        console.log('AI response ready:', result.p1.substring(0, 50) + '...');
+        res.json(result);
+        
     } catch (e) {
-        console.error('Overall fetch failed:', e);
-        res.status(500).json({ 
-            error: "Fetch failed",
-            p1: `Discover this location in ${city ? city.split(',')[0] : 'the area'}.`, 
-            p2: "" 
+        console.error('Overall fetch failed:', e.message);
+        // ÇOK HIZLI ERROR RESPONSE
+        res.json({ 
+            p1: `${point} is a location worth exploring.`, 
+            p2: "",
+            error: "quick_fallback"
         });
     }
 });
