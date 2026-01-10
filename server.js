@@ -247,7 +247,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
-// Port (Nginx 3003’e bakıyorsa 3003 yap)
+
 const PORT = process.env.PORT || 3004;
 
 app.listen(PORT, () => {
