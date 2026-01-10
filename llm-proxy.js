@@ -221,7 +221,6 @@ If asked about something unrelated to travel, politely say you only answer trave
 });
 
 
-
 router.post('/clicked-ai', async (req, res) => {
     const { point, city, lat, lng, facts } = req.body;
 
