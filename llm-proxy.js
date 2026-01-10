@@ -313,101 +313,184 @@ router.post('/clicked-ai', async (req, res) => {
     };
 
     const getPointInfo = async () => {
-        const { cleanFacts, cleanCategory, cleanCity } = cleanFactsData(facts || {});
+    const { cleanFacts, cleanCategory, cleanCity } = cleanFactsData(facts || {});
+    
+    // DAHA KALİTELİ VE ZENGİN PROMPT
+    const prompt = `You are a knowledgeable local guide in ${cleanCity.split(',')[0] || 'the area'}. 
+Provide a brief but insightful description of ${point} (a ${cleanCategory}).
+
+CONTEXT: ${JSON.stringify(cleanFacts, null, 2)}
+
+REQUIREMENTS:
+- First sentence: Describe the atmosphere, architecture, or unique character
+- Second sentence: Mention its significance, popularity, or local importance
+- If relevant, add one practical tip (opening hours, best time to visit, what to try)
+- Be specific, avoid generic phrases like "is a nice place"
+- Keep it natural and conversational
+- If no specific tip, leave p2 empty
+
+FORMAT (JSON only):
+{
+  "p1": "Sentence 1. Sentence 2.",
+  "p2": "Practical tip or empty string"
+}
+
+EXAMPLE FOR A CAFE IN PARIS:
+{
+  "p1": "This charming cafe embodies the authentic Parisian bistro atmosphere with its vintage decor and cozy seating. Locals frequent it for its excellent coffee and as a peaceful retreat from the bustling city streets.",
+  "p2": "Try their house blend coffee in the late afternoon when it's less crowded."
+}`;
+
+    try {
+        console.time('Llama-API-Call');
+        const response = await axios.post('http://127.0.0.1:11434/api/chat', {
+            model: "gemma2:9b",
+            messages: [{ 
+                role: "user", 
+                content: prompt 
+            }],
+            stream: false, 
+            format: "json", 
+            options: { 
+                temperature: 0.3, // Biraz daha yaratıcı
+                num_predict: 120, // Daha uzun yanıt
+                top_k: 20, // Daha fazla seçenek
+                top_p: 0.85,
+                repeat_penalty: 1.05,
+                presence_penalty: 0.1 // Tekrarları önle
+            }
+        }, { 
+            timeout: 10000, // 10 saniye timeout
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.timeEnd('Llama-API-Call');
+        console.log('Gemma2 response received');
+
+        let content = response.data?.message?.content || "{}";
         
-        // ÇOK DAHA BASİT PROMPT - HIZLI CEVAP İÇİN
-        const prompt = `Briefly describe ${point} in ${cleanCity.split(',')[0] || 'the area'}. 
-        Category: ${cleanCategory}. 
-        Respond in JSON: {"p1": "Two short sentences about this place.", "p2": "One practical tip or nothing if no tip."}`;
-
+        // JSON temizliği
         try {
-            console.time('Llama-API-Call');
-            const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "gemma2:9b",
-                messages: [{ role: "user", content: prompt }],
-                stream: false, 
-                format: "json", 
-                options: { 
-                    temperature: 0.1,
-                    num_predict: 60, // DAHA AZ TOKEN
-                    top_k: 5, // DAHA AZ SEÇENEK
-                    top_p: 0.8,
-                    repeat_penalty: 1.0
-                }
-            }, { timeout: 8000 }); // 8 SANİYE TIMEOUT
-
-            console.timeEnd('Llama-API-Call');
-            console.log('Llama response received');
-
-            let content = response.data?.message?.content || "{}";
+            // JSON dışı karakterleri temizle
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) content = jsonMatch[0];
             
-            // JSON temizliği
-            try {
-                // JSON dışı karakterleri temizle
-                const jsonMatch = content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) content = jsonMatch[0];
+            const result = JSON.parse(content);
+            
+            // Kalite kontrolü
+            if (result.p1) {
+                // Temizleme
+                result.p1 = result.p1
+                    .replace(/\[.*?\]/g, '')
+                    .replace(/\(.*?\)/g, '')
+                    .replace(/postal code/gi, '')
+                    .replace(/zip code/gi, '')
+                    .replace(/this is a\s+/gi, '')
+                    .replace(/it is a\s+/gi, '')
+                    .replace(/located in\s+/gi, 'in ')
+                    .replace(/\s+\./g, '.')
+                    .replace(/\.\./g, '.')
+                    .replace(/\s+/g, ' ')
+                    .trim();
                 
-                const result = JSON.parse(content);
+                // Noktalama kontrolü
+                if (!result.p1.endsWith('.')) result.p1 += '.';
                 
-                // Placeholder ve gereksiz ifadeleri temizle
-                if (result.p1) {
-                    result.p1 = result.p1
-                        .replace(/\[.*?\]/g, '')
-                        .replace(/\(.*?\)/g, '')
-                        .replace(/postal code/gi, '')
-                        .replace(/zip code/gi, '')
-                        .replace(/this is a\s+/gi, '')
-                        .replace(/\s+\./g, '.')
-                        .replace(/\.\./g, '.')
-                        .trim();
-                    
-                    // Cümle sayısını kontrol et
-                    const sentences = result.p1.split(/[.!?]+/).filter(s => s.trim().length > 0);
-                    if (sentences.length !== 2) {
-                        if (sentences.length > 2) {
-                            result.p1 = sentences.slice(0, 2).join('. ') + '.';
-                        } else if (sentences.length === 1) {
-                            result.p1 = sentences[0] + '. A local spot in ' + (cleanCity.split(',')[0] || 'the area') + '.';
-                        }
+                // Cümle sayısını optimize et
+                const sentences = result.p1.split(/[.!?]+/).filter(s => s.trim().length > 2);
+                if (sentences.length !== 2) {
+                    if (sentences.length > 2) {
+                        // İlk 2 cümleyi al
+                        result.p1 = sentences.slice(0, 2).join('. ') + '.';
+                    } else if (sentences.length === 1) {
+                        // Cümleyi zenginleştir
+                        const enhancements = [
+                            ` ${point} offers visitors a genuine local experience.`,
+                            ` It's a notable spot worth exploring in ${cleanCity.split(',')[0] || 'the area'}.`,
+                            ` This ${cleanCategory} captures the character of its surroundings.`
+                        ];
+                        const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)];
+                        result.p1 = sentences[0] + randomEnhancement;
                     }
                 }
                 
-                if (result.p2) {
-                    result.p2 = result.p2
-                        .replace(/\[.*?\]/g, '')
-                        .replace(/\b(?:note|tip|recommendation):\s*/gi, '')
-                        .trim();
-                    
-                    if (result.p2.toLowerCase().includes('unknown') || 
-                        result.p2.length < 10 || 
-                        result.p2.toLowerCase().includes('no specific') ||
-                        result.p2.toLowerCase().includes('not specified')) {
-                        result.p2 = "";
-                    }
-                }
-                
-                return result;
-                
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError);
-                // ÇOK BASİT FALLBACK
-                const cityName = cleanCity.split(',')[0] || 'the area';
-                return { 
-                    p1: `${point} is a ${cleanCategory} in ${cityName}.`, 
-                    p2: "" 
-                };
+                // Baş harfi büyük yap
+                result.p1 = result.p1.charAt(0).toUpperCase() + result.p1.slice(1);
             }
             
-        } catch (err) { 
-            console.error('AI API error:', err.message);
-            // ÇOK HIZLI FALLBACK
-            const cityName = (cleanCity || city || '').split(',')[0] || 'the area';
+            if (result.p2) {
+                // Tip temizliği
+                result.p2 = result.p2
+                    .replace(/\[.*?\]/g, '')
+                    .replace(/\(.*?\)/g, '')
+                    .replace(/\b(?:tip|note|recommendation|advice|suggestion):\s*/gi, '')
+                    .replace(/^\s*[-•*]\s*/g, '') // Madde işaretlerini kaldır
+                    .trim();
+                
+                // Kalite kontrolü
+                const lowQualityIndicators = [
+                    'unknown', 'no specific', 'not specified', 'no tip', 
+                    'none', 'n/a', 'no information', 'check locally'
+                ];
+                
+                const hasLowQuality = lowQualityIndicators.some(indicator => 
+                    result.p2.toLowerCase().includes(indicator)
+                );
+                
+                if (hasLowQuality || result.p2.length < 15) {
+                    result.p2 = "";
+                } else {
+                    // Baş harfi büyük yap ve nokta ekle
+                    result.p2 = result.p2.charAt(0).toUpperCase() + result.p2.slice(1);
+                    if (!result.p2.endsWith('.')) result.p2 += '.';
+                }
+            }
+            
+            console.log('Processed AI result:', {
+                p1_length: result.p1?.length || 0,
+                p2_length: result.p2?.length || 0,
+                p1_preview: result.p1?.substring(0, 80) + '...',
+                has_tip: !!result.p2
+            });
+            
+            return result;
+            
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError, 'Raw content:', content.substring(0, 200));
+            // Daha iyi fallback
+            const cityName = cleanCity.split(',')[0] || 'the area';
+            const enhancements = [
+                ` ${point} offers a distinctive atmosphere in ${cityName}.`,
+                ` Visitors appreciate its local character and unique setting.`,
+                ` It's a spot that captures the essence of ${cityName}.`
+            ];
+            const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)];
+            
             return { 
-                p1: `${point} in ${cityName}.`, 
+                p1: `${point} is a notable ${cleanCategory} in ${cityName}.${randomEnhancement}`, 
                 p2: "" 
-            }; 
+            };
         }
-    };
+        
+    } catch (err) { 
+        console.error('AI API error:', err.message);
+        // Daha iyi fallback
+        const cityName = (cleanCity || city || '').split(',')[0] || 'the area';
+        const fallbackTips = [
+            "Consider visiting during off-peak hours for a more relaxed experience.",
+            "Local visitors often recommend exploring the surrounding area as well.",
+            "The spot is particularly charming during different seasons."
+        ];
+        const randomTip = Math.random() > 0.5 ? fallbackTips[Math.floor(Math.random() * fallbackTips.length)] : "";
+        
+        return { 
+            p1: `${point} presents a unique ${cleanCategory} experience in ${cityName}. Its atmosphere and local significance make it worth a visit.`, 
+            p2: randomTip 
+        }; 
+    }
+};
 
     try {
         console.time('Total-AI-Request');
