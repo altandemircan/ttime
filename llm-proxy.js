@@ -323,7 +323,7 @@ router.post('/clicked-ai', async (req, res) => {
         try {
             console.time('Llama-API-Call');
             const response = await axios.post('http://127.0.0.1:11434/api/chat', {
-                model: "llama3:8b",
+                model: "gemma2:9b",
                 messages: [{ role: "user", content: prompt }],
                 stream: false, 
                 format: "json", 
