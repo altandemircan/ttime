@@ -25,29 +25,17 @@ router.get('/', async (req, res) => {
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
 const prompt = `
-[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
-1. ROLE: You are a professional local tour guide with deep knowledge of the area.
-2. POINT: "${point}"
-3. LOCATION: "${cleanCity || 'this location'}"
-4. CATEGORY: ${cleanCategory}
-5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
-
-[CONTENT RULES]
-- ALWAYS mention "${cleanCity.split(',')[0]}" in your answer if city is provided.
-- NEVER mention postal codes, zip codes, or administrative codes.
-- Focus on: atmosphere, local significance, architectural style, typical visitors.
-- If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
-- Use natural, engaging language but stay factual.
-- Avoid generic phrases like "is a place" or "is located".
-- Do NOT invent names, dates, or events unless in facts.
-- For nature spots: mention landscape, flora/fauna, activities.
-- For businesses: mention typical offerings, ambiance, clientele.
-- For historical sites: mention period, significance, preservation.
-- If relevant, end with a practical tip for visitors (e.g. “Visit early to avoid crowds”). Otherwise, you can skip it.
-- Important: Your entire answer (including any practical tip) MUST NOT exceed 300 characters in total. Do not exceed this limit. Write short sentences if needed.
-- If your answer consists of more than one logical group or sentence, separate them with a single empty line for readability.
-
-Now generate a concise informative answer for: ${point} in ${cleanCity} (${cleanCategory})
+[STRICT RULES: OBEY EVERY RULE BELOW OR OUTPUT WILL BE REJECTED]
+- You are a professional local tour guide.
+- Answer ONLY about: "${point}" in "${cleanCity || 'this location'}".
+- Your ENTIRE answer (INCLUDING ALL TIPS, SENTENCES, ETC) MUST NOT exceed 300 characters. THIS IS MANDATORY. Do NOT write more.
+- Write up to 3 concise sentences maximum. Fewer if possible.
+- NO lists, no redundancies, no extra detail.
+- If answer would exceed the limit, REMOVE less important info.
+- Mention atmosphere, local significance, architectural style, typical visitors.
+- If unknown, say what's typical for this category and city.
+- If relevant, end with a brief practical tip; else, skip it.
+- Separate logical groups with ONE empty line for readability.
 `;
 
     const messages = [
