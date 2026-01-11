@@ -463,7 +463,7 @@ aiImg.playsInline = true;
             hasError = true;
             eventSource.close();
             aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-            aiImg.src = '/img/avatar_aiio.png';
+           
         }
     };
 
@@ -520,8 +520,7 @@ aiImg.playsInline = true;
             
             // Güncelle
             aiContent.innerHTML = finalText;
-            aiImg.src = '/img/avatar_aiio.png';
-            
+         
             // Geçmişe kaydet
             chatHistory.push({ role: "assistant", content: finalText });
             saveCurrentChat();
