@@ -405,33 +405,23 @@ document.addEventListener("DOMContentLoaded", function() {
         let hasError = false;
         let isFirstChunk = true;
 
-       // eventSource.onmessage kısmını şöyle düzelt:
-let fullTextBuffer = ""; // Tüm chunkları birleştireceğimiz değişken
+let fullTextBuffer = "";
 
 eventSource.onmessage = function(event) {
     if (hasError) return;
     try {
         const data = JSON.parse(event.data);
-
-        // Her chunk'ın içeriği
         if (data.message && data.message.content) {
-            const chunk = data.message.content;
-            fullTextBuffer += chunk;
+            fullTextBuffer += data.message.content;
 
-            if (isFirstChunk) {
-                aiContentDiv.innerHTML = '';
-                isFirstChunk = false;
-            }
-            // Anında ekrana göster (her yeni chunk ile)
+            // ANINDA GÖSTER!
             aiContentDiv.innerHTML = fullTextBuffer;
-
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     } catch (e) {
         console.log('Raw SSE data:', event.data);
     }
 };
-
 
         eventSource.onerror = function() {
             if (!hasError) {

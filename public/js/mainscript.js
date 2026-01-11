@@ -12036,33 +12036,6 @@ function markdownToHtml(text) {
   return text;
 }
 
-function startStreamingTypewriterEffect(element, queue, speed = 5) {
-  let chunkIndex = 0;
-  let charIndex = 0;
-  let stopped = false;
-  element._typewriterStop = () => { stopped = true; };
-
-  function type() {
-    if (stopped) return;
-    // Chunk queue güncellendikçe devam et
-    if (chunkIndex < queue.length) {
-      const chunk = queue[chunkIndex];
-      if (charIndex < chunk.length) {
-        element.innerHTML += chunk.charAt(charIndex);
-        charIndex++;
-        setTimeout(type, speed);
-      } else {
-        chunkIndex++;
-        charIndex = 0;
-        setTimeout(type, speed); // bir sonraki chunkı da hemen yaz
-      }
-    } else {
-      // Chunk queue'ya yeni veri gelirse devam et
-      setTimeout(type, speed);
-    }
-  }
-  type();
-}
 
 // iki nokta arasında yay çizen fonksiyon
 function drawCurvedLine(map, pointA, pointB, options = {}) {
