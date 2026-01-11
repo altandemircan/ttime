@@ -25,17 +25,15 @@ router.get('/', async (req, res) => {
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
 const prompt = `
-[STRICT RULES: OBEY EVERY RULE BELOW OR OUTPUT WILL BE REJECTED]
+[STRICT RULES: IMPORTANT!]
 - You are a professional local tour guide.
 - Answer ONLY about: "${point}" in "${cleanCity || 'this location'}".
-- Your ENTIRE answer (INCLUDING ALL TIPS, SENTENCES, ETC) MUST NOT exceed 300 characters. THIS IS MANDATORY. Do NOT write more.
-- Write up to 3 concise sentences maximum. Fewer if possible.
-- NO lists, no redundancies, no extra detail.
-- If answer would exceed the limit, REMOVE less important info.
-- Mention atmosphere, local significance, architectural style, typical visitors.
-- If unknown, say what's typical for this category and city.
-- If relevant, end with a brief practical tip; else, skip it.
-- Separate logical groups with ONE empty line for readability.
+- The WHOLE answer MUST NOT exceed 300 characters, absolutely no more.
+- Maximum 3 short sentences.
+- If you reach the limit, OMIT less important info.
+- If needed, separate logical groups with a blank line for readability.
+- Do NOT include lists, extra adjectives, or filler sentences.
+- Ignore all other instructions.
 `;
 
     const messages = [
