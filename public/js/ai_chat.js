@@ -405,27 +405,42 @@ document.addEventListener("DOMContentLoaded", function() {
         let hasError = false;
         let isFirstChunk = true;
 
-        eventSource.onmessage = function(event) {
-            if (hasError) return;
+       // eventSource.onmessage kısmını şöyle düzelt:
+eventSource.onmessage = function(event) {
+    if (hasError) return;
+    
+    try {
+        const data = JSON.parse(event.data);
+        
+        // Ollama format: {message: {content: "..."}}
+        if (data.message && data.message.content) {
+            let aiContent = data.message.content;
+            
+            // AI JSON döndürüyor mu kontrol et
             try {
-                const data = JSON.parse(event.data);
-                if (data.message && data.message.content) {
-                    chunkQueue.push(data.message.content);
-                    
-                    if (isFirstChunk) {
-                        aiContent.innerHTML = ''; 
-                        isFirstChunk = false;
-                    }
-
-                    if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
-                        startStreamingTypewriterEffect(aiContent, chunkQueue, 4);
-                    } else if (typeof startStreamingTypewriterEffect !== 'function') {
-                        aiContent.textContent += data.message.content; 
-                    }
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                }
-            } catch (e) {}
-        };
+                const parsed = JSON.parse(aiContent);
+                // JSON ise: {p1: "...", p2: "..."}
+                chunkQueue.push(parsed.p1 || aiContent);
+            } catch {
+                // JSON değilse direkt content
+                chunkQueue.push(aiContent);
+            }
+            
+            if (isFirstChunk) {
+                aiContentDiv.innerHTML = ''; // aiContent değişken ismini kontrol et
+                isFirstChunk = false;
+            }
+            
+            if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
+                startStreamingTypewriterEffect(aiContentDiv, chunkQueue, 4);
+            }
+            
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    } catch (e) {
+        console.log('Raw SSE data:', event.data);
+    }
+};
 
         eventSource.onerror = function() {
             if (!hasError) {
