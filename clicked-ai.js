@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-router.post('/clicked-ai', async (req, res) => {
+router.post('/', async (req, res) => {
     const { point, city } = req.body;
 
     const prompt = `Return ONLY raw JSON.
