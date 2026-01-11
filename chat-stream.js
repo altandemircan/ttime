@@ -38,7 +38,7 @@ const prompt = `
 - Write complete thoughts that can end naturally.
 - Use short sentences.
 - END your response naturally with a period, exclamation, or question mark.
-- DO NOT exceed 250 characters. Count carefully.
+- DO NOT exceed 500 characters. Count carefully.
 - If including a tip, make it part of the main text, not separate.
 
 Now describe: ${point} in ${cleanCity} (${cleanCategory})
