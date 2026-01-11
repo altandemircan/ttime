@@ -993,7 +993,7 @@ Your browser does not support the video tag.                  </video>
     <source src="/img/intro.mp4" type="video/mp4">
 </video>
 <button class="sound-toggle" onclick="toggleSound()">
-    <img src="/img/mic_mute.svg" alt="Mute" class="sound-icon">
+    <img src="/img/mic_mute.svg" class="sound-icon" alt="">
 </button>
 </div>
 
@@ -1001,41 +1001,49 @@ Your browser does not support the video tag.                  </video>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('circleVideo');
-    const icon = document.querySelector('.sound-icon');
+    const icon  = document.querySelector('.sound-icon');
 
     if (!video) return;
 
-    // Son 1 saniyeyi atla (loop pürüzsüz)
-    video.addEventListener('timeupdate', () => {
-        if (video.duration && video.currentTime >= video.duration - 1) {
-            video.currentTime = 0;
-        }
-    });
+    // Başlangıç durumu: sessiz + loop
+    video.muted = true;
+    video.loop = true;
 
-    // Dışarıdan çağrılabilir: playVideo()
-    window.playVideo = function () {
-        video.muted = false;
-        video.volume = 1;
-        video.play();
-
-        if (icon) {
-            icon.src = '/img/mic_play.svg';
-        }
-    };
-
-    // Ses aç / kapa
+    // PLAY / MUTE toggle
     window.toggleSound = function () {
-        video.muted = !video.muted;
-        video.volume = 1;
 
-        if (icon) {
-            icon.src = video.muted
-                ? '/img/mic_mute.svg'
-                : '/img/mic_play.svg';
+        // Eğer şu an sessizse → PLAY MODE
+        if (video.muted) {
+            video.loop = false;          // 1 kez çalacak
+            video.muted = false;
+            video.volume = 1;
+            video.currentTime = 0;       // baştan başla
+            video.play();
+
+            if (icon) icon.src = '/img/mic_play.svg';
+
+            // Video bitince tekrar MUTE MODE
+            video.onended = () => {
+                video.muted = true;
+                video.loop = true;
+                video.play();
+
+                if (icon) icon.src = '/img/mic_mute.svg';
+            };
+
+        } 
+        // Eğer sesliyse → MUTE MODE
+        else {
+            video.muted = true;
+            video.loop = true;
+            video.play();
+
+            if (icon) icon.src = '/img/mic_mute.svg';
         }
     };
 });
 </script>
+
 
 
 
