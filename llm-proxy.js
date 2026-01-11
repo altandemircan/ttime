@@ -65,7 +65,7 @@ router.post('/plan-summary', async (req, res) => {
         const aiReqCity = country ? `${city}, ${country}` : city;
          
         // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-        const activeModel = "llama3:8b"; // Kullandığın model ismini buraya yaz
+        const activeModel = "gemma2:9b"; // Kullandığın model ismini buraya yaz
         console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`); // Konsola yazdırır
 
         const prompt = `
@@ -196,7 +196,7 @@ const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
         ...userMessages.filter(msg => msg.role !== "system") // frontend'den gelen system'ı at!
     ];
 
-    const model = 'llama3:8b';
+    const model = 'gemma2:9b';
 
     try {
         const ollama = await axios({
@@ -260,7 +260,7 @@ Return ONLY valid JSON: {"p1": "First sentence", "p2": "Local tip"}
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-            model: "llama3:8b",
+            model: "gemma2:9b",
             prompt: prompt,
             stream: false,
             options: {
