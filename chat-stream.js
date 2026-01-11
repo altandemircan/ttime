@@ -11,7 +11,6 @@ router.get('/', async (req, res) => {
 
     let finished = false;
 
-    // Tüm mesaj geçmişini frontendden al
     let userMessages = [];
     try {
         userMessages = JSON.parse(req.query.messages || "[]");
@@ -24,40 +23,19 @@ router.get('/', async (req, res) => {
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
-    const prompt = `[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
-    1. ROLE: You are a professional local tour guide with deep knowledge of the area.
-    2. POINT: "${point}"
-    3. LOCATION: "${cleanCity || 'this location'}"
-    4. CATEGORY: ${cleanCategory}
-    5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
+    // BASİT PROMPT - Normal AI chat gibi
+    const prompt = `You are a friendly local tour guide in ${cleanCity || "the area"}.
+    
+The user is asking about "${point}" (${cleanCategory}).
+${cleanFacts ? `Available information: ${JSON.stringify(cleanFacts)}` : ""}
 
-    [OUTPUT REQUIREMENTS]
-    - Return ONLY valid JSON: {"p1": "text", "p2": "text"}
-    - "p1": Exactly 2 informative sentences about this place.
-    - "p2": 1 practical tip or recommendation (or empty string if none).
+Provide a helpful, engaging response in plain text.
+Be conversational and natural.`;
 
-    [CONTENT RULES]
-    - ALWAYS mention "${cleanCity.split(',')[0]}" in p1 if city is provided.
-    - NEVER mention postal codes, zip codes, or administrative codes.
-    - Focus on: atmosphere, local significance, architectural style, typical visitors.
-    - If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
-    - Use natural, engaging language but stay factual.
-    - Avoid generic phrases like "is a place" or "is located".
-    - Do NOT invent names, dates, or events unless in facts.
-    - For nature spots: mention landscape, flora/fauna, activities.
-    - For businesses: mention typical offerings, ambiance, clientele.
-    - For historical sites: mention period, significance, preservation.
-    - Tips (p2): practical advice like "Visit early to avoid crowds" or "Try the local specialty".
-
-    [EXAMPLE FORMAT]
-    Good: {"p1": "This historic cafe in Beyoglu has been serving traditional Turkish coffee since 1950. Its antique decor and central location make it popular with both locals and tourists.", "p2": "Try their signature Turkish delight with the coffee."}
-    Bad: {"p1": "This is a cafe. It is located in Istanbul.", "p2": ""}
-
-    Now generate for: ${point} in ${cleanCity} (${cleanCategory})`;
-
+    // Tüm mesajları birleştir
     const messages = [
         { role: "system", content: prompt },
-        ...userMessages.filter(msg => msg.role !== "system")
+        ...userMessages
     ];
 
     const model = 'llama3:8b';
@@ -70,7 +48,7 @@ router.get('/', async (req, res) => {
                 model,
                 messages,
                 stream: true,
-                max_tokens: 200
+                max_tokens: 300
             },
             responseType: 'stream',
             timeout: 180000
@@ -82,28 +60,12 @@ router.get('/', async (req, res) => {
             if (str) {
                 try {
                     const data = JSON.parse(str);
-                    
-                    // Ollama format: {message: {content: "{\"p1\":\"...\",\"p2\":\"...\"}"}}
                     if (data.message && data.message.content) {
-                        let aiContent = data.message.content;
-                        
-                        // AI'dan gelen JSON'u parse et
-                        try {
-                            const parsedContent = JSON.parse(aiContent);
-                            
-                            // Formatlı response gönder
-                            const formatted = {
-                                p1: parsedContent.p1 || "",
-                                p2: parsedContent.p2 || ""
-                            };
-                            res.write(`data: ${JSON.stringify(formatted)}\n\n`);
-                        } catch (parseErr) {
-                            // JSON değilse, düz text olarak gönder
-                            res.write(`data: ${JSON.stringify({content: aiContent})}\n\n`);
-                        }
+                        // Direkt içeriği gönder
+                        res.write(`data: ${JSON.stringify({content: data.message.content})}\n\n`);
                     }
                 } catch (e) {
-                    // JSON parse edilemezse, olduğu gibi gönder
+                    // JSON değilse olduğu gibi gönder
                     res.write(`data: ${str}\n\n`);
                 }
             }
@@ -120,7 +82,7 @@ router.get('/', async (req, res) => {
         ollama.data.on('error', (err) => {
             if (!finished) {
                 finished = true;
-                res.write(`event: error\ndata: ${JSON.stringify({error: err.message})}\n\n`);
+                res.write(`event: error\ndata: ${err.message}\n\n`);
                 res.end();
             }
         });
@@ -133,7 +95,7 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         finished = true;
-        res.write(`event: error\ndata: ${JSON.stringify({error: error?.response?.data?.error || error.message})}\n\n`);
+        res.write(`event: error\ndata: ${error?.response?.data?.error || error.message}\n\n`);
         res.end();
         console.error('[OLLAMA ERROR]', error?.response?.data || error);
     }
