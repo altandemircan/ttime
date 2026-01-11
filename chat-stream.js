@@ -80,7 +80,32 @@ router.get('/', async (req, res) => {
             if (finished) return;
             const str = chunk.toString().trim();
             if (str) {
-                res.write(`data: ${str}\n\n`);
+                try {
+                    const data = JSON.parse(str);
+                    
+                    // Ollama format: {message: {content: "{\"p1\":\"...\",\"p2\":\"...\"}"}}
+                    if (data.message && data.message.content) {
+                        let aiContent = data.message.content;
+                        
+                        // AI'dan gelen JSON'u parse et
+                        try {
+                            const parsedContent = JSON.parse(aiContent);
+                            
+                            // Formatlı response gönder
+                            const formatted = {
+                                p1: parsedContent.p1 || "",
+                                p2: parsedContent.p2 || ""
+                            };
+                            res.write(`data: ${JSON.stringify(formatted)}\n\n`);
+                        } catch (parseErr) {
+                            // JSON değilse, düz text olarak gönder
+                            res.write(`data: ${JSON.stringify({content: aiContent})}\n\n`);
+                        }
+                    }
+                } catch (e) {
+                    // JSON parse edilemezse, olduğu gibi gönder
+                    res.write(`data: ${str}\n\n`);
+                }
             }
         });
 
@@ -95,7 +120,7 @@ router.get('/', async (req, res) => {
         ollama.data.on('error', (err) => {
             if (!finished) {
                 finished = true;
-                res.write(`event: error\ndata: ${err.message}\n\n`);
+                res.write(`event: error\ndata: ${JSON.stringify({error: err.message})}\n\n`);
                 res.end();
             }
         });
@@ -108,7 +133,7 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         finished = true;
-        res.write(`event: error\ndata: ${error?.response?.data?.error || error.message}\n\n`);
+        res.write(`event: error\ndata: ${JSON.stringify({error: error?.response?.data?.error || error.message})}\n\n`);
         res.end();
         console.error('[OLLAMA ERROR]', error?.response?.data || error);
     }
