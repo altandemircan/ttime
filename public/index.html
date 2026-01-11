@@ -992,13 +992,6 @@ Your browser does not support the video tag.                  </video>
     </video>
 </div><button onclick="playVideo()">Sesi Aç</button>
 
-<script>
-function playVideo() {
-    const video = document.querySelector('.circle-video');
-    video.muted = false;
-    video.play();
-}
-</script>
 
             <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
             <div id="welcome-content">
@@ -1174,5 +1167,13 @@ window.addEventListener('DOMContentLoaded', function() {
   }, 360);
 });
 </script>
+<script>
+function playVideo() {
+    const video = document.querySelector('.circle-video');
+    video.muted = false;
+    video.play();
+}
+</script>
+
 </body>
 </html>
