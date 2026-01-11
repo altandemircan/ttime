@@ -997,6 +997,13 @@ Your browser does not support the video tag.                  </video>
 <button onclick="playVideo()">Sesi Aç</button>
 
 <script>
+function playVideo() {
+    const video = document.getElementById('circleVideo');
+    video.muted = false;
+    video.volume = 1.0;
+    video.play();
+}
+</script><script>
 const video = document.getElementById('circleVideo');
 video.addEventListener('timeupdate', () => {
     if (video.duration && video.currentTime >= video.duration - 1) {
