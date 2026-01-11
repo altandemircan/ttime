@@ -398,8 +398,8 @@ document.addEventListener("DOMContentLoaded", function() {
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
         const eventSource = new EventSource(
-            `/llm-proxy/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
-        );
+    `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+);
 
         let chunkQueue = [];
         let hasError = false;
