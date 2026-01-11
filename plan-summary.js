@@ -30,7 +30,7 @@ function saveCacheToDisk() {
 }
 
 // --- ENDPOINT ---
-router.post('/plan-summary', async (req, res) => {
+router.post('/', async (req, res) => {
     const { city, country } = req.body;
     if (!city) {
         res.status(400).send('City is required');
