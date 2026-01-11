@@ -31,7 +31,6 @@ cd ~/triptime-live
 # Değişiklikleri iptal et (dosya adı)
 git checkout llm-proxy.js
 
-
 # Sonra deploy et
 deploy
 
@@ -39,3 +38,10 @@ deploy
 
 -----
 
+
+CONFIG DOSYALARINDAKİ DEĞİŞİKLİK SONRASI NGINX ŞART
+# 1. Nginx config test et
+sudo nginx -t
+
+# 2. Nginx'i yeniden yükle
+sudo systemctl reload nginx

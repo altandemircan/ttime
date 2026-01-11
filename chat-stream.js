@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 
 // PROMPT güncellemesi (satır 26-67 arası):
 const prompt = `
-[STRICT GUIDELINES - KEEP RESPONSE UNDER 250 CHARACTERS]
+[STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
 1. ROLE: Professional local tour guide for ${cleanCity || 'this location'}.
 2. POINT: "${point}"
 3. CATEGORY: ${cleanCategory}
