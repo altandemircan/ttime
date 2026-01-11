@@ -378,9 +378,16 @@ async function sendAIChatMessage(userMessage) {
     const aiDiv = document.createElement('div');
     aiDiv.className = 'chat-message ai-message';
 
-    const aiImg = document.createElement('img');
-    aiImg.src = '/img/aioo.webp';
-    aiImg.alt = 'AI';
+    const aiImg = document.createElement('video');
+aiImg.src = '/img/intro.webm';
+aiImg.alt = 'AI';
+aiImg.autoplay = true;
+aiImg.loop = true;
+aiImg.muted = true;
+aiImg.playsInline = true;
+aiImg.style.width = '32px'; // Boyut ayarı
+aiImg.style.height = '32px';
+aiImg.style.borderRadius = '50%';
 
     const aiContent = document.createElement('div');
     aiContent.innerHTML = '<span class="typing">...</span>';
