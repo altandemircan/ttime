@@ -350,7 +350,8 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
     // --- 7. MESAJ GÖNDERME ---
-   async function sendAIChatMessage(userMessage) {
+// --- 7. MESAJ GÖNDERME ---
+async function sendAIChatMessage(userMessage) {
     if (!canAskQuestion()) {
         const limitDiv = document.createElement('div');
         limitDiv.className = 'chat-message ai-message';
@@ -377,7 +378,7 @@ document.addEventListener("DOMContentLoaded", function() {
     aiDiv.className = 'chat-message ai-message';
 
     const aiImg = document.createElement('img');
-    aiImg.src = '/img/aioo.webp'; 
+    aiImg.src = '/img/aioo.webp';
     aiImg.alt = 'AI';
 
     const aiContent = document.createElement('div');
@@ -396,6 +397,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // STREAM BAŞLASIN
     let hasError = false;
+    let streamEnded = false;
     let fullTextBuffer = "";
 
     const eventSource = new EventSource(
@@ -417,7 +419,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };
 
     eventSource.onerror = function() {
-        if (!hasError) {
+        if (!hasError && !streamEnded) {
             hasError = true;
             eventSource.close();
             aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
@@ -427,7 +429,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     eventSource.addEventListener('end', function() {
         if (!hasError) {
-            // Buffer'ı finale kaydet, kutuya ekle
+            streamEnded = true;
             chatHistory.push({ role: "assistant", content: fullTextBuffer });
             saveCurrentChat();
             aiImg.src = '/img/avatar_aiio.png';
