@@ -25,15 +25,29 @@ router.get('/', async (req, res) => {
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
 const prompt = `
-[STRICT RULES: IMPORTANT!]
-- You are a professional local tour guide.
-- Answer ONLY about: "${point}" in "${cleanCity || 'this location'}".
-- The WHOLE answer MUST NOT exceed 300 characters, absolutely no more.
-- Maximum 3 short sentences.
-- If you reach the limit, OMIT less important info.
-- If needed, separate logical groups with a blank line for readability.
-- Do NOT include lists, extra adjectives, or filler sentences.
-- Ignore all other instructions.
+[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
+1. ROLE: You are a professional local tour guide with deep knowledge of the area.
+2. POINT: "${point}"
+3. LOCATION: "${cleanCity || 'this location'}"
+4. CATEGORY: ${cleanCategory}
+5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
+
+[CONTENT RULES]
+- ALWAYS mention "${cleanCity.split(',')[0]}" in your answer if city is provided.
+- NEVER mention postal codes, zip codes, or administrative codes.
+- Focus on: atmosphere, local significance, architectural style, typical visitors.
+- If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
+- Use natural, engaging language but stay factual.
+- Avoid generic phrases like "is a place" or "is located".
+- Do NOT invent names, dates, or events unless in facts.
+- For nature spots: mention landscape, flora/fauna, activities.
+- For businesses: mention typical offerings, ambiance, clientele.
+- For historical sites: mention period, significance, preservation.
+- If relevant, end with a practical tip for visitors (e.g. “Visit early to avoid crowds”). Otherwise, you can skip it.
+- Important: Your entire answer (including any practical tip) MUST NOT exceed 300 characters in total. Do not exceed this limit. Write short sentences if needed.
+- If your answer consists of more than one logical group or sentence, separate them with a single empty line for readability.
+
+Now generate a concise informative answer for: ${point} in ${cleanCity} (${cleanCategory})
 `;
 
     const messages = [
