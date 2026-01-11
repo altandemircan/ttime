@@ -253,10 +253,13 @@ const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 router.post('/clicked-ai', async (req, res) => {
     const { point, city } = req.body;
 
-    const prompt = `You are a travel writer.
-Write a sensory, non-generic 2-sentence description about "${point}" in "${city}".
-Return ONLY valid JSON: {"p1": "First sentence", "p2": "Local tip"}
-`;
+const prompt = `Return ONLY raw JSON.
+No explanations. No markdown. No backticks.
+
+{
+  "p1": "Sensory sentence about ${point} in ${city}",
+  "p2": "Short local tip"
+}`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
