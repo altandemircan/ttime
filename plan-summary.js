@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
     }
 
     // 2. YENİ İŞLEM BAŞLAT
-   // 2. YENİ İŞLEM BAŞLAT kısmını değiştir:
+// 2. YENİ İŞLEM BAŞLAT kısmı
 const processingPromise = (async () => {
     const aiReqCity = country ? `${city}, ${country}` : city;
      
@@ -76,11 +76,13 @@ const processingPromise = (async () => {
     { "summary": "...", "tip": "...", "highlight": "..." }
     `.trim();
 
+    console.log('[AI] Prompt:', prompt);
+
     try {
-        console.log('[AI] Ollama çağrısı yapılıyor...');
+        console.log('[AI] Ollama /api/generate çağrısı yapılıyor...');
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
             model: activeModel,
-            prompt: prompt,  // DEĞİŞTİR: messages yerine prompt kullan
+            prompt: prompt,
             stream: false,
             format: "json",
             options: {
@@ -88,30 +90,50 @@ const processingPromise = (async () => {
                 top_p: 0.9,
                 max_tokens: 200
             }
+        }, {
+            timeout: 30000  // 30 saniye timeout
         });
 
-        console.log('[AI] Ollama response:', response.data);
+        console.log('[AI] Ollama response status:', response.status);
+        console.log('[AI] Ollama response data:', JSON.stringify(response.data));
 
         let jsonText = '';
-        // Ollama'nın generate endpoint'i farklı dönüyor
+        // Ollama generate endpoint formatı
         if (response.data && response.data.response) {
             jsonText = response.data.response;
-        } else if (typeof response.data === 'string') {
-            const match = response.data.match(/\{[\s\S]*?\}/);
-            if (match) jsonText = match[0];
+            console.log('[AI] Response.text bulundu:', jsonText);
+        } else {
+            console.log('[AI] Response.text bulunamadı, tüm response:', response.data);
         }
 
-        console.log('[AI] Parsed JSON text:', jsonText);
+        // JSON'u parse et
+        if (jsonText) {
+            try {
+                const parsed = JSON.parse(jsonText);
+                console.log('[AI] JSON parse başarılı:', parsed);
+                return parsed;
+            } catch (parseErr) {
+                console.error('[AI] JSON parse hatası:', parseErr.message);
+                // Belki sadece JSON içeren kısmı al
+                const match = jsonText.match(/\{[\s\S]*\}/);
+                if (match) {
+                    try {
+                        const parsed = JSON.parse(match[0]);
+                        console.log('[AI] Regex ile parse edildi:', parsed);
+                        return parsed;
+                    } catch (e2) {
+                        console.error('[AI] Regex parse de başarısız');
+                    }
+                }
+            }
+        }
+
+        console.error('[AI] Boş veya geçersiz yanıt');
+        return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
         
-        if (!jsonText) {
-            console.error('[AI] Boş yanıt alındı');
-            return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
-        }
-
-        return JSON.parse(jsonText);
     } catch (err) {
         console.error("LLM Error:", err.message);
-        console.error("LLM Error stack:", err.stack);
+        console.error("LLM Error details:", err.response?.data || 'No response data');
         return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
     }
 })();
