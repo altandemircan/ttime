@@ -42,21 +42,34 @@ router.post('/', async (req, res) => {
     console.log(`[AI REQ] ${cacheKey}`);
 
     // 1. KONTROL: Cache'de var mı?
-    if (aiCache[cacheKey]) {
-        // A) Hazırsa hemen ver
-        if (aiCache[cacheKey].status === 'done') {
-            return res.json(aiCache[cacheKey].data);
-        }
-        // B) Şu an başkası için hazırlanıyorsa bekle
-        if (aiCache[cacheKey].status === 'pending' && aiCache[cacheKey].promise) {
-            try {
-                const data = await aiCache[cacheKey].promise;
-                return res.json(data);
-            } catch (error) {
-                delete aiCache[cacheKey];
+    // --- BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
+let aiCache = {};
+if (fs.existsSync(CACHE_FILE)) {
+    try {
+        const rawData = fs.readFileSync(CACHE_FILE, 'utf8');
+        aiCache = JSON.parse(rawData);
+        console.log(`[AI SERVER] ${Object.keys(aiCache).length} kayıt diskten yüklendi.`);
+        
+        // Cache'i temizle: "Info unavailable." içerenleri sil
+        let cleanedCount = 0;
+        for (const key in aiCache) {
+            if (aiCache[key].data && 
+                aiCache[key].data.summary === "Info unavailable.") {
+                delete aiCache[key];
+                cleanedCount++;
             }
         }
+        if (cleanedCount > 0) {
+            console.log(`[AI SERVER] ${cleanedCount} bozuk cache kaydı temizlendi.`);
+            saveCacheToDisk(); // Temizlenmiş cache'i kaydet
+        }
+    } catch (e) {
+        console.error('[AI SERVER] Cache dosyası bozuk, sıfırdan başlatılıyor:', e.message);
+        aiCache = {};
+        // Bozuk dosyayı sil
+        try { fs.unlinkSync(CACHE_FILE); } catch {}
     }
+}
 
     // 2. YENİ İŞLEM BAŞLAT
 // 2. YENİ İŞLEM BAŞLAT kısmı
