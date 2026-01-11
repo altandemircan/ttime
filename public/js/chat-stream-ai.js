@@ -428,15 +428,24 @@ async function sendAIChatMessage(userMessage) {
     };
 
     eventSource.addEventListener('end', function() {
-        if (!hasError) {
-            streamEnded = true;
-            chatHistory.push({ role: "assistant", content: fullTextBuffer });
-            saveCurrentChat();
-            aiImg.src = '/img/avatar_aiio.png';
-            aiContent.innerHTML = fullTextBuffer.trim();
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    if (!hasError) {
+        streamEnded = true;
+        chatHistory.push({ role: "assistant", content: fullTextBuffer });
+        saveCurrentChat();
+        aiImg.src = '/img/avatar_aiio.png';
+
+        let displayText = fullTextBuffer.trim();
+        const MAX_CHARS = 300;
+        if (displayText.length > MAX_CHARS) {
+            displayText = displayText.slice(0, MAX_CHARS);
+            const lastDot = displayText.lastIndexOf('.');
+            if (lastDot > 60) displayText = displayText.slice(0, lastDot + 1);
+            else displayText += "…";
         }
-    });
+        aiContent.innerHTML = displayText;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+});
 }
 
     if (sendBtn && chatInput) {
