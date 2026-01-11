@@ -30,6 +30,7 @@ console.log('Chat stream router methods:', Object.keys(chatStreamRouter));
 app.use('/plan-summary', planSummaryRouter);
 app.use('/clicked-ai', clickedAiRouter);
 app.use('/chat-stream', chatStreamRouter);
+console.log('Chat stream endpoint registered at /chat-stream');
 
 
 // Diğer API Routerları
