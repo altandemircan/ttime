@@ -979,31 +979,32 @@ Your browser does not support the video tag.                  </video>
                 <img id="circle-image" class="circle-video" srcset="/img/aioo.webp" type="image/webp">
             </div> -->
    <div class="circle-container">
-    <video
-        id="circleVideo"
-        class="circle-video"
-        autoplay
-        loop
-        muted
-        playsinline
-        preload="auto"
-    >
-        <source src="/img/intro.webm" type="video/webm">
-        <source src="/img/intro.mp4" type="video/mp4">
-        Tarayıcınız video etiketini desteklemiyor.
-    </video>
+   <video
+    id="circleVideo"
+    class="circle-video"
+    autoplay
+    loop
+    muted
+    playsinline
+    preload="auto"
+    onloadedmetadata="this.currentTime = 0; this.play();"
+>
+    <source src="/img/intro.webm" type="video/webm">
+    <source src="/img/intro.mp4" type="video/mp4">
+</video>
 </div>
 
 <button onclick="playVideo()">Sesi Aç</button>
 
 <script>
-function playVideo() {
-    const video = document.getElementById('circleVideo');
-    video.muted = false;
-    video.volume = 1.0;
-    video.play();
-}
+const video = document.getElementById('circleVideo');
+video.addEventListener('timeupdate', () => {
+    if (video.duration && video.currentTime >= video.duration - 1) {
+        video.currentTime = 0; // sona gelince başa sar
+    }
+});
 </script>
+
 
 
             <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
