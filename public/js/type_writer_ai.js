@@ -150,7 +150,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     // API çağrısı
     const t0 = performance.now();
     try {
-        const resp = await fetch('/llm-proxy/plan-summary', {
+        const resp = await fetch('/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city, country })

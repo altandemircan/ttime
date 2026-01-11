@@ -1119,7 +1119,7 @@ const triggerFetch = async () => {
         const cleanedCity = cleanCityContext(city);
         
         console.time('AI-API-Response');
-        const response = await fetch('/llm-proxy/clicked-ai', {
+        const response = await fetch('/clicked-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

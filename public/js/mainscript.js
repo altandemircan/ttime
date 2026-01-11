@@ -1903,35 +1903,6 @@ function updateTripTitle() {
     tripTitleDiv.textContent = userQuery.length > 0 ? userQuery : "Trip Plan";
 }
 
-async function clarifyLocation(query) {
-    if (!query || query.trim().length < 2) {
-        return { city: "", country: "" };
-    }
-    
-    try {
-        const response = await fetch('/llm-proxy/clarify-location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
-        
-        // Basit veri doğrulama
-        if (!data.city || typeof data.city !== 'string') {
-            return { city: query, country: "" };
-        }
-        
-        return data;
-    } catch (error) {
-        console.error("Location clarification failed:", error);
-        return { city: query, country: "" };
-    }
-}
-
-
 
 let hasAutoAddedToCart = false;
 
