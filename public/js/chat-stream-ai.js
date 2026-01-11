@@ -385,9 +385,6 @@ aiImg.autoplay = true;
 aiImg.loop = true;
 aiImg.muted = true;
 aiImg.playsInline = true;
-aiImg.style.width = '32px'; // Boyut ayarı
-aiImg.style.height = '32px';
-aiImg.style.borderRadius = '50%';
 
     const aiContent = document.createElement('div');
     aiContent.innerHTML = '<span class="typing">...</span>';
