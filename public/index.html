@@ -975,9 +975,31 @@ Your browser does not support the video tag.                  </video>
  
 
         <div class="cw">
-            <div class="circle-container">
+            <!-- <div class="circle-container">
                 <img id="circle-image" class="circle-video" srcset="/img/aioo.webp" type="image/webp">
-            </div>
+            </div> -->
+            <div class="circle-container">
+    <video
+        class="circle-video"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="auto"
+    >
+        <source src="/video/intro.webm" type="video/webm">
+        <source src="/video/intro.mp4" type="video/mp4">
+    </video>
+</div><button onclick="playVideo()">Sesi Aç</button>
+
+<script>
+function playVideo() {
+    const video = document.querySelector('.circle-video');
+    video.muted = false;
+    video.play();
+}
+</script>
+
             <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
             <div id="welcome-content">
                 <p id="welcome-text">With Triptime.AI, I help you build travel routes and suggest places to discover. Get ready for an extraordinary holiday plan!</p>
