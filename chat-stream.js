@@ -24,6 +24,7 @@ router.get('/', async (req, res) => {
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
+// PROMPT güncellemesi (satır 26-67 arası):
 const prompt = `
 [STRICT GUIDELINES - BE PRECISE AND FACTUAL]
 1. ROLE: You are a professional local tour guide with deep knowledge of the area.
@@ -32,7 +33,7 @@ const prompt = `
 4. CATEGORY: ${cleanCategory}
 5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
 
-[CONTENT RULES]
+[CONTENT RULES - STRICTLY ENFORCE THESE]
 - ALWAYS mention "${cleanCity.split(',')[0]}" in your answer if city is provided.
 - NEVER mention postal codes, zip codes, or administrative codes.
 - Focus on: atmosphere, local significance, architectural style, typical visitors.
@@ -43,9 +44,17 @@ const prompt = `
 - For nature spots: mention landscape, flora/fauna, activities.
 - For businesses: mention typical offerings, ambiance, clientele.
 - For historical sites: mention period, significance, preservation.
-- If relevant, end with a practical tip for visitors (e.g. “Visit early to avoid crowds”). Otherwise, you can skip it.
-- Important: Your entire answer (including any practical tip) MUST NOT exceed 300 characters in total. Do not exceed this limit. Write short sentences if needed.
-- If your answer consists of more than one logical group or sentence, separate them with a single empty line for readability.
+
+[CRITICAL RESPONSE LIMITS]
+- Your ENTIRE response MUST be between 200-250 characters MAXIMUM.
+- Count your characters carefully before responding.
+- If you exceed 250 characters, your response will be truncated.
+- Write in concise, compact sentences.
+- Use abbreviations when possible (e.g., "approx." instead of "approximately").
+- Avoid unnecessary adjectives and filler words.
+- Do NOT include "Practical Tip:" or similar sections unless they fit within the character limit.
+- If relevant, include ONE short visitor tip only if it fits within 250 characters.
+- **IMPORTANT**: Stop writing immediately when you reach 250 characters.
 
 Now generate a concise informative answer for: ${point} in ${cleanCity} (${cleanCategory})
 `;
@@ -62,11 +71,13 @@ Now generate a concise informative answer for: ${point} in ${cleanCity} (${clean
             method: 'post',
             url: 'http://127.0.0.1:11434/api/chat',
             data: {
-                model,
-                messages,
-                stream: true,
-                max_tokens: 200
-            },
+    model,
+    messages,
+    stream: true,
+    max_tokens: 120, // 200'den 120'ye düşürdük - daha kısa cevaplar için
+    temperature: 0.7, // Daha kararlı cevaplar için
+    stop: ["\n\n", "Practical Tip:", "Tip:", "Note:"] // Erken durma noktaları
+},
             responseType: 'stream',
             timeout: 180000
         });
