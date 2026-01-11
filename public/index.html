@@ -978,8 +978,9 @@ Your browser does not support the video tag.                  </video>
             <!-- <div class="circle-container">
                 <img id="circle-image" class="circle-video" srcset="/img/aioo.webp" type="image/webp">
             </div> -->
-            <div class="circle-container">
+   <div class="circle-container">
     <video
+        id="circleVideo"
         class="circle-video"
         autoplay
         loop
@@ -989,8 +990,20 @@ Your browser does not support the video tag.                  </video>
     >
         <source src="/img/intro.webm" type="video/webm">
         <source src="/img/intro.mp4" type="video/mp4">
+        Tarayıcınız video etiketini desteklemiyor.
     </video>
-</div><button onclick="playVideo()">Sesi Aç</button>
+</div>
+
+<button onclick="playVideo()">Sesi Aç</button>
+
+<script>
+function playVideo() {
+    const video = document.getElementById('circleVideo');
+    video.muted = false;
+    video.volume = 1.0;
+    video.play();
+}
+</script>
 
 
             <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
@@ -1167,13 +1180,7 @@ window.addEventListener('DOMContentLoaded', function() {
   }, 360);
 });
 </script>
-<script>
-function playVideo() {
-    const video = document.querySelector('.circle-video');
-    video.muted = false;
-    video.play();
-}
-</script>
+
 
 </body>
 </html>
