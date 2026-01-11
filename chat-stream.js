@@ -23,7 +23,8 @@ router.get('/', async (req, res) => {
     const cleanCity = req.query.city || "";
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
-const prompt = `
+
+    const prompt = `
 [STRICT GUIDELINES - BE PRECISE AND FACTUAL]
 1. ROLE: You are a professional local tour guide with deep knowledge of the area.
 2. POINT: "${point}"
@@ -43,10 +44,6 @@ const prompt = `
 - For businesses: mention typical offerings, ambiance, clientele.
 - For historical sites: mention period, significance, preservation.
 - If relevant, end with a practical tip for visitors (e.g. “Visit early to avoid crowds”). Otherwise, you can skip it.
-
-- Important: Your answer MUST be maximum 3 sentences and no more than 350 characters. Be concise!
-- If your answer consists of more than one logical group or sentence, separate them with a single empty line for readability.
-- Birden fazla bilgilendirici grup veya cümle varsa, okunabilirlik için aralarına bir satır boşluk bırak.
 
 Now generate a concise informative answer for: ${point} in ${cleanCity} (${cleanCategory})
 `;

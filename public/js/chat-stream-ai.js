@@ -350,7 +350,8 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
     // --- 7. MESAJ GÖNDERME ---
-   async function sendAIChatMessage(userMessage) {
+// --- 7. MESAJ GÖNDERME ---
+async function sendAIChatMessage(userMessage) {
     if (!canAskQuestion()) {
         const limitDiv = document.createElement('div');
         limitDiv.className = 'chat-message ai-message';
@@ -377,7 +378,7 @@ document.addEventListener("DOMContentLoaded", function() {
     aiDiv.className = 'chat-message ai-message';
 
     const aiImg = document.createElement('img');
-    aiImg.src = '/img/aioo.webp'; 
+    aiImg.src = '/img/aioo.webp';
     aiImg.alt = 'AI';
 
     const aiContent = document.createElement('div');
@@ -396,59 +397,47 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // STREAM BAŞLASIN
     let hasError = false;
-let streamEnded = false; // YENİ SATIR
+    let streamEnded = false;
+    let fullTextBuffer = "";
 
-eventSource.onmessage = function(event) {
-    if (hasError) return;
-    try {
-        const data = JSON.parse(event.data);
-        if (data.message && data.message.content) {
-            fullTextBuffer += data.message.content;
-            aiContent.innerHTML = fullTextBuffer;
+    const eventSource = new EventSource(
+        `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
+
+    eventSource.onmessage = function(event) {
+        if (hasError) return;
+        try {
+            const data = JSON.parse(event.data);
+            if (data.message && data.message.content) {
+                fullTextBuffer += data.message.content;
+                aiContent.innerHTML = fullTextBuffer;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        } catch (e) {
+            console.log('Raw SSE data:', event.data);
+        }
+    };
+
+    eventSource.onerror = function() {
+        if (!hasError && !streamEnded) {
+            hasError = true;
+            eventSource.close();
+            aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+            aiImg.src = '/img/avatar_aiio.png';
+        }
+    };
+
+    eventSource.addEventListener('end', function() {
+        if (!hasError) {
+            streamEnded = true;
+            chatHistory.push({ role: "assistant", content: fullTextBuffer });
+            saveCurrentChat();
+            aiImg.src = '/img/avatar_aiio.png';
+            aiContent.innerHTML = fullTextBuffer.trim();
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-    } catch (e) {
-        console.log('Raw SSE data:', event.data);
-    }
-};
-
-eventSource.onerror = function() {
-    // eğer streamEnded FLAG'i true ise "end" eventinden sonra geliyor demektir, ignore et
-    if (!hasError && !streamEnded) {
-        hasError = true;
-        eventSource.close();
-        aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-        aiImg.src = '/img/avatar_aiio.png';
-    }
-};
-
-eventSource.addEventListener('end', function() {
-    if (!hasError) {
-        streamEnded = true; // STREAM BİTTİ FLAG
-        chatHistory.push({ role: "assistant", content: fullTextBuffer });
-        saveCurrentChat();
-        aiImg.src = '/img/avatar_aiio.png';
-        aiContent.innerHTML = fullTextBuffer.trim();
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-});
-
-    if (sendBtn && chatInput) {
-        sendBtn.addEventListener('click', () => {
-            const val = chatInput.value.trim();
-            if (val) {
-                sendAIChatMessage(val);
-                chatInput.value = '';
-            }
-        });
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendBtn.click();
-        });
-    }
-
-    // Uygulama Başlangıcı
-    startNewChat();
-});
+    });
+}
 
 // Scroll helper
 function setupMobileAIViewport() {
