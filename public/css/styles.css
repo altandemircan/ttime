@@ -330,12 +330,8 @@ ease;
     border-radius: 50%;
     object-position: calc(50% + 5px) center;
 }
-.sound-icon {
-    width: 14px;
-    height: 14px;
-    pointer-events: none;
-}
-.sound-icon img {
+
+.sound-toggle img {
     width: 20px;
     height: 20px;
     border-radius: 50%;
