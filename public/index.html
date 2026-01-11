@@ -1005,35 +1005,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!video) return;
 
-    // Başlangıç durumu: sessiz + loop
+    let playOnceMode = false;
+
+    // Başlangıç: sessiz + loop
     video.muted = true;
     video.loop = true;
 
-    // PLAY / MUTE toggle
+    // ZAMAN KONTROLÜ (son 1 saniyeyi kes)
+    video.addEventListener('timeupdate', () => {
+        if (!video.duration) return;
+
+        const cutTime = video.duration - 1;
+
+        // PLAY MODE: 1 kez çal, erken bitir
+        if (playOnceMode && video.currentTime >= cutTime) {
+            playOnceMode = false;
+
+            video.muted = true;
+            video.loop = true;
+            video.currentTime = 0;
+            video.play();
+
+            if (icon) icon.src = '/img/mic_mute.svg';
+        }
+
+        // LOOP MODE: sona girmeden başa sar
+        if (!playOnceMode && video.currentTime >= cutTime) {
+            video.currentTime = 0;
+        }
+    });
+
+    // PLAY / MUTE BUTONU
     window.toggleSound = function () {
 
-        // Eğer şu an sessizse → PLAY MODE
+        // MUTE → PLAY
         if (video.muted) {
-            video.loop = false;          // 1 kez çalacak
+            playOnceMode = true;
+
+            video.loop = false;
             video.muted = false;
             video.volume = 1;
-            video.currentTime = 0;       // baştan başla
+            video.currentTime = 0;
             video.play();
 
             if (icon) icon.src = '/img/mic_play.svg';
-
-            // Video bitince tekrar MUTE MODE
-            video.onended = () => {
-                video.muted = true;
-                video.loop = true;
-                video.play();
-
-                if (icon) icon.src = '/img/mic_mute.svg';
-            };
-
-        } 
-        // Eğer sesliyse → MUTE MODE
+        }
+        // PLAY → MUTE
         else {
+            playOnceMode = false;
+
             video.muted = true;
             video.loop = true;
             video.play();
@@ -1041,6 +1061,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (icon) icon.src = '/img/mic_mute.svg';
         }
     };
+});
+</script>
+
 });
 </script>
 

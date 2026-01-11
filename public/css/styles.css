@@ -335,6 +335,13 @@ ease;
     height: 14px;
     pointer-events: none;
 }
+.sound-icon img {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    padding: 8px;
+    background: #f1f2f6;
+}
 
 @media (max-width:768px) {
     #tt-welcome h1 {
