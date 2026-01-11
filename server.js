@@ -23,10 +23,14 @@ const planSummaryRouter = require('./plan-summary');
 const clickedAiRouter = require('./clicked-ai');
 const chatStreamRouter = require('./chat-stream');
 
-// Direkt endpoint olarak tanımla (opsiyonel - istediğin gibi organize edebilirsin)
+console.log('Chat stream router yüklendi mi?', typeof chatStreamRouter);
+console.log('Chat stream router methods:', Object.keys(chatStreamRouter));
+
+// Direkt endpoint olarak tanımla
 app.use('/plan-summary', planSummaryRouter);
 app.use('/clicked-ai', clickedAiRouter);
 app.use('/chat-stream', chatStreamRouter);
+
 
 // Veya hepsini /ai altında toplamak istersen:
 // app.use('/ai/plan-summary', planSummaryRouter);
