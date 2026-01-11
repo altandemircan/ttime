@@ -401,11 +401,7 @@ document.addEventListener("DOMContentLoaded", function() {
     `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
 );
 
-        let chunkQueue = [];
-        let hasError = false;
-        let isFirstChunk = true;
-
-let fullTextBuffer = "";
+        let fullTextBuffer = "";
 
 eventSource.onmessage = function(event) {
     if (hasError) return;
@@ -415,7 +411,7 @@ eventSource.onmessage = function(event) {
             fullTextBuffer += data.message.content;
 
             // ANINDA GÖSTER!
-            aiContentDiv.innerHTML = fullTextBuffer;
+            aiContent.innerHTML = fullTextBuffer;         // DÜZELTME BURADA
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     } catch (e) {
@@ -423,18 +419,18 @@ eventSource.onmessage = function(event) {
     }
 };
 
-        eventSource.onerror = function() {
-            if (!hasError) {
-                if (aiContent._typewriterStop) aiContent._typewriterStop();
-                chunkQueue.length = 0;
-                hasError = true;
-                eventSource.close();
-                aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-                aiImg.src = '/img/avatar_aiio.png';
-            }
-        };
+eventSource.onerror = function() {
+    if (!hasError) {
+        if (aiContent._typewriterStop) aiContent._typewriterStop();
+        chunkQueue.length = 0;
+        hasError = true;
+        eventSource.close();
+        aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+        aiImg.src = '/img/avatar_aiio.png';
+    }
+};
 
-        eventSource.addEventListener('end', function() {
+eventSource.addEventListener('end', function() {
     if (!hasError) {
         // Bitiş işareti gelince tüm buffer’ı finale kaydet
         chatHistory.push({ role: "assistant", content: fullTextBuffer });
@@ -442,16 +438,15 @@ eventSource.onmessage = function(event) {
 
         if (aiContent._typewriterStop) aiContent._typewriterStop(); // Gerekirse
 
-        // Görsel/sonraki işlemler vs.
         aiImg.src = '/img/avatar_aiio.png';
 
-        // Paragraflandırma, karakter limiti, bold vb. diğer parse/gösterim işlerini burada uygula:
+        // Paragraflandırma vs.
         let displayText = fullTextBuffer.trim();
 
         // örnek kısa kod: (varsa)
         // displayText = displayText.replace(/\n/g, "<br>");
 
-        aiContentDiv.innerHTML = displayText;
+        aiContent.innerHTML = displayText;                // DÜZELTME BURADA
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 });
