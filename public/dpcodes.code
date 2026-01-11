@@ -11,3 +11,16 @@ docker run -d --name osrm-tr-car -p 5003:5000 \
   -v /data/osrm/car:/data \
   osrm/osrm-backend \
   osrm-routed --algorithm mld /data/turkey.osrm
+
+
+TRIPTIME-LIVE STASH OLURSA
+#  Değişiklikleri İptal Et (en hızlı)
+bash
+cd ~/triptime-live
+
+# Değişiklikleri iptal et
+git checkout llm-proxy.js
+git checkout public/index.html
+
+# Sonra deploy et
+deploy
