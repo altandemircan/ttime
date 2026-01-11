@@ -992,37 +992,51 @@ Your browser does not support the video tag.                  </video>
     <source src="/img/intro.webm" type="video/webm">
     <source src="/img/intro.mp4" type="video/mp4">
 </video>
-<button class="sound-toggle" onclick="toggleSound()">🔇</button>
-
+<button class="sound-toggle" onclick="toggleSound()">
+    <img src="/img/mic_mute.svg" alt="Mute" class="sound-icon">
+</button>
 </div>
 
 
 <script>
-function playVideo() {
+document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('circleVideo');
-    video.muted = false;
-    video.volume = 1.0;
-    video.play();
-}
-</script><script>
-const video = document.getElementById('circleVideo');
-video.addEventListener('timeupdate', () => {
-    if (video.duration && video.currentTime >= video.duration - 1) {
-        video.currentTime = 0; // sona gelince başa sar
-    }
+    const icon = document.querySelector('.sound-icon');
+
+    if (!video) return;
+
+    // Son 1 saniyeyi atla (loop pürüzsüz)
+    video.addEventListener('timeupdate', () => {
+        if (video.duration && video.currentTime >= video.duration - 1) {
+            video.currentTime = 0;
+        }
+    });
+
+    // Dışarıdan çağrılabilir: playVideo()
+    window.playVideo = function () {
+        video.muted = false;
+        video.volume = 1;
+        video.play();
+
+        if (icon) {
+            icon.src = '/img/mic_play.svg';
+        }
+    };
+
+    // Ses aç / kapa
+    window.toggleSound = function () {
+        video.muted = !video.muted;
+        video.volume = 1;
+
+        if (icon) {
+            icon.src = video.muted
+                ? '/img/mic_mute.svg'
+                : '/img/mic_play.svg';
+        }
+    };
 });
 </script>
-<script>
-function toggleSound() {
-    const video = document.getElementById('circleVideo');
-    const btn = document.querySelector('.sound-toggle');
 
-    video.muted = !video.muted;
-    video.volume = 1;
-
-    btn.textContent = video.muted ? '🔇' : '🔊';
-}
-</script>
 
 
             <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
