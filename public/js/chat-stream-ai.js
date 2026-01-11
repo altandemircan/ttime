@@ -409,37 +409,30 @@ document.addEventListener("DOMContentLoaded", function() {
 eventSource.onmessage = function(event) {
     if (hasError) return;
     
-    try {
-        const data = JSON.parse(event.data);
-        
-        // Ollama format: {message: {content: "..."}}
-        if (data.message && data.message.content) {
-            let aiContent = data.message.content;
-            
-            // AI JSON döndürüyor mu kontrol et
             try {
-                const parsed = JSON.parse(aiContent);
-                // JSON ise: {p1: "...", p2: "..."}
-                chunkQueue.push(parsed.p1 || aiContent);
-            } catch {
-                // JSON değilse direkt content
+            const data = JSON.parse(event.data);
+            
+            // Ollama format: {message: {content: "..."}}
+            if (data.message && data.message.content) {
+                let aiContent = data.message.content;
+
+                // Modelden gelen yanıtı aynen kullan (p1/p2 ayrıştırma yok!)
                 chunkQueue.push(aiContent);
+
+                if (isFirstChunk) {
+                    aiContentDiv.innerHTML = '';
+                    isFirstChunk = false;
+                }
+
+                if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
+                    startStreamingTypewriterEffect(aiContentDiv, chunkQueue, 4);
+                }
+
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
-            
-            if (isFirstChunk) {
-                aiContentDiv.innerHTML = ''; // aiContent değişken ismini kontrol et
-                isFirstChunk = false;
-            }
-            
-            if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
-                startStreamingTypewriterEffect(aiContentDiv, chunkQueue, 4);
-            }
-            
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } catch (e) {
+            console.log('Raw SSE data:', event.data);
         }
-    } catch (e) {
-        console.log('Raw SSE data:', event.data);
-    }
 };
 
         eventSource.onerror = function() {

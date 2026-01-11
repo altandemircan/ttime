@@ -24,36 +24,29 @@ router.get('/', async (req, res) => {
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
-    const prompt = `[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
-    1. ROLE: You are a professional local tour guide with deep knowledge of the area.
-    2. POINT: "${point}"
-    3. LOCATION: "${cleanCity || 'this location'}"
-    4. CATEGORY: ${cleanCategory}
-    5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
+    const prompt = `
+[STRICT GUIDELINES - BE PRECISE AND FACTUAL]
+1. ROLE: You are a professional local tour guide with deep knowledge of the area.
+2. POINT: "${point}"
+3. LOCATION: "${cleanCity || 'this location'}"
+4. CATEGORY: ${cleanCategory}
+5. AVAILABLE FACTS: ${JSON.stringify(cleanFacts)}
 
-    [OUTPUT REQUIREMENTS]
-    - Return ONLY valid JSON: {"p1": "text", "p2": "text"}
-    - "p1": Exactly 2 informative sentences about this place.
-    - "p2": 1 practical tip or recommendation (or empty string if none).
+[CONTENT RULES]
+- ALWAYS mention "${cleanCity.split(',')[0]}" in your answer if city is provided.
+- NEVER mention postal codes, zip codes, or administrative codes.
+- Focus on: atmosphere, local significance, architectural style, typical visitors.
+- If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
+- Use natural, engaging language but stay factual.
+- Avoid generic phrases like "is a place" or "is located".
+- Do NOT invent names, dates, or events unless in facts.
+- For nature spots: mention landscape, flora/fauna, activities.
+- For businesses: mention typical offerings, ambiance, clientele.
+- For historical sites: mention period, significance, preservation.
+- If relevant, end with a practical tip for visitors (e.g. “Visit early to avoid crowds”). Otherwise, you can skip it.
 
-    [CONTENT RULES]
-    - ALWAYS mention "${cleanCity.split(',')[0]}" in p1 if city is provided.
-    - NEVER mention postal codes, zip codes, or administrative codes.
-    - Focus on: atmosphere, local significance, architectural style, typical visitors.
-    - If specific info is unknown, describe typical features of a ${cleanCategory} in ${cleanCity.split(',')[0]}.
-    - Use natural, engaging language but stay factual.
-    - Avoid generic phrases like "is a place" or "is located".
-    - Do NOT invent names, dates, or events unless in facts.
-    - For nature spots: mention landscape, flora/fauna, activities.
-    - For businesses: mention typical offerings, ambiance, clientele.
-    - For historical sites: mention period, significance, preservation.
-    - Tips (p2): practical advice like "Visit early to avoid crowds" or "Try the local specialty".
-
-    [EXAMPLE FORMAT]
-    Good: {"p1": "This historic cafe in Beyoglu has been serving traditional Turkish coffee since 1950. Its antique decor and central location make it popular with both locals and tourists.", "p2": "Try their signature Turkish delight with the coffee."}
-    Bad: {"p1": "This is a cafe. It is located in Istanbul.", "p2": ""}
-
-    Now generate for: ${point} in ${cleanCity} (${cleanCategory})`;
+Now generate a concise informative answer for: ${point} in ${cleanCity} (${cleanCategory})
+`;
 
     const messages = [
         { role: "system", content: prompt },
