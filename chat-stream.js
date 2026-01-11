@@ -23,20 +23,25 @@ router.get('/', async (req, res) => {
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
-    // BASİT PROMPT - Normal AI chat gibi
-    const prompt = `You are a friendly local tour guide in ${cleanCity || "the area"}.
-    
-The user is asking about "${point}" (${cleanCategory}).
-${cleanFacts ? `Available information: ${JSON.stringify(cleanFacts)}` : ""}
+    // MİNİMAL PROMPT - AI kendi halleder
+    const systemPrompt = `You are a helpful local guide. 
+Provide useful information about places in a friendly, conversational way.`;
 
-Provide a helpful, engaging response in plain text.
-Be conversational and natural.`;
+    // Eğer point varsa context ekle
+    const contextPrompt = point ? `The user is asking about "${point}" in ${cleanCity}.` : "";
 
-    // Tüm mesajları birleştir
     const messages = [
-        { role: "system", content: prompt },
+        { role: "system", content: systemPrompt },
         ...userMessages
     ];
+
+    // Point varsa son mesaja ekle
+    if (point) {
+        messages.push({ 
+            role: "user", 
+            content: `Tell me about ${point} in ${cleanCity}.` 
+        });
+    }
 
     const model = 'llama3:8b';
 
@@ -48,7 +53,7 @@ Be conversational and natural.`;
                 model,
                 messages,
                 stream: true,
-                max_tokens: 300
+                max_tokens: 400
             },
             responseType: 'stream',
             timeout: 180000
@@ -61,11 +66,9 @@ Be conversational and natural.`;
                 try {
                     const data = JSON.parse(str);
                     if (data.message && data.message.content) {
-                        // Direkt içeriği gönder
                         res.write(`data: ${JSON.stringify({content: data.message.content})}\n\n`);
                     }
                 } catch (e) {
-                    // JSON değilse olduğu gibi gönder
                     res.write(`data: ${str}\n\n`);
                 }
             }
