@@ -14,15 +14,36 @@ const app = express();
 app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// 2. Feedback Route (DOSYA KONUMUNA DİKKAT)
+// 2. Feedback Route
 const feedbackRoute = require('./feedbackRoute');
 app.use('/api', feedbackRoute);
 
-// 3. Diğer API Routerları
-const llmProxy = require('./llm-proxy');
-const photogetProxy = require('./photoget-proxy');
+// 3. AI Router'larını doğrudan ana seviyede bağlayalım
+const planSummaryRouter = require('./plan-summary');
+const clickedAiRouter = require('./clicked-ai');
+const chatStreamRouter = require('./chat-stream');
 
-app.use('/llm-proxy', llmProxy);
+// Direkt endpoint olarak tanımla (opsiyonel - istediğin gibi organize edebilirsin)
+app.use('/plan-summary', planSummaryRouter);
+app.use('/clicked-ai', clickedAiRouter);
+app.use('/chat-stream', chatStreamRouter);
+
+// Veya hepsini /ai altında toplamak istersen:
+// app.use('/ai/plan-summary', planSummaryRouter);
+// app.use('/ai/clicked-ai', clickedAiRouter);
+// app.use('/ai/chat-stream', chatStreamRouter);
+
+// Veya doğrudan endpoint'leri burada tanımlamak istersen (router kullanmadan):
+// const planSummaryRoute = require('./plan-summary');
+// const clickedAiRoute = require('./clicked-ai');
+// const chatStreamRoute = require('./chat-stream');
+// 
+// app.post('/plan-summary', planSummaryRoute.post('/plan-summary'));
+// app.post('/clicked-ai', clickedAiRoute.post('/clicked-ai'));
+// app.get('/chat-stream', chatStreamRoute.get('/chat-stream'));
+
+// Diğer API Routerları
+const photogetProxy = require('./photoget-proxy');
 app.use('/photoget-proxy', photogetProxy);
 
 const geoapify = require('./geoapify.js');
@@ -65,11 +86,8 @@ app.get('/api/geoapify/geocode', async (req, res) => {
   }
 });
 
-
-
 app.get('/api/tile/:z/:x/:y.pbf', async (req, res) => {
   const { z, x, y } = req.params;
-  // DOĞRU YOL - planet versiyonunu burada kullan!
   const url = `https://tiles.openfreemap.org/planet/20251112_001001_pt/${z}/${x}/${y}.pbf`;
   try {
     const r = await fetch(url, {
@@ -98,7 +116,6 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
         "Referer": "https://triptime.ai/"
       }
     });
-    // DEBUG
     console.log(`[RASTER] Proxying: ${url} → Status: ${r.status}`);
     if (r.status === 403) return res.status(403).send("Upstream returned 403 Forbidden (rate-limit, IP block, etc)");
     if (r.status === 404) return res.status(404).send("Upstream PNG not found (404)");
@@ -111,7 +128,6 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
     res.status(500).send('Internal proxy error');
   }
 });
-
 
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
@@ -147,18 +163,18 @@ app.get('/api/elevation', async (req, res) => {
   const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
   const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'merit_dem';
 
-  let batchSize = 120; // önce küçük
+  let batchSize = 120;
   try {
     const coords = (locations || "").split('|').filter(Boolean);
     const resultsAll = [];
 
     for (let i = 0; i < coords.length; i += batchSize) {
       const batch = coords.slice(i, i + batchSize).join('|');
-const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
+      const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
       console.log(`[Elevation BACKEND] Calling: ${url} with ${batch.split('|').length} coords`);
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 15s
+      const timeout = setTimeout(() => controller.abort(), 30000);
       let response;
       try {
         response = await fetch(url, { signal: controller.signal });
@@ -233,7 +249,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-
 // 9. Global error handler
 app.use((err, req, res, next) => {
   console.error('[GLOBAL ERROR]', err);
@@ -246,7 +261,6 @@ app.use((err, req, res, next) => {
   }
   res.status(500).send('Internal Server Error');
 });
-
 
 const PORT = process.env.PORT || 3004;
 
