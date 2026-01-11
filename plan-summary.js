@@ -59,49 +59,62 @@ router.post('/', async (req, res) => {
     }
 
     // 2. YENİ İŞLEM BAŞLAT
-    const processingPromise = (async () => {
-        const aiReqCity = country ? `${city}, ${country}` : city;
-         
-        const activeModel = "llama3:8b";
-        console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`);
+   // 2. YENİ İŞLEM BAŞLAT kısmını değiştir:
+const processingPromise = (async () => {
+    const aiReqCity = country ? `${city}, ${country}` : city;
+     
+    const activeModel = "llama3:8b";
+    console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`);
 
-        const prompt = `
-        You are a strictly factual travel guide. 
-        Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
-        RULES:
-        1. Do NOT hallucinate. If unknown, state "Info not available".
-        2. Verify landmarks are INSIDE "${aiReqCity}".
-        3. Respond ONLY with a valid JSON object:
-        { "summary": "...", "tip": "...", "highlight": "..." }
-        `.trim();
+    const prompt = `
+    You are a strictly factual travel guide. 
+    Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
+    RULES:
+    1. Do NOT hallucinate. If unknown, state "Info not available".
+    2. Verify landmarks are INSIDE "${aiReqCity}".
+    3. Respond ONLY with a valid JSON object:
+    { "summary": "...", "tip": "...", "highlight": "..." }
+    `.trim();
 
-        try {
-            const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-                model: activeModel,
-                messages: [{ role: "user", content: prompt }],
-                stream: false,
-                format: "json",
-                options: {
-                    temperature: 0.1,
-                    top_p: 0.9,
-                    max_tokens: 200
-                }
-            });
-
-            let jsonText = '';
-            if (typeof response.data === 'object' && response.data.message) {
-                jsonText = response.data.message.content;
-            } else if (typeof response.data === 'string') {
-                const match = response.data.match(/\{[\s\S]*?\}/);
-                if (match) jsonText = match[0];
+    try {
+        console.log('[AI] Ollama çağrısı yapılıyor...');
+        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
+            model: activeModel,
+            prompt: prompt,  // DEĞİŞTİR: messages yerine prompt kullan
+            stream: false,
+            format: "json",
+            options: {
+                temperature: 0.1,
+                top_p: 0.9,
+                max_tokens: 200
             }
+        });
 
-            return JSON.parse(jsonText);
-        } catch (err) {
-            console.error("LLM Error:", err.message);
+        console.log('[AI] Ollama response:', response.data);
+
+        let jsonText = '';
+        // Ollama'nın generate endpoint'i farklı dönüyor
+        if (response.data && response.data.response) {
+            jsonText = response.data.response;
+        } else if (typeof response.data === 'string') {
+            const match = response.data.match(/\{[\s\S]*?\}/);
+            if (match) jsonText = match[0];
+        }
+
+        console.log('[AI] Parsed JSON text:', jsonText);
+        
+        if (!jsonText) {
+            console.error('[AI] Boş yanıt alındı');
             return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
         }
-    })();
+
+        return JSON.parse(jsonText);
+    } catch (err) {
+        console.error("LLM Error:", err.message);
+        console.error("LLM Error stack:", err.stack);
+        return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
+    }
+})();
 
     // 3. PENDING OLARAK İŞARETLE
     aiCache[cacheKey] = {
