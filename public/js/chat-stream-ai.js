@@ -350,107 +350,92 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('btn-ai-history').addEventListener('click', showHistoryScreen);
 
     // --- 7. MESAJ GÖNDERME ---
-    async function sendAIChatMessage(userMessage) {
-        if (!canAskQuestion()) {
-            const limitDiv = document.createElement('div');
-            limitDiv.className = 'chat-message ai-message';
-            limitDiv.style.background = "#ffeaea";
-            limitDiv.style.border = "1px solid #ffcdd2";
-            limitDiv.innerHTML = `<b>Limit Reached:</b> You've hit the ${MAX_MESSAGES_PER_CHAT} message limit for this chat.<br>Please start a <b>New Chat</b> to continue!`;
-            messagesDiv.appendChild(limitDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return;
+   async function sendAIChatMessage(userMessage) {
+    if (!canAskQuestion()) {
+        const limitDiv = document.createElement('div');
+        limitDiv.className = 'chat-message ai-message';
+        limitDiv.style.background = "#ffeaea";
+        limitDiv.style.border = "1px solid #ffcdd2";
+        limitDiv.innerHTML = `<b>Limit Reached:</b> You've hit the ${MAX_MESSAGES_PER_CHAT} message limit for this chat.<br>Please start a <b>New Chat</b> to continue!`;
+        messagesDiv.appendChild(limitDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return;
+    }
+
+    // KULLANICI MESAJINI KUTUYA EKLE
+    const userDiv = document.createElement('div');
+    userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`;
+    userDiv.className = 'chat-message user-message';
+    messagesDiv.appendChild(userDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    chatHistory.push({ role: "user", content: userMessage });
+    saveCurrentChat();
+
+    // AI MESAJ KUTUSU OLUŞTUR
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-message ai-message';
+
+    const aiImg = document.createElement('img');
+    aiImg.src = '/img/aioo.webp'; 
+    aiImg.alt = 'AI';
+
+    const aiContent = document.createElement('div');
+    aiContent.innerHTML = '<span class="typing">...</span>';
+
+    const contentContainer = document.createElement('div');
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+    contentContainer.style.flex = '1';
+
+    contentContainer.appendChild(aiContent);
+    aiDiv.appendChild(aiImg);
+    aiDiv.appendChild(contentContainer);
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // STREAM BAŞLASIN
+    let hasError = false;
+    let fullTextBuffer = "";
+
+    const eventSource = new EventSource(
+        `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
+    );
+
+    eventSource.onmessage = function(event) {
+        if (hasError) return;
+        try {
+            const data = JSON.parse(event.data);
+            if (data.message && data.message.content) {
+                fullTextBuffer += data.message.content;
+                aiContent.innerHTML = fullTextBuffer;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        } catch (e) {
+            console.log('Raw SSE data:', event.data);
         }
+    };
 
-        // 1. KULLANICI MESAJINI EKLE
-        const userDiv = document.createElement('div');
-        userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`; 
-        userDiv.className = 'chat-message user-message';
-        messagesDiv.appendChild(userDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    eventSource.onerror = function() {
+        if (!hasError) {
+            hasError = true;
+            eventSource.close();
+            aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+            aiImg.src = '/img/avatar_aiio.png';
+        }
+    };
 
-        chatHistory.push({ role: "user", content: userMessage });
-        saveCurrentChat();
-
-        // 2. AI MESAJ KUTUSUNU OLUŞTUR
-        const aiDiv = document.createElement('div');
-        aiDiv.className = 'chat-message ai-message';
-
-        // Görsel
-        const aiImg = document.createElement('img');
-        aiImg.src = '/img/aioo.webp'; 
-        aiImg.alt = 'AI';
-        
-        // İçerik Alanı
-        const aiContent = document.createElement('div');
-        aiContent.innerHTML = '<span class="typing">...</span>'; // Animasyonlu nokta
-
-        // Flex Container (Senin istediğin yapı)
-        const contentContainer = document.createElement('div');
-        contentContainer.style.display = 'flex';
-        contentContainer.style.flexDirection = 'column';
-        contentContainer.style.flex = '1';
-        
-        contentContainer.appendChild(aiContent);
-        aiDiv.appendChild(aiImg);
-        aiDiv.appendChild(contentContainer);
-        messagesDiv.appendChild(aiDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        const eventSource = new EventSource(
-    `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
-);
-
-        let fullTextBuffer = "";
-
-eventSource.onmessage = function(event) {
-    if (hasError) return;
-    try {
-        const data = JSON.parse(event.data);
-        if (data.message && data.message.content) {
-            fullTextBuffer += data.message.content;
-
-            // ANINDA GÖSTER!
-            aiContent.innerHTML = fullTextBuffer;         // DÜZELTME BURADA
+    eventSource.addEventListener('end', function() {
+        if (!hasError) {
+            // Buffer'ı finale kaydet, kutuya ekle
+            chatHistory.push({ role: "assistant", content: fullTextBuffer });
+            saveCurrentChat();
+            aiImg.src = '/img/avatar_aiio.png';
+            aiContent.innerHTML = fullTextBuffer.trim();
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-    } catch (e) {
-        console.log('Raw SSE data:', event.data);
-    }
-};
-
-eventSource.onerror = function() {
-    if (!hasError) {
-        if (aiContent._typewriterStop) aiContent._typewriterStop();
-        chunkQueue.length = 0;
-        hasError = true;
-        eventSource.close();
-        aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-        aiImg.src = '/img/avatar_aiio.png';
-    }
-};
-
-eventSource.addEventListener('end', function() {
-    if (!hasError) {
-        // Bitiş işareti gelince tüm buffer’ı finale kaydet
-        chatHistory.push({ role: "assistant", content: fullTextBuffer });
-        saveCurrentChat();
-
-        if (aiContent._typewriterStop) aiContent._typewriterStop(); // Gerekirse
-
-        aiImg.src = '/img/avatar_aiio.png';
-
-        // Paragraflandırma vs.
-        let displayText = fullTextBuffer.trim();
-
-        // örnek kısa kod: (varsa)
-        // displayText = displayText.replace(/\n/g, "<br>");
-
-        aiContent.innerHTML = displayText;                // DÜZELTME BURADA
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-});
-    }
+    });
+}
 
     if (sendBtn && chatInput) {
         sendBtn.addEventListener('click', () => {
