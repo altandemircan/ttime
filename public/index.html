@@ -994,7 +994,7 @@ Your browser does not support the video tag.                  </video>
 </video>
 </div>
 
-<button onclick="playVideo()">Sesi Aç</button>
+<button class="sound-toggle" onclick="toggleSound()">🔇</button>
 
 <script>
 function playVideo() {
@@ -1011,6 +1011,39 @@ video.addEventListener('timeupdate', () => {
     }
 });
 </script>
+<script>
+function toggleSound() {
+    const video = document.getElementById('circleVideo');
+    const btn = document.querySelector('.sound-toggle');
+
+    video.muted = !video.muted;
+    video.volume = 1;
+
+    btn.textContent = video.muted ? '🔇' : '🔊';
+}
+</script>
+<style>.sound-toggle {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 13px;
+
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    backdrop-filter: blur(4px);
+}
+</style>
 
 
 
