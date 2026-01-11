@@ -32,20 +32,6 @@ app.use('/clicked-ai', clickedAiRouter);
 app.use('/chat-stream', chatStreamRouter);
 
 
-// Veya hepsini /ai altında toplamak istersen:
-// app.use('/ai/plan-summary', planSummaryRouter);
-// app.use('/ai/clicked-ai', clickedAiRouter);
-// app.use('/ai/chat-stream', chatStreamRouter);
-
-// Veya doğrudan endpoint'leri burada tanımlamak istersen (router kullanmadan):
-// const planSummaryRoute = require('./plan-summary');
-// const clickedAiRoute = require('./clicked-ai');
-// const chatStreamRoute = require('./chat-stream');
-// 
-// app.post('/plan-summary', planSummaryRoute.post('/plan-summary'));
-// app.post('/clicked-ai', clickedAiRoute.post('/clicked-ai'));
-// app.get('/chat-stream', chatStreamRoute.get('/chat-stream'));
-
 // Diğer API Routerları
 const photogetProxy = require('./photoget-proxy');
 app.use('/photoget-proxy', photogetProxy);
