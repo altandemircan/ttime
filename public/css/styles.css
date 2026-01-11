@@ -7375,7 +7375,7 @@ position: absolute;
 }
 
 /* AI Resmi Ayarı (Aynen kalıyor) */
-.ai-message img {
+.ai-message video {
     width: 24px;
     height: 24px;
     border-radius: 50%;
@@ -7385,12 +7385,12 @@ position: absolute;
 }
 
 /* AI mesajının yazı kısmı için column düzeni */
-.ai-message > :not(img) {
+/*.ai-message > :not(img) {
     display: flex;
-    flex-direction: column; /* İçerik alt alta */
+    flex-direction: column; 
     flex: 1;
     gap: 8px;
-}
+}*/
 
 
 /* 3. User Mesajı (Sağda Emoji, Solda Yazı) */
