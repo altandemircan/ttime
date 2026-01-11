@@ -363,6 +363,7 @@ async function sendAIChatMessage(userMessage) {
         return;
     }
 
+    
     // KULLANICI MESAJINI KUTUYA EKLE
     const userDiv = document.createElement('div');
     userDiv.innerHTML = `<div>🧑</div><div>${userMessage}</div>`;
@@ -399,14 +400,9 @@ async function sendAIChatMessage(userMessage) {
     let hasError = false;
     let streamEnded = false;
     let fullTextBuffer = "";
-    let charCount = 0;
-    const MAX_CHARS = 250;
-
-    // Karakter sayacı ekleyelim
-    const charCounter = document.createElement('div');
-    charCounter.style.cssText = 'font-size: 0.7rem; color: #888; margin-top: 5px;';
-    charCounter.textContent = `Characters: 0/${MAX_CHARS}`;
-    contentContainer.appendChild(charCounter);
+    let isNearLimit = false;
+    const SOFT_LIMIT = 220; // Yumuşak limit (kullanıcıya göster)
+    const HARD_LIMIT = 280; // Gerçek limit (kesme noktası)
 
     const eventSource = new EventSource(
         `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
@@ -418,37 +414,37 @@ async function sendAIChatMessage(userMessage) {
             const data = JSON.parse(event.data);
             if (data.message && data.message.content) {
                 const newText = data.message.content;
+                fullTextBuffer += newText;
                 
-                // Karakter limit kontrolü
-                if (charCount + newText.length > MAX_CHARS) {
-                    // Limit aşıldı, kapat
-                    eventSource.close();
-                    streamEnded = true;
-                    fullTextBuffer += newText.substring(0, MAX_CHARS - charCount);
-                    charCount = MAX_CHARS;
-                    
-                    // Mesajı güncelle
-                    aiContent.innerHTML = fullTextBuffer + " [trimmed]";
-                    charCounter.textContent = `Characters: ${charCount}/${MAX_CHARS} (limit reached)`;
-                    charCounter.style.color = '#ff4444';
-                    
-                    // Otomatik bitir
-                    setTimeout(() => {
-                        if (!hasError) {
-                            completeResponse();
-                        }
-                    }, 100);
-                    return;
+                // Karakter sayısını kontrol et
+                const currentLength = fullTextBuffer.length;
+                
+                // Eğer yumuşak limite yaklaşıyorsa, backend'e uyarı gönder
+                if (currentLength >= SOFT_LIMIT && !isNearLimit) {
+                    isNearLimit = true;
+                    console.log("Near character limit, will stop naturally");
                 }
                 
-                fullTextBuffer += newText;
-                charCount += newText.length;
+                // Gerçek zamanlı olarak göster
                 aiContent.innerHTML = fullTextBuffer;
-                charCounter.textContent = `Characters: ${charCount}/${MAX_CHARS}`;
                 
-                // Karakter sayısına göre renk değiştir
-                if (charCount > 200) {
-                    charCounter.style.color = '#ff8800';
+                // Eğer kesinlikle çok uzunsa ve doğal bir noktada kesilebilirse
+                if (currentLength >= HARD_LIMIT) {
+                    // Doğal bir durma noktası ara
+                    const lastPeriod = fullTextBuffer.lastIndexOf('. ');
+                    const lastExclamation = fullTextBuffer.lastIndexOf('! ');
+                    const lastQuestion = fullTextBuffer.lastIndexOf('? ');
+                    
+                    let bestStopPoint = Math.max(lastPeriod, lastExclamation, lastQuestion);
+                    
+                    // Eğer uygun bir durma noktası bulundu ve makul uzunluktaysa
+                    if (bestStopPoint > 180) {
+                        fullTextBuffer = fullTextBuffer.substring(0, bestStopPoint + 1);
+                        aiContent.innerHTML = fullTextBuffer;
+                        eventSource.close();
+                        setTimeout(completeResponse, 100);
+                        return;
+                    }
                 }
                 
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -471,7 +467,6 @@ async function sendAIChatMessage(userMessage) {
         completeResponse();
     });
 
-    // Yardımcı fonksiyon
     function completeResponse() {
         if (!hasError && !streamEnded) {
             streamEnded = true;
@@ -483,19 +478,39 @@ async function sendAIChatMessage(userMessage) {
             // Fazla boşlukları temizle
             finalText = finalText.replace(/\s+/g, ' ');
             
-            // Eğer karakter limitini aştıysa kes
-            if (finalText.length > MAX_CHARS) {
-                finalText = finalText.substring(0, MAX_CHARS);
-                // Son cümleyi tamamlamaya çalış
+            // KESME YAPMA! Sadece çok uzunsa ve tam bir cümlede değilse nokta ekle
+            if (finalText.length > HARD_LIMIT) {
+                // En son noktalama işaretini bul
                 const lastPeriod = finalText.lastIndexOf('.');
                 const lastExclamation = finalText.lastIndexOf('!');
                 const lastQuestion = finalText.lastIndexOf('?');
                 const lastStop = Math.max(lastPeriod, lastExclamation, lastQuestion);
                 
-                if (lastStop > 150) { // Yeterince uzunsa
-                    finalText = finalText.substring(0, lastStop + 1);
-                } else {
-                    finalText = finalText.trim() + '...';
+                // Eğer son 50 karakter içinde noktalama yoksa, en yakın noktayı bul
+                if (lastStop < finalText.length - 50) {
+                    // Son boşluktan veya virgülden kes
+                    const lastGoodBreak = Math.max(
+                        finalText.lastIndexOf('. '),
+                        finalText.lastIndexOf('! '),
+                        finalText.lastIndexOf('? '),
+                        finalText.lastIndexOf(', '),
+                        finalText.lastIndexOf('; ')
+                    );
+                    
+                    if (lastGoodBreak > 180) {
+                        finalText = finalText.substring(0, lastGoodBreak + 1);
+                    } else if (finalText.length > HARD_LIMIT) {
+                        // Çok uzunsa ve uygun yer yoksa, son kelimeyi tamamla
+                        finalText = finalText.substring(0, HARD_LIMIT - 3) + '...';
+                    }
+                }
+            }
+            
+            // Eğer noktalama ile bitmiyorsa ekle
+            if (finalText.length > 0) {
+                const lastChar = finalText[finalText.length - 1];
+                if (!['.', '!', '?'].includes(lastChar)) {
+                    finalText += '.';
                 }
             }
             
@@ -507,15 +522,11 @@ async function sendAIChatMessage(userMessage) {
             chatHistory.push({ role: "assistant", content: finalText });
             saveCurrentChat();
             
-            // Karakter sayacını güncelle
-            charCount = finalText.length;
-            charCounter.textContent = `Characters: ${charCount}/${MAX_CHARS}`;
-            
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     }
 
-    // Timeout ekleyelim (30 saniye)
+    // Timeout (45 saniye)
     setTimeout(() => {
         if (!streamEnded && !hasError) {
             eventSource.close();
@@ -523,7 +534,7 @@ async function sendAIChatMessage(userMessage) {
             aiContent.innerHTML = "Response timed out. Please try again.";
             aiImg.src = '/img/avatar_aiio.png';
         }
-    }, 30000);
+    }, 45000);
 }
 
     if (sendBtn && chatInput) {
