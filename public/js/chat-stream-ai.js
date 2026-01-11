@@ -406,34 +406,32 @@ document.addEventListener("DOMContentLoaded", function() {
         let isFirstChunk = true;
 
        // eventSource.onmessage kısmını şöyle düzelt:
+let fullTextBuffer = ""; // Tüm chunkları birleştireceğimiz değişken
+
 eventSource.onmessage = function(event) {
     if (hasError) return;
-    
-            try {
-            const data = JSON.parse(event.data);
-            
-            // Ollama format: {message: {content: "..."}}
-            if (data.message && data.message.content) {
-                let aiContent = data.message.content;
+    try {
+        const data = JSON.parse(event.data);
 
-                // Modelden gelen yanıtı aynen kullan (p1/p2 ayrıştırma yok!)
-                chunkQueue.push(aiContent);
+        // Her chunk'ın içeriği
+        if (data.message && data.message.content) {
+            const chunk = data.message.content;
+            fullTextBuffer += chunk;
 
-                if (isFirstChunk) {
-                    aiContentDiv.innerHTML = '';
-                    isFirstChunk = false;
-                }
-
-                if (typeof startStreamingTypewriterEffect === 'function' && chunkQueue.length === 1) {
-                    startStreamingTypewriterEffect(aiContentDiv, chunkQueue, 4);
-                }
-
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            if (isFirstChunk) {
+                aiContentDiv.innerHTML = '';
+                isFirstChunk = false;
             }
-        } catch (e) {
-            console.log('Raw SSE data:', event.data);
+            // Anında ekrana göster (her yeni chunk ile)
+            aiContentDiv.innerHTML = fullTextBuffer;
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
+    } catch (e) {
+        console.log('Raw SSE data:', event.data);
+    }
 };
+
 
         eventSource.onerror = function() {
             if (!hasError) {
@@ -447,51 +445,26 @@ eventSource.onmessage = function(event) {
         };
 
         eventSource.addEventListener('end', function() {
-            if (!hasError) {
-                const fullText = chunkQueue.join('');
-                
-                chatHistory.push({ role: "assistant", content: fullText });
-                saveCurrentChat();
+    if (!hasError) {
+        // Bitiş işareti gelince tüm buffer’ı finale kaydet
+        chatHistory.push({ role: "assistant", content: fullTextBuffer });
+        saveCurrentChat();
 
-                if (aiContent._typewriterStop) aiContent._typewriterStop();
-                chunkQueue.length = 0;
-                hasError = true;
-                eventSource.close();
+        if (aiContent._typewriterStop) aiContent._typewriterStop(); // Gerekirse
 
-                // Bitiş (Normal Görsel)
-                aiImg.src = '/img/avatar_aiio.png';
+        // Görsel/sonraki işlemler vs.
+        aiImg.src = '/img/avatar_aiio.png';
 
-                // 1. Karakter limiti uygula (ör: 700)
-                let displayText = fullText.trim();
-                const MAX_CHARS = 500;
-                if (displayText.length > MAX_CHARS) {
-                    // Cümlenin tam ortasından kes (kelime bütünlüğü korumak için)
-                    const cut = displayText.slice(0, MAX_CHARS);
-                    displayText = cut.slice(0, cut.lastIndexOf('.') + 1); // Son cümlede bitir
-                    if (displayText.length < 50) displayText = cut + '...';
-                }
+        // Paragraflandırma, karakter limiti, bold vb. diğer parse/gösterim işlerini burada uygula:
+        let displayText = fullTextBuffer.trim();
 
-                // 2. Okunabilir HTML'ye çevir
-                displayText = displayText
-                    .replace(/\n{2,}/g, '</p><p>')      // Çift boşluk-paragraf 
-                    .replace(/\n/g, '<br>')             // Tek satır geçişlerine <br>
-                    .replace(/- /g, '<li>')             // Bullet için
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // **kalın** yapısını bolda çevir
+        // örnek kısa kod: (varsa)
+        // displayText = displayText.replace(/\n/g, "<br>");
 
-                // Eğer bullet varsa, <ul> içine sar (isteğe göre)
-                if (displayText.includes('<li>')) {
-                    displayText = displayText.replace(/(<li>.*?)(?=<li>|$)/g, '$1</li>');
-                    displayText = '<ul style="margin-top:3px;">'+displayText+'</ul>';
-                }
-                displayText = '<p>' + displayText + '</p>';
-                displayText = displayText.replace(/(<\/ul>)(<p>)/g, '$1'); // paragraflar bulletları bölmesin
-
-                aiContent.innerHTML = displayText;
-
-
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }
-        });
+        aiContentDiv.innerHTML = displayText;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+});
     }
 
     if (sendBtn && chatInput) {
