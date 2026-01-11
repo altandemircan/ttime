@@ -281,9 +281,17 @@ No explanations. No markdown. No backticks.
         // Sadece ilk {...} JSON'u parse et, başka hiçbir şey yapma
         const jsonMatch = content.match(/\{[\s\S]*?\}/);
         let result = { p1: "", p2: "" };
-        if (jsonMatch) result = JSON.parse(jsonMatch[0]);
+        if (jsonMatch) {
+  const parsed = JSON.parse(jsonMatch[0]);
 
-        res.json(result);
+  result = {
+    p1: parsed.p1 || "",
+    p2: parsed.p2 || ""
+  };
+}
+
+res.json(result);
+
     } catch (e) {
         console.error("AI error:", e.message);
         res.json({ p1: "", p2: "" });
