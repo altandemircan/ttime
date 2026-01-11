@@ -259,22 +259,6 @@ ease;
     width: calc(100% + 415px);
 }
 
-/* Circle Container */
-.circle-container {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    position: relative;
-    margin: 0 auto;
-}
-
-.circle-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-    object-position: top;
-}
 
 /* Welcome Başlık ve Metin Ayarları */
 #tt-welcome img {
@@ -310,6 +294,49 @@ ease;
     padding: 0;
     max-width: 540px;
     margin: 0 auto;
+}
+
+
+.sound-toggle {
+    position: absolute;
+    top: 20px;
+    right: -7px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgb(255 255 255);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+/* Circle Container */
+.circle-container {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    position: relative;
+    margin: 0 auto;
+}
+
+.circle-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    object-position: calc(50% + 5px) center;
+}
+
+.sound-toggle img {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50%;
+    padding: 8px;
+    background: #f1f2f6;
 }
 
 @media (max-width:768px) {
@@ -7348,7 +7375,7 @@ position: absolute;
 }
 
 /* AI Resmi Ayarı (Aynen kalıyor) */
-.ai-message img {
+.ai-message video {
     width: 24px;
     height: 24px;
     border-radius: 50%;
@@ -7358,12 +7385,12 @@ position: absolute;
 }
 
 /* AI mesajının yazı kısmı için column düzeni */
-.ai-message > :not(img) {
+/*.ai-message > :not(img) {
     display: flex;
-    flex-direction: column; /* İçerik alt alta */
+    flex-direction: column; 
     flex: 1;
     gap: 8px;
-}
+}*/
 
 
 /* 3. User Mesajı (Sağda Emoji, Solda Yazı) */

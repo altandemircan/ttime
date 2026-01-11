@@ -378,9 +378,13 @@ async function sendAIChatMessage(userMessage) {
     const aiDiv = document.createElement('div');
     aiDiv.className = 'chat-message ai-message';
 
-    const aiImg = document.createElement('img');
-    aiImg.src = '/img/aioo.webp';
-    aiImg.alt = 'AI';
+    const aiImg = document.createElement('video');
+aiImg.src = '/img/intro.webm';
+aiImg.alt = 'AI';
+aiImg.autoplay = true;
+aiImg.loop = true;
+aiImg.muted = true;
+aiImg.playsInline = true;
 
     const aiContent = document.createElement('div');
     aiContent.innerHTML = '<span class="typing">...</span>';
@@ -459,7 +463,7 @@ async function sendAIChatMessage(userMessage) {
             hasError = true;
             eventSource.close();
             aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-            aiImg.src = '/img/avatar_aiio.png';
+           
         }
     };
 
@@ -516,8 +520,7 @@ async function sendAIChatMessage(userMessage) {
             
             // Güncelle
             aiContent.innerHTML = finalText;
-            aiImg.src = '/img/avatar_aiio.png';
-            
+         
             // Geçmişe kaydet
             chatHistory.push({ role: "assistant", content: finalText });
             saveCurrentChat();

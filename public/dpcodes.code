@@ -1,9 +1,15 @@
 DEPLOY
 git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
 
+-----
+
+
 
 ELEVATION START
 pm2 start elevation_api.py --interpreter python3 --name elevation-api
+
+
+----
 
 
 DOCKER CAR YOKSA
@@ -11,3 +17,31 @@ docker run -d --name osrm-tr-car -p 5003:5000 \
   -v /data/osrm/car:/data \
   osrm/osrm-backend \
   osrm-routed --algorithm mld /data/turkey.osrm
+
+
+-----
+
+
+
+TRIPTIME-LIVE STASH OLURSA
+#  Değişiklikleri İptal Et (en hızlı)
+bash
+cd ~/triptime-live
+
+# Değişiklikleri iptal et (dosya adı)
+git checkout llm-proxy.js
+
+# Sonra deploy et
+deploy
+
+
+
+-----
+
+
+CONFIG DOSYALARINDAKİ DEĞİŞİKLİK SONRASI NGINX ŞART
+# 1. Nginx config test et
+sudo nginx -t
+
+# 2. Nginx'i yeniden yükle
+sudo systemctl reload nginx

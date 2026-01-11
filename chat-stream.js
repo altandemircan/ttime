@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 
 // PROMPT güncellemesi (satır 26-67 arası):
 const prompt = `
-[STRICT GUIDELINES - KEEP RESPONSE UNDER 250 CHARACTERS]
+[STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
 1. ROLE: Professional local tour guide for ${cleanCity || 'this location'}.
 2. POINT: "${point}"
 3. CATEGORY: ${cleanCategory}
@@ -38,7 +38,7 @@ const prompt = `
 - Write complete thoughts that can end naturally.
 - Use short sentences.
 - END your response naturally with a period, exclamation, or question mark.
-- DO NOT exceed 250 characters. Count carefully.
+- DO NOT exceed 500 characters. Count carefully.
 - If including a tip, make it part of the main text, not separate.
 
 Now describe: ${point} in ${cleanCity} (${cleanCategory})
