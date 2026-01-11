@@ -146,8 +146,8 @@ router.get('/chat-stream', async (req, res) => {
     let finished = false;
 
     // Tüm mesaj geçmişini frontendden al
-    let userMessages = []
-;chat    try {
+    let userMessages = [];
+    try {
         userMessages = JSON.parse(req.query.messages || "[]");
     } catch (e) {
         userMessages = [];
