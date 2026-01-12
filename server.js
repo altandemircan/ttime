@@ -3,7 +3,7 @@ try {
 console.log('[startup] __dirname:', __dirname);
 const fs = require('fs');
 console.log('[startup] .env exists:', fs.existsSync('./.env'));
-  require('dotenv').config({ /* quiet: true */ });
+require('dotenv').config({ path: __dirname + '/.env' });
   console.log('[startup] dotenv loaded');
 } catch (e) {
   console.warn('[startup] dotenv not loaded:', e.code || e.message);
