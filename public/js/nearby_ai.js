@@ -1,4 +1,14 @@
 // Görsel doğrulama fonksiyonu
+function getBestCityForAI(pointInfo) {
+    if (!pointInfo) return "";
+    let country = (pointInfo.country || pointInfo.country_code || "").trim().toUpperCase();
+    if (country === "TURKEY" || country === "TR") {
+        return pointInfo.county || pointInfo.city || "";
+    } else {
+        return pointInfo.city || pointInfo.county || "";
+    }
+}
+
 async function isImageValid(url, timeout = 3000) {
     if (!url || url === PLACEHOLDER_IMG) return false;
     
@@ -523,7 +533,6 @@ function getSimplePlaceCategory(f) {
 }
 
 
-function getBestCityForAI(pointInfo) {
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
@@ -1016,13 +1025,14 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             currentCityName = pointInfo.county || pointInfo.city;
         }
         
-if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+      if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const category = pointInfo?.category || pointInfo?.type || "place";
     const cityName = getBestCityForAI(pointInfo);
     console.log('AI request:', { point: pointInfo.name, city: cityName }); // her tıklamada city güncel!
 
     window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
 }
+
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
