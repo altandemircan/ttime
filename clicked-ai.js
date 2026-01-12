@@ -5,22 +5,20 @@ const router = express.Router();
 router.post('/', async (req, res) => {
     const { point, city, facts } = req.body; // facts'i de al
 
-    const prompt = `You are a local tour guide in ${city}. 
-Create a brief, engaging description about "${point}" that appeals to the senses.
-Focus on what visitors might see, hear, smell, or feel at this location.
+    const prompt = `You are a travel guide for ${city}. 
+Write a short summary and a tip about visiting this city.
 
 Return ONLY a JSON object with these exact keys:
 {
-  "p1": "description_here", 
-  "p2": "tip_here" 
+  "p1": "short summary about ${city}", 
+  "p2": "one tip for travelers"
 }
 
 Rules:
-- p1: 1-2 sentences describing ${point} in a vivid, sensory way
-- p2: 1 practical tip or recommendation for visitors
+- p1: 1-2 sentences with a quick overview about ${city} (its location, main attractions, general vibe)
+- p2: 1 simple tip or suggestion for first-time visitors
 - Use simple, natural English
-- Do NOT include any explanations outside the JSON
-- If you don't know specific details, describe typical features`;
+- Respond only with the JSON object above.`;
 
     try {
         const response = await axios.post('http://127.0.0.1:11434/api/generate', {
