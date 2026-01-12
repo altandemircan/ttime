@@ -25,8 +25,7 @@ router.get('/', async (req, res) => {
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
-// PROMPT güncellemesi (satır 26-67 arası):
-const prompt = `
+    const prompt = `
 [STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
 1. ROLE: Professional local tour guide for ${cleanCity || 'this location'}.
 2. POINT: "${point}"
@@ -53,22 +52,6 @@ Now describe: ${point} in ${cleanCity} (${cleanCategory})
     const model = 'llama3:8b';
 
     try {
-<<<<<<< Updated upstream
-        const ollama = await axios({
-            method: 'post',
-            url: 'http://127.0.0.1:11434/api/chat',
-            data: {
-    model,
-    messages,
-    stream: true,
-    max_tokens: 120, // 200'den 120'ye düşürdük - daha kısa cevaplar için
-    temperature: 0.7, // Daha kararlı cevaplar için
-    stop: ["\n\n", "Practical Tip:", "Tip:", "Note:"] // Erken durma noktaları
-},
-            responseType: 'stream',
-            timeout: 180000
-        });
-=======
         // RETRY MEKANİZMASI - 2 deneme
         let ollamaResponse;
         let lastError;
@@ -106,7 +89,6 @@ break; // Başarılı, döngüden çık
         }
 
         const ollama = ollamaResponse;
->>>>>>> Stashed changes
 
       let firstChunkTime = null;
 ollama.data.on('data', chunk => {
