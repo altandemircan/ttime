@@ -523,6 +523,7 @@ function getSimplePlaceCategory(f) {
 }
 
 
+function getBestCityForAI(pointInfo) {
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
@@ -1016,16 +1017,13 @@ showCustomPopup(lat, lng, map, loadingContent, false);
         }
         
         if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-    const category = pointInfo?.category || pointInfo?.type || "place"; 
-const cityName =
-    pointInfo.city && pointInfo.city.length > 1
-        ? pointInfo.city
-        : (pointInfo.county || pointInfo.country || window.selectedCity || "");
-        console.log('AI request:', { point: pointInfo.name, city: cityName });
+            const category = pointInfo?.category || pointInfo?.type || "place";
+            const cityName = getBestCityForAI(pointInfo);
+            console.log('AI request:', { point: pointInfo.name, city: cityName }); // her tıklamada city güncel!
 
-window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
-}
-
+            window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
+        }
+        
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
