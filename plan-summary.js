@@ -71,8 +71,7 @@ if (fs.existsSync(CACHE_FILE)) {
     }
 }
 
-    // 2. YENİ İŞLEM BAŞLAT
-// 2. YENİ İŞLEM BAŞLAT kısmı
+
 const processingPromise = (async () => {
     const aiReqCity = country ? `${city}, ${country}` : city;
      
@@ -91,64 +90,68 @@ const processingPromise = (async () => {
 
     console.log('[AI] Prompt:', prompt);
 
-    try {
-        console.log('[AI] Ollama /api/generate çağrısı yapılıyor...');
-        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-            model: activeModel,
-            prompt: prompt,
-            stream: false,
-            format: "json",
-            options: {
-                temperature: 0.1,
-                top_p: 0.9,
-                max_tokens: 200
+    // RETRY MEKANİZMASI - 2 deneme
+    let lastError;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            console.log(`[AI] Ollama çağrısı (attempt ${attempt})...`);
+            const response = await axios.post('http://127.0.0.1:11434/api/generate', {
+                model: activeModel,
+                prompt: prompt,
+                stream: false,
+                format: "json",
+                options: {
+                    temperature: 0.1,
+                    top_p: 0.9,
+                    max_tokens: 200
+                }
+            }, {
+                timeout: attempt === 1 ? 20000 : 40000 // İlk 20sn, ikinci 40sn
+            });
+
+            console.log('[AI] Ollama response status:', response.status);
+
+            let jsonText = '';
+            if (response.data && response.data.response) {
+                jsonText = response.data.response;
+                console.log('[AI] Response.text bulundu:', jsonText);
             }
-        }, {
-            timeout: 30000  // 30 saniye timeout
-        });
 
-        console.log('[AI] Ollama response status:', response.status);
-        console.log('[AI] Ollama response data:', JSON.stringify(response.data));
-
-        let jsonText = '';
-        // Ollama generate endpoint formatı
-        if (response.data && response.data.response) {
-            jsonText = response.data.response;
-            console.log('[AI] Response.text bulundu:', jsonText);
-        } else {
-            console.log('[AI] Response.text bulunamadı, tüm response:', response.data);
-        }
-
-        // JSON'u parse et
-        if (jsonText) {
-            try {
-                const parsed = JSON.parse(jsonText);
-                console.log('[AI] JSON parse başarılı:', parsed);
-                return parsed;
-            } catch (parseErr) {
-                console.error('[AI] JSON parse hatası:', parseErr.message);
-                // Belki sadece JSON içeren kısmı al
-                const match = jsonText.match(/\{[\s\S]*\}/);
-                if (match) {
-                    try {
-                        const parsed = JSON.parse(match[0]);
-                        console.log('[AI] Regex ile parse edildi:', parsed);
-                        return parsed;
-                    } catch (e2) {
-                        console.error('[AI] Regex parse de başarısız');
+            // JSON'u parse et
+            if (jsonText) {
+                try {
+                    const parsed = JSON.parse(jsonText);
+                    console.log('[AI] JSON parse başarılı:', parsed);
+                    return parsed;
+                } catch (parseErr) {
+                    console.error('[AI] JSON parse hatası:', parseErr.message);
+                    const match = jsonText.match(/\{[\s\S]*\}/);
+                    if (match) {
+                        try {
+                            const parsed = JSON.parse(match[0]);
+                            console.log('[AI] Regex ile parse edildi:', parsed);
+                            return parsed;
+                        } catch (e2) {
+                            console.error('[AI] Regex parse de başarısız');
+                        }
                     }
                 }
             }
-        }
 
-        console.error('[AI] Boş veya geçersiz yanıt');
-        return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
-        
-    } catch (err) {
-        console.error("LLM Error:", err.message);
-        console.error("LLM Error details:", err.response?.data || 'No response data');
-        return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
+            console.error('[AI] Boş veya geçersiz yanıt');
+            return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
+            
+        } catch (err) {
+            lastError = err;
+            console.error(`[AI] Attempt ${attempt} failed:`, err.message);
+            if (attempt < 2) {
+                await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5sn bekle
+            }
+        }
     }
+
+    console.error("LLM Error after retries:", lastError?.message);
+    return { summary: "Info unavailable.", tip: "Info unavailable.", highlight: "Info unavailable." };
 })();
 
     // 3. PENDING OLARAK İŞARETLE

@@ -3,7 +3,7 @@ const axios = require('axios');
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-    const { point, city, facts } = req.body; // facts'i de al
+    const { point, city, facts } = req.body;
 
     const prompt = `You are a local tour guide in ${city}. 
 Create a brief, engaging description about "${point}" that appeals to the senses.
@@ -22,43 +22,55 @@ Rules:
 - Do NOT include any explanations outside the JSON
 - If you don't know specific details, describe typical features`;
 
-    try {
-        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-            model: "llama3:8b",
-            prompt: prompt,
-            stream: false,
-            options: {
-                temperature: 0.7,  // Biraz daha yaratıcı olsun
-                top_p: 0.9,
-                repeat_penalty: 1.1,
-                num_predict: 150
+    // RETRY MEKANİZMASI - 2 deneme
+    let lastError;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            const response = await axios.post('http://127.0.0.1:11434/api/generate', {
+                model: "llama3:8b",
+                prompt: prompt,
+                stream: false,
+                options: {
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    repeat_penalty: 1.1,
+                    num_predict: 150
+                }
+            }, { 
+                timeout: attempt === 1 ? 15000 : 25000 // İlk 15sn, ikinci 25sn
+            });
+
+            let content = response.data?.response || "{}";
+            console.log(`[clicked-ai] Attempt ${attempt} success`);
+
+            const jsonMatch = content.match(/\{[\s\S]*?\}/);
+            let result = { p1: "", p2: "" };
+            if (jsonMatch) {
+                try {
+                    const parsed = JSON.parse(jsonMatch[0]);
+                    result = {
+                        p1: parsed.p1 || "",
+                        p2: parsed.p2 || ""
+                    };
+                } catch (parseErr) {
+                    console.error('JSON parse error:', parseErr.message);
+                }
             }
-        }, { timeout: 30000 });
 
-        let content = response.data?.response || "{}";
-        console.log('Ollama response:', content); // DEBUG
+            console.log('Result to frontend:', result);
+            return res.json(result);
 
-        const jsonMatch = content.match(/\{[\s\S]*?\}/);
-        let result = { p1: "", p2: "" };
-        if (jsonMatch) {
-            try {
-                const parsed = JSON.parse(jsonMatch[0]);
-                result = {
-                    p1: parsed.p1 || "",
-                    p2: parsed.p2 || ""
-                };
-            } catch (parseErr) {
-                console.error('JSON parse error:', parseErr.message);
+        } catch (e) {
+            lastError = e;
+            console.log(`[clicked-ai] Attempt ${attempt} failed:`, e.message);
+            if (attempt < 2) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1sn bekle
             }
         }
-
-        console.log('Result to frontend:', result); // DEBUG
-        res.json(result);
-
-    } catch (e) {
-        console.error("AI error:", e.message);
-        res.json({ p1: "", p2: "" });
     }
+
+    console.error("AI error after retries:", lastError?.message);
+    res.json({ p1: "", p2: "" });
 });
 
 module.exports = router; 

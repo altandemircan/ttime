@@ -24,8 +24,7 @@ router.get('/', async (req, res) => {
     const cleanCategory = req.query.category || "";
     const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
-// PROMPT güncellemesi (satır 26-67 arası):
-const prompt = `
+    const prompt = `
 [STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
 1. ROLE: Professional local tour guide for ${cleanCity || 'this location'}.
 2. POINT: "${point}"
@@ -52,20 +51,43 @@ Now describe: ${point} in ${cleanCity} (${cleanCategory})
     const model = 'llama3:8b';
 
     try {
-        const ollama = await axios({
-            method: 'post',
-            url: 'http://127.0.0.1:11434/api/chat',
-            data: {
-    model,
-    messages,
-    stream: true,
-    max_tokens: 120, // 200'den 120'ye düşürdük - daha kısa cevaplar için
-    temperature: 0.7, // Daha kararlı cevaplar için
-    stop: ["\n\n", "Practical Tip:", "Tip:", "Note:"] // Erken durma noktaları
-},
-            responseType: 'stream',
-            timeout: 180000
-        });
+        // RETRY MEKANİZMASI - 2 deneme
+        let ollamaResponse;
+        let lastError;
+        
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                console.log(`[chat-stream] Ollama attempt ${attempt} for: ${point}`);
+                ollamaResponse = await axios({
+                    method: 'post',
+                    url: 'http://127.0.0.1:11434/api/chat',
+                    data: {
+                        model,
+                        messages,
+                        stream: true,
+                        max_tokens: 120,
+                        temperature: 0.7,
+                        stop: ["\n\n", "Practical Tip:", "Tip:", "Note:"]
+                    },
+                    responseType: 'stream',
+                    timeout: attempt === 1 ? 30000 : 60000 // İlk 30sn, ikinci 60sn
+                });
+                console.log(`[chat-stream] Attempt ${attempt} success`);
+                break; // Başarılı, döngüden çık
+            } catch (err) {
+                lastError = err;
+                console.log(`[chat-stream] Attempt ${attempt} failed:`, err.message);
+                if (attempt < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // 2sn bekle
+                }
+            }
+        }
+        
+        if (!ollamaResponse) {
+            throw lastError || new Error('Ollama connection failed after retries');
+        }
+
+        const ollama = ollamaResponse;
 
         ollama.data.on('data', chunk => {
             if (finished) return;
