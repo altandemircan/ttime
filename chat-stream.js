@@ -3,6 +3,7 @@ const axios = require('axios');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
+    console.log("[BACKEND] Yeni chat-stream AI SSE isteği geldi", new Date().toISOString());
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-cache');
@@ -52,6 +53,7 @@ Now describe: ${point} in ${cleanCity} (${cleanCategory})
     const model = 'llama3:8b';
 
     try {
+<<<<<<< Updated upstream
         const ollama = await axios({
             method: 'post',
             url: 'http://127.0.0.1:11434/api/chat',
@@ -66,37 +68,82 @@ Now describe: ${point} in ${cleanCity} (${cleanCategory})
             responseType: 'stream',
             timeout: 180000
         });
-
-        ollama.data.on('data', chunk => {
-            if (finished) return;
-            const str = chunk.toString().trim();
-            if (str) {
-                res.write(`data: ${str}\n\n`);
+=======
+        // RETRY MEKANİZMASI - 2 deneme
+        let ollamaResponse;
+        let lastError;
+        
+        for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+        console.log(`[BACKEND] Ollama attempt ${attempt} başlıyor`, Date.now());
+                ollamaResponse = await axios({
+                    method: 'post',
+                    url: 'http://127.0.0.1:11434/api/chat',
+                    data: {
+                        model,
+                        messages,
+                        stream: true,
+                        max_tokens: 120,
+                        temperature: 0.7,
+                        stop: ["\n\n", "Practical Tip:", "Tip:", "Note:"]
+                    },
+                    responseType: 'stream',
+                    timeout: attempt === 1 ? 30000 : 60000 // İlk 30sn, ikinci 60sn
+                });
+                console.log(`[BACKEND] Ollama attempt ${attempt} BAŞARILI`, Date.now());
+break; // Başarılı, döngüden çık
+            } catch (err) {
+                lastError = err;
+                console.log(`[chat-stream] Attempt ${attempt} failed:`, err.message);
+                if (attempt < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // 2sn bekle
+                }
             }
-        });
+        }
+        
+        if (!ollamaResponse) {
+            throw lastError || new Error('Ollama connection failed after retries');
+        }
 
+        const ollama = ollamaResponse;
+>>>>>>> Stashed changes
+
+      let firstChunkTime = null;
+ollama.data.on('data', chunk => {
+    if (finished) return;
+    const str = chunk.toString().trim();
+    if (str) {
+        if (!firstChunkTime) {
+            firstChunkTime = Date.now();
+            console.log("[BACKEND] Ollama ilk data chunk geldi", firstChunkTime);
+        }
+        res.write(`data: ${str}\n\n`);
+    }
+});
         ollama.data.on('end', () => {
-            if (!finished) {
-                finished = true;
-                res.write('event: end\ndata: [DONE]\n\n');
-                res.end();
-            }
-        });
+    console.log("[BACKEND] Ollama stream bitti", Date.now());
+    if (!finished) {
+        finished = true;
+        res.write('event: end\ndata: [DONE]\n\n');
+        res.end();
+    }
+});
+       ollama.data.on('error', (err) => {
+    console.log("[BACKEND] Ollama stream error", Date.now(), err);
+    if (!finished) {
+        finished = true;
+        res.write(`event: error\ndata: ${err.message}\n\n`);
+        res.end();
+    }
+});
 
-        ollama.data.on('error', (err) => {
-            if (!finished) {
-                finished = true;
-                res.write(`event: error\ndata: ${err.message}\n\n`);
-                res.end();
-            }
-        });
-
-        req.on('close', () => {
-            if (!finished) {
-                finished = true;
-                res.end();
-            }
-        });
+       req.on('close', () => {
+    console.log("[BACKEND] SSE HTTP connection kapandı", Date.now());
+    if (!finished) {
+        finished = true;
+        res.end();
+    }
+});
     } catch (error) {
         finished = true;
         res.write(`event: error\ndata: ${error?.response?.data?.error || error.message}\n\n`);
