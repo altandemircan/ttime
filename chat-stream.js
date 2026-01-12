@@ -133,5 +133,5 @@ ollama.data.on('data', chunk => {
         console.error('[OLLAMA ERROR]', error?.response?.data || error);
     }
 });
-
+ 
 module.exports = router; 

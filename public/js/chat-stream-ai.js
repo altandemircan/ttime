@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px;
+                gap: 6px; 
                 box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             }
             .ai-nav-btn:hover {
