@@ -3,7 +3,12 @@ const axios = require('axios');
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-    const { point, city, facts } = req.body; // facts'i de al
+   const { point, city, facts } = req.body;
+if (!city || city.trim() === '') {
+    console.warn("WARN: AI request city parametresi boş geliyor!", point);
+}
+        console.log(`[AI REQUEST] point=${point}, city=${city}, facts=${JSON.stringify(facts)}`);
+
 
     const prompt = `You are a travel guide for ${city}.
 Write a short summary and a tip about visiting this city.
@@ -42,7 +47,7 @@ try {
     }
 
     console.log('Ollama response:', content);
-    console.log('Result to frontend:', result);
+    console.log(`[AI RESPONSE for city=${city}]`, result);
     res.json(result);
 
 } catch (e) {
