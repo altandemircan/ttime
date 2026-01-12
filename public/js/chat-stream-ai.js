@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px;
+                gap: 6px; 
                 box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             }
             .ai-nav-btn:hover {
@@ -408,14 +408,16 @@ aiImg.playsInline = true;
     const SOFT_LIMIT = 220; // Yumuşak limit (kullanıcıya göster)
     const HARD_LIMIT = 280; // Gerçek limit (kesme noktası)
 
-    const eventSource = new EventSource(
+    console.log("[FRONT] sendAIChatMessage - AI sorgu başlatıldı", Date.now());
+const eventSource = new EventSource(
         `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
     );
 
     eventSource.onmessage = function(event) {
-        if (hasError) return;
-        try {
-            const data = JSON.parse(event.data);
+    console.log("[FRONT] SSE onmessage geldi", Date.now(), event.data);
+    if (hasError) return;
+    try {
+        const data = JSON.parse(event.data);
             if (data.message && data.message.content) {
                 const newText = data.message.content;
                 fullTextBuffer += newText;
@@ -458,14 +460,14 @@ aiImg.playsInline = true;
         }
     };
 
-    eventSource.onerror = function() {
-        if (!hasError && !streamEnded) {
-            hasError = true;
-            eventSource.close();
-            aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
-           
-        }
-    };
+    eventSource.onerror = function(e) {
+    console.log("[FRONT] SSE error!", Date.now(), e);
+    if (!hasError && !streamEnded) {
+        hasError = true;
+        eventSource.close();
+        aiContent.innerHTML += " <span style='color:red;font-size:0.8em'>(Connection error)</span>";
+    }
+};
 
     eventSource.addEventListener('end', function() {
         completeResponse();
@@ -531,13 +533,14 @@ aiImg.playsInline = true;
 
     // Timeout (45 saniye)
     setTimeout(() => {
-        if (!streamEnded && !hasError) {
-            eventSource.close();
-            hasError = true;
-            aiContent.innerHTML = "Response timed out. Please try again.";
-            aiImg.src = '/img/avatar_aiio.png';
-        }
-    }, 45000);
+    if (!streamEnded && !hasError) {
+        console.log("[FRONT] STREAM TIMEOUT!", Date.now());
+        eventSource.close();
+        hasError = true;
+        aiContent.innerHTML = "Response timed out. Please try again.";
+        aiImg.src = '/img/avatar_aiio.png';
+    }
+}, 45000);
 }
 
     if (sendBtn && chatInput) {
