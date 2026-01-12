@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
     // Anahtar oluştur (Örn: "Rome-Italy")
     const cacheKey = country ? `${city}-${country}` : city;
     console.log(`[AI REQ] ${cacheKey}`);
-
+ 
     // 1. KONTROL: Cache'de var mı?
     // --- BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
 let aiCache = {};

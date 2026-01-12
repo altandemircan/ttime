@@ -127,4 +127,4 @@ Now describe: ${point} in ${cleanCity} (${cleanCategory})
     }
 });
 
-module.exports = router;
+module.exports = router; 

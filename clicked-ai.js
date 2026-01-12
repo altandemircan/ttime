@@ -12,7 +12,7 @@ Focus on what visitors might see, hear, smell, or feel at this location.
 Return ONLY a JSON object with these exact keys:
 {
   "p1": "description_here", 
-  "p2": "tip_here"
+  "p2": "tip_here" 
 }
 
 Rules:
