@@ -1029,10 +1029,14 @@ if (pointInfo && (pointInfo.county || pointInfo.city)) {
         
       if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const category = pointInfo?.category || pointInfo?.type || "place";
-    const cityName = getBestCityForAI(pointInfo);
-const safeCityName = cityName && cityName.trim() ? cityName : 'Rome';
-console.log('AI request:', { point: pointInfo.name, city: safeCityName }); // takibi kolay
-window.fetchClickedPointAI(pointInfo.name, lat, lng, safeCityName, { category }, 'ai-point-description');
+const cityName = getBestCityForAI(pointInfo);
+if (!cityName || !cityName.trim()) {
+    console.warn('[AI REQUEST] Şehir adı tespit edilemedi, AI isteği gönderilmiyor!', pointInfo);
+    // İstersen kullanıcıya hata göster ve/veya isteği atlama:
+    // return;
+}
+console.log('AI request:', { point: pointInfo.name, city: cityName });
+window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
 }
 
     } catch (error) {
