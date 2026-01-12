@@ -1016,15 +1016,14 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             currentCityName = pointInfo.county || pointInfo.city;
         }
         
-        if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-            const category = pointInfo?.category || pointInfo?.type || "place";
-            const cityName = getBestCityForAI(pointInfo);
-            console.log('AI request:', { point: pointInfo.name, city: cityName }); // her tıklamada city güncel!
+if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+    const category = pointInfo?.category || pointInfo?.type || "place";
+    const cityName = getBestCityForAI(pointInfo);
+    console.log('AI request:', { point: pointInfo.name, city: cityName }); // her tıklamada city güncel!
 
-            window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
-        }
-
-    catch (error) {
+    window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
+}
+    } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
     }
