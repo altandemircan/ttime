@@ -45,3 +45,14 @@ sudo nginx -t
 
 # 2. Nginx'i yeniden yükle
 sudo systemctl reload nginx
+
+
+-----
+
+
+ESKİ LOGLARI TEMİZLE
+pm2 flush
+
+
+
+-------

@@ -36,7 +36,7 @@ app.use('/clicked-ai', clickedAiRouter);
 app.use('/chat-stream', chatStreamRouter);
 console.log('Chat stream endpoint registered at /chat-stream');
 
-
+ 
 // Diğer API Routerları
 const photogetProxy = require('./photoget-proxy');
 app.use('/photoget-proxy', photogetProxy);
