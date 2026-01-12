@@ -1,4 +1,8 @@
 try {
+  console.log('[startup] process.cwd():', process.cwd());
+console.log('[startup] __dirname:', __dirname);
+const fs = require('fs');
+console.log('[startup] .env exists:', fs.existsSync('./.env'));
   require('dotenv').config({ /* quiet: true */ });
   console.log('[startup] dotenv loaded');
 } catch (e) {
