@@ -211,7 +211,7 @@ app.get('/api/geoapify/reverse', async (req, res) => {
   } catch (e) {
     res.status(500).send('Proxy error');
   }
-});
+}); 
 
 // 4. Health endpoint
 app.get('/health', (req, res) => {
@@ -258,4 +258,4 @@ const PORT = process.env.PORT || 3004;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Feedback email configured:', !!process.env.FEEDBACK_FROM_EMAIL);
-});
+}); 
