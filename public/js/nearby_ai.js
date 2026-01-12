@@ -1023,8 +1023,8 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
             window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
         }
-        
-    } catch (error) {
+
+    catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
     }
