@@ -25,13 +25,13 @@ Rules:
             model: "llama3:8b",
             prompt: prompt,
             stream: false,
-            options: {
+            options: { 
                 temperature: 0.7,  // Biraz daha yaratıcı olsun
                 top_p: 0.9,
                 repeat_penalty: 1.1,
                 num_predict: 150
             }
-        }, { timeout: 30000 });
+        }, { timeout: 90000 });
 
         let content = response.data?.response || "{}";
         console.log('Ollama response:', content); // DEBUG

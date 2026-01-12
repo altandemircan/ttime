@@ -1593,4 +1593,4 @@ window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) 
 
 window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'entertainment');
-};
+}; 
