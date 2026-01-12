@@ -7,13 +7,8 @@ let aiActiveRequest = 0;
 
 // Görsel doğrulama fonksiyonu
 function getBestCityForAI(pointInfo) {
-    if (!pointInfo) return "";
-    let country = (pointInfo.country || pointInfo.country_code || "").trim().toUpperCase();
-    if (country === "TURKEY" || country === "TR") {
-        return pointInfo.county || pointInfo.city || "";
-    } else {
-        return pointInfo.city || pointInfo.county || "";
-    }
+    if (!pointInfo) return '';
+    return pointInfo.city || pointInfo.county || pointInfo.locality || window.selectedCity || '';
 }
 
 async function isImageValid(url, timeout = 3000) {
@@ -1028,16 +1023,16 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         // Şehir bilgisi ve AI açıklaması
         let currentCityName = window.selectedCity || "";
-        if (pointInfo && (pointInfo.county || pointInfo.city)) {
-            currentCityName = pointInfo.county || pointInfo.city;
-        }
+if (pointInfo && (pointInfo.county || pointInfo.city)) {
+    currentCityName = pointInfo.county || pointInfo.city;
+}
         
       if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const category = pointInfo?.category || pointInfo?.type || "place";
     const cityName = getBestCityForAI(pointInfo);
-    console.log('AI request:', { point: pointInfo.name, city: cityName }); // her tıklamada city güncel!
-
-    window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
+const safeCityName = cityName && cityName.trim() ? cityName : 'Rome';
+console.log('AI request:', { point: pointInfo.name, city: safeCityName }); // takibi kolay
+window.fetchClickedPointAI(pointInfo.name, lat, lng, safeCityName, { category }, 'ai-point-description');
 }
 
     } catch (error) {
