@@ -1,4 +1,4 @@
-DEPLOY
+DEPLOY2 saat sonra test mi y
 git pull && BUILD=$(git rev-parse --short HEAD) && sed -i "s/v=__BUILD__/v=${BUILD}/g" public/index.html
 
 -----------------------------------------------------------------------------------------------------------------------------
@@ -56,3 +56,12 @@ tail -f /root/cron_ai_ping.log
 
 OLLAMA TEST 2 SAAT SONRA
 curl -X POST http://127.0.0.1:11434/api/ps -H "Content-Type: application/json" -d '{}'
+
+
+-------------------------------------
+
+
+  //km'de nokta sayısı: 2'den 5'e
+  // const N = Math.max(40, Math.round(totalKm * 2));
+
+  const N = Math.max(80, Math.round(totalKm * 2));
