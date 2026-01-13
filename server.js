@@ -205,9 +205,8 @@ app.get('/api/geoapify/places', async (req, res) => {
 
 
 app.post('/api/elevation', async (req, res) => {
-    // Eğer locations direkt dizi olarak geliyorsa:
-    const locations = Array.isArray(req.body.locations) 
-        ? req.body.locations 
+    const locations = Array.isArray(req.body.locations)
+        ? req.body.locations
         : (req.body.locations || "").split('|').filter(Boolean);
 
     const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
