@@ -5947,21 +5947,35 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-    // 5. HARİTA BAŞLATMA
-   const map = L.map(sidebarContainer, {
+  // renderLeafletRoute fonksiyonu içinde harita oluşturulan yeri bulun
+// Mevcut haritayı temizle (Already initialized hatasını önler)
+if (window.leafletMaps && window.leafletMaps[sidebarContainer]) {
+    window.leafletMaps[sidebarContainer].remove();
+    delete window.leafletMaps[sidebarContainer];
+}
+
+// Haritayı PASİF olarak başlat
+const map = L.map(sidebarContainer, {
     center: [0, 0],
     zoom: 1,
-    dragging: false,         // PASİF
-    touchZoom: false,        // PASİF
-    scrollWheelZoom: false,  // PASİF
-    doubleClickZoom: false,  // PASİF
-    zoomControl: false,      // PASİF
-    attributionControl: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
-    markerZoomAnimation: true,
-    inertia: false
+    dragging: false,          // Sürükleme kapalı
+    touchZoom: false,         // Dokunmatik zoom kapalı
+    scrollWheelZoom: false,   // Mouse tekerleği kapalı
+    doubleClickZoom: false,   // Çift tıklama kapalı
+    boxZoom: false,           // Kutu zoom kapalı
+    keyboard: false,          // Klavye kapalı
+    zoomControl: false,       // ZOOM BUTONLARINI TAMAMEN KALDIR (setPosition hatasını önler)
+    attributionControl: false, // Alt yazıyı manuel yönetmek daha güvenli
+    fadeAnimation: true
 });
+
+// Attribution'ı güvenli şekilde ekle (Hata almamak için setPosition çağırmadan)
+L.control.attribution({ prefix: false }).addTo(map)
+ .addAttribution('&copy; <a href="https://openfreemap.org">OpenFreeMap</a>');
+
+// Haritayı globale kaydet
+window.leafletMaps = window.leafletMaps || {};
+window.leafletMaps[sidebarContainer] = map;
 
 // MapLibre eklenirken yine interactive: false
 if (typeof L.maplibreGL === 'function') {
@@ -6219,7 +6233,9 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     }
 
     wrapRouteControls(day);
+if (map.zoomControl) {
     map.zoomControl.setPosition('topright');
+}
     window.leafletMaps[containerId] = map;
 
     // --- GÜVENLİ ODAKLAMA ---
@@ -12204,6 +12220,10 @@ document.addEventListener("DOMContentLoaded", function() {
         .leaflet-marker-pane {
             pointer-events: auto !important;
         }
+        .route-map.leaflet-container {
+    pointer-events: none !important; /* Harita tamamen bir resim gibi davranır */
+    cursor: default !important;
+}
     `;
     document.head.appendChild(style);
 })();
