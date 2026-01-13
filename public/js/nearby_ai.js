@@ -1045,13 +1045,11 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
         }, 250);
 
-        // Şehir bilgisi ve AI açıklaması
 // Şehir bilgisi ve AI açıklaması - YENİ VERSİYON
 let currentCityName = "";
 
-// 1. Önce reverse geocode yap - değişkeni try-catch dışında da kullanılabilir yap
+// 1. Önce reverse geocode yap
 const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
-
 try {
     const reverseResp = await fetch(reverseUrl);
     const reverseData = await reverseResp.json();
@@ -1068,27 +1066,46 @@ try {
         console.log('- Name:', props.name);
         console.log('- Categories:', props.categories);
         console.log('- All properties:', Object.keys(props));
+        
+        // REVERSE DATA'dan şehir bilgisini al
+        currentCityName = props.city || props.county || props.region || props.state || "";
     }
 } catch (e) {
     console.error('Reverse geocode error:', e);
 }
-// 2. Hala boşsa pointInfo'dan al
+
+// 2. Hala boşsa pointInfo'dan al - ama pointInfo yapısını kontrol et
 if (!currentCityName && pointInfo) {
-    currentCityName = pointInfo.city || pointInfo.county || pointInfo.region || "";
+    // pointInfo nesnesinin yapısını kontrol et
+    console.log('pointInfo structure:', pointInfo);
+    currentCityName = pointInfo.city || pointInfo.county || pointInfo.region || pointInfo.state || "";
 }
 
 // 3. Hala boşsa global city
 if (!currentCityName) {
     currentCityName = window.selectedCity || "";
 }
+
+// DEBUG: Şehir adını konsola yazdır
+console.log('[AI CITY DEBUG] Final city name:', currentCityName, {
+    reverseDataCity: reverseData?.features?.[0]?.properties?.city,
+    pointInfoCity: pointInfo?.city,
+    selectedCity: window.selectedCity
+});
         
 // Şehir bilgisi ve AI açıklaması kısmını güncelle:
 if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const category = pointInfo?.category || pointInfo?.type || "place";
     
-    // currentCityName'i kullan (yukarıda belirledik)
+    // currentCityName'i kullan
     if (!currentCityName || !currentCityName.trim()) {
-        console.warn('[AI REQUEST] Şehir adı tespit edilemedi!', { lat, lng, pointInfo });
+        console.warn('[AI REQUEST] Şehir adı tespit edilemedi!', { 
+            lat, 
+            lng, 
+            pointInfo,
+            reverseData: reverseData?.features?.[0]?.properties,
+            selectedCity: window.selectedCity 
+        });
         return;
     }
     
