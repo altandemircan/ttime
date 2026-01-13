@@ -3852,6 +3852,10 @@ const map = L.map(containerId, {
       center: map.getCenter(),
       zoom: map.getZoom()
     };
+    setTimeout(() => {
+  map.invalidateSize();
+  setTimeout(() => map.invalidateSize(), 300);
+}, 100);
   }
   
   window.leafletMaps = window.leafletMaps || {};
@@ -4279,7 +4283,11 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
-    setTimeout(() => { map.invalidateSize(); }, 250);
+   // Her ihtimale karşı iki aşamalı ve tekrar invalidate
+setTimeout(() => {
+  map.invalidateSize();
+  setTimeout(() => map.invalidateSize(), 300);
+}, 120);
 }
 
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
@@ -12034,16 +12042,12 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             transform: translate3d(0,0,0);
         }
 
-        /* 4. Küçük harita (route-map) özel ayarı */
         .route-map .leaflet-marker-icon {
-            margin-left: -12px !important;  /* Marker merkezi için */
-            margin-top: -12px !important;   /* Marker merkezi için */
-        }
-        /* mainscript.js içindeki style kısmına ekle */
-.route-map .leaflet-marker-icon {
-    margin-left: -13px !important; 
-    margin-top: -13px !important;
+    margin-left: -12px !important;
+    margin-top: -12px !important;
 }
+
+
     `;
     document.head.appendChild(style);
 })();
