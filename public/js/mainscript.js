@@ -3859,120 +3859,51 @@ function ensureDayMapContainer(day) {
 // }
 
 function initEmptyDayMap(day) {
-  const containerId = `route-map-day${day}`;
-  let el = document.getElementById(containerId);
-
-  if (!el) {
-    el = ensureDayMapContainer(day);
+    const containerId = `route-map-day${day}`;
+    let el = document.getElementById(containerId);
     if (!el) return;
-  }
 
-  if (typeof L === 'undefined') {
-    setTimeout(() => initEmptyDayMap(day), 60);
-    return;
-  }
+    // 1. HATA ENGELLEME: Eğer harita zaten kurulmuşsa tekrar kurma, çık.
+    if (el._leaflet_id || (window.leafletMaps && window.leafletMaps[containerId])) {
+        return; 
+    }
 
-  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
-  const hasInner = el.querySelector('.leaflet-container');
-  if (existingMap && hasInner) return;
-  
-  if (existingMap && !hasInner) {
-    try { existingMap.remove(); } catch(_) {}
-    delete window.leafletMaps[containerId];
-  }
+    if (typeof L === 'undefined') {
+        setTimeout(() => initEmptyDayMap(day), 60);
+        return;
+    }
 
-  if (!el.style.height) el.style.height = '285px';
-  el.style.backgroundColor = "#eef0f5"; 
-  
-  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-  const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-  
-  let startCenter = [39.0, 35.0];
-  let startZoom = 5;
-  let startBounds = null;
-  let hasFocus = false;
+    // Stil değişkenini en başa alalım (ReferenceError hatasını engeller)
+    const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
-  if (validPts.length > 0) {
-      if (validPts.length === 1) {
-          startCenter = [validPts[0].lat, validPts[0].lng];
-          startZoom = 14;
-      } else {
-          startBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-          startCenter = startBounds.getCenter();
-          startZoom = 10;
-      }
-      hasFocus = true;
-  } 
-  else if (day > 1 && typeof getDayPoints === 'function') {
-      const prevPoints = getDayPoints(day - 1);
-      const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
-      if (validPrevPts.length > 0) {
-          const lastPt = validPrevPts[validPrevPts.length - 1];
-          startCenter = [lastPt.lat, lastPt.lng];
-          startZoom = 12; 
-          hasFocus = true;
-      }
-  }
+    // 2. PASİF AYARLAR: Etkileşimi kapatan tüm opsiyonlar
+    const map = L.map(containerId, {
+        center: [39.0, 35.0],
+        zoom: 5,
+        dragging: false,         // Sürüklemeyi kapat
+        touchZoom: false,        // Dokunmatik zoom kapat
+        scrollWheelZoom: false,  // Mouse tekerleği kapat
+        doubleClickZoom: false,  // Çift tıklama kapat
+        boxZoom: false,          // Kutu seçimi kapat
+        keyboard: false,         // Klavye kapat
+        tap: false,              // Mobil dokunmatik kapat
+        zoomControl: false,      // +/- butonlarını gizle
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: true,
+        inertia: false
+    });
 
-  const map = L.map(containerId, {
-    center: startCenter,
-    zoom: startZoom,
-    // === ETKİLEŞİMİ KAPATAN AYARLAR ===
-    dragging: false,         // Sürüklemeyi kapatır
-    touchZoom: false,        // Dokunmatik zoom'u kapatır
-    scrollWheelZoom: false,  // Fare tekerleği ile zoom'u kapatır
-    doubleClickZoom: false,  // Çift tıklama zoom'u kapatır
-    boxZoom: false,          // Kutu seçimiyle zoom'u kapatır
-    keyboard: false,         // Klavye kontrolünü kapatır
-    tap: false,              // Mobil dokunmatik etkileşimi kapatır
-    zoomControl: false,      // +/- butonlarını gizler
-    // =================================
-    fadeAnimation: true,
-    zoomAnimation: true,
-    markerZoomAnimation: true,
-    inertia: false
-});
+    if (typeof L.maplibreGL === 'function') {
+        L.maplibreGL({
+            style: openFreeMapStyle,
+            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
+            interactive: false // MapLibre katmanını da pasif yap
+        }).addTo(map);
+    }
 
-// Ayrıca harita katmanını (MapLibre) pasif yapın:
-if (typeof L.maplibreGL === 'function') {
-    L.maplibreGL({
-        style: openFreeMapStyle,
-        attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-        interactive: false // Burayı false yapın
-    }).addTo(map);
-}
-
-// İmleci normal ok işaretine çevir (el ikonu yerine)
-el.style.cursor = 'default';
-
-  if (startBounds && startBounds.isValid()) {
-      map.fitBounds(startBounds, { padding: [20, 20], animate: false });
-  }
-
-  // Tile layer
-  const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-  if (typeof L.maplibreGL === 'function') {
-      L.maplibreGL({
-          style: openFreeMapStyle,
-          attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-          interactive: false
-      }).addTo(map);
-  } else {
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-  }
-  
-  if (!map._initialView) {
-    map._initialView = {
-      center: map.getCenter(),
-      zoom: map.getZoom()
-    };
-  }
-  
-  window.leafletMaps = window.leafletMaps || {};
-  window.leafletMaps[containerId] = map;
+    window.leafletMaps = window.leafletMaps || {};
+    window.leafletMaps[containerId] = map;
 }
 
 
@@ -6017,21 +5948,28 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     // 5. HARİTA BAŞLATMA
-    const map = L.map(containerId, {
-        scrollWheelZoom: true,
-        // Akışkan Zoom Ayarları
-        fadeAnimation: true,
-        zoomAnimation: true,
-        markerZoomAnimation: true,
-        inertia: true,
-        zoomSnap: 0,             
-        zoomDelta: 0.1,
-        wheelPxPerZoomLevel: 60, 
-        wheelDebounceTime: 20,
-        touchZoom: true,
-        bounceAtZoomLimits: false
-    });
+   const map = L.map(sidebarContainer, {
+    center: [0, 0],
+    zoom: 1,
+    dragging: false,         // PASİF
+    touchZoom: false,        // PASİF
+    scrollWheelZoom: false,  // PASİF
+    doubleClickZoom: false,  // PASİF
+    zoomControl: false,      // PASİF
+    attributionControl: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    inertia: false
+});
 
+// MapLibre eklenirken yine interactive: false
+if (typeof L.maplibreGL === 'function') {
+    L.maplibreGL({
+        style: 'https://tiles.openfreemap.org/styles/bright',
+        interactive: false 
+    }).addTo(map);
+}
     try {
         map.createPane('customRoutePane');
         map.getPane('customRoutePane').style.zIndex = 450;
@@ -12248,27 +12186,22 @@ document.addEventListener("DOMContentLoaded", function() {
     const style = document.createElement('style');
     style.id = 'tt-static-maps-style';
     style.innerHTML = `
-        /* Harita imlecini normal ok yap */
-        .sidebar .leaflet-container,
+        /* Rota haritası ve diğer mini haritalar için imleci düzelt */
+        .route-map .leaflet-container,
         .cart-item .leaflet-container,
-        .travel-item .leaflet-container,
-        .day-container .route-map .leaflet-container {
+        .travel-item .leaflet-container {
             cursor: default !important;
         }
         
-        /* Harita zeminini tıklanamaz yap */
-        .sidebar .leaflet-tile-pane,
+        /* Harita zeminini (tile) tıklanamaz yap */
+        .route-map .leaflet-tile-pane,
         .cart-item .leaflet-tile-pane,
-        .travel-item .leaflet-tile-pane,
-        .day-container .route-map .leaflet-tile-pane { /* Bu satırı ekledik */
+        .travel-item .leaflet-tile-pane {
             pointer-events: none !important;
         }
         
-        /* Eğer markerların (1, 2, 3...) üzerine gelindiğinde tıklanabilsin istiyorsanız bu kalsın */
-        .sidebar .leaflet-marker-pane,
-        .cart-item .leaflet-marker-pane,
-        .travel-item .leaflet-marker-pane,
-        .day-container .route-map .leaflet-marker-pane {
+        /* Markerlar tıklanabilsin (popup açılması gerekirse) */
+        .leaflet-marker-pane {
             pointer-events: auto !important;
         }
     `;
