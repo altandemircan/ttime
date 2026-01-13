@@ -75,12 +75,12 @@ function generateStepHtml(step, day, category, idx = 0) {
             </style>
 
         </div>
-            
+
         <div class="info day_cats item-info-view">
-            /* Title: 1 Satır ve Tooltip */
+   
             <div class="title" title="${name}">${name}</div>
             
-            /* Address: 2 Satır ve Tooltip */
+      
             <div class="address">
                 <img src="img/address_icon.svg">
                 <span title="${address || 'Address not found'}">
@@ -88,7 +88,7 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </span>
             </div>
 
-            /* Opening Hours: 2 Satır ve Tooltip */
+      
             <div class="opening_hours">
                 <img src="img/hours_icon.svg">
                 <span title="${opening || 'Working hours not found.'}">

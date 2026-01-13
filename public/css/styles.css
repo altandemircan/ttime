@@ -7874,7 +7874,7 @@ scrollbar-width: thin;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-
+    max-height: 1.2em; /* Tek satır yüksekliği */
     word-break: break-word;
 }
 
@@ -7886,7 +7886,6 @@ scrollbar-width: thin;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-
     word-break: break-word;
 }
 
