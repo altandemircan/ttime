@@ -661,7 +661,6 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     
     // Tıklanan koordinatlar için direkt reverse geocode yap
     console.log('[DEBUG] Tıklanan koordinatlar:', { lat, lng });
-    fetch(reverseUrl)
     .then(r => r.json())
     .then(data => {
         console.log('[DIRECT REVERSE GEOCODE] Full response:', data);
