@@ -1449,101 +1449,37 @@ document.getElementById('send-button').addEventListener('click', sendMessage);
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
-    
-    // 1. ÇOKLU CLASS DESTEĞİ:
-    // Gelen className "user-message request-user-message" olabilir.
-    // Mevcut 'message' class'ının yanına ekliyoruz.
     messageElement.className = "message " + className;
 
-    // --- PROFİL GÖRSELİ MANTIĞI ---
+    // Profil görseli mantığı
     let profileElem;
-    
-    // 2. KONTROL DEĞİŞİKLİĞİ (=== yerine includes):
     if (className.includes("user-message")) {
-        // Kullanıcı: Emoji (🧑)
         profileElem = document.createElement("div");
         profileElem.className = "profile-img"; 
         profileElem.textContent = "🧑";
-        profileElem.style.display = "flex";
-        profileElem.style.alignItems = "center";
-        profileElem.style.justifyContent = "center";
-        profileElem.style.fontSize = "1rem";
-        profileElem.style.lineHeight = "1";
     } else {
-        // Bot: Resim
         profileElem = document.createElement("img");
         profileElem.src = "img/avatar_aiio.png";
-        profileElem.alt = "AI";
-        profileElem.classList.add("profile-img");
-    }
-    // -----------------------------
-
-    if (className.includes("bot-message") && /<button|<div|<br/i.test(text)) {
-        messageElement.appendChild(profileElem);
-        const htmlDiv = document.createElement("span");
-        htmlDiv.innerHTML = text;
-        messageElement.appendChild(htmlDiv);
-    } else {
-        messageElement.appendChild(profileElem);
-        const textElement = document.createElement("div");
-        if (/<div|<span|canonical-diff|→/.test(text)) {
-            textElement.innerHTML = text;
-        } else {
-            textElement.textContent = text;
-        }
-        messageElement.appendChild(textElement);
+        profileElem.className = "profile-img";
     }
 
+    messageElement.appendChild(profileElem);
+    const contentDiv = document.createElement("div");
+    contentDiv.innerHTML = text;
+    messageElement.appendChild(contentDiv);
+
+    // --- KRİTİK DEĞİŞİKLİK: İndikatörü her zaman mesajın altına taşı ---
     const typingIndicator = document.getElementById("typing-indicator");
     if (typingIndicator) {
-        // İndikatör varsa, mesajı her zaman onun üstüne ekle
+        // Mesajı indikatörün önüne ekle
         chatBox.insertBefore(messageElement, typingIndicator);
     } else {
-        // İndikatör yoksa (ki olmalı), direkt ekle
         chatBox.appendChild(messageElement);
     }
     
-    if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-}
-
-function showTypingIndicator() {
-  const chatBox = document.getElementById("chat-box");
-  let indicator = document.getElementById("typing-indicator");
-  
-  if (!indicator) {
-    indicator = document.createElement("div");
-    indicator.id = "typing-indicator";
-    indicator.className = "typing-indicator";
-    indicator.innerHTML = '<span></span><span></span><span></span>';
-    chatBox.appendChild(indicator);
-  } else {
-    // --- DEĞİŞİKLİK BURADA ---
-    // Var olan indikatörü yerinden söküp en sona tekrar ekliyoruz
-    chatBox.appendChild(indicator); 
-    indicator.style.display = "block";
-    indicator.innerHTML = '<span></span><span></span><span></span>';
-  }
-  
-  if (chatBox.scrollHeight - chatBox.clientHeight > 100) {
     chatBox.scrollTop = chatBox.scrollHeight;
-  }
 }
 
-function hideTypingIndicator() {
-  const typingIndicator = document.getElementById("typing-indicator");
-  if (typingIndicator) typingIndicator.style.display = "none";
-}
-
-
-// document.addEventListener("DOMContentLoaded", function() {
-//     const sendBtn = document.getElementById("send-button");
-//     if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-
-//     const userInput = document.getElementById("user-input");
-//     if (userInput) userInput.addEventListener("keypress", handleKeyPress);
-// });
 
 
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
