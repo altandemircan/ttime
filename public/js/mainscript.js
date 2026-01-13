@@ -10545,7 +10545,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   //km'de nokta sayısı: 2'den 5'e
   // const N = Math.max(40, Math.round(totalKm * 2));
 
-  const N = Math.max(80, Math.round(totalKm * 2));
+  const N = Math.max(80, Math.round(totalKm * 5));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
