@@ -7908,3 +7908,13 @@ scrollbar-width: thin;
     align-items: flex-start; 
     gap: 5px;
 }
+
+/* Sadece sığmadığında (is-overflowing) üç noktayı kırmızı yapma hilesi */
+.is-overflowing {
+    color: red !important; /* Üç noktayı kırmızı yapar */
+}
+
+/* Metnin kendisi siyah kalsın diye içeriği tekrar boyuyoruz */
+.is-overflowing::first-line {
+    color: #333; /* Buraya kendi metin rengini yazabilirsin */
+}
