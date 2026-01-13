@@ -4267,11 +4267,11 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         : `<div style="background:#d32f2f; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; font-weight:bold;">${number || "1"}</div>`;
 
     const finalIcon = L.divIcon({
-        html: markerHtml,
-        className: 'my-custom-marker',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15] // Tam merkez
-    });
+    html: markerHtml, // Senin paylaştığın 24px'lik div
+    className: 'my-custom-marker',
+    iconSize: [24, 24],      // 32 yerine gerçek div boyutu
+    iconAnchor: [12, 12]     // Tam merkez (24/2)
+});
 
     const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
     if (name) marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
@@ -8480,7 +8480,7 @@ async function renderRouteForDay(day) {
     window.selectedSegment = null;
     
     // Eski "hafızada kalan" segment bilgilerini de siliyoruz.
-    window._lastSegmentDay = null;
+    
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
 
@@ -12009,52 +12009,41 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v5';
+    const styleId = 'tt-leaflet-fix-v6';
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Zoom/Pan animasyon ayarları */
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-shadow, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
+        /* 1. Marker ve Çizgilerin (SVG) gecikmesini engelle */
+        .leaflet-zoom-animated, 
+        .leaflet-marker-icon, 
+        .leaflet-marker-shadow, 
+        .leaflet-customRoute-pane svg {
             transition: none !important;
-            /* transform-origin: 0 0 SİLİNDİ - Kaymanın ana sebebi buydu */
-        }
-        
-        /* Marker Senkronizasyonu: Sürüklerken marker'ın haritaya yapışık kalmasını sağlar */
-        .leaflet-marker-icon {
             will-change: transform !important;
         }
 
-        /* 2. Resim Ayarları */
-        .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
-            max-width: none !important;
-            transition: none !important; 
+        /* 2. MapLibre katmanının Leaflet ile hizalanmasını zorla */
+        .leaflet-gl-layer.maplibregl-map {
+            transition: none !important;
         }
 
-        /* 3. İmleç Ayarları */
-        .expanded-map.leaflet-container, .expanded-map .leaflet-grab { cursor: grab !important; }
-        .expanded-map.leaflet-container:active, .expanded-map .leaflet-grab:active { cursor: grabbing !important; }
-        
-        /* 4. Tıklama/Etkileşim Sorunları */
-        .leaflet-pane { pointer-events: auto; }
-        .leaflet-tile-pane { z-index: 200; }
-        
-        /* 5. Custom Marker Tasarımı */
-        .custom-marker-outer {
-            transition: none !important; /* Animasyonu kapatmak senkronu artırır */
-            will-change: transform;
+        /* 3. Marker'ların titremesini önlemek için donanımsal hızlandırma */
+        .leaflet-pane {
+            transform: translate3d(0,0,0);
         }
 
-        /* 6. Mobil Performans */
-        .leaflet-container {
-            touch-action: none;
+        /* 4. Küçük harita (route-map) özel ayarı */
+        .route-map .leaflet-marker-icon {
+            margin-left: -12px !important;  /* Marker merkezi için */
+            margin-top: -12px !important;   /* Marker merkezi için */
         }
+        /* mainscript.js içindeki style kısmına ekle */
+.route-map .leaflet-marker-icon {
+    margin-left: -13px !important; 
+    margin-top: -13px !important;
+}
     `;
     document.head.appendChild(style);
 })();
