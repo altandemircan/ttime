@@ -4239,7 +4239,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         zoom: 16,
         scrollWheelZoom: false,
         zoomControl: true,
-        attributionControl: false
+        attributionControl: false,
+        
+        // KRİTİK EKLENTİLER:
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false,
+        inertia: false,
+        zoomSnap: 1
     });
 
     // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
@@ -12019,53 +12026,90 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v7'; // Versiyonu güncelledik
+    const styleId = 'tt-leaflet-fix-v8'; // Versiyonu güncelledik
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. SORUN: Leaflet zoom sırasında marker-pane'e transform uygular, bu kaymalara neden olur */
-        /* ÇÖZÜM: Sadece TRANSITION'ı kapat, transform'u Leaflet yönetsin */
+        /* ========================================
+           KRİTİK ÇÖZÜM: Mini haritalarda Leaflet'in
+           inertia (관성) ve fade animasyonlarını kapat
+           ======================================== */
         
-        /* Tüm haritalarda zoom transition'ı kapat (anlık pozisyon değişimi) */
+        /* 1. ZOOM sırasında tüm transition'ları kapat */
         .leaflet-zoom-anim .leaflet-zoom-animated {
             transition: none !important;
         }
         
-        /* Marker'ların zoom sırasında kaymasını engelle */
-        .leaflet-marker-icon,
-        .leaflet-marker-shadow {
+        /* 2. PAN (sürükleme) sırasında transition'ı kapat - SADECE MİNİ HARİTALARDA */
+        .leaflet-container:not(.expanded-map) .leaflet-map-pane,
+        .leaflet-container:not(.expanded-map) .leaflet-tile-pane,
+        .leaflet-container:not(.expanded-map) .leaflet-overlay-pane,
+        .leaflet-container:not(.expanded-map) .leaflet-shadow-pane,
+        .leaflet-container:not(.expanded-map) .leaflet-marker-pane,
+        .leaflet-container:not(.expanded-map) .leaflet-tooltip-pane,
+        .leaflet-container:not(.expanded-map) .leaflet-popup-pane {
             transition: none !important;
+            animation: none !important;
         }
         
-        /* 2. Sadece expanded map'te smooth animasyon olsun */
+        /* 3. Marker'ların kendisinin de transition'ı olmasın */
+        .leaflet-container:not(.expanded-map) .leaflet-marker-icon,
+        .leaflet-container:not(.expanded-map) .leaflet-marker-shadow {
+            transition: none !important;
+            animation: none !important;
+        }
+        
+        /* 4. Tile'lar için transition kapat */
+        .leaflet-container:not(.expanded-map) .leaflet-tile {
+            transition: none !important;
+            animation: none !important;
+        }
+        
+        /* 5. Expanded map için smooth animasyonlar */
         .expanded-map.leaflet-zoom-anim .leaflet-zoom-animated {
             transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         
-        /* 3. Pan (sürükleme) sırasında smooth hareket - SADECE EXPANDED */
-        .expanded-map .leaflet-pane {
-            transition: transform 0.25s ease-out;
+        .expanded-map .leaflet-map-pane {
+            transition: transform 0.2s ease-out;
         }
         
-        /* Mini haritalarda pan da anlık olsun */
+        /* 6. Hardware acceleration ayarları */
         .leaflet-container:not(.expanded-map) .leaflet-pane {
-            transition: none !important;
+            will-change: auto !important;
+            backface-visibility: visible !important;
+            perspective: none !important;
         }
         
-        /* 4. Tile'ların pozisyon ayarları (DOKUNMA) */
+        .expanded-map .leaflet-pane {
+            will-change: transform;
+        }
+        
+        /* 7. Tile pozisyon düzeltmeleri */
         .leaflet-tile {
             max-width: none !important;
             width: 256px !important;
             height: 256px !important;
         }
         
-        /* 5. İmleç Ayarları */
+        /* 8. Custom marker - sadece expanded'da animasyon */
+        .leaflet-container:not(.expanded-map) .custom-marker-outer {
+            transition: none !important;
+            animation: none !important;
+        }
+        
+        .expanded-map .custom-marker-outer {
+            transition: transform 0.1s ease !important;
+        }
+        
+        /* 9. İmleç ayarları */
         .expanded-map.leaflet-container,
         .expanded-map .leaflet-grab {
             cursor: grab !important;
         }
+        
         .expanded-map.leaflet-container:active,
         .expanded-map .leaflet-grab:active {
             cursor: grabbing !important;
@@ -12076,38 +12120,17 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             cursor: pointer !important;
         }
 
-        /* 6. Custom Marker animasyonu - sadece expanded'da */
-        .leaflet-container:not(.expanded-map) .custom-marker-outer {
-            transition: none !important;
-        }
-        
-        .expanded-map .custom-marker-outer {
-            transition: transform 0.1s ease !important;
-        }
-
-        /* 7. Mobil dokunmatik iyileştirme */
+        /* 10. Mobil optimizasyon */
         .leaflet-container {
             touch-action: none;
         }
         
-        /* 8. Pointer events */
+        /* 11. Z-index düzeni */
         .leaflet-pane { 
             pointer-events: auto; 
         }
         .leaflet-tile-pane {
             z-index: 200; 
-        }
-        
-        /* 9. KRİTİK: Hardware acceleration'ı mini haritalarda kapat */
-        .leaflet-container:not(.expanded-map) .leaflet-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-tile-pane {
-            transform: translate3d(0, 0, 0);
-            will-change: auto !important;
-        }
-        
-        /* Expanded'da hardware acceleration aktif */
-        .expanded-map .leaflet-pane {
-            will-change: transform;
         }
     `;
     document.head.appendChild(style);
