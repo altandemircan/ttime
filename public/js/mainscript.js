@@ -4229,85 +4229,59 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // 1. Sürükle-Bırak Çakışmasını Önleme (Event Propagation)
-    // Harita üzerindeki hareketlerin (zoom/pan) dışarıdaki drag sistemini tetiklemesini engeller.
+    // Sürükle-bırak çakışmasını önle
     ['mousedown', 'touchstart', 'pointerdown', 'wheel'].forEach(eventType => {
-        el.addEventListener(eventType, function(e) {
-            e.stopPropagation();
-        }, { passive: eventType === 'wheel' || eventType === 'touchstart' });
+        el.addEventListener(eventType, (e) => e.stopPropagation(), { passive: eventType === 'wheel' || eventType === 'touchstart' });
     });
 
-    // 2. Eski harita varsa temizle (Bellek sızıntısını ve "Map already initialized" hatasını önler)
     if (window._leafletMaps[mapId]) {
         try { window._leafletMaps[mapId].remove(); } catch(e){}
         delete window._leafletMaps[mapId];
     }
 
-    // 3. Haritayı oluştur
+    // Harita ayarları: Atalet (inertia) kapatıldı ki sürükleme anında marker kopmasın
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 15,
-        scrollWheelZoom: true, // Kart açıkken haritada zoom yapılabilsin
+        scrollWheelZoom: true,
         zoomControl: true,
-        attributionControl: false
+        attributionControl: false,
+        inertia: false,             // KRİTİK: Sürükleme sonrası kaymayı kapatır
+        zoomAnimation: false,       // KRİTİK: Zoom yaparken marker kaymasını önler
+        markerZoomAnimation: false
     });
 
-    // 4. Harita Katmanını Ekle (OpenFreeMap / Fallback OSM)
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
     if (typeof L.maplibreGL === 'function') {
         L.maplibreGL({
             style: openFreeMapStyle,
-            attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a>',
+            attribution: '&copy; OpenFreeMap',
             interactive: true
         }).addTo(map);
     } else {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
-    // 5. Marker Tasarımı (Mor/Kırmızı Marker)
-    let markerHtml = "";
-    if (typeof getPurpleRestaurantMarkerHtml === 'function') {
-        markerHtml = getPurpleRestaurantMarkerHtml(number || "1");
-    } else {
-        // Fonksiyon bulunamazsa görsel hata almamak için yedek tasarım
-        markerHtml = `
-            <div class="custom-marker-outer" style="
-                background-color: #d32f2f; color: white; width: 28px; height: 28px; 
-                border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-                font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); font-size: 14px;">
-                ${number || "1"}
-            </div>`;
-    }
+    let markerHtml = typeof getPurpleRestaurantMarkerHtml === 'function' 
+        ? getPurpleRestaurantMarkerHtml(number || "1") 
+        : `<div style="background:#d32f2f; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; font-weight:bold;">${number || "1"}</div>`;
 
     const finalIcon = L.divIcon({
         html: markerHtml,
         className: 'my-custom-marker',
         iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconAnchor: [15, 15] // Tam merkez
     });
 
-    // 6. Marker'ı Ekle ve Popup Bağla
     const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
-    if (name) {
-        marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
-    }
-
-    // 7. Konum Odaklama
-    if (typeof getDayPoints === "function" && typeof day !== "undefined") {
-        const pts = getDayPoints(day).filter(p => p && typeof p.lat === "number");
-        if (pts.length === 1) {
-            map.setView([lat, lon], 15);
-        }
-    }
+    if (name) marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
-    // 8. Render İyileştirmesi (Gri ekran sorununu çözer)
-    setTimeout(() => { 
-        map.invalidateSize();
-    }, 250);
+    setTimeout(() => { map.invalidateSize(); }, 250);
 }
+
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
@@ -12035,13 +12009,13 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
+    const styleId = 'tt-leaflet-fix-v5';
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-         /* 1. Zoom/Pan animasyonlarını sadece route-map VE expanded-map dışındaki haritalarda kapat */
+        /* 1. Zoom/Pan animasyon ayarları */
         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
@@ -12049,56 +12023,41 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
             transition: none !important;
-            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
+            /* transform-origin: 0 0 SİLİNDİ - Kaymanın ana sebebi buydu */
         }
         
-        /* 2. Resimlerin animasyonunu sadece route-map VE expanded-map dışındaki haritalarda engelle */
+        /* Marker Senkronizasyonu: Sürüklerken marker'ın haritaya yapışık kalmasını sağlar */
+        .leaflet-marker-icon {
+            will-change: transform !important;
+        }
+
+        /* 2. Resim Ayarları */
         .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
             max-width: none !important;
-            width: 256px !important;
-            height: 256px !important;
             transition: none !important; 
         }
+
         /* 3. İmleç Ayarları */
-        .expanded-map.leaflet-container,
-        .expanded-map .leaflet-grab,
-        .expanded-map .leaflet-interactive {
-            cursor: grab !important;
-        }
-        .expanded-map.leaflet-container:active,
-        .expanded-map .leaflet-grab:active {
-            cursor: grabbing !important;
-        }
+        .expanded-map.leaflet-container, .expanded-map .leaflet-grab { cursor: grab !important; }
+        .expanded-map.leaflet-container:active, .expanded-map .leaflet-grab:active { cursor: grabbing !important; }
         
-        /* Markerlar için pointer */
-        .expanded-map .leaflet-marker-icon,
-        .expanded-map .leaflet-popup-close-button,
-        .expanded-map a {
-            cursor: pointer !important;
-        }
-
         /* 4. Tıklama/Etkileşim Sorunları */
-        .leaflet-pane { 
-            pointer-events: auto; 
-        }
-        .leaflet-tile-pane {
-            z-index: 200; 
-        }
+        .leaflet-pane { pointer-events: auto; }
+        .leaflet-tile-pane { z-index: 200; }
         
-        /* 5. Custom Marker Animasyonu */
+        /* 5. Custom Marker Tasarımı */
         .custom-marker-outer {
-            transition: transform 0.1s ease !important;
-            will-change: auto; 
+            transition: none !important; /* Animasyonu kapatmak senkronu artırır */
+            will-change: transform;
         }
 
-        /* 6. Mobil Performans İyileştirmesi */
+        /* 6. Mobil Performans */
         .leaflet-container {
-            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
+            touch-action: none;
         }
     `;
     document.head.appendChild(style);
 })();
-
 
 
 
