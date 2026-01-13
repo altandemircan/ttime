@@ -7866,67 +7866,50 @@ scrollbar-width: thin;
     overflow: hidden;
 }
 
-/* Title: 1 Satır Sınırı */
-.title {
-    display: -webkit-box;
-    -webkit-line-clamp: 1; 
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.5em;
-    max-height: 1.5em; 
-    word-break: break-word;
-}
-
-/* Address: 3 Satır Sınırı */
-/* Address ve Opening Hours Genel Yapı */
-/* 1. Temel Durum: Metin sığıyorsa tertemiz, emoji ve üç nokta yok */
+/* 1. Normal Durum: Sığdığı sürece tertemiz, ne üç nokta ne emoji var */
 .title, 
 .address span, 
 .opening_hours span {
     display: block; 
     overflow: hidden;
     line-height: 1.5em;
+    white-space: nowrap; /* Sığarken tek satır tutar, emojiyi kutu dışına iter */
+    text-overflow: clip; /* Üç noktayı tamamen kapatır */
     position: relative;
-    text-overflow: clip; /* Taşma yoksa üç noktayı gizle */
-    white-space: nowrap; /* Sığdığı sürece tek satır tut (emoji görünmez) */
 }
 
-/* 2. Sadece Sığmadığında (JS ile is-overflowing class'ı eklendiğinde) */
+/* 2. Sadece Sığmadığında (JS sınıfı eklediğinde) İkisi Birden Gelir */
 .is-overflowing {
     display: -webkit-box !important;
     -webkit-box-orient: vertical;
-    text-overflow: ellipsis; /* Üç noktayı getir */
-    white-space: normal;     /* Satır kırmayı aç */
+    text-overflow: ellipsis !important; /* Üç noktayı açar */
+    white-space: normal !important;     /* Satır kırmayı açar */
 }
 
-/* Adres için 3 satır sınırı */
+/* Satır Sınırları */
+.title.is-overflowing {
+    -webkit-line-clamp: 1;
+    max-height: 1.5em;
+}
+
 .address span.is-overflowing {
     -webkit-line-clamp: 3;
     max-height: 4.5em;
 }
 
-/* Çalışma saatleri için 2 satır sınırı */
 .opening_hours span.is-overflowing {
     -webkit-line-clamp: 2;
     max-height: 3em;
 }
 
-/* Başlık için 1 satır sınırı */
-.title.is-overflowing {
-    -webkit-line-clamp: 1;
-    max-height: 1.5em;
-} 
-
-/* 3. Emoji: Sadece sığmadığında üç noktanın yanına eklenir */
+/* 3. Emoji: Sadece sığmadığında üç noktanın hemen peşine takılır */
 .is-overflowing::after {
     content: " 🪧";
-    display: inline;
+    display: inline; /* Sağa yaslamaz, metnin bittiği yere koyar */
     font-size: 12px;
-    vertical-align: middle;
 }
 
-/* İkon hizalamaları (Mevcut yapın) */
+/* İkon Hizalaması */
 .address, .opening_hours {
     display: flex;
     align-items: flex-start;
