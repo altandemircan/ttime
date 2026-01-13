@@ -1495,9 +1495,11 @@ function addMessage(text, className) {
     }
 
     const typingIndicator = document.getElementById("typing-indicator");
-    if (typingIndicator && typingIndicator.parentNode === chatBox) {
+    if (typingIndicator) {
+        // İndikatör varsa, mesajı her zaman onun üstüne ekle
         chatBox.insertBefore(messageElement, typingIndicator);
     } else {
+        // İndikatör yoksa (ki olmalı), direkt ekle
         chatBox.appendChild(messageElement);
     }
     
@@ -5053,6 +5055,7 @@ async function updateCart() {
     window.latestTripPlan = [];
     window.cart = [];
     window.__welcomeHiddenForever = false; // Flag'i sıfırla ki bot mesajı tetiklenebilsin
+    window.__welcomeShown = false; // BU SATIRI EKLE: Botun başlangıç mesajı atabilmesi için şart.
 
     try {
         if (typeof window.__ttNewTripToken === 'function') {

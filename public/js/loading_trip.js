@@ -22,7 +22,6 @@
     }
 })();
 
-// 2. Loading Panelini Açma (Sorgu Gönderildiğinde Tetiklenir)
 window.showLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
     const msgEl = document.getElementById('loading-message');
@@ -30,23 +29,21 @@ window.showLoadingPanel = function() {
     
     if (!panel) return;
     
-    // A. Loading Panelini Görünür Yap
     panel.style.display = "flex"; 
-    
-    // B. Alttaki İçeriği (cw) Gizle
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
 
-    // C. [ÖNEMLİ] Chat Kutusunun "Gizli" Durumunu Kaldır
-    // Bu satır sayesinde "Let's get started" mesajı, loading başladığı an görünür hale gelir.
     if (chatBox && chatBox.classList.contains("awaiting-start")) {
         chatBox.classList.remove("awaiting-start");
     }
 
-    // D. Sayfayı Kilitle (Tıklamaları Engelle)
+    // --- EKLEME: Typing Indicator'ı başlat ---
+    if (typeof showTypingIndicator === "function") {
+        showTypingIndicator();
+    }
+
     document.body.classList.add('app-locked'); 
-    if (document.activeElement) document.activeElement.blur(); // Klavyeyi kapat
+    if (document.activeElement) document.activeElement.blur(); 
     
-    // E. Mesaj Animasyonlarını Başlat
     if (msgEl) {
         msgEl.textContent = "Analyzing your request...";
         msgEl.style.opacity = 1;
@@ -82,31 +79,26 @@ window.showLoadingPanel = function() {
     }, 3000); 
 };
 
-// 3. Loading Panelini Kapatma
 window.hideLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
     if (panel) {
         panel.style.display = "none";
     }
 
-    // Animasyonu durdur
+    // --- EKLEME: Typing Indicator'ı gizle ---
+    if (typeof hideTypingIndicator === "function") {
+        hideTypingIndicator();
+    }
+
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
     }
 
-    // KİLİDİ AÇ
     document.body.classList.remove('app-locked');
 
-    // İçerik (cw) yönetimi
-    // Eğer sonuçlar geldiyse (welcomeHiddenForever true) cw gizli kalır, chat görünür.
-    // İptal edildiyse (welcomeHiddenForever false) cw geri gelir.
     if (!window.__welcomeHiddenForever) {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-        
-        // Eğer işlem iptal edildiyse ve chat hiç başlamadıysa tekrar gizle (Opsiyonel)
-        // const chatBox = document.getElementById("chat-box");
-        // if(chatBox && chatBox.innerHTML.trim() === "") chatBox.classList.add("awaiting-start");
     } else {
         document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     }
