@@ -7863,44 +7863,35 @@ scrollbar-width: thin;
 
 /* Ortak Ayar: Taşan kısımları gizle */
 /* 1. Normal Durum: Tertemiz, simge falan yok */
-.title, 
+/* 1. Normal Durum: Tertemiz, ne ℹ️ var ne de kayma */
 .address span, 
-.opening_hours span {
+.opening_hours span,
+.title {
     display: block;
-    overflow: hidden;
     line-height: 1.5em;
+    overflow: hidden;
     position: relative;
-    white-space: nowrap; /* Sığarken metni tek satır tutar, simgeyi gizli tutar */
+    white-space: normal; /* Kelime kaymasına izin ver */
 }
 
-/* Satır Sınırları */
-.address span { max-height: 4.5em; }
-.opening_hours span { max-height: 3em; }
-.title { max-height: 1.5em; }
+/* Yükseklik sınırları (Hizalamayı bozmaz) */
+.address span { max-height: 4.5em; }      /* 3 satır */
+.opening_hours span { max-height: 3em; } /* 2 satır */
+.title { max-height: 1.5em; }            /* 1 satır */
 
-/* 2. Sadece Sığmadığında (is-overflowing varken) Simge Çıkar */
-.is-overflowing {
-    white-space: normal !important; /* Satır kırmayı açar */
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical;
-    /* -webkit-line-clamp değerlerini aşağıda belirledik */
-}
-
-.address span.is-overflowing { -webkit-line-clamp: 3; }
-.opening_hours span.is-overflowing { -webkit-line-clamp: 2; }
-.title.is-overflowing { -webkit-line-clamp: 1; }
-
-/* 3. Simge: Üç nokta yerine sadece ℹ️ simgesi */
+/* 2. Sadece Sığmadığında Emoji Çıkar */
+/* JS 'is-overflowing' eklediği an bu devreye girer */
 .is-overflowing::after {
     content: " ℹ️";
-    display: inline;
-    font-size: 12px;
-    vertical-align: middle;
+    display: inline; /* Metnin hemen peşine takılır, divi bozmaz */
+    font-size: 13px;
+    font-weight: bold;
 }
 
-/* İkon Hizalaması */
+/* 3. Ana Divler (Simge + Metin yan yana dursun diye) */
 .address, .opening_hours {
     display: flex;
     align-items: flex-start;
-    gap: 5px;
+    gap: 8px;
+    margin-bottom: 4px;
 }
