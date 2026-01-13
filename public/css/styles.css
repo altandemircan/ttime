@@ -7879,21 +7879,21 @@ scrollbar-width: thin;
 }
 
 /* Address: 3 Satır Sınırı */
-/* styles.css güncellemesi */
-
-.address span, .opening_hours span {
-    display: -webkit-box;
-    -webkit-line-clamp: 3; /* Adres için */
-    -webkit-box-orient: vertical;
+/* Address ve Opening Hours için uygulayalım */
+.address span, 
+.opening_hours span {
+    display: block; /* webkit-box yerine block kullanıyoruz */
+    max-height: 4.5em; /* Adres için 3 satır (1.5 * 3) */
+    line-height: 1.5em;
     overflow: hidden;
-    transition: max-height 0.3s ease-in-out; /* Yumuşak açılış */
-    cursor: pointer;
+    position: relative;
+    
+    /* Gradyan maskesi */
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
 
-/* Üzerine gelince veya tıklanınca (active) tam boyuta geç */
-.address span:hover, .address span:active,
-.opening_hours span:hover, .opening_hours span:active {
-    -webkit-line-clamp: unset; /* Satır sınırını kaldır */
-    max-height: 500px; /* Çok büyük bir değer vererek açılmasını sağla */
-    overflow: visible;
-}
+/* Sadece Adres 3 satır kalsın */
+.address span { max-height: 4.5em; }
+/* Saatler 2 satır kalsın */
+.opening_hours span { max-height: 3em; }
