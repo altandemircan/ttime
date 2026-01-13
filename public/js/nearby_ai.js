@@ -549,6 +549,12 @@ function getSimplePlaceCategory(f) {
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
+
+    console.log('[DEBUG] TIKLANAN NOKTANIN TAM BİLGİLERİ:');
+console.log('Koordinatlar:', { lat, lng });
+
+
+
     // 1. Önce kesinlikle eskileri temizle
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
@@ -645,10 +651,28 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     }
 
     try {
-        let pointInfo = { name: "Selected Point", address: "" };
-        try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
-
-        const resp = await fetch(url);
+    let pointInfo = { name: "Selected Point", address: "" };
+    try { 
+        pointInfo = await getPlaceInfoFromLatLng(lat, lng); 
+        console.log('[GEOAPIFY REVERSE RESULT] Full data:', pointInfo);
+    } catch (e) {
+        console.warn('getPlaceInfoFromLatLng failed:', e.message);
+    }
+    
+    // Tıklanan koordinatlar için direkt reverse geocode yap
+    console.log('[DEBUG] Tıklanan koordinatlar:', { lat, lng });
+    const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
+    fetch(reverseUrl)
+        .then(r => r.json())
+        .then(data => {
+            console.log('[DIRECT REVERSE GEOCODE] Full response:', data);
+            if (data.features && data.features[0]) {
+                console.log('[DIRECT REVERSE GEOCODE] Properties:', data.features[0].properties);
+            }
+        })
+        .catch(e => console.error('Direct reverse error:', e));
+    
+    const resp = await fetch(url);
         
         // HTTP hata kontrolü
         if (!resp.ok) {
@@ -1037,20 +1061,27 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 let currentCityName = "";
 
 // 1. Önce reverse geocode yap
+const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
 try {
-    const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
     const reverseResp = await fetch(reverseUrl);
     const reverseData = await reverseResp.json();
+    console.log('[FULL REVERSE GEOCODE RESPONSE]:', JSON.stringify(reverseData, null, 2));
     
     if (reverseData.features && reverseData.features[0]) {
         const props = reverseData.features[0].properties;
-        currentCityName = props.city || props.county || props.state || props.country || "";
-        console.log('[DEBUG] Reverse geocode city:', currentCityName);
+        console.log('[REVERSE GEOCODE PROPERTIES]:');
+        console.log('- City:', props.city);
+        console.log('- County:', props.county);
+        console.log('- Region:', props.region, props.state);
+        console.log('- Country:', props.country);
+        console.log('- Formatted:', props.formatted);
+        console.log('- Name:', props.name);
+        console.log('- Categories:', props.categories);
+        console.log('- All properties:', Object.keys(props));
     }
 } catch (e) {
-    console.warn('Reverse geocode failed:', e);
+    console.error('Reverse geocode error:', e);
 }
-
 // 2. Hala boşsa pointInfo'dan al
 if (!currentCityName && pointInfo) {
     currentCityName = pointInfo.city || pointInfo.county || pointInfo.region || "";
