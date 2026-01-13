@@ -3006,15 +3006,19 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
     function categoryIcon(category) {
-        switch (category) {
-            case "Coffee": return "img/coffee_icon.svg";
-            case "Museum": return "img/museum_icon.svg";
-            case "Touristic attraction": return "img/touristic_icon.svg";
-            case "Restaurant": return "img/restaurant_icon.svg";
-            case "Accommodation": return "img/accommodation_icon.svg";
-            default: return "img/location.svg";
-        }
-    }
+    // Kategori isimlerini normalize et (Büyük/küçük harf hatasını önler)
+    const cat = String(category || "").trim();
+    
+    const icons = {
+        "Coffee": "img/coffee_icon.svg",
+        "Museum": "img/museum_icon.svg",
+        "Touristic attraction": "img/touristic_icon.svg",
+        "Restaurant": "img/restaurant_icon.svg",
+        "Accommodation": "img/accommodation_icon.svg"
+    };
+
+    return icons[cat] || "img/location.svg";
+}
 
 
 
@@ -7195,16 +7199,20 @@ async function expandMap(containerId, day) {
     locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
-    if (window.isLocationActiveByDay[day]) {
-        locBtn.innerHTML = '<img src="img/location.svg" alt="On">';
-    }
+    // Başlangıç durumu: Eğer aktifse butona 'active' class'ı ekle veya farklı ikon göster
+if (window.isLocationActiveByDay[day]) {
+    locBtn.classList.add('active');
+    locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">'; // Maviye boyar
+}
 
-    locBtn.onclick = function() {
-        window.isLocationActiveByDay[day] = !window.isLocationActiveByDay[day];
-        const isActive = window.isLocationActiveByDay[day];
+locBtn.onclick = function() {
+    window.isLocationActiveByDay[day] = !window.isLocationActiveByDay[day];
+    const isActive = window.isLocationActiveByDay[day];
 
-        if (isActive) {
-            locBtn.innerHTML = '<img src="img/location.svg" alt="On">';
+    if (isActive) {
+        locBtn.classList.add('active');
+        // İkonu CSS filter ile mavi yapıyoruz (Veya elinde mavi ikon varsa onu koyabilirsin)
+        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';;
             if (!document.getElementById('tt-unified-loc-style')) {
                 const s = document.createElement('style');
                 s.id = 'tt-unified-loc-style';
@@ -7219,11 +7227,12 @@ async function expandMap(containerId, day) {
                     locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
                 });
             }
-        } else {
-            locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
-            window.updateUserLocationMarker(expandedMapInstance, day);
-        }
-    };
+       } else {
+        locBtn.classList.remove('active');
+        locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+        window.updateUserLocationMarker(expandedMapInstance, day);
+    }
+};
 
     controlsDiv.appendChild(zoomInBtn);
     controlsDiv.appendChild(zoomOutBtn);
