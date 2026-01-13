@@ -10,13 +10,17 @@ if (!city || city.trim() === '') {
         console.log(`[AI REQUEST] point=${point}, city=${city}, facts=${JSON.stringify(facts)}`);
 
 
-    const prompt = `You are a travel guide for ${city}.
-Write a short summary and a tip about visiting this city.
+const prompt = `You are a local tour guide in ${city}. 
+A traveler clicked on a point called "${point}" on the map.
+
+Write a brief description about THIS SPECIFIC POINT ("${point}") in ${city}, and one practical tip.
+
+IMPORTANT: Focus on "${point}" specifically, not the entire city of ${city}.
 
 Return ONLY this valid JSON (no explanation, no formatting, no text outside the curly braces!):
 {
-  "p1": "short summary about ${city}",
-  "p2": "one tip for travelers"
+  "p1": "brief description about ${point} in ${city}",
+  "p2": "one practical tip about ${point}"
 }`;
 
 // ...
