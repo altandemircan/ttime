@@ -3917,20 +3917,19 @@ function initEmptyDayMap(day) {
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    
     // ====== TÜM ETKİLEŞİMLERİ KAPAT ======
-    dragging: false,
-    touchZoom: false,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
-    boxZoom: false,
-    keyboard: false,
-    tap: false,
-    zoomControl: false
-  });
+    dragging: false,         // Sürüklemeyi kapat
+    touchZoom: false,        // Dokunmatik zoom'u kapat
+    scrollWheelZoom: false,  // Fare tekerleği zoom'unu kapat
+    doubleClickZoom: false,  // Çift tıklama zoom'unu kapat
+    boxZoom: false,          // Kutu seçim zoom'unu kapat
+    keyboard: false,         // Klavye kontrolünü kapat
+    tap: false,              // Mobil dokunma etkileşimini kapat
+    zoomControl: false       // +/- butonlarını gizle
+});
 
-  // === Statik görünüm ===
-  el.style.cursor = 'default';
+// İmleci normal ok işaretine çevir (el ikonu yerine)
+el.style.cursor = 'default';
 
   if (startBounds && startBounds.isValid()) {
       map.fitBounds(startBounds, { padding: [20, 20], animate: false });
@@ -12235,7 +12234,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const style = document.createElement('style');
     style.id = 'tt-static-maps-style';
     style.innerHTML = `
-        /* Mini haritalar için statik görünüm */
+        /* Harita konteynırları için imleci sabitle */
         .sidebar .leaflet-container,
         .cart-item .leaflet-container,
         .travel-item .leaflet-container,
@@ -12243,24 +12242,19 @@ document.addEventListener("DOMContentLoaded", function() {
             cursor: default !important;
         }
         
-        /* Hover efektini kaldır */
-        .sidebar .leaflet-container:hover,
-        .cart-item .leaflet-container:hover,
-        .travel-item .leaflet-container:hover {
-            cursor: default !important;
-        }
-        
-        /* Tile'ları tıklanamaz yap ama görünür */
+        /* Harita zeminini (Tile) tıklanamaz yap */
         .sidebar .leaflet-tile-pane,
         .cart-item .leaflet-tile-pane,
-        .travel-item .leaflet-tile-pane {
+        .travel-item .leaflet-tile-pane,
+        .day-container .route-map .leaflet-tile-pane { /* <-- Bu satırı ekleyin */
             pointer-events: none !important;
         }
         
-        /* Marker'lar tıklanabilir kalsın */
+        /* Markerlar (duraklar) tıklanabilir kalsın (opsiyonel) */
         .sidebar .leaflet-marker-pane,
         .cart-item .leaflet-marker-pane,
-        .travel-item .leaflet-marker-pane {
+        .travel-item .leaflet-marker-pane,
+        .day-container .route-map .leaflet-marker-pane {
             pointer-events: auto !important;
         }
     `;
