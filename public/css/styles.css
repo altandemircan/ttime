@@ -7861,56 +7861,41 @@ scrollbar-width: thin;
 
 /* styles.css */
 
-/* Ortak Ayar: Başlık, Adres ve Saatler */
-.title, .address, .opening_hours {
-    overflow: hidden;
-    line-height: 1.5em;
-}
-
-/* Title: 1 Satır Sınırı */
-.title {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    text-overflow: ellipsis;
-    max-height: 1.5em;
-    word-break: break-word;
-}
-
-/* Address ve Opening Hours */
+/* Ortak Ayar */
 .address span, 
 .opening_hours span {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis; /* Üç noktayı tarayıcı koyar */
+    position: relative;
+    line-height: 1.5em;
     word-break: break-word;
 }
 
-/* Adres: 3 Satır */
-.address span {
-    -webkit-line-clamp: 3;
-    max-height: 4.5em;
-}
+/* Adres 3 satır, Saat 2 satır */
+.address span { -webkit-line-clamp: 3; max-height: 4.5em; }
+.opening_hours span { -webkit-line-clamp: 2; max-height: 3em; }
 
-/* Çalışma Saatleri: 2 Satır */
-.opening_hours span {
-    -webkit-line-clamp: 2;
-    max-height: 3em;
-}
-
-/* Sadece sığmadığında emojiyi gösterme hilesi */
-/* Metin taşarsa (ellipsis aktifse) emojiyi metnin peşine ekler */
+/* Emoji ve Üç Nokta Kontrolü */
 .address span::after, 
-.opening_hours span::after,
-.title::after {
-    content: " 🪧";
-    display: inline; /* Sağa yaslamaz, metnin hemen bitimine ekler */
-    font-size: 12px;
-    vertical-align: middle;
+.opening_hours span::after {
+    /* Metin sığmadığında otomatik çıkan üç nokta ile emojiyi birleştiriyoruz */
+    content: "... 🪧";
+    
+    /* Konumlandırma: Metnin en sonuna, sadece taşma varsa görünecek şekilde */
+    float: right;
+    width: 3.2em; /* Yaklaşık üç nokta ve emoji genişliği */
+    margin-left: -3.2em;
+    padding-left: 2px;
+    position: relative;
+    left: 100%;
+    top: -1.5em; /* Metnin son satırına hizalar */
+    
+    /* Arka planı temizle ki alttaki harflerin üzerine bindiğinde okunsun */
+    background: white; 
 }
 
-/* İkon ve Metin Hizalaması */
+/* Metin sığmıyorsa (Taşma Varsa) */
 .address, .opening_hours {
     display: flex;
     align-items: flex-start;
