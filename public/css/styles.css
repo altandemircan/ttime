@@ -7878,52 +7878,33 @@ scrollbar-width: thin;
     word-break: break-word;
 }
 
-/* Address ve Opening Hours Genel Yapı */
-.address span, 
-.opening_hours span {
-    display: block;
-    line-height: 1.5em;
+/* Address: 3 Satır Sınırı */
+.address span {
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* 3 satır */
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    position: relative;
-    /* padding-right: 18px;  <-- Burayı kaldırdım ki sığanlarda boşluk kalmasın */
+    text-overflow: ellipsis;
+    line-height: 1.5em;
+    max-height: 4.5em; /* 1.5em * 3 satır */
+    word-break: break-word;
 }
 
-/* Adres için 3 satır sınırı */
-.address span { 
-    max-height: 4.5em; 
+/* Opening Hours: 2 Satır Sınırı */
+.opening_hours span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 2 satır */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5em;
+    max-height: 3em; /* 1.5em * 2 satır */
+    word-break: break-word;
 }
 
-/* Çalışma saatleri için 2 satır sınırı */
-.opening_hours span { 
-    max-height: 3em; 
-}
-
-/* BİLGİ İKONU: NORMALDE HİÇ YOK (display: none) */
-.address span::after, 
-.opening_hours span::after {
-    content: "ℹ️";
-    display: none; /* Sığanlarda tamamen yok eder */
-    position: absolute;
-    right: 0;
-    bottom: 2px;
-    font-size: 11px;
-    opacity: 0.6;
-    filter: grayscale(100%);
-    transition: all 0.2s ease;
-}
-
-/* SADECE SIĞMAZSA (JS sınıfı varken) EMOJİ GÖZÜKSÜN */
-.is-overflowing {
-    padding-right: 18px !important; /* Sadece sığmadığında boşluk açar */
-}
-
-.is-overflowing::after {
-    display: block !important; /* Sadece sığmadığında emojiyi var eder */
-}
-
-/* Hover Efekti (Sadece sığmadığında çalışır) */
-.is-overflowing:hover::after {
-    opacity: 1;
-    filter: grayscale(0%);
-    transform: scale(1.2);
+/* İkonların hizalanması */
+.address, .opening_hours {
+    display: flex;
+    align-items: flex-start; 
+    gap: 5px;
 }
