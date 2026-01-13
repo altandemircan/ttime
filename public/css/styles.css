@@ -7862,71 +7862,20 @@ scrollbar-width: thin;
 
 /* styles.css içine ekle */
 
-/* Metni tek satırda sınırlamak için */
 .opening_hours {
-    position: relative; /* Tooltip'in hizalanması için gerekli */
-    cursor: pointer;
-    display: flex;
-    align-items: center;
+    display: flex; /* İkon ve metni yan yana tutar */
+    align-items: flex-start; /* İkonun çok satırlı metinde yukarıda hizalanmasını sağlar */
     gap: 8px;
+    overflow: hidden; /* Dışarı taşmaları engeller */
 }
 
-.truncate-text {
-    white-space: nowrap;
+.opening_hours span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* METNİ KAÇ SATIRLA SINIRLAMAK İSTİYORSAN BURAYI DEĞİŞTİR (Örn: 1 veya 2) */
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-    flex: 1;
-}
-
-/* Tooltip Tasarımı (Pseudo-element) */
-.opening_hours::after {
-    content: attr(data-tooltip); /* data-tooltip içindeki metni okur */
-    position: absolute;
-    bottom: 125%; /* Üstte görünmesi için */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #333;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: normal; /* Uzun metnin aşağı kayması için */
-    width: 200px;
-    z-index: 999;
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    pointer-events: none; /* Mouse ile etkileşimi engeller (kapanmasın diye) */
-}
-
-/* Tooltip Oku (Küçük Üçgen) */
-.opening_hours::before {
-    content: "";
-    position: absolute;
-    bottom: 110%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: #333;
-    visibility: hidden;
-    opacity: 0;
-    z-index: 999;
-}
-
-/* Masaüstü: Hover durumunda göster */
-@media (min-width: 769px) {
-    .opening_hours:hover::after,
-    .opening_hours:hover::before {
-        visibility: visible;
-        opacity: 1;
-    }
-}
-
-/* Mobil: 'show-tooltip' class'ı varken göster */
-.opening_hours.show-tooltip::after,
-.opening_hours.show-tooltip::before {
-    visibility: visible;
-    opacity: 1;
+    text-overflow: ellipsis; /* Sığmayan yere ... koyar */
+    line-height: 1.2em;      /* Satır yüksekliği */
+    max-height: 2.4em;       /* satır sayısı * line-height (2 * 1.2) */
+    word-break: break-word;  /* Çok uzun kelimeleri böler */
 }
