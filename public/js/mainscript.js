@@ -4270,25 +4270,26 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         ? getPurpleRestaurantMarkerHtml(number || "1") 
         : `<div style="background:#d32f2f; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; font-weight:bold;">${number || "1"}</div>`;
 
-const finalIcon = L.divIcon({
-    html: markerHtml, // Senin paylaştığın 24px'lik div
-    className: 'my-custom-marker',
-    iconSize: [24, 24],
-    iconAnchor: [12, 24] // <-- DİKKAT: İKİNCİ parametrede 24 yap! (24, 24)
-});
+    // DÜZELTME: iconAnchor Y: 24 YAPILDI, marker tabanı tam koordinatın üzerinde olur!
+    const finalIcon = L.divIcon({
+        html: markerHtml,
+        className: 'my-custom-marker',
+        iconSize: [24, 24],
+        iconAnchor: [12, 24] // Alt orta noktayı referans alır (çubuk gibi davranır)
+    });
+
     const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
     if (name) marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
-    
-   // Her ihtimale karşı iki aşamalı ve tekrar invalidate
-setTimeout(() => {
-  map.invalidateSize();
-  setTimeout(() => map.invalidateSize(), 300);
-}, 120);
-}
 
+    // Her ihtimale karşı iki aşamalı ve tekrar invalidate
+    setTimeout(() => {
+        map.invalidateSize();
+        setTimeout(() => map.invalidateSize(), 300);
+    }, 120);
+}
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
