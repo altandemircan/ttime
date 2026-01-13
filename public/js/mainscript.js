@@ -4296,6 +4296,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         map.invalidateSize();
         setTimeout(() => map.invalidateSize(), 300);
     }, 120);
+     map.on('moveend zoomend', function() {
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker) map.removeLayer(layer);
+        });
+        const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
+        if (name) marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
+    });
 }
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
