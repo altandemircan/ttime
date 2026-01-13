@@ -50,3 +50,9 @@ CRON GÖRME VE LOG
 crontab -e
 
 tail -f /root/cron_ai_ping.log
+
+
+----------------------------------
+
+OLLAMA TEST 2 SAAT SONRA
+curl -X POST http://127.0.0.1:11434/api/ps -H "Content-Type: application/json" -d '{}'
