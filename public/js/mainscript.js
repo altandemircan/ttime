@@ -3917,16 +3917,30 @@ function initEmptyDayMap(day) {
   const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    // ====== TÜM ETKİLEŞİMLERİ KAPAT ======
-    dragging: false,         // Sürüklemeyi kapat
-    touchZoom: false,        // Dokunmatik zoom'u kapat
-    scrollWheelZoom: false,  // Fare tekerleği zoom'unu kapat
-    doubleClickZoom: false,  // Çift tıklama zoom'unu kapat
-    boxZoom: false,          // Kutu seçim zoom'unu kapat
-    keyboard: false,         // Klavye kontrolünü kapat
-    tap: false,              // Mobil dokunma etkileşimini kapat
-    zoomControl: false       // +/- butonlarını gizle
+    // === ETKİLEŞİMİ KAPATAN AYARLAR ===
+    dragging: false,         // Sürüklemeyi kapatır
+    touchZoom: false,        // Dokunmatik zoom'u kapatır
+    scrollWheelZoom: false,  // Fare tekerleği ile zoom'u kapatır
+    doubleClickZoom: false,  // Çift tıklama zoom'u kapatır
+    boxZoom: false,          // Kutu seçimiyle zoom'u kapatır
+    keyboard: false,         // Klavye kontrolünü kapatır
+    tap: false,              // Mobil dokunmatik etkileşimi kapatır
+    zoomControl: false,      // +/- butonlarını gizler
+    // =================================
+    fadeAnimation: true,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    inertia: false
 });
+
+// Ayrıca harita katmanını (MapLibre) pasif yapın:
+if (typeof L.maplibreGL === 'function') {
+    L.maplibreGL({
+        style: openFreeMapStyle,
+        attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
+        interactive: false // Burayı false yapın
+    }).addTo(map);
+}
 
 // İmleci normal ok işaretine çevir (el ikonu yerine)
 el.style.cursor = 'default';
