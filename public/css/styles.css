@@ -7863,35 +7863,38 @@ scrollbar-width: thin;
 
 /* Ortak Ayar: Taşan kısımları gizle */
 /* 1. Normal Durum: Tertemiz, simge falan yok */
-/* 1. Normal Durum: Tertemiz, ne ℹ️ var ne de kayma */
+/* Normal Durum: Hiçbir şeye dokunma, her şey doğal akışında */
 .address span, 
 .opening_hours span,
 .title {
     display: block;
-    line-height: 1.5em;
     overflow: hidden;
+    line-height: 1.5em;
     position: relative;
-    white-space: normal; /* Kelime kaymasına izin ver */
 }
 
-/* Yükseklik sınırları (Hizalamayı bozmaz) */
-.address span { max-height: 4.5em; }      /* 3 satır */
-.opening_hours span { max-height: 3em; } /* 2 satır */
-.title { max-height: 1.5em; }            /* 1 satır */
+/* Sadece Sığmadığında: Üç nokta ve ikon beraber gelsin */
+.is-overflowing {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis; /* Üç noktayı getirir */
+}
 
-/* 2. Sadece Sığmadığında Emoji Çıkar */
-/* JS 'is-overflowing' eklediği an bu devreye girer */
+/* Kaç satırda keseceğini belirtiyoruz (Yükseklik vermiyoruz) */
+.address span.is-overflowing { -webkit-line-clamp: 3; }
+.opening_hours span.is-overflowing { -webkit-line-clamp: 2; }
+.title.is-overflowing { -webkit-line-clamp: 1; }
+
+/* Emoji: Üç noktanın hemen peşine takılır */
 .is-overflowing::after {
     content: " ℹ️";
-    display: inline; /* Metnin hemen peşine takılır, divi bozmaz */
-    font-size: 13px;
-    font-weight: bold;
+    display: inline;
+    font-size: 12px;
 }
 
-/* 3. Ana Divler (Simge + Metin yan yana dursun diye) */
+/* Ana taşıyıcıların (ikon+metin) hizasını koru */
 .address, .opening_hours {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 4px;
+    gap: 5px;
 }
