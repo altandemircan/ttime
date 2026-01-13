@@ -5085,21 +5085,19 @@ async function updateCart() {
     if (sidebar) sidebar.classList.add('open');
 
     // --- Let's get started mesajını tekrar ekle ---
-    if (chatBox) {
-        const welcomeMsg = document.createElement("div");
-        welcomeMsg.className = "message bot-message request-bot-message";
-        welcomeMsg.innerHTML = `<img src="img/avatar_aiio.png" alt="AI" class="profile-img"><div>Let's get started.</div>`;
-        chatBox.appendChild(welcomeMsg);
+    window.__welcomeShown = false; 
+    window.__welcomeHiddenForever = false;
 
-        // Typing Indicator ekle/düzenle
+    if (chatBox) {
+        chatBox.innerHTML = ''; // İçeriği tamamen boşalt
+        
+        // Typing indicator'ı (gizli olarak) tekrar oluştur/ekle
         let indicator = document.getElementById('typing-indicator');
         if (!indicator) {
             indicator = document.createElement('div');
             indicator.id = 'typing-indicator';
             indicator.className = 'typing-indicator';
             indicator.innerHTML = '<span></span><span></span><span></span>';
-            chatBox.appendChild(indicator);
-        } else {
             chatBox.appendChild(indicator);
         }
         indicator.style.display = 'none';

@@ -24,24 +24,21 @@
 
 window.showLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
-    const msgEl = document.getElementById('loading-message');
     const chatBox = document.getElementById("chat-box");
-    
     if (!panel) return;
-    
+
     panel.style.display = "flex"; 
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
 
-    if (chatBox && chatBox.classList.contains("awaiting-start")) {
-        chatBox.classList.remove("awaiting-start");
-    }
+    // Chat kutusunu görünür yap (awaiting-start sınıfı varsa kaldır)
+    if (chatBox) chatBox.classList.remove("awaiting-start");
 
-    // --- EKLEME: Typing Indicator'ı başlat ---
+    // --- BURASI KRİTİK: Üç noktayı göster ---
     if (typeof showTypingIndicator === "function") {
         showTypingIndicator();
     }
 
-    document.body.classList.add('app-locked'); 
+    document.body.classList.add('app-locked');
     if (document.activeElement) document.activeElement.blur(); 
     
     if (msgEl) {
@@ -81,14 +78,14 @@ window.showLoadingPanel = function() {
 
 window.hideLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.style.display = "none";
-    }
+    if (panel) panel.style.display = "none";
 
-    // --- EKLEME: Typing Indicator'ı gizle ---
+    // --- BURASI KRİTİK: Üç noktayı gizle ---
     if (typeof hideTypingIndicator === "function") {
         hideTypingIndicator();
     }
+
+    document.body.classList.remove('app-locked');
 
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
