@@ -7879,21 +7879,47 @@ scrollbar-width: thin;
 }
 
 /* Address: 3 Satır Sınırı */
-/* Address ve Opening Hours için uygulayalım */
+/* Address ve Opening Hours Genel Yapı */
 .address span, 
 .opening_hours span {
-    display: block; /* webkit-box yerine block kullanıyoruz */
-    max-height: 4.5em; /* Adres için 3 satır (1.5 * 3) */
+    display: block;
     line-height: 1.5em;
     overflow: hidden;
     position: relative;
+    padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
     
-    /* Gradyan maskesi */
-    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    /* Gradyan maskesi: Metni aşağı doğru hafifçe soldurur */
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
 }
 
-/* Sadece Adres 3 satır kalsın */
-.address span { max-height: 4.5em; }
-/* Saatler 2 satır kalsın */
-.opening_hours span { max-height: 3em; }
+/* Adres için 3 satır sınırı */
+.address span { 
+    max-height: 4.5em; 
+}
+
+/* Çalışma saatleri için 2 satır sınırı */
+.opening_hours span { 
+    max-height: 3em; 
+}
+
+/* Bilgi İkonu (::after ile HTML'i bozmadan ekliyoruz) */
+.address span::after, 
+.opening_hours span::after {
+    content: "ℹ️";
+    position: absolute;
+    right: 0;
+    bottom: 2px; /* Gradyanın içinde hafif görünmesi için */
+    font-size: 11px;
+    opacity: 0.6;
+    filter: grayscale(100%); /* Çok renkli olup tasarımı bozmaması için gri tonlama */
+    transition: all 0.2s ease;
+}
+
+/* Masaüstünde mouse ile gelince veya mobilde dokununca */
+.address span:hover::after, 
+.opening_hours span:hover::after {
+    opacity: 1;
+    filter: grayscale(0%); /* Orijinal rengine döner */
+    transform: scale(1.2); /* Hafifçe büyür */
+}
