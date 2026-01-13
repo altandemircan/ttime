@@ -661,7 +661,6 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     
     // Tıklanan koordinatlar için direkt reverse geocode yap
     console.log('[DEBUG] Tıklanan koordinatlar:', { lat, lng });
-    const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
     fetch(reverseUrl)
         .then(r => r.json())
         .then(data => {
