@@ -4226,37 +4226,33 @@ function getPurpleRestaurantMarkerHtml(label) {
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
 
-    const mapContainer = document.getElementById(mapId);
-    
-    // Harita üzerinde mouse varken sürüklemeyi engellemek için
-    mapContainer.addEventListener('mousedown', (e) => e.stopPropagation());
-    mapContainer.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
-    mapContainer.addEventListener('wheel', (e) => e.stopPropagation());
+    const el = document.getElementById(mapId);
+    if (!el) return;
 
-    // Ekstra güvenlik: Harita üzerindeyken gövdedeki kaydırmayı (touch) engelle
-    mapContainer.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
+    // 1. Sürükle-Bırak Çakışmasını Önleme (Event Propagation)
+    // Harita üzerindeki hareketlerin (zoom/pan) dışarıdaki drag sistemini tetiklemesini engeller.
+    ['mousedown', 'touchstart', 'pointerdown', 'wheel'].forEach(eventType => {
+        el.addEventListener(eventType, function(e) {
+            e.stopPropagation();
+        }, { passive: eventType === 'wheel' || eventType === 'touchstart' });
     });
-    
-    // Eski harita varsa temizle (Bellek sızıntısını önler)
+
+    // 2. Eski harita varsa temizle (Bellek sızıntısını ve "Map already initialized" hatasını önler)
     if (window._leafletMaps[mapId]) {
         try { window._leafletMaps[mapId].remove(); } catch(e){}
         delete window._leafletMaps[mapId];
     }
 
-    const el = document.getElementById(mapId);
-    if (!el) return;
-
-    // Haritayı oluştur
+    // 3. Haritayı oluştur
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 15,
-        scrollWheelZoom: false,
+        scrollWheelZoom: true, // Kart açıkken haritada zoom yapılabilsin
         zoomControl: true,
         attributionControl: false
     });
 
-    // OpenFreeMap / MapLibre Katmanı
+    // 4. Harita Katmanını Ekle (OpenFreeMap / Fallback OSM)
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
     if (typeof L.maplibreGL === 'function') {
         L.maplibreGL({
@@ -4268,28 +4264,17 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
 
-    // --- MARKER TASARIMI VE OLUŞTURMA ---
-    // getPurpleRestaurantMarkerHtml fonksiyonu yoksa veya hatalıysa kullanılacak yedek HTML
+    // 5. Marker Tasarımı (Mor/Kırmızı Marker)
     let markerHtml = "";
     if (typeof getPurpleRestaurantMarkerHtml === 'function') {
-        // Eğer fonksiyon varsa, numarayı (number) içine gönderiyoruz
         markerHtml = getPurpleRestaurantMarkerHtml(number || "1");
     } else {
-        // Fonksiyon yoksa fallback (yedek) tasarım
+        // Fonksiyon bulunamazsa görsel hata almamak için yedek tasarım
         markerHtml = `
             <div class="custom-marker-outer" style="
-                background-color: #d32f2f; 
-                color: white; 
-                width: 28px; 
-                height: 28px; 
-                border-radius: 50%; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                font-weight: bold; 
-                border: 2px solid white; 
-                box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-                font-size: 14px;">
+                background-color: #d32f2f; color: white; width: 28px; height: 28px; 
+                border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); font-size: 14px;">
                 ${number || "1"}
             </div>`;
     }
@@ -4298,16 +4283,16 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         html: markerHtml,
         className: 'my-custom-marker',
         iconSize: [30, 30],
-        iconAnchor: [15, 15] // Tam orta nokta
+        iconAnchor: [15, 15]
     });
 
-    // Marker'ı ekle ve Popup'ı bağla
+    // 6. Marker'ı Ekle ve Popup Bağla
     const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
     if (name) {
         marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
     }
 
-    // Konum odaklama mantığı
+    // 7. Konum Odaklama
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
         const pts = getDayPoints(day).filter(p => p && typeof p.lat === "number");
         if (pts.length === 1) {
@@ -4318,14 +4303,11 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
-    // Harita boyutunu düzelt (Gri ekran sorununu çözer)
+    // 8. Render İyileştirmesi (Gri ekran sorununu çözer)
     setTimeout(() => { 
         map.invalidateSize();
-        // Popup'ı otomatik açmak istersen:
-        // marker.openPopup(); 
-    }, 200);
+    }, 250);
 }
-
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
