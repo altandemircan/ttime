@@ -108,7 +108,7 @@ window.hideLoadingPanel = function() {
     }
 };
 
-function showTypingIndicator() {
+window.showTypingIndicator = function() {
     const chatBox = document.getElementById("chat-box");
     let indicator = document.getElementById("typing-indicator");
     
@@ -117,17 +117,79 @@ function showTypingIndicator() {
         indicator.id = "typing-indicator";
         indicator.className = "typing-indicator";
         indicator.innerHTML = '<span></span><span></span><span></span>';
-        chatBox.appendChild(indicator);
-    } else {
-        // Mevcut indikatörü en sona taşı ve görünür yap
+        if (chatBox) chatBox.appendChild(indicator);
+    } else if (chatBox) {
         chatBox.appendChild(indicator); 
     }
     
-    indicator.style.display = "block"; // 'flex' de yapabilirsiniz CSS'e göre
-    chatBox.scrollTop = chatBox.scrollHeight;
+    if (indicator) indicator.style.display = "block";
+    if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+};
+
+window.hideTypingIndicator = function() {
+    const typingIndicator = document.getElementById("typing-indicator");
+    if (typingIndicator) typingIndicator.style.display = "none";
+};
+
+function addCanonicalMessage(canonicalStr) {
+  const chatBox = document.getElementById("chat-box");
+  if (!chatBox) return;
+  const msg = document.createElement("div");
+  msg.className = "message canonical-message";
+  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
+  <span>${canonicalStr}</span>`;
+  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
+  const typingIndicator = chatBox.querySelector('#typing-indicator');
+  if (typingIndicator && typingIndicator.nextSibling) {
+    chatBox.insertBefore(msg, typingIndicator.nextSibling);
+  } else {
+    chatBox.appendChild(msg);
+  }
 }
 
-function hideTypingIndicator() {
-  const typingIndicator = document.getElementById("typing-indicator");
-  if (typingIndicator) typingIndicator.style.display = "none";
+// Helper fonksiyonu güncelliyoruz
+function addWelcomeMessage() {
+    if (!window.__welcomeShown) {
+        // BURASI DEĞİŞTİ:
+        addMessage("Let's get started.", "bot-message request-bot-message");
+        window.__welcomeShown = true;
+    }
+}
+
+    
+function addMessage(text, className) {
+    const chatBox = document.getElementById("chat-box");
+    const messageElement = document.createElement("div");
+    messageElement.className = "message " + className;
+
+    // Profil görseli mantığı
+    let profileElem;
+    if (className.includes("user-message")) {
+        profileElem = document.createElement("div");
+        profileElem.className = "profile-img"; 
+        profileElem.textContent = "🧑";
+    } else {
+        profileElem = document.createElement("img");
+        profileElem.src = "img/avatar_aiio.png";
+        profileElem.className = "profile-img";
+    }
+
+    messageElement.appendChild(profileElem);
+    const contentDiv = document.createElement("div");
+    contentDiv.innerHTML = text;
+    messageElement.appendChild(contentDiv);
+
+    // --- KRİTİK DEĞİŞİKLİK: İndikatörü her zaman mesajın altına taşı ---
+    const typingIndicator = document.getElementById("typing-indicator");
+    if (typingIndicator) {
+        // Mesajı indikatörün önüne ekle
+        chatBox.insertBefore(messageElement, typingIndicator);
+    } else {
+        chatBox.appendChild(messageElement);
+    }
+    
+   chatBox.scrollTo({
+    top: chatBox.scrollHeight,
+    behavior: 'smooth'
+});
 }

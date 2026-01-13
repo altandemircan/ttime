@@ -1345,30 +1345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function addCanonicalMessage(canonicalStr) {
-  const chatBox = document.getElementById("chat-box");
-  if (!chatBox) return;
-  const msg = document.createElement("div");
-  msg.className = "message canonical-message";
-  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
-  <span>${canonicalStr}</span>`;
-  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
-  const typingIndicator = chatBox.querySelector('#typing-indicator');
-  if (typingIndicator && typingIndicator.nextSibling) {
-    chatBox.insertBefore(msg, typingIndicator.nextSibling);
-  } else {
-    chatBox.appendChild(msg);
-  }
-}
 
-// Helper fonksiyonu güncelliyoruz
-function addWelcomeMessage() {
-    if (!window.__welcomeShown) {
-        // BURASI DEĞİŞTİ:
-        addMessage("Let's get started.", "bot-message request-bot-message");
-        window.__welcomeShown = true;
-    }
-}
 
 function sendMessage() {
     // Kilit kontrolü (Loading sırasında tekrar basılmasın)
@@ -1445,40 +1422,6 @@ function sendMessage() {
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
-    
-function addMessage(text, className) {
-    const chatBox = document.getElementById("chat-box");
-    const messageElement = document.createElement("div");
-    messageElement.className = "message " + className;
-
-    // Profil görseli mantığı
-    let profileElem;
-    if (className.includes("user-message")) {
-        profileElem = document.createElement("div");
-        profileElem.className = "profile-img"; 
-        profileElem.textContent = "🧑";
-    } else {
-        profileElem = document.createElement("img");
-        profileElem.src = "img/avatar_aiio.png";
-        profileElem.className = "profile-img";
-    }
-
-    messageElement.appendChild(profileElem);
-    const contentDiv = document.createElement("div");
-    contentDiv.innerHTML = text;
-    messageElement.appendChild(contentDiv);
-
-    // --- KRİTİK DEĞİŞİKLİK: İndikatörü her zaman mesajın altına taşı ---
-    const typingIndicator = document.getElementById("typing-indicator");
-    if (typingIndicator) {
-        // Mesajı indikatörün önüne ekle
-        chatBox.insertBefore(messageElement, typingIndicator);
-    } else {
-        chatBox.appendChild(messageElement);
-    }
-    
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
 
 
 
