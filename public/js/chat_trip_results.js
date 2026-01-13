@@ -81,10 +81,12 @@ function generateStepHtml(step, day, category, idx = 0) {
             <div class="address">
                 <img src="img/address_icon.svg"><span>${address || 'Address not found'}</span>
             </div>
-            <div class="opening_hours">
-    <img src="img/hours_icon.svg">
-    <span title="${opening || 'Working hours not found.'}">${opening || 'Working hours not found.'}</span>
-</div>
+            <div class="opening_hours" onclick="this.classList.toggle('show-tooltip')">
+            <img src="img/hours_icon.svg">
+            <span class="truncate-text" data-tooltip="${opening || 'Working hours not found.'}">
+                ${opening || 'Working hours not found.'}
+            </span>
+        </div>
         </div>
         <div class="item_action">
             <div class="change">
