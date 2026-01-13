@@ -7866,52 +7866,54 @@ scrollbar-width: thin;
     overflow: hidden;
 }
 
-/* 1. Normal Durum: Sığdığı sürece tertemiz, ne üç nokta ne emoji var */
-.title, 
+/* Title: 1 Satır Sınırı */
+.title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1; 
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5em;
+    max-height: 1.5em; 
+    word-break: break-word;
+}
+
 .address span, 
 .opening_hours span {
-    display: block; 
-    overflow: hidden;
+    display: block;
     line-height: 1.5em;
-    white-space: nowrap; /* Sığarken tek satır tutar, emojiyi kutu dışına iter */
-    text-overflow: clip; /* Üç noktayı tamamen kapatır */
+    overflow: hidden;
     position: relative;
+    padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
 }
 
-/* 2. Sadece Sığmadığında (JS sınıfı eklediğinde) İkisi Birden Gelir */
-.is-overflowing {
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical;
-    text-overflow: ellipsis !important; /* Üç noktayı açar */
-    white-space: normal !important;     /* Satır kırmayı açar */
+/* Adres için 3 satır sınırı */
+.address span { 
+    max-height: 4.5em; 
 }
 
-/* Satır Sınırları */
-.title.is-overflowing {
-    -webkit-line-clamp: 1;
-    max-height: 1.5em;
+/* Çalışma saatleri için 2 satır sınırı */
+.opening_hours span { 
+    max-height: 3em; 
 }
 
-.address span.is-overflowing {
-    -webkit-line-clamp: 3;
-    max-height: 4.5em;
+/* Bilgi İkonu */
+.address span::after, 
+.opening_hours span::after {
+    content: "🪧";
+    position: absolute;
+    right: 0;
+    bottom: 2px;
+    font-size: 11px;
+    opacity: 0.6;
+    filter: grayscale(100%);
+    transition: all 0.2s ease;
 }
 
-.opening_hours span.is-overflowing {
-    -webkit-line-clamp: 2;
-    max-height: 3em;
-}
-
-/* 3. Emoji: Sadece sığmadığında üç noktanın hemen peşine takılır */
-.is-overflowing::after {
-    content: " 🪧";
-    display: inline; /* Sağa yaslamaz, metnin bittiği yere koyar */
-    font-size: 12px;
-}
-
-/* İkon Hizalaması */
-.address, .opening_hours {
-    display: flex;
-    align-items: flex-start;
-    gap: 5px;
+/* Hover efekti */
+.address span:hover::after, 
+.opening_hours span:hover::after {
+    opacity: 1;
+    filter: grayscale(0%);
+    transform: scale(1.2);
 }
