@@ -7880,46 +7880,55 @@ scrollbar-width: thin;
 
 /* Address: 3 Satır Sınırı */
 /* Address ve Opening Hours Genel Yapı */
+/* 1. Temel Durum: Metin sığıyorsa tertemiz, emoji ve üç nokta yok */
+.title, 
 .address span, 
 .opening_hours span {
-    display: block;
-    line-height: 1.5em;
+    display: block; 
     overflow: hidden;
+    line-height: 1.5em;
     position: relative;
-    padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
-    
-    /* Gradyan maskesi: Metni aşağı doğru hafifçe soldurur */
-    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
-    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    text-overflow: clip; /* Taşma yoksa üç noktayı gizle */
+    white-space: nowrap; /* Sığdığı sürece tek satır tut (emoji görünmez) */
+}
+
+/* 2. Sadece Sığmadığında (JS ile is-overflowing class'ı eklendiğinde) */
+.is-overflowing {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis; /* Üç noktayı getir */
+    white-space: normal;     /* Satır kırmayı aç */
 }
 
 /* Adres için 3 satır sınırı */
-.address span { 
-    max-height: 4.5em; 
+.address span.is-overflowing {
+    -webkit-line-clamp: 3;
+    max-height: 4.5em;
 }
 
 /* Çalışma saatleri için 2 satır sınırı */
-.opening_hours span { 
-    max-height: 3em; 
+.opening_hours span.is-overflowing {
+    -webkit-line-clamp: 2;
+    max-height: 3em;
 }
 
-/* Bilgi İkonu (::after ile HTML'i bozmadan ekliyoruz) */
-.address span::after, 
-.opening_hours span::after {
-    content: "🪧";
-    position: absolute;
-    right: 0;
-    bottom: 2px; /* Gradyanın içinde hafif görünmesi için */
-    font-size: 11px;
-    opacity: 0.6;
-    filter: grayscale(100%); /* Çok renkli olup tasarımı bozmaması için gri tonlama */
-    transition: all 0.2s ease;
+/* Başlık için 1 satır sınırı */
+.title.is-overflowing {
+    -webkit-line-clamp: 1;
+    max-height: 1.5em;
 }
 
-/* Masaüstünde mouse ile gelince veya mobilde dokununca */
-.address span:hover::after, 
-.opening_hours span:hover::after {
-    opacity: 1;
-    filter: grayscale(0%); /* Orijinal rengine döner */
-    transform: scale(1.2); /* Hafifçe büyür */
+/* 3. Emoji: Sadece sığmadığında üç noktanın yanına eklenir */
+.is-overflowing::after {
+    content: " 🪧";
+    display: inline;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+/* İkon hizalamaları (Mevcut yapın) */
+.address, .opening_hours {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
 }
