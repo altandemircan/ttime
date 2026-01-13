@@ -7862,18 +7862,37 @@ scrollbar-width: thin;
 
 /* styles.css içine ekle */
 
-.opening_hours {
-   
-    overflow: hidden; /* Dışarı taşmaları engeller */
+/* Ortak Ayar: Taşan kısımları gizle */
+.title, .address, .opening_hours {
+    overflow: hidden;
 }
 
-.opening_hours span {
-       display: -webkit-box;
-    -webkit-line-clamp: 2;
+/* Title: 1 Satır Sınırı */
+.title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1; /* Sadece 1 satır */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    /* line-height: 1.2em; */
-    max-height: 2.4em;
+    max-height: 1.2em; /* Tek satır yüksekliği */
     word-break: break-word;
+}
+
+/* Address ve Opening Hours Span'ları: 2 Satır Sınırı */
+.address span, 
+.opening_hours span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 2 satır */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.4em; /* İki satır yüksekliği (1.2 * 2) */
+    word-break: break-word;
+}
+
+/* İkonların hizalanması için (isteğe bağlı) */
+.address, .opening_hours {
+    display: flex;
+    align-items: flex-start; /* İkonun çok satırlı metinde yukarıda kalması için */
+    gap: 5px;
 }
