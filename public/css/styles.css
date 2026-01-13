@@ -7862,39 +7862,59 @@ scrollbar-width: thin;
 /* styles.css */
 
 /* Ortak Ayar: Taşan kısımları gizle */
-/* 1. Normal Durum: Tertemiz, simge falan yok */
-/* Normal Durum: Hiçbir şeye dokunma, her şey doğal akışında */
-.address span, 
-.opening_hours span,
-.title {
-    display: block;
+.title, .address, .opening_hours {
     overflow: hidden;
-    line-height: 1.5em;
-    position: relative;
 }
 
-/* Sadece Sığmadığında: Üç nokta ve ikon beraber gelsin */
-.is-overflowing {
-    display: -webkit-box !important;
+/* Title: 1 Satır Sınırı */
+.title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1; 
     -webkit-box-orient: vertical;
-    text-overflow: ellipsis; /* Üç noktayı getirir */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5em;
+    max-height: 1.5em; 
+    word-break: break-word;
 }
 
-/* Kaç satırda keseceğini belirtiyoruz (Yükseklik vermiyoruz) */
-.address span.is-overflowing { -webkit-line-clamp: 3; }
-.opening_hours span.is-overflowing { -webkit-line-clamp: 2; }
-.title.is-overflowing { -webkit-line-clamp: 1; }
-
-/* Emoji: Üç noktanın hemen peşine takılır */
-.is-overflowing::after {
-    content: " ℹ️";
-    display: inline;
-    font-size: 12px;
+/* Address ve Opening Hours Genel Yapı */
+.address span, 
+.opening_hours span {
+    display: block;
+    line-height: 1.5em;
+    overflow: hidden;
+    position: relative;
+    padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
 }
 
-/* Ana taşıyıcıların (ikon+metin) hizasını koru */
-.address, .opening_hours {
-    display: flex;
-    align-items: flex-start;
-    gap: 5px;
+/* Adres için 3 satır sınırı */
+.address span { 
+    max-height: 4.5em; 
+}
+
+/* Çalışma saatleri için 2 satır sınırı */
+.opening_hours span { 
+    max-height: 3em; 
+}
+
+/* Bilgi İkonu */
+.address span::after, 
+.opening_hours span::after {
+    content: "ℹ️";
+    position: absolute;
+    right: 0;
+    bottom: 2px;
+    font-size: 11px;
+    opacity: 0.6;
+    filter: grayscale(100%);
+    transition: all 0.2s ease;
+}
+
+/* Hover Efekti */
+.address span:hover::after, 
+.opening_hours span:hover::after {
+    opacity: 1;
+    filter: grayscale(0%);
+    transform: scale(1.2);
 }
