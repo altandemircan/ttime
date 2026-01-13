@@ -12020,31 +12020,68 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
+    const styleId = 'tt-leaflet-fix-v6'; // Versiyonu güncelledik
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-         /* 1. Zoom/Pan animasyonlarını sadece route-map VE expanded-map dışındaki haritalarda kapat */
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-shadow, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
-        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
+        /* 1. SADECE EXPANDED MAP'TE ANIMASYON AÇIK OLSUN */
+        /* Tüm Leaflet haritalarında animasyonu kapat */
+        .leaflet-container .leaflet-pane, 
+        .leaflet-container .leaflet-tile, 
+        .leaflet-container .leaflet-marker-icon, 
+        .leaflet-container .leaflet-marker-shadow, 
+        .leaflet-container .leaflet-tile-container, 
+        .leaflet-container .leaflet-zoom-animated {
             transition: none !important;
-            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
+            transform: none !important;
+            animation: none !important;
         }
         
-        /* 2. Resimlerin animasyonunu sadece route-map VE expanded-map dışındaki haritalarda engelle */
-        .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
-            max-width: none !important;
-            width: 256px !important;
-            height: 256px !important;
-            transition: none !important; 
+        /* Expanded map için animasyonu GERİ AÇ */
+        .expanded-map .leaflet-pane, 
+        .expanded-map .leaflet-tile, 
+        .expanded-map .leaflet-zoom-animated {
+            transition: transform 0.25s cubic-bezier(0,0,0.25,1) !important;
         }
-        /* 3. İmleç Ayarları */
+        
+        /* 2. Marker pozisyonlarını sabitlemek için kritik düzeltme */
+        .leaflet-marker-pane,
+        .leaflet-shadow-pane,
+        .leaflet-overlay-pane {
+            transform: translate3d(0, 0, 0) !important;
+        }
+        
+        /* 3. Tile (zemin) pozisyonlarını düzelt */
+        .leaflet-tile {
+            position: absolute !important;
+            transform-origin: 0 0 !important;
+        }
+        
+        /* 4. Sidebar mini haritaları için özel düzeltme */
+        .sidebar .leaflet-container,
+        .day-container .leaflet-container,
+        .cart-item .leaflet-container,
+        .travel-item .leaflet-container {
+            overflow: hidden !important;
+        }
+        
+        .sidebar .leaflet-marker-pane,
+        .day-container .leaflet-marker-pane,
+        .cart-item .leaflet-marker-pane,
+        .travel-item .leaflet-marker-pane {
+            transform: none !important;
+            will-change: auto !important;
+        }
+        
+        /* 5. Zoom sırasında marker'ların ölçeklenmesini engelle (sadece mini haritalarda) */
+        .leaflet-container:not(.expanded-map) .leaflet-zoom-anim .leaflet-zoom-animated {
+            transition: none !important;
+            transform: none !important;
+        }
+        
+        /* 6. İmleç Ayarları */
         .expanded-map.leaflet-container,
         .expanded-map .leaflet-grab,
         .expanded-map .leaflet-interactive {
@@ -12055,14 +12092,13 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             cursor: grabbing !important;
         }
         
-        /* Markerlar için pointer */
         .expanded-map .leaflet-marker-icon,
         .expanded-map .leaflet-popup-close-button,
         .expanded-map a {
             cursor: pointer !important;
         }
 
-        /* 4. Tıklama/Etkileşim Sorunları */
+        /* 7. Tıklama/Etkileşim Sorunları */
         .leaflet-pane { 
             pointer-events: auto; 
         }
@@ -12070,15 +12106,29 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
             z-index: 200; 
         }
         
-        /* 5. Custom Marker Animasyonu */
-        .custom-marker-outer {
+        /* 8. Custom Marker (Sadece expanded'da animasyon) */
+        .leaflet-container:not(.expanded-map) .custom-marker-outer {
+            transition: none !important;
+            will-change: auto !important;
+        }
+        
+        .expanded-map .custom-marker-outer {
             transition: transform 0.1s ease !important;
-            will-change: auto; 
         }
 
-        /* 6. Mobil Performans İyileştirmesi */
+        /* 9. Mobil Performans */
         .leaflet-container {
-            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
+            touch-action: none;
+        }
+        
+        /* 10. KRİTİK: Leaflet'in kendi zoom animasyon sınıflarını devre dışı bırak */
+        .leaflet-zoom-anim .leaflet-zoom-animated {
+            transition-duration: 0s !important;
+        }
+        
+        /* Sadece expanded map'te zoom animasyonunu etkinleştir */
+        .expanded-map.leaflet-zoom-anim .leaflet-zoom-animated {
+            transition-duration: 0.25s !important;
         }
     `;
     document.head.appendChild(style);
