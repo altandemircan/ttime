@@ -10688,6 +10688,7 @@ const response = await fetch('/api/elevation', {
       svgElem.setAttribute('width', '100%');
       svgElem.setAttribute('height', SVG_H);
       track.appendChild(svgElem);
+      console.log("[SCALEBAR][SVG]", {svgElem, width, height: SVG_H, track});
 
       const gridG = document.createElementNS(svgNS, 'g');
       gridG.setAttribute('class', 'tt-elev-grid');
