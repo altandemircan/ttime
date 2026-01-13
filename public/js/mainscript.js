@@ -3807,15 +3807,10 @@ const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
-    
-    // KRİTİK EKLENTİLER:
-    fadeAnimation: false,      // Tile fade animasyonunu kapat
-    zoomAnimation: false,      // Zoom animasyonunu kapat
-    markerZoomAnimation: false, // Marker zoom animasyonunu kapat
-    inertia: false,            // Pan sonrası kayma efektini kapat
-    zoomSnap: 1,               // Zoom seviyelerini tam sayıya kilitle
-    zoomDelta: 1,              // Zoom adım büyüklüğü
-    wheelPxPerZoomLevel: 60    // Mouse wheel duyarlılığı
+    fadeAnimation: true,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    inertia: false
   });
 
   if (startBounds && startBounds.isValid()) {
@@ -4244,14 +4239,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         zoom: 16,
         scrollWheelZoom: false,
         zoomControl: true,
-        attributionControl: false,
-        
-        // KRİTİK EKLENTİLER:
-        fadeAnimation: false,
-        zoomAnimation: false,
-        markerZoomAnimation: false,
-        inertia: false,
-        zoomSnap: 1
+        attributionControl: false
     });
 
     // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
@@ -12030,116 +12018,72 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 }
 
 
+
 (function forceLeafletCssFix() {
-    const styleId = 'tt-leaflet-fix-v8'; // Versiyonu güncelledik
+    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
     if (document.getElementById(styleId)) return;
     
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* ========================================
-           KRİTİK ÇÖZÜM: Mini haritalarda Leaflet'in
-           inertia (관성) ve fade animasyonlarını kapat
-           ======================================== */
-        
-        /* 1. ZOOM sırasında tüm transition'ları kapat */
-        .leaflet-zoom-anim .leaflet-zoom-animated {
+         /* 1. Zoom/Pan animasyonlarını sadece route-map VE expanded-map dışındaki haritalarda kapat */
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-shadow, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
             transition: none !important;
+            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
         }
         
-        /* 2. PAN (sürükleme) sırasında transition'ı kapat - SADECE MİNİ HARİTALARDA */
-        .leaflet-container:not(.expanded-map) .leaflet-map-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-tile-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-overlay-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-shadow-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-marker-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-tooltip-pane,
-        .leaflet-container:not(.expanded-map) .leaflet-popup-pane {
-            transition: none !important;
-            animation: none !important;
-        }
-        
-        /* 3. Marker'ların kendisinin de transition'ı olmasın */
-        .leaflet-container:not(.expanded-map) .leaflet-marker-icon,
-        .leaflet-container:not(.expanded-map) .leaflet-marker-shadow {
-            transition: none !important;
-            animation: none !important;
-        }
-        
-        /* 4. Tile'lar için transition kapat */
-        .leaflet-container:not(.expanded-map) .leaflet-tile {
-            transition: none !important;
-            animation: none !important;
-        }
-        
-        /* 5. Expanded map için smooth animasyonlar */
-        .expanded-map.leaflet-zoom-anim .leaflet-zoom-animated {
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-        
-        .expanded-map .leaflet-map-pane {
-            transition: transform 0.2s ease-out;
-        }
-        
-        /* 6. Hardware acceleration ayarları */
-        .leaflet-container:not(.expanded-map) .leaflet-pane {
-            will-change: auto !important;
-            backface-visibility: visible !important;
-            perspective: none !important;
-        }
-        
-        .expanded-map .leaflet-pane {
-            will-change: transform;
-        }
-        
-        /* 7. Tile pozisyon düzeltmeleri */
-        .leaflet-tile {
+        /* 2. Resimlerin animasyonunu sadece route-map VE expanded-map dışındaki haritalarda engelle */
+        .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
             max-width: none !important;
             width: 256px !important;
             height: 256px !important;
+            transition: none !important; 
         }
-        
-        /* 8. Custom marker - sadece expanded'da animasyon */
-        .leaflet-container:not(.expanded-map) .custom-marker-outer {
-            transition: none !important;
-            animation: none !important;
-        }
-        
-        .expanded-map .custom-marker-outer {
-            transition: transform 0.1s ease !important;
-        }
-        
-        /* 9. İmleç ayarları */
+        /* 3. İmleç Ayarları */
         .expanded-map.leaflet-container,
-        .expanded-map .leaflet-grab {
+        .expanded-map .leaflet-grab,
+        .expanded-map .leaflet-interactive {
             cursor: grab !important;
         }
-        
         .expanded-map.leaflet-container:active,
         .expanded-map .leaflet-grab:active {
             cursor: grabbing !important;
         }
         
-        .leaflet-marker-icon,
-        .leaflet-popup-close-button {
+        /* Markerlar için pointer */
+        .expanded-map .leaflet-marker-icon,
+        .expanded-map .leaflet-popup-close-button,
+        .expanded-map a {
             cursor: pointer !important;
         }
 
-        /* 10. Mobil optimizasyon */
-        .leaflet-container {
-            touch-action: none;
-        }
-        
-        /* 11. Z-index düzeni */
+        /* 4. Tıklama/Etkileşim Sorunları */
         .leaflet-pane { 
             pointer-events: auto; 
         }
         .leaflet-tile-pane {
             z-index: 200; 
         }
+        
+        /* 5. Custom Marker Animasyonu */
+        .custom-marker-outer {
+            transition: transform 0.1s ease !important;
+            will-change: auto; 
+        }
+
+        /* 6. Mobil Performans İyileştirmesi */
+        .leaflet-container {
+            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
+        }
     `;
     document.head.appendChild(style);
 })();
+
 
 
 
