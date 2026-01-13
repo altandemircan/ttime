@@ -7871,4 +7871,15 @@ scrollbar-width: thin;
     overflow: hidden;         /* Taşan kısmı gizler */
     text-overflow: ellipsis;  /* Üç nokta (...) ekler */
     flex: 1;                  /* Kalan tüm alanı kaplamasını sağlar */
+}.info {
+    float: left;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    grid-area: text;
+    font-size: 0.95rem;
+    position: relative;
+    min-height: 150px; /* height: 150px; yerine min-height kullanın */
+    height: auto;      /* İçerik kadar uzamasını sağlar */
 }
