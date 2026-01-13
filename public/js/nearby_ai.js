@@ -1033,56 +1033,52 @@ showCustomPopup(lat, lng, map, loadingContent, false);
         }, 250);
 
         // Şehir bilgisi ve AI açıklaması
-        let currentCityName = window.selectedCity || "";
-if (pointInfo && (pointInfo.county || pointInfo.city)) {
-    currentCityName = pointInfo.county || pointInfo.city;
+// Şehir bilgisi ve AI açıklaması - YENİ VERSİYON
+let currentCityName = "";
+
+// 1. Önce reverse geocode yap
+try {
+    const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
+    const reverseResp = await fetch(reverseUrl);
+    const reverseData = await reverseResp.json();
+    
+    if (reverseData.features && reverseData.features[0]) {
+        const props = reverseData.features[0].properties;
+        currentCityName = props.city || props.county || props.state || props.country || "";
+        console.log('[DEBUG] Reverse geocode city:', currentCityName);
+    }
+} catch (e) {
+    console.warn('Reverse geocode failed:', e);
+}
+
+// 2. Hala boşsa pointInfo'dan al
+if (!currentCityName && pointInfo) {
+    currentCityName = pointInfo.city || pointInfo.county || pointInfo.region || "";
+}
+
+// 3. Hala boşsa global city
+if (!currentCityName) {
+    currentCityName = window.selectedCity || "";
 }
         
 // Şehir bilgisi ve AI açıklaması kısmını güncelle:
 if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const category = pointInfo?.category || pointInfo?.type || "place";
     
-    // YENİ: Gerçek şehir bilgisini al
-    let cityNameForAI = "";
-    
-    // 1. Önce pointInfo'dan al
-    if (pointInfo.city) {
-        cityNameForAI = pointInfo.city;
-    } else if (pointInfo.county) {
-        cityNameForAI = pointInfo.county;
-    } else if (pointInfo.region) {
-        cityNameForAI = pointInfo.region;
-    } else if (pointInfo.country) {
-        cityNameForAI = pointInfo.country;
-    }
-    
-    // 2. Eğer yoksa reverse geocode yap
-    if (!cityNameForAI) {
-        try {
-            const revInfo = await getPlaceInfoFromLatLng(lat, lng);
-            cityNameForAI = revInfo.city || revInfo.county || revInfo.region || "";
-        } catch (e) {
-            console.warn('Reverse geocode failed:', e);
-        }
-    }
-    
-    // 3. Hala yoksa global city'yi kullan
-    if (!cityNameForAI) {
-        cityNameForAI = window.selectedCity || "";
-    }
-    
-    if (!cityNameForAI || !cityNameForAI.trim()) {
-        console.warn('[AI REQUEST] Şehir adı tespit edilemedi, AI isteği gönderilmiyor!', pointInfo);
+    // currentCityName'i kullan (yukarıda belirledik)
+    if (!currentCityName || !currentCityName.trim()) {
+        console.warn('[AI REQUEST] Şehir adı tespit edilemedi!', { lat, lng, pointInfo });
         return;
     }
     
-    console.log('AI request with real city:', { 
+    console.log('AI request with city:', { 
         point: pointInfo.name, 
-        city: cityNameForAI,
-        source: 'clicked-point'
+        city: currentCityName,
+        lat: lat,
+        lng: lng 
     });
     
-    window.fetchClickedPointAI(pointInfo.name, lat, lng, cityNameForAI, { category }, 'ai-point-description');
+    window.fetchClickedPointAI(pointInfo.name, lat, lng, currentCityName, { category }, 'ai-point-description');
 }
 
     } catch (error) {
