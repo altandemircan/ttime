@@ -7860,12 +7860,15 @@ scrollbar-width: thin;
 }
 
 
-.opening-text {
-    display: inline-block;
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: help;
-    border-bottom: 1px dotted #999;
+.info .opening_hours {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.info .opening_hours span {
+    white-space: nowrap;      /* Metni tek satıra zorlar */
+    overflow: hidden;         /* Taşan kısmı gizler */
+    text-overflow: ellipsis;  /* Üç nokta (...) ekler */
+    flex: 1;                  /* Kalan tüm alanı kaplamasını sağlar */
 }
