@@ -7885,7 +7885,7 @@ scrollbar-width: thin;
     line-height: 1.5em;
     overflow: hidden;
     position: relative;
-    padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
+    padding-right: 18px; 
 }
 
 /* Adres için 3 satır sınırı */
@@ -7898,7 +7898,7 @@ scrollbar-width: thin;
     max-height: 3em; 
 }
 
-/* Bilgi İkonu */
+/* Bilgi İkonu - NORMALDE GİZLİ */
 .address span::after, 
 .opening_hours span::after {
     content: "ℹ️";
@@ -7906,15 +7906,20 @@ scrollbar-width: thin;
     right: 0;
     bottom: 2px;
     font-size: 11px;
-    opacity: 0.6;
+    opacity: 0; /* Sığdığı sürece gizli */
     filter: grayscale(100%);
     transition: all 0.2s ease;
+    pointer-events: none;
 }
 
-/* Hover Efekti */
-.address span:hover::after, 
-.opening_hours span:hover::after {
-    opacity: 1;
+/* SADECE SIĞMAZSA (JS sınıfı varken) GÖSTER */
+.is-overflowing::after {
+    opacity: 0.6 !important;
+}
+
+/* Hover Efekti (Sadece sığmadığında çalışır) */
+.is-overflowing:hover::after {
+    opacity: 1 !important;
     filter: grayscale(0%);
     transform: scale(1.2);
 }
