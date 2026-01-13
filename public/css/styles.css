@@ -7858,3 +7858,14 @@ scrollbar-width: thin;
   0%, 80%, 100% { opacity: 0.6; }
   40% { opacity: 1; }
 }
+
+
+.opening-text {
+    display: inline-block;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: help;
+    border-bottom: 1px dotted #999;
+}
