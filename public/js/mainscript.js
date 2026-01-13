@@ -12248,7 +12248,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const style = document.createElement('style');
     style.id = 'tt-static-maps-style';
     style.innerHTML = `
-        /* Harita konteynırları için imleci sabitle */
+        /* Harita imlecini normal ok yap */
         .sidebar .leaflet-container,
         .cart-item .leaflet-container,
         .travel-item .leaflet-container,
@@ -12256,15 +12256,15 @@ document.addEventListener("DOMContentLoaded", function() {
             cursor: default !important;
         }
         
-        /* Harita zeminini (Tile) tıklanamaz yap */
+        /* Harita zeminini tıklanamaz yap */
         .sidebar .leaflet-tile-pane,
         .cart-item .leaflet-tile-pane,
         .travel-item .leaflet-tile-pane,
-        .day-container .route-map .leaflet-tile-pane { /* <-- Bu satırı ekleyin */
+        .day-container .route-map .leaflet-tile-pane { /* Bu satırı ekledik */
             pointer-events: none !important;
         }
         
-        /* Markerlar (duraklar) tıklanabilir kalsın (opsiyonel) */
+        /* Eğer markerların (1, 2, 3...) üzerine gelindiğinde tıklanabilsin istiyorsanız bu kalsın */
         .sidebar .leaflet-marker-pane,
         .cart-item .leaflet-marker-pane,
         .travel-item .leaflet-marker-pane,
