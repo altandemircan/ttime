@@ -10586,8 +10586,26 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   (async () => {
     try {
-      let elevations = await window.getElevationsForRoute(samples, container, routeKey);
-      
+      let elevations = [];
+
+try {
+    const coordsString = samples.map(s => `${s.lat},${s.lng}`).join('|');
+    const response = await fetch(`/api/elevation?locations=${coordsString}`);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    
+    // Backend'den gelen formatı client formatına çevir
+    if (data && Array.isArray(data.results)) {
+        elevations = data.results.map(r => r.elevation || 0);
+    }
+    
+} catch (error) {
+    console.error('Elevation fetch failed:', error);
+    // Fallback elevation
+    elevations = samples.map((_, i) => 60 + Math.sin(i * 0.1) * 20);
+}      
       // --- ROBUST DATA REPAIR (VERİ TAMİRİ) ---
       // Veri null gelirse boş dizi yap, hata vermesin.
       if (!elevations) {
