@@ -185,10 +185,17 @@ app.get('/api/elevation', async (req, res) => {
         continue;
       }
 
-      const result = await response.json();
-      if (result && Array.isArray(result.results)) {
-        resultsAll.push(...result.results);
-      } else {
+      // Bu kısmı elevation API endpoint'inize ekleyin:
+const result = await response.json();
+console.log(`[Elevation DEBUG] Batch ${i / batchSize}:`, {
+  batchSize: batch.split('|').length,
+  resultsCount: result.results?.length || 0,
+  sampleElevations: result.results?.slice(0, 3).map(r => r.elevation)
+});
+
+if (result && Array.isArray(result.results)) {
+  resultsAll.push(...result.results);
+} else {
         for (let j = i; j < i + batchSize && j < coords.length; j++) {
           resultsAll.push({ elevation: null });
         }
