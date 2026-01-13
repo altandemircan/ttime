@@ -5039,37 +5039,29 @@ async function updateCart() {
         newChat.textContent = 'New Trip Plan';
         newChat.style.cursor = 'pointer';
 
-       newChat.onclick  = function () {
+    newChat.onclick = function () {
     const chatBox = document.getElementById('chat-box');
-    if (chatBox) chatBox.innerHTML = ''; // Önce her şeyi temizle
+    if (chatBox) chatBox.innerHTML = ''; 
 
-    const userInput = document.getElementById("user-input");
-    if (userInput) userInput.value = '';
-
-    // Temizlik İşlemleri
-    window.selectedCity = null;
-    window.selectedLocation = null;
-    window.selectedLocationLocked = false;
-    window.__locationPickedFromSuggestions = false;
-    window.lastUserQuery = '';
-    window.latestTripPlan = [];
-    window.cart = [];
-    
+    // Önemli: Botun ilk mesajı tekrar atabilmesi için flagleri sıfırla
     window.__welcomeShown = false; 
     window.__welcomeHiddenForever = false;
+    window.__locationPickedFromSuggestions = false;
 
+    // Diğer temizlik işlemleri...
+    window.selectedCity = null;
+    window.cart = [];
+    
+    // Typing indicator'ı temizle ve gizli olarak ekle
     if (chatBox) {
-        chatBox.innerHTML = ''; // İçeriği tamamen temizle (Bot mesajı dahil)
-        
-        // Typing indicator'ı (gizli olarak) sona ekle
         let indicator = document.getElementById('typing-indicator');
         if (!indicator) {
             indicator = document.createElement('div');
             indicator.id = 'typing-indicator';
             indicator.className = 'typing-indicator';
             indicator.innerHTML = '<span></span><span></span><span></span>';
-            chatBox.appendChild(indicator);
         }
+        chatBox.appendChild(indicator);
         indicator.style.display = 'none';
     }
 

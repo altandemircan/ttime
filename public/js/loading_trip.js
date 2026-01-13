@@ -24,32 +24,24 @@
 
 window.showLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
-    const msgEl = document.getElementById('loading-message'); // Bu satırın varlığından emin olun
+    const msgEl = document.getElementById('loading-message'); // Değişkeni burada tanımlıyoruz
     const chatBox = document.getElementById("chat-box");
     
     if (!panel) return;
     
-    // A. Loading Panelini Görünür Yap
+    // A. Paneli ve İndikatörü Göster
     panel.style.display = "flex"; 
-    
-    // B. Alttaki İçeriği (cw) Gizle
-    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-
-    // C. Chat Kutusunu Hazırla
-    if (chatBox) {
-        chatBox.classList.remove("awaiting-start");
-    }
-
-    // D. [ÖNEMLİ] Üç Nokta Animasyonunu Göster
     if (typeof showTypingIndicator === "function") {
         showTypingIndicator();
     }
-
-    // E. Sayfayı Kilitle
+    
+    // B. Arka Planı Gizle ve Kilitle
+    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
+    if (chatBox) chatBox.classList.remove("awaiting-start");
     document.body.classList.add('app-locked'); 
     if (document.activeElement) document.activeElement.blur(); 
     
-    // F. Mesaj Animasyonlarını Başlat
+    // C. Loading Metinlerini Başlat
     if (msgEl) {
         msgEl.textContent = "Analyzing your request...";
         msgEl.style.opacity = 1;
@@ -67,19 +59,20 @@ window.showLoadingPanel = function() {
     let isTransitioning = false;
 
     window.loadingInterval = setInterval(() => {
-        const currentMsgEl = document.getElementById('loading-message'); // İçeride tekrar kontrol
-        if (!currentMsgEl || panel.style.display === 'none') return;
+        // Fonksiyon içinde msgEl'i tekrar kontrol et
+        const internalMsgEl = document.getElementById('loading-message');
+        if (!internalMsgEl || panel.style.display === 'none') return;
         if (isTransitioning) return;
         
         isTransitioning = true;
-        currentMsgEl.style.transition = "opacity 0.5s ease";
-        currentMsgEl.style.opacity = 0;
+        internalMsgEl.style.transition = "opacity 0.5s ease";
+        internalMsgEl.style.opacity = 0;
 
         setTimeout(() => {
             current = (current + 1) % messages.length;
-            if(currentMsgEl) {
-                currentMsgEl.textContent = messages[current];
-                currentMsgEl.style.opacity = 1;
+            if(internalMsgEl) {
+                internalMsgEl.textContent = messages[current];
+                internalMsgEl.style.opacity = 1;
             }
             setTimeout(() => { isTransitioning = false; }, 500); 
         }, 500); 
@@ -90,12 +83,10 @@ window.hideLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
     if (panel) panel.style.display = "none";
 
-    // --- BURASI KRİTİK: Üç noktayı gizle ---
+    // İndikatörü gizle
     if (typeof hideTypingIndicator === "function") {
         hideTypingIndicator();
     }
-
-    document.body.classList.remove('app-locked');
 
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
