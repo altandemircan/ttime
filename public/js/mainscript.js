@@ -10589,8 +10589,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
       let elevations = [];
 
 try {
-    const coordsString = samples.map(s => `${s.lat},${s.lng}`).join('|');
-    const response = await fetch(`/api/elevation?locations=${coordsString}`);
+   const locations = samples.map(s => `${s.lat},${s.lng}`);
+const response = await fetch('/api/elevation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locations })
+});
     
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
