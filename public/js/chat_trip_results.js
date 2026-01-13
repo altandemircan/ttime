@@ -538,26 +538,3 @@ function showTripDetails(startDate) {
     tripDetailsSection.appendChild(shareDiv);
 }
 
-// Bu fonksiyon metin sığıyor mu bakıp class ekler
-const checkOverflow = (el) => {
-    if (el.scrollHeight > el.clientHeight) {
-        el.classList.add('is-overflowing');
-    }
-};
-
-// HTML basıldıktan sonra çalıştır:
-document.querySelectorAll('.address span, .opening_hours span').forEach(checkOverflow);
-
-function updateOverflows() {
-    document.querySelectorAll('.address span, .opening_hours span, .title').forEach(el => {
-        // Eğer içindeki metin, görünen alandan daha büyükse class ekle
-        if (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) {
-            el.classList.add('is-overflowing');
-        } else {
-            el.classList.remove('is-overflowing');
-        }
-    });
-}
-
-// Kartlar oluştuktan hemen sonra çalıştır
-setTimeout(updateOverflows, 100);
