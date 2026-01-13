@@ -662,14 +662,14 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     // Tıklanan koordinatlar için direkt reverse geocode yap
     console.log('[DEBUG] Tıklanan koordinatlar:', { lat, lng });
     fetch(reverseUrl)
-        .then(r => r.json())
-        .then(data => {
-            console.log('[DIRECT REVERSE GEOCODE] Full response:', data);
-            if (data.features && data.features[0]) {
-                console.log('[DIRECT REVERSE GEOCODE] Properties:', data.features[0].properties);
-            }
-        })
-        .catch(e => console.error('Direct reverse error:', e));
+    .then(r => r.json())
+    .then(data => {
+        console.log('[DIRECT REVERSE GEOCODE] Full response:', data);
+        if (data.features && data.features[0]) {
+            console.log('[DIRECT REVERSE GEOCODE] Properties:', data.features[0].properties);
+        }
+    })
+    .catch(e => console.error('Direct reverse error:', e));
     
     const resp = await fetch(url);
         
@@ -1059,8 +1059,9 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 // Şehir bilgisi ve AI açıklaması - YENİ VERSİYON
 let currentCityName = "";
 
-// 1. Önce reverse geocode yap
+// 1. Önce reverse geocode yap - değişkeni try-catch dışında da kullanılabilir yap
 const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
+
 try {
     const reverseResp = await fetch(reverseUrl);
     const reverseData = await reverseResp.json();
