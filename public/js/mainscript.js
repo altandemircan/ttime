@@ -10589,12 +10589,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
       let elevations = [];
 
 try {
-   const locations = samples.map(s => `${s.lat},${s.lng}`);
+const locations = samples.map(s => `${s.lat},${s.lng}`);
 const response = await fetch('/api/elevation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ locations })
-});
+});;
     
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
@@ -11303,8 +11303,11 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
     for (let i=0;i<samples.length;i+=CHUNK){
       const chunk = samples.slice(i,i+CHUNK);
       const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
-      const resp = await fetch(url);
+      const resp = await fetch('/api/elevation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locations: loc.split('|') })
+});
       if (resp.status === 429) {
         cooldownUntil.myApi = Date.now() + 10*60*1000;
         throw new Error('429');
