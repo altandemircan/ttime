@@ -1045,14 +1045,15 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
         }, 250);
 
-// Şehir bilgisi ve AI açıklaması - YENİ VERSİYON
+// Şehir bilgisi ve AI açıklaması
 let currentCityName = "";
+let reverseData = null; // Değişkeni dışarıda tanımla
 
 // 1. Önce reverse geocode yap
 const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
 try {
     const reverseResp = await fetch(reverseUrl);
-    const reverseData = await reverseResp.json();
+    reverseData = await reverseResp.json();
     console.log('[FULL REVERSE GEOCODE RESPONSE]:', JSON.stringify(reverseData, null, 2));
     
     if (reverseData.features && reverseData.features[0]) {
@@ -1060,25 +1061,38 @@ try {
         console.log('[REVERSE GEOCODE PROPERTIES]:');
         console.log('- City:', props.city);
         console.log('- County:', props.county);
-        console.log('- Region:', props.region, props.state);
         console.log('- Country:', props.country);
-        console.log('- Formatted:', props.formatted);
-        console.log('- Name:', props.name);
-        console.log('- Categories:', props.categories);
-        console.log('- All properties:', Object.keys(props));
+        console.log('- Country Code:', props.country_code);
         
-        // REVERSE DATA'dan şehir bilgisini al
-        currentCityName = props.city || props.county || props.region || props.state || "";
+        // KURAL: Türkiye için county, diğer ülkeler için city
+        if (props.country_code === 'tr' || props.country === 'Turkey') {
+            // TÜRKİYE: county kullan
+            currentCityName = props.county || "";
+            console.log('[TÜRKİYE] County kullanılıyor:', currentCityName);
+        } else {
+            // DÜNYA: city kullan
+            currentCityName = props.city || "";
+            console.log('[DÜNYA] City kullanılıyor:', currentCityName);
+        }
     }
 } catch (e) {
     console.error('Reverse geocode error:', e);
 }
 
-// 2. Hala boşsa pointInfo'dan al - ama pointInfo yapısını kontrol et
+// 2. Hala boşsa pointInfo'dan al
 if (!currentCityName && pointInfo) {
-    // pointInfo nesnesinin yapısını kontrol et
     console.log('pointInfo structure:', pointInfo);
-    currentCityName = pointInfo.city || pointInfo.county || pointInfo.region || pointInfo.state || "";
+    
+    // address içinden şehir çıkarmaya çalış
+    if (pointInfo.address) {
+        const addressParts = pointInfo.address.split(',');
+        if (addressParts.length > 1) {
+            // Adresin son parçasını al
+            const lastPart = addressParts[addressParts.length - 1].trim();
+            // Sayıları ve posta kodlarını temizle
+            currentCityName = lastPart.replace(/\d+/g, '').replace('Turkey', '').trim();
+        }
+    }
 }
 
 // 3. Hala boşsa global city
@@ -1088,9 +1102,10 @@ if (!currentCityName) {
 
 // DEBUG: Şehir adını konsola yazdır
 console.log('[AI CITY DEBUG] Final city name:', currentCityName, {
-    reverseDataCity: reverseData?.features?.[0]?.properties?.city,
-    pointInfoCity: pointInfo?.city,
-    selectedCity: window.selectedCity
+    country: reverseData?.features?.[0]?.properties?.country,
+    country_code: reverseData?.features?.[0]?.properties?.country_code,
+    isTurkey: (reverseData?.features?.[0]?.properties?.country_code === 'tr' || 
+               reverseData?.features?.[0]?.properties?.country === 'Turkey')
 });
         
 // Şehir bilgisi ve AI açıklaması kısmını güncelle:
@@ -1103,20 +1118,25 @@ if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
             lat, 
             lng, 
             pointInfo,
-            reverseData: reverseData?.features?.[0]?.properties,
-            selectedCity: window.selectedCity 
+            country: reverseData?.features?.[0]?.properties?.country,
+            isTurkey: (reverseData?.features?.[0]?.properties?.country_code === 'tr')
         });
         return;
     }
     
-    console.log('AI request with city:', { 
+    // AI için ülke bilgisini de ekle
+    const country = reverseData?.features?.[0]?.properties?.country || "Turkey";
+    const locationContext = `${currentCityName}, ${country}`;
+    
+    console.log('AI request with location:', { 
         point: pointInfo.name, 
-        city: currentCityName,
+        locationContext: locationContext,
+        isTurkey: (country === 'Turkey' || reverseData?.features?.[0]?.properties?.country_code === 'tr'),
         lat: lat,
         lng: lng 
     });
     
-    window.fetchClickedPointAI(pointInfo.name, lat, lng, currentCityName, { category }, 'ai-point-description');
+    window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
 }
 
     } catch (error) {
