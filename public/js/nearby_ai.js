@@ -7,8 +7,19 @@ let aiActiveRequest = 0;
 
 // Görsel doğrulama fonksiyonu
 function getBestCityForAI(pointInfo) {
-    if (!pointInfo) return '';
-    return pointInfo.city || pointInfo.county || pointInfo.locality || window.selectedCity || '';
+    if (!pointInfo) return window.selectedCity || '';
+    
+    // Öncelik sırası:
+    // 1. Tıklanan noktanın city bilgisi
+    // 2. county bilgisi
+    // 3. locality bilgisi
+    // 4. Global selectedCity
+    
+    return pointInfo.city || 
+           pointInfo.county || 
+           pointInfo.locality || 
+           window.selectedCity || 
+           '';
 }
 
 async function isImageValid(url, timeout = 3000) {
@@ -538,6 +549,12 @@ function getSimplePlaceCategory(f) {
 
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
+
+    console.log('[DEBUG] TIKLANAN NOKTANIN TAM BİLGİLERİ:');
+console.log('Koordinatlar:', { lat, lng });
+
+
+
     // 1. Önce kesinlikle eskileri temizle
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
@@ -634,19 +651,26 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     }
 
     try {
-        let pointInfo = { name: "Selected Point", address: "" };
-        try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
-
-        const resp = await fetch(url);
+    let pointInfo = { name: "Selected Point", address: "" };
+    try { 
+        pointInfo = await getPlaceInfoFromLatLng(lat, lng); 
+        console.log('[GEOAPIFY REVERSE RESULT] Full data:', pointInfo);
+    } catch (e) {
+        console.warn('getPlaceInfoFromLatLng failed:', e.message);
+    }
+    
+   
+    
+   const resp = await fetch(url);
         
-        // HTTP hata kontrolü
-        if (!resp.ok) {
-            console.error('API Error:', resp.status, resp.statusText);
-            showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
-            return;
-        }
-        
-        const data = await resp.json();
+    // HTTP hata kontrolü
+    if (!resp.ok) {
+        console.error('API Error:', resp.status, resp.statusText);
+        showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
+        return;
+    }
+    
+    const data = await resp.json();
 
         // DEBUG: Gelen datayı konsola yazdır
         console.log('Geoapify Response:', {
@@ -1021,24 +1045,155 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
         }, 250);
 
-        // Şehir bilgisi ve AI açıklaması
-        let currentCityName = window.selectedCity || "";
-if (pointInfo && (pointInfo.county || pointInfo.city)) {
-    currentCityName = pointInfo.county || pointInfo.city;
-}
+// Şehir bilgisi ve AI açıklaması
+let currentCityName = "";
+let reverseData = null; // Değişkeni dışarıda tanımla
+
+// 1. Önce reverse geocode yap
+const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
+try {
+    const reverseResp = await fetch(reverseUrl);
+    reverseData = await reverseResp.json();
+    console.log('[FULL REVERSE GEOCODE RESPONSE]:', JSON.stringify(reverseData, null, 2));
+    
+    if (reverseData.features && reverseData.features[0]) {
+        const props = reverseData.features[0].properties;
+        console.log('[REVERSE GEOCODE PROPERTIES]:');
+        console.log('- City:', props.city);
+        console.log('- County:', props.county);
+        console.log('- Country:', props.country);
+        console.log('- Country Code:', props.country_code);
         
-      if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-    const category = pointInfo?.category || pointInfo?.type || "place";
-const cityName = getBestCityForAI(pointInfo);
-if (!cityName || !cityName.trim()) {
-    console.warn('[AI REQUEST] Şehir adı tespit edilemedi, AI isteği gönderilmiyor!', pointInfo);
-    // İstersen kullanıcıya hata göster ve/veya isteği atlama:
-    // return;
-}
-console.log('AI request:', { point: pointInfo.name, city: cityName });
-window.fetchClickedPointAI(pointInfo.name, lat, lng, cityName, { category }, 'ai-point-description');
+        // KURAL: Türkiye için county, diğer ülkeler için city
+        if (props.country_code === 'tr' || props.country === 'Turkey') {
+            // TÜRKİYE: county kullan
+            currentCityName = props.county || "";
+            console.log('[TÜRKİYE] County kullanılıyor:', currentCityName);
+        } else {
+            // DÜNYA: city kullan
+            currentCityName = props.city || "";
+            console.log('[DÜNYA] City kullanılıyor:', currentCityName);
+        }
+    }
+} catch (e) {
+    console.error('Reverse geocode error:', e);
 }
 
+// 2. Hala boşsa pointInfo'dan al
+if (!currentCityName && pointInfo) {
+    console.log('pointInfo structure:', pointInfo);
+    
+    // address içinden şehir çıkarmaya çalış
+    if (pointInfo.address) {
+        const addressParts = pointInfo.address.split(',');
+        if (addressParts.length > 1) {
+            // Adresin son parçasını al
+            const lastPart = addressParts[addressParts.length - 1].trim();
+            // Sayıları ve posta kodlarını temizle
+            currentCityName = lastPart.replace(/\d+/g, '').replace('Turkey', '').trim();
+        }
+    }
+}
+
+// 3. Hala boşsa global city
+if (!currentCityName) {
+    currentCityName = window.selectedCity || "";
+}
+
+// DEBUG: Şehir adını konsola yazdır
+console.log('[AI CITY DEBUG] Final city name:', currentCityName, {
+    country: reverseData?.features?.[0]?.properties?.country,
+    country_code: reverseData?.features?.[0]?.properties?.country_code,
+    isTurkey: (reverseData?.features?.[0]?.properties?.country_code === 'tr' || 
+               reverseData?.features?.[0]?.properties?.country === 'Turkey')
+});
+        
+// Şehir bilgisi ve AI açıklaması kısmını güncelle:
+if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+    const category = pointInfo?.category || pointInfo?.type || "place";
+    
+    // currentCityName'i kullan
+    if (!currentCityName || !currentCityName.trim()) {
+        console.warn('[AI REQUEST] Şehir adı tespit edilemedi!', { 
+            lat, 
+            lng, 
+            pointInfo,
+            country: reverseData?.features?.[0]?.properties?.country,
+            isTurkey: (reverseData?.features?.[0]?.properties?.country_code === 'tr')
+        });
+        return;
+    }
+    
+    // AI için ülke bilgisini de ekle
+    const country = reverseData?.features?.[0]?.properties?.country || "Turkey";
+    const locationContext = `${currentCityName}, ${country}`;
+    
+    // ENHANCED AI FACTS (filtrelenmiş)
+    const enhancedFacts = {};
+    const props = reverseData?.features?.[0]?.properties;
+    
+    if (props) {
+        // 1. Kategori/Tür bilgisi (varsa ve generic değilse)
+        if (props.category && props.category !== "amenity" && !props.category.includes("unknown")) {
+            enhancedFacts.category = props.category;
+        }
+        
+        // 2. State/İl bilgisi (varsa ve boş değilse)
+        if (props.state && props.state.trim() && props.state !== props.county) {
+            enhancedFacts.state = props.state;
+        }
+        
+        // 3. City bilgisi (varsa, boş değilse ve county'den farklıysa)
+        if (props.city && props.city.trim() && props.city !== props.county) {
+            enhancedFacts.city = props.city;
+        }
+        
+        // 4. Popülerlik skoru (varsa ve anlamlı bir değerse)
+        if (props.rank?.popularity && props.rank.popularity > 1) {
+            enhancedFacts.popularity_score = Math.round(props.rank.popularity * 10) / 10;
+        }
+        
+        // 5. Result type (varsa ve generic değilse)
+        if (props.result_type && props.result_type !== "amenity") {
+            enhancedFacts.place_type = props.result_type;
+        }
+        
+        // 6. Formatted address (kısa versiyon, 100 karakterden azsa)
+        if (props.formatted && props.formatted.length < 100) {
+            enhancedFacts.address_short = props.formatted;
+        }
+    }
+    
+    // 7. Yakındaki yerler (varsa ve limitli)
+    if (allPlaces && allPlaces.length > 0) {
+        const nearbyNames = allPlaces
+            .slice(0, 3)
+            .map(p => p.properties.name)
+            .filter(name => name && name.trim() && name !== pointInfo.name);
+        
+        if (nearbyNames.length > 0) {
+            enhancedFacts.nearby_places = nearbyNames;
+        }
+    }
+    
+    console.log('AI request with enhanced facts:', { 
+        point: pointInfo.name, 
+        locationContext: locationContext,
+        enhancedFacts: enhancedFacts,
+        isTurkey: (country === 'Turkey' || reverseData?.features?.[0]?.properties?.country_code === 'tr'),
+        lat: lat,
+        lng: lng 
+    });
+    
+    window.fetchClickedPointAI(
+        pointInfo.name, 
+        lat, 
+        lng, 
+        locationContext, 
+        enhancedFacts, // Filtrelenmiş enhanced facts gönder
+        'ai-point-description'
+    );
+}
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);

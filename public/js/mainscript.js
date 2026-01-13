@@ -10545,7 +10545,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   //km'de nokta sayısı: 2'den 5'e
   // const N = Math.max(40, Math.round(totalKm * 2));
 
-  const N = Math.max(80, Math.round(totalKm * 5));
+  const N = Math.max(80, Math.round(totalKm * 2));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -10586,8 +10586,30 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   (async () => {
     try {
-      let elevations = await window.getElevationsForRoute(samples, container, routeKey);
-      
+      let elevations = [];
+
+try {
+const locations = samples.map(s => `${s.lat},${s.lng}`);
+const response = await fetch('/api/elevation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locations })
+});;
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    
+    // Backend'den gelen formatı client formatına çevir
+    if (data && Array.isArray(data.results)) {
+        elevations = data.results.map(r => r.elevation || 0);
+    }
+    
+} catch (error) {
+    console.error('Elevation fetch failed:', error);
+    // Fallback elevation
+    elevations = samples.map((_, i) => 60 + Math.sin(i * 0.1) * 20);
+}      
       // --- ROBUST DATA REPAIR (VERİ TAMİRİ) ---
       // Veri null gelirse boş dizi yap, hata vermesin.
       if (!elevations) {
@@ -10666,6 +10688,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       svgElem.setAttribute('width', '100%');
       svgElem.setAttribute('height', SVG_H);
       track.appendChild(svgElem);
+      console.log("[SCALEBAR][SVG]", {svgElem, width, height: SVG_H, track});
 
       const gridG = document.createElementNS(svgNS, 'g');
       gridG.setAttribute('class', 'tt-elev-grid');
@@ -11281,8 +11304,11 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
     for (let i=0;i<samples.length;i+=CHUNK){
       const chunk = samples.slice(i,i+CHUNK);
       const loc = chunk.map(p=>`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-      const url = `/api/elevation?locations=${encodeURIComponent(loc)}`;
-      const resp = await fetch(url);
+      const resp = await fetch('/api/elevation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locations: loc.split('|') })
+});
       if (resp.status === 429) {
         cooldownUntil.myApi = Date.now() + 10*60*1000;
         throw new Error('429');
