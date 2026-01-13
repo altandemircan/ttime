@@ -7860,7 +7860,7 @@ scrollbar-width: thin;
 }
 
 
-/* styles.css içine ekle */
+/* styles.css son hali */
 
 /* Ortak Ayar: Taşan kısımları gizle */
 .title, .address, .opening_hours {
@@ -7870,11 +7870,12 @@ scrollbar-width: thin;
 /* Title: 1 Satır Sınırı */
 .title {
     display: -webkit-box;
-    -webkit-line-clamp: 1; /* Sadece 1 satır */
+    -webkit-line-clamp: 1; 
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-height: 1.2em; /* Tek satır yüksekliği */
+    max-height: 1.2em; 
+    line-height: 1.2em; /* Satır yüksekliğini sabitlemek iyidir */
     word-break: break-word;
 }
 
@@ -7882,16 +7883,18 @@ scrollbar-width: thin;
 .address span, 
 .opening_hours span {
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* 2 satır */
+    -webkit-line-clamp: 2; 
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2em; /* Satır yüksekliği */
+    max-height: 2.4em;  /* 2 satır için (1.2 x 2) */
     word-break: break-word;
 }
 
-/* İkonların hizalanması için (isteğe bağlı) */
+/* İkonların hizalanması */
 .address, .opening_hours {
     display: flex;
-    align-items: flex-start; /* İkonun çok satırlı metinde yukarıda kalması için */
+    align-items: flex-start; 
     gap: 5px;
 }
