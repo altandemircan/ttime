@@ -24,23 +24,32 @@
 
 window.showLoadingPanel = function() {
     const panel = document.getElementById("loading-panel");
+    const msgEl = document.getElementById('loading-message'); // Bu satırın varlığından emin olun
     const chatBox = document.getElementById("chat-box");
+    
     if (!panel) return;
-
+    
+    // A. Loading Panelini Görünür Yap
     panel.style.display = "flex"; 
+    
+    // B. Alttaki İçeriği (cw) Gizle
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
 
-    // Chat kutusunu görünür yap (awaiting-start sınıfı varsa kaldır)
-    if (chatBox) chatBox.classList.remove("awaiting-start");
+    // C. Chat Kutusunu Hazırla
+    if (chatBox) {
+        chatBox.classList.remove("awaiting-start");
+    }
 
-    // --- BURASI KRİTİK: Üç noktayı göster ---
+    // D. [ÖNEMLİ] Üç Nokta Animasyonunu Göster
     if (typeof showTypingIndicator === "function") {
         showTypingIndicator();
     }
 
-    document.body.classList.add('app-locked');
+    // E. Sayfayı Kilitle
+    document.body.classList.add('app-locked'); 
     if (document.activeElement) document.activeElement.blur(); 
     
+    // F. Mesaj Animasyonlarını Başlat
     if (msgEl) {
         msgEl.textContent = "Analyzing your request...";
         msgEl.style.opacity = 1;
@@ -58,18 +67,19 @@ window.showLoadingPanel = function() {
     let isTransitioning = false;
 
     window.loadingInterval = setInterval(() => {
-        if (!msgEl || panel.style.display === 'none') return;
+        const currentMsgEl = document.getElementById('loading-message'); // İçeride tekrar kontrol
+        if (!currentMsgEl || panel.style.display === 'none') return;
         if (isTransitioning) return;
         
         isTransitioning = true;
-        msgEl.style.transition = "opacity 0.5s ease";
-        msgEl.style.opacity = 0;
+        currentMsgEl.style.transition = "opacity 0.5s ease";
+        currentMsgEl.style.opacity = 0;
 
         setTimeout(() => {
             current = (current + 1) % messages.length;
-            if(msgEl) {
-                msgEl.textContent = messages[current];
-                msgEl.style.opacity = 1;
+            if(currentMsgEl) {
+                currentMsgEl.textContent = messages[current];
+                currentMsgEl.style.opacity = 1;
             }
             setTimeout(() => { isTransitioning = false; }, 500); 
         }, 500); 
