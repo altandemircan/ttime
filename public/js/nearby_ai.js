@@ -1128,17 +1128,72 @@ if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const country = reverseData?.features?.[0]?.properties?.country || "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-    console.log('AI request with location:', { 
+    // ENHANCED AI FACTS (filtrelenmiş)
+    const enhancedFacts = {};
+    const props = reverseData?.features?.[0]?.properties;
+    
+    if (props) {
+        // 1. Kategori/Tür bilgisi (varsa ve generic değilse)
+        if (props.category && props.category !== "amenity" && !props.category.includes("unknown")) {
+            enhancedFacts.category = props.category;
+        }
+        
+        // 2. State/İl bilgisi (varsa ve boş değilse)
+        if (props.state && props.state.trim() && props.state !== props.county) {
+            enhancedFacts.state = props.state;
+        }
+        
+        // 3. City bilgisi (varsa, boş değilse ve county'den farklıysa)
+        if (props.city && props.city.trim() && props.city !== props.county) {
+            enhancedFacts.city = props.city;
+        }
+        
+        // 4. Popülerlik skoru (varsa ve anlamlı bir değerse)
+        if (props.rank?.popularity && props.rank.popularity > 1) {
+            enhancedFacts.popularity_score = Math.round(props.rank.popularity * 10) / 10;
+        }
+        
+        // 5. Result type (varsa ve generic değilse)
+        if (props.result_type && props.result_type !== "amenity") {
+            enhancedFacts.place_type = props.result_type;
+        }
+        
+        // 6. Formatted address (kısa versiyon, 100 karakterden azsa)
+        if (props.formatted && props.formatted.length < 100) {
+            enhancedFacts.address_short = props.formatted;
+        }
+    }
+    
+    // 7. Yakındaki yerler (varsa ve limitli)
+    if (allPlaces && allPlaces.length > 0) {
+        const nearbyNames = allPlaces
+            .slice(0, 3)
+            .map(p => p.properties.name)
+            .filter(name => name && name.trim() && name !== pointInfo.name);
+        
+        if (nearbyNames.length > 0) {
+            enhancedFacts.nearby_places = nearbyNames;
+        }
+    }
+    
+    console.log('AI request with enhanced facts:', { 
         point: pointInfo.name, 
         locationContext: locationContext,
+        enhancedFacts: enhancedFacts,
         isTurkey: (country === 'Turkey' || reverseData?.features?.[0]?.properties?.country_code === 'tr'),
         lat: lat,
         lng: lng 
     });
     
-    window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, { category }, 'ai-point-description');
+    window.fetchClickedPointAI(
+        pointInfo.name, 
+        lat, 
+        lng, 
+        locationContext, 
+        enhancedFacts, // Filtrelenmiş enhanced facts gönder
+        'ai-point-description'
+    );
 }
-
     } catch (error) {
         console.error('Nearby places fetch error:', error);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">Error loading nearby places.</div>', true);
