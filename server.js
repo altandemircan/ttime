@@ -152,7 +152,7 @@ app.get('/api/geoapify/places', async (req, res) => {
   }
 });
 
-// app.get('/api/elevation', async (req, res) => {
+app.get('/api/elevation', async (req, res) => {
 //   const { locations } = req.query;
 
 //   const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
@@ -201,114 +201,114 @@ app.get('/api/geoapify/places', async (req, res) => {
 //     console.error('[Elevation] Error:', e);
 //     res.status(502).json({ error: 'Elevation API failed.', detail: e.message });
 //   }
-// });
-
-
-app.get('/api/elevation', async (req, res) => {
-  const { locations } = req.query;
-  const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
-
-  try {
-    const coords = (locations || "").split('|').filter(Boolean);
-    const batchSize = 100;
-    const resultsAll = [];
-
-    for (let i = 0; i < coords.length; i += batchSize) {
-      const batch = coords.slice(i, i + batchSize).join('|');
-      const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
-      
-      const response = await fetch(url, { timeout: 15000 });
-      
-      if (!response.ok) {
-        throw new Error(`Elevation API error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result && Array.isArray(result.results)) {
-        // DEBUG: İlk 3 değeri logla
-        console.log(`[Elevation DEBUG] Batch elevations:`, 
-          result.results.slice(0, 3).map(r => r.elevation));
-        
-        resultsAll.push(...result.results);
-      } else {
-        throw new Error('Invalid response format from elevation API');
-      }
-    }
-
-    // ELEVATION KALİTE KONTROLÜ
-    const elevations = resultsAll.map(r => r.elevation).filter(e => e != null);
-    
-    if (elevations.length === 0) {
-      console.warn('[Elevation] Tüm elevation değerleri null!');
-      return res.status(500).json({ 
-        error: 'No elevation data received',
-        results: resultsAll 
-      });
-    }
-
-    // Tüm değerler aynı mı kontrol et
-    const uniqueElevations = [...new Set(elevations.map(e => Math.round(e)))];
-    
-    if (uniqueElevations.length <= 2) { // 1-2 farklı değer varsa
-      console.warn(`[Elevation] Çok az farklı elevation değeri:`, uniqueElevations);
-      
-      // DÜZELTME: Eğer tüm değerler ~aynıysa, varyasyon ekle
-      if (uniqueElevations.length === 1 && coords.length > 10) {
-        console.log('[Elevation] Tüm elevation değerleri aynı, varyasyon ekleniyor...');
-        
-        const baseElevation = uniqueElevations[0];
-        const variedResults = resultsAll.map((r, index) => ({
-          ...r,
-          elevation: baseElevation + (Math.sin(index * 0.1) * 10) // Hafif varyasyon
-        }));
-        
-        return res.json({ 
-          results: variedResults, 
-          source: 'opentopodata',
-          adjusted: true 
-        });
-      }
-    }
-
-    // Normal response
-    res.json({ 
-      results: resultsAll, 
-      source: 'opentopodata',
-      elevation_stats: {
-        min: Math.min(...elevations),
-        max: Math.max(...elevations),
-        unique_values: uniqueElevations.length,
-        sample: elevations.slice(0, 5)
-      }
-    });
-
-  } catch (error) {
-    console.error('[Elevation] Error:', error);
-    
-    // FALLBACK: Koordinat sayısına göre rastgele elevation üret
-    const coords = (locations || "").split('|').filter(Boolean);
-    const fallbackResults = coords.map((coord, index) => {
-      const [lat, lon] = coord.split(',').map(Number);
-      // Bölgeye göre ortalama elevation
-      let base = 50; // default
-      if (lat > 40 && lat < 42 && lon > 28 && lon < 30) base = 60; // Istanbul
-      if (lat > 29 && lat < 30 && lon > 34 && lon < 36) base = 6;  // Aqaba
-      
-      return {
-        latitude: lat,
-        longitude: lon,
-        elevation: base + (Math.sin(index * 0.3) * 20) // Varyasyon
-      };
-    });
-    
-    res.json({ 
-      results: fallbackResults, 
-      source: 'fallback',
-      error: error.message 
-    });
-  }
 });
+
+
+// app.get('/api/elevation', async (req, res) => {
+//   const { locations } = req.query;
+//   const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
+
+//   try {
+//     const coords = (locations || "").split('|').filter(Boolean);
+//     const batchSize = 100;
+//     const resultsAll = [];
+
+//     for (let i = 0; i < coords.length; i += batchSize) {
+//       const batch = coords.slice(i, i + batchSize).join('|');
+//       const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
+      
+//       const response = await fetch(url, { timeout: 15000 });
+      
+//       if (!response.ok) {
+//         throw new Error(`Elevation API error: ${response.status}`);
+//       }
+
+//       const result = await response.json();
+      
+//       if (result && Array.isArray(result.results)) {
+//         // DEBUG: İlk 3 değeri logla
+//         console.log(`[Elevation DEBUG] Batch elevations:`, 
+//           result.results.slice(0, 3).map(r => r.elevation));
+        
+//         resultsAll.push(...result.results);
+//       } else {
+//         throw new Error('Invalid response format from elevation API');
+//       }
+//     }
+
+//     // ELEVATION KALİTE KONTROLÜ
+//     const elevations = resultsAll.map(r => r.elevation).filter(e => e != null);
+    
+//     if (elevations.length === 0) {
+//       console.warn('[Elevation] Tüm elevation değerleri null!');
+//       return res.status(500).json({ 
+//         error: 'No elevation data received',
+//         results: resultsAll 
+//       });
+//     }
+
+//     // Tüm değerler aynı mı kontrol et
+//     const uniqueElevations = [...new Set(elevations.map(e => Math.round(e)))];
+    
+//     if (uniqueElevations.length <= 2) { // 1-2 farklı değer varsa
+//       console.warn(`[Elevation] Çok az farklı elevation değeri:`, uniqueElevations);
+      
+//       // DÜZELTME: Eğer tüm değerler ~aynıysa, varyasyon ekle
+//       if (uniqueElevations.length === 1 && coords.length > 10) {
+//         console.log('[Elevation] Tüm elevation değerleri aynı, varyasyon ekleniyor...');
+        
+//         const baseElevation = uniqueElevations[0];
+//         const variedResults = resultsAll.map((r, index) => ({
+//           ...r,
+//           elevation: baseElevation + (Math.sin(index * 0.1) * 10) // Hafif varyasyon
+//         }));
+        
+//         return res.json({ 
+//           results: variedResults, 
+//           source: 'opentopodata',
+//           adjusted: true 
+//         });
+//       }
+//     }
+
+//     // Normal response
+//     res.json({ 
+//       results: resultsAll, 
+//       source: 'opentopodata',
+//       elevation_stats: {
+//         min: Math.min(...elevations),
+//         max: Math.max(...elevations),
+//         unique_values: uniqueElevations.length,
+//         sample: elevations.slice(0, 5)
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('[Elevation] Error:', error);
+    
+//     // FALLBACK: Koordinat sayısına göre rastgele elevation üret
+//     const coords = (locations || "").split('|').filter(Boolean);
+//     const fallbackResults = coords.map((coord, index) => {
+//       const [lat, lon] = coord.split(',').map(Number);
+//       // Bölgeye göre ortalama elevation
+//       let base = 50; // default
+//       if (lat > 40 && lat < 42 && lon > 28 && lon < 30) base = 60; // Istanbul
+//       if (lat > 29 && lat < 30 && lon > 34 && lon < 36) base = 6;  // Aqaba
+      
+//       return {
+//         latitude: lat,
+//         longitude: lon,
+//         elevation: base + (Math.sin(index * 0.3) * 20) // Varyasyon
+//       };
+//     });
+    
+//     res.json({ 
+//       results: fallbackResults, 
+//       source: 'fallback',
+//       error: error.message 
+//     });
+//   }
+// });
 
 app.get('/api/geoapify/reverse', async (req, res) => {
   const { lat, lon } = req.query;
