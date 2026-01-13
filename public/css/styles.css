@@ -7862,59 +7862,45 @@ scrollbar-width: thin;
 /* styles.css */
 
 /* Ortak Ayar: Taşan kısımları gizle */
-.title, .address, .opening_hours {
-    overflow: hidden;
-}
-
-/* Title: 1 Satır Sınırı */
-.title {
-    display: -webkit-box;
-    -webkit-line-clamp: 1; 
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.5em;
-    max-height: 1.5em; 
-    word-break: break-word;
-}
-
-/* Address ve Opening Hours Genel Yapı */
+/* 1. Normal Durum: Tertemiz, simge falan yok */
+.title, 
 .address span, 
 .opening_hours span {
     display: block;
-    line-height: 1.5em;
     overflow: hidden;
+    line-height: 1.5em;
     position: relative;
-    padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
+    white-space: nowrap; /* Sığarken metni tek satır tutar, simgeyi gizli tutar */
 }
 
-/* Adres için 3 satır sınırı */
-.address span { 
-    max-height: 4.5em; 
+/* Satır Sınırları */
+.address span { max-height: 4.5em; }
+.opening_hours span { max-height: 3em; }
+.title { max-height: 1.5em; }
+
+/* 2. Sadece Sığmadığında (is-overflowing varken) Simge Çıkar */
+.is-overflowing {
+    white-space: normal !important; /* Satır kırmayı açar */
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    /* -webkit-line-clamp değerlerini aşağıda belirledik */
 }
 
-/* Çalışma saatleri için 2 satır sınırı */
-.opening_hours span { 
-    max-height: 3em; 
+.address span.is-overflowing { -webkit-line-clamp: 3; }
+.opening_hours span.is-overflowing { -webkit-line-clamp: 2; }
+.title.is-overflowing { -webkit-line-clamp: 1; }
+
+/* 3. Simge: Üç nokta yerine sadece ℹ️ simgesi */
+.is-overflowing::after {
+    content: " ℹ️";
+    display: inline;
+    font-size: 12px;
+    vertical-align: middle;
 }
 
-/* Bilgi İkonu */
-.address span::after, 
-.opening_hours span::after {
-    content: "ℹ️";
-    position: absolute;
-    right: 0;
-    bottom: 2px;
-    font-size: 11px;
-    opacity: 0.6;
-    filter: grayscale(100%);
-    transition: all 0.2s ease;
-}
-
-/* Hover Efekti */
-.address span:hover::after, 
-.opening_hours span:hover::after {
-    opacity: 1;
-    filter: grayscale(0%);
-    transform: scale(1.2);
+/* İkon Hizalaması */
+.address, .opening_hours {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
 }
