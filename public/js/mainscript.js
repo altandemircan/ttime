@@ -2594,11 +2594,18 @@ const chatCategories = ["Coffee", "Museum", "Touristic attraction", "Restaurant"
 
 
 const categoryIcons = {
-    "Coffee": "img/coffee_icon.svg",
-    "Museum": "img/museum_icon.svg",
-    "Touristic attraction": "img/touristic_icon.svg",
-    "Restaurant": "img/restaurant_icon.svg",
-    "Accommodation": "img/accommodation_icon.svg" 
+    "coffee": "img/coffee_icon.svg",
+    "museum": "img/museum_icon.svg",
+    "touristic attraction": "img/touristic_icon.svg",
+    "touristic": "img/touristic_icon.svg",
+    "restaurant": "img/restaurant_icon.svg",
+    "accommodation": "img/accommodation_icon.svg"
+};
+
+function getCategoryIcon(category) {
+    if (!category) return 'img/location.svg';
+    const cat = category.toLowerCase().trim();
+    return categoryIcons[cat] || 'img/location.svg';
 };
 
 function addToCart(
@@ -4608,9 +4615,7 @@ async function updateCart() {
                     ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
                     : '<div class="map-error">Location not available</div>';
 
-                const catIcon = (window.categoryIcons && window.categoryIcons[item.category]) 
-                                ? window.categoryIcons[item.category] 
-                                : 'img/location.svg';
+               const catIcon = getCategoryIcon(item.category);
 
                 li.innerHTML = `
           <div class="cart-item">
