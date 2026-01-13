@@ -4270,13 +4270,12 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         ? getPurpleRestaurantMarkerHtml(number || "1") 
         : `<div style="background:#d32f2f; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; font-weight:bold;">${number || "1"}</div>`;
 
-    const finalIcon = L.divIcon({
+const finalIcon = L.divIcon({
     html: markerHtml, // Senin paylaştığın 24px'lik div
     className: 'my-custom-marker',
-    iconSize: [24, 24],      // 32 yerine gerçek div boyutu
-    iconAnchor: [12, 12]     // Tam merkez (24/2)
+    iconSize: [24, 24],
+    iconAnchor: [12, 24] // <-- DİKKAT: İKİNCİ parametrede 24 yap! (24, 24)
 });
-
     const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
     if (name) marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
 
