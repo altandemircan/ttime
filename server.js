@@ -209,7 +209,7 @@ app.post('/api/elevation', async (req, res) => {
         ? req.body.locations
         : (req.body.locations || "").split('|').filter(Boolean);
 
-    const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
+    const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:9000';
   try {
     const coords = (locations || "").split('|').filter(Boolean);
     const batchSize = 100;
