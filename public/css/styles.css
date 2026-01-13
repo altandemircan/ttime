@@ -7859,53 +7859,50 @@ scrollbar-width: thin;
   40% { opacity: 1; }
 }
 
-/* Başlık, Adres ve Saatler Genel Ayar */
+/* 1. Başlangıç Durumu: Sığdığı sürece tertemiz görünür */
 .title, 
 .address span, 
 .opening_hours span {
-    display: block; /* Normalde standart blok */
+    display: block; 
     overflow: hidden;
     line-height: 1.5em;
-    word-break: break-word;
+    white-space: nowrap; /* Sığdığı sürece tek satır ve emoji yok */
+    text-overflow: clip; 
     position: relative;
-    text-overflow: clip; /* Sığdığı sürece üç nokta ASLA gözükmez */
 }
 
-/* Sadece JS tarafından taşma tespit edildiğinde (is-overflowing) tetiklenir */
+/* 2. Sadece JS 'is-overflowing' eklediğinde devreye giren kurallar */
 .is-overflowing {
     display: -webkit-box !important;
     -webkit-box-orient: vertical;
-    text-overflow: ellipsis; /* Üç noktayı aktifleştirir */
+    text-overflow: ellipsis; /* Üç noktayı getirir */
+    white-space: normal;     /* Satır kırmayı aktif eder */
 }
 
-/* Adres Sınırı: 3 Satır */
-.address span.is-overflowing {
-    -webkit-line-clamp: 3;
-    max-height: 4.5em;
-}
-
-/* Saatler Sınırı: 2 Satır */
-.opening_hours span.is-overflowing {
-    -webkit-line-clamp: 2;
-    max-height: 3em;
-}
-
-/* Başlık Sınırı: 1 Satır */
+/* Satır Sınırları (Sadece sığmadığında) */
 .title.is-overflowing {
     -webkit-line-clamp: 1;
     max-height: 1.5em;
 }
 
-/* Üç noktanın yanına emojiyi ekleyen sihirli dokunuş */
-/* Sadece taşma varsa görünür */
+.address span.is-overflowing {
+    -webkit-line-clamp: 3;
+    max-height: 4.5em;
+}
+
+.opening_hours span.is-overflowing {
+    -webkit-line-clamp: 2;
+    max-height: 3em;
+}
+
+/* 3. Emoji: Sadece sığmadığında (is-overflowing varken) üç noktanın yanına gelir */
 .is-overflowing::after {
     content: " 🪧";
-    display: inline-block;
-    vertical-align: middle;
+    display: inline;
     font-size: 12px;
 }
 
-/* İkon hizalamaları */
+/* İkon ve Metin Hizalaması */
 .address, .opening_hours {
     display: flex;
     align-items: flex-start;
