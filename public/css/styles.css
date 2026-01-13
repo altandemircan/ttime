@@ -7916,7 +7916,7 @@ scrollbar-width: thin;
 .title.is-overflowing {
     -webkit-line-clamp: 1;
     max-height: 1.5em;
-}
+} 
 
 /* 3. Emoji: Sadece sığmadığında üç noktanın yanına eklenir */
 .is-overflowing::after {
