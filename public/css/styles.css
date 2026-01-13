@@ -7863,9 +7863,7 @@ scrollbar-width: thin;
 /* styles.css içine ekle */
 
 .opening_hours {
-    display: flex; /* İkon ve metni yan yana tutar */
-    align-items: flex-start; /* İkonun çok satırlı metinde yukarıda hizalanmasını sağlar */
-    gap: 8px;
+   
     overflow: hidden; /* Dışarı taşmaları engeller */
 }
 
