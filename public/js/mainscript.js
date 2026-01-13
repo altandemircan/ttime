@@ -4279,6 +4279,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     });
 
     const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
+    setTimeout(() => {
+      const mm = el.querySelector('.leaflet-marker-icon.my-custom-marker');
+      if (mm) {
+        mm.style.marginLeft = '0px';
+        mm.style.marginTop = '0px';
+      }
+    }, 50);
     if (name) marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
 
     map.zoomControl.setPosition('topright');
@@ -12015,43 +12022,54 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 }
 
 
-
 (function forceLeafletCssFix() {
     const styleId = 'tt-leaflet-fix-v6';
     if (document.getElementById(styleId)) return;
-    
     const style = document.createElement('style');
     style.id = styleId;
     style.innerHTML = `
-        /* 1. Marker ve Çizgilerin (SVG) gecikmesini engelle */
-        .leaflet-zoom-animated, 
-        .leaflet-marker-icon, 
-        .leaflet-marker-shadow, 
-        .leaflet-customRoute-pane svg {
-            transition: none !important;
-            will-change: transform !important;
-        }
-
-        /* 2. MapLibre katmanının Leaflet ile hizalanmasını zorla */
-        .leaflet-gl-layer.maplibregl-map {
-            transition: none !important;
-        }
-
-        /* 3. Marker'ların titremesini önlemek için donanımsal hızlandırma */
-        .leaflet-pane {
-            transform: translate3d(0,0,0);
-        }
-
-        .route-map .leaflet-marker-icon {
+/* ROUTEMAP/SMALL MAP: Marker ve çizgi kaymasını/titremesini ENGELLE: */
+.route-map .leaflet-marker-icon,
+.route-map .my-custom-marker,
+.route-map .custom-marker-outer,
+.route-map .custom-marker-label {
+    will-change: unset !important;
+    transition: none !important;
     margin-left: -12px !important;
     margin-top: -12px !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
 }
 
+/* Marker shadow/altlık kayması da block */
+.route-map .leaflet-marker-shadow {
+    will-change: unset !important;
+    transition: none !important;
+    margin-left: -12px !important;
+    margin-top: -12px !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+}
 
+/* Her türlü SVG, pane, animasyonlar kapalı olsun */
+.route-map .leaflet-zoom-animated, 
+.route-map .leaflet-marker-icon, 
+.route-map .leaflet-marker-shadow, 
+.route-map .leaflet-pane svg {
+    transition: none !important;
+    will-change: unset !important;
+}
+/* Donanımsal hızlandırma force et, alt kayma bug'ına karşı: */
+.route-map .leaflet-pane,
+.route-map .leaflet-map-pane,
+.route-map .leaflet-marker-pane {
+    transform: translate3d(0,0,0) !important;
+}
     `;
     document.head.appendChild(style);
 })();
-
 
 
 document.addEventListener("DOMContentLoaded", function() {
