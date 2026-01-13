@@ -7878,6 +7878,8 @@ scrollbar-width: thin;
     word-break: break-word;
 }
 
+/* Address: 3 Satır Sınırı */
+/* Address ve Opening Hours Genel Yapı */
 .address span, 
 .opening_hours span {
     display: block;
@@ -7885,6 +7887,10 @@ scrollbar-width: thin;
     overflow: hidden;
     position: relative;
     padding-right: 18px; /* Emojinin metne binmemesi için sağdan boşluk */
+    
+    /* Gradyan maskesi: Metni aşağı doğru hafifçe soldurur */
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
 }
 
 /* Adres için 3 satır sınırı */
@@ -7897,23 +7903,23 @@ scrollbar-width: thin;
     max-height: 3em; 
 }
 
-/* Bilgi İkonu */
+/* Bilgi İkonu (::after ile HTML'i bozmadan ekliyoruz) */
 .address span::after, 
 .opening_hours span::after {
-    content: "🪧";
+    content: "ℹ️";
     position: absolute;
     right: 0;
-    bottom: 2px;
+    bottom: 2px; /* Gradyanın içinde hafif görünmesi için */
     font-size: 11px;
     opacity: 0.6;
-    filter: grayscale(100%);
+    filter: grayscale(100%); /* Çok renkli olup tasarımı bozmaması için gri tonlama */
     transition: all 0.2s ease;
 }
 
-/* Hover efekti */
+/* Masaüstünde mouse ile gelince veya mobilde dokununca */
 .address span:hover::after, 
 .opening_hours span:hover::after {
     opacity: 1;
-    filter: grayscale(0%);
-    transform: scale(1.2);
+    filter: grayscale(0%); /* Orijinal rengine döner */
+    transform: scale(1.2); /* Hafifçe büyür */
 }
