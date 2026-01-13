@@ -4225,6 +4225,18 @@ function getPurpleRestaurantMarkerHtml(label) {
 
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
+
+    const mapContainer = document.getElementById(mapId);
+    
+    // Harita üzerinde mouse varken sürüklemeyi engellemek için
+    mapContainer.addEventListener('mousedown', (e) => e.stopPropagation());
+    mapContainer.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+    mapContainer.addEventListener('wheel', (e) => e.stopPropagation());
+
+    // Ekstra güvenlik: Harita üzerindeyken gövdedeki kaydırmayı (touch) engelle
+    mapContainer.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+    });
     
     // Eski harita varsa temizle (Bellek sızıntısını önler)
     if (window._leafletMaps[mapId]) {

@@ -503,6 +503,9 @@ function updatePlaceholder(clientX, clientY) {
 }
 // ========== HANDLERS ==========
 function handleTouchStart(e) {
+    // Harita içinde bir yere dokunulduysa sürüklemeyi engelle
+    if (e.target.closest('.leaflet-container')) return;
+
     const item = e.target.closest('.travel-item');
     if (!item || e.target.closest('button') || e.target.closest('.map-content-wrap')) return;
     if (e.touches.length > 1) return;
@@ -542,7 +545,8 @@ function handleTouchEnd() {
 function setupDesktopListeners() {
     document.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
-        if (e.target.closest('.leaflet-control') || e.target.closest('.map-functions')) return;
+        // Harita alanı veya kontrollerine tıklandıysa sürüklemeyi başlatma
+        if (e.target.closest('.leaflet-container') || e.target.closest('.leaflet-control') || e.target.closest('.map-functions')) return;
 
         const item = e.target.closest('.travel-item');
         if (item && !e.target.closest('button')) {
