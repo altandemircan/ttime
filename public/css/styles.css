@@ -7879,32 +7879,21 @@ scrollbar-width: thin;
 }
 
 /* Address: 3 Satır Sınırı */
-.address span {
+/* styles.css güncellemesi */
+
+.address span, .opening_hours span {
     display: -webkit-box;
-    -webkit-line-clamp: 3; /* 3 satır */
+    -webkit-line-clamp: 3; /* Adres için */
     -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.5em;
-    max-height: 4.5em; /* 1.5em * 3 satır */
-    word-break: break-word;
+    transition: max-height 0.3s ease-in-out; /* Yumuşak açılış */
+    cursor: pointer;
 }
 
-/* Opening Hours: 2 Satır Sınırı */
-.opening_hours span {
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* 2 satır */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.5em;
-    max-height: 3em; /* 1.5em * 2 satır */
-    word-break: break-word;
-}
-
-/* İkonların hizalanması */
-.address, .opening_hours {
-    display: flex;
-    align-items: flex-start; 
-    gap: 5px;
+/* Üzerine gelince veya tıklanınca (active) tam boyuta geç */
+.address span:hover, .address span:active,
+.opening_hours span:hover, .opening_hours span:active {
+    -webkit-line-clamp: unset; /* Satır sınırını kaldır */
+    max-height: 500px; /* Çok büyük bir değer vererek açılmasını sağla */
+    overflow: visible;
 }
