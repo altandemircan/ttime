@@ -3807,10 +3807,15 @@ const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
     scrollWheelZoom: true,
-    fadeAnimation: true,
-    zoomAnimation: true,
-    markerZoomAnimation: true,
-    inertia: false
+    
+    // KRİTİK EKLENTİLER:
+    fadeAnimation: false,      // Tile fade animasyonunu kapat
+    zoomAnimation: false,      // Zoom animasyonunu kapat
+    markerZoomAnimation: false, // Marker zoom animasyonunu kapat
+    inertia: false,            // Pan sonrası kayma efektini kapat
+    zoomSnap: 1,               // Zoom seviyelerini tam sayıya kilitle
+    zoomDelta: 1,              // Zoom adım büyüklüğü
+    wheelPxPerZoomLevel: 60    // Mouse wheel duyarlılığı
   });
 
   if (startBounds && startBounds.isValid()) {
