@@ -6126,13 +6126,15 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     const refitMap = () => {
         if (!map || !sidebarContainer) return;
         if (sidebarContainer.offsetParent === null) return;
-
         try {
-            map.invalidateSize();
+            // [FIX] Mobil cihazlarda marker kaymasını önlemek için boyutları yenile
+            map.invalidateSize(); 
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
-                map.fitBounds(bounds, { padding: [20, 20], animate: false });
+                // [FIX] Mobilde markerların köşeye yapışmaması için padding'i artırdık
+                const isMobile = window.innerWidth <= 768;
+                map.fitBounds(bounds, { padding: isMobile ? [40, 40] : [20, 20], animate: false });
             }
         } catch (err) {}
     };
@@ -7105,12 +7107,15 @@ async function expandMap(containerId, day) {
             setExpandedMapTile(currentLayer);
 
             setTimeout(() => {
-                try {
-                    updateExpandedMap(expandedMapInstance, day);
-                } catch (err) { console.error(err); }
-
-                expandedMapInstance.invalidateSize(true);
-                refreshLocationIfActive();
+            try {
+                updateExpandedMap(expandedMapInstance, day);
+            } catch (err) {
+                console.error(err);
+            }
+            // [FIX] Agresif boyut yenileme
+            expandedMapInstance.invalidateSize();
+            setTimeout(() => expandedMapInstance.invalidateSize(true), 150);
+            refreshLocationIfActive();
 
                 if (window._lastSegmentDay === day && typeof window._lastSegmentStartKm === 'number' && typeof window._lastSegmentEndKm === 'number') {
                     highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
@@ -9834,10 +9839,20 @@ function wrapRouteControls(day) {
     if (e.target.closest('.expand-map-btn')) return;
     open = !open;
     if (open) {
-      mapContentWrap.style.maxHeight = '700px';
-      mapContentWrap.style.opacity = '1';
-      arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
-      bar.style.gap = '10px';
+        mapContentWrap.style.maxHeight = '700px';
+        mapContentWrap.style.opacity = '1';
+        arrowSpan.querySelector('.arrow-icon').style.transform = 'rotate(90deg)';
+        bar.style.gap = '10px';
+        
+        // [FIX] Küçük harita açıldığında markerları ortala
+        const containerId = `route-map-day${day}`;
+        const mapInstance = window.leafletMaps && window.leafletMaps[containerId];
+        if (mapInstance) {
+            setTimeout(() => {
+                mapInstance.invalidateSize();
+                if (typeof fitExpandedMapToRoute === 'function') fitExpandedMapToRoute(day);
+            }, 300);
+        }
     } else {
       mapContentWrap.style.maxHeight = '0px';
       mapContentWrap.style.opacity = '0.2';
