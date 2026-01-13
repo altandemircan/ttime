@@ -7906,7 +7906,7 @@ scrollbar-width: thin;
 /* Emoji: Üç noktanın hemen sağında sabit durur */
 .address span::after, 
 .opening_hours span::after {
-    content: "ℹ️";
+    content: "... 🪧";
     position: absolute;
     right: 0;
     bottom: 2px; /* Satırın hizasına çekiyoruz */
