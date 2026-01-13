@@ -659,27 +659,18 @@ showCustomPopup(lat, lng, map, loadingContent, false);
         console.warn('getPlaceInfoFromLatLng failed:', e.message);
     }
     
-    // Tıklanan koordinatlar için direkt reverse geocode yap
-    console.log('[DEBUG] Tıklanan koordinatlar:', { lat, lng });
-    .then(r => r.json())
-    .then(data => {
-        console.log('[DIRECT REVERSE GEOCODE] Full response:', data);
-        if (data.features && data.features[0]) {
-            console.log('[DIRECT REVERSE GEOCODE] Properties:', data.features[0].properties);
-        }
-    })
-    .catch(e => console.error('Direct reverse error:', e));
+   
     
-    const resp = await fetch(url);
+   const resp = await fetch(url);
         
-        // HTTP hata kontrolü
-        if (!resp.ok) {
-            console.error('API Error:', resp.status, resp.statusText);
-            showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
-            return;
-        }
-        
-        const data = await resp.json();
+    // HTTP hata kontrolü
+    if (!resp.ok) {
+        console.error('API Error:', resp.status, resp.statusText);
+        showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
+        return;
+    }
+    
+    const data = await resp.json();
 
         // DEBUG: Gelen datayı konsola yazdır
         console.log('Geoapify Response:', {
