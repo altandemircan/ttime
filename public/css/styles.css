@@ -7861,34 +7861,32 @@ scrollbar-width: thin;
 
 /* styles.css */
 
-/* Ortak Ayar: Taşan kısımları gizle */
+/* Ortak Ayar: Başlık, Adres ve Saatler */
 .title, .address, .opening_hours {
     overflow: hidden;
+    position: relative; /* Emoji konumlandırması için */
 }
 
-/* Title: 1 Satır Sınırı */
-/* Başlık: 1 Satır + Üç Nokta */
+/* Title: 1 Satır Sınırı + Üç Nokta */
 .title {
     display: -webkit-box;
-    -webkit-line-clamp: 1; 
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
-    overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.5em;
-    max-height: 1.5em; 
+    max-height: 1.5em;
     word-break: break-word;
 }
 
-/* Adres ve Saatler Genel Ayar */
+/* Address ve Opening Hours Genel Ayar */
 .address span, 
 .opening_hours span {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis; /* Üç noktayı tarayıcı otomatik koyar */
+    text-overflow: ellipsis; /* Üç noktayı tarayıcı koyar */
     line-height: 1.5em;
-    position: relative;
-    padding-right: 15px; /* Emoji için sağda yer açıyoruz */
+    padding-right: 20px; /* Emojiye yer açar */
 }
 
 /* Adres: 3 Satır */
@@ -7903,23 +7901,16 @@ scrollbar-width: thin;
     max-height: 3em;
 }
 
-/* Emoji: Üç noktanın hemen sağında sabit durur */
+/* Sığmadığında/Taştığında Çıkacak Emoji (::after) */
 .address span::after, 
-.opening_hours span::after {
-    content: "... 🪧";
+.opening_hours span::after,
+.title::after {
+    content: " 🪧";
     position: absolute;
-    right: 0;
-    bottom: 2px; /* Satırın hizasına çekiyoruz */
-    font-size: 11px;
-    opacity: 0.7;
-    cursor: pointer;
-}
-
-/* Hover/Touch efekti: Emoji parlasın */
-.address span:hover::after, 
-.opening_hours span:hover::after {
-    opacity: 1;
-    transform: scale(1.1);
+    bottom: 0;
+    font-size: 12px;
+    background: white; /* Metnin üzerine binince arkasını temizler */
+    padding-left: 4px;
 }
 
 /* İkon ve Metin Hizalaması */
