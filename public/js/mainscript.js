@@ -4215,10 +4215,18 @@ function attachMapClickAddMode(day) {
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
 
+function getPurpleRestaurantMarkerHtml(label) {
+    return `
+        <div class="custom-marker-outer" style="background-color: #d32f2f; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+            ${label}
+        </div>
+    `;
+}
+
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
-    // Eski harita varsa temizle
+    // Eski harita varsa temizle (Bellek sızıntısını önler)
     if (window._leafletMaps[mapId]) {
         try { window._leafletMaps[mapId].remove(); } catch(e){}
         delete window._leafletMaps[mapId];
@@ -4227,63 +4235,83 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
+    // Haritayı oluştur
     var map = L.map(mapId, {
         center: [lat, lon],
-        zoom: 16,
+        zoom: 15,
         scrollWheelZoom: false,
         zoomControl: true,
         attributionControl: false
     });
 
-    // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
+    // OpenFreeMap / MapLibre Katmanı
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-
     if (typeof L.maplibreGL === 'function') {
-        // MapLibreGL (Vektör) kullan
         L.maplibreGL({
             style: openFreeMapStyle,
-            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+            attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a>',
             interactive: true
         }).addTo(map);
     } else {
-        // Eğer kütüphane yüklenmediyse OSM Fallback
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
-    // ------------------------------------------------
 
-    // ARTIK day VAR!
+    // --- MARKER TASARIMI VE OLUŞTURMA ---
+    // getPurpleRestaurantMarkerHtml fonksiyonu yoksa veya hatalıysa kullanılacak yedek HTML
+    let markerHtml = "";
+    if (typeof getPurpleRestaurantMarkerHtml === 'function') {
+        // Eğer fonksiyon varsa, numarayı (number) içine gönderiyoruz
+        markerHtml = getPurpleRestaurantMarkerHtml(number || "1");
+    } else {
+        // Fonksiyon yoksa fallback (yedek) tasarım
+        markerHtml = `
+            <div class="custom-marker-outer" style="
+                background-color: #d32f2f; 
+                color: white; 
+                width: 28px; 
+                height: 28px; 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                font-weight: bold; 
+                border: 2px solid white; 
+                box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+                font-size: 14px;">
+                ${number || "1"}
+            </div>`;
+    }
+
+    const finalIcon = L.divIcon({
+        html: markerHtml,
+        className: 'my-custom-marker',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15] // Tam orta nokta
+    });
+
+    // Marker'ı ekle ve Popup'ı bağla
+    const marker = L.marker([lat, lon], { icon: finalIcon }).addTo(map);
+    if (name) {
+        marker.bindPopup(`<strong>${name}</strong>`, { offset: [0, -10] });
+    }
+
+    // Konum odaklama mantığı
     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
-        const pts = getDayPoints(day).filter(
-            p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
-        );
-        // Eğer sadece 1 nokta varsa o noktaya odaklan
+        const pts = getDayPoints(day).filter(p => p && typeof p.lat === "number");
         if (pts.length === 1) {
-            map.setView([pts[0].lat, pts[0].lng], 14);
+            map.setView([lat, lon], 15);
         }
     }
-
-    // Marker
-    const icon = L.divIcon({
-        html: getPurpleRestaurantMarkerHtml(), // Bu fonksiyonun tanımlı olduğundan emin olun, yoksa standart icon kullanın
-        className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    });
-    
-    // Eğer getPurpleRestaurantMarkerHtml yoksa fallback için basit bir HTML string:
-    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
-    const finalIcon = typeof getPurpleRestaurantMarkerHtml === 'function' ? icon : L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
-
-    L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
-    // Harita boyutunu düzelt (render hatasını önler)
-    setTimeout(function() { map.invalidateSize(); }, 120);
+    // Harita boyutunu düzelt (Gri ekran sorununu çözer)
+    setTimeout(() => { 
+        map.invalidateSize();
+        // Popup'ı otomatik açmak istersen:
+        // marker.openPopup(); 
+    }, 200);
 }
 
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
