@@ -36,6 +36,7 @@ router.post('/', async (req, res) => {
         res.status(400).send('City is required');
         return;
     }
+    console.log(`[AI PLAN-REQ] city="${city}" country="${country}"`);
 
     // Anahtar oluştur (Örn: "Rome-Italy")
     const cacheKey = country ? `${city}-${country}` : city;
@@ -171,7 +172,9 @@ const processingPromise = (async () => {
         saveCacheToDisk();
         console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
 
-        res.setHeader('Access-Control-Allow-Origin', '*');
+                console.log(`[AI PLAN-RESP for city=${city}]`, result);
+
+res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(result);
 

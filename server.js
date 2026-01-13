@@ -1,5 +1,9 @@
 try {
-  require('dotenv').config({ /* quiet: true */ });
+  console.log('[startup] process.cwd():', process.cwd());
+console.log('[startup] __dirname:', __dirname);
+const fs = require('fs');
+console.log('[startup] .env exists:', fs.existsSync('./.env'));
+require('dotenv').config({ path: __dirname + '/.env' });
   console.log('[startup] dotenv loaded');
 } catch (e) {
   console.warn('[startup] dotenv not loaded:', e.code || e.message);
@@ -32,7 +36,7 @@ app.use('/clicked-ai', clickedAiRouter);
 app.use('/chat-stream', chatStreamRouter);
 console.log('Chat stream endpoint registered at /chat-stream');
 
-
+ 
 // Diğer API Routerları
 const photogetProxy = require('./photoget-proxy');
 app.use('/photoget-proxy', photogetProxy);
@@ -211,7 +215,7 @@ app.get('/api/geoapify/reverse', async (req, res) => {
   } catch (e) {
     res.status(500).send('Proxy error');
   }
-});
+}); 
 
 // 4. Health endpoint
 app.get('/health', (req, res) => {
@@ -258,4 +262,4 @@ const PORT = process.env.PORT || 3004;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Feedback email configured:', !!process.env.FEEDBACK_FROM_EMAIL);
-});
+}); 
