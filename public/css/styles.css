@@ -5865,15 +5865,14 @@ ease;
     gap: 6px;
     padding: 4px 12px;
     background: #ffffff;
+    color: #1976d2; /* Orijinal mavi rengin */
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 21px;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1;
-    /* Yazı rengi maviden siyaha yumuşakça evrilir */
-    animation: text-color-shift 3s ease-in-out infinite;
 }
 
 /* Sinyal Halkası */
@@ -5881,46 +5880,33 @@ ease;
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 8px;
-    background: rgba(25, 118, 210, 0.3); /* Mavi sinyal rengi */
+    border-radius: 21px;
+    background: rgba(25, 118, 210, 0.4); /* Mavi sinyal rengi */
     z-index: -1;
-    animation: signal-pulse 3s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    animation: signal-pulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
 }
 
 .expand-map-btn img {
     width: 20px;
     height: 20px;
     display: block;
-    /* İkon da metinle birlikte siyaha döner */
-    animation: icon-black-shift 3s ease-in-out infinite;
 }
 
-/* Sinyal Animasyonu: Arkadan genişleyerek kaybolan halka */
+/* Sinyal Animasyonu */
 @keyframes signal-pulse {
     0% {
         transform: scale(1);
-        opacity: 0.6;
+        opacity: 0.8;
     }
     100% {
-        transform: scale(1.4, 1.8); /* Yatay ve dikey farklı genişleme */
+        transform: scale(1.3, 1.6); /* Yatay ve dikey genişleme */
         opacity: 0;
     }
 }
 
-/* Metin Renk Geçişi: Mavi -> Siyah */
-@keyframes text-color-shift {
-    0%, 100% { color: #1976d2; }
-    50% { color: #000000; }
-}
-
-/* İkon Renk Geçişi */
-@keyframes icon-black-shift {
-    0%, 100% { filter: none; }
-    50% { filter: brightness(0); }
-}
-
+/* Hover'da sinyali hafifletip butonu belirginleştirir */
 .expand-map-btn:hover {
-    transform: translateY(-1px);
+    background: #f8faff;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .maplibregl-ctrl-bottom-right {
