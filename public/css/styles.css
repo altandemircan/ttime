@@ -5862,78 +5862,72 @@ ease;
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 18px;
+    gap: 6px;
+    padding: 4px 12px;
     background: #ffffff;
     color: #1976d2;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 13px; /* Sabit tutuldu */
+    font-weight: 600;
     cursor: pointer;
-    border-radius: 30px;
+    border-radius: 21px;
     border: none;
     outline: none;
-    overflow: hidden; /* Dışarı taşan ışığı keser */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease;
+    overflow: hidden;
+    z-index: 1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Arka plandaki dönen modern gradient ışığı */
+/* Dönen ışık hüzmesi */
 .expand-map-btn::before {
     content: '';
     position: absolute;
-    width: 150%;
-    height: 400%; /* Işığın daha dikey ve keskin gelmesi için */
+    inset: -100% -50%; /* Alanı geniş tutarak ışığı yumuşatır */
     background: conic-gradient(
         from 0deg,
         transparent 0%,
-        #1976d2 25%,
-        #64b5f6 50%,
-        transparent 75%
+        rgba(25, 118, 210, 0.1) 10%,
+        #1976d2 20%,
+        rgba(25, 118, 210, 0.1) 30%,
+        transparent 40%,
+        transparent 100%
     );
-    animation: rotate-glow 4s linear infinite;
-    top: -150%;
-    left: -25%;
-    z-index: 0;
+    animation: rotate-border 4s linear infinite;
+    z-index: -2;
 }
 
-/* İç beyaz gövde (Kenar payı bırakır) */
+/* İç dolgu - Butonun beyaz kalmasını sağlar */
 .expand-map-btn::after {
     content: '';
     position: absolute;
-    inset: 2px; /* Kenar kalınlığı (2px modern durur) */
-    background: white;
-    border-radius: 28px;
-    z-index: 1;
+    inset: 1.5px; /* Border kalınlığı hissi verir */
+    background: #ffffff;
+    border-radius: 20px;
+    z-index: -1;
 }
 
-/* İçeriklerin (ikon ve yazı) en üstte görünmesi için */
-.expand-map-btn span, 
 .expand-map-btn img {
+    width: 20px; /* Sabit tutuldu */
+    height: 20px; /* Sabit tutuldu */
+    display: block;
     position: relative;
     z-index: 2;
 }
 
-/* İkon için yumuşak bir hover geçişi */
-.expand-map-btn img {
-    width: 20px;
-    height: 20px;
-    transition: transform 0.3s ease;
+.expand-map-btn span {
+    position: relative;
+    z-index: 2;
 }
 
-/* Animasyon Tanımı */
-@keyframes rotate-glow {
+/* Animasyon */
+@keyframes rotate-border {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-/* Hover (Üzerine Gelince) Efektleri */
+/* Modern Hover: Sadece hafif bir derinlik katar */
 .expand-map-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(25, 118, 210, 0.2);
-}
-
-.expand-map-btn:hover img {
-    transform: rotate(15deg) scale(1.1);
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.12);
+    transform: translateY(-1px);
 }.maplibregl-ctrl-bottom-right {
     display: none;
 }
