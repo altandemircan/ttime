@@ -3742,169 +3742,149 @@ function ensureDayMapContainer(day) {
   return mapDiv;
 }
 
-// function initEmptyDayMap(day) {
-//   const containerId = `route-map-day${day}`;
-//   let el = document.getElementById(containerId);
-
-//   if (!el) {
-//     el = ensureDayMapContainer(day);
-//     if (!el) return;
-//   }
-
-//   // Leaflet kütüphanesi henüz yüklenmediyse bekle
-//   if (typeof L === 'undefined') {
-//     setTimeout(() => initEmptyDayMap(day), 60);
-//     return;
-//   }
-
-//   // Zaten harita varsa ve container içindeyse çık
-//   const existingMap = window.leafletMaps && window.leafletMaps[containerId];
-//   const hasInner = el.querySelector('.leaflet-container');
-//   if (existingMap && hasInner) return;
-  
-//   // Harita var ama container uçmuşsa temizle
-//   if (existingMap && !hasInner) {
-//     try { existingMap.remove(); } catch(_) {}
-//     delete window.leafletMaps[containerId];
-//   }
-
-//   if (!el.style.height) el.style.height = '285px';
-//   // [FIX] Yükleme sırasında gri ekran yerine harita zemin rengi
-//   el.style.backgroundColor = "#eef0f5"; 
-  
-//   // --- KONUM BELİRLEME MANTIĞI ---
-//   const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-//   const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-  
-//   let startCenter = [39.0, 35.0]; // Varsayılan Türkiye
-//   let startZoom = 5;
-//   let startBounds = null;
-//   let hasFocus = false;
-
-//   if (validPts.length > 0) {
-//       if (validPts.length === 1) {
-//           startCenter = [validPts[0].lat, validPts[0].lng];
-//           startZoom = 14;
-//       } else {
-//           startBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-//           startCenter = startBounds.getCenter();
-//           startZoom = 10;
-//       }
-//       hasFocus = true;
-//   } 
-//   else if (day > 1 && typeof getDayPoints === 'function') {
-//       const prevPoints = getDayPoints(day - 1);
-//       const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
-//       if (validPrevPts.length > 0) {
-//           const lastPt = validPrevPts[validPrevPts.length - 1];
-//           startCenter = [lastPt.lat, lastPt.lng];
-//           startZoom = 12; 
-//           hasFocus = true;
-//       }
-//   }
-
-// const map = L.map(containerId, {
-//     center: startCenter,
-//     zoom: startZoom,
-//     scrollWheelZoom: true,
-//     fadeAnimation: true,
-//     zoomAnimation: true,
-//     markerZoomAnimation: true,
-//     inertia: false
-//   });
-
-//   if (startBounds && startBounds.isValid()) {
-//       map.fitBounds(startBounds, { padding: [20, 20], animate: false });
-//   }
-  
-//   if (!hasFocus && navigator.geolocation) {
-//     navigator.geolocation.getCurrentPosition(function(pos) {
-//       const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
-//       if (currentPts.length === 0) {
-//           map.whenReady(function() {
-//             try {
-//                map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: false });
-//             } catch(e) {}
-//           });
-//       }
-//     }, function(err) {}, { timeout: 3000 });
-//   }
-
-//   // --- [FIX] OSM YERİNE OPENFREEMAP ---
-//   const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-//   if (typeof L.maplibreGL === 'function') {
-//       L.maplibreGL({
-//           style: openFreeMapStyle,
-//           attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-//           interactive: true
-//       }).addTo(map);
-//   } else {
-//       // Sadece kütüphane yüklenemediyse OSM fallback
-//       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//         maxZoom: 19,
-//         attribution: '© OpenStreetMap contributors'
-//       }).addTo(map);
-//   }
-//   // ------------------------------------
-  
-//   if (!map._initialView) {
-//     map._initialView = {
-//       center: map.getCenter(),
-//       zoom: map.getZoom()
-//     };
-//   }
-  
-//   window.leafletMaps = window.leafletMaps || {};
-//   window.leafletMaps[containerId] = map;
-// }
-
 function initEmptyDayMap(day) {
-    const containerId = `route-map-day${day}`;
-    let el = document.getElementById(containerId);
+  const containerId = `route-map-day${day}`;
+  let el = document.getElementById(containerId);
+
+  if (!el) {
+    el = ensureDayMapContainer(day);
     if (!el) return;
+  }
 
-    // 1. HATA ENGELLEME: Eğer harita zaten kurulmuşsa tekrar kurma, çık.
-    if (el._leaflet_id || (window.leafletMaps && window.leafletMaps[containerId])) {
-        return; 
-    }
+  // Leaflet kütüphanesi henüz yüklenmediyse bekle
+  if (typeof L === 'undefined') {
+    setTimeout(() => initEmptyDayMap(day), 60);
+    return;
+  }
 
-    if (typeof L === 'undefined') {
-        setTimeout(() => initEmptyDayMap(day), 60);
-        return;
-    }
+  // Zaten harita varsa ve container içindeyse çık
+  const existingMap = window.leafletMaps && window.leafletMaps[containerId];
+  const hasInner = el.querySelector('.leaflet-container');
+  if (existingMap && hasInner) return;
+  
+  // Harita var ama container uçmuşsa temizle
+  if (existingMap && !hasInner) {
+    try { existingMap.remove(); } catch(_) {}
+    delete window.leafletMaps[containerId];
+  }
 
-    // Stil değişkenini en başa alalım (ReferenceError hatasını engeller)
-    const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+  if (!el.style.height) el.style.height = '285px';
+  // [FIX] Yükleme sırasında gri ekran yerine harita zemin rengi
+  el.style.backgroundColor = "#eef0f5"; 
+  
+  // --- KONUM BELİRLEME MANTIĞI ---
+  const points = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+  const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+  
+  let startCenter = [39.0, 35.0]; // Varsayılan Türkiye
+  let startZoom = 5;
+  let startBounds = null;
+  let hasFocus = false;
 
-    // 2. PASİF AYARLAR: Etkileşimi kapatan tüm opsiyonlar
-    const map = L.map(containerId, {
-        center: [39.0, 35.0],
-        zoom: 5,
-        dragging: false,         // Sürüklemeyi kapat
-        touchZoom: false,        // Dokunmatik zoom kapat
-        scrollWheelZoom: false,  // Mouse tekerleği kapat
-        doubleClickZoom: false,  // Çift tıklama kapat
-        boxZoom: false,          // Kutu seçimi kapat
-        keyboard: false,         // Klavye kapat
-        tap: false,              // Mobil dokunmatik kapat
-        zoomControl: false,      // +/- butonlarını gizle
-        fadeAnimation: true,
-        zoomAnimation: true,
-        markerZoomAnimation: true,
-        inertia: false
-    });
+  if (validPts.length > 0) {
+      if (validPts.length === 1) {
+          startCenter = [validPts[0].lat, validPts[0].lng];
+          startZoom = 14;
+      } else {
+          startBounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+          startCenter = startBounds.getCenter();
+          startZoom = 10;
+      }
+      hasFocus = true;
+  } 
+  else if (day > 1 && typeof getDayPoints === 'function') {
+      const prevPoints = getDayPoints(day - 1);
+      const validPrevPts = prevPoints.filter(p => isFinite(p.lat) && isFinite(p.lng));
+      if (validPrevPts.length > 0) {
+          const lastPt = validPrevPts[validPrevPts.length - 1];
+          startCenter = [lastPt.lat, lastPt.lng];
+          startZoom = 12; 
+          hasFocus = true;
+      }
+  }
 
-    if (typeof L.maplibreGL === 'function') {
-        L.maplibreGL({
-            style: openFreeMapStyle,
-            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-            interactive: false // MapLibre katmanını da pasif yap
-        }).addTo(map);
-    }
+const map = L.map(containerId, {
+    center: startCenter,
+    zoom: startZoom,
+    scrollWheelZoom: true,
+    fadeAnimation: true,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    inertia: false
+  });
 
-    window.leafletMaps = window.leafletMaps || {};
-    window.leafletMaps[containerId] = map;
+  if (startBounds && startBounds.isValid()) {
+      map.fitBounds(startBounds, { padding: [20, 20], animate: false });
+  }
+  
+  if (!hasFocus && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const currentPts = typeof getDayPoints === 'function' ? getDayPoints(day) : [];
+      if (currentPts.length === 0) {
+          map.whenReady(function() {
+            try {
+               map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: false });
+            } catch(e) {}
+          });
+      }
+    }, function(err) {}, { timeout: 3000 });
+  }
+
+  // --- [FIX] OSM YERİNE OPENFREEMAP ---
+  const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+  if (typeof L.maplibreGL === 'function') {
+      L.maplibreGL({
+          style: openFreeMapStyle,
+          attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+          interactive: true
+      }).addTo(map);
+  } else {
+      // Sadece kütüphane yüklenemediyse OSM fallback
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+  }
+  // ------------------------------------
+  
+  if (!map._initialView) {
+    map._initialView = {
+      center: map.getCenter(),
+      zoom: map.getZoom()
+    };
+  }
+  
+  window.leafletMaps = window.leafletMaps || {};
+  window.leafletMaps[containerId] = map;
 }
+
+// function restoreLostDayMaps() {
+//   if (!window.leafletMaps) return;
+//   Object.keys(window.leafletMaps).forEach(id => {
+//     if (!/^route-map-day\d+$/.test(id)) return;
+//     const container = document.getElementById(id);
+//     if (!container) return; // Gün tamamen silinmiş olabilir
+//     if (!container.querySelector('.leaflet-container')) {
+//       const old = window.leafletMaps[id];
+//       let center = null, zoom = null;
+//       try {
+//         center = old.getCenter();
+//         zoom = old.getZoom();
+//         old.remove();
+//       } catch(_){}
+//       delete window.leafletMaps[id];
+
+//       const day = parseInt(id.replace('route-map-day',''), 10);
+//       initEmptyDayMap(day);
+//       if (center && window.leafletMaps[id]) {
+//         try { window.leafletMaps[id].setView(center, zoom || window.leafletMaps[id].getZoom()); } catch(_){}
+//       }
+//       if (typeof renderRouteForDay === 'function') {
+//         setTimeout(()=>renderRouteForDay(day), 0);
+//       }
+//     }
+//   });
+// }
 
 
 (function initDirectDayExpandedMapPatch(){
@@ -4242,78 +4222,6 @@ function getPurpleRestaurantMarkerHtml(label) {
         </div>
     `;
 }
-// function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
-//     window._leafletMaps = window._leafletMaps || {};
-    
-//     // Eski harita varsa temizle
-//     if (window._leafletMaps[mapId]) {
-//         try { window._leafletMaps[mapId].remove(); } catch(e){}
-//         delete window._leafletMaps[mapId];
-//     }
-
-//     const el = document.getElementById(mapId);
-//     if (!el) return;
-
-//     var map = L.map(mapId, {
-//         center: [lat, lon],
-//         zoom: 16,
-//         scrollWheelZoom: false,
-//         zoomControl: true,
-//         attributionControl: false
-//     });
-
-//     // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
-//     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-
-//     if (typeof L.maplibreGL === 'function') {
-//         // MapLibreGL (Vektör) kullan
-//         L.maplibreGL({
-//             style: openFreeMapStyle,
-//             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-//             interactive: true
-//         }).addTo(map);
-//     } else {
-//         // Eğer kütüphane yüklenmediyse OSM Fallback
-//         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//             maxZoom: 19,
-//             attribution: '© OpenStreetMap contributors'
-//         }).addTo(map);
-//     }
-//     // ------------------------------------------------
-
-//     // ARTIK day VAR!
-//     if (typeof getDayPoints === "function" && typeof day !== "undefined") {
-//         const pts = getDayPoints(day).filter(
-//             p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
-//         );
-//         // Eğer sadece 1 nokta varsa o noktaya odaklan
-//         if (pts.length === 1) {
-//             map.setView([pts[0].lat, pts[0].lng], 14);
-//         }
-//     }
-
-//     // Marker
-//     const icon = L.divIcon({
-//         html: getPurpleRestaurantMarkerHtml(), // Bu fonksiyonun tanımlı olduğundan emin olun, yoksa standart icon kullanın
-//         className: "",
-//         iconSize: [32, 32],
-//         iconAnchor: [16, 16]
-//     });
-    
-//     // Eğer getPurpleRestaurantMarkerHtml yoksa fallback için basit bir HTML string:
-//     const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
-//     const finalIcon = typeof getPurpleRestaurantMarkerHtml === 'function' ? icon : L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
-
-//     L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
-
-//     map.zoomControl.setPosition('topright');
-//     window._leafletMaps[mapId] = map;
-    
-//     // Harita boyutunu düzelt (render hatasını önler)
-//     setTimeout(function() { map.invalidateSize(); }, 120);
-// }
-// createLeafletMapForItem fonksiyonunu bulun ve şu şekilde güncelleyin:
-
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
@@ -4329,47 +4237,62 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
-        
-        // ====== TÜM ETKİLEŞİMLERİ KAPAT ======
-        dragging: false,              // Sürükleme kapalı
-        touchZoom: false,             // Dokunmatik zoom kapalı
-        scrollWheelZoom: false,       // Mouse wheel zoom kapalı
-        doubleClickZoom: false,       // Çift tık zoom kapalı
-        boxZoom: false,               // Kutu zoom kapalı
-        keyboard: false,              // Klavye kontrolü kapalı
-        tap: false,                   // Mobil tap kapalı
-        zoomControl: false,           // Zoom butonları kapalı
+        scrollWheelZoom: false,
+        zoomControl: true,
         attributionControl: false
     });
 
-    // === Haritaya "statik" görünüm ekle ===
-    el.style.cursor = 'default';
-    el.style.pointerEvents = 'auto'; // Tıklanabilir ama harita hareket etmez
-    
-    // MapLibre veya OSM tile
+    // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
+
     if (typeof L.maplibreGL === 'function') {
+        // MapLibreGL (Vektör) kullan
         L.maplibreGL({
             style: openFreeMapStyle,
             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-            interactive: false  // MapLibre etkileşimini kapat
+            interactive: true
         }).addTo(map);
     } else {
+        // Eğer kütüphane yüklenmediyse OSM Fallback
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
     }
+    // ------------------------------------------------
 
-    // Marker ekle
+    // ARTIK day VAR!
+    if (typeof getDayPoints === "function" && typeof day !== "undefined") {
+        const pts = getDayPoints(day).filter(
+            p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
+        );
+        // Eğer sadece 1 nokta varsa o noktaya odaklan
+        if (pts.length === 1) {
+            map.setView([pts[0].lat, pts[0].lng], 14);
+        }
+    }
+
+    // Marker
+    const icon = L.divIcon({
+        html: getPurpleRestaurantMarkerHtml(), // Bu fonksiyonun tanımlı olduğundan emin olun, yoksa standart icon kullanın
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    
+    // Eğer getPurpleRestaurantMarkerHtml yoksa fallback için basit bir HTML string:
     const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
-    const finalIcon = L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
-    L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '');
+    const finalIcon = typeof getPurpleRestaurantMarkerHtml === 'function' ? icon : L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
 
+    L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
+
+    map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
+    // Harita boyutunu düzelt (render hatasını önler)
     setTimeout(function() { map.invalidateSize(); }, 120);
 }
+
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
   if (!geoCategory) {
@@ -5947,43 +5870,22 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
-  // renderLeafletRoute fonksiyonu içinde harita oluşturulan yeri bulun
-// Mevcut haritayı temizle (Already initialized hatasını önler)
-if (window.leafletMaps && window.leafletMaps[sidebarContainer]) {
-    window.leafletMaps[sidebarContainer].remove();
-    delete window.leafletMaps[sidebarContainer];
-}
+    // 5. HARİTA BAŞLATMA
+    const map = L.map(containerId, {
+        scrollWheelZoom: true,
+        // Akışkan Zoom Ayarları
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: true,
+        inertia: true,
+        zoomSnap: 0,             
+        zoomDelta: 0.1,
+        wheelPxPerZoomLevel: 60, 
+        wheelDebounceTime: 20,
+        touchZoom: true,
+        bounceAtZoomLimits: false
+    });
 
-// Haritayı PASİF olarak başlat
-const map = L.map(sidebarContainer, {
-    center: [0, 0],
-    zoom: 1,
-    dragging: false,          // Sürükleme kapalı
-    touchZoom: false,         // Dokunmatik zoom kapalı
-    scrollWheelZoom: false,   // Mouse tekerleği kapalı
-    doubleClickZoom: false,   // Çift tıklama kapalı
-    boxZoom: false,           // Kutu zoom kapalı
-    keyboard: false,          // Klavye kapalı
-    zoomControl: false,       // ZOOM BUTONLARINI TAMAMEN KALDIR (setPosition hatasını önler)
-    attributionControl: false, // Alt yazıyı manuel yönetmek daha güvenli
-    fadeAnimation: true
-});
-
-// Attribution'ı güvenli şekilde ekle (Hata almamak için setPosition çağırmadan)
-L.control.attribution({ prefix: false }).addTo(map)
- .addAttribution('&copy; <a href="https://openfreemap.org">OpenFreeMap</a>');
-
-// Haritayı globale kaydet
-window.leafletMaps = window.leafletMaps || {};
-window.leafletMaps[sidebarContainer] = map;
-
-// MapLibre eklenirken yine interactive: false
-if (typeof L.maplibreGL === 'function') {
-    L.maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/bright',
-        interactive: false 
-    }).addTo(map);
-}
     try {
         map.createPane('customRoutePane');
         map.getPane('customRoutePane').style.zIndex = 450;
@@ -6233,9 +6135,7 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     }
 
     wrapRouteControls(day);
-if (map.zoomControl) {
     map.zoomControl.setPosition('topright');
-}
     window.leafletMaps[containerId] = map;
 
     // --- GÜVENLİ ODAKLAMA ---
@@ -12195,35 +12095,3 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-
-(function addStaticMapStyles() {
-    if (document.getElementById('tt-static-maps-style')) return;
-    
-    const style = document.createElement('style');
-    style.id = 'tt-static-maps-style';
-    style.innerHTML = `
-        /* Rota haritası ve diğer mini haritalar için imleci düzelt */
-        .route-map .leaflet-container,
-        .cart-item .leaflet-container,
-        .travel-item .leaflet-container {
-            cursor: default !important;
-        }
-        
-        /* Harita zeminini (tile) tıklanamaz yap */
-        .route-map .leaflet-tile-pane,
-        .cart-item .leaflet-tile-pane,
-        .travel-item .leaflet-tile-pane {
-            pointer-events: none !important;
-        }
-        
-        /* Markerlar tıklanabilsin (popup açılması gerekirse) */
-        .leaflet-marker-pane {
-            pointer-events: auto !important;
-        }
-        .route-map.leaflet-container {
-    pointer-events: none !important; /* Harita tamamen bir resim gibi davranır */
-    cursor: default !important;
-}
-    `;
-    document.head.appendChild(style);
-})();
