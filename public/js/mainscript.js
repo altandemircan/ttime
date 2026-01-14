@@ -4159,10 +4159,7 @@ marker.bindPopup(`<b>${name || 'Point'}</b>`, {
             user-select: none !important;
         }
 
-        .leaflet-popup {
-        margin-left:8px;
-        }
-        
+       
         /* Marker ve popup hariç - onlar tıklanabilir kalsın */
         .cart-item .leaflet-map .leaflet-marker-icon,
         .cart-item .leaflet-map .leaflet-popup,
