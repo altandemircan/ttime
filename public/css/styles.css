@@ -5911,8 +5911,8 @@ ease;
 }
 .leaflet-popup-pane {
     z-index: 700;
-    margin-left: 18px;
-    margin-top: 20px;
+
+    margin-top: 10px;
 }
 .leaflet-popup {
        margin-bottom: 60px;
