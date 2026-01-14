@@ -4175,7 +4175,6 @@ marker.bindPopup(`<b>${name || 'Point'}</b>`, {
             border-radius: 8px;
             box-shadow: 0 3px 14px rgba(0,0,0,0.2);
             padding: 8px 12px;
-            font-size: 14px;
             border: 1px solid #ddd;
         }
         
