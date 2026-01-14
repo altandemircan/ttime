@@ -6138,6 +6138,8 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
 
     wrapRouteControls(day);
     // map.zoomControl artık undefined olduğu için setPosition satırı silindi
+    map._originalBounds = (bounds && bounds.isValid()) ? bounds : null;
+
     window.leafletMaps[containerId] = map;
 
     // --- GÜVENLİ ODAKLAMA ---
@@ -6163,6 +6165,15 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     const ro = new ResizeObserver(() => { requestAnimationFrame(refitMap); });
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
+    // Popup kapandığında haritayı ilk haline (rota odaklı) geri döndür
+    map.on('popupclose', function() {
+        if (map._originalBounds) {
+            map.fitBounds(map._originalBounds, { 
+                padding: window.innerWidth <= 768 ? [40, 40] : [20, 20], 
+                animate: true 
+            });
+        }
+    });
 
     const is3DActive = document.getElementById('maplibre-3d-view') &&
         document.getElementById('maplibre-3d-view').style.display !== 'none';
