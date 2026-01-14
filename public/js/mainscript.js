@@ -6199,26 +6199,27 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
-const mapContainer = document.getElementById(containerId);
-    // Butonu en güvenli şekilde bul (ister kardeş ister üst kapsayıcıda olsun)
-    const actionBtn = mapContainer?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
-                     || mapContainer?.parentElement?.querySelector('.expand-map-btn');
+    // --- HARİTA KURCALANINCA BUTONU SALLA (KESİN ÇÖZÜM) ---
+        const mapContainer = document.getElementById(containerId);
+        const actionBtn = mapContainer?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
+                         || mapContainer?.parentElement?.querySelector('.expand-map-btn');
 
-    if (mapContainer && actionBtn) {
-        const triggerEffect = (e) => {
-            // Eğer tıklanan şey marker veya popup değilse efekti ver
-            if (!e.target.closest('.leaflet-marker-icon') && !e.target.closest('.leaflet-popup')) {
-                actionBtn.classList.remove('is-shaking'); 
-                void actionBtn.offsetWidth; // Animasyonu baştan başlatmak için şart
-                actionBtn.classList.add('is-shaking');
-                setTimeout(() => actionBtn.classList.remove('is-shaking'), 300);
-            }
-        };
+        if (map && actionBtn) {
+            const triggerEffect = (e) => {
+                // Eğer tıklanan yer bir marker değilse salla
+                // Leaflet event objesi üzerinden kontrol yapıyoruz
+                if (e.originalEvent && !e.originalEvent.target.closest('.leaflet-marker-icon')) {
+                    actionBtn.classList.remove('is-shaking'); 
+                    void actionBtn.offsetWidth; 
+                    actionBtn.classList.add('is-shaking');
+                    setTimeout(() => actionBtn.classList.remove('is-shaking'), 300);
+                }
+            };
 
-        // Haritayı kurcalama anlarını yakala
-        mapContainer.addEventListener('touchstart', triggerEffect, { passive: true });
-        mapContainer.addEventListener('mousedown', triggerEffect, { passive: true });
-    }
+            // DOM yerine doğrudan Leaflet objesine (map) dinleyici ekliyoruz
+            // Çünkü harita üzerindeki tıklamaları Leaflet yakalar
+            map.on('mousedown touchstart', triggerEffect);
+        }
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
