@@ -5878,18 +5878,71 @@ ease;
     width: 20px;
     height: 20px;  
 }
-/* Sadece sarsıntı hareketi tanımı */
-@keyframes expand-shake {
-    0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.08) translateX(-4px); }
-    75% { transform: scale(1.08) translateX(4px); }
-}
-
-/* JS ile bu sınıf gelince sadece sarsılır, görüntüsü değişmez */
+/* Buton sallama animasyonu */
 .is-shaking {
-    animation: expand-shake 0.3s ease-in-out !important;
+    animation: shake 0.3s ease-in-out;
+    background-color: #ff9800 !important;
+    transform: scale(1.05);
 }
 
+@keyframes shake {
+    0%, 100% { transform: translateX(0) scale(1.05); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-3px) scale(1.05); }
+    20%, 40%, 60%, 80% { transform: translateX(3px) scale(1.05); }
+}
+
+/* Harita üzerinde "etkileşim engellendi" efekti */
+.map-container.disabled-map::after {
+    content: "Haritayı genişletmek için butona tıklayın";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.map-container.disabled-map:hover::after {
+    opacity: 1;
+}
+
+/* Expand butonu için özel stil */
+.expand-map-btn {
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.expand-map-btn:hover {
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.5);
+}
+
+.expand-map-btn:active {
+    transform: scale(0.95);
+}
+
+/* Buton üzerinde ikon animasyonu */
+.expand-map-btn i {
+    transition: transform 0.3s ease;
+}
+
+.is-shaking i {
+    animation: bounce 0.3s ease;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
 .maplibregl-ctrl-bottom-right {
     display: none;
 }
