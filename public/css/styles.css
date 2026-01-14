@@ -7859,3 +7859,18 @@ scrollbar-width: thin;
     gap: 5px;
 }
 
+
+/* Küçük Rota Haritalarını Tamamen Sabitle */
+.route-map.leaflet-container {
+    pointer-events: none !important;
+    touch-action: none;
+    cursor: default !important;
+}
+
+/* Harita üzerindeki butonlar ve header tıklanabilir kalsın */
+.map-bar-header, 
+.expand-map-btn,
+.route-controls-bar {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
