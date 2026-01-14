@@ -4039,7 +4039,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // HARİTA OLUŞTUR - INTERAKTİF ÖZELLİKLER KAPALI
     var map = L.map(mapId, {
         center: [lat, lon],
-        zoom: 12,
+        zoom: 15,
         // TÜM INTERAKTİF ÖZELLİKLER KAPALI
         scrollWheelZoom: false,
         dragging: false,
@@ -4070,7 +4070,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     } else {
         // OSM fallback
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+            maxZoom: 16,
             attribution: '© OpenStreetMap contributors',
             interactive: false
         }).addTo(map);
