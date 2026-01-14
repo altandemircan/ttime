@@ -5912,7 +5912,7 @@ ease;
 .leaflet-popup-pane {
     z-index: 700;
 
-    margin-top: 10px;
+    margin-top: 0px;
 }
 
 /* Üstteki 1 sn'lik "hint" popup stili (X butonu yok) */
