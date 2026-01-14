@@ -5859,47 +5859,39 @@ ease;
 }
     
 .expand-map-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 6px 14px;
     background: #ffffff;
-    color: #5b21b6; /* Sayfadaki mor tonuna çektik */
-    font-size: 13px; /* Sabit */
+    color: #475569; /* Şık bir füme, sırıtmıyor */
+    font-size: 13px; /* Dokunulmadı */
     font-weight: 600;
     cursor: pointer;
-    border-radius: 21px;
-    border: none; /* Border tamamen kalktı */
-    position: relative;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    animation: button-glow 3s infinite ease-in-out;
-    transition: transform 0.2s ease;
-}
-
-/* Animasyon: Sadece butonun arkasındaki gölgenin mor bir ışık gibi yayılması */
-@keyframes button-glow {
-    0% {
-        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-    }
+    border-radius: 10px; /* Harita kutusuyla daha uyumlu köşe */
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); /* Hafif derinlik */
+    transition: all 0.3s ease;
 }
 
 .expand-map-btn img {
-    width: 20px; /* Sabit */
-    height: 20px; /* Sabit */
-    display: block;
+    width: 20px; /* Dokunulmadı */
+    height: 20px; /* Dokunulmadı */
+    /* İkon çok hafif bir nabız atışı yapacak */
+    animation: icon-pulse 3s ease-in-out infinite;
 }
 
-/* Hover'da animasyonu hızlandırıp butonu hafifçe belirginleştirir */
+@keyframes icon-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Hover: Üzerine gelince buton sadece çok hafif bir mor tona döner */
 .expand-map-btn:hover {
-    transform: translateY(-1px);
     background: #fdfcff;
-    animation: button-glow 1.5s infinite ease-in-out;
+    color: #8b5cf6; /* Sayfadaki mor tonu */
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1);
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
