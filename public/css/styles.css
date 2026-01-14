@@ -5864,37 +5864,54 @@ ease;
     gap: 6px;
     padding: 4px 12px;
     background: #ffffff;
-    color: #475569; /* Nötr ve profesyonel bir gri */
+    color: #64748b; /* Başlangıçta yumuşak bir gri */
     font-size: 13px; /* Sabit */
     font-weight: 600;
     cursor: pointer;
-    border-radius: 8px; /* Harita kartının köşeleriyle birebir aynı */
+    border-radius: 8px; /* Harita köşeleriyle uyumlu */
     border: none;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     position: relative;
-    /* Renk geçişi animasyonu */
-    animation: background-phase 5s ease-in-out infinite;
-    transition: all 0.2s ease;
+    /* Hem arka plan hem yazı rengi animasyonu */
+    animation: soft-phase 5s ease-in-out infinite;
+    transition: all 0.3s ease;
 }
 
 .expand-map-btn img {
     width: 20px; /* Sabit */
     height: 20px; /* Sabit */
     display: block;
+    /* İkonun da yazı rengiyle uyumlu olması için hafif opaklık */
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
 }
 
-/* Animasyon: Sadece arka plan renginin çok hafif değişimi */
-@keyframes background-phase {
-    0% { background: #ffffff; }
-    50% { background: #f5f3ff; } /* Sayfadaki mor tonunun en açık hali */
-    100% { background: #ffffff; }
+/* Animasyon: Arka plan mora dönerken yazı rengi siyaha geçiyor */
+@keyframes soft-phase {
+    0% { 
+        background: #ffffff; 
+        color: #64748b; 
+    }
+    50% { 
+        background: #f5f3ff; /* Sayfadaki mor tonunun en açığı */
+        color: #000000; /* Yazı tam siyah oluyor */
+    }
+    100% { 
+        background: #ffffff; 
+        color: #64748b; 
+    }
 }
 
-/* Hover: Üzerine gelince netleşme */
+/* Hover durumunda animasyonu durdurup net bir görünüm veriyoruz */
 .expand-map-btn:hover {
-    color: #8b5cf6; /* Sayfa rengi olan mor */
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    animation-play-state: paused;
+    background: #f5f3ff;
+    color: #000000;
+    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.15);
+}
+
+.expand-map-btn:hover img {
+    opacity: 1;
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
