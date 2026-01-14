@@ -5869,7 +5869,7 @@ ease;
     font-size: 13px; /* Sabit */
     font-weight: 600;
     cursor: pointer;
-    border-radius: 21px;
+    border-radius: 8px;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1;
@@ -5880,7 +5880,7 @@ ease;
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 21px;
+    border-radius: 8px;
     /* Sadece 1px kalınlığında kenarlık */
     border: 1px solid #1976d2; 
     z-index: -1;
@@ -5897,10 +5897,10 @@ ease;
 @keyframes signal-ring {
     0% {
         transform: scale(1);
-        opacity: 0.8;
+        opacity: 0.6;
     }
     100% {
-        transform: scale(1.1, 1.2); /* Yatayda %30, dikeyde %60 büyüme */
+        transform: scale(1.1, 1.1); /* Yatayda %30, dikeyde %60 büyüme */
         opacity: 0;
     }
 }
