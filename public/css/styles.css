@@ -5863,56 +5863,54 @@ ease;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    background: #ffffff; /* Arka plan bembeyaz ve sabit */
+    background: #ffffff;
+    /* Yazı rengi maviden başlıyor */
+    color: #1976d2; 
     font-size: 13px; /* Sabit */
     font-weight: 600;
     cursor: pointer;
-    border-radius: 8px; /* Harita kartı köşeleriyle uyumlu */
-    border: none; /* Kenarlık yok */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Hafif derinlik */
-    transition: all 0.3s ease;
+    border-radius: 8px; /* Harita köşeleriyle uyumlu */
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    /* Hem arka plan hem yazı rengi için tek animasyon */
+    animation: blue-to-black-phase 4s ease-in-out infinite;
+    transition: transform 0.2s ease;
 }
 
-/* Sadece metin rengi geçişi */
-.expand-map-btn span {
-    color: #64748b; /* Başlangıç gri */
-    animation: text-to-black 4s ease-in-out infinite;
-}
-
-/* Sadece ikonun koyulaşması */
 .expand-map-btn img {
     width: 20px; /* Sabit */
     height: 20px; /* Sabit */
-    filter: grayscale(100%) brightness(1.2); /* Başlangıçta daha soluk */
-    animation: icon-to-black 4s ease-in-out infinite;
+    display: block;
+    /* İkonun rengini yazı rengine uydurur */
+    filter: none; 
+    transition: all 0.3s ease;
 }
 
-/* Yazı için animasyon: Griden siyaha */
-@keyframes text-to-black {
-    0%, 100% { color: #94a3b8; }
-    50% { color: #000000; }
+/* Animasyon: Arka plan hafifçe koyulaşırken yazı maviden siyaha geçiyor */
+@keyframes blue-to-black-phase {
+    0%, 100% { 
+        background: #ffffff; 
+        color: #1976d2; /* Başlangıç mavisi */
+    }
+    50% { 
+        background: #f0f7ff; /* Çok açık mavi/gri bir ton */
+        color: #000000; /* Hedef siyah */
+    }
 }
 
-/* İkon için animasyon: Soluktan koyuya */
-@keyframes icon-to-black {
-    0%, 100% { opacity: 0.5; filter: grayscale(100%) brightness(1.2); }
-    50% { opacity: 1; filter: grayscale(0%) brightness(1); }
-}
-
-/* Hover: Üzerine gelince her şey siyah ve net */
+/* Hover: Animasyonu durdurur ve en net haliyle (siyah) sabitler */
 .expand-map-btn:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.expand-map-btn:hover span {
     animation-play-state: paused;
+    background: #f0f7ff;
     color: #000000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+/* İkonun hoverda tam görünmesi için (eğer ikon mavi ise siyaha yakınlaşması için) */
 .expand-map-btn:hover img {
-    animation-play-state: paused;
-    opacity: 1;
-    filter: grayscale(0%) brightness(1);
+    filter: brightness(0); /* İkonu siyah yapar */
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
