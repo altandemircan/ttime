@@ -6108,7 +6108,9 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
                 fillColor: '#d32f2f',
                 fillOpacity: 0.7,
                 weight: 2
-            }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`);
+            }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`, {
+    autoPan: false
+});
         }
     });
 }
