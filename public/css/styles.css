@@ -5858,26 +5858,50 @@ ease;
     display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;     font-weight: 400;"
 }
     
+/* Nabız Animasyonu (Arka planda yayılan halka) */
+@keyframes expand-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
+}
+
+/* Titreme Animasyonu (Haritaya dokunulunca) */
+@keyframes expand-shake {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.1) translateX(-3px); }
+    75% { transform: scale(1.1) translateX(3px); }
+}
+
 .expand-map-btn {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
     background: #ffffff !important;
-    border: none;
     border-radius: 21px;
     transition: all 0.2s ease;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border: 1px dashed #1976d2;
+    border: 1px dashed #1976d2 !important;
+    /* Yeni eklenenler: */
+    animation: expand-pulse 2s infinite;
+    position: relative;
+    z-index: 999;
 }
-
 
 .expand-map-btn img {
     width: 20px;
     height: 20px;  
 }
+
+/* Haritaya basıldığında tetiklenecek class */
+.expand-map-btn.is-shaking {
+    animation: expand-shake 0.3s ease-in-out !important;
+    border-style: solid !important; /* Titrerken çizgi düzleşsin */
+    background-color: #f0f7ff !important;
+}
+
 .maplibregl-ctrl-bottom-right {
     display: none;
 }

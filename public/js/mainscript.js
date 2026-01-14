@@ -6197,6 +6197,26 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
+
+        // Harita konteynerini ve butonu yakala
+    const mapElement = document.getElementById(containerId);
+    const mapParent = mapElement ? mapElement.parentElement : null;
+    const expandButton = mapParent ? mapParent.querySelector('.expand-map-btn') : null;
+
+    if (mapElement && expandButton) {
+        // Haritaya dokunma olayını dinle
+        mapElement.addEventListener('touchstart', function(e) {
+            // Eğer tıklanan şey bir marker değilse butonu salla
+            if (!e.target.closest('.leaflet-marker-icon')) {
+                expandButton.classList.add('is-shaking');
+                
+                // Animasyon bitince temizle
+                setTimeout(() => {
+                    expandButton.classList.remove('is-shaking');
+                }, 300);
+            }
+        }, { passive: true });
+    }
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
