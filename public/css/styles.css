@@ -5862,34 +5862,58 @@ ease;
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 4px 12px;
     background: #ffffff;
-    color: #5b21b6; /* Sayfadaki ikon/buton moru */
-    font-size: 13px;
+    color: #475569; /* Daha modern, yumuşak bir füme */
+    font-size: 13px; /* Dokunulmadı */
     font-weight: 600;
-    border: none;
-    border-radius: 10px;
     cursor: pointer;
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); /* Başlangıçta gölge yok */
-    animation: pulse-shadow 3s infinite;
-    transition: all 0.3s ease;
+    border-radius: 21px;
+    border: none; /* Kenarlık tamamen kaldırıldı */
+    position: relative;
+    overflow: hidden;
+    /* Soft bir derinlik hissi için gölge */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    z-index: 1;
 }
 
-@keyframes pulse-shadow {
-    0% {
-        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
-    }
-    70% {
-        box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-    }
+/* Butonun içinden geçen ipeksi ışık hüzmesi */
+.expand-map-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 100%;
+    height: 100%;
+    /* Sayfadaki mor tondan gelen çok hafif bir yansıma */
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(139, 92, 246, 0.15), 
+        transparent
+    );
+    animation: silk-sweep 4s ease-in-out infinite;
+    z-index: -1;
 }
 
+.expand-map-btn img {
+    width: 20px; /* Dokunulmadı */
+    height: 20px; /* Dokunulmadı */
+    display: block;
+}
+
+/* Animasyon: Gözü yormayan, yavaş bir kayma */
+@keyframes silk-sweep {
+    0% { left: -150%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+}
+
+/* Hover: Üzerine gelince butonun hafifçe canlanması */
 .expand-map-btn:hover {
-    background: #f5f3ff; /* Çok hafif morumsu beyaz */
-    transform: translateY(-1px);
+    color: #8b5cf6; /* Sayfadaki mor tonuna geçiş */
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.15);
+    background: #fafafa;
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
