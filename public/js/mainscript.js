@@ -6155,19 +6155,7 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
 
     window.leafletMaps[containerId] = map;
 
-    // Harita konteynerini ve butonu yakala
-const mapEl = document.getElementById(containerId);
-const btnEl = mapEl?.parentElement?.querySelector('.expand-map-btn');
 
-if (mapEl && btnEl) {
-    // Haritada bir yere dokunulursa (marker hariç) butonu salla
-    mapEl.addEventListener('touchstart', (e) => {
-        if (!e.target.closest('.leaflet-marker-icon')) {
-            btnEl.classList.add('btn-vibrate');
-            setTimeout(() => btnEl.classList.remove('btn-vibrate'), 300);
-        }
-    }, { passive: true });
-}
 
     // --- GÜVENLİ ODAKLAMA ---
     const refitMap = () => {
@@ -6211,26 +6199,23 @@ if (mapEl && btnEl) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
+// --- TİTREME EFEKTİ GÜNCELLEMESİ ---
+    const targetMapElement = document.getElementById(containerId);
+    // Butonu bulmak için daha geniş kapsamlı bir arama yapıyoruz
+    const targetExpandBtn = targetMapElement?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
+                         || targetMapElement?.parentElement?.querySelector('.expand-map-btn');
 
-    // Harita konteynerini ve butonu yakala
-const mapElement = document.getElementById(containerId);
-const mapParent = mapElement ? mapElement.parentElement : null;
-const expandButton = mapParent ? mapParent.querySelector('.expand-map-btn') : null;
-
-if (mapElement && expandButton) {
-    // Haritaya dokunma olayını dinle
-    mapElement.addEventListener('touchstart', function(e) {
-        // Eğer tıklanan şey bir marker değilse butonu salla
-        if (!e.target.closest('.leaflet-marker-icon')) {
-            expandButton.classList.add('is-shaking');
-            
-            // Animasyon bitince temizle
-            setTimeout(() => {
-                expandButton.classList.remove('is-shaking');
-            }, 300);
-        }
-    }, { passive: true });
-}
+    if (targetMapElement && targetExpandBtn) {
+        targetMapElement.addEventListener('touchstart', function(e) {
+            // Eğer tıklanan yer bir marker (işaretçi) veya popup değilse salla
+            if (!e.target.closest('.leaflet-marker-icon') && !e.target.closest('.leaflet-popup')) {
+                targetExpandBtn.classList.add('is-shaking');
+                setTimeout(() => {
+                    targetExpandBtn.classList.remove('is-shaking');
+                }, 300);
+            }
+        }, { passive: true });
+    }
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
