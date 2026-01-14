@@ -6003,7 +6003,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             })
-        }).addTo(map).bindPopup(points[0].name || "Point");
+       }).addTo(map).bindPopup(points[0].name || "Point", {
+    autoPan: false,           // Haritanın kaymasını engeller
+    closeButton: false,       // Daha temiz görünüm için opsiyonel
+    offset: L.point(0, -10)   // Popup'ı marker'ın biraz üzerine taşır
+});
     } else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
 
