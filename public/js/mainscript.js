@@ -4009,8 +4009,6 @@ function getPurpleRestaurantMarkerHtml(label) {
 //     }
 // }
 
-// createLeafletMapForItem fonksiyonunu ESKİ HALİNE getirin ama interaktifliği kapatın:
-
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
@@ -4202,6 +4200,53 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     `;
     document.head.appendChild(style);
 })();
+// Ayrıca toggleContent fonksiyonunu da güncelleyin:
+function toggleContent(arrowIcon) {
+    const cartItem = arrowIcon.closest('.cart-item');
+    if (!cartItem) return;
+    const contentDiv = cartItem.querySelector('.content');
+    if (!contentDiv) return;
+    
+    // Aç/Kapa işlemi
+    contentDiv.classList.toggle('open');
+    if (contentDiv.classList.contains('open')) {
+        contentDiv.style.display = 'block';
+        
+        // --- LEAFLET HARİTA YÖNETİMİ KALDIRILDI ---
+        // Sadece static image gösterilecek
+        const item = cartItem.closest('.travel-item');
+        if (!item) return;
+        
+        const mapDiv = item.querySelector('.leaflet-map');
+        if (mapDiv && contentDiv.style.display !== 'none') {
+            const mapId = mapDiv.id;
+            
+            // [SAFETY CHECK] Koordinatları güvenli al
+            const latStr = item.getAttribute('data-lat');
+            const lonStr = item.getAttribute('data-lon');
+            
+            if (!latStr || !lonStr || isNaN(parseFloat(latStr)) || isNaN(parseFloat(lonStr))) {
+                 mapDiv.innerHTML = '<div class="map-error" style="padding:20px;text-align:center;color:#999;">Location data not available</div>';
+                 return;
+            }
+
+            const lat = parseFloat(latStr);
+            const lon = parseFloat(lonStr);
+            const name = item.querySelector('.toggle-title') ? item.querySelector('.toggle-title').textContent : "Place";
+            const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+
+            // Static map göster
+            createLeafletMapForItem(mapId, lat, lon, name, number);
+        }
+    } else {
+        contentDiv.style.display = 'none';
+    }
+
+    // Ok işaretini döndür
+    const arrowImg = arrowIcon.querySelector('img') || arrowIcon;
+    if(arrowImg && arrowImg.classList) arrowImg.classList.toggle('rotated');
+}
+
 
 
 
