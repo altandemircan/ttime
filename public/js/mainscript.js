@@ -4069,16 +4069,71 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 }
 
 // CSS ekle:
-(function() {
+(function addStaticMapCSS() {
+    const styleId = 'tt-static-map-css-fixed';
+    if (document.getElementById(styleId)) return;
+    
     const style = document.createElement('style');
+    style.id = styleId;
     style.textContent = `
-        .cart-item .leaflet-map .leaflet-container {
+        /* Tek item haritaları için - harita interaktif değil */
+        .cart-item .leaflet-map .leaflet-container,
+        .cart-item .leaflet-map .leaflet-pane,
+        .cart-item .leaflet-map .leaflet-control-container {
             pointer-events: none !important;
+            cursor: default !important;
+            user-select: none !important;
         }
         
+        /* Marker ve popup hariç - onlar tıklanabilir kalsın */
         .cart-item .leaflet-map .leaflet-marker-icon,
-        .cart-item .leaflet-map .leaflet-popup {
+        .cart-item .leaflet-map .leaflet-popup,
+        .cart-item .leaflet-map .leaflet-popup-content-wrapper,
+        .cart-item .leaflet-map .leaflet-popup-tip,
+        .cart-item .leaflet-map .leaflet-popup-close-button {
             pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        
+        /* Popup stili - daha belirgin olsun */
+        .cart-item .leaflet-map .leaflet-popup-content-wrapper {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+        }
+        
+        .cart-item .leaflet-map .leaflet-popup-content {
+            margin: 8px;
+            line-height: 1.4;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .cart-item .leaflet-map .leaflet-popup-tip {
+            background: white;
+            box-shadow: -2px 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        /* Harita üzerindeki kontrolleri gizle */
+        .cart-item .leaflet-map .leaflet-control-attribution,
+        .cart-item .leaflet-map .leaflet-control-zoom {
+            display: none !important;
+        }
+        
+        /* Harita container'ı */
+        .cart-item .leaflet-map {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Marker stili - eski boyutta */
+        .tt-static-marker {
+            pointer-events: auto !important;
+            cursor: pointer !important;
         }
     `;
     document.head.appendChild(style);
