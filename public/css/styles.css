@@ -7860,10 +7860,9 @@ scrollbar-width: thin;
 }
 
 
-/* Küçük Rota Haritalarını Tamamen Sabitle */
 .route-map.leaflet-container {
     pointer-events: none !important;
-    touch-action: none;
-    cursor: default !important;
 }
-
+.map-bar-header, .expand-map-btn {
+    pointer-events: auto !important;
+}
