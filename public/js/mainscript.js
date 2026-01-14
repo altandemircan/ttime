@@ -4021,17 +4021,19 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // ESKİ HARİTA AYARLARI - SADECE INTERAKTİF ÖZELLİKLER KAPALI
+    // ESKİ HARİTA - KAYMA SORUNU GİDERİLMİŞ HALİ
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
-        scrollWheelZoom: false,  // Zoom kapalı
-        dragging: false,         // Sürükleme kapalı
+        // SADECE BU 2 SATIR EKLENDİ (interaktif kapalı):
+        scrollWheelZoom: false,
+        dragging: false,
+        // GERİ KALAN HER ŞEY AYNI:
         zoomControl: true,
         attributionControl: false
     });
 
-    // ESKİ TILE LAYER
+    // --- ESKİ TILE LAYER KODU ---
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
     if (typeof L.maplibreGL === 'function') {
@@ -4046,15 +4048,21 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
     }
+    // ------------------------------------------------
+
+    // ARTIK day VAR!
+    if (typeof getDayPoints === "function" && typeof day !== "undefined") {
+        const pts = getDayPoints(day).filter(
+            p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
+        );
+        if (pts.length === 1) {
+            map.setView([pts[0].lat, pts[0].lng], 14);
+        }
+    }
 
     // ESKİ MARKER KODU - TAMAMEN AYNI
-    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(1);"><span class="custom-marker-label">${number}</span></div>`;
-    const finalIcon = L.divIcon({ 
-        html: fallbackHtml, 
-        className: "", 
-        iconSize:[32,32], 
-        iconAnchor:[16,16] 
-    });
+    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
+    const finalIcon = L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
 
     L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
 
@@ -4064,7 +4072,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // Harita boyutunu düzelt
     setTimeout(function() { map.invalidateSize(); }, 120);
     
-    // Interaktifliği kapat
+    // INTERAKTİFLİĞİ KAPATMAK İÇİN SADECE BU SATIR:
     map.getContainer().style.pointerEvents = 'none';
 }
 
