@@ -5864,74 +5864,60 @@ ease;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    background: white; /* İç arka plan */
+    background: #ffffff;
     color: #1976d2;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     border-radius: 21px;
-    border: none;
+    border: 1px solid rgba(25, 118, 210, 0.15); /* Sabit, çok soluk ana kenarlık */
+    overflow: hidden;
     z-index: 1;
-    /* Hafif dış gölge */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Hareket eden sıvı efektinin kapsayıcısı */
+/* Sadece köşelerden geçen ince ışık sızıntısı */
 .expand-map-btn::before {
-    content: "";
+    content: '';
     position: absolute;
-    inset: -1px; /* Dışarıya 1px taşar */
-    padding: 1.5px; /* Kenarlık kalınlığı */
-    border-radius: 21px; 
-    background: linear-gradient(
-        120deg, 
-        transparent 30%, 
-        #1976d2 50%, 
-        transparent 70%
+    inset: -20px; /* Alanı genişleterek ışığın sadece bir kısmının görünmesini sağlar */
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        transparent 150deg,
+        rgba(25, 118, 210, 0.4) 180deg, /* Işığın en parlak olduğu nokta */
+        transparent 210deg,
+        transparent 360deg
     );
-    background-size: 200% 200%;
-    /* Maskeleme ile sadece kenarların görünmesini sağlıyoruz */
-    -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
-        linear-gradient(#fff 0 0);
-    mask: 
-        linear-gradient(#fff 0 0) content-box, 
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    
-    animation: moveGradient 3s ease-in-out infinite;
+    animation: slow-rotate 6s linear infinite; /* 6 saniye - Çok yavaş ve sakin */
+    z-index: -1;
 }
 
-/* Görsel ve Metin */
+/* İçerideki beyaz doku (Işığın sadece border'da kalmasını sağlar) */
+.expand-map-btn::after {
+    content: '';
+    position: absolute;
+    inset: 1px; /* Kenarlık kalınlığı */
+    background: #ffffff;
+    border-radius: 20px;
+    z-index: -1;
+}
+
 .expand-map-btn img {
     width: 20px;
     height: 20px;
+    opacity: 0.9;
 }
 
-/* Arka plandaki akış animasyonu */
-@keyframes moveGradient {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
+/* Çok yavaş ve göz yormayan dönüş */
+@keyframes slow-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-/* Hover'da hızlanma ve netleşme */
-.expand-map-btn:hover::before {
-    animation: moveGradient 1.5s ease-in-out infinite;
-    background: linear-gradient(
-        120deg, 
-        transparent 20%, 
-        #1976d2 50%, 
-        transparent 80%
-    );
-    background-size: 200% 200%;
+/* Hover'da sadece çok hafif bir netleşme */
+.expand-map-btn:hover {
+    border-color: rgba(25, 118, 210, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }.maplibregl-ctrl-bottom-right {
     display: none;
 }
