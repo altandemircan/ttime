@@ -4039,7 +4039,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // HARİTA OLUŞTUR - INTERAKTİF ÖZELLİKLER KAPALI
     var map = L.map(mapId, {
         center: [lat, lon],
-        zoom: 15,
+        zoom: 12,
         // TÜM INTERAKTİF ÖZELLİKLER KAPALI
         scrollWheelZoom: false,
         dragging: false,
