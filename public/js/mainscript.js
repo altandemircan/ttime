@@ -6119,7 +6119,7 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     }
 
     wrapRouteControls(day);
-    map.zoomControl.setPosition('topright');
+    // map.zoomControl artık undefined olduğu için setPosition satırı silindi
     window.leafletMaps[containerId] = map;
 
     // --- GÜVENLİ ODAKLAMA ---
