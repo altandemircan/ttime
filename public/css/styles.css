@@ -5859,69 +5859,69 @@ ease;
 }
     
 .expand-map-btn {
-    position: relative; /* Animasyonun butona göre konumlanması için */
-    display: inline-flex;
+    position: relative;
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 4px 12px;
     background: #ffffff;
-    color: #1976d2;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 21px;
-    overflow: hidden; /* Dönen parçanın taşmasını önler */
+    border-radius: 8px;
     border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1;
+    /* Yazı rengi maviden siyaha yumuşakça evrilir */
+    animation: text-color-shift 3s ease-in-out infinite;
 }
 
-/* Arka plandaki dönen renkli katman */
+/* Sinyal Halkası */
 .expand-map-btn::before {
-    content: '';
+    content: "";
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    /* Konik gradyan ile dönme efekti oluşturuyoruz */
-    background: conic-gradient(
-        transparent, 
-        #1976d2, 
-        transparent 30%
-    );
-    animation: rotate 3s linear infinite;
-    z-index: -2;
-}
-
-/* Butonun iç kısmını beyaz tutan katman */
-.expand-map-btn::after {
-    content: '';
-    position: absolute;
-    inset: 2px; /* Kenar kalınlığını belirler */
-    background: white;
-    border-radius: 19px; /* Dış radius'tan biraz küçük olmalı */
+    inset: 0;
+    border-radius: 8px;
+    background: rgba(25, 118, 210, 0.3); /* Mavi sinyal rengi */
     z-index: -1;
-    /* Kesikli çizgi efekti için */
-    border: 1px dashed rgba(25, 118, 210, 0.3);
+    animation: signal-pulse 3s cubic-bezier(0.24, 0, 0.38, 1) infinite;
 }
 
 .expand-map-btn img {
     width: 20px;
     height: 20px;
-    position: relative;
-    z-index: 2;
+    display: block;
+    /* İkon da metinle birlikte siyaha döner */
+    animation: icon-black-shift 3s ease-in-out infinite;
 }
 
-/* Dönme Animasyonu */
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+/* Sinyal Animasyonu: Arkadan genişleyerek kaybolan halka */
+@keyframes signal-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(1.4, 1.8); /* Yatay ve dikey farklı genişleme */
+        opacity: 0;
+    }
 }
 
-/* Hover Efekti */
+/* Metin Renk Geçişi: Mavi -> Siyah */
+@keyframes text-color-shift {
+    0%, 100% { color: #1976d2; }
+    50% { color: #000000; }
+}
+
+/* İkon Renk Geçişi */
+@keyframes icon-black-shift {
+    0%, 100% { filter: none; }
+    50% { filter: brightness(0); }
+}
+
 .expand-map-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
