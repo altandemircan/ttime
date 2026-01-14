@@ -4021,51 +4021,113 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // ESKİ HARİTA AYARLARI - SADECE INTERAKTİF ÖZELLİKLER KAPALI
+    // Harita container'ını temizle ve boyutunu ayarla
+    el.innerHTML = '';
+    el.style.width = '100%';
+    el.style.height = '250px';
+    el.style.backgroundColor = '#eef0f5';
+    el.style.borderRadius = '8px';
+    el.style.overflow = 'hidden';
+
+    // Leaflet kütüphanesi yüklü mü kontrol et
+    if (typeof L === 'undefined') {
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading map...</div>';
+        setTimeout(() => createLeafletMapForItem(mapId, lat, lon, name, number, day), 100);
+        return;
+    }
+
+    // HARİTA OLUŞTUR - INTERAKTİF ÖZELLİKLER KAPALI
     var map = L.map(mapId, {
         center: [lat, lon],
-        zoom: 16,
-        scrollWheelZoom: false,  // Zoom kapalı
-        dragging: false,         // Sürükleme kapalı
-        zoomControl: true,
-        attributionControl: false
+        zoom: 15,
+        // TÜM INTERAKTİF ÖZELLİKLER KAPALI
+        scrollWheelZoom: false,
+        dragging: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        zoomControl: false, // Zoom kontrolleri gizli
+        attributionControl: false, // Attribution gizli
+        
+        // Animasyonlar kapalı
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false,
+        inertia: false
     });
 
-    // ESKİ TILE LAYER
+    // --- TILE LAYER EKLE (OpenFreeMap veya OSM) ---
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
     if (typeof L.maplibreGL === 'function') {
+        // MapLibreGL kullan
         L.maplibreGL({
             style: openFreeMapStyle,
             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-            interactive: true
+            interactive: false
         }).addTo(map);
     } else {
+        // OSM fallback
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors',
+            interactive: false
         }).addTo(map);
     }
+    // ------------------------------------------------
 
-    // ESKİ MARKER KODU - TAMAMEN AYNI
-    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
-    const finalIcon = L.divIcon({ 
-        html: fallbackHtml, 
-        className: "", 
-        iconSize:[32,32], 
-        iconAnchor:[16,16] 
+    // MARKER EKLE - ESKİ BOYUTLARDA (24px)
+    const markerHtml = `
+        <div class="custom-marker-outer" style="background-color: #d32f2f; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+            ${number || '1'}
+        </div>
+    `;
+    
+    const icon = L.divIcon({
+        html: markerHtml,
+        className: "tt-static-marker",
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
     });
+    
+    // Marker ekle - interaktif OLSUN ki popup açılabilsin
+    const marker = L.marker([lat, lon], { 
+        icon: icon,
+        interactive: true // Marker tıklanabilir olsun
+    }).addTo(map);
+    
+    // Popup ekle - tıklanmış gibi açık dursun
+    marker.bindPopup(`<b>${name || 'Point'}</b>`).openPopup();
 
-    L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
-
-    map.zoomControl.setPosition('topright');
+    // Harita boyutunu düzelt ve popup'ın görünmesini sağla
+    setTimeout(function() { 
+        map.invalidateSize();
+        map.setView([lat, lon], 15);
+        
+        // Popup'ı tekrar aç (güvence için)
+        marker.openPopup();
+    }, 150);
+    
+    // Popup'ın otomatik kapanmasını engelle
+    marker.on('popupclose', function() {
+        setTimeout(() => {
+            marker.openPopup();
+        }, 100);
+    });
+    
     window._leafletMaps[mapId] = map;
     
-    // Harita boyutunu düzelt
-    setTimeout(function() { map.invalidateSize(); }, 120);
+    // CSS ile harita interaktifliğini kapat, ama marker'a dokunma
+    const mapContainer = map.getContainer();
+    mapContainer.style.pointerEvents = 'none';
+    mapContainer.style.cursor = 'default';
     
-    // Interaktifliği kapat
-    map.getContainer().style.pointerEvents = 'none';
+    // Marker'ın tıklanabilir kalması için
+    if (marker._icon) {
+        marker._icon.style.pointerEvents = 'auto';
+        marker._icon.style.cursor = 'pointer';
+    }
 }
 
 // CSS ekle:
