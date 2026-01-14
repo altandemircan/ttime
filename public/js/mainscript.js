@@ -4098,10 +4098,9 @@ const icon = L.divIcon({
     
     // Popup ekle - tıklanmış gibi açık dursun
 marker.bindPopup(`<b>${name || 'Point'}</b>`, {
-        closeButton: false,
-        offset: [0, -15], // [Yatayda 0 kayma, Dikeyde 15px yukarı]
-        autoPan: false    // Açılırken haritayı sarsmasın
-    }).openPopup();
+    closeButton: false,
+    offset: [0, -50] // X:0 (Yatayda tam orta), Y:-16 (İkonun tam tepesi)
+}).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
     setTimeout(function() { 
