@@ -4087,7 +4087,7 @@ const icon = L.divIcon({
     html: fallbackHtml, 
     className: "", 
     iconSize: [32, 32], 
-    iconAnchor: [12, 16] // Tam matematiksel merkez
+    iconAnchor: [16, 16] // Tam matematiksel merkez
 });
     
     // Marker ekle - interaktif OLSUN ki popup açılabilsin
