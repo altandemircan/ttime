@@ -4087,7 +4087,7 @@ const icon = L.divIcon({
     html: fallbackHtml, 
     className: "", 
     iconSize: [32, 32], 
-    iconAnchor: [20, 16] // X'i biraz artırdık, 18-20 arası deneyebilirsin
+    iconAnchor: [16, 16] // X'i biraz artırdık, 18-20 arası deneyebilirsin
 });
     
     // Marker ekle - interaktif OLSUN ki popup açılabilsin
