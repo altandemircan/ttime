@@ -6199,27 +6199,30 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
-    // --- HARİTA KURCALANINCA BUTONU SALLA (KESİN ÇÖZÜM) ---
-        const mapContainer = document.getElementById(containerId);
-        const actionBtn = mapContainer?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
-                         || mapContainer?.parentElement?.querySelector('.expand-map-btn');
+    // --- KESİN ÇÖZÜM: HARİTA ÜST KATMANINI DİNLE ---
+    const mapElement = document.getElementById(containerId);
+    // Butonu bul
+    const actionBtn = mapElement?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
+                     || mapElement?.parentElement?.querySelector('.expand-map-btn');
 
-        if (map && actionBtn) {
-            const triggerEffect = (e) => {
-                // Eğer tıklanan yer bir marker değilse salla
-                // Leaflet event objesi üzerinden kontrol yapıyoruz
-                if (e.originalEvent && !e.originalEvent.target.closest('.leaflet-marker-icon')) {
-                    actionBtn.classList.remove('is-shaking'); 
-                    void actionBtn.offsetWidth; 
-                    actionBtn.classList.add('is-shaking');
-                    setTimeout(() => actionBtn.classList.remove('is-shaking'), 300);
-                }
-            };
+    if (mapElement && actionBtn) {
+        // Haritanın içindeki etkileşim katmanını yakala
+        const interactionLayer = mapElement.querySelector('.leaflet-overlay-pane') || mapElement;
 
-            // DOM yerine doğrudan Leaflet objesine (map) dinleyici ekliyoruz
-            // Çünkü harita üzerindeki tıklamaları Leaflet yakalar
-            map.on('mousedown touchstart', triggerEffect);
-        }
+        const triggerShake = (e) => {
+            // Eğer marker'a tıklanmıyorsa butonu salla
+            if (!e.target.closest('.leaflet-marker-icon') && !e.target.closest('.leaflet-popup')) {
+                actionBtn.classList.remove('is-shaking'); 
+                void actionBtn.offsetWidth; // Reset
+                actionBtn.classList.add('is-shaking');
+                setTimeout(() => actionBtn.classList.remove('is-shaking'), 300);
+            }
+        };
+
+        // Standart JS eventleri (Leaflet'ten bağımsız)
+        mapElement.addEventListener('touchstart', triggerShake, { capture: true, passive: true });
+        mapElement.addEventListener('mousedown', triggerShake, { capture: true, passive: true });
+    }
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
