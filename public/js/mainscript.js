@@ -3497,7 +3497,12 @@ function initEmptyDayMap(day) {
 const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    scrollWheelZoom: true,
+    scrollWheelZoom: false,  // Kapalı
+    dragging: false,         // Kapalı
+    touchZoom: false,        // Kapalı
+    doubleClickZoom: false,  // Kapalı
+    boxZoom: false,          // Kapalı
+    zoomControl: false,      // Butonları kaldır
     fadeAnimation: true,
     zoomAnimation: true,
     markerZoomAnimation: true,
