@@ -5859,26 +5859,70 @@ ease;
 }
     
 .expand-map-btn {
-    display: flex;
+    position: relative; /* Animasyonun butona göre konumlanması için */
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
-    background: #ffffff !important;
-    border: none;
-    border-radius: 21px;
-    transition: all 0.2s ease;
+    padding: 6px 14px;
+    background: #ffffff;
+    color: #1976d2;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border: 1px dashed #1976d2;
+    border-radius: 21px;
+    overflow: hidden; /* Dönen parçanın taşmasını önler */
+    border: none;
+    z-index: 1;
 }
 
+/* Arka plandaki dönen renkli katman */
+.expand-map-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    /* Konik gradyan ile dönme efekti oluşturuyoruz */
+    background: conic-gradient(
+        transparent, 
+        #1976d2, 
+        transparent 30%
+    );
+    animation: rotate 3s linear infinite;
+    z-index: -2;
+}
+
+/* Butonun iç kısmını beyaz tutan katman */
+.expand-map-btn::after {
+    content: '';
+    position: absolute;
+    inset: 2px; /* Kenar kalınlığını belirler */
+    background: white;
+    border-radius: 19px; /* Dış radius'tan biraz küçük olmalı */
+    z-index: -1;
+    /* Kesikli çizgi efekti için */
+    border: 1px dashed rgba(25, 118, 210, 0.3);
+}
 
 .expand-map-btn img {
     width: 20px;
-    height: 20px;  
+    height: 20px;
+    position: relative;
+    z-index: 2;
 }
-.maplibregl-ctrl-bottom-right {
+
+/* Dönme Animasyonu */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Hover Efekti */
+.expand-map-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+}.maplibregl-ctrl-bottom-right {
     display: none;
 }
 .route-controls-bar .leaflet-touch .leaflet-control-attribution {
