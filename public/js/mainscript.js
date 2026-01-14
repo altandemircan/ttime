@@ -3494,10 +3494,20 @@ function initEmptyDayMap(day) {
       }
   }
 
-const map = L.map(containerId, {
+// Varsa temizle
+  if (window.leafletMaps[containerId]) {
+    try { window.leafletMaps[containerId].remove(); } catch(e){}
+  }
+
+  const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    scrollWheelZoom: true,
+    zoomControl: false,      // Butonları kapat
+    dragging: false,         // Kaydırmayı kapat
+    touchZoom: false,        // Parmak zoom kapat
+    scrollWheelZoom: false,  // Tekerlek kapat
+    doubleClickZoom: false,  // Çift tık kapat
+    attributionControl: false, // Logoyu kapat
     fadeAnimation: true,
     zoomAnimation: true,
     markerZoomAnimation: true,
@@ -4159,7 +4169,7 @@ marker.bindPopup(`<b>${name || 'Point'}</b>`, {
             user-select: none !important;
         }
 
-       
+
         /* Marker ve popup hariç - onlar tıklanabilir kalsın */
         .cart-item .leaflet-map .leaflet-marker-icon,
         .cart-item .leaflet-map .leaflet-popup,
@@ -5790,6 +5800,13 @@ function addNumberedMarkers(map, points) {
 }
 
 async function renderLeafletRoute(containerId, geojson, points = [], summary = null, day = 1, missingPoints = []) {
+    // Eğer bu container'da zaten aktif bir harita varsa, önce onu temizle
+    if (window.leafletMaps && window.leafletMaps[containerId]) {
+        try {
+            window.leafletMaps[containerId].remove();
+            delete window.leafletMaps[containerId];
+        } catch (e) { console.warn("Harita temizlenemedi:", e); }
+    }
     // 1. KÜTÜPHANE KONTROLÜ
     if (typeof L === 'undefined') {
         setTimeout(() => renderLeafletRoute(containerId, geojson, points, summary, day, missingPoints), 100);
