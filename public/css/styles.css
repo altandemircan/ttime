@@ -5859,58 +5859,69 @@ ease;
 }
     
 .expand-map-btn {
-    display: flex;
+    position: relative; /* Animasyonun butona göre konumlanması için */
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 6px 14px;
     background: #ffffff;
-    /* Yazı rengi maviden başlıyor */
-    color: #1976d2; 
-    font-size: 13px; /* Sabit */
+    color: #1976d2;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 8px; /* Harita köşeleriyle uyumlu */
+    border-radius: 21px;
+    overflow: hidden; /* Dönen parçanın taşmasını önler */
     border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    position: relative;
-    /* Hem arka plan hem yazı rengi için tek animasyon */
-    animation: blue-to-black-phase 4s ease-in-out infinite;
-    transition: transform 0.2s ease;
+    z-index: 1;
+}
+
+/* Arka plandaki dönen renkli katman */
+.expand-map-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    /* Konik gradyan ile dönme efekti oluşturuyoruz */
+    background: conic-gradient(
+        transparent, 
+        #1976d2, 
+        transparent 30%
+    );
+    animation: rotate 3s linear infinite;
+    z-index: -2;
+}
+
+/* Butonun iç kısmını beyaz tutan katman */
+.expand-map-btn::after {
+    content: '';
+    position: absolute;
+    inset: 2px; /* Kenar kalınlığını belirler */
+    background: white;
+    border-radius: 19px; /* Dış radius'tan biraz küçük olmalı */
+    z-index: -1;
+    /* Kesikli çizgi efekti için */
+    border: 1px dashed rgba(25, 118, 210, 0.3);
 }
 
 .expand-map-btn img {
-    width: 20px; /* Sabit */
-    height: 20px; /* Sabit */
-    display: block;
-    /* İkonun rengini yazı rengine uydurur */
-    filter: none; 
-    transition: all 0.3s ease;
+    width: 20px;
+    height: 20px;
+    position: relative;
+    z-index: 2;
 }
 
-/* Animasyon: Arka plan hafifçe koyulaşırken yazı maviden siyaha geçiyor */
-@keyframes blue-to-black-phase {
-    0%, 100% { 
-        background: #ffffff; 
-        color: #1976d2; /* Başlangıç mavisi */
-    }
-    50% { 
-        background: #f0f7ff; /* Çok açık mavi/gri bir ton */
-        color: #000000; /* Hedef siyah */
-    }
+/* Dönme Animasyonu */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-/* Hover: Animasyonu durdurur ve en net haliyle (siyah) sabitler */
+/* Hover Efekti */
 .expand-map-btn:hover {
-    animation-play-state: paused;
-    background: #f0f7ff;
-    color: #000000;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-/* İkonun hoverda tam görünmesi için (eğer ikon mavi ise siyaha yakınlaşması için) */
-.expand-map-btn:hover img {
-    filter: brightness(0); /* İkonu siyah yapar */
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
