@@ -4021,28 +4021,26 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // ESKİ HARİTA - KAYMA SORUNU GİDERİLMİŞ HALİ
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
-        // SADECE BU 2 SATIR EKLENDİ (interaktif kapalı):
-        scrollWheelZoom: false,
-        dragging: false,
-        // GERİ KALAN HER ŞEY AYNI:
+        scrollWheelZoom: true,  // BU SATIR FALSE OLMALI: false
         zoomControl: true,
         attributionControl: false
     });
 
-    // --- ESKİ TILE LAYER KODU ---
+    // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
     if (typeof L.maplibreGL === 'function') {
+        // MapLibreGL (Vektör) kullan
         L.maplibreGL({
             style: openFreeMapStyle,
             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
             interactive: true
         }).addTo(map);
     } else {
+        // Eğer kütüphane yüklenmediyse OSM Fallback
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
@@ -4055,27 +4053,38 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         const pts = getDayPoints(day).filter(
             p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
         );
+        // Eğer sadece 1 nokta varsa o noktaya odaklan
         if (pts.length === 1) {
             map.setView([pts[0].lat, pts[0].lng], 14);
         }
     }
 
-    // ESKİ MARKER KODU - TAMAMEN AYNI
+    // Marker
+    const icon = L.divIcon({
+        html: getPurpleRestaurantMarkerHtml(), // Bu fonksiyonun tanımlı olduğundan emin olun, yoksa standart icon kullanın
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    
+    // Eğer getPurpleRestaurantMarkerHtml yoksa fallback için basit bir HTML string:
     const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
-    const finalIcon = L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
+    const finalIcon = typeof getPurpleRestaurantMarkerHtml === 'function' ? icon : L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
 
     L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
-    // Harita boyutunu düzelt
+    // Harita boyutunu düzelt (render hatasını önler)
     setTimeout(function() { map.invalidateSize(); }, 120);
     
-    // INTERAKTİFLİĞİ KAPATMAK İÇİN SADECE BU SATIR:
-    map.getContainer().style.pointerEvents = 'none';
+    // === SADECE BU 3 SATIR EKLENDİ ===
+    map.scrollWheelZoom.disable();      // Mouse wheel zoom kapat
+    map.dragging.disable();             // Sürükleme kapat
+    map.touchZoom.disable();            // Dokunmatik zoom kapat
+    // ================================
 }
-
 // CSS ekle:
 (function() {
     const style = document.createElement('style');
