@@ -3497,12 +3497,7 @@ function initEmptyDayMap(day) {
 const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    scrollWheelZoom: false,  // Kapalı
-    dragging: false,         // Kapalı
-    touchZoom: false,        // Kapalı
-    doubleClickZoom: false,  // Kapalı
-    boxZoom: false,          // Kapalı
-    zoomControl: false,      // Butonları kaldır
+    scrollWheelZoom: true,
     fadeAnimation: true,
     zoomAnimation: true,
     markerZoomAnimation: true,
@@ -5862,18 +5857,19 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
-        scrollWheelZoom: true,
-        // Akışkan Zoom Ayarları
+        scrollWheelZoom: false, // Kapalı
+        dragging: false,        // Kapalı
+        touchZoom: false,       // Kapalı
+        doubleClickZoom: false, // Kapalı
+        boxZoom: false,         // Kapalı
+        zoomControl: false,     // Butonları kaldır
         fadeAnimation: true,
         zoomAnimation: true,
         markerZoomAnimation: true,
-        inertia: true,
-        zoomSnap: 0,             
+        inertia: false,
+        zoomSnap: 0,               
         zoomDelta: 0.1,
-        wheelPxPerZoomLevel: 60, 
-        wheelDebounceTime: 20,
-        touchZoom: true,
-        bounceAtZoomLimits: false
+        attributionControl: false // Alt logoyu gizle
     });
 
     try {
