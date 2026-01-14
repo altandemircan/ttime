@@ -5914,9 +5914,7 @@ ease;
 
     margin-top: 10px;
 }
-.leaflet-popup {
-       margin-bottom: 60px;
-}
+
 /* Üstteki 1 sn'lik "hint" popup stili (X butonu yok) */
 .leaflet-popup.drag-hint-popup {
   pointer-events: none;                /* tıklamaları engellemesin */
