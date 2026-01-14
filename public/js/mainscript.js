@@ -5923,8 +5923,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         try {
             const glLayer = L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/bright',
-                attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
-                interactive: true
+                attribution: '&copy; OpenFreeMap',
+                // [KRİTİK DÜZELTME] Alt zeminin kaymasını engelleyen satır:
+                interactive: false 
             });
 
             glLayer.addTo(map);
