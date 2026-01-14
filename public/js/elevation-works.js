@@ -2,16 +2,55 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
-// Sayı formatlama yardımcıları - HER YERDEN ERİŞİLEBİLİR OLMALI
-function fmt(num) {
-    if (num === undefined || num === null) return "0";
-    return num.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
-}
+ function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
+    const distStr = (typeof distanceMeters === 'number')
+      ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
+    const duraStr = (typeof durationSeconds === 'number')
+      ? Math.round(durationSeconds / 60) + ' min' : '';
+    const ascStr = (typeof ascentM === 'number')
+      ? Math.round(ascentM) + ' m' : '';
+    const descStr = (typeof descentM === 'number')
+      ? Math.round(descentM) + ' m' : '';
+    return { distStr, duraStr, ascStr, descStr };
+  }
 
-function fmtM(m) {
-    if (m === undefined || m === null) return "0";
-    return Math.round(m).toLocaleString('tr-TR');
-}
+  function buildBadgesHTML(strings) {
+    const parts = [];
+    if (strings.distStr) {
+      parts.push(`
+        <span class="stat stat-distance">
+          <img class="icon" src="${window.TT_SVG_ICONS.distance}" alt="Distance" loading="lazy" decoding="async">
+          <span class="badge">${strings.distStr}</span>
+        </span>
+      `);
+    }
+    if (strings.duraStr) {
+      parts.push(`
+        <span class="stat stat-duration">
+          <img class="icon" src="${window.TT_SVG_ICONS.duration}" alt="Duration" loading="lazy" decoding="async">
+          <span class="badge">${strings.duraStr}</span>
+        </span>
+      `);
+    }
+    if (strings.ascStr) {
+      parts.push(`
+        <span class="stat stat-ascent">
+          <img class="icon" src="${window.TT_SVG_ICONS.ascent}" alt="Ascent" loading="lazy" decoding="async">
+          <span class="badge">${strings.ascStr}</span>
+        </span>
+      `);
+    }
+    if (strings.descStr) {
+      parts.push(`
+        <span class="stat stat-descent">
+          <img class="icon" src="${window.TT_SVG_ICONS.descent}" alt="Descent" loading="lazy" decoding="async">
+          <span class="badge">${strings.descStr}</span>
+        </span>
+      `);
+    }
+    return parts.join(' ');
+  }
+
 
         // Nice tick helpers
 function niceStep(total, target) {
@@ -1117,55 +1156,7 @@ window.updateRouteStatsUI = function(day) {
   // 2) Keep per-day elevation stats here when ready
   window.routeElevStatsByDay = window.routeElevStatsByDay || {};
 
-  function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
-    const distStr = (typeof distanceMeters === 'number')
-      ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
-    const duraStr = (typeof durationSeconds === 'number')
-      ? Math.round(durationSeconds / 60) + ' min' : '';
-    const ascStr = (typeof ascentM === 'number')
-      ? Math.round(ascentM) + ' m' : '';
-    const descStr = (typeof descentM === 'number')
-      ? Math.round(descentM) + ' m' : '';
-    return { distStr, duraStr, ascStr, descStr };
-  }
-
-  function buildBadgesHTML(strings) {
-    const parts = [];
-    if (strings.distStr) {
-      parts.push(`
-        <span class="stat stat-distance">
-          <img class="icon" src="${window.TT_SVG_ICONS.distance}" alt="Distance" loading="lazy" decoding="async">
-          <span class="badge">${strings.distStr}</span>
-        </span>
-      `);
-    }
-    if (strings.duraStr) {
-      parts.push(`
-        <span class="stat stat-duration">
-          <img class="icon" src="${window.TT_SVG_ICONS.duration}" alt="Duration" loading="lazy" decoding="async">
-          <span class="badge">${strings.duraStr}</span>
-        </span>
-      `);
-    }
-    if (strings.ascStr) {
-      parts.push(`
-        <span class="stat stat-ascent">
-          <img class="icon" src="${window.TT_SVG_ICONS.ascent}" alt="Ascent" loading="lazy" decoding="async">
-          <span class="badge">${strings.ascStr}</span>
-        </span>
-      `);
-    }
-    if (strings.descStr) {
-      parts.push(`
-        <span class="stat stat-descent">
-          <img class="icon" src="${window.TT_SVG_ICONS.descent}" alt="Descent" loading="lazy" decoding="async">
-          <span class="badge">${strings.descStr}</span>
-        </span>
-      `);
-    }
-    return parts.join(' ');
-  }
-
+ 
   function setSummaryForDay(day, distanceM, durationS) {
     const elev = window.routeElevStatsByDay?.[day] || {};
     const strings = fmt(distanceM, durationS, elev.ascent, elev.descent);
