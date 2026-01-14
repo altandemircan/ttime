@@ -1054,8 +1054,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-
-
 function sendMessage() {
     // Kilit kontrolü (Loading sırasında tekrar basılmasın)
     if (window.isProcessing) {
@@ -1131,15 +1129,9 @@ function sendMessage() {
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
-
-
-
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
 window.__lastAddedItem = null;
 let lastUserQuery = ""
-
-
-
 
 function extractCityAndDaysFromTheme(title) {
   let days = 2;
@@ -1788,6 +1780,7 @@ window.showSuggestionsInChat = async function(category, day = 1, code = null, ra
         addMessage("An error occurred.", "bot-message");
     }
 };
+
 // 2. Butonla şehir seçildiğinde de güncelle
 window.handleCitySelection = async function(city, days) {
     if (window.isProcessing) return;
@@ -3290,8 +3283,6 @@ const detailsDiv = document.getElementById(`place-details-${day}`);
 }
 
 
-
-
 function formatLocationDetails(properties) {
   const parts = [];
   if (properties.state) parts.push(properties.state);
@@ -3356,7 +3347,6 @@ function editDayName(day) {
         saveDayName(day, this.value);
     });
 }
-
 
 // Gün ismini kaydetme fonksiyonu (güncellendi)
 function saveDayName(day, newName) {
@@ -3895,6 +3885,7 @@ function getPurpleRestaurantMarkerHtml(label) {
         </div>
     `;
 }
+
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
@@ -7337,12 +7328,6 @@ function restoreMap(containerId, day) {
 }
 
 
-
-
-
-
-
-
 function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = {}) {
     const el = marker.getElement();
     if (!el) {
@@ -9428,91 +9413,6 @@ window.TT_SVG_ICONS = {
   }
 })();
 
-
-
-
-
-// Kartları ekledikten sonra çağır: attachFavEvents();
-
-window.__sb_onMouseMove = function(e) {
-  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
-  
-  // Mobilde sayfa kaymasını engelle (Scroll Lock)
-  if (e.type === 'touchmove' && e.cancelable) {
-      e.preventDefault(); 
-  }
-
-  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
-  const clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
-  
-  window.__scaleBarDrag.lastX = Math.max(0, Math.min(rect.width, clientX - rect.left));
-  
-  const left = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  const right = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  
-  window.__scaleBarDragSelDiv.style.left = `${left}px`;
-  window.__scaleBarDragSelDiv.style.width = `${right - left}px`;
-};
-
-window.__sb_onMouseUp = function() {
-  if (!window.__scaleBarDrag || !window.__scaleBarDragTrack || !window.__scaleBarDragSelDiv) return;
-  const rect = window.__scaleBarDragTrack.getBoundingClientRect();
-  const leftPx = Math.min(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  const rightPx = Math.max(window.__scaleBarDrag.startX, window.__scaleBarDrag.lastX);
-  
-  // Seçim bitti, div'i gizleyelim ki ekranda asılı kalmasın
-  window.__scaleBarDragSelDiv.style.display = 'none';
-
-  if (rightPx - leftPx < 8) { 
-      window.__scaleBarDrag = null; 
-      return; 
-  }
-
-  const container = window.__scaleBarDragTrack.closest('.route-scale-bar');
-  if (!container) { window.__scaleBarDrag = null; return; }
-  
-  const dayMatch = container.id && container.id.match(/day(\d+)/);
-  const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
-
-  window.__scaleBarDrag = null;
-
-  if (day != null) {
-    // --- NESTED SEGMENT MANTIĞI ---
-    
-    // Varsayılan: Ana grafik (0'dan Toplam KM'ye)
-    let baseStartKm = 0;
-    let visibleSpanKm = Number(container.dataset.totalKm) || 0;
-
-    // Eğer zaten bir segmentin içindeysek (Zoomlu görünüm)
-    if (
-        typeof window._lastSegmentDay === 'number' &&
-        window._lastSegmentDay === day &&
-        typeof window._lastSegmentStartKm === 'number' &&
-        typeof window._lastSegmentEndKm === 'number'
-    ) {
-        // Hesaplamayı mevcut segmentin üzerine kur
-        baseStartKm = window._lastSegmentStartKm;
-        visibleSpanKm = window._lastSegmentEndKm - window._lastSegmentStartKm;
-    }
-
-    // Mouse'un bar üzerindeki oranını hesapla (0.0 - 1.0)
-    const ratioStart = leftPx / rect.width;
-    const ratioEnd   = rightPx / rect.width;
-
-    // Yeni başlangıç ve bitiş km'lerini hesapla
-    // Formül: (Mevcut Başlangıç) + (Oran * Mevcut Genişlik)
-    const newStartKm = baseStartKm + (ratioStart * visibleSpanKm);
-    const newEndKm   = baseStartKm + (ratioEnd * visibleSpanKm);
-
-    // Yeni segmenti çiz
-    fetchAndRenderSegmentElevation(container, day, newStartKm, newEndKm);
-    
-    // Haritadaki çizgiyi de hemen güncelle (Gecikmeyi önlemek için buraya da ekledim)
-    if (typeof highlightSegmentOnMap === 'function') {
-        highlightSegmentOnMap(day, newStartKm, newEndKm);
-    }
-  }
-};
 
 
 (function(){
