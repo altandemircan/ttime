@@ -4087,7 +4087,7 @@ const icon = L.divIcon({
     html: fallbackHtml, 
     className: "", 
     iconSize: [32, 32], 
-    iconAnchor: [16, 16] // X'i biraz artırdık, 18-20 arası deneyebilirsin
+    iconAnchor: [16, 16] // Tam matematiksel merkez
 });
     
     // Marker ekle - interaktif OLSUN ki popup açılabilsin
@@ -4097,9 +4097,11 @@ const icon = L.divIcon({
     }).addTo(map);
     
     // Popup ekle - tıklanmış gibi açık dursun
-    marker.bindPopup(`<b>${name || 'Point'}</b>`, {
-    closeButton: false
-}).openPopup();
+marker.bindPopup(`<b>${name || 'Point'}</b>`, {
+        closeButton: false,
+        offset: [0, -15], // [Yatayda 0 kayma, Dikeyde 15px yukarı]
+        autoPan: false    // Açılırken haritayı sarsmasın
+    }).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
     setTimeout(function() { 
