@@ -5906,7 +5906,7 @@ map.dragging.disable();
 if (map.tap) map.tap.disable(); // iOS ve bazı Android cihazlar için kritik
 
 // Harita katmanlarının dokunmatik olayları yakalamasını engelle
-const mapElement = document.getElementById(containerId);
+const mapElementForBtn = document.getElementById(containerId);
 mapElement.addEventListener('touchstart', (e) => {
     // Eğer tıklanan şey bir marker değilse, olayı yukarı (sayfaya) sal
     if (!e.target.closest('.leaflet-marker-icon')) {
