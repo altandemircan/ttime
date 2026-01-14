@@ -5859,69 +5859,81 @@ ease;
 }
     
 .expand-map-btn {
-    position: relative; /* Animasyonun butona göre konumlanması için */
-    display: inline-flex;
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
+    gap: 8px;
+    padding: 8px 18px;
     background: #ffffff;
     color: #1976d2;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    border-radius: 21px;
-    overflow: hidden; /* Dönen parçanın taşmasını önler */
+    border-radius: 30px;
     border: none;
-    z-index: 1;
+    outline: none;
+    overflow: hidden; /* Dışarı taşan ışığı keser */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
 }
 
-/* Arka plandaki dönen renkli katman */
+/* Arka plandaki dönen modern gradient ışığı */
 .expand-map-btn::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    /* Konik gradyan ile dönme efekti oluşturuyoruz */
+    width: 150%;
+    height: 400%; /* Işığın daha dikey ve keskin gelmesi için */
     background: conic-gradient(
-        transparent, 
-        #1976d2, 
-        transparent 30%
+        from 0deg,
+        transparent 0%,
+        #1976d2 25%,
+        #64b5f6 50%,
+        transparent 75%
     );
-    animation: rotate 3s linear infinite;
-    z-index: -2;
+    animation: rotate-glow 4s linear infinite;
+    top: -150%;
+    left: -25%;
+    z-index: 0;
 }
 
-/* Butonun iç kısmını beyaz tutan katman */
+/* İç beyaz gövde (Kenar payı bırakır) */
 .expand-map-btn::after {
     content: '';
     position: absolute;
-    inset: 2px; /* Kenar kalınlığını belirler */
+    inset: 2px; /* Kenar kalınlığı (2px modern durur) */
     background: white;
-    border-radius: 19px; /* Dış radius'tan biraz küçük olmalı */
-    z-index: -1;
-    /* Kesikli çizgi efekti için */
-    border: 1px dashed rgba(25, 118, 210, 0.3);
+    border-radius: 28px;
+    z-index: 1;
 }
 
+/* İçeriklerin (ikon ve yazı) en üstte görünmesi için */
+.expand-map-btn span, 
 .expand-map-btn img {
-    width: 20px;
-    height: 20px;
     position: relative;
     z-index: 2;
 }
 
-/* Dönme Animasyonu */
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+/* İkon için yumuşak bir hover geçişi */
+.expand-map-btn img {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
 }
 
-/* Hover Efekti */
+/* Animasyon Tanımı */
+@keyframes rotate-glow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Hover (Üzerine Gelince) Efektleri */
 .expand-map-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(25, 118, 210, 0.2);
+}
+
+.expand-map-btn:hover img {
+    transform: rotate(15deg) scale(1.1);
 }.maplibregl-ctrl-bottom-right {
     display: none;
 }
