@@ -4094,7 +4094,9 @@ const icon = L.divIcon({
     }).addTo(map);
     
     // Popup ekle - tıklanmış gibi açık dursun
-    marker.bindPopup(`<b>${name || 'Point'}</b>`).openPopup();
+    marker.bindPopup(`<b>${name || 'Point'}</b>`, {
+    closeButton: false
+}).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
     setTimeout(function() { 
