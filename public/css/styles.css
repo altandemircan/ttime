@@ -5869,9 +5869,8 @@ ease;
     font-size: 13px; /* Sabit */
     font-weight: 600;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 20px;
     border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1;
 }
 
@@ -5880,7 +5879,7 @@ ease;
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 8px;
+    border-radius: 20px;
     /* Sadece 1px kalınlığında kenarlık */
     border: 1px solid #1976d2; 
     z-index: -1;
