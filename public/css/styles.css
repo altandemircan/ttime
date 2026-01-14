@@ -7860,26 +7860,21 @@ scrollbar-width: thin;
 }
 
 
-/* 1. Harita kabuğunu ve içindeki TILE (zemin) katmanını tamamen etkisiz yap */
-.route-map.leaflet-container,
-.leaflet-tile-pane,
-.leaflet-map-pane {
+/* Harita kapsayıcısının dokunmatik etkileşimini tamamen kapat */
+.route-map {
+    touch-action: auto !important; /* Tarayıcıya kaydırma yetkisini geri ver */
+}
+
+/* Harita içindeki her şeyi tıklanamaz yap */
+.route-map .leaflet-container {
     pointer-events: none !important;
-    touch-action: pan-y !important; /* Sayfa kaydırmasına izin ver */
 }
 
-/* 2. SADECE üzerine tıklanacak objeleri (Marker ve Popup) geri canlandır */
-.leaflet-marker-pane,
-.leaflet-marker-icon,
-.leaflet-popup-pane,
-.leaflet-popup,
-.leaflet-overlay-pane path { /* Rota çizgisi için */
-    pointer-events: auto !important;
-}
-
-/* 3. Senin butonların ve barların her zaman tıklanabilir kalsın */
-.map-bar-header, 
-.expand-map-btn,
-.route-controls-bar {
+/* Sadece markerları ve senin butonlarını "tıklanabilir" hale getir */
+.route-map .leaflet-marker-icon,
+.route-map .leaflet-popup,
+.route-map .map-bar-header,
+.route-map .expand-map-btn,
+.route-map .route-controls-bar {
     pointer-events: auto !important;
 }

@@ -5883,6 +5883,19 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         attributionControl: false // Alt logoyu gizle
     });
 
+    // Mobilde harita üzerinden sayfanın kaymasını sağlar
+map.dragging.disable();
+if (map.tap) map.tap.disable(); // iOS ve bazı Android cihazlar için kritik
+
+// Harita katmanlarının dokunmatik olayları yakalamasını engelle
+const mapElement = document.getElementById(containerId);
+mapElement.addEventListener('touchstart', (e) => {
+    // Eğer tıklanan şey bir marker değilse, olayı yukarı (sayfaya) sal
+    if (!e.target.closest('.leaflet-marker-icon')) {
+        return true; 
+    }
+}, { passive: true });
+
     try {
         map.createPane('customRoutePane');
         map.getPane('customRoutePane').style.zIndex = 450;
