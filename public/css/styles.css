@@ -5858,18 +5858,17 @@ ease;
     display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;     font-weight: 400;"
 }
     
-/* 1. Titreme Animasyonu Tanımı */
 @keyframes expand-shake {
     0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.05) translateX(-3px); }
-    75% { transform: scale(1.05) translateX(3px); }
+    25% { transform: scale(1.1) translateX(-4px); }
+    75% { transform: scale(1.1) translateX(4px); }
 }
 
-/* 2. Sürekli Hafif Nabız (Butonun orada olduğunu belli eder) */
-@keyframes btn-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); }
-    70% { box-shadow: 0 0 0 8px rgba(25, 118, 210, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
+/* Sadece bu sınıf eklendiğinde çalışır */
+.expand-map-btn.is-shaking {
+    animation: expand-shake 0.3s ease-in-out !important;
+    background-color: #e3f2fd !important;
+    border-style: solid !important;
 }
 
 .expand-map-btn {
@@ -5883,22 +5882,7 @@ ease;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border: 1px dashed #1976d2 !important; /* Mevcut stilin */
-    
-    /* EKLEME: Butonun sürekli fark edilmesi için hafif bir dalgalanma */
-    animation: btn-pulse 2s infinite; 
-}
-
-.expand-map-btn img {
-    width: 20px;
-    height: 20px;  
-}
-
-/* 3. JS Tarafından Tetiklenen Titreme Sınıfı */
-.expand-map-btn.is-shaking {
-    animation: expand-shake 0.3s ease-in-out !important;
-    background-color: #e3f2fd !important; /* Dokunulduğunda hafif mavi arka plan */
-    border-style: solid !important;      /* Kesikli çizgiyi düze çevirir (görsel geri bildirim) */
+    border: 1px dashed #1976d2 !important;
 }
 .maplibregl-ctrl-bottom-right {
     display: none;

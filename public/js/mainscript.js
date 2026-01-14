@@ -6200,21 +6200,25 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
         }
     }
 // --- TİTREME EFEKTİ GÜNCELLEMESİ ---
+   // --- HARİTAYI KURCALAYINCA BUTONU SALLA ---
     const targetMapElement = document.getElementById(containerId);
-    // Butonu bulmak için daha geniş kapsamlı bir arama yapıyoruz
-    const targetExpandBtn = targetMapElement?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
-                         || targetMapElement?.parentElement?.querySelector('.expand-map-btn');
+    const targetBtn = targetMapElement?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
+                      || targetMapElement?.parentElement?.querySelector('.expand-map-btn');
 
-    if (targetMapElement && targetExpandBtn) {
-        targetMapElement.addEventListener('touchstart', function(e) {
-            // Eğer tıklanan yer bir marker (işaretçi) veya popup değilse salla
+    if (targetMapElement && targetBtn) {
+        const triggerShake = (e) => {
+            // Sadece haritanın boş yerine dokunulursa salla (marker ve popup hariç)
             if (!e.target.closest('.leaflet-marker-icon') && !e.target.closest('.leaflet-popup')) {
-                targetExpandBtn.classList.add('is-shaking');
-                setTimeout(() => {
-                    targetExpandBtn.classList.remove('is-shaking');
-                }, 300);
+                targetBtn.classList.remove('is-shaking'); 
+                void targetBtn.offsetWidth; // CSS animasyonunu tetiklemek için şart
+                targetBtn.classList.add('is-shaking');
+                setTimeout(() => targetBtn.classList.remove('is-shaking'), 300);
             }
-        }, { passive: true });
+        };
+
+        // Haritayı kurcalama (dokunma veya tıklama) anında çalışır
+        targetMapElement.addEventListener('touchstart', triggerShake, { passive: true });
+        targetMapElement.addEventListener('mousedown', triggerShake, { passive: true });
     }
 }
 // Harita durumlarını yönetmek için global değişken
