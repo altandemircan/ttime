@@ -5863,61 +5863,67 @@ ease;
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 6px 14px;
     background: #ffffff;
-    color: #1976d2;
+    color: #5b21b6; /* Sayfadaki mor tonlarına yakın bir renk */
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 21px;
-    border: 1px solid rgba(25, 118, 210, 0.15); /* Sabit, çok soluk ana kenarlık */
+    border-radius: 12px; /* Harita köşeleriyle uyumlu olsun diye biraz azalttık */
+    border: 1px solid #e2e8f0; /* Çok hafif, görünmez bir gri border */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
     overflow: hidden;
-    z-index: 1;
 }
 
-/* Sadece köşelerden geçen ince ışık sızıntısı */
+/* Animasyon: Kenarlarda yavaşça gezen çok hafif mor bir parıltı */
 .expand-map-btn::before {
     content: '';
     position: absolute;
-    inset: -20px; /* Alanı genişleterek ışığın sadece bir kısmının görünmesini sağlar */
+    top: 50%;
+    left: 50%;
+    width: 140px;
+    height: 140px;
     background: conic-gradient(
-        from 0deg,
-        transparent 0deg,
-        transparent 150deg,
-        rgba(25, 118, 210, 0.4) 180deg, /* Işığın en parlak olduğu nokta */
-        transparent 210deg,
-        transparent 360deg
+        transparent 70%, 
+        rgba(139, 92, 246, 0.3) 100% /* Mor sayfa rengine uyumlu ışık */
     );
-    animation: slow-rotate 6s linear infinite; /* 6 saniye - Çok yavaş ve sakin */
-    z-index: -1;
+    animation: slow-spin 8s linear infinite;
+    transform: translate(-50%, -50%);
+    z-index: 0;
 }
 
-/* İçerideki beyaz doku (Işığın sadece border'da kalmasını sağlar) */
+/* İç beyaz alan */
 .expand-map-btn::after {
     content: '';
     position: absolute;
-    inset: 1px; /* Kenarlık kalınlığı */
-    background: #ffffff;
-    border-radius: 20px;
-    z-index: -1;
+    inset: 1px;
+    background: white;
+    border-radius: 11px;
+    z-index: 1;
+}
+
+/* İkon ve Metin */
+.expand-map-btn img, 
+.expand-map-btn span {
+    position: relative;
+    z-index: 2;
 }
 
 .expand-map-btn img {
-    width: 20px;
-    height: 20px;
-    opacity: 0.9;
+    width: 18px; /* Biraz küçültüldü ki daha "premium" dursun */
+    height: 18px;
 }
 
-/* Çok yavaş ve göz yormayan dönüş */
-@keyframes slow-rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+@keyframes slow-spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-/* Hover'da sadece çok hafif bir netleşme */
+/* Hover'da parıltıyı biraz belirginleştir */
 .expand-map-btn:hover {
-    border-color: rgba(25, 118, 210, 0.3);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border-color: #8b5cf6;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
 }.maplibregl-ctrl-bottom-right {
     display: none;
 }
