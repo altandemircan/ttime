@@ -7860,12 +7860,24 @@ scrollbar-width: thin;
 }
 
 
-.route-map.leaflet-container {
+/* 1. Harita kabuğunu ve içindeki TILE (zemin) katmanını tamamen etkisiz yap */
+.route-map.leaflet-container,
+.leaflet-tile-pane,
+.leaflet-map-pane {
     pointer-events: none !important;
-    touch-action: none !important;
+    touch-action: pan-y !important; /* Sayfa kaydırmasına izin ver */
 }
 
-/* Sadece üst bar ve expand butonunu tıkla-açık bırak */
+/* 2. SADECE üzerine tıklanacak objeleri (Marker ve Popup) geri canlandır */
+.leaflet-marker-pane,
+.leaflet-marker-icon,
+.leaflet-popup-pane,
+.leaflet-popup,
+.leaflet-overlay-pane path { /* Rota çizgisi için */
+    pointer-events: auto !important;
+}
+
+/* 3. Senin butonların ve barların her zaman tıklanabilir kalsın */
 .map-bar-header, 
 .expand-map-btn,
 .route-controls-bar {
