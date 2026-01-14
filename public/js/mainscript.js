@@ -3886,6 +3886,8 @@ function getPurpleRestaurantMarkerHtml(label) {
     `;
 }
 
+// Dosyanın sonuna veya createLeafletMapForItem fonksiyonunu bulduğunuz yere ekleyin:
+
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
@@ -3898,29 +3900,61 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
+    // ÖNEMLİ DÜZELTME: Leaflet referans sistemini düzelt
+    el.style.position = 'relative';
+    el.style.overflow = 'hidden';
+    
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
         scrollWheelZoom: false,
         zoomControl: true,
-        attributionControl: false
+        attributionControl: false,
+        // CRITICAL FIX: Render sorunlarını önlemek için
+        renderer: L.canvas(),
+        preferCanvas: true,
+        zoomSnap: 0,
+        zoomDelta: 0.5,
+        wheelPxPerZoomLevel: 120
     });
 
     // --- DEĞİŞİKLİK BURADA: OpenFreeMap Kullanımı ---
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
 
+    // ÖNEMLİ: Tüm tile layer'lar için CRS uyumluluğu
+    L.CRS.EPSG3857 = L.extend({}, L.CRS.EPSG3857, {
+        transformation: new L.Transformation(1, 0, -1, 0)
+    });
+
     if (typeof L.maplibreGL === 'function') {
         // MapLibreGL (Vektör) kullan
-        L.maplibreGL({
+        const glLayer = L.maplibreGL({
             style: openFreeMapStyle,
             attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
-            interactive: true
+            interactive: true,
+            // ÖNEMLİ: Render sorunlarını önle
+            preferCanvas: true
         }).addTo(map);
+        
+        // MapLibre layer'ı yüklendikten sonra düzeltme uygula
+        glLayer.on('ready', function() {
+            setTimeout(() => {
+                map.invalidateSize();
+                // Marker'ı yeniden konumlandır
+                if (marker) {
+                    marker.setLatLng([lat, lon]);
+                }
+            }, 100);
+        });
     } else {
-        // Eğer kütüphane yüklenmediyse OSM Fallback
+        // Eğer kütüphane yüklenmediyse OSM Fallback - CRS düzeltmeli
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors',
+            // CRS uyumluluğu için
+            tileSize: 256,
+            zoomOffset: 0,
+            noWrap: true
         }).addTo(map);
     }
     // ------------------------------------------------
@@ -3936,26 +3970,106 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         }
     }
 
-    // Marker
-    const icon = L.divIcon({
-        html: getPurpleRestaurantMarkerHtml(), // Bu fonksiyonun tanımlı olduğundan emin olun, yoksa standart icon kullanın
-        className: "",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+    // ÖNEMLİ: Marker oluşturmadan önce haritanın yüklenmesini bekle
+    let marker;
+    map.whenReady(function() {
+        // Marker
+        const icon = L.divIcon({
+            html: getPurpleRestaurantMarkerHtml(number || '1'),
+            className: "tt-fixed-marker",
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            // DÜZELTME: Marker'ın sabit kalması için
+            popupAnchor: [0, -16]
+        });
+        
+        marker = L.marker([lat, lon], { 
+            icon: icon,
+            // CRITICAL: Marker'ı pane'e ekle
+            pane: 'markerPane',
+            // Marker'ın interaktif olmasını sağla
+            interactive: true
+        }).addTo(map).bindPopup(name || '').openPopup();
+        
+        // Marker'ın doğru pane'de olduğundan emin ol
+        if (marker._icon) {
+            marker._icon.style.position = 'absolute';
+            marker._icon.style.zIndex = '1000';
+        }
     });
-    
-    // Eğer getPurpleRestaurantMarkerHtml yoksa fallback için basit bir HTML string:
-    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
-    const finalIcon = typeof getPurpleRestaurantMarkerHtml === 'function' ? icon : L.divIcon({ html: fallbackHtml, className: "", iconSize:[32,32], iconAnchor:[16,16] });
-
-    L.marker([lat, lon], { icon: finalIcon }).addTo(map).bindPopup(name || '').openPopup();
 
     map.zoomControl.setPosition('topright');
     window._leafletMaps[mapId] = map;
     
     // Harita boyutunu düzelt (render hatasını önler)
-    setTimeout(function() { map.invalidateSize(); }, 120);
+    setTimeout(function() { 
+        map.invalidateSize();
+        // View'ı tekrar ayarla
+        map.setView([lat, lon], 16);
+    }, 120);
+    
+    // Sürükleme sırasında marker'ın kaymasını önlemek için event handler
+    map.on('drag', function() {
+        if (marker) {
+            // Marker'ı sabit tut
+            marker.setLatLng([lat, lon]);
+        }
+    });
+    
+    map.on('move', function() {
+        if (marker) {
+            // Marker'ı sabit tut
+            marker.setLatLng([lat, lon]);
+        }
+    });
+    
+    return map;
 }
+
+// Ayrıca CSS düzeltmesi de gerekli, şu CSS'i ekleyin:
+(function addMarkerFixCSS() {
+    const styleId = 'tt-marker-fix-css';
+    if (document.getElementById(styleId)) return;
+    
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+        /* Marker kayması düzeltmesi */
+        .tt-fixed-marker {
+            pointer-events: auto !important;
+            transform-origin: center center !important;
+        }
+        
+        .leaflet-marker-icon {
+            transition: none !important;
+            will-change: transform !important;
+        }
+        
+        .leaflet-pane {
+            transform-style: preserve-3d;
+        }
+        
+        .leaflet-marker-pane {
+            z-index: 600 !important;
+        }
+        
+        /* Harita container düzeltmesi */
+        .leaflet-map {
+            position: relative !important;
+            overflow: hidden !important;
+        }
+        
+        .leaflet-container {
+            background: #eef0f5 !important;
+        }
+        
+        /* Sürükleme sırasında marker'ın sabit kalması */
+        .leaflet-dragging .leaflet-marker-icon {
+            transform: none !important;
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 async function getPlacesForCategory(city, category, limit = 5, radius = 3000, code = null) {
   const geoCategory = code || geoapifyCategoryMap[category] || placeCategories[category];
