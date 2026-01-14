@@ -5867,12 +5867,11 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ensureDayTravelModeSet(day, sidebarContainer, controlsWrapper);
 
     // 5. HARİTA BAŞLATMA
-    // 5. HARİTA BAŞLATMA - Güncellenmiş versiyon
     const map = L.map(containerId, {
-        scrollWheelZoom: false, // Kapalı ama dinleyici eklenecek
-        dragging: false,        // Kapalı ama dinleyici eklenecek
+        scrollWheelZoom: false, // Kapalı
+        dragging: false,        // Kapalı
         touchZoom: false,       // Kapalı
-        doubleClickZoom: false, // Kapalı ama dinleyici eklenecek
+        doubleClickZoom: false, // Kapalı
         boxZoom: false,         // Kapalı
         zoomControl: false,     // Butonları kaldır
         fadeAnimation: true,
@@ -5881,32 +5880,15 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         inertia: false,
         zoomSnap: 0,               
         zoomDelta: 0.1,
-        attributionControl: false,
-        
-        // Haritayı "pasif" göster ama tıklanabilir yap
-        interactive: true, // DOM olaylarını yakalamak için
-        bubblingMouseEvents: true
+        attributionControl: false // Alt logoyu gizle
     });
-
-    // Harita kontrollerini tamamen engelle
-    map.dragging.disable();
-    map.touchZoom.disable();
-    map.doubleClickZoom.disable();
-    map.scrollWheelZoom.disable();
-    map.boxZoom.disable();
-    map.keyboard.disable();
-    if (map.tap) map.tap.disable();
-
-    // Harita elementine özel CSS sınıfı ekle
-    const mapElement = document.getElementById(containerId);
-    mapElement.classList.add('disabled-map');
 
     // Mobilde harita üzerinden sayfanın kaymasını sağlar
 map.dragging.disable();
 if (map.tap) map.tap.disable(); // iOS ve bazı Android cihazlar için kritik
 
 // Harita katmanlarının dokunmatik olayları yakalamasını engelle
-const mapElementForBtn = document.getElementById(containerId);
+const mapElement = document.getElementById(containerId);
 mapElement.addEventListener('touchstart', (e) => {
     // Eğer tıklanan şey bir marker değilse, olayı yukarı (sayfaya) sal
     if (!e.target.closest('.leaflet-marker-icon')) {
@@ -6217,158 +6199,7 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
-    // --- HARİTA KURCALANINCA BUTONU SALLA (KESİN ÇÖZÜM) ---
-       // --- HARİTA KURCALANINCA BUTONU SALLA (GELİŞTİRİLMİŞ VERSİYON) ---
-const mapContainer = document.getElementById(containerId);
-const actionBtn = mapContainer?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
-                 || mapContainer?.parentElement?.querySelector('.expand-map-btn');
 
-if (map && actionBtn) {
-    // Buton sallama efektini tetikleyen fonksiyon
-    const shakeButton = () => {
-        actionBtn.classList.remove('is-shaking'); 
-        void actionBtn.offsetWidth; // Reflow tetikleme
-        actionBtn.classList.add('is-shaking');
-        setTimeout(() => actionBtn.classList.remove('is-shaking'), 300);
-    };
-    
-    // Tüm harita etkileşimlerini dinle
-    const addMapInteractionListeners = () => {
-        // 1. Tıklama (marker hariç)
-        map.on('mousedown touchstart', (e) => {
-            if (e.originalEvent && !e.originalEvent.target.closest('.leaflet-marker-icon')) {
-                shakeButton();
-            }
-        });
-        
-        // 2. Kaydırma (pan) denemesi
-        let isPanning = false;
-        let panStartPos = null;
-        
-        map.on('movestart', (e) => {
-            isPanning = true;
-            panStartPos = map.getCenter();
-            shakeButton();
-        });
-        
-        map.on('moveend', (e) => {
-            if (isPanning) {
-                const movedDistance = panStartPos && panStartPos.distanceTo(map.getCenter());
-                // Küçük hareketlerde de efekti göstermek için
-                if (movedDistance > 10) {
-                    shakeButton();
-                }
-                isPanning = false;
-                panStartPos = null;
-            }
-        });
-        
-        // 3. Zoom denemesi (fare tekerleği, çift tık, vb.)
-        let zoomAttemptCount = 0;
-        let zoomTimer = null;
-        
-        map.on('zoomanim', (e) => {
-            zoomAttemptCount++;
-            
-            // Zoom hızını kontrol et (çok hızlıysa butonu salla)
-            if (zoomAttemptCount > 1 && !zoomTimer) {
-                shakeButton();
-                zoomTimer = setTimeout(() => {
-                    zoomAttemptCount = 0;
-                    zoomTimer = null;
-                }, 500);
-            }
-        });
-        
-        // 4. Çift tıklama
-        map.on('dblclick', (e) => {
-            if (!e.originalEvent.target.closest('.leaflet-marker-icon')) {
-                shakeButton();
-            }
-        });
-        
-        // 5. Touch (mobil) pinch-to-zoom
-        let touchStartDistance = 0;
-        let touchStartTime = 0;
-        
-        map.on('touchstart', (e) => {
-            touchStartTime = Date.now();
-            if (e.originalEvent.touches.length === 2) {
-                const t1 = e.originalEvent.touches[0];
-                const t2 = e.originalEvent.touches[1];
-                touchStartDistance = Math.sqrt(
-                    Math.pow(t2.clientX - t1.clientX, 2) + 
-                    Math.pow(t2.clientY - t1.clientY, 2)
-                );
-            }
-        });
-        
-        map.on('touchmove', (e) => {
-            if (e.originalEvent.touches.length === 2 && touchStartDistance > 0) {
-                const t1 = e.originalEvent.touches[0];
-                const t2 = e.originalEvent.touches[1];
-                const currentDistance = Math.sqrt(
-                    Math.pow(t2.clientX - t1.clientX, 2) + 
-                    Math.pow(t2.clientY - t1.clientY, 2)
-                );
-                
-                // Pinch-to-zoom tespiti
-                if (Math.abs(currentDistance - touchStartDistance) > 20) {
-                    shakeButton();
-                    touchStartDistance = 0; // Tekrar tetiklememek için
-                }
-            }
-        });
-        
-        // 6. Klavye kontrolleri (opsiyonel)
-        document.addEventListener('keydown', (e) => {
-            const mapElement = document.getElementById(containerId);
-            if (mapElement && document.activeElement === mapElement) {
-                if (['+', '-', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                    shakeButton();
-                }
-            }
-        });
-    };
-    
-    // Dinleyicileri ekle
-    addMapInteractionListeners();
-    
-    // Harita açıldığında kullanıcıya ipucu ver
-    setTimeout(() => {
-        if (!localStorage.getItem(`mapHintShown_${containerId}`)) {
-            shakeButton();
-            // İlk açılışta araç ipucu göster
-            const tooltip = document.createElement('div');
-            tooltip.className = 'map-hint-tooltip';
-            tooltip.innerHTML = `
-                <span>Haritayı genişletmek için butona tıklayın</span>
-                <div class="tooltip-arrow"></div>
-            `;
-            tooltip.style.cssText = `
-                position: absolute;
-                background: #333;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                z-index: 1000;
-                white-space: nowrap;
-                top: ${actionBtn.offsetTop - 40}px;
-                left: ${actionBtn.offsetLeft}px;
-            `;
-            document.body.appendChild(tooltip);
-            
-            // 3 saniye sonra kaldır
-            setTimeout(() => {
-                if (tooltip.parentNode) {
-                    tooltip.parentNode.removeChild(tooltip);
-                }
-                localStorage.setItem(`mapHintShown_${containerId}`, 'true');
-            }, 3000);
-        }
-    }, 1000);
-}
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
