@@ -5858,22 +5858,23 @@ ease;
     display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;     font-weight: 400;"
 }
     
-/* Nabız Animasyonu (Arka planda yayılan halka) */
+/* Nabız Animasyonu */
 @keyframes expand-pulse {
     0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
     100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
 }
 
-/* Titreme Animasyonu (Haritaya dokunulunca) */
+/* Titreme Animasyonu */
 @keyframes expand-shake {
     0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.1) translateX(-3px); }
-    75% { transform: scale(1.1) translateX(3px); }
+    25% { transform: scale(1.05) translateX(-4px); }
+    75% { transform: scale(1.05) translateX(4px); }
 }
 
+/* Butonun Tam Hali */
 .expand-map-btn {
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
@@ -5884,10 +5885,10 @@ ease;
     font-weight: 600;
     cursor: pointer;
     border: 1px dashed #1976d2 !important;
-    /* Yeni eklenenler: */
     animation: expand-pulse 2s infinite;
     position: relative;
-    z-index: 999;
+    z-index: 9999 !important; /* Her şeyin üstünde */
+    pointer-events: auto !important;
 }
 
 .expand-map-btn img {
@@ -5895,11 +5896,21 @@ ease;
     height: 20px;  
 }
 
-/* Haritaya basıldığında tetiklenecek class */
+/* Sallanma Tetiklendiğinde */
 .expand-map-btn.is-shaking {
     animation: expand-shake 0.3s ease-in-out !important;
-    border-style: solid !important; /* Titrerken çizgi düzleşsin */
+    border-style: solid !important;
     background-color: #f0f7ff !important;
+}
+
+/* Harita ve Sayfa Kaydırma Ayarı */
+.route-map.leaflet-container {
+    touch-action: pan-y !important; /* Sayfa kaymasına izin ver */
+}
+
+/* Harita içindeki zemin katmanını tıkla-geç yap (sayfa kaysın diye) */
+.route-map .leaflet-tile-pane {
+    pointer-events: none !important;
 }
 
 .maplibregl-ctrl-bottom-right {
