@@ -6155,6 +6155,20 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
 
     window.leafletMaps[containerId] = map;
 
+    // Harita konteynerini ve butonu yakala
+const mapEl = document.getElementById(containerId);
+const btnEl = mapEl?.parentElement?.querySelector('.expand-map-btn');
+
+if (mapEl && btnEl) {
+    // Haritada bir yere dokunulursa (marker hariç) butonu salla
+    mapEl.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('.leaflet-marker-icon')) {
+            btnEl.classList.add('btn-vibrate');
+            setTimeout(() => btnEl.classList.remove('btn-vibrate'), 300);
+        }
+    }, { passive: true });
+}
+
     // --- GÜVENLİ ODAKLAMA ---
     const refitMap = () => {
         if (!map || !sidebarContainer) return;

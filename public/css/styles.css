@@ -5858,23 +5858,22 @@ ease;
     display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;     font-weight: 400;"
 }
     
-/* Nabız Animasyonu */
-@keyframes expand-pulse {
+/* Sabit Dururken: Mavi bir halka yayılır (Dikkat çekmek için) */
+@keyframes pulse-blue {
     0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
     100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
 }
 
-/* Titreme Animasyonu */
-@keyframes expand-shake {
+/* Haritaya Dokunulunca: Buton sağa sola titrer */
+@keyframes shake-me {
     0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.05) translateX(-4px); }
-    75% { transform: scale(1.05) translateX(4px); }
+    25% { transform: scale(1.1) translateX(-4px); }
+    75% { transform: scale(1.1) translateX(4px); }
 }
 
-/* Butonun Tam Hali */
 .expand-map-btn {
-    display: flex !important;
+    display: flex;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
@@ -5885,32 +5884,15 @@ ease;
     font-weight: 600;
     cursor: pointer;
     border: 1px dashed #1976d2 !important;
-    animation: expand-pulse 2s infinite;
-    position: relative;
-    z-index: 9999 !important; /* Her şeyin üstünde */
-    pointer-events: auto !important;
+    /* Animasyon eklemesi */
+    animation: pulse-blue 2s infinite;
+    z-index: 1001;
 }
 
-.expand-map-btn img {
-    width: 20px;
-    height: 20px;  
-}
-
-/* Sallanma Tetiklendiğinde */
-.expand-map-btn.is-shaking {
-    animation: expand-shake 0.3s ease-in-out !important;
-    border-style: solid !important;
-    background-color: #f0f7ff !important;
-}
-
-/* Harita ve Sayfa Kaydırma Ayarı */
-.route-map.leaflet-container {
-    touch-action: pan-y !important; /* Sayfa kaymasına izin ver */
-}
-
-/* Harita içindeki zemin katmanını tıkla-geç yap (sayfa kaysın diye) */
-.route-map .leaflet-tile-pane {
-    pointer-events: none !important;
+/* JS ile eklenecek titreme sınıfı */
+.btn-vibrate {
+    animation: shake-me 0.3s ease-in-out !important;
+    background-color: #e3f2fd !important;
 }
 
 .maplibregl-ctrl-bottom-right {
