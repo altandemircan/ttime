@@ -4099,7 +4099,7 @@ const icon = L.divIcon({
     // Popup ekle - tıklanmış gibi açık dursun
 marker.bindPopup(`<b>${name || 'Point'}</b>`, {
     closeButton: false,
-    offset: [0, -16] // X:0 (Yatayda tam orta), Y:-16 (İkonun tam tepesi)
+    offset: [-2, -16] // X:0 (Yatayda tam orta), Y:-16 (İkonun tam tepesi)
 }).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
