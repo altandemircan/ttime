@@ -4048,7 +4048,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     }
 
     // ESKİ MARKER KODU - TAMAMEN AYNI
-    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
+    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(1);"><span class="custom-marker-label">${number}</span></div>`;
     const finalIcon = L.divIcon({ 
         html: fallbackHtml, 
         className: "", 
