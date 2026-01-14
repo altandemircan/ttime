@@ -2,7 +2,10 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
- function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
+
+
+
+function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
     const duraStr = (typeof durationSeconds === 'number')
@@ -14,7 +17,7 @@ window.__scaleBarDragSelDiv = null;
     return { distStr, duraStr, ascStr, descStr };
   }
 
-  function buildBadgesHTML(strings) {
+function buildBadgesHTML(strings) {
     const parts = [];
     if (strings.distStr) {
       parts.push(`
@@ -50,6 +53,8 @@ window.__scaleBarDragSelDiv = null;
     }
     return parts.join(' ');
   }
+
+
 
 
         // Nice tick helpers
@@ -2021,6 +2026,25 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
 
   window.__tt_scaleBarLoaderReady = true;
 })();
+
+(function ensureElev429Planner(){
+  if (window.__tt_elev429PlannerReady) return;
+  window.planElevationRetry = function(container, routeKey, waitMs, retryFn){
+    if (!container) return;
+    const now = Date.now(), until = now + Math.max(2000, waitMs|0);
+    if (container.__elevRetryTimer){ clearTimeout(container.__elevRetryTimer); container.__elevRetryTimer=null; }
+    const tick = ()=> {
+      const left = Math.max(0, Math.ceil((until - Date.now())/1000));
+      updateScaleBarLoadingText(container, left>0 ? `Waiting ${left}s due to rate limit…` : `Retrying…`);
+      if (left>0){ container.__elevRetryTicker = setTimeout(tick, 1000); }
+    };
+    if (container.__elevRetryTicker){ clearTimeout(container.__elevRetryTicker); }
+    tick();
+    container.__elevRetryTimer = setTimeout(()=>{ container.__elevRetryTimer=null; if (container.__elevRetryTicker) clearTimeout(container.__elevRetryTicker); retryFn && retryFn(); }, until-now);
+  };
+  window.__tt_elev429PlannerReady = true;
+})();
+
 
 (function ensureElevationMux(){
   // Global değişkenler ve Rate Limit koruması burada kalmalı

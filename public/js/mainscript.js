@@ -1,5 +1,16 @@
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
+window.__welcomeHiddenForever = false;
+window.__restaurantLayers = window.__restaurantLayers || [];
+window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
+window.mapPlanningDay = null;
+window.mapPlanningActive = false;
+window.mapPlanningMarkersByDay = {};
+window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+window.cart = JSON.parse(localStorage.getItem('cart')) || [];
+window.__locationPickedFromSuggestions = false;
+window.selectedLocationLocked = false;
+
 
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Dünya yarıçapı metre cinsinden
@@ -12,6 +23,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
 }
+
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
         f.name === item.name &&
@@ -27,15 +39,6 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
 }
-
-
-window.__welcomeHiddenForever = false;
-window.__restaurantLayers = window.__restaurantLayers || [];
-
-window.__hideAddCatBtnByDay = window.__hideAddCatBtnByDay || {};
-// === SCALE BAR DRAG GLOBAL HANDLERLARI ===
-
-// local_storage.js'in en üstüne ekle:
 
 function getDisplayName(place) {
   // Latin/İngilizce ad döndür
@@ -89,8 +92,6 @@ function disableSendButton() {
       btn.classList.add("disabled");
     }
 
-
-
 function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
@@ -110,26 +111,7 @@ function fitExpandedMapToRoute(day) {
 }
 
 
-
-        // Aktif harita planlama modu için
-window.mapPlanningDay = null;
-window.mapPlanningActive = false;
-window.mapPlanningMarkersByDay = {};
-window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-
-
-
-window.cart = JSON.parse(localStorage.getItem('cart')) || [];
-
-
-
-// --- PLAN SEÇİM ZORUNLULUĞU FLAGS ---
-window.__locationPickedFromSuggestions = false;
-window.selectedLocationLocked = false;
-
 let selectedCity = "";
-
-// (REMOVED) showCitySuggestions + countryPopularCities usage
 
 document.addEventListener('click', function(event) {
   const arrowElement = event.target.closest('.arrow');
@@ -258,8 +240,6 @@ async function geoapifyLocationAutocomplete(query) {
     return sortLocations(features);
 }
  
-
-
 
 function extractLocationQuery(input) {
     if (!input) return "";
@@ -496,8 +476,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
     }
 }
-// --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
-
 
 // Sayfa yüklendiğinde listener'ı ekle
 document.addEventListener("DOMContentLoaded", function() {
@@ -877,7 +855,7 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
     console.log(`[DailyLimit] New count: ${usage.count}`);
     return true;
 }
-// === handleAnswer Fonksiyonunun GÜVENLİ HALİ ===
+
 async function handleAnswer(answer) {
   // Çift tıklama önlemi
   if (window.isProcessing) return;
@@ -1688,10 +1666,6 @@ function toggleAccordion(accordionHeader) {
     }
 }
 
-
-
-
-// mainscript.js dosyasında window.showSuggestionsInChat fonksiyonunu tamamen değiştirin:
 
 window.showSuggestionsInChat = async function(category, day = 1, code = null, radiusKm = 3, limit = 5) {
     // --- YARDIMCI FONKSİYON: Objenin içinden koordinat söküp al ---
@@ -4883,9 +4857,6 @@ async function updateCart() {
             }
         }
     })();
-    // ============================================================
-
-    // ===================================
 
     // EN SON: (Keep your existing trailing code)
     if (window.latestAiInfoHtml && !document.querySelector('.ai-trip-info-box')) {
@@ -5809,8 +5780,6 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
         }
     });
 }
-// -----------------------------------------------
-            // -----------------------------------------------
 
         } else {
             const fallbackCoords = points.map(p => [p.lat, p.lng]);
@@ -9546,27 +9515,6 @@ window.__sb_onMouseUp = function() {
 };
 
 
-
-(function ensureElev429Planner(){
-  if (window.__tt_elev429PlannerReady) return;
-  window.planElevationRetry = function(container, routeKey, waitMs, retryFn){
-    if (!container) return;
-    const now = Date.now(), until = now + Math.max(2000, waitMs|0);
-    if (container.__elevRetryTimer){ clearTimeout(container.__elevRetryTimer); container.__elevRetryTimer=null; }
-    const tick = ()=> {
-      const left = Math.max(0, Math.ceil((until - Date.now())/1000));
-      updateScaleBarLoadingText(container, left>0 ? `Waiting ${left}s due to rate limit…` : `Retrying…`);
-      if (left>0){ container.__elevRetryTicker = setTimeout(tick, 1000); }
-    };
-    if (container.__elevRetryTicker){ clearTimeout(container.__elevRetryTicker); }
-    tick();
-    container.__elevRetryTimer = setTimeout(()=>{ container.__elevRetryTimer=null; if (container.__elevRetryTicker) clearTimeout(container.__elevRetryTicker); retryFn && retryFn(); }, until-now);
-  };
-  window.__tt_elev429PlannerReady = true;
-})();
-
-
-
 (function(){
   if (!document.getElementById('suggestions-hidden-style')) {
     const st = document.createElement('style');
@@ -9575,8 +9523,6 @@ window.__sb_onMouseUp = function() {
     document.head.appendChild(st);
   }
 })();
-
-
 
 
 
