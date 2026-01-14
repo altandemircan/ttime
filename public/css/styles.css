@@ -5858,18 +5858,20 @@ ease;
     display: none; position: absolute; top: 100%; right: 0; width: 220px; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; font-size: 11px; line-height: 1.4; text-align: left; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; pointer-events: none;     font-weight: 400;"
 }
    /* 1. Animasyon aynı kalıyor */
+/* 1. Sarsıntı Animasyonu (Orijinal Boyutu Bozmaz) */
+/* 1. Sarsıntı Animasyonu */
 @keyframes expand-shake {
     0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.1) translateX(-4px); }
-    75% { transform: scale(1.1) translateX(4px); }
+    25% { transform: scale(1.05) translateX(-4px); }
+    75% { transform: scale(1.05) translateX(4px); }
 }
 
-/* 2. SADECE sarsıntı efekti (Renk ve çizgi değişikliğini sildim) */
+/* 2. Sadece JS ile tetiklenen sarsıntı sınıfı (RENGİNE/ÇİZGİSİNE DOKUNMAZ) */
 .expand-map-btn.is-shaking {
     animation: expand-shake 0.3s ease-in-out !important;
 }
 
-/* 3. Butonun normal hali (Senin orijinal kodun) */
+/* 3. Butonun Senin İstediğin Orijinal Dev Görünümü */
 .expand-map-btn {
     display: flex;
     align-items: center;
@@ -5881,7 +5883,13 @@ ease;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border: 1px dashed #1976d2 !important;
+    border: 1px dashed #1976d2 !important; /* Kesikli mavi çizgi kalıyor */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+}
+
+.expand-map-btn img {
+    width: 20px;
+    height: 20px;  
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
