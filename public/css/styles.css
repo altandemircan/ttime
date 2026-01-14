@@ -7867,10 +7867,3 @@ scrollbar-width: thin;
     cursor: default !important;
 }
 
-/* Harita üzerindeki butonlar ve header tıklanabilir kalsın */
-.map-bar-header, 
-.expand-map-btn,
-.route-controls-bar {
-    pointer-events: auto !important;
-    cursor: pointer !important;
-}
