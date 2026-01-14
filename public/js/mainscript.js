@@ -4078,18 +4078,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // ------------------------------------------------
 
     // MARKER EKLE - ESKİ BOYUTLARDA (24px)
-    const markerHtml = `
-        <div class="custom-marker-outer" style="background-color: #d32f2f; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-            ${number || '1'}
-        </div>
-    `;
-    
-    const icon = L.divIcon({
-        html: markerHtml,
-        className: "tt-static-marker",
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-    });
+    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
+
+const icon = L.divIcon({ 
+    html: fallbackHtml, 
+    className: "", 
+    iconSize: [32, 32], 
+    iconAnchor: [16, 16] 
+});
     
     // Marker ekle - interaktif OLSUN ki popup açılabilsin
     const marker = L.marker([lat, lon], { 
