@@ -2,6 +2,17 @@ window.__scaleBarDrag = null;
 window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
+// Sayı formatlama yardımcıları - HER YERDEN ERİŞİLEBİLİR OLMALI
+function fmt(num) {
+    if (num === undefined || num === null) return "0";
+    return num.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+}
+
+function fmtM(m) {
+    if (m === undefined || m === null) return "0";
+    return Math.round(m).toLocaleString('tr-TR');
+}
+
         // Nice tick helpers
 function niceStep(total, target) {
   const raw = total / Math.max(1, target);
