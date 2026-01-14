@@ -4078,7 +4078,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // ------------------------------------------------
 
     // MARKER EKLE - ESKİ BOYUTLARDA (24px)
-    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(0.7);"><span class="custom-marker-label">${number}</span></div>`;
+    const fallbackHtml = `<div class="custom-marker-outer red" style="transform: scale(1);"><span class="custom-marker-label">${number}</span></div>`;
 
 const icon = L.divIcon({ 
     html: fallbackHtml, 
@@ -4100,12 +4100,22 @@ const icon = L.divIcon({
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
     setTimeout(function() { 
-        map.invalidateSize();
-        map.setView([lat, lon], 15);
-        
-        // Popup'ı tekrar aç (güvence için)
-        marker.openPopup();
-    }, 150);
+    map.invalidateSize();
+    
+    // MARKER'I ORTALA
+    map.setView([lat, lon], 15, {
+        animate: false // Animasyon yok
+    });
+    
+    // Popup'ı aç (zaten açık ama güvence için)
+    marker.openPopup();
+    
+    // EKSTRA: Popup'ı da ortalamak için
+    if (marker._popup) {
+        marker._popup._updateLayout();
+        marker._popup._adjustPan();
+    }
+}, 150);
     
     // Popup'ın otomatik kapanmasını engelle
     marker.on('popupclose', function() {
