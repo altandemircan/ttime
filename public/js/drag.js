@@ -160,6 +160,97 @@ const MAX_SCROLL_SPEED = 28;
 
 let lastClientX = 0, lastClientY = 0;
 
+
+
+
+
+function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = {}) {
+    const el = marker.getElement();
+    if (!el) {
+        marker.once('add', () => attachLongPressDrag(marker, map, { delay, moveThreshold }));
+        return;
+    }
+
+    if (marker.dragging && marker.dragging.enabled()) {
+        marker.dragging.disable();
+    }
+
+    let timer = null;
+    let pressed = false;
+    let armed = false;             // long press süresi doldu
+    let handedToLeaflet = false;   // kontrol Leaflet drag’e devredildi
+    let startX = 0, startY = 0;
+
+    const clearAll = () => {
+        if (timer) clearTimeout(timer);
+        timer = null;
+        pressed = false;
+        armed = false;
+        if (!pressed) return;
+
+        const isTouch = e.type.startsWith('touch');
+        const pt = isTouch ? (e.touches[0] || e.changedTouches?.[0]) : e;
+        if (!pt) return;
+
+        const dx = Math.abs(pt.clientX - startX);
+        const dy = Math.abs(pt.clientY - startY);
+
+        if (!armed) {
+            if (dx > moveThreshold || dy > moveThreshold) {
+                if (timer) clearTimeout(timer);
+                timer = null;
+                pressed = false;
+                armed = false;
+                handedToLeaflet = false;
+            }
+            return;
+        }
+
+        if (armed && !handedToLeaflet) {
+            handedToLeaflet = true;
+            // Marker drag aktif: harita long-press’i bu süre boyunca devreye girmesin
+            window.__tt_markerDragActive = true;
+            try {
+                if (marker.dragging) marker.dragging.enable();
+                if (marker.dragging && marker.dragging._draggable && typeof marker.dragging._draggable._onDown === 'function') {
+                    marker.dragging._draggable._onDown(e);
+                }
+            } catch (err) {}
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+
+    const onUp = () => {
+        clearAll();
+    };
+
+    el.addEventListener('touchstart', onDown, { passive: true });
+    el.addEventListener('mousedown', onDown);
+
+    el.addEventListener('touchmove', maybeStartDrag, { passive: false });
+    el.addEventListener('mousemove', maybeStartDrag);
+
+    el.addEventListener('touchend', onUp);
+    el.addEventListener('mouseup', onUp);
+    el.addEventListener('mouseleave', onUp);
+    el.addEventListener('touchcancel', onUp);
+
+    marker.on('dragend', () => {
+        if (marker.dragging) marker.dragging.disable();
+        clearAll();
+    });
+}
+
+function disableAllMarkerDragging(expandedMap) {
+    expandedMap.eachLayer(layer => {
+        if (layer instanceof L.Marker && layer.dragging && layer.dragging.enabled && layer.dragging.enabled()) {
+            layer.dragging.disable();
+        }
+    });
+}
+
+
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
     injectDragStyles();
