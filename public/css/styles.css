@@ -5906,6 +5906,63 @@ ease;
     color: #00000080 !important;
 }
 
+.leaflet-attribution-flag {
+    display: none !important;
+}
+.leaflet-popup-pane {
+    z-index: 700;
+
+    margin-top: 4px;
+}
+
+/* Üstteki 1 sn'lik "hint" popup stili (X butonu yok) */
+.leaflet-popup.drag-hint-popup {
+  pointer-events: none;                /* tıklamaları engellemesin */
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-content-wrapper {
+  background: #111;                    /* koyu balon */
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  padding: 6px 8px;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-tip {
+  display: none;                       /* ok ucu görünmesin, tooltip gibi dursun */
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-content {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-close-button {
+  display: none !important;            /* X tamamen yok */
+}
+.leaflet-popup-content {
+        font-weight: bold;
+    text-align: center;
+}
+
+/* Hint tooltip (top) — NO close icon, just a small dark bubble, auto hides */
+.leaflet-popup.drag-hint-popup {
+  pointer-events: none;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-content-wrapper {
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  padding: 6px 8px;
+}
+.leaflet-popup.drag-hint-popup .leaflet-popup-tip { display:none; }
+.leaflet-popup.drag-hint-popup .leaflet-popup-close-button { display:none !important; }
+.leaflet-popup.drag-hint-popup .leaflet-popup-content {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 /* Name bubble: appear-disappear animation (bottom one over marker) */
 .custom-marker-place-name.name-bubble-animate {
   animation: nameBubbleInOut 1s ease both;
