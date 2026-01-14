@@ -6199,26 +6199,25 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
-// --- TİTREME EFEKTİ GÜNCELLEMESİ ---
-   // --- HARİTAYI KURCALAYINCA BUTONU SALLA ---
-    const targetMapElement = document.getElementById(containerId);
-    const targetBtn = targetMapElement?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
-                      || targetMapElement?.parentElement?.querySelector('.expand-map-btn');
+const mapContainer = document.getElementById(containerId);
+    // Butonu en güvenli şekilde bul (ister kardeş ister üst kapsayıcıda olsun)
+    const actionBtn = mapContainer?.closest('.map-container, .card, .sidebar-section')?.querySelector('.expand-map-btn') 
+                     || mapContainer?.parentElement?.querySelector('.expand-map-btn');
 
-    if (targetMapElement && targetBtn) {
-        const triggerShake = (e) => {
-            // Sadece haritanın boş yerine dokunulursa salla (marker ve popup hariç)
+    if (mapContainer && actionBtn) {
+        const triggerEffect = (e) => {
+            // Eğer tıklanan şey marker veya popup değilse efekti ver
             if (!e.target.closest('.leaflet-marker-icon') && !e.target.closest('.leaflet-popup')) {
-                targetBtn.classList.remove('is-shaking'); 
-                void targetBtn.offsetWidth; // CSS animasyonunu tetiklemek için şart
-                targetBtn.classList.add('is-shaking');
-                setTimeout(() => targetBtn.classList.remove('is-shaking'), 300);
+                actionBtn.classList.remove('is-shaking'); 
+                void actionBtn.offsetWidth; // Animasyonu baştan başlatmak için şart
+                actionBtn.classList.add('is-shaking');
+                setTimeout(() => actionBtn.classList.remove('is-shaking'), 300);
             }
         };
 
-        // Haritayı kurcalama (dokunma veya tıklama) anında çalışır
-        targetMapElement.addEventListener('touchstart', triggerShake, { passive: true });
-        targetMapElement.addEventListener('mousedown', triggerShake, { passive: true });
+        // Haritayı kurcalama anlarını yakala
+        mapContainer.addEventListener('touchstart', triggerEffect, { passive: true });
+        mapContainer.addEventListener('mousedown', triggerEffect, { passive: true });
     }
 }
 // Harita durumlarını yönetmek için global değişken
