@@ -4107,7 +4107,7 @@ marker.bindPopup(`<b>${name || 'Point'}</b>`, {
     map.invalidateSize();
     
     // MARKER'I ORTALA
-    map.setView([lat, lon], 26, {
+    map.setView([lat, lon], 16, {
         animate: false // Animasyon yok
     });
     
