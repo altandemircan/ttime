@@ -7862,7 +7862,12 @@ scrollbar-width: thin;
 
 .route-map.leaflet-container {
     pointer-events: none !important;
+    touch-action: none !important;
 }
-.map-bar-header, .expand-map-btn {
+
+/* Sadece üst bar ve expand butonunu tıkla-açık bırak */
+.map-bar-header, 
+.expand-map-btn,
+.route-controls-bar {
     pointer-events: auto !important;
 }
