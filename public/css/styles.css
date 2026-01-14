@@ -5863,41 +5863,35 @@ ease;
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px); /* Arkadaki haritayı hafifçe bulanıklaştırır */
-    color: #475569; /* Modern koyu gri/füme metin */
+    background: #ffffff;
+    color: #5b21b6; /* Sayfadaki ikon/buton moru */
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
-    border-radius: 8px; /* Harita hatlarına uygun köşe */
     border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Yumuşak gölge */
-    position: relative;
-    overflow: hidden;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); /* Başlangıçta gölge yok */
+    animation: pulse-shadow 3s infinite;
+    transition: all 0.3s ease;
 }
 
-/* Border yerine: Butonun altından geçen çok belli belirsiz ışık */
-.expand-map-btn::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(139, 92, 246, 0.1), /* Sayfadaki mor tondan hafif bir esinti */
-        transparent
-    );
-    transition: none;
-    animation: shine-sweep 4s infinite;
+@keyframes pulse-shadow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    }
 }
 
-@keyframes shine-sweep {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}.maplibregl-ctrl-bottom-right {
+.expand-map-btn:hover {
+    background: #f5f3ff; /* Çok hafif morumsu beyaz */
+    transform: translateY(-1px);
+}
+.maplibregl-ctrl-bottom-right {
     display: none;
 }
 .route-controls-bar .leaflet-touch .leaflet-control-attribution {
