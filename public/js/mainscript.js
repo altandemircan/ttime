@@ -4079,7 +4079,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 
     // MARKER EKLE - ESKİ BOYUTLARDA (24px)
     const fallbackHtml = `
-  <div class="custom-marker-outer red" style="transform: scale(1); display:flex; align-items:center; justify-content:center;">
+  <div class="custom-marker-outer red" style="transform: scale(1); margin-left:8px; display:flex; align-items:center; justify-content:center;">
     <span class="custom-marker-label">${number}</span>
   </div>
 `;
