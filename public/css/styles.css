@@ -5905,9 +5905,7 @@ ease;
     }
 }
 
-.expand-map-btn:hover {
-    background: #fcfdfe;
-}
+
 .maplibregl-ctrl-bottom-right {
     display: none;
 }
