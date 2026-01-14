@@ -5859,39 +5859,42 @@ ease;
 }
     
 .expand-map-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 4px 12px;
     background: #ffffff;
-    color: #475569; /* Şık bir füme, sırıtmıyor */
-    font-size: 13px; /* Dokunulmadı */
+    color: #475569; /* Nötr ve profesyonel bir gri */
+    font-size: 13px; /* Sabit */
     font-weight: 600;
     cursor: pointer;
-    border-radius: 10px; /* Harita kutusuyla daha uyumlu köşe */
+    border-radius: 8px; /* Harita kartının köşeleriyle birebir aynı */
     border: none;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); /* Hafif derinlik */
-    transition: all 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    /* Renk geçişi animasyonu */
+    animation: background-phase 5s ease-in-out infinite;
+    transition: all 0.2s ease;
 }
 
 .expand-map-btn img {
-    width: 20px; /* Dokunulmadı */
-    height: 20px; /* Dokunulmadı */
-    /* İkon çok hafif bir nabız atışı yapacak */
-    animation: icon-pulse 3s ease-in-out infinite;
+    width: 20px; /* Sabit */
+    height: 20px; /* Sabit */
+    display: block;
 }
 
-@keyframes icon-pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.15); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
+/* Animasyon: Sadece arka plan renginin çok hafif değişimi */
+@keyframes background-phase {
+    0% { background: #ffffff; }
+    50% { background: #f5f3ff; } /* Sayfadaki mor tonunun en açık hali */
+    100% { background: #ffffff; }
 }
 
-/* Hover: Üzerine gelince buton sadece çok hafif bir mor tona döner */
+/* Hover: Üzerine gelince netleşme */
 .expand-map-btn:hover {
-    background: #fdfcff;
-    color: #8b5cf6; /* Sayfadaki mor tonu */
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1);
+    color: #8b5cf6; /* Sayfa rengi olan mor */
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
