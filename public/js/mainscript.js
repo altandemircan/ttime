@@ -1,4 +1,3 @@
-// === PAYLAŞILAN GEZİ YÜKLEME ===
 // mainscript.js'deki kodu GÜNCELLEYİN (sadece bu kalacak):
 (function loadSharedTripOnStart() {
     try {

@@ -1,46 +1,5 @@
-// Gezi planını base64 linkine çevir
-async function createShortTripLink() {
-    const tripData = {
-        cart: window.cart,
-        customDayNames: window.customDayNames || {},
-        tripDates: window.tripDates || {},
-        version: "1.0"
-    };
-    
-    const jsonStr = JSON.stringify(tripData);
-    const base64 = btoa(encodeURIComponent(jsonStr));
-    
-    // Backend'de kısa URL oluştur (örnek)
-    try {
-        const response = await fetch('https://api.triptime.ai/shorten', {
-            method: 'POST',
-            body: JSON.stringify({ data: base64 }),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const result = await response.json();
-        return result.shortUrl; // "triptime.ai/t/abc123"
-    } catch(e) {
-        // Fallback: normal uzun link
-        return `${window.location.origin}/?shared=${base64}`;
-    }
-}
-
-
-// --- Paylaşım Metni Oluşturucu ---
 // --- Paylaşım Metni Oluşturucu ---
 function generateShareableText() {
-    // Base64 link oluştur
-    const tripData = {
-        cart: window.cart,
-        customDayNames: window.customDayNames || {},
-        tripDates: window.tripDates || {},
-        version: "1.0"
-    };
-    
-    const jsonStr = JSON.stringify(tripData);
-    const base64 = btoa(encodeURIComponent(jsonStr));
-    const shareLink = `${window.location.origin}/?sharedTrip=${base64}`;
-    
     let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     const dateOptions = { day: 'numeric', month: 'long' };
@@ -68,11 +27,36 @@ function generateShareableText() {
         }
     }
 
-     const shortLink = createShortTripLink();
+    // KISA LINK OLUŞTUR
+    const shortLink = createShortTripLink();
     shareText += `\n\nView full plan: ${shortLink}`;
+    shareText += "\n\nThis plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
     
     return shareText;
 }
+
+// KISA LINK OLUŞTUR (TEK BIR FONKSIYON)
+function createShortTripLink() {
+    // Sadeleştirilmiş veri
+    const minimalData = {
+        i: window.cart.map(item => ({
+            n: item.name,        // name
+            c: item.category,    // category
+            d: item.day,         // day
+            la: item.lat,        // lat
+            lo: item.lon         // lon
+        })),
+        dn: window.customDayNames || {},
+        td: window.tripDates || {}
+    };
+    
+    const jsonStr = JSON.stringify(minimalData);
+    const base64 = btoa(encodeURIComponent(jsonStr));
+    
+    // Parametreyi kısalt
+    return `${window.location.origin}/?t=${base64}`;
+}
+
 // WhatsApp share
 function shareOnWhatsApp() {
     const textToShare = generateShareableText();
