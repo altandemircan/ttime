@@ -1,6 +1,11 @@
 function showTripDesign(tripData) {
-    const chatScreen = document.getElementById("chat-screen");
-    if (!chatScreen) return;
+    console.log("tripData geldi mi?", tripData);
+    console.log("tripData.cart:", tripData?.cart);
+    
+    if (!tripData || !tripData.cart) {
+        console.error("tripData boş!");
+        return;
+    }
     
     // Basit CSS
     const style = document.createElement('style');
@@ -102,36 +107,19 @@ function showTripDesign(tripData) {
     `;
     
     window.useThisTrip = function() {
-    window.cart = tripData.cart;
-    localStorage.setItem('cart', JSON.stringify(window.cart));
-    
-    // Chat ekranını temizle
-    const chatScreen = document.getElementById("chat-screen");
-    if (chatScreen) chatScreen.innerHTML = '';
-    
-    // showTripDetails'i MANUEL ÇAĞIR
-    if (typeof showTripDetails === 'function') {
-        showTripDetails();
+        console.log("Butona tıklandı!");
+        console.log("tripData.cart:", tripData.cart);
         
-        // Slider'ları da manuel oluştur
-        setTimeout(() => {
-            if (typeof Splide !== 'undefined') {
-                document.querySelectorAll('.splide').forEach(el => {
-                    if (!el._splideInstance) {
-                        new Splide(el, {
-                            perPage: 5,
-                            gap: '18px',
-                            arrows: true,
-                            pagination: false,
-                            drag: true
-                        }).mount();
-                    }
-                });
-            }
-        }, 500);
-    } else {
-        // Fonksiyon yoksa sayfayı yenile
-        window.location.reload();
-    }
-};
+        window.cart = tripData.cart;
+        console.log("window.cart atandı:", window.cart);
+        
+        localStorage.setItem('cart', JSON.stringify(window.cart));
+        console.log("localStorage'a kaydedildi");
+        
+        // TEST: Hemen göster
+        if (typeof showTripDetails === 'function') {
+            console.log("showTripDetails çağrılıyor...");
+            showTripDetails();
+        }
+    };
 }
