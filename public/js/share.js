@@ -37,16 +37,11 @@ async function shareOnWhatsApp() {
     const textToShare = generateShareableText();
     const includePdfCheck = document.getElementById('includePdfCheck');
 
+    // Eğer PDF seçiliyse ve tarayıcı destekliyorsa
     if (includePdfCheck && includePdfCheck.checked && navigator.canShare) {
-        // Mevcut pdf_download.js içindeki doc objesini alıyoruz
-        // NOT: pdf_download.js içindeki fonksiyonun doc.save() yapmak yerine 
-        // blob döndüren bir versiyonu olduğunu veya doc'u globalden alabildiğini varsayıyoruz.
         try {
-            // Eğer pdf_download.js'deki fonksiyonu direkt kullanıyorsan:
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF(); 
-            // ... (Burada pdf_download içindeki çizim kodlarını çağırabilirsin) ...
-            
+            // Mevcut PDF oluşturma fonksiyonunu çağırıyoruz
+            const doc = downloadTripPlanPDF(); 
             const pdfBlob = doc.output('blob');
             const pdfFile = new File([pdfBlob], "TripPlan.pdf", { type: "application/pdf" });
 
@@ -54,16 +49,19 @@ async function shareOnWhatsApp() {
                 await navigator.share({
                     files: [pdfFile],
                     text: textToShare,
-                    title: 'My Trip Plan'
+                    title: 'Trip Plan'
                 });
-                return;
+                return; 
             }
-        } catch (e) { console.error("PDF share error:", e); }
+        } catch (err) { console.error("PDF share failed:", err); }
     }
 
-    // PDF istenmiyorsa veya hata varsa standart WhatsApp linki
+    // PDF seçili değilse veya hata olursa eski metin yöntemi
     const encodedText = encodeURIComponent(textToShare);
-    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+    const whatsappUrl = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) 
+        ? `whatsapp://send?text=${encodedText}` 
+        : `https://web.whatsapp.com/send?text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
 }
 
 // Instagram - Copy to clipboard
