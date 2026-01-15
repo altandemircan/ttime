@@ -1,15 +1,40 @@
 (function loadSharedTripOnStart() {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedTrip = urlParams.get('t');
-        
-        if (sharedTrip && !urlParams.has('loadedFromShare')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedTrip = urlParams.get('t');
+    
+    if (sharedTrip && !urlParams.has('loadedFromShare')) {
+        try {
             const jsonStr = decodeURIComponent(sharedTrip);
             const tripData = JSON.parse(jsonStr);
-            // ... kalan kod
+            
+            if (tripData.i) {
+                window.cart = tripData.i.map(item => ({
+                    name: item.n,
+                    category: item.c,
+                    day: item.d,
+                    lat: item.la,
+                    lon: item.lo,
+                    address: '',
+                    website: '',
+                    opening_hours: '',
+                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                }));
+                window.customDayNames = tripData.dn || {};
+                window.tripDates = tripData.td || {};
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+            
+            if (typeof showSharedTripPage === 'function') {
+                showSharedTripPage({
+                    cart: window.cart,
+                    customDayNames: window.customDayNames,
+                    tripDates: window.tripDates
+                });
+            }
+        } catch(e) {
+            console.error("Paylaşım hatası:", e);
         }
-    } catch(e) {
-        console.error("Failed to load shared trip:", e);
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===

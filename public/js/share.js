@@ -1,4 +1,22 @@
-// --- Paylaşım Metni Oluşturucu ---
+function createShortTripLink() {
+    const cleanCart = window.cart.map(item => ({
+        n: (item.name || '').replace(/"/g, "'").replace(/\n/g, ' '),
+        c: (item.category || '').replace(/"/g, "'"),
+        d: item.day || 1,
+        la: item.lat || 0,
+        lo: item.lon || 0
+    }));
+    
+    const minimalData = {
+        i: cleanCart,
+        dn: window.customDayNames || {},
+        td: window.tripDates || {}
+    };
+    
+    const jsonStr = JSON.stringify(minimalData);
+    return `${window.location.origin}/?t=${encodeURIComponent(jsonStr)}`;
+}
+
 function generateShareableText() {
     let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
@@ -7,7 +25,6 @@ function generateShareableText() {
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
-            if (typeof window.customDayNames === 'undefined') window.customDayNames = {};
             const dayName = window.customDayNames[day] || `Day ${day}`;
             let dayHeader;
             const startDateValue = window.tripDates && window.tripDates.startDate ? window.tripDates.startDate : null;
@@ -27,46 +44,12 @@ function generateShareableText() {
         }
     }
 
-    // KISA LINK OLUŞTUR
     const shortLink = createShortTripLink();
     shareText += `\n\nView full plan: ${shortLink}`;
-    shareText += "\n\nThis plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
+    shareText += "\n\nThis plan was created with triptime.ai!"; 
     
     return shareText;
 }
-
-// share.js'deki createShortTripLink fonksiyonunu GÜNCELLE:
-// ÇOK DAHA BASİT VERSİYON
-function createShortTripLink() {
-    const minimalData = {
-        i: window.cart.map(item => [item.name, item.category, item.day, item.lat, item.lon]),
-        dn: window.customDayNames || {},
-        td: window.tripDates || {}
-    };
-    
-    // JSON'u direkt URL'ye koy (encodeURIComponent ile)
-    const jsonStr = JSON.stringify(minimalData);
-    return `${window.location.origin}/?t=${encodeURIComponent(jsonStr)}`;
-}
-
-// mainscript.js
-(function loadSharedTripOnStart() {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedTrip = urlParams.get('t');
-        
-        if (sharedTrip && !urlParams.has('loadedFromShare')) {
-            const jsonStr = decodeURIComponent(sharedTrip);
-            const tripData = JSON.parse(jsonStr);
-            // ... kalan kod
-        }
-    } catch(e) {
-        console.error("Failed to load shared trip:", e);
-    }
-})();
-
-// mainscript.js'deki loadSharedTripOnStart fonksiyonunu GÜNCELLE:
-
 
 // WhatsApp share
 function shareOnWhatsApp() {
