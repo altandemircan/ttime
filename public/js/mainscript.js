@@ -1,17 +1,25 @@
-// mainscript.js'deki kodu GÜNCELLEYİN (sadece bu kalacak):
 (function loadSharedTripOnStart() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
+        let sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
         
-        if (sharedTrip) {
+        if (sharedTrip && !urlParams.has('loadedFromShare')) {
+            // URL-safe base64'i geri çevir
+            sharedTrip = sharedTrip
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            // Padding ekle
+            while (sharedTrip.length % 4) {
+                sharedTrip += '=';
+            }
+            
             const jsonStr = decodeURIComponent(atob(sharedTrip));
             const tripData = JSON.parse(jsonStr);
             
-            // EĞER minimal veri formatındaysa (i, dn, td)
+            // Veriyi işle
             if (tripData.i) {
-                // Minimal veriyi tam veriye çevir
-                window.cart = (tripData.i || []).map(item => ({
+                tripData.cart = (tripData.i || []).map(item => ({
                     name: item.n,
                     category: item.c,
                     day: item.d,
@@ -22,31 +30,30 @@
                     opening_hours: '',
                     image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
                 }));
-                window.customDayNames = tripData.dn || {};
-                window.tripDates = tripData.td || {};
-            } 
-            // EĞER eski format daysa (cart, customDayNames, tripDates)
-            else {
+                tripData.customDayNames = tripData.dn || {};
+                tripData.tripDates = tripData.td || {};
+            }
+            
+            // ÖZEL TASARIMI GÖSTER
+            if (typeof showSharedTripDesign === 'function') {
+                showSharedTripDesign(tripData);
+            } else {
+                // Fallback: normal görünüm
                 window.cart = tripData.cart || [];
                 window.customDayNames = tripData.customDayNames || {};
                 window.tripDates = tripData.tripDates || {};
+                localStorage.setItem('cart', JSON.stringify(window.cart));
+                
+                setTimeout(() => {
+                    if (typeof showTripDetails === 'function') {
+                        const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
+                        showTripDetails(startDate);
+                    }
+                }, 1000);
             }
-            
-            // Local storage'a kaydet
-            localStorage.setItem('cart', JSON.stringify(window.cart));
-            
-            console.log("Shared trip loaded from URL:", tripData);
-            
-            // Sayfa tam yüklendiğinde geziyi göster
-            setTimeout(() => {
-                if (typeof showTripDetails === 'function') {
-                    const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
-                    showTripDetails(startDate);
-                }
-            }, 1000);
         }
     } catch(e) {
-        console.error("Failed to load shared trip from URL:", e);
+        console.error("Failed to load shared trip:", e);
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===

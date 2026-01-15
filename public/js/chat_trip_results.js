@@ -541,184 +541,139 @@ function showTripDetails(startDate) {
 
 
 
-// PAYLAŞILAN GEZİ ÖZEL SAYFASI
-function showSharedTripPage(tripData) {
-    const chatScreen = document.getElementById("chat-screen") || document.createElement("div");
-    chatScreen.id = "chat-screen";
-    document.body.innerHTML = ''; // Sayfayı temizle
-    document.body.appendChild(chatScreen);
+function showSharedTripDesign(tripData) {
+    const chatScreen = document.getElementById("chat-screen");
+    if (!chatScreen) return;
     
-    // Özel CSS
+    chatScreen.innerHTML = '';
+    
+    // CSS ekle
     const style = document.createElement('style');
     style.textContent = `
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: #f5f7fa;
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .shared-trip-wrapper {
-            max-width: 100%;
+        .shared-trip-page {
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 20px;
         }
         
-        .trip-hero {
+        .trip-header-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 40px 20px;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
         
-        .trip-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
-            background-size: cover;
-            opacity: 0.3;
-        }
-        
-        .trip-hero h1 {
-            font-size: 2.8rem;
+        .trip-title {
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            position: relative;
-            z-index: 1;
         }
         
-        .trip-hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto 30px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .hero-stats {
+        .trip-stats {
             display: flex;
             justify-content: center;
             gap: 40px;
-            margin-top: 30px;
-            position: relative;
-            z-index: 1;
+            margin-top: 20px;
+            flex-wrap: wrap;
         }
         
-        .stat-item {
-            text-align: center;
+        .stat-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
         }
         
         .stat-number {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
             display: block;
         }
         
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-        
-        .trip-content {
-            padding: 40px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .day-section {
+        .day-section-shared {
             background: white;
             border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
             overflow: hidden;
-            transition: transform 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #eaeaea;
         }
         
-        .day-section:hover {
-            transform: translateY(-5px);
-        }
-        
-        .day-header {
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            color: white;
+        .day-header-shared {
+            background: #f8f9fa;
             padding: 20px;
+            border-bottom: 1px solid #eaeaea;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
-        .day-title {
-            font-size: 1.5rem;
+        .day-title-shared {
+            font-size: 1.4rem;
             font-weight: 600;
+            color: #333;
         }
         
-        .day-date {
-            font-size: 1rem;
-            opacity: 0.9;
-        }
-        
-        .day-places {
+        .day-places-shared {
             padding: 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
         
-        /* Mevcut steps tasarımını güçlendir */
-        .shared-step {
+        .shared-place-card {
             background: white;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
-            border: 1px solid #e1e5e9;
-            transition: all 0.3s ease;
+            border: 1px solid #eaeaea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .shared-place-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .place-image-container {
+            height: 180px;
+            overflow: hidden;
             position: relative;
         }
         
-        .shared-step:hover {
-            border-color: #667eea;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+        .place-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
         }
         
-        .step-number {
+        .shared-place-card:hover .place-image {
+            transform: scale(1.05);
+        }
+        
+        .place-number {
             position: absolute;
             top: 15px;
             left: 15px;
             background: #667eea;
             color: white;
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             font-size: 14px;
-            z-index: 2;
-            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
         }
         
-        .step-image {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-            display: block;
-        }
-        
-        .step-info {
+        .place-content {
             padding: 20px;
         }
         
-        .step-category {
+        .place-category {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -728,128 +683,63 @@ function showSharedTripPage(tripData) {
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 500;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         
-        .step-category img {
-            width: 16px;
-            height: 16px;
-        }
-        
-        .step-title {
-            font-size: 1.3rem;
+        .place-name {
+            font-size: 1.2rem;
             font-weight: 600;
             color: #333;
             margin-bottom: 10px;
             line-height: 1.3;
         }
         
-        .step-details {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .detail-item {
+        .place-address {
+            color: #666;
+            font-size: 0.9rem;
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-            font-size: 0.9rem;
-            color: #666;
+            gap: 8px;
+            margin-top: 10px;
         }
         
-        .detail-item img {
-            width: 16px;
-            height: 16px;
-            opacity: 0.7;
-            margin-top: 2px;
-        }
-        
-        .cta-section {
+        .cta-footer {
             text-align: center;
-            padding: 60px 20px;
-            background: white;
+            padding: 40px 20px;
             margin-top: 40px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
         }
         
-        .cta-title {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        
-        .cta-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .cta-btn {
-            padding: 15px 30px;
+        .cta-button {
+            background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
             border-radius: 50px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            border: none;
-            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         
-        .cta-btn-primary {
-            background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .cta-btn-secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-        
-        .cta-btn:hover {
+        .cta-button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-        
-        .powered-by {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 30px;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
         }
         
         @media (max-width: 768px) {
-            .day-places {
+            .day-places-shared {
                 grid-template-columns: 1fr;
             }
             
-            .trip-hero h1 {
-                font-size: 2rem;
-            }
-            
-            .hero-stats {
-                flex-direction: column;
+            .trip-stats {
                 gap: 20px;
             }
             
-            .cta-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .cta-btn {
-                width: 100%;
-                max-width: 300px;
-                justify-content: center;
+            .trip-title {
+                font-size: 2rem;
             }
         }
     `;
@@ -859,152 +749,115 @@ function showSharedTripPage(tripData) {
     const days = {};
     tripData.cart.forEach(item => {
         if (!days[item.day]) days[item.day] = [];
-        days[item.day].push(item);
+        days[item.day].push({...item});
     });
     
     // İstatistikler
     const totalPlaces = tripData.cart.length;
     const totalDays = Object.keys(days).length;
-    const categories = [...new Set(tripData.cart.map(item => item.category))];
     
-    // HTML Oluştur
-    chatScreen.innerHTML = `
-        <div class="shared-trip-wrapper">
-            <div class="trip-hero">
-                <h1>✈️ Amazing Trip Plan</h1>
-                <p>Discover this carefully curated travel itinerary with ${totalPlaces} amazing places across ${totalDays} days</p>
+    // HTML oluştur
+    const html = `
+        <div class="shared-trip-page">
+            <div class="trip-header-card">
+                <h1 class="trip-title">📍 Trip Plan Shared</h1>
+                <p style="opacity: 0.9; max-width: 600px; margin: 0 auto;">
+                    Discover this amazing travel itinerary with ${totalPlaces} carefully selected places
+                </p>
                 
-                <div class="hero-stats">
-                    <div class="stat-item">
+                <div class="trip-stats">
+                    <div class="stat-box">
                         <span class="stat-number">${totalDays}</span>
-                        <span class="stat-label">Days</span>
+                        <span>Days</span>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-box">
                         <span class="stat-number">${totalPlaces}</span>
-                        <span class="stat-label">Places</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">${categories.length}</span>
-                        <span class="stat-label">Categories</span>
+                        <span>Places</span>
                     </div>
                 </div>
             </div>
             
-            <div class="trip-content">
-                ${Object.entries(days).map(([day, places]) => {
-                    const dayName = tripData.customDayNames?.[day] || `Day ${day}`;
-                    let dateStr = '';
-                    if (tripData.tripDates?.startDate) {
-                        const startDate = new Date(tripData.tripDates.startDate);
-                        const currentDate = new Date(startDate);
-                        currentDate.setDate(startDate.getDate() + (parseInt(day) - 1));
-                        dateStr = currentDate.toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                        });
-                    }
-                    
-                    return `
-                    <div class="day-section">
-                        <div class="day-header">
-                            <div>
-                                <div class="day-title">${dayName}</div>
-                                ${dateStr ? `<div class="day-date">${dateStr}</div>` : ''}
-                            </div>
-                            <div style="font-size: 0.9rem; opacity: 0.9;">
-                                ${places.length} places
-                            </div>
+            ${Object.entries(days).map(([day, places]) => {
+                const dayName = tripData.customDayNames?.[day] || `Day ${day}`;
+                let dateStr = '';
+                if (tripData.tripDates?.startDate) {
+                    const startDate = new Date(tripData.tripDates.startDate);
+                    const currentDate = new Date(startDate);
+                    currentDate.setDate(startDate.getDate() + (parseInt(day) - 1));
+                    dateStr = currentDate.toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                }
+                
+                return `
+                <div class="day-section-shared">
+                    <div class="day-header-shared">
+                        <div>
+                            <div class="day-title-shared">${dayName}</div>
+                            ${dateStr ? `<div style="color: #666; font-size: 0.9rem; margin-top: 5px;">${dateStr}</div>` : ''}
                         </div>
-                        
-                        <div class="day-places">
-                            ${places.map((place, idx) => `
-                                <div class="shared-step">
-                                    <div class="step-number">${idx + 1}</div>
-                                    <img class="step-image" src="${place.image || 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350'}" alt="${place.name}" onerror="this.src='img/placeholder.png'">
-                                    
-                                    <div class="step-info">
-                                        <div class="step-category">
-                                            <img src="${getCategoryIcon(place.category)}" alt="${place.category}">
-                                            ${place.category}
-                                        </div>
-                                        
-                                        <div class="step-title">${place.name}</div>
-                                        
-                                        <div class="step-details">
-                                            ${place.address ? `
-                                            <div class="detail-item">
-                                                <img src="img/address_icon.svg" alt="Address">
-                                                <span>${place.address}</span>
-                                            </div>` : ''}
-                                            
-                                            ${place.opening_hours ? `
-                                            <div class="detail-item">
-                                                <img src="img/hours_icon.svg" alt="Hours">
-                                                <span>${place.opening_hours}</span>
-                                            </div>` : ''}
-                                        </div>
-                                    </div>
+                        <div style="color: #667eea; font-weight: 600;">
+                            ${places.length} ${places.length === 1 ? 'place' : 'places'}
+                        </div>
+                    </div>
+                    
+                    <div class="day-places-shared">
+                        ${places.map((place, idx) => `
+                            <div class="shared-place-card">
+                                <div class="place-image-container">
+                                    <div class="place-number">${idx + 1}</div>
+                                    <img class="place-image" src="${place.image || 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350'}" 
+                                         alt="${place.name}" 
+                                         onerror="this.src='img/placeholder.png'">
                                 </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    `;
-                }).join('')}
-                
-                <div class="cta-section">
-                    <h2 class="cta-title">Ready to customize this trip?</h2>
-                    <p style="color: #666; max-width: 600px; margin: 0 auto 30px; line-height: 1.6;">
-                        This trip plan was shared with you. You can customize it, add your own places, 
-                        or use it as inspiration for your next adventure!
-                    </p>
-                    
-                    <div class="cta-buttons">
-                        <button class="cta-btn cta-btn-primary" onclick="loadThisTrip()">
-                            <img src="img/addtotrip-icon.svg" style="width: 20px; height: 20px;">
-                            Use This Trip Plan
-                        </button>
-                        <button class="cta-btn cta-btn-secondary" onclick="window.location.href = 'https://triptime.ai'">
-                            ✨ Create Your Own Trip
-                        </button>
+                                
+                                <div class="place-content">
+                                    <div class="place-category">
+                                        <img src="${getCategoryIcon(place.category)}" alt="${place.category}" style="width: 16px; height: 16px;">
+                                        ${place.category}
+                                    </div>
+                                    
+                                    <h3 class="place-name">${place.name}</h3>
+                                    
+                                    ${place.address ? `
+                                    <div class="place-address">
+                                        <img src="img/address_icon.svg" alt="Address" style="width: 14px; height: 14px; opacity: 0.7;">
+                                        <span>${place.address.substring(0, 60)}${place.address.length > 60 ? '...' : ''}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
-                
-                <div class="powered-by">
-                    Powered by <strong>Triptime.ai</strong> • Share your own trips with friends!
-                </div>
+                `;
+            }).join('')}
+            
+            <div class="cta-footer">
+                <button class="cta-button" onclick="useThisSharedTrip()">
+                    <img src="img/addtotrip-icon.svg" style="width: 20px; height: 20px;">
+                    Use This Trip Plan
+                </button>
+                <p style="color: #666; margin-top: 20px;">
+                    This trip was shared with you via Triptime.ai
+                </p>
             </div>
         </div>
     `;
     
+    chatScreen.innerHTML = html;
+    
     // Global fonksiyon
-    window.loadThisTrip = function() {
-        // Mevcut geziyi yükle
+    window.useThisSharedTrip = function() {
         window.cart = tripData.cart;
         window.customDayNames = tripData.customDayNames || {};
         window.tripDates = tripData.tripDates || {};
         localStorage.setItem('cart', JSON.stringify(window.cart));
         
-        // Ana sayfaya yönlendir
-        window.location.href = window.location.origin + '/?loadedFromShare=true';
+        // Normal gezi görünümüne dön
+        if (typeof showTripDetails === 'function') {
+            showTripDetails(tripData.tripDates?.startDate);
+        }
     };
-}
-
-// Kategori ikonu fonksiyonu
-function getCategoryIcon(category) {
-    if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-        return "/img/coffee_icon.svg";
-    else if (category === "Museum")
-        return "/img/museum_icon.svg";
-    else if (category === "Touristic attraction")
-        return "/img/touristic_icon.svg";
-    else if (category === "Restaurant" || category === "Lunch" || category === "Dinner")
-        return "/img/restaurant_icon.svg";
-    else if (category === "Accommodation")
-        return "/img/accommodation_icon.svg";
-    else if (category === "Parks")
-        return "/img/park_icon.svg";
-    else
-        return "https://www.svgrepo.com/show/522166/location.svg";
 }
