@@ -9533,7 +9533,6 @@ function wrapRouteControls(day) {
   mapFunctionsDiv.style.display = 'flex';
   mapFunctionsDiv.style.alignItems = 'center';
   mapFunctionsDiv.style.gap = '2x'; 
-
   const mapTitleDiv = document.createElement('div');
   mapTitleDiv.textContent = "Route Information";
   mapTitleDiv.style.fontWeight = 'bold';
