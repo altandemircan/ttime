@@ -102,12 +102,36 @@ function showTripDesign(tripData) {
     `;
     
     window.useThisTrip = function() {
-        window.cart = tripData.cart;
-        localStorage.setItem('cart', JSON.stringify(window.cart));
+    window.cart = tripData.cart;
+    localStorage.setItem('cart', JSON.stringify(window.cart));
+    
+    // Chat ekranını temizle
+    const chatScreen = document.getElementById("chat-screen");
+    if (chatScreen) chatScreen.innerHTML = '';
+    
+    // showTripDetails'i MANUEL ÇAĞIR
+    if (typeof showTripDetails === 'function') {
+        showTripDetails();
         
-        // Normal sayfaya dön
-        if (typeof showTripDetails === 'function') {
-            showTripDetails();
-        }
-    };
+        // Slider'ları da manuel oluştur
+        setTimeout(() => {
+            if (typeof Splide !== 'undefined') {
+                document.querySelectorAll('.splide').forEach(el => {
+                    if (!el._splideInstance) {
+                        new Splide(el, {
+                            perPage: 5,
+                            gap: '18px',
+                            arrows: true,
+                            pagination: false,
+                            drag: true
+                        }).mount();
+                    }
+                });
+            }
+        }, 500);
+    } else {
+        // Fonksiyon yoksa sayfayı yenile
+        window.location.reload();
+    }
+};
 }
