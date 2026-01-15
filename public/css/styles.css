@@ -6145,9 +6145,19 @@ ease;
 }
 
 #feedback-form .feedback-actions button[type="submit"] {
-    background: linear-gradient(135deg, #8a4af3 0%, #7030d8 100%);
+       padding: 10px;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: #9159ed;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
     color: #ffffff;
-    box-shadow: 0 4px 12px rgba(138, 74, 243, 0.3);
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
 
 #feedback-form .feedback-actions button[type="submit"]:hover {
