@@ -2,7 +2,7 @@
 (function loadSharedTrip() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const sharedTrip = urlParams.get('sharedTrip');
+        const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip'); // 't' parametresini de kontrol et
         
         if (sharedTrip) {
             const jsonStr = decodeURIComponent(atob(sharedTrip));
@@ -24,7 +24,7 @@
                     showTripDetails(tripData.tripDates.startDate);
                 }
             }, 1000);
-        }
+      }
     } catch(e) {
         console.error("Failed to load shared trip from URL:", e);
     }
