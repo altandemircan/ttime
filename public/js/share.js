@@ -34,58 +34,60 @@ function generateShareableText() {
     
     return shareText;
 }
-
 function createShortTripLink() {
-    // VERİYİ TEMİZLE
-    const cleanCart = window.cart.map(item => ({
-        n: String(item.name || '')
-            .replace(/"/g, "'")        // Çift tırnakları tek tırnağa çevir
-            .replace(/\\/g, '')        // Backslash'leri kaldır
-            .replace(/\n/g, ' ')       // Yeni satırları boşluğa çevir
-            .replace(/\r/g, '')        // Carriage return'ü kaldır
-            .substring(0, 150),       // Çok uzun isimleri kısalt
-        c: String(item.category || '').replace(/"/g, "'"),
-        d: item.day || 1,
-        la: item.lat || 0,
-        lo: item.lon || 0
-    }));
-    
-    const minimalData = {
-        i: cleanCart,
-        dn: window.customDayNames || {},
-        td: window.tripDates || {}
+    // ÇOK BASİT ARRAY FORMATI
+    const simpleData = {
+        places: window.cart.map(item => [
+            item.name ? item.name.substring(0, 80) : '',
+            item.category || '',
+            item.day || 1
+        ]),
+        days: Object.keys(window.customDayNames || {}).length,
+        count: window.cart.length
     };
     
-    // JSON'u oluştur ve TEST ET
-    let jsonStr;
-    try {
-        jsonStr = JSON.stringify(minimalData);
-        // JSON geçerli mi test et
-        JSON.parse(jsonStr);
-    } catch(e) {
-        console.error("JSON oluşturma hatası, basit veri kullanılıyor:", e);
-        // Fallback: çok basit veri
-        jsonStr = JSON.stringify({
-            i: cleanCart.map(item => ({
-                n: item.n.substring(0, 50),
-                c: item.c,
-                d: item.d,
-                la: item.la,
-                lo: item.lo
-            })),
-            dn: {},
-            td: {}
-        });
-    }
-    
-    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    
-    // URL-safe yap
-    return `${window.location.origin}/?t=${base64
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '')}`;
+    const jsonStr = JSON.stringify(simpleData);
+    // BASE64 YOK - direkt encode
+    return `${window.location.origin}/?t=${encodeURIComponent(jsonStr)}`;
 }
+
+// mainscript.js'de loadSharedTripOnStart'ı GÜNCELLE:
+(function loadSharedTripOnStart() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedTrip = urlParams.get('t');
+    
+    if (sharedTrip) {
+        try {
+            // BASE64 YOK - direkt decode
+            const jsonStr = decodeURIComponent(sharedTrip);
+            console.log("Gelen JSON:", jsonStr);
+            
+            const tripData = JSON.parse(jsonStr);
+            
+            // Basit veriyi çevir
+            const fullTripData = {
+                cart: (tripData.places || []).map((item, index) => ({
+                    name: item[0] || `Place ${index + 1}`,
+                    category: item[1] || 'Unknown',
+                    day: item[2] || 1,
+                    address: '',
+                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                })),
+                customDayNames: {},
+                tripDates: {}
+            };
+            
+            // TASARIMI GÖSTER
+            if (typeof showSharedTripDesign === 'function') {
+                showSharedTripDesign(fullTripData);
+            }
+        } catch(e) {
+            console.error("Basit JSON hatası:", e);
+            // Ana sayfaya yönlendir
+            window.location.href = window.location.origin;
+        }
+    }
+})();
 
 // WhatsApp share
 function shareOnWhatsApp() {
