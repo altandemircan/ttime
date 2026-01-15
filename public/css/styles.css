@@ -6059,27 +6059,7 @@ ease;
 
 /* Feedback Form Refinements - Sitenin Genel Tasarımıyla Uyumlu Versiyon */
 
-#sidebar-overlay-feedback .sidebar_title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 20px; /* Kenar boşlukları ana tasarıma uygun */
-    margin: 0;
-    border-bottom: 1px solid #f1f1f1;
-    font-size: 1.1rem;
-    font-weight: 700; /* Satoshi Bold etkisi */
-    color: #1a1a1a;
-    font-family: 'Satoshi', sans-serif;
-}
 
-#sidebar-feedback {
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    gap: 16px;
-    background: #fff;
-}
 
 /* Form Root */
 #feedback-form {
@@ -6137,6 +6117,8 @@ ease;
     padding: 15px;
     border-radius: 12px;
     text-align: center;
+        margin-top: 10px;
+    width: -webkit-fill-available;
 }
 
 #feedback-form input[type="file"]:hover {
