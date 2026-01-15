@@ -35,36 +35,30 @@ function generateShareableText() {
     return shareText;
 }
 function createShortTripLink() {
-    // ÇOK BASİT ve GÜVENLİ
+    // EN GÜVENLİ: Base64 YOK
     const simpleData = {
-        c: window.cart.map(item => ({
-            n: item.name || '',
-            t: item.category || '',
-            d: item.day || 1,
-            i: item.image || ''
-        }))
+        c: window.cart.map(item => [
+            item.name || '',
+            item.category || '',
+            item.day || 1
+        ])
     };
     
     const jsonStr = JSON.stringify(simpleData);
-    const base64 = btoa(jsonStr);
     
-    // URL-safe
-    return `${window.location.origin}/?share=${base64
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '')}`;
+    // DIRECT encodeURIComponent
+    return `${window.location.origin}/?share=${encodeURIComponent(jsonStr)}`;
 }
-
 // mainscript.js'de loadSharedTripOnStart'ı GÜNCELLE:
 (function loadSharedTripOnStart() {
     const urlParams = new URLSearchParams(window.location.search);
-    const sharedTrip = urlParams.get('t');
+    const shareCode = urlParams.get('share');
     
-    if (sharedTrip) {
+    if (shareCode) {
         try {
-            // BASE64 YOK - direkt decode
-            const jsonStr = decodeURIComponent(sharedTrip);
-            console.log("Gelen JSON:", jsonStr);
+            // DIRECT decode
+            const jsonStr = decodeURIComponent(shareCode);
+            const simpleData = JSON.parse(jsonStr);
             
             const tripData = JSON.parse(jsonStr);
             
