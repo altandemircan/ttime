@@ -1,57 +1,37 @@
-function showSimpleSharedDesign(tripData) {
+function showTripDesign(tripData) {
     const chatScreen = document.getElementById("chat-screen");
     if (!chatScreen) return;
     
     // Basit CSS
     const style = document.createElement('style');
     style.textContent = `
-        .shared-container {
+        .trip-design {
             padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: Arial, sans-serif;
         }
-        
-        .shared-header {
+        .trip-header {
+            background: #4CAF50;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
-        
-        .shared-header h1 {
-            color: #667eea;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .day-card {
+        .day-box {
             background: white;
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
-        .day-title {
-            color: #333;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
-        }
-        
-        .place-item {
+        .place-row {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 12px;
+            padding: 10px;
             border-bottom: 1px solid #eee;
         }
-        
-        .place-item:last-child {
-            border-bottom: none;
-        }
-        
-        .place-number {
-            background: #667eea;
+        .place-num {
+            background: #4CAF50;
             color: white;
             width: 30px;
             height: 30px;
@@ -59,77 +39,65 @@ function showSimpleSharedDesign(tripData) {
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-right: 15px;
             font-weight: bold;
         }
-        
-        .place-info h4 {
-            margin: 0 0 5px 0;
+        .place-name {
+            font-weight: bold;
             color: #333;
         }
-        
-        .place-category {
+        .place-cat {
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.9em;
         }
-        
-        .cta-area {
-            text-align: center;
-            margin-top: 40px;
-            padding: 30px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-        
         .use-btn {
-            background: #667eea;
+            background: #4CAF50;
             color: white;
             border: none;
             padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
+            font-size: 16px;
+            border-radius: 5px;
             cursor: pointer;
-            font-weight: 600;
+            margin-top: 20px;
+            display: block;
+            width: 100%;
         }
     `;
     document.head.appendChild(style);
     
-    // HTML
+    // Günleri grupla
     const days = {};
     tripData.cart.forEach(item => {
         if (!days[item.day]) days[item.day] = [];
         days[item.day].push(item);
     });
     
+    // HTML
     chatScreen.innerHTML = `
-        <div class="shared-container">
-            <div class="shared-header">
-                <h1>🌍 Shared Trip Plan</h1>
-                <p>${tripData.cart.length} amazing places to discover</p>
+        <div class="trip-design">
+            <div class="trip-header">
+                <h1>🌍 Paylaşılan Gezi Planı</h1>
+                <p>${tripData.cart.length} mekan, ${Object.keys(days).length} gün</p>
             </div>
             
             ${Object.entries(days).map(([day, places]) => `
-                <div class="day-card">
-                    <div class="day-title">Day ${day}</div>
+                <div class="day-box">
+                    <h3>Gün ${day}</h3>
                     ${places.map((place, idx) => `
-                        <div class="place-item">
-                            <div class="place-number">${idx + 1}</div>
-                            <div class="place-info">
-                                <h4>${place.name}</h4>
-                                <div class="place-category">${place.category}</div>
+                        <div class="place-row">
+                            <div class="place-num">${idx + 1}</div>
+                            <div>
+                                <div class="place-name">${place.name}</div>
+                                <div class="place-cat">${place.category}</div>
                             </div>
                         </div>
                     `).join('')}
                 </div>
             `).join('')}
             
-            <div class="cta-area">
-                <button class="use-btn" onclick="useThisTrip()">
-                    ✨ Use This Trip
-                </button>
-                <p style="margin-top: 15px; color: #666;">
-                    Shared via Triptime.ai
-                </p>
-            </div>
+            <button class="use-btn" onclick="useThisTrip()">
+                ✅ Bu Geziyi Kullan
+            </button>
         </div>
     `;
     
@@ -137,7 +105,7 @@ function showSimpleSharedDesign(tripData) {
         window.cart = tripData.cart;
         localStorage.setItem('cart', JSON.stringify(window.cart));
         
-        // Normal görünüme dön
+        // Normal sayfaya dön
         if (typeof showTripDetails === 'function') {
             showTripDetails();
         }

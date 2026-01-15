@@ -1,43 +1,33 @@
 (function loadSharedTripOnStart() {
     const urlParams = new URLSearchParams(window.location.search);
-    let shareCode = urlParams.get('share');
+    const shareCode = urlParams.get('share');
     
     if (shareCode) {
         try {
-            // URL-safe geri çevir
-            shareCode = shareCode
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-            
-            // Padding
-            while (shareCode.length % 4) {
-                shareCode += '=';
-            }
-            
-            // Decode
-            const jsonStr = atob(shareCode);
+            // DIRECT DECODE
+            const jsonStr = decodeURIComponent(shareCode);
             const simpleData = JSON.parse(jsonStr);
             
-            // Tam veriye çevir
+            // Veriyi hazırla
             const tripData = {
                 cart: (simpleData.c || []).map(item => ({
-                    name: item.n,
-                    category: item.t,
-                    day: item.d,
-                    image: item.i || 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg'
+                    name: item[0] || '',
+                    category: item[1] || '',
+                    day: item[2] || 1,
+                    image: 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg'
                 }))
             };
             
             // TASARIMI GÖSTER
-            showSimpleSharedDesign(tripData);
+            showTripDesign(tripData);
             
         } catch(e) {
-            console.log("Paylaşım hatası, normal sayfaya dön:", e);
-            // Normal sayfaya yönlendir
+            console.log("Paylaşım hatası:", e);
             window.location.href = window.location.origin;
         }
     }
 })();
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;

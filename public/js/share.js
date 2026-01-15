@@ -1,25 +1,12 @@
 // --- Paylaşım Metni Oluşturucu ---
 function generateShareableText() {
-    let shareText = "Here's your trip plan!\n\n";
+    let shareText = "Gezi Planım:\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
-    const dateOptions = { day: 'numeric', month: 'long' };
 
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
-            if (typeof window.customDayNames === 'undefined') window.customDayNames = {};
-            const dayName = window.customDayNames[day] || `Day ${day}`;
-            let dayHeader;
-            const startDateValue = window.tripDates && window.tripDates.startDate ? window.tripDates.startDate : null;
-            if (startDateValue) {
-                const startDateObj = new Date(startDateValue);
-                const currentDate = new Date(startDateObj.setDate(startDateObj.getDate() + (day - 1)));
-                const formattedDate = currentDate.toLocaleDateString('en-US', dateOptions);
-                dayHeader = `--- ${dayName} - ${formattedDate} ---\n`;
-            } else {
-                dayHeader = `--- ${dayName} ---\n`;
-            }
-            shareText += dayHeader;
+            shareText += `--- Gün ${day} ---\n`;
             dayItems.forEach(item => {
                 shareText += `• ${item.name} (${item.category})\n`;
             });
@@ -27,15 +14,14 @@ function generateShareableText() {
         }
     }
 
-    // KISA LINK OLUŞTUR
     const shortLink = createShortTripLink();
-    shareText += `\n\nView full plan: ${shortLink}`;
-    shareText += "\n\nThis plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
+    shareText += `\nTam planı gör: ${shortLink}`;
+    shareText += "\n\nTriptime.ai ile oluşturuldu!";
     
     return shareText;
 }
 function createShortTripLink() {
-    // EN GÜVENLİ: Base64 YOK
+    // EN GÜVENLİ: BASE64 YOK
     const simpleData = {
         c: window.cart.map(item => [
             item.name || '',
@@ -45,9 +31,7 @@ function createShortTripLink() {
     };
     
     const jsonStr = JSON.stringify(simpleData);
-    
-    // DIRECT encodeURIComponent
-    return `${window.location.origin}/?share=${encodeURIComponent(jsonStr)}`;
+    return window.location.origin + '/?share=' + encodeURIComponent(jsonStr);
 }
 // mainscript.js'de loadSharedTripOnStart'ı GÜNCELLE:
 (function loadSharedTripOnStart() {
