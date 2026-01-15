@@ -35,32 +35,56 @@ function generateShareableText() {
     return shareText;
 }
 
-// KISA LINK OLUŞTUR (TEK BIR FONKSIYON)
-// share.js'de createShortTripLink fonksiyonunu DÜZELT:
 function createShortTripLink() {
-    // Sadeleştirilmiş veri
+    // VERİYİ TEMİZLE
+    const cleanCart = window.cart.map(item => ({
+        n: String(item.name || '')
+            .replace(/"/g, "'")        // Çift tırnakları tek tırnağa çevir
+            .replace(/\\/g, '')        // Backslash'leri kaldır
+            .replace(/\n/g, ' ')       // Yeni satırları boşluğa çevir
+            .replace(/\r/g, '')        // Carriage return'ü kaldır
+            .substring(0, 150),       // Çok uzun isimleri kısalt
+        c: String(item.category || '').replace(/"/g, "'"),
+        d: item.day || 1,
+        la: item.lat || 0,
+        lo: item.lon || 0
+    }));
+    
     const minimalData = {
-        i: window.cart.map(item => ({
-            n: String(item.name || '').replace(/"/g, "'").substring(0, 100),
-            c: String(item.category || '').replace(/"/g, "'"),
-            d: item.day || 1,
-            la: item.lat || 0,
-            lo: item.lon || 0
-        })),
+        i: cleanCart,
         dn: window.customDayNames || {},
         td: window.tripDates || {}
     };
     
-    const jsonStr = JSON.stringify(minimalData);
+    // JSON'u oluştur ve TEST ET
+    let jsonStr;
+    try {
+        jsonStr = JSON.stringify(minimalData);
+        // JSON geçerli mi test et
+        JSON.parse(jsonStr);
+    } catch(e) {
+        console.error("JSON oluşturma hatası, basit veri kullanılıyor:", e);
+        // Fallback: çok basit veri
+        jsonStr = JSON.stringify({
+            i: cleanCart.map(item => ({
+                n: item.n.substring(0, 50),
+                c: item.c,
+                d: item.d,
+                la: item.la,
+                lo: item.lo
+            })),
+            dn: {},
+            td: {}
+        });
+    }
+    
     const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
     
-    // URL-SAFE YAP (BU ÇOK ÖNEMLİ!)
-    const urlSafeBase64 = base64
+    // URL-safe yap
+    return `${window.location.origin}/?t=${base64
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
-        .replace(/=+$/, '');
-    
-    return `${window.location.origin}/?t=${urlSafeBase64}`;
+        .replace(/=+$/, '')}`;
 }
 
 // WhatsApp share
