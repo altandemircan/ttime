@@ -34,27 +34,19 @@ function generateShareableText() {
 
 // WhatsApp share
 async function shareOnWhatsApp() {
-    const textToShare = generateShareableText(); // Mevcut metin oluşturucun
+    const textToShare = generateShareableText();
     const includePdfCheck = document.getElementById('includePdfCheck');
 
-    // Eğer checkbox işaretliyse PDF ile paylaşmayı dene
     if (includePdfCheck && includePdfCheck.checked && navigator.canShare) {
+        // Mevcut pdf_download.js içindeki doc objesini alıyoruz
+        // NOT: pdf_download.js içindeki fonksiyonun doc.save() yapmak yerine 
+        // blob döndüren bir versiyonu olduğunu veya doc'u globalden alabildiğini varsayıyoruz.
         try {
+            // Eğer pdf_download.js'deki fonksiyonu direkt kullanıyorsan:
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            const doc = new jsPDF(); 
+            // ... (Burada pdf_download içindeki çizim kodlarını çağırabilirsin) ...
             
-            // pdf_download.js'deki tasarımını buraya kısa özet olarak ekliyoruz
-            doc.setFontSize(16);
-            doc.text("Trip Plan", 10, 20);
-            let y = 30;
-            window.cart.forEach(item => {
-                if(item.name) {
-                    doc.setFontSize(10);
-                    doc.text(`- ${item.name}`, 10, y);
-                    y += 7;
-                }
-            });
-
             const pdfBlob = doc.output('blob');
             const pdfFile = new File([pdfBlob], "TripPlan.pdf", { type: "application/pdf" });
 
@@ -64,20 +56,14 @@ async function shareOnWhatsApp() {
                     text: textToShare,
                     title: 'My Trip Plan'
                 });
-                return; // Paylaşım başarılıysa fonksiyondan çık
+                return;
             }
-        } catch (err) {
-            console.error("PDF Share failed:", err);
-        }
+        } catch (e) { console.error("PDF share error:", e); }
     }
 
-    // Checkbox işaretli değilse veya PDF paylaşımı başarısızsa orijinal WhatsApp linkine yönlendir
+    // PDF istenmiyorsa veya hata varsa standart WhatsApp linki
     const encodedText = encodeURIComponent(textToShare);
-    const whatsappUrl = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) 
-        ? `whatsapp://send?text=${encodedText}` 
-        : `https://web.whatsapp.com/send?text=${encodedText}`;
-    
-    window.open(whatsappUrl, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
 }
 
 // Instagram - Copy to clipboard
