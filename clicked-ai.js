@@ -75,59 +75,70 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
     }
 
     try {
-        const response = await axios.post('http://127.0.0.1:11434/api/generate', {
-            model: "llama3:8b",
-            prompt: prompt,
-            stream: false,
-            options: {
-                temperature: 0.7,
-                top_p: 0.9,
-                repeat_penalty: 1.1,
-                num_predict: 200 // Artırdım çünkü daha fazla context var
+        const response = await axios.post(
+            'http://127.0.0.1:11434/api/generate',
+            {
+                model: "llama3:8b",
+                prompt: prompt,
+                stream: true,
+                options: {
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    repeat_penalty: 1.1,
+                    num_predict: 200
+                }
+            },
+            {
+                responseType: 'stream',
+                timeout: 0
             }
-        }, { timeout: 60000 });
+        );
 
-        let result = { p1: "", p2: "" };
-        let content = response.data?.response || "{}";
-        
-        try {
-            // JSON'u temizle (eğer AI ekstra text eklerse)
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                content = jsonMatch[0];
-            }
-            
-            result = JSON.parse(content);
-            result = {
-                p1: result.p1 || `Explore ${point} in ${city}.`,
-                p2: result.p2 || `Check opening hours before visiting.`
-            };
-        } catch (parseErr) {
-            console.error('AI JSON parse error:', parseErr.message, "Content:", content.substring(0, 200));
-            
-            // Fallback: Eğer JSON parse edilemezse, içeriği manuel parse etmeye çalış
-            const lines = content.split('\n').filter(line => line.trim());
-            if (lines.length >= 2) {
-                result.p1 = lines[0].replace(/^["']|["']$/g, '').trim();
-                result.p2 = lines[1].replace(/^["']|["']$/g, '').trim();
-            } else {
-                result.p1 = `${point} is located in ${city}. It's worth exploring.`;
-                result.p2 = `Consider visiting during daylight hours for the best experience.`;
-            }
-        }
+        let fullContent = "";
 
-        console.log(`[AI RESPONSE for ${point}]`, {
-            city: city,
-            factsUsed: Object.keys(facts || {}).length,
-            responseLength: result.p1.length + result.p2.length
+        response.data.on('data', chunk => {
+            const lines = chunk.toString().split('\n').filter(Boolean);
+            for (const line of lines) {
+                const data = JSON.parse(line);
+                if (data.response) {
+                    fullContent += data.response;
+                }
+                if (data.done) {
+                    let result = { p1: "", p2: "" };
+                    let content = fullContent || "{}";
+
+                    try {
+                        const jsonMatch = content.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            content = jsonMatch[0];
+                        }
+
+                        result = JSON.parse(content);
+                        result = {
+                            p1: result.p1 || `Explore ${point} in ${city}.`,
+                            p2: result.p2 || `Check opening hours before visiting.`
+                        };
+                    } catch (err) {
+                        console.error('AI JSON parse error:', err.message);
+                        result = {
+                            p1: `${point} is located in ${city}. It's worth exploring.`,
+                            p2: `Consider visiting during daylight hours for the best experience.`
+                        };
+                    }
+
+                    console.log(`[AI RESPONSE for ${point}]`, {
+                        city: city,
+                        factsUsed: Object.keys(facts || {}).length,
+                        responseLength: result.p1.length + result.p2.length
+                    });
+
+                    res.json(result);
+                }
+            }
         });
-        
-        res.json(result);
 
     } catch (e) {
         console.error("AI error:", e.message);
-        
-        // Fallback response
         res.json({ 
             p1: `${point} is a location in ${city}. It offers a unique experience for visitors.`,
             p2: `Plan your visit according to the weather and local conditions.`
@@ -136,5 +147,3 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
 });
 
 module.exports = router;
-
-module.exports = router; 

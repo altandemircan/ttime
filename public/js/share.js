@@ -33,40 +33,16 @@ function generateShareableText() {
 }
 
 // WhatsApp share
-async function shareOnWhatsApp() {
+function shareOnWhatsApp() {
     const textToShare = generateShareableText();
-    const includePdfCheck = document.getElementById('includePdfCheck');
-
-    // Eğer kutu seçiliyse senin orjinal PDF fonksiyonunu çalıştır
-    if (includePdfCheck && includePdfCheck.checked && navigator.canShare) {
-        try {
-            // DİKKAT: Senin pdf_download.js içindeki orjinal fonksiyonu çağırıyoruz
-            const doc = downloadTripPlanPDF(); 
-            
-            // doc nesnesini dosyaya çevir
-            const pdfBlob = doc.output('blob');
-            const pdfFile = new File([pdfBlob], "TripPlan.pdf", { type: "application/pdf" });
-
-            if (navigator.canShare({ files: [pdfFile] })) {
-                await navigator.share({
-                    files: [pdfFile],
-                    text: textToShare,
-                    title: 'Trip Plan'
-                });
-                return;
-            }
-        } catch (err) {
-            console.error("PDF Paylaşım Hatası:", err);
-        }
-    }
-
-    // Kutu seçili değilse klasik WhatsApp açılır
     const encodedText = encodeURIComponent(textToShare);
-    const whatsappUrl = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) 
-        ? `whatsapp://send?text=${encodedText}` 
-        : `https://api.whatsapp.com/send?text=${encodedText}`;
-    
-    window.open(whatsappUrl, '_blank');
+    const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
+    const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.open(whatsappAppUrl, '_blank');
+    } else {
+        window.open(whatsappWebUrl, '_blank');
+    }
 }
 
 // Instagram - Copy to clipboard

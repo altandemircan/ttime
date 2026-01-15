@@ -1,9 +1,19 @@
 const express = require('express');
 const axios = require('axios');
+const http = require('http');
 const router = express.Router();
+
+/* 🔒 KEEP-ALIVE AGENT (ASIL OLAY BU) */
+const keepAliveAgent = new http.Agent({
+    keepAlive: true,
+    keepAliveMsecs: 60000,
+    maxSockets: 5,
+    timeout: 0
+});
 
 router.get('/', async (req, res) => {
     console.log("[BACKEND] Yeni chat-stream AI SSE isteği geldi", new Date().toISOString());
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-cache');
@@ -12,7 +22,13 @@ router.get('/', async (req, res) => {
 
     let finished = false;
 
-    // Tüm mesaj geçmişini frontendden al
+    /* 🔁 SSE HEARTBEAT — PROXY / NODE TIMEOUT ENGELLEYİCİ */
+    const heartbeat = setInterval(() => {
+        if (!finished) {
+            res.write(`: ping\n\n`);
+        }
+    }, 15000);
+
     let userMessages = [];
     try {
         userMessages = JSON.parse(req.query.messages || "[]");
@@ -23,7 +39,6 @@ router.get('/', async (req, res) => {
     const point = req.query.point || "";
     const cleanCity = req.query.city || "";
     const cleanCategory = req.query.category || "";
-    const cleanFacts = req.query.facts ? JSON.parse(req.query.facts) : {};
 
     const prompt = `
 [STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
@@ -38,100 +53,98 @@ router.get('/', async (req, res) => {
 - Write complete thoughts that can end naturally.
 - Use short sentences.
 - END your response naturally with a period, exclamation, or question mark.
-- DO NOT exceed 500 characters. Count carefully.
-- If including a tip, make it part of the main text, not separate.
-
-Now describe: ${point} in ${cleanCity} (${cleanCategory})
+- DO NOT exceed 500 characters.
 `;
 
     const messages = [
         { role: "system", content: prompt },
-        ...userMessages.filter(msg => msg.role !== "system")
+        ...userMessages.filter(m => m.role !== "system")
     ];
 
-    const model = 'llama3:8b';
-
     try {
-        // RETRY MEKANİZMASI - 2 deneme
         let ollamaResponse;
         let lastError;
-        
+
         for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-        console.log(`[BACKEND] Ollama attempt ${attempt} başlıyor`, Date.now());
+            try {
+                console.log(`[BACKEND] Ollama attempt ${attempt} başlıyor`, Date.now());
+
                 ollamaResponse = await axios({
                     method: 'post',
                     url: 'http://127.0.0.1:11434/api/chat',
+                    httpAgent: keepAliveAgent,
                     data: {
-                        model,
+                        model: 'llama3:8b',
                         messages,
                         stream: true,
-                        max_tokens: 120,
                         temperature: 0.7,
-                        stop: ["\n\n", "Practical Tip:", "Tip:", "Note:"]
+                        max_tokens: 120,
+                        stop: ["\n\n", "Tip:", "Note:"]
                     },
                     responseType: 'stream',
-                    timeout: attempt === 1 ? 30000 : 60000 // İlk 30sn, ikinci 60sn
+                    timeout: 0 // ❗ ASLA TIMEOUT OLMAZ
                 });
+
                 console.log(`[BACKEND] Ollama attempt ${attempt} BAŞARILI`, Date.now());
-break; // Başarılı, döngüden çık
+                break;
+
             } catch (err) {
                 lastError = err;
-                console.log(`[chat-stream] Attempt ${attempt} failed:`, err.message);
-                if (attempt < 2) {
-                    await new Promise(resolve => setTimeout(resolve, 2000)); // 2sn bekle
-                }
+                console.log(`[chat-stream] Attempt ${attempt} failed`, err.message);
+                if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
             }
         }
-        
-        if (!ollamaResponse) {
-            throw lastError || new Error('Ollama connection failed after retries');
-        }
 
-        const ollama = ollamaResponse;
+        if (!ollamaResponse) throw lastError;
 
-      let firstChunkTime = null;
-ollama.data.on('data', chunk => {
-    if (finished) return;
-    const str = chunk.toString().trim();
-    if (str) {
-        if (!firstChunkTime) {
-            firstChunkTime = Date.now();
-            console.log("[BACKEND] Ollama ilk data chunk geldi", firstChunkTime);
-        }
-        res.write(`data: ${str}\n\n`);
-    }
-});
-        ollama.data.on('end', () => {
-    console.log("[BACKEND] Ollama stream bitti", Date.now());
-    if (!finished) {
-        finished = true;
-        res.write('event: end\ndata: [DONE]\n\n');
-        res.end();
-    }
-});
-       ollama.data.on('error', (err) => {
-    console.log("[BACKEND] Ollama stream error", Date.now(), err);
-    if (!finished) {
-        finished = true;
-        res.write(`event: error\ndata: ${err.message}\n\n`);
-        res.end();
-    }
-});
+        let firstChunkTime = null;
 
-       req.on('close', () => {
-    console.log("[BACKEND] SSE HTTP connection kapandı", Date.now());
-    if (!finished) {
-        finished = true;
-        res.end();
-    }
-});
+        ollamaResponse.data.on('data', chunk => {
+            if (finished) return;
+            const str = chunk.toString().trim();
+            if (!str) return;
+
+            if (!firstChunkTime) {
+                firstChunkTime = Date.now();
+                console.log("[BACKEND] Ollama ilk chunk geldi", firstChunkTime);
+            }
+
+            res.write(`data: ${str}\n\n`);
+        });
+
+        ollamaResponse.data.on('end', () => {
+            if (finished) return;
+            finished = true;
+            clearInterval(heartbeat);
+            console.log("[BACKEND] Ollama stream bitti", Date.now());
+            res.write('event: end\ndata: [DONE]\n\n');
+            res.end();
+        });
+
+        ollamaResponse.data.on('error', err => {
+            if (finished) return;
+            finished = true;
+            clearInterval(heartbeat);
+            console.log("[BACKEND] Ollama stream error", err.message);
+            res.write(`event: error\ndata: ${err.message}\n\n`);
+            res.end();
+        });
+
+        req.on('close', () => {
+            if (finished) return;
+            finished = true;
+            clearInterval(heartbeat);
+            console.log("[BACKEND] SSE connection kapandı");
+            res.end();
+        });
+
     } catch (error) {
         finished = true;
-        res.write(`event: error\ndata: ${error?.response?.data?.error || error.message}\n\n`);
+        clearInterval(heartbeat);
+        res.write(`event: error\ndata: ${error.message}\n\n`);
         res.end();
-        console.error('[OLLAMA ERROR]', error?.response?.data || error);
+        console.error('[OLLAMA ERROR]', error);
     }
 });
- 
-module.exports = router;  
+
+module.exports = router;
