@@ -5102,6 +5102,28 @@ async function updateCart() {
                 }
             };
         }
+        // === PDF'i Paylaşıma Dahil Et Checkbox'u ===
+let pdfCheckbox = document.getElementById('tt-share-pdf-checkbox');
+if (!pdfCheckbox) {
+    pdfCheckbox = document.createElement('input');
+    pdfCheckbox.type = 'checkbox';
+    pdfCheckbox.id = 'tt-share-pdf-checkbox';
+    pdfCheckbox.style.marginLeft = '18px';
+}
+let pdfCheckboxLabel = document.getElementById('tt-share-pdf-checkbox-label');
+if (!pdfCheckboxLabel) {
+    pdfCheckboxLabel = document.createElement('label');
+    pdfCheckboxLabel.id = 'tt-share-pdf-checkbox-label';
+    pdfCheckboxLabel.htmlFor = 'tt-share-pdf-checkbox';
+    pdfCheckboxLabel.textContent = " PDF'i de ekle";
+    pdfCheckboxLabel.style.fontSize = '1em';
+    pdfCheckboxLabel.style.marginLeft = '4px';
+}
+// PDF butonunun yanına ekle
+if (pdfBtn && pdfBtn.parentNode) {
+    if (!pdfCheckbox.parentNode) pdfBtn.insertAdjacentElement('afterend', pdfCheckbox);
+    if (!pdfCheckboxLabel.parentNode) pdfCheckbox.insertAdjacentElement('afterend', pdfCheckboxLabel);
+}
 
         // 2. Görünürlük (Boşsa gizle)
         const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);

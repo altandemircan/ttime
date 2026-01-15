@@ -34,17 +34,14 @@ function generateShareableText() {
 
 // WhatsApp share
 function shareOnWhatsApp() {
-    const textToShare = generateShareableText();
-    const encodedText = encodeURIComponent(textToShare);
-    const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
-    const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        window.open(whatsappAppUrl, '_blank');
-    } else {
-        window.open(whatsappWebUrl, '_blank');
+    let text = generateTripShareText();
+    // YENİ: PDF checkbox seçiliyse
+    if (document.getElementById('tt-share-pdf-checkbox')?.checked) {
+        text += "\nPDF olarak indirmek için: "+window.location.origin+"/download_trip_pdf?key="+encodeURIComponent(window.activeTripKey || 'current_draft');
     }
+    let wurl = "https://wa.me/?text=" + encodeURIComponent(text);
+    window.open(wurl, "_blank");
 }
-
 // Instagram - Copy to clipboard
 function shareOnInstagram() {
     const textToShare = generateShareableText();
