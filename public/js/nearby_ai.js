@@ -438,7 +438,7 @@ function showRouteInfoBanner(day) {
     banner.id = 'route-info-banner';
     banner.className = 'route-info-banner';
     banner.innerHTML = `
-      <span>Click the map to list nearby restaurants, cafes and bars.</span>
+      <span>Click the map and view AI-generated information about each spot.</span>
     `;
     expandedContainer.prepend(banner);
   }

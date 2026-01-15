@@ -75,17 +75,29 @@ function generateStepHtml(step, day, category, idx = 0) {
             </style>
 
         </div>
+
         <div class="info day_cats item-info-view">
-            <div class="title">${name}</div>
+   
+            <div class="title" title="${name}">${name}</div>
             
+      
             <div class="address">
-                <img src="img/address_icon.svg"><span>${address || 'Address not found'}</span>
+                <img src="img/address_icon.svg">
+                <span title="${address || 'Address not found'}">
+                    ${address || 'Address not found'}
+                </span>
             </div>
+
             <div class="opening_hours" title="${(opening || 'Working hours not found.').replace(/"/g, '&quot;')}">
     <img src="img/hours_icon.svg">
     <span>${(opening || 'Working hours not found.').length > 30 ? (opening || 'Working hours not found.').substring(0, 30) + '...' : (opening || 'Working hours not found.')}</span>
 </div>
+
+
+      
+
         </div>
+
         <div class="item_action">
             <div class="change">
                 <span onclick="window.showImage && window.showImage(this)">
@@ -526,3 +538,4 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(shareDiv);
 }
+
