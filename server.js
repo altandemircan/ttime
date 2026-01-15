@@ -152,56 +152,6 @@ app.get('/api/geoapify/places', async (req, res) => {
   }
 });
 
-// app.get('/api/elevation', async (req, res) => {
-//   const { locations } = req.query;
-
-//   const ELEVATION_BASE = process.env.ELEVATION_BASE || 'http://127.0.0.1:5000';
-//   const ELEVATION_DATASET = process.env.ELEVATION_DATASET || 'merit_dem';
-
-//   let batchSize = 120;
-//   try {
-//     const coords = (locations || "").split('|').filter(Boolean);
-//     const resultsAll = [];
-
-//     for (let i = 0; i < coords.length; i += batchSize) {
-//       const batch = coords.slice(i, i + batchSize).join('|');
-//       const url = `${ELEVATION_BASE}/api/elevation?locations=${batch}`;
-//       console.log(`[Elevation BACKEND] Calling: ${url} with ${batch.split('|').length} coords`);
-
-//       const controller = new AbortController();
-//       const timeout = setTimeout(() => controller.abort(), 30000);
-//       let response;
-//       try {
-//         response = await fetch(url, { signal: controller.signal });
-//       } finally {
-//         clearTimeout(timeout);
-//       }
-
-//       if (!response.ok) {
-//         console.warn(`[Elevation] OpenTopoData failed: ${response.status} batch ${batch}`);
-//         for (let j = i; j < i + batchSize && j < coords.length; j++) {
-//           resultsAll.push({ elevation: null });
-//         }
-//         continue;
-//       }
-
-//       const result = await response.json();
-//       if (result && Array.isArray(result.results)) {
-//         resultsAll.push(...result.results);
-//       } else {
-//         for (let j = i; j < i + batchSize && j < coords.length; j++) {
-//           resultsAll.push({ elevation: null });
-//         }
-//       }
-//     }
-
-//     res.set('Access-Control-Allow-Origin', '*');
-//     res.json({ results: resultsAll, source: 'opentopodata' });
-//   } catch (e) {
-//     console.error('[Elevation] Error:', e);
-//     res.status(502).json({ error: 'Elevation API failed.', detail: e.message });
-//   }
-// });
 
 
 app.post('/api/elevation', async (req, res) => {
