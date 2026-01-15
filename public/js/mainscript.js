@@ -1,59 +1,34 @@
 (function loadSharedTripOnStart() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        let sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
+        let sharedTrip = urlParams.get('t');
         
-        if (sharedTrip && !urlParams.has('loadedFromShare')) {
+        if (sharedTrip) {
+            console.log("Alınan link:", sharedTrip.substring(0, 50) + "...");
+            
             // URL-safe base64'i geri çevir
             sharedTrip = sharedTrip
                 .replace(/-/g, '+')
                 .replace(/_/g, '/');
             
-            // Padding ekle
+            // Padding ekle (base64 için gerekli)
             while (sharedTrip.length % 4) {
                 sharedTrip += '=';
             }
             
-            const jsonStr = decodeURIComponent(atob(sharedTrip));
+            console.log("Düzeltilmiş base64:", sharedTrip.substring(0, 50) + "...");
+            
+            const jsonStr = decodeURIComponent(escape(atob(sharedTrip)));
+            console.log("JSON string:", jsonStr.substring(0, 100) + "...");
+            
             const tripData = JSON.parse(jsonStr);
+            console.log("Başarılı! Trip data:", tripData);
             
-            // Veriyi işle
-            if (tripData.i) {
-                tripData.cart = (tripData.i || []).map(item => ({
-                    name: item.n,
-                    category: item.c,
-                    day: item.d,
-                    lat: item.la,
-                    lon: item.lo,
-                    address: '',
-                    website: '',
-                    opening_hours: '',
-                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
-                }));
-                tripData.customDayNames = tripData.dn || {};
-                tripData.tripDates = tripData.td || {};
-            }
-            
-            // ÖZEL TASARIMI GÖSTER
-            if (typeof showSharedTripDesign === 'function') {
-                showSharedTripDesign(tripData);
-            } else {
-                // Fallback: normal görünüm
-                window.cart = tripData.cart || [];
-                window.customDayNames = tripData.customDayNames || {};
-                window.tripDates = tripData.tripDates || {};
-                localStorage.setItem('cart', JSON.stringify(window.cart));
-                
-                setTimeout(() => {
-                    if (typeof showTripDetails === 'function') {
-                        const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
-                        showTripDetails(startDate);
-                    }
-                }, 1000);
-            }
+            // ... kalan kod
         }
     } catch(e) {
-        console.error("Failed to load shared trip:", e);
+        console.error("JSON hatası detayı:", e.message);
+        console.error("String pozisyonu 216 civarı:", sharedTrip?.substring(200, 230));
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===

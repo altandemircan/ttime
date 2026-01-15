@@ -36,25 +36,31 @@ function generateShareableText() {
 }
 
 // KISA LINK OLUŞTUR (TEK BIR FONKSIYON)
+// share.js'de createShortTripLink fonksiyonunu DÜZELT:
 function createShortTripLink() {
     // Sadeleştirilmiş veri
     const minimalData = {
         i: window.cart.map(item => ({
-            n: item.name,        // name
-            c: item.category,    // category
-            d: item.day,         // day
-            la: item.lat,        // lat
-            lo: item.lon         // lon
+            n: String(item.name || '').replace(/"/g, "'").substring(0, 100),
+            c: String(item.category || '').replace(/"/g, "'"),
+            d: item.day || 1,
+            la: item.lat || 0,
+            lo: item.lon || 0
         })),
         dn: window.customDayNames || {},
         td: window.tripDates || {}
     };
     
     const jsonStr = JSON.stringify(minimalData);
-    const base64 = btoa(encodeURIComponent(jsonStr));
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
     
-    // Parametreyi kısalt
-    return `${window.location.origin}/?t=${base64}`;
+    // URL-SAFE YAP (BU ÇOK ÖNEMLİ!)
+    const urlSafeBase64 = base64
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    
+    return `${window.location.origin}/?t=${urlSafeBase64}`;
 }
 
 // WhatsApp share
