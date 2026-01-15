@@ -5083,26 +5083,9 @@ async function updateCart() {
 
         // 1. PDF Butonunu Oluştur veya Bul
         let pdfBtn = document.getElementById('tt-pdf-dl-btn');
-        if (!pdfBtn) {
-            pdfBtn = document.createElement('button');
-            pdfBtn.id = 'tt-pdf-dl-btn';
-            pdfBtn.className = 'add-to-calendar-btn'; // Select Dates ile aynı stil
-            pdfBtn.textContent = 'Download Offline Plan (PDF)';
-            // Görsel ayarlar
-            pdfBtn.style.backgroundColor = '#c05c9e'; // renk
-            pdfBtn.style.color = '#fff';
+if (!pdfBtn) { ... }
 
-            pdfBtn.onclick = function () {
-                if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-                if (typeof downloadTripPlanPDF === "function") {
-                    const key = window.activeTripKey || 'current_draft';
-                    downloadTripPlanPDF(key);
-                } else {
-                    alert("PDF module not ready.");
-                }
-            };
-        }
-       // 1. Add PDF share checkbox
+// 1. Add PDF share checkbox
 let pdfCheckbox = document.getElementById('tt-share-pdf-checkbox');
 if (!pdfCheckbox) {
     pdfCheckbox = document.createElement('input');
