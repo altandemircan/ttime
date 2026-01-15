@@ -35,20 +35,24 @@ function generateShareableText() {
     return shareText;
 }
 function createShortTripLink() {
-    // ÇOK BASİT ARRAY FORMATI
+    // ÇOK BASİT ve GÜVENLİ
     const simpleData = {
-        places: window.cart.map(item => [
-            item.name ? item.name.substring(0, 80) : '',
-            item.category || '',
-            item.day || 1
-        ]),
-        days: Object.keys(window.customDayNames || {}).length,
-        count: window.cart.length
+        c: window.cart.map(item => ({
+            n: item.name || '',
+            t: item.category || '',
+            d: item.day || 1,
+            i: item.image || ''
+        }))
     };
     
     const jsonStr = JSON.stringify(simpleData);
-    // BASE64 YOK - direkt encode
-    return `${window.location.origin}/?t=${encodeURIComponent(jsonStr)}`;
+    const base64 = btoa(jsonStr);
+    
+    // URL-safe
+    return `${window.location.origin}/?share=${base64
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')}`;
 }
 
 // mainscript.js'de loadSharedTripOnStart'ı GÜNCELLE:

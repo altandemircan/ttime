@@ -1,45 +1,40 @@
 (function loadSharedTripOnStart() {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        let sharedTrip = urlParams.get('t');
-        
-        if (sharedTrip) {
-            // DEBUG: JSON'un nerede bozulduğunu bul
-            console.log("RAW URL param (ilk 100 char):", sharedTrip.substring(0, 100));
-            
-            // URL-safe base64'i geri çevir
-            sharedTrip = sharedTrip
+    const urlParams = new URLSearchParams(window.location.search);
+    let shareCode = urlParams.get('share');
+    
+    if (shareCode) {
+        try {
+            // URL-safe geri çevir
+            shareCode = shareCode
                 .replace(/-/g, '+')
                 .replace(/_/g, '/');
             
-            while (sharedTrip.length % 4) {
-                sharedTrip += '=';
+            // Padding
+            while (shareCode.length % 4) {
+                shareCode += '=';
             }
             
-            const jsonStr = decodeURIComponent(escape(atob(sharedTrip)));
+            // Decode
+            const jsonStr = atob(shareCode);
+            const simpleData = JSON.parse(jsonStr);
             
-            // JSON'un neresi bozuk görelim
-            console.log("JSON uzunluğu:", jsonStr.length);
-            console.log("375. karakter civarı:", 
-                jsonStr.substring(370, 380), 
-                "Karakter kodları:",
-                Array.from(jsonStr.substring(370, 380)).map(c => c.charCodeAt(0))
-            );
+            // Tam veriye çevir
+            const tripData = {
+                cart: (simpleData.c || []).map(item => ({
+                    name: item.n,
+                    category: item.t,
+                    day: item.d,
+                    image: item.i || 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg'
+                }))
+            };
             
-            const tripData = JSON.parse(jsonStr);
-            console.log("BAŞARILI! Trip data yüklendi");
+            // TASARIMI GÖSTER
+            showSimpleSharedDesign(tripData);
             
-            // Tasarımı göster
-            if (typeof showSharedTripDesign === 'function') {
-                showSharedTripDesign(tripData);
-            }
-        }
-    } catch(e) {
-        console.error("SON HATA:", e.message);
-        
-        // FALLBACK: Ana sayfaya yönlendir
-        if (window.location.search.includes('t=')) {
-            window.location.href = window.location.origin + '?shareError=true';
+        } catch(e) {
+            console.log("Paylaşım hatası, normal sayfaya dön:", e);
+            // Normal sayfaya yönlendir
+            window.location.href = window.location.origin;
         }
     }
 })();
