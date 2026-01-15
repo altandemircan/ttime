@@ -1,6 +1,5 @@
 // Gezi planını base64 linkine çevir
-function createTripShareLink() {
-    // 1. Gezi verisini al
+async function createShortTripLink() {
     const tripData = {
         cart: window.cart,
         customDayNames: window.customDayNames || {},
@@ -8,13 +7,22 @@ function createTripShareLink() {
         version: "1.0"
     };
     
-    // 2. JSON'a çevir, base64 yap
     const jsonStr = JSON.stringify(tripData);
     const base64 = btoa(encodeURIComponent(jsonStr));
     
-    // 3. URL oluştur
-    const baseUrl = window.location.origin; // "https://triptime.ai"
-    return `${baseUrl}/?sharedTrip=${base64}`;
+    // Backend'de kısa URL oluştur (örnek)
+    try {
+        const response = await fetch('https://api.triptime.ai/shorten', {
+            method: 'POST',
+            body: JSON.stringify({ data: base64 }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        return result.shortUrl; // "triptime.ai/t/abc123"
+    } catch(e) {
+        // Fallback: normal uzun link
+        return `${window.location.origin}/?shared=${base64}`;
+    }
 }
 
 
@@ -60,12 +68,11 @@ function generateShareableText() {
         }
     }
 
-    shareText += `\nView full interactive plan: ${shareLink}`;
-    shareText += "\n\nThis plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
+     const shortLink = createShortTripLink();
+    shareText += `\n\nView full plan: ${shortLink}`;
     
     return shareText;
 }
-
 // WhatsApp share
 function shareOnWhatsApp() {
     const textToShare = generateShareableText();
