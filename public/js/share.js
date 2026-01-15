@@ -1,5 +1,5 @@
 // --- Paylaşım Metni Oluşturucu ---
-function generateShareableText(includePdfLink = false) {
+function generateShareableText() {
     let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     const dateOptions = { day: 'numeric', month: 'long' };
@@ -27,23 +27,14 @@ function generateShareableText(includePdfLink = false) {
         }
     }
 
-    shareText += "This plan was created with triptime.ai! Create your own trip plan and share it with your friends!";
-    
-    if (includePdfLink && typeof downloadTripPlanPDF === 'function') {
-        shareText += "\n\nDownload offline PDF version: https://triptime.ai/pdf-download";
-    }
+    shareText += "This plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
     
     return shareText;
 }
 
 // WhatsApp share
 function shareOnWhatsApp() {
-    // Checkbox kontrolü
-    const shareContainer = document.querySelector('.share-buttons-container');
-    const checkbox = shareContainer ? shareContainer.querySelector('.include-pdf-checkbox') : null;
-    const includePdf = checkbox ? checkbox.checked : false;
-    
-    const textToShare = generateShareableText(includePdf);
+    const textToShare = generateShareableText();
     const encodedText = encodeURIComponent(textToShare);
     const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
     const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
@@ -56,12 +47,7 @@ function shareOnWhatsApp() {
 
 // Instagram - Copy to clipboard
 function shareOnInstagram() {
-    // Checkbox kontrolü
-    const shareContainer = document.querySelector('.share-buttons-container');
-    const checkbox = shareContainer ? shareContainer.querySelector('.include-pdf-checkbox') : null;
-    const includePdf = checkbox ? checkbox.checked : false;
-    
-    const textToShare = generateShareableText(includePdf);
+    const textToShare = generateShareableText();
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(textToShare).then(() => {
             alert("Trip plan copied to clipboard! Now go to Instagram and paste it into your post description.");
@@ -88,24 +74,14 @@ function shareOnInstagram() {
 
 // Facebook share
 function shareOnFacebook() {
-    // Checkbox kontrolü
-    const shareContainer = document.querySelector('.share-buttons-container');
-    const checkbox = shareContainer ? shareContainer.querySelector('.include-pdf-checkbox') : null;
-    const includePdf = checkbox ? checkbox.checked : false;
-    
-    const textToShare = generateShareableText(includePdf);
+    const textToShare = generateShareableText();
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://triptime.ai')}&quote=${encodeURIComponent(textToShare)}`;
     window.open(facebookShareUrl, '_blank');
 }
 
 // Twitter share
 function shareOnTwitter() {
-    // Checkbox kontrolü
-    const shareContainer = document.querySelector('.share-buttons-container');
-    const checkbox = shareContainer ? shareContainer.querySelector('.include-pdf-checkbox') : null;
-    const includePdf = checkbox ? checkbox.checked : false;
-    
-    const textToShare = generateShareableText(includePdf);
+    const textToShare = generateShareableText();
     const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textToShare)}&url=${encodeURIComponent('https://triptime.ai')}`;
     window.open(twitterShareUrl, '_blank');
 }
