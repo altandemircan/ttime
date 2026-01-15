@@ -9518,7 +9518,6 @@ function wrapRouteControls(day) {
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
   
-
   // Bar header
   const mapBarHeader = document.createElement('div');
   mapBarHeader.className = 'map-bar-header';
