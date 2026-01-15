@@ -21,17 +21,9 @@ function generateShareableText() {
     return shareText;
 }
 function createShortTripLink() {
-    // EN GÜVENLİ: BASE64 YOK
-    const simpleData = {
-        c: window.cart.map(item => [
-            item.name || '',
-            item.category || '',
-            item.day || 1
-        ])
-    };
-    
-    const jsonStr = JSON.stringify(simpleData);
-    return window.location.origin + '/?share=' + encodeURIComponent(jsonStr);
+    const data = window.cart.map(item => [item.name, item.category, item.day]);
+    const json = JSON.stringify(data);
+    return window.location.origin + '/?trip=' + encodeURIComponent(json);
 }
 // mainscript.js'de loadSharedTripOnStart'ı GÜNCELLE:
 (function loadSharedTripOnStart() {

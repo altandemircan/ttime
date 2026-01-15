@@ -1,29 +1,32 @@
-(function loadSharedTripOnStart() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const shareCode = urlParams.get('share');
+(function() {
+    const params = new URLSearchParams(window.location.search);
+    const tripParam = params.get('trip');
     
-    if (shareCode) {
+    if (tripParam) {
         try {
-            // DIRECT DECODE
-            const jsonStr = decodeURIComponent(shareCode);
-            const simpleData = JSON.parse(jsonStr);
+            const data = JSON.parse(decodeURIComponent(tripParam));
+            const cart = data.map(item => ({
+                name: item[0],
+                category: item[1],
+                day: item[2],
+                image: 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg'
+            }));
             
-            // Veriyi hazırla
-            const tripData = {
-                cart: (simpleData.c || []).map(item => ({
-                    name: item[0] || '',
-                    category: item[1] || '',
-                    day: item[2] || 1,
-                    image: 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg'
-                }))
-            };
+            // HEMEN GÖSTER (tasarım yok)
+            window.cart = cart;
+            localStorage.setItem('cart', JSON.stringify(cart));
             
-            // TASARIMI GÖSTER
-            showTripDesign(tripData);
+            // 1 saniye bekle ve göster
+            setTimeout(() => {
+                if (typeof showTripDetails === 'function') {
+                    showTripDetails();
+                } else {
+                    location.reload();
+                }
+            }, 1000);
             
         } catch(e) {
-            console.log("Paylaşım hatası:", e);
-            window.location.href = window.location.origin;
+            console.log("Hata:", e);
         }
     }
 })();
