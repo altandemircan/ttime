@@ -37,34 +37,34 @@ async function shareOnWhatsApp() {
     const textToShare = generateShareableText();
     const includePdfCheck = document.getElementById('includePdfCheck');
 
-    // Eğer "Include PDF" işaretliyse
+    // Eğer kutu seçiliyse senin orjinal PDF fonksiyonunu çalıştır
     if (includePdfCheck && includePdfCheck.checked && navigator.canShare) {
         try {
-            // Senin mevcut PDF indirme fonksiyonunu çağırıyoruz (return eklediğimiz için doc gelecek)
+            // DİKKAT: Senin pdf_download.js içindeki orjinal fonksiyonu çağırıyoruz
             const doc = downloadTripPlanPDF(); 
             
+            // doc nesnesini dosyaya çevir
             const pdfBlob = doc.output('blob');
             const pdfFile = new File([pdfBlob], "TripPlan.pdf", { type: "application/pdf" });
 
-            // Tarayıcı dosya paylaşımını destekliyor mu? (Mobil ve yeni Chrome'lar destekler)
             if (navigator.canShare({ files: [pdfFile] })) {
                 await navigator.share({
                     files: [pdfFile],
                     text: textToShare,
-                    title: 'My Trip Plan'
+                    title: 'Trip Plan'
                 });
-                return; // Paylaşım başarılıysa aşağıya geçme
+                return;
             }
         } catch (err) {
-            console.error("PDF Share failed:", err);
+            console.error("PDF Paylaşım Hatası:", err);
         }
     }
 
-    // Checkbox işaretli değilse veya PDF paylaşımı başarısızsa eski usul devam
+    // Kutu seçili değilse klasik WhatsApp açılır
     const encodedText = encodeURIComponent(textToShare);
     const whatsappUrl = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) 
         ? `whatsapp://send?text=${encodedText}` 
-        : `https://web.whatsapp.com/send?text=${encodedText}`;
+        : `https://api.whatsapp.com/send?text=${encodedText}`;
     
     window.open(whatsappUrl, '_blank');
 }
