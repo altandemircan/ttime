@@ -1,46 +1,55 @@
-// EN BAŞA EKLE
-if (window.location.search.includes('t=')) {
-    const params = new URLSearchParams(window.location.search);
-    const tripData = params.get('t');
-    
+// === PAYLAŞILAN GEZİ YÜKLEME ===
+// mainscript.js'deki kodu GÜNCELLEYİN (sadece bu kalacak):
+(function loadSharedTripOnStart() {
     try {
-        const data = JSON.parse(decodeURIComponent(tripData));
-        const cart = data.map((item, i) => ({
-            name: item[0],
-            category: item[1],
-            day: item[2],
-            image: 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg',
-            address: '',
-            id: 'shared_' + i
-        }));
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
         
-        // HEMEN GÖSTER (direkt mevcut sayfada)
-        const chatScreen = document.getElementById("chat-screen");
-        if (chatScreen) {
-            chatScreen.innerHTML = `
-                <div style="padding:40px 20px; text-align:center;">
-                    <h1 style="color:#4CAF50;">✅ Gezi Paylaşıldı!</h1>
-                    <p>${cart.length} mekan yüklendi.</p>
-                    <button onclick="loadSharedCart()" style="background:#4CAF50; color:white; border:none; padding:15px 30px; border-radius:8px; font-size:16px; cursor:pointer; margin-top:20px;">
-                        Geziyi Aç
-                    </button>
-                </div>
-            `;
+        if (sharedTrip) {
+            const jsonStr = decodeURIComponent(atob(sharedTrip));
+            const tripData = JSON.parse(jsonStr);
             
-            // Globalde sakla
-            window.sharedCart = cart;
+            // EĞER minimal veri formatındaysa (i, dn, td)
+            if (tripData.i) {
+                // Minimal veriyi tam veriye çevir
+                window.cart = (tripData.i || []).map(item => ({
+                    name: item.n,
+                    category: item.c,
+                    day: item.d,
+                    lat: item.la,
+                    lon: item.lo,
+                    address: '',
+                    website: '',
+                    opening_hours: '',
+                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                }));
+                window.customDayNames = tripData.dn || {};
+                window.tripDates = tripData.td || {};
+            } 
+            // EĞER eski format daysa (cart, customDayNames, tripDates)
+            else {
+                window.cart = tripData.cart || [];
+                window.customDayNames = tripData.customDayNames || {};
+                window.tripDates = tripData.tripDates || {};
+            }
             
-            window.loadSharedCart = function() {
-                window.cart = window.sharedCart;
-                localStorage.setItem('cart', JSON.stringify(window.cart));
-                location.href = window.location.origin; // Ana sayfaya git
-            };
+            // Local storage'a kaydet
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+            
+            console.log("Shared trip loaded from URL:", tripData);
+            
+            // Sayfa tam yüklendiğinde geziyi göster
+            setTimeout(() => {
+                if (typeof showTripDetails === 'function') {
+                    const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
+                    showTripDetails(startDate);
+                }
+            }, 1000);
         }
-        
     } catch(e) {
-        console.log("Hata:", e);
+        console.error("Failed to load shared trip from URL:", e);
     }
-}
+})();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
