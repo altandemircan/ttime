@@ -1,86 +1,45 @@
-// mainscript.js - TASARIMLI
-(function() {
+// EN BAŞA EKLE
+if (window.location.search.includes('t=')) {
     const params = new URLSearchParams(window.location.search);
-    const tripParam = params.get('trip');
+    const tripData = params.get('t');
     
-    if (tripParam && !params.has('viewing')) {
-        try {
-            const data = JSON.parse(decodeURIComponent(tripParam));
-            const cart = data.map(item => ({
-                name: item[0],
-                category: item[1],
-                day: item[2],
-                image: 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg'
-            }));
-            
-            // TASARIMI GÖSTER
-            showSimpleDesign(cart);
-            
-        } catch(e) {
-            console.log("Hata:", e);
-        }
-    }
-})();
-
-// TASARIM FONKSİYONU - ÇOK BASİT
-function showSimpleDesign(cart) {
-    const chatScreen = document.getElementById("chat-screen");
-    if (!chatScreen) return;
-    
-    // Günleri grupla
-    const days = {};
-    cart.forEach(item => {
-        if (!days[item.day]) days[item.day] = [];
-        days[item.day].push(item);
-    });
-    
-    // HTML
-    chatScreen.innerHTML = `
-        <div style="padding:20px; max-width:800px; margin:0 auto; font-family:Arial;">
-            <div style="background:#4CAF50; color:white; padding:25px; border-radius:10px; text-align:center; margin-bottom:30px;">
-                <h1 style="margin:0 0 10px 0;">🌍 Paylaşılan Gezi</h1>
-                <p style="margin:0; opacity:0.9;">${cart.length} mekan • ${Object.keys(days).length} gün</p>
-            </div>
-            
-            ${Object.entries(days).map(([day, places]) => `
-                <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 3px 10px rgba(0,0,0,0.1);">
-                    <h3 style="color:#333; margin-top:0; border-bottom:2px solid #4CAF50; padding-bottom:10px;">Gün ${day}</h3>
-                    ${places.map((place, idx) => `
-                        <div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #eee;">
-                            <div style="background:#4CAF50; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:15px;">
-                                ${idx + 1}
-                            </div>
-                            <div>
-                                <div style="font-weight:bold; color:#333;">${place.name}</div>
-                                <div style="color:#666; font-size:0.9em;">${place.category}</div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('')}
-            
-            <button onclick="loadThisTrip()" style="background:#4CAF50; color:white; border:none; padding:15px 30px; font-size:16px; border-radius:5px; cursor:pointer; margin-top:20px; width:100%; font-weight:bold;">
-                ✅ Bu Geziyi Kullan
-            </button>
-            
-            <p style="text-align:center; color:#666; margin-top:15px;">
-                Triptime.ai ile paylaşıldı
-            </p>
-        </div>
-    `;
-    
-    // Geziyi yükleme fonksiyonu
-    window.loadThisTrip = function() {
-        window.cart = cart;
-        localStorage.setItem('cart', JSON.stringify(cart));
+    try {
+        const data = JSON.parse(decodeURIComponent(tripData));
+        const cart = data.map((item, i) => ({
+            name: item[0],
+            category: item[1],
+            day: item[2],
+            image: 'https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg',
+            address: '',
+            id: 'shared_' + i
+        }));
         
-        // Normal sayfaya dön
-        setTimeout(() => {
-            if (typeof showTripDetails === 'function') {
-                showTripDetails();
-            }
-        }, 100);
-    };
+        // HEMEN GÖSTER (direkt mevcut sayfada)
+        const chatScreen = document.getElementById("chat-screen");
+        if (chatScreen) {
+            chatScreen.innerHTML = `
+                <div style="padding:40px 20px; text-align:center;">
+                    <h1 style="color:#4CAF50;">✅ Gezi Paylaşıldı!</h1>
+                    <p>${cart.length} mekan yüklendi.</p>
+                    <button onclick="loadSharedCart()" style="background:#4CAF50; color:white; border:none; padding:15px 30px; border-radius:8px; font-size:16px; cursor:pointer; margin-top:20px;">
+                        Geziyi Aç
+                    </button>
+                </div>
+            `;
+            
+            // Globalde sakla
+            window.sharedCart = cart;
+            
+            window.loadSharedCart = function() {
+                window.cart = window.sharedCart;
+                localStorage.setItem('cart', JSON.stringify(window.cart));
+                location.href = window.location.origin; // Ana sayfaya git
+            };
+        }
+        
+    } catch(e) {
+        console.log("Hata:", e);
+    }
 }
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
