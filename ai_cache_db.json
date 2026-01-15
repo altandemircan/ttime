@@ -6,5 +6,53 @@
       "tip": "Visit the ancient city of Perge, located just outside Antalya, to explore ruins from the Roman era.",
       "highlight": "The Duden Waterfalls are a must-see attraction in Antalya, offering stunning views and picnic areas."
     }
+  },
+  "Konya, Turkey-Turkey": {
+    "status": "done",
+    "data": {
+      "summary": "Konya is a city in central Turkey known for its rich history and cultural heritage.",
+      "tip": "Visit the Mevlana Mausoleum, a UNESCO World Heritage Site and the final resting place of Rumi, one of the most famous poets in Turkish literature.",
+      "highlight": "Explore the ancient city walls and gates, including the famous Hisar Gate, which dates back to the 13th century."
+    }
+  },
+  "Mersin, Turkey-Turkey": {
+    "status": "done",
+    "data": {
+      "summary": "Mersin is a city located on the Mediterranean coast of Turkey, known for its rich history and cultural heritage.",
+      "tip": "Visit the Mersin Museum to learn about the city's history and see artifacts from ancient civilizations such as the Hittites and Romans.",
+      "highlight": "The city's harbor and waterfront area are popular spots for a stroll or a meal at one of the many restaurants."
+    }
+  },
+  "Rome": {
+    "status": "done",
+    "data": {
+      "summary": "Rome is the capital city of Italy, located in the central-western part of the country.",
+      "tip": "The best way to get around Rome is by walking or using public transportation, as many streets are narrow and traffic can be chaotic.",
+      "highlight": "Must-visit landmarks include the Colosseum, Roman Forum, Pantheon, Trevi Fountain, and Vatican City, including St. Peter's Basilica."
+    }
+  },
+  "Giresun": {
+    "status": "done",
+    "data": {
+      "summary": "Giresun is a city located in the Black Sea region of Turkey, known for its stunning natural beauty and rich history.",
+      "tip": "Visit the Giresun Castle, a medieval fortress built on a hill overlooking the city, which offers breathtaking views of the surrounding landscape.",
+      "highlight": "The city's scenic coastline and beaches are perfect for relaxation and water activities like swimming and fishing."
+    }
+  },
+  "Kemer, Turkey-Turkey": {
+    "status": "done",
+    "data": {
+      "summary": "Kemer is a coastal town in the Antalya Province of Turkey's Mediterranean region.",
+      "tip": "Visit the Kemer Marina, which offers boat tours and stunning views of the surrounding mountains.",
+      "highlight": "The ancient city of Phaselis, located just outside Kemer, is a must-see archaeological site."
+    }
+  },
+  "Meydan Tıp Merkezi, Turkey-Turkey": {
+    "status": "done",
+    "data": {
+      "summary": "Meydan Tıp Merkezi is not a city or town in Turkey. Meydan Tıp Merkezi is a hospital located in Istanbul, Turkey.",
+      "tip": "If you're looking for travel information on Istanbul, I'd be happy to help!",
+      "highlight": "Unfortunately, there are no notable landmarks inside Meydan Tıp Merkezi as it's a medical facility."
+    }
   }
 }
