@@ -4,31 +4,43 @@
         let sharedTrip = urlParams.get('t');
         
         if (sharedTrip) {
-            console.log("Alınan link:", sharedTrip.substring(0, 50) + "...");
+            // DEBUG: JSON'un nerede bozulduğunu bul
+            console.log("RAW URL param (ilk 100 char):", sharedTrip.substring(0, 100));
             
             // URL-safe base64'i geri çevir
             sharedTrip = sharedTrip
                 .replace(/-/g, '+')
                 .replace(/_/g, '/');
             
-            // Padding ekle (base64 için gerekli)
             while (sharedTrip.length % 4) {
                 sharedTrip += '=';
             }
             
-            console.log("Düzeltilmiş base64:", sharedTrip.substring(0, 50) + "...");
-            
             const jsonStr = decodeURIComponent(escape(atob(sharedTrip)));
-            console.log("JSON string:", jsonStr.substring(0, 100) + "...");
+            
+            // JSON'un neresi bozuk görelim
+            console.log("JSON uzunluğu:", jsonStr.length);
+            console.log("375. karakter civarı:", 
+                jsonStr.substring(370, 380), 
+                "Karakter kodları:",
+                Array.from(jsonStr.substring(370, 380)).map(c => c.charCodeAt(0))
+            );
             
             const tripData = JSON.parse(jsonStr);
-            console.log("Başarılı! Trip data:", tripData);
+            console.log("BAŞARILI! Trip data yüklendi");
             
-            // ... kalan kod
+            // Tasarımı göster
+            if (typeof showSharedTripDesign === 'function') {
+                showSharedTripDesign(tripData);
+            }
         }
     } catch(e) {
-        console.error("JSON hatası detayı:", e.message);
-        console.error("String pozisyonu 216 civarı:", sharedTrip?.substring(200, 230));
+        console.error("SON HATA:", e.message);
+        
+        // FALLBACK: Ana sayfaya yönlendir
+        if (window.location.search.includes('t=')) {
+            window.location.href = window.location.origin + '?shareError=true';
+        }
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
