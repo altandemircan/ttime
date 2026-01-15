@@ -2,13 +2,8 @@
     try {
         const urlParams = new URLSearchParams(window.location.search);
         let sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
-
-
         
         if (sharedTrip && !urlParams.has('loadedFromShare')) {
-              alert("Link bulundu! Tasarım yükleniyor...");
-            console.log("showSharedTripDesign fonksiyonu var mı?", typeof showSharedTripDesign);
-         
             // URL-safe base64'i geri çevir
             sharedTrip = sharedTrip
                 .replace(/-/g, '+')
