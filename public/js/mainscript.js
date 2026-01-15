@@ -5083,31 +5083,25 @@ async function updateCart() {
 
         // 1. PDF Butonunu Oluştur veya Bul
         let pdfBtn = document.getElementById('tt-pdf-dl-btn');
-if (!pdfBtn) { ... }
+        if (!pdfBtn) {
+            pdfBtn = document.createElement('button');
+            pdfBtn.id = 'tt-pdf-dl-btn';
+            pdfBtn.className = 'add-to-calendar-btn'; // Select Dates ile aynı stil
+            pdfBtn.textContent = 'Download Offline Plan (PDF)';
+            // Görsel ayarlar
+            pdfBtn.style.backgroundColor = '#c05c9e'; // renk
+            pdfBtn.style.color = '#fff';
 
-// 1. Add PDF share checkbox
-let pdfCheckbox = document.getElementById('tt-share-pdf-checkbox');
-if (!pdfCheckbox) {
-    pdfCheckbox = document.createElement('input');
-    pdfCheckbox.type = 'checkbox';
-    pdfCheckbox.id = 'tt-share-pdf-checkbox';
-    pdfCheckbox.style.marginLeft = '18px';
-}
-let pdfCheckboxLabel = document.getElementById('tt-share-pdf-checkbox-label');
-if (!pdfCheckboxLabel) {
-    pdfCheckboxLabel = document.createElement('label');
-    pdfCheckboxLabel.id = 'tt-share-pdf-checkbox-label';
-    pdfCheckboxLabel.htmlFor = 'tt-share-pdf-checkbox';
-    pdfCheckboxLabel.textContent = " Include PDF";
-    pdfCheckboxLabel.style.fontSize = '1em';
-    pdfCheckboxLabel.style.marginLeft = '4px';
-}
-
-// Add to DOM, just after the PDF button
-if (pdfBtn && pdfBtn.parentNode) {
-    if (!pdfCheckbox.parentNode) pdfBtn.insertAdjacentElement('afterend', pdfCheckbox);
-    if (!pdfCheckboxLabel.parentNode) pdfCheckbox.insertAdjacentElement('afterend', pdfCheckboxLabel);
-}
+            pdfBtn.onclick = function () {
+                if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+                if (typeof downloadTripPlanPDF === "function") {
+                    const key = window.activeTripKey || 'current_draft';
+                    downloadTripPlanPDF(key);
+                } else {
+                    alert("PDF module not ready.");
+                }
+            };
+        }
 
         // 2. Görünürlük (Boşsa gizle)
         const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
