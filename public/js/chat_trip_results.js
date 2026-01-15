@@ -520,21 +520,25 @@ function showTripDetails(startDate) {
     shareDiv.id = 'mobile-share-buttons';
     shareDiv.className = 'share-buttons-container';
     shareDiv.innerHTML = `
-        <div class="share-buttons">
-            <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
-                <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
-            </button>
-            <button class="share-btn instagram" onclick="shareOnInstagram()">
-                <img src="img/share_instagram.svg" alt="Instagram"> Instagram
-            </button>
-            <button class="share-btn facebook" onclick="shareOnFacebook()">
-                <img src="img/share_facebook.svg" alt="Facebook"> Facebook
-            </button>
-            <button class="share-btn twitter" onclick="shareOnTwitter()">
-                <img src="img/share_x.svg" alt="Twitter"> Twitter
-            </button>
-        </div>
-    `;
+    <div class="pdf-option-container" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px;">
+        <input type="checkbox" id="includePdfCheck" style="width:16px; height:16px; cursor:pointer;">
+        <label for="includePdfCheck" style="font-size: 14px; color: #555; cursor:pointer;">Include PDF file with my plan</label>
+    </div>
+    <div class="share-buttons">
+        <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
+            <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
+        </button>
+        <button class="share-btn instagram" onclick="shareOnInstagram()">
+            <img src="img/share_instagram.svg" alt="Instagram"> Instagram
+        </button>
+        <button class="share-btn facebook" onclick="shareOnFacebook()">
+            <img src="img/share_facebook.svg" alt="Facebook"> Facebook
+        </button>
+        <button class="share-btn twitter" onclick="shareOnTwitter()">
+            <img src="img/share_x.svg" alt="Twitter"> Twitter
+        </button>
+    </div>
+`;
     tripDetailsSection.appendChild(shareDiv);
 }
 
