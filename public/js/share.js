@@ -35,9 +35,11 @@ function generateShareableText() {
 // WhatsApp share
 function shareOnWhatsApp() {
     let text = generateTripShareText();
-    // YENİ: PDF checkbox seçiliyse
+    // Eğer PDF kutusu işaretliyse PDF linkini de metne ekle
     if (document.getElementById('tt-share-pdf-checkbox')?.checked) {
-        text += "\nPDF olarak indirmek için: "+window.location.origin+"/download_trip_pdf?key="+encodeURIComponent(window.activeTripKey || 'current_draft');
+        text += "\nPDF olarak indirmek için: " + 
+          window.location.origin + "/download_trip_pdf?key=" + 
+          encodeURIComponent(window.activeTripKey || 'current_draft');
     }
     let wurl = "https://wa.me/?text=" + encodeURIComponent(text);
     window.open(wurl, "_blank");

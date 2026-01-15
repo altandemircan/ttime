@@ -5102,7 +5102,7 @@ async function updateCart() {
                 }
             };
         }
-        // === PDF'i Paylaşıma Dahil Et Checkbox'u ===
+       // 1. Add PDF share checkbox
 let pdfCheckbox = document.getElementById('tt-share-pdf-checkbox');
 if (!pdfCheckbox) {
     pdfCheckbox = document.createElement('input');
@@ -5115,11 +5115,12 @@ if (!pdfCheckboxLabel) {
     pdfCheckboxLabel = document.createElement('label');
     pdfCheckboxLabel.id = 'tt-share-pdf-checkbox-label';
     pdfCheckboxLabel.htmlFor = 'tt-share-pdf-checkbox';
-    pdfCheckboxLabel.textContent = " PDF'i de ekle";
+    pdfCheckboxLabel.textContent = " Include PDF";
     pdfCheckboxLabel.style.fontSize = '1em';
     pdfCheckboxLabel.style.marginLeft = '4px';
 }
-// PDF butonunun yanına ekle
+
+// Add to DOM, just after the PDF button
 if (pdfBtn && pdfBtn.parentNode) {
     if (!pdfCheckbox.parentNode) pdfBtn.insertAdjacentElement('afterend', pdfCheckbox);
     if (!pdfCheckboxLabel.parentNode) pdfCheckbox.insertAdjacentElement('afterend', pdfCheckboxLabel);
