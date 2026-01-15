@@ -36,7 +36,6 @@
     }
 })();
 
-
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
