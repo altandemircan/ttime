@@ -5859,25 +5859,27 @@ ease;
 }
     
 .expand-map-btn {
-        display: flex;
+    display: flex;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
     background: #ffffff;
-    color: #475569;
+    color: #6366f1; /* Mor/Mavi arası modern bir ton */
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     border-radius: 8px;
-    border: 1px solid #f2f2f2;
-    box-shadow: 0 4px 12px rgb(92 140 246 / 15%);
-    transition: all 0.2s ease;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-.expand-map-btn img {
-    width: 20px;
-    height: 20px;  
+.expand-map-btn:hover {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px); /* Arkadaki haritayı bulanıklaştırır */
+    color: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
