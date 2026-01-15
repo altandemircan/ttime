@@ -1,22 +1,5 @@
-function createShortTripLink() {
-    const cleanCart = window.cart.map(item => ({
-        n: (item.name || '').replace(/"/g, "'").replace(/\n/g, ' '),
-        c: (item.category || '').replace(/"/g, "'"),
-        d: item.day || 1,
-        la: item.lat || 0,
-        lo: item.lon || 0
-    }));
-    
-    const minimalData = {
-        i: cleanCart,
-        dn: window.customDayNames || {},
-        td: window.tripDates || {}
-    };
-    
-    const jsonStr = JSON.stringify(minimalData);
-    return `${window.location.origin}/?t=${encodeURIComponent(jsonStr)}`;
-}
 
+// --- Paylaşım Metni Oluşturucu ---
 function generateShareableText() {
     let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
@@ -25,6 +8,7 @@ function generateShareableText() {
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
+            if (typeof window.customDayNames === 'undefined') window.customDayNames = {};
             const dayName = window.customDayNames[day] || `Day ${day}`;
             let dayHeader;
             const startDateValue = window.tripDates && window.tripDates.startDate ? window.tripDates.startDate : null;
@@ -44,11 +28,34 @@ function generateShareableText() {
         }
     }
 
+    // KISA LINK OLUŞTUR
     const shortLink = createShortTripLink();
     shareText += `\n\nView full plan: ${shortLink}`;
-    shareText += "\n\nThis plan was created with triptime.ai!"; 
+    shareText += "\n\nThis plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
     
     return shareText;
+}
+
+// KISA LINK OLUŞTUR (TEK BIR FONKSIYON)
+function createShortTripLink() {
+    // Sadeleştirilmiş veri
+    const minimalData = {
+        i: window.cart.map(item => ({
+            n: item.name,        // name
+            c: item.category,    // category
+            d: item.day,         // day
+            la: item.lat,        // lat
+            lo: item.lon         // lon
+        })),
+        dn: window.customDayNames || {},
+        td: window.tripDates || {}
+    };
+    
+    const jsonStr = JSON.stringify(minimalData);
+    const base64 = btoa(encodeURIComponent(jsonStr));
+    
+    // Parametreyi kısalt
+    return `${window.location.origin}/?t=${base64}`;
 }
 
 // WhatsApp share
