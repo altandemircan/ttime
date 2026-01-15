@@ -1,12 +1,15 @@
-// --- 1. PDF File Helper ---
-// Creates a File object from the PDF logic for sharing
-async function getTripPDFAsFile() {
+// --- Helper: Generate PDF as a File object ---
+async function getTripPDFFile() {
     if (typeof window.jspdf === "undefined") return null;
+
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
+        
+        // Basic PDF content (You can expand this to match your pdf_download.js style)
         doc.setFontSize(18);
-        doc.text("Trip Plan - Triptime AI", 10, 20);
+        doc.text("My Trip Plan", 10, 20);
+        
         let y = 30;
         window.cart.forEach((item, index) => {
             if (item.name) {
@@ -16,30 +19,11 @@ async function getTripPDFAsFile() {
                 if (y > 280) { doc.addPage(); y = 20; }
             }
         });
+
         const pdfBlob = doc.output('blob');
-        return new File([pdfBlob], `TripPlan_${new Date().getTime()}.pdf`, { type: 'application/pdf' });
+        return new File([pdfBlob], "TripPlan.pdf", { type: 'application/pdf' });
     } catch (e) {
         console.error("PDF generation failed:", e);
-        return null;
-    }
-}
-// --- Helper for PDF generation (Uses jsPDF from your project) ---
-async function generatePDFFile() {
-    if (!window.jspdf) return null;
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.text("Your Trip Plan", 10, 10);
-        let y = 20;
-        window.cart.forEach(item => {
-            if (item.name) {
-                doc.text(`- ${item.name} (${item.category})`, 10, y);
-                y += 10;
-            }
-        });
-        const blob = doc.output('blob');
-        return new File([blob], "TripPlan.pdf", { type: "application/pdf" });
-    } catch (e) {
         return null;
     }
 }
@@ -77,33 +61,35 @@ function generateShareableText() {
     return shareText;
 }
 
-// WhatsApp share (PDF is optional)
+// WhatsApp share
 async function shareOnWhatsApp() {
     const textToShare = generateShareableText();
     
-    // Check if user wants PDF
-    const includePDF = confirm("Would you like to include the PDF plan?");
-    
-    if (includePDF && navigator.canShare) {
-        const pdfFile = await generatePDFFile();
+    // Check if the "Include PDF" checkbox is checked
+    const includePdfCheck = document.getElementById('includePdfCheck');
+    const shouldIncludePdf = includePdfCheck && includePdfCheck.checked;
+
+    if (shouldIncludePdf && navigator.canShare) {
+        const pdfFile = await getTripPDFFile();
         if (pdfFile && navigator.canShare({ files: [pdfFile] })) {
             try {
                 await navigator.share({
                     files: [pdfFile],
-                    text: textToShare,
-                    title: 'Trip Plan'
+                    title: 'My Trip Plan',
+                    text: textToShare
                 });
-                return; // Shared via Web Share API
+                return; // Successfully shared via Web Share API
             } catch (err) {
-                console.error("Share failed", err);
+                if (err.name !== 'AbortError') console.error("PDF Share failed:", err);
             }
         }
     }
 
-    // Fallback to original text-only share
+    // Fallback to original URL-based text share (if checkbox is off or browser doesn't support file sharing)
     const encodedText = encodeURIComponent(textToShare);
     const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
     const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
+    
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         window.open(whatsappAppUrl, '_blank');
     } else {
