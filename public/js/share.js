@@ -1,33 +1,3 @@
-// --- Helper: Generate PDF as a File object ---
-async function getTripPDFFile() {
-    if (typeof window.jspdf === "undefined") return null;
-
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // Basic PDF content (You can expand this to match your pdf_download.js style)
-        doc.setFontSize(18);
-        doc.text("My Trip Plan", 10, 20);
-        
-        let y = 30;
-        window.cart.forEach((item, index) => {
-            if (item.name) {
-                doc.setFontSize(12);
-                doc.text(`${index + 1}. ${item.name} (${item.category})`, 10, y);
-                y += 10;
-                if (y > 280) { doc.addPage(); y = 20; }
-            }
-        });
-
-        const pdfBlob = doc.output('blob');
-        return new File([pdfBlob], "TripPlan.pdf", { type: 'application/pdf' });
-    } catch (e) {
-        console.error("PDF generation failed:", e);
-        return null;
-    }
-}
-
 // --- Paylaşım Metni Oluşturucu ---
 function generateShareableText() {
     let shareText = "Here's your trip plan!\n\n";
@@ -58,43 +28,56 @@ function generateShareableText() {
     }
 
     shareText += "This plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
+    
     return shareText;
 }
 
 // WhatsApp share
 async function shareOnWhatsApp() {
-    const textToShare = generateShareableText();
-    
-    // Check if the "Include PDF" checkbox is checked
+    const textToShare = generateShareableText(); // Mevcut metin oluşturucun
     const includePdfCheck = document.getElementById('includePdfCheck');
-    const shouldIncludePdf = includePdfCheck && includePdfCheck.checked;
 
-    if (shouldIncludePdf && navigator.canShare) {
-        const pdfFile = await getTripPDFFile();
-        if (pdfFile && navigator.canShare({ files: [pdfFile] })) {
-            try {
+    // Eğer checkbox işaretliyse PDF ile paylaşmayı dene
+    if (includePdfCheck && includePdfCheck.checked && navigator.canShare) {
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // pdf_download.js'deki tasarımını buraya kısa özet olarak ekliyoruz
+            doc.setFontSize(16);
+            doc.text("Trip Plan", 10, 20);
+            let y = 30;
+            window.cart.forEach(item => {
+                if(item.name) {
+                    doc.setFontSize(10);
+                    doc.text(`- ${item.name}`, 10, y);
+                    y += 7;
+                }
+            });
+
+            const pdfBlob = doc.output('blob');
+            const pdfFile = new File([pdfBlob], "TripPlan.pdf", { type: "application/pdf" });
+
+            if (navigator.canShare({ files: [pdfFile] })) {
                 await navigator.share({
                     files: [pdfFile],
-                    title: 'My Trip Plan',
-                    text: textToShare
+                    text: textToShare,
+                    title: 'My Trip Plan'
                 });
-                return; // Successfully shared via Web Share API
-            } catch (err) {
-                if (err.name !== 'AbortError') console.error("PDF Share failed:", err);
+                return; // Paylaşım başarılıysa fonksiyondan çık
             }
+        } catch (err) {
+            console.error("PDF Share failed:", err);
         }
     }
 
-    // Fallback to original URL-based text share (if checkbox is off or browser doesn't support file sharing)
+    // Checkbox işaretli değilse veya PDF paylaşımı başarısızsa orijinal WhatsApp linkine yönlendir
     const encodedText = encodeURIComponent(textToShare);
-    const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
-    const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
+    const whatsappUrl = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) 
+        ? `whatsapp://send?text=${encodedText}` 
+        : `https://web.whatsapp.com/send?text=${encodedText}`;
     
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        window.open(whatsappAppUrl, '_blank');
-    } else {
-        window.open(whatsappWebUrl, '_blank');
-    }
+    window.open(whatsappUrl, '_blank');
 }
 
 // Instagram - Copy to clipboard
