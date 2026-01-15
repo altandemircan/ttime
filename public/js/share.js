@@ -1,5 +1,38 @@
+// Gezi planını base64 linkine çevir
+function createTripShareLink() {
+    // 1. Gezi verisini al
+    const tripData = {
+        cart: window.cart,
+        customDayNames: window.customDayNames || {},
+        tripDates: window.tripDates || {},
+        version: "1.0"
+    };
+    
+    // 2. JSON'a çevir, base64 yap
+    const jsonStr = JSON.stringify(tripData);
+    const base64 = btoa(encodeURIComponent(jsonStr));
+    
+    // 3. URL oluştur
+    const baseUrl = window.location.origin; // "https://triptime.ai"
+    return `${baseUrl}/?sharedTrip=${base64}`;
+}
+
+
+// --- Paylaşım Metni Oluşturucu ---
 // --- Paylaşım Metni Oluşturucu ---
 function generateShareableText() {
+    // Base64 link oluştur
+    const tripData = {
+        cart: window.cart,
+        customDayNames: window.customDayNames || {},
+        tripDates: window.tripDates || {},
+        version: "1.0"
+    };
+    
+    const jsonStr = JSON.stringify(tripData);
+    const base64 = btoa(encodeURIComponent(jsonStr));
+    const shareLink = `${window.location.origin}/?sharedTrip=${base64}`;
+    
     let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     const dateOptions = { day: 'numeric', month: 'long' };
@@ -27,7 +60,8 @@ function generateShareableText() {
         }
     }
 
-    shareText += "This plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
+    shareText += `\nView full interactive plan: ${shareLink}`;
+    shareText += "\n\nThis plan was created with triptime.ai! Create your own trip plan and share it with your friends!"; 
     
     return shareText;
 }

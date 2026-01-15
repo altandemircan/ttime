@@ -1,29 +1,34 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedTrip = urlParams.get('sharedTrip');
-    
-    if (sharedTrip) {
-        try {
+// === PAYLAŞILAN GEZİ YÜKLEME ===
+(function loadSharedTrip() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedTrip = urlParams.get('sharedTrip');
+        
+        if (sharedTrip) {
             const jsonStr = decodeURIComponent(atob(sharedTrip));
             const tripData = JSON.parse(jsonStr);
             
-            // Geziyi yükle
+            // Global değişkenlere ata
             window.cart = tripData.cart || [];
             window.customDayNames = tripData.customDayNames || {};
             window.tripDates = tripData.tripDates || {};
             
-            // Ekranı güncelle
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(tripData.tripDates.startDate);
-            }
+            // Local storage'a kaydet
+            localStorage.setItem('cart', JSON.stringify(window.cart));
             
-            alert("Shared trip loaded successfully!");
-        } catch(e) {
-            console.error("Failed to load shared trip:", e);
+            console.log("Shared trip loaded from URL:", tripData);
+            
+            // Sayfa tam yüklendiğinde geziyi göster
+            setTimeout(() => {
+                if (typeof showTripDetails === 'function') {
+                    showTripDetails(tripData.tripDates.startDate);
+                }
+            }, 1000);
         }
+    } catch(e) {
+        console.error("Failed to load shared trip from URL:", e);
     }
-});
-
+})();
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
