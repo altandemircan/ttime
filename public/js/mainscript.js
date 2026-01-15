@@ -1,3 +1,30 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedTrip = urlParams.get('sharedTrip');
+    
+    if (sharedTrip) {
+        try {
+            const jsonStr = decodeURIComponent(atob(sharedTrip));
+            const tripData = JSON.parse(jsonStr);
+            
+            // Geziyi yükle
+            window.cart = tripData.cart || [];
+            window.customDayNames = tripData.customDayNames || {};
+            window.tripDates = tripData.tripDates || {};
+            
+            // Ekranı güncelle
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(tripData.tripDates.startDate);
+            }
+            
+            alert("Shared trip loaded successfully!");
+        } catch(e) {
+            console.error("Failed to load shared trip:", e);
+        }
+    }
+});
+
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
