@@ -516,10 +516,16 @@ function showTripDetails(startDate) {
         With <strong>Triptime AI</strong>, every journey becomes a story worth sharing!
     `;
 
-    const shareDiv = document.createElement('div');
+       const shareDiv = document.createElement('div');
     shareDiv.id = 'mobile-share-buttons';
     shareDiv.className = 'share-buttons-container';
     shareDiv.innerHTML = `
+        <div class="share-pdf-option" style="margin-bottom: 10px; padding: 8px; background: #f5f5f5; border-radius: 6px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="include-pdf-checkbox" style="width: 16px; height: 16px;">
+                <span style="font-size: 14px;">Include PDF download link in share</span>
+            </label>
+        </div>
         <div class="share-buttons">
             <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
                 <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
