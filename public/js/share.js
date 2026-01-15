@@ -35,27 +35,38 @@ function generateShareableText() {
     return shareText;
 }
 
-// KISA LINK OLUŞTUR (TEK BIR FONKSIYON)
+// share.js'deki createShortTripLink fonksiyonunu GÜNCELLE:
+// ÇOK DAHA BASİT VERSİYON
 function createShortTripLink() {
-    // Sadeleştirilmiş veri
     const minimalData = {
-        i: window.cart.map(item => ({
-            n: item.name,        // name
-            c: item.category,    // category
-            d: item.day,         // day
-            la: item.lat,        // lat
-            lo: item.lon         // lon
-        })),
+        i: window.cart.map(item => [item.name, item.category, item.day, item.lat, item.lon]),
         dn: window.customDayNames || {},
         td: window.tripDates || {}
     };
     
+    // JSON'u direkt URL'ye koy (encodeURIComponent ile)
     const jsonStr = JSON.stringify(minimalData);
-    const base64 = btoa(encodeURIComponent(jsonStr));
-    
-    // Parametreyi kısalt
-    return `${window.location.origin}/?t=${base64}`;
+    return `${window.location.origin}/?t=${encodeURIComponent(jsonStr)}`;
 }
+
+// mainscript.js
+(function loadSharedTripOnStart() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedTrip = urlParams.get('t');
+        
+        if (sharedTrip && !urlParams.has('loadedFromShare')) {
+            const jsonStr = decodeURIComponent(sharedTrip);
+            const tripData = JSON.parse(jsonStr);
+            // ... kalan kod
+        }
+    } catch(e) {
+        console.error("Failed to load shared trip:", e);
+    }
+})();
+
+// mainscript.js'deki loadSharedTripOnStart fonksiyonunu GÜNCELLE:
+
 
 // WhatsApp share
 function shareOnWhatsApp() {
