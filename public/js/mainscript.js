@@ -1,14 +1,17 @@
+// mainscript.js'deki kodu GÜNCELLEYİN (sadece bu kalacak):
 (function loadSharedTripOnStart() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedTrip = urlParams.get('t');
-    
-    if (sharedTrip && !urlParams.has('loadedFromShare')) {
-        try {
-            const jsonStr = decodeURIComponent(sharedTrip);
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
+        
+        if (sharedTrip) {
+            const jsonStr = decodeURIComponent(atob(sharedTrip));
             const tripData = JSON.parse(jsonStr);
             
+            // EĞER minimal veri formatındaysa (i, dn, td)
             if (tripData.i) {
-                window.cart = tripData.i.map(item => ({
+                // Minimal veriyi tam veriye çevir
+                window.cart = (tripData.i || []).map(item => ({
                     name: item.n,
                     category: item.c,
                     day: item.d,
@@ -21,20 +24,29 @@
                 }));
                 window.customDayNames = tripData.dn || {};
                 window.tripDates = tripData.td || {};
+            } 
+            // EĞER eski format daysa (cart, customDayNames, tripDates)
+            else {
+                window.cart = tripData.cart || [];
+                window.customDayNames = tripData.customDayNames || {};
+                window.tripDates = tripData.tripDates || {};
             }
             
+            // Local storage'a kaydet
             localStorage.setItem('cart', JSON.stringify(window.cart));
             
-            if (typeof showSharedTripPage === 'function') {
-                showSharedTripPage({
-                    cart: window.cart,
-                    customDayNames: window.customDayNames,
-                    tripDates: window.tripDates
-                });
-            }
-        } catch(e) {
-            console.error("Paylaşım hatası:", e);
+            console.log("Shared trip loaded from URL:", tripData);
+            
+            // Sayfa tam yüklendiğinde geziyi göster
+            setTimeout(() => {
+                if (typeof showTripDetails === 'function') {
+                    const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
+                    showTripDetails(startDate);
+                }
+            }, 1000);
         }
+    } catch(e) {
+        console.error("Failed to load shared trip from URL:", e);
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
