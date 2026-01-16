@@ -39,30 +39,23 @@ function generateShareableText() {
 function createShortTripLink() {
     if (!window.cart || window.cart.length === 0) return window.location.origin;
     
-    // Gezi Adı (Input'tan veya bir değişkenden alıyorsan orayı buraya bağla)
-    const tripName = document.getElementById('trip-name-input')?.value || "Yeni Gezi";
-    
-    // AI Bilgisi (LocalStorage'dan çekiyoruz)
+    // Gezi Adını alıyoruz
+    const tripName = document.getElementById('trip_title')?.innerText || "Yeni Gezi";
+    // AI bilgisini alıyoruz
     const aiInfo = localStorage.getItem('ai_information') || "";
 
     const items = window.cart.map(it => {
         const name = it.name.replace(/[:|*]/g, "");
-        const la = (it.lat || it.location?.lat || 0);
-        const lo = (it.lng || it.location?.lng || 0);
+        const la = it.lat || it.location?.lat || 0;
+        const lo = it.lng || it.location?.lng || 0;
         const day = it.day || 1;
-        // Resim URL'sini pakete ekle (Pexels linki)
-        const img = encodeURIComponent(it.image || ""); 
+        // RESİM BURADA PAKETE GİRİYOR:
+        const img = it.image ? encodeURIComponent(it.image) : "no-img"; 
         return `${name}:${la}:${lo}:${day}:${img}`;
     }).join('*');
 
-    const tripData = {
-        n: tripName,
-        ai: aiInfo,
-        items: items
-    };
-
-    const finalUrl = `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(tripData))}`;
-    return finalUrl;
+    const tripData = { n: tripName, ai: aiInfo, items: items };
+    return `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(tripData))}`;
 }
 
 // WhatsApp share
