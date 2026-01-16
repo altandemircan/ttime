@@ -10100,20 +10100,25 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-// mainscript.js sonuna ekle (defer olduğu için DOMContentLoaded içinde)
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const t = params.get('t');
+    let t = params.get('t');
     if (!t) return;
 
     try {
-        // 1. Veriyi Çöz
-        const base64 = t.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonStr = decodeURIComponent(escape(atob(base64)));
+        // 1. URL-safe karakterleri geri çevir
+        t = t.replace(/-/g, '+').replace(/_/g, '/');
+        while (t.length % 4) t += '='; // Padding ekle
+
+        // 2. Decode işlemi
+        const binary = atob(t);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const jsonStr = new TextDecoder().decode(bytes);
         const tripData = JSON.parse(jsonStr);
 
         if (tripData && tripData.i) {
-            // 2. Senin sisteminin beklediği formatta window.cart'ı doldur
+            // 3. Veriyi window.cart'a göm
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
@@ -10124,34 +10129,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
 
             if (tripData.td) window.tripDates = tripData.td;
-            
-            // 3. LocalStorage'a yaz (Sayfa yenilense de gitmesin)
             localStorage.setItem('cart', JSON.stringify(window.cart));
 
-            // 4. UI TEMİZLİK
-            const welcome = document.getElementById('tt-welcome');
-            if (welcome) welcome.style.display = 'none';
+            // 4. SİSTEMLERİ TETİKLE
+            if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-            // 5. MOTORU ATEŞLE (SIRALAMA KRİTİK)
-            console.log("🛠️ Triptime Sistemleri Başlatılıyor...");
-            
-            // Önce listeyi doldur (fonsk.js içindeki fonksiyonun)
+            // Listeyi güncelle
             if (typeof updateCart === 'function') updateCart();
-            
-            // Tarih detaylarını bas
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(window.tripDates?.startDate || null);
-            }
 
-            // Haritayı ve Yükseklik Verilerini (elevation-works) Render Et
+            // Yükseklik ve Rota motorunu ateşle (fonsk.js)
             setTimeout(() => {
                 if (typeof renderRouteForDay === 'function') {
-                    renderRouteForDay(1); // 1. günün rotasını çiz
-                    console.log("🚀 Rota ve Yükseklik Grafiği Yüklendi!");
+                    renderRouteForDay(1);
+                    console.log("🚀 Gezi başarıyla restore edildi.");
                 }
-            }, 1000); // Harita kütüphanelerinin oturması için 1 sn bekle
+            }, 800);
         }
     } catch (e) {
-        console.error("Yükleme sırasında hata:", e);
+        console.error("Kritik Decode Hatası:", e);
+        // Eğer hala hata alırsak URL'den 't' parametresini temizleyip sayfayı kurtaralım
     }
 });

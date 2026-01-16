@@ -44,18 +44,25 @@ function createShortTripLink() {
             n: item.name,
             c: item.category,
             d: item.day,
-            la: (item.lat || item.location?.lat || 0).toFixed(5),
-            lo: (item.lng || item.location?.lng || 0).toFixed(5)
+            la: (item.lat || item.location?.lat || 0),
+            lo: (item.lng || item.location?.lng || 0)
         })),
         td: window.tripDates || {}
     };
 
-    // Veriyi Base64 yap ama URL'de bozulmaması için güvenli hale getir
+    // JSON'u URL-safe bir string'e çevir (Base64'ün en güvenli hali)
     const jsonStr = JSON.stringify(tripData);
-    const base64 = btoa(unescape(encodeURIComponent(jsonStr)))
-                   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const utf8Bytes = new TextEncoder().encode(jsonStr);
+    let binary = "";
+    utf8Bytes.forEach(b => binary += String.fromCharCode(b));
     
-    return `${window.location.origin}${window.location.pathname}?t=${base64}`;
+    // btoa sonrası URL'de sorun çıkaran karakterleri temizle
+    const safeBase64 = btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    
+    return `${window.location.origin}${window.location.pathname}?t=${safeBase64}`;
 }
 
 // WhatsApp share
