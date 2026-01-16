@@ -1,15 +1,13 @@
 function loadSharedTripOnStart() {
-    // URL'deki #plan= kısmını alıyoruz
     const hash = window.location.hash;
-    if (!hash || !hash.startsWith('#plan=')) return;
+    if (!hash || !hash.includes('plan=')) return;
 
     try {
-        console.log("🔗 Plan Hash üzerinden yükleniyor...");
+        console.log("🔗 Plan yükleniyor...");
 
-        const base64Data = hash.replace('#plan=', '');
-        
-        // Güvenli Decode
-        const decodedStr = decodeURIComponent(escape(atob(base64Data)));
+        // Hash'ten veriyi çek ve çöz
+        const rawData = hash.split('plan=')[1];
+        const decodedStr = decodeURIComponent(rawData);
         const tripData = JSON.parse(decodedStr);
 
         if (tripData.i) {
@@ -26,12 +24,14 @@ function loadSharedTripOnStart() {
             window.tripDates = tripData.td || {};
         }
 
-        // Arayüzü temizle
-        const chatBox = document.getElementById("chat-box");
-        if (chatBox) chatBox.innerHTML = ""; 
-        if (document.querySelector('.input-wrapper')) document.querySelector('.input-wrapper').style.display = 'none';
-        if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
+        // Ekranı temizle
+        if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = ""; 
+        const inputArea = document.querySelector('.input-wrapper');
+        if (inputArea) inputArea.style.display = 'none';
+        const welcome = document.getElementById('tt-welcome');
+        if (welcome) welcome.style.display = 'none';
 
+        // Planı çiz
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
@@ -39,15 +39,13 @@ function loadSharedTripOnStart() {
         }, 500);
 
     } catch (e) {
-        console.error("Hash Yükleme Hatası:", e);
+        console.error("Yükleme Hatası:", e);
     }
 }
 
-// Sayfa yüklendiğinde ve hash değiştiğinde çalıştır
+// Olayları bağla
 window.addEventListener('load', loadSharedTripOnStart);
 window.addEventListener('hashchange', loadSharedTripOnStart);
-
-
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;

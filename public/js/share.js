@@ -158,10 +158,10 @@ function createShortTripLink() {
         td: window.tripDates || {}
     };
 
-    // JSON'u string yap ve Base64'e çevir
+    // JSON'u string yap ve URI güvenli hale getir
     const jsonStr = JSON.stringify(minimalData);
-    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    const safeData = encodeURIComponent(jsonStr);
     
-    // Veriyi '?' yerine '#' ile ekliyoruz. Bu, kesilme hatasını ÖNLER.
-    return `${window.location.origin}/#plan=${base64}`;
+    // Veriyi doğrudan hash içine koyuyoruz (Şifreleme yok, hata yok)
+    return `${window.location.origin}/#plan=${safeData}`;
 }
