@@ -3,14 +3,39 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
         if (sharedTrip) {
-            // Hem encodeURIComponent'li hem sade base64 desteği
-            let jsonStr = atob(sharedTrip);
-            if (jsonStr[0] === "%") { // encodeURIComponent ile encode edilmişse
-                jsonStr = decodeURIComponent(jsonStr);
+            let jsonStr = "";
+            // Atob ile çöz
+            try {
+                jsonStr = atob(sharedTrip);
+                // Sadece yüzde ile başlıyorsa decodeURIComponent uygula
+                if (jsonStr.startsWith('%')) {
+                    try {
+                        jsonStr = decodeURIComponent(jsonStr);
+                    } catch(e) {
+                        // decodeURIComponent patlarsa, olduğu gibi bırak
+                    }
+                }
+            } catch (e) {
+                // base64 bozuksa: yanlış linktir, parse etme
+                console.error("Base64 decode error:", e);
+                return;
             }
-            const tripData = JSON.parse(jsonStr);
 
-            // Devamı: senin öz kodun
+            let tripData;
+            try {
+                tripData = JSON.parse(jsonStr);
+            } catch(e) {
+                // bazen rare-case'de URI'li olmadığını yanlış algıladıysak 2. şans
+                try {
+                    jsonStr = decodeURIComponent(jsonStr);
+                    tripData = JSON.parse(jsonStr);
+                } catch(e2) {
+                    console.error("Failed to parse JSON from shared trip:", e2);
+                    return;
+                }
+            }
+
+            // BUNDAN SONRASI DEĞİŞMEYECEK
             if (tripData.i) {
                 window.cart = (tripData.i || []).map(item => ({
                     name: item.n,
@@ -43,7 +68,6 @@
                 });
                 const chatScreen = document.getElementById('chat-screen');
                 if (chatScreen) chatScreen.style.display = '';
-
                 let detailsSection = document.getElementById('tt-trip-details');
                 if (detailsSection && !detailsSection.querySelector('.shared-trip-banner')) {
                     let banner = document.createElement('div');
