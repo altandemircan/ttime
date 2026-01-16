@@ -10144,41 +10144,63 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-// mainscript.js sonuna ekle
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const itemsRaw = params.get('items');
     if (!itemsRaw) return;
 
-    try {
-        const items = decodeURIComponent(itemsRaw).split('|');
-        
-        // Tasarım Katmanı
-        const overlay = document.createElement('div');
-        overlay.id = "shared-trip-overlay";
-        overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); font-family:sans-serif;";
+    const items = decodeURIComponent(itemsRaw).split('|');
 
-        const card = document.createElement('div');
-        card.style = "background:#fff; padding:25px; border-radius:20px; width:90%; max-width:360px; text-align:center; box-shadow:0 15px 40px rgba(0,0,0,0.4);";
+    // 1. window.cart'ı doldur (Harita buna bakacak)
+    window.cart = items.map(data => {
+        const [name, lat, lon] = data.split(':');
+        return {
+            name: name,
+            category: "Point",
+            day: 1,
+            lat: parseFloat(lat),
+            lng: parseFloat(lon),
+            location: { lat: parseFloat(lat), lng: parseFloat(lon) }
+        };
+    });
 
-        let listHtml = items.map((name, i) => `
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:10px; border-radius:12px; text-align:left;">
-                <span style="background:#ff5a5f; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;">${i+1}</span>
-                <span style="font-weight:600; color:#333; font-size:14px;">${name}</span>
-            </div>
-        `).join('');
+    // 2. Overlay Tasarımı
+    const overlay = document.createElement('div');
+    overlay.id = "shared-trip-overlay";
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); font-family:sans-serif;";
 
-        card.innerHTML = `
+    const listHtml = items.map((data, i) => `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:10px; border-radius:12px; text-align:left;">
+            <span style="background:#ff5a5f; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;">${i+1}</span>
+            <span style="font-weight:600; color:#333;">${data.split(':')[0]}</span>
+        </div>
+    `).join('');
+
+    overlay.innerHTML = `
+        <div style="background:#fff; padding:25px; border-radius:20px; width:90%; max-width:360px; text-align:center; box-shadow:0 15px 40px rgba(0,0,0,0.4);">
             <h2 style="margin:0 0 10px; color:#ff5a5f;">📍 Rota Paylaşıldı</h2>
-            <p style="color:#666; font-size:14px; margin-bottom:15px;">İşte senin için gelen duraklar:</p>
             <div style="max-height:250px; overflow-y:auto; margin-bottom:20px;">${listHtml}</div>
-            <button onclick="document.getElementById('shared-trip-overlay').remove()" style="width:100%; background:#ff5a5f; color:#fff; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:16px;">Kapat ve Keşfet</button>
-        `;
+            <button id="start-trip-btn" style="width:100%; background:#ff5a5f; color:#fff; border:none; padding:15px; border-radius:12px; cursor:pointer; font-weight:bold; font-size:16px;">Haritada Gör ve Başla</button>
+        </div>
+    `;
 
-        overlay.appendChild(card);
-        document.body.appendChild(overlay);
-        console.log("✅ Paylaşılan rota başarıyla gösterildi.");
-    } catch (e) {
-        console.error("Link çözme hatası:", e);
-    }
+    document.body.appendChild(overlay);
+
+    // 3. BUTONA BASINCA SİSTEMİ ÇALIŞTIR
+    document.getElementById('start-trip-btn').onclick = function() {
+        // Overlay'i kaldır
+        overlay.remove();
+        
+        // Hoşgeldin ekranını kapat
+        const welcome = document.getElementById('tt-welcome');
+        if (welcome) welcome.style.display = 'none';
+
+        // Senin fonsk.js içindeki motoru ateşle
+        if (typeof updateCart === 'function') updateCart();
+        
+        setTimeout(() => {
+            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+            console.log("🚀 Harita canlandırıldı!");
+        }, 500);
+    };
 });
