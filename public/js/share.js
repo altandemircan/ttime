@@ -40,28 +40,21 @@ function generateShareableText() {
 
 // --- 2. Link Oluşturucu (Tüm veriyi linke gömer) ---
 function createShortTripLink() {
-    if (!window.cart || window.cart.length === 0) return window.location.origin;
-    
-    // Gezi Adını al (id="trip_title" alanından dinamik çekiyoruz)
-    const titleEl = document.getElementById('trip_title');
-    const tripName = titleEl ? titleEl.innerText : "My Trip Plan";
-    
-    // AI bilgisini localStorage'dan alıyoruz
-    const aiInfo = localStorage.getItem('ai_information') || "";
+    const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
+    const aiInfo = localStorage.getItem('ai_information') || ""; // Yukarıdaki kod burayı dolduruyor
 
-    // window.cart'ı paketle (Resim URL'leri dahil)
-    const items = window.cart.map(it => {
-        const name = it.name.replace(/[:|*]/g, "");
-        const la = it.lat || it.location?.lat || 0;
-        const lo = it.lng || it.location?.lng || 0;
-        const day = it.day || 1;
-        const img = it.image ? encodeURIComponent(it.image) : "no-img"; 
-        const cat = it.category || "Place";
-        return `${name}:${la}:${lo}:${day}:${img}:${cat}`;
+    const items = (window.cart || []).map(item => {
+        return `${item.name}:${item.lat}:${item.lng}:${item.day || 1}:${item.image || ''}`;
     }).join('*');
 
-    const tripData = { n: tripName, ai: aiInfo, items: items };
-    return `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(tripData))}`;
+    const payload = {
+        n: title,
+        ai: aiInfo,
+        items: items
+    };
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
 // --- 3. Linke Tıklanınca Veriyi Yükleyen Kısım ---
@@ -74,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı resimler ve kategorilerle beraber doldur
+        // 1. window.cart'ı doldur
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
             const [name, lat, lon, day, img, cat] = parts;
@@ -84,14 +77,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 lng: parseFloat(lon),
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
-                image: img === "no-img" ? "" : decodeURIComponent(img),
+                image: (img === "no-img" || !img) ? "" : decodeURIComponent(img),
                 category: cat || "Place"
             };
         });
 
-        // 2. AI Bilgisini ve Gezi Adını Geri Yükle
+        // 2. AI Bilgisini ve Gezi Adını Geri Yükle + EKRANA BAS
         if (tripData.ai) {
             localStorage.setItem('ai_information', tripData.ai);
+            
+            // Linkten gelen AI metnini parçalayıp ekrandaki kutuya basıyoruz
+            if (typeof insertTripAiInfo === "function") {
+                const parts = tripData.ai.split('\n\n');
+                const staticAi = {
+                    summary: parts[0] ? parts[0].replace('Summary:', '').trim() : "",
+                    tip: parts[1] ? parts[1].replace('Tip:', '').trim() : "",
+                    highlight: parts[2] ? parts[2].replace('Highlight:', '').trim() : ""
+                };
+                // API'ye gitmeden eldeki veriyi UI'ya çizer
+                insertTripAiInfo(null, staticAi);
+            }
         }
         
         const titleEl = document.getElementById('trip_title');
@@ -105,10 +110,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // 5. Sistemi Ateşle (mainscript'teki listeleme fonksiyonu)
+        // 5. Sistemi Ateşle
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
-            // Haritayı yenile (sidebar açıldığı için kayma yapmasın)
             if (window.map) window.map.invalidateSize();
         }, 800);
 
