@@ -87,7 +87,6 @@ function createShortTripLink() {
 }
 
 // --- 3. Linke Tıklanınca Veriyi Yükleyen Kısım ---
-// --- 3. Linke Tıklanınca Veriyi Yükleyen Kısım ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
@@ -97,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı doldur (Veriyi belleğe alıyoruz)
+        // 1. Veriyi hazırla ve window.cart'a at
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
             const [name, lat, lon, day, img, cat] = parts;
@@ -112,53 +111,53 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // 2. LocalStorage'ı hemen güncelle (mainscript buraya bakacak)
+        // 2. Hafızayı güncelle (Diğer dosyalar burayı okuyor)
         localStorage.setItem('cart', JSON.stringify(window.cart));
-
-        // 3. AI Bilgisini LocalStorage'a yaz ama UI'yı biraz sonra basacağız
         if (tripData.ai) {
             localStorage.setItem('ai_information', tripData.ai);
         }
         
+        // Başlığı ayarla
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // 4. Hoşgeldin ekranını kapat, sidebarı aç
+        // 3. UI Katmanlarını hazırla
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // 5. KRİTİK NOKTA: Harita ve Rota için mainscript'in hazır olmasını bekle
-        const checkAndInit = setInterval(() => {
-            // updateCart fonksiyonu ve Harita objesi hazır mı?
-            if (typeof updateCart === 'function' && window.map) {
-                clearInterval(checkAndInit); // Döngüyü durdur
-                
-                // Önce listeyi ve rotayı çiz
+        // 4. GARANTİCİ YÜKLEME DÖNGÜSÜ
+        // Harita ve listeleme fonksiyonları tamamen hazır olana kadar bekle
+        const waitForSystem = setInterval(() => {
+            // Harita objesi ve listeyi güncelleyen fonksiyon hazır mı?
+            if (window.map && typeof updateCart === 'function') {
+                clearInterval(waitForSystem); // Sistem hazır, döngüyü durdur.
+
+                // Önce rota çizgilerini ve mekan listesini oluştur
                 updateCart();
 
-                // AI Kutusunu şimdi bas (Sistem hazır olduktan sonra)
-                if (tripData.ai && typeof insertTripAiInfo === "function") {
-                    const parts = tripData.ai.split('\n\n');
-                    const staticAi = {
-                        summary: parts[0] ? parts[0].replace('Summary:', '').trim() : "",
-                        tip: parts[1] ? parts[1].replace('Tip:', '').trim() : "",
-                        highlight: parts[2] ? parts[2].replace('Highlight:', '').trim() : ""
-                    };
-                    insertTripAiInfo(null, staticAi);
-                }
-
-                // Haritayı rotaya göre odakla
+                // Rota çizildikten kısa bir süre sonra AI kutusunu bas
                 setTimeout(() => {
+                    if (tripData.ai && typeof insertTripAiInfo === "function") {
+                        const parts = tripData.ai.split('\n\n');
+                        const staticAi = {
+                            summary: parts[0] ? parts[0].replace('Summary:', '').trim() : "",
+                            tip: parts[1] ? parts[1].replace('Tip:', '').trim() : "",
+                            highlight: parts[2] ? parts[2].replace('Highlight:', '').trim() : ""
+                        };
+                        insertTripAiInfo(null, staticAi);
+                    }
+                    
+                    // Haritayı son bir kez tazele ve rotaya odakla
                     window.map.invalidateSize();
-                    if (window.cart.length > 0 && typeof fitMapToCart === 'function') {
+                    if (typeof fitMapToCart === 'function') {
                         fitMapToCart();
                     }
-                }, 300);
+                }, 500);
             }
-        }, 100); // Her 100ms'de bir kontrol et
+        }, 200); // Her 200ms'de bir sistemi kontrol et
 
     } catch (e) {
-        console.error("Rota Yükleme Hatası:", e);
+        console.error("Yükleme sırasında hata oluştu:", e);
     }
-});;
+});
