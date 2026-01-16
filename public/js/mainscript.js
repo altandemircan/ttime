@@ -1,49 +1,56 @@
-(function loadSharedTripOnStart() {
+function loadSharedTripOnStart() {
+    // Adres çubuğundaki #trip= kısmına bak
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('trip=')) return;
+
     try {
-        // Hem URL parametresine hem de Hash (yeni yöntem) kısmına bakıyoruz
-        const hash = window.location.hash;
-        if (!hash || !hash.includes('plan=')) return;
-
-        console.log("🔗 Paylaşılan gezi yükleniyor...");
-
-        const rawData = hash.split('plan=')[1];
-        const decodedStr = decodeURIComponent(rawData);
+        console.log("🔗 Plan Hash üzerinden yükleniyor...");
+        let base64 = hash.split('trip=')[1];
         
-        // JSON'un tam olduğundan emin olmak için kontrol
-        const tripData = JSON.parse(decodedStr);
+        // Base64 karakterlerini geri düzelt
+        base64 = base64.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+
+        // Byte byte geri çöz (Karakter hatasını %100 önler)
+        const jsonStr = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const tripData = JSON.parse(jsonStr);
 
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
-                day: item.d,
+                day: item.day,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
                 lon: parseFloat(item.lo),
-                image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
             }));
             window.customDayNames = tripData.dn || {};
             window.tripDates = tripData.td || {};
             
-            // local_storage.js ile uyumlu kayıt
+            // local_storage.js'deki yapıya kaydet
             localStorage.setItem('cart', JSON.stringify(window.cart));
         }
 
-        // Arayüzü temizle
-        if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = "";
-        const inputArea = document.querySelector('.input-wrapper');
-        if (inputArea) inputArea.style.display = 'none';
-
+        // Arayüzü temizle ve planı göster
+        const chatBox = document.getElementById("chat-box");
+        if (chatBox) chatBox.innerHTML = "";
+        
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
-            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-        }, 400);
+        }, 500);
 
     } catch (e) {
-        console.error("Yükleme hatası (Hash Decode):", e);
+        console.error("Kritik Yükleme Hatası:", e);
     }
-})();
+}
+
+// Sayfa ilk açıldığında tetikle
+window.addEventListener('load', loadSharedTripOnStart);
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;

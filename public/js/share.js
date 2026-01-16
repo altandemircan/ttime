@@ -145,36 +145,56 @@ function safeBase64Decode(b64str) {
         return null;
     }
 }
-function createShortTripLink() {
+function loadSharedTripOnStart() {
+    // Adres çubuğundaki #trip= kısmına bak
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('trip=')) return;
+
     try {
-        const minimalData = {
-            i: window.cart.map(item => ({
-                n: item.name.replace(/[\x00-\x1F\x7F-\x9F]/g, ""), // Kontrol karakterlerini temizle
-                c: item.category,
-                d: item.day,
-                la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
-                lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
-            })),
-            dn: window.customDayNames || {},
-            td: window.tripDates || {}
-        };
-
-        // JSON string'i oluştur ve tekrar temizle
-        let jsonStr = JSON.stringify(minimalData);
+        console.log("🔗 Plan Hash üzerinden yükleniyor...");
+        let base64 = hash.split('trip=')[1];
         
-        // Türkçe karakterleri bozmayan ve URL'de patlamayan en sağlam yöntem
-        const utf8Bytes = new TextEncoder().encode(jsonStr);
-        let binary = "";
-        utf8Bytes.forEach(b => binary += String.fromCharCode(b));
-        
-        const base64 = btoa(binary)
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
+        // Base64 karakterlerini geri düzelt
+        base64 = base64.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
 
-        return `${window.location.origin}/?t=${base64}`;
+        // Byte byte geri çöz (Karakter hatasını %100 önler)
+        const jsonStr = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const tripData = JSON.parse(jsonStr);
+
+        if (tripData.i) {
+            window.cart = tripData.i.map(item => ({
+                name: item.n,
+                category: item.c,
+                day: item.day,
+                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
+                lat: parseFloat(item.la),
+                lon: parseFloat(item.lo),
+                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
+            }));
+            window.customDayNames = tripData.dn || {};
+            window.tripDates = tripData.td || {};
+            
+            // local_storage.js'deki yapıya kaydet
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+        }
+
+        // Arayüzü temizle ve planı göster
+        const chatBox = document.getElementById("chat-box");
+        if (chatBox) chatBox.innerHTML = "";
+        
+        setTimeout(() => {
+            if (typeof updateCart === 'function') updateCart();
+            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
+        }, 500);
+
     } catch (e) {
-        console.error("Link hatası:", e);
-        return window.location.origin;
+        console.error("Kritik Yükleme Hatası:", e);
     }
 }
+
+// Sayfa ilk açıldığında tetikle
+window.addEventListener('load', loadSharedTripOnStart);
