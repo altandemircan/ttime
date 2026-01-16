@@ -1,5 +1,5 @@
 // ============================================================
-// share.js - FİNAL VE TAM VERSİYON (PEXELS & AI & ROTA FİX)
+// share.js - FULL STABLE VERSION (10s DELAY & PEXELS FIX)
 // ============================================================
 
 // --- 1. Paylaşım Metni Oluşturucu ---
@@ -38,7 +38,7 @@ function generateShareableText() {
     return shareText;
 }
 
-// --- 2. Link Oluşturucu (Pexels Linklerini Kurtaran Versiyon) ---
+// --- 2. Link Oluşturucu (Ayraç: | ) ---
 function createShortTripLink() {
     const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
     const aiInfo = localStorage.getItem('ai_information') || "";
@@ -46,11 +46,9 @@ function createShortTripLink() {
     const items = (window.cart || []).map(item => {
         const lat = item.lat || (item.location && item.location.lat) || 0;
         const lng = item.lng || (item.location && item.location.lng) || 0;
-        
-        // Pexels linkini encode ediyoruz
+        // Pexels linkini encode et
         const imgUrl = (item.image && item.image.length > 5) ? encodeURIComponent(item.image) : "no-img";
-
-        // AYRAÇ OLARAK | KULLANIYORUZ (Resim linkindeki : ile çakışmaması için)
+        // Ayraç olarak | kullanıyoruz
         return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgUrl}`;
     }).join('*');
 
@@ -64,7 +62,7 @@ function createShortTripLink() {
     return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-// --- 3. Linke Tıklanınca Yükleyen Kısım ---
+// --- 3. Linke Tıklanınca Veriyi Yükleyen Kısım ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
@@ -75,11 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawItems = tripData.items.split('*');
         
         window.cart = rawItems.map(str => {
-            // AYRAÇ | OLARAK PARÇALANIYOR
             const parts = str.split('|');
             const [name, lat, lon, day, img] = parts;
-            
-            // Çift decode ile URL'yi kurtarıyoruz
+            // Çift decode ile URL'yi kurtar
             const finalImg = (img === "no-img" || !img) ? "" : decodeURIComponent(decodeURIComponent(img));
             
             return {
@@ -93,9 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Hafızaya yaz
+        // LocalStorage'ı doldur
         localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
+        if (tripData.ai) {
+            localStorage.setItem('ai_information', tripData.ai);
+        }
         
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
@@ -105,34 +103,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // Sistemi Garantiye Alarak Başlat
-        const waitForSystem = setInterval(() => {
-            if (typeof updateCart === 'function' && window.map) {
-                clearInterval(waitForSystem);
+        // --- KRİTİK BAŞLATICI ---
+        // Önce sistemin (mainscript) hazır olmasını bekle (max 10 saniye döngüde kalır)
+        let attempts = 0;
+        const waitForMain = setInterval(() => {
+            attempts++;
+            if ((typeof updateCart === 'function' && window.map) || attempts > 50) {
+                clearInterval(waitForMain);
                 
-                updateCart(); // Rota ve listeyi çizer
+                // 1. Rota ve Listeyi Çiz
+                updateCart();
 
-                // AI Kutusunu Linkteki Veriyle Bas
-                if (tripData.ai && typeof insertTripAiInfo === "function") {
-                    const parts = tripData.ai.split('\n\n');
-                    const staticAi = {
-                        summary: parts[0]?.replace('Summary:', '').trim(),
-                        tip: parts[1]?.replace('Tip:', '').trim(),
-                        highlight: parts[2]?.replace('Highlight:', '').trim()
-                    };
-                    insertTripAiInfo(null, staticAi);
-                }
-
-                // Haritayı Odakla
+                // 2. 10 SANİYE SONRA AI VE HARİTA FIX (Senin istediğin o garanti bekleme)
                 setTimeout(() => {
-                    window.map.invalidateSize();
-                    if (typeof fitMapToCart === 'function') fitMapToCart();
-                }, 500);
+                    // AI Kutusunu Oluştur
+                    if (tripData.ai && typeof insertTripAiInfo === "function") {
+                        const parts = tripData.ai.split('\n\n');
+                        const staticAi = {
+                            summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
+                            tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
+                            highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
+                        };
+                        insertTripAiInfo(null, staticAi);
+                    }
+
+                    // Haritayı Tazele ve Odakla
+                    if (window.map) {
+                        window.map.invalidateSize();
+                        if (typeof fitMapToCart === 'function') fitMapToCart();
+                    }
+                    console.log("Sistem 10 saniye sonra tam kapasite tetiklendi.");
+                }, 10000); // TAM 10 SANİYE
             }
         }, 200);
 
     } catch (e) {
-        console.error("Critical Load Error:", e);
+        console.error("Yükleme Hatası:", e);
     }
 });
 
@@ -140,16 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function shareOnWhatsApp() {
     const text = encodeURIComponent(generateShareableText());
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
-    window.open(`${baseUrl}?text=${text}`, '_blank');
+    window.open(`${isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send"}?text=${text}`, '_blank');
 }
 
 function shareOnInstagram() {
     const textToShare = generateShareableText();
     if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToShare).then(() => {
-            alert("Trip plan copied to clipboard!");
-        });
+        navigator.clipboard.writeText(textToShare).then(() => alert("Trip plan copied!"));
     }
 }
 
