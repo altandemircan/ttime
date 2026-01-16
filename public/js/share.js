@@ -158,15 +158,16 @@ function createShortTripLink() {
         td: window.tripDates || {}
     };
 
+    // 1. JSON yapısını oluştur
     const jsonStr = JSON.stringify(minimalData);
     
-    // TÜRKÇE KARAKTER HATASINI ÖNLEYEN GÜVENLİ ENCODE
+    // 2. UTF-8 güvenli Base64 (Türkçe karakter dostu)
     const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => {
         return String.fromCharCode('0x' + p1);
     }));
 
-    // URL uyumlu hale getir (+ -> -, / -> _, = sil)
-    const urlSafe = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // 3. URL'de sorun çıkaran karakterleri temizle
+    const safeUrl = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     
-    return `${window.location.origin}/?t=${urlSafe}`;
+    return window.location.origin + "/?t=" + safeUrl;
 }

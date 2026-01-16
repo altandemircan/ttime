@@ -6,18 +6,19 @@ function loadSharedTripOnStart() {
     try {
         console.log("🔗 Veri yükleniyor...");
 
-        // 1. URL-Safe formatını geri standart Base64 yap
+        // 1. URL-Safe karakterleri geri çevir
         t = t.replace(/-/g, '+').replace(/_/g, '/');
         while (t.length % 4) t += '=';
 
-        // 2. BYTE SEVİYESİNDE DECODE (Türkçe karakterlerin bozulmasını engeller)
-        const decodedStr = decodeURIComponent(atob(t).split('').map(c => {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        // 2. Karakter bazlı güvenli decode (Türkçe karakterler için)
+        const binaryString = atob(t);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const decodedStr = new TextDecoder().decode(bytes);
+        const tripData = JSON.parse(decodeURIComponent(encodeURIComponent(decodedStr)));
 
-        const tripData = JSON.parse(decodedStr);
-
-        // 3. Verileri Aktar
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
@@ -32,14 +33,13 @@ function loadSharedTripOnStart() {
             window.tripDates = tripData.td || {};
         }
 
-        // 4. Arayüzü Gizle (Güzel görünüm için)
-        document.getElementById("chat-box").innerHTML = ""; 
+        // UI GÜZELLEŞTİRME
+        if(document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = ""; 
         const inputWrap = document.querySelector('.input-wrapper');
         if (inputWrap) inputWrap.style.display = 'none';
         const welcome = document.getElementById('tt-welcome');
         if (welcome) welcome.style.display = 'none';
 
-        // 5. Görselleştir
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
@@ -47,11 +47,12 @@ function loadSharedTripOnStart() {
         }, 300);
 
     } catch (e) {
-        console.error("KRİTİK HATA: Veri çözülemedi. Muhtemelen link eksik kopyalanmış.", e);
+        console.error("Yükleme Hatası:", e);
     }
 }
 
-window.onload = loadSharedTripOnStart;
+// Olay dinleyiciyi en sade haliyle ekle
+window.addEventListener('load', loadSharedTripOnStart);
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
