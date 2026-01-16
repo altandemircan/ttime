@@ -1,90 +1,100 @@
 (function loadSharedTripOnStart() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
+        const sharedTrip = urlParams.get('t'); // 't' parametresini al
+
         if (sharedTrip) {
-            // UTF-8'li veya normal kodlu tüm base64 girişleri için:
-            function safeBase64Decode(b64str) {
-                try {
-                    let decoded = atob(b64str);
-                    if (decoded.startsWith('%')) {
-                        decoded = decodeURIComponent(decoded);
-                    } else {
-                        try {
-                            // Modern browserlarda TextDecoder ile safer decode
-                            decoded = new TextDecoder("utf-8").decode(Uint8Array.from(atob(b64str), c => c.charCodeAt(0)));
-                        } catch (e) {
-                            // ES5 fallback (escape= eski usul, utf-8 için)
-                            decoded = decodeURIComponent(escape(atob(b64str)));
-                        }
-                    }
-                    return decoded;
-                } catch (err) {
-                    return null;
-                }
-            }
+            console.log("🔗 Shared trip detected...");
 
-            let jsonStr = safeBase64Decode(sharedTrip);
-            if (!jsonStr) {
-                alert("Plan açılırken veri çözümlenemedi. Link bozuk olabilir!");
-                return;
-            }
+            // 1. Veriyi Çöz (Decode)
+            const jsonStr = decodeURIComponent(atob(sharedTrip));
+            const tripData = JSON.parse(jsonStr);
 
-            let tripData;
-            try {
-                tripData = JSON.parse(jsonStr);
-            } catch(e) {
-                alert("Plan verisi bozuk veya eski. Lütfen bağlantıyı tekrar oluşturun.");
-                return;
-            }
-
-            // aaaaallttaki kod hep aynı 
+            // 2. Window.cart'ı Doldur
             if (tripData.i) {
+                // Minimal formattan (n, c, d, la, lo) tam formata çevir
                 window.cart = (tripData.i || []).map(item => ({
                     name: item.n,
                     category: item.c,
                     day: item.d,
-                    lat: item.la,
-                    lon: item.lo,
-                    address: '',
-                    website: '',
-                    opening_hours: '',
-                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                    lat: item.la, // Eski veri uyumu
+                    lon: item.lo, // Eski veri uyumu
+                    location: { lat: Number(item.la), lng: Number(item.lo) }, // Harita için kritik
+                    address: '', 
+                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350` // Placeholder
                 }));
                 window.customDayNames = tripData.dn || {};
                 window.tripDates = tripData.td || {};
-            } else {
+            } 
+            // Eski format desteği
+            else {
                 window.cart = tripData.cart || [];
                 window.customDayNames = tripData.customDayNames || {};
                 window.tripDates = tripData.tripDates || {};
             }
-            localStorage.setItem('cart', JSON.stringify(window.cart));
-            window.__sharedTripView = true;
 
-            setTimeout(() => {
+            // 3. Local Storage'a kaydet (Sayfa yenilenirse kaybolmasın)
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+
+            // 4. ARAYÜZ TEMİZLİĞİ (Güzel Format İçin)
+            // Hoşgeldin mesajlarını ve Chat input'unu gizle
+            const chatBox = document.getElementById("chat-box");
+            if (chatBox) chatBox.innerHTML = ""; 
+            
+            const inputWrapper = document.querySelector('.input-wrapper');
+            if (inputWrapper) inputWrapper.style.display = 'none'; // Sadece izleme modu
+            
+            const welcomeSection = document.getElementById('tt-welcome');
+            if (welcomeSection) welcomeSection.style.display = 'none';
+
+            // 5. BAŞLIĞI GÜNCELLE
+            // Şehir adını ilk item'dan tahmin etmeye çalış
+            if (window.cart.length > 0) {
+                 // İlk günün ilk item'ının olduğu şehri bulabilirsek başlığa yazabiliriz
+                 // Şimdilik genel başlık:
+                 window.lastUserQuery = "Shared Trip Plan";
+                 updateTripTitle();
+            }
+
+            // 6. PLAN GÖRÜNTÜLEME
+            // DOM'un hazır olmasını bekle
+            setTimeout(async () => {
+                // A) Chat içindeki Slider/Accordion görünümü
                 if (typeof showTripDetails === 'function') {
-                    const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
+                    const startDate = tripData.td?.startDate || null;
                     showTripDetails(startDate);
                 }
-                document.querySelectorAll('.input-wrapper, .chat-footer, .sidebar-trip, #chat-box').forEach(function(el){
-                    if(el) el.style.display = 'none';
-                });
-                const chatScreen = document.getElementById('chat-screen');
-                if (chatScreen) chatScreen.style.display = '';
-                let detailsSection = document.getElementById('tt-trip-details');
-                if (detailsSection && !detailsSection.querySelector('.shared-trip-banner')) {
-                    let banner = document.createElement('div');
-                    banner.className = 'shared-trip-banner';
-                    banner.innerHTML = `
-                        🔗 This is a shared trip plan &mdash; <a href="/">Plan your own trip</a>
-                    `;
-                    detailsSection.prepend(banner);
+                
+                // B) Sidebar (Sepet) Görünümü
+                if (typeof updateCart === 'function') {
+                    updateCart();
                 }
-            }, 800);
+
+                // C) Resimleri Zenginleştir (Lazy load photos)
+                // Bu işlem arka planda çalışır, arayüzü kilitlemez
+                if (typeof enrichPlanWithWiki === 'function') {
+                   // window.cart = await enrichPlanWithWiki(window.cart);
+                   // updateCart(); // Resimler gelince tekrar güncelle
+                }
+
+                // D) Haritayı İlk Güne Odakla
+                if (typeof renderRouteForDay === 'function') {
+                    renderRouteForDay(1);
+                }
+                
+                // E) Mobilde Sidebar'ı Aç (Opsiyonel)
+                if (window.innerWidth <= 768) {
+                     const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
+                     if(sidebarOverlay) sidebarOverlay.classList.add('open');
+                }
+
+            }, 500);
         }
-    } catch (e) {
+    } catch(e) {
         console.error("Failed to load shared trip from URL:", e);
-        alert("Paylaşım bağlantısı çözümlenirken hata oluştu. Link ya çok eski, ya hatalı.");
+        // Hata durumunda kullanıcıya bilgi ver
+        const chatBox = document.getElementById("chat-box");
+        if(chatBox) chatBox.innerHTML = `<div class="bot-message">⚠️ This trip link seems to be broken or expired.</div>`;
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===

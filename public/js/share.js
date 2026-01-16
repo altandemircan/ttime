@@ -111,3 +111,51 @@ function shareOnTwitter() {
     const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textToShare)}&url=${encodeURIComponent('https://triptime.ai')}`;
     window.open(twitterShareUrl, '_blank');
 }
+
+
+// Tüm platformlarda, tüm Türkçe/emoji ve json kombinasyonlarında patlamaz:
+function safeBase64Decode(b64str) {
+    try {
+        // 1. encodeURIComponent ile encode edilmişse burada açılır (çoğu eski tasarımlar bunu kullanır)
+        let decoded = atob(b64str);
+        // Eğer decodeJSON gibi görünüyorsa (%7B ile başlıyorsa), decodeURIComponent uygula
+        if (decoded.startsWith('%')) {
+            decoded = decodeURIComponent(decoded);
+        } else {
+            // Yoksa, bytes'ı UTF-8'e çevirerek normalleştir (çünkü atob tek başına UTF-8 çözemez!)
+            try {
+                // Modern browserlarda TextDecoder çok hızlı/failsafe
+                decoded = new TextDecoder("utf-8").decode(Uint8Array.from(atob(b64str), c => c.charCodeAt(0)));
+            } catch (e) {
+                // Eski tarayıcılar için fallback
+                decoded = decodeURIComponent(escape(atob(b64str)));
+            }
+        }
+        return decoded;
+    } catch (err) {
+        return null;
+    }
+}
+function createShortTripLink() {
+    // Veriyi mümkün olduğunca küçültüyoruz (URL limitine takılmamak için)
+    const minimalData = {
+        i: window.cart.map(item => ({
+            n: item.name,        // name
+            c: item.category,    // category
+            d: item.day,         // day
+            // Koordinatları virgülden sonra 4 haneye yuvarla (URL tasarrufu)
+            la: item.location ? Number(item.location.lat).toFixed(4) : (item.lat ? Number(item.lat).toFixed(4) : 0),
+            lo: item.location ? Number(item.location.lng).toFixed(4) : (item.lon ? Number(item.lon).toFixed(4) : 0)
+        })),
+        dn: window.customDayNames || {}, // Özel gün isimleri (Day 1 -> Paris Tour)
+        td: window.tripDates || {}       // Tarihler
+    };
+    
+    // JSON -> String -> URI Encode -> Base64
+    const jsonStr = JSON.stringify(minimalData);
+    
+    // encodeURIComponent kullanıyoruz çünkü Base64 Türkçe karakterlerde (ş,ğ,ü) patlayabilir.
+    const base64 = btoa(encodeURIComponent(jsonStr));
+    
+    return `${window.location.origin}/?t=${base64}`;
+}
