@@ -10144,36 +10144,41 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
+// mainscript.js sonuna ekle
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const itemsRaw = params.get('items');
     if (!itemsRaw) return;
 
-    const items = decodeURIComponent(itemsRaw).split('|');
+    try {
+        const items = decodeURIComponent(itemsRaw).split('|');
+        
+        // Tasarım Katmanı
+        const overlay = document.createElement('div');
+        overlay.id = "shared-trip-overlay";
+        overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); font-family:sans-serif;";
 
-    // Overlay oluştur
-    const overlay = document.createElement('div');
-    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px);";
+        const card = document.createElement('div');
+        card.style = "background:#fff; padding:25px; border-radius:20px; width:90%; max-width:360px; text-align:center; box-shadow:0 15px 40px rgba(0,0,0,0.4);";
 
-    // Kart Tasarımı
-    const card = document.createElement('div');
-    card.style = "background:#fff; padding:25px; border-radius:20px; width:90%; max-width:350px; text-align:center; font-family:sans-serif; box-shadow:0 15px 35px rgba(0,0,0,0.3);";
+        let listHtml = items.map((name, i) => `
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:10px; border-radius:12px; text-align:left;">
+                <span style="background:#ff5a5f; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;">${i+1}</span>
+                <span style="font-weight:600; color:#333; font-size:14px;">${name}</span>
+            </div>
+        `).join('');
 
-    const listHtml = items.map((name, i) => `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; background:#f8f8f8; padding:10px; border-radius:10px; text-align:left;">
-            <span style="background:#ff5a5f; color:#fff; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px;">${i+1}</span>
-            <span style="font-weight:600; color:#333; font-size:14px;">${name}</span>
-        </div>
-    `).join('');
+        card.innerHTML = `
+            <h2 style="margin:0 0 10px; color:#ff5a5f;">📍 Rota Paylaşıldı</h2>
+            <p style="color:#666; font-size:14px; margin-bottom:15px;">İşte senin için gelen duraklar:</p>
+            <div style="max-height:250px; overflow-y:auto; margin-bottom:20px;">${listHtml}</div>
+            <button onclick="document.getElementById('shared-trip-overlay').remove()" style="width:100%; background:#ff5a5f; color:#fff; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:16px;">Kapat ve Keşfet</button>
+        `;
 
-    card.innerHTML = `
-        <h2 style="margin:0 0 5px; color:#ff5a5f;">📍 Rota Hazır!</h2>
-        <p style="color:#666; font-size:13px; margin-bottom:15px;">Paylaşılan duraklar aşağıdadır:</p>
-        <div style="max-height:250px; overflow-y:auto; margin-bottom:15px;">${listHtml}</div>
-        <button onclick="this.closest('#shared-overlay').remove()" style="width:100%; background:#ff5a5f; color:#white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; color:white;">Kapat ve Başla</button>
-    `;
-    
-    overlay.id = "shared-overlay";
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        console.log("✅ Paylaşılan rota başarıyla gösterildi.");
+    } catch (e) {
+        console.error("Link çözme hatası:", e);
+    }
 });
