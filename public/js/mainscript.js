@@ -1,51 +1,57 @@
 function loadSharedTripOnStart() {
     const urlParams = new URLSearchParams(window.location.search);
-    const t = urlParams.get('t');
+    let t = urlParams.get('t');
     if (!t) return;
 
     try {
-        console.log("🔗 Veri çözülüyor...");
+        console.log("🔗 Veri yükleniyor...");
 
-        // Hex formatını geri JSON'a çeviriyoruz (En güvenli yol)
-        const bytes = new Uint8Array(t.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-        const decodedStr = new TextDecoder().decode(bytes);
+        // 1. URL-Safe formatını geri standart Base64 yap
+        t = t.replace(/-/g, '+').replace(/_/g, '/');
+        while (t.length % 4) t += '=';
+
+        // 2. BYTE SEVİYESİNDE DECODE (Türkçe karakterlerin bozulmasını engeller)
+        const decodedStr = decodeURIComponent(atob(t).split('').map(c => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
         const tripData = JSON.parse(decodedStr);
 
+        // 3. Verileri Aktar
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
-                day: item.d,
+                day: item.day,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
                 lon: parseFloat(item.lo),
-                image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
             }));
             window.customDayNames = tripData.dn || {};
             window.tripDates = tripData.td || {};
         }
 
-        // Arayüz temizliği
+        // 4. Arayüzü Gizle (Güzel görünüm için)
         document.getElementById("chat-box").innerHTML = ""; 
-        if(document.querySelector('.input-wrapper')) document.querySelector('.input-wrapper').style.display = 'none';
-        if(document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
+        const inputWrap = document.querySelector('.input-wrapper');
+        if (inputWrap) inputWrap.style.display = 'none';
+        const welcome = document.getElementById('tt-welcome');
+        if (welcome) welcome.style.display = 'none';
 
+        // 5. Görselleştir
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
             if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-        }, 500);
+        }, 300);
 
     } catch (e) {
-        console.error("Kesin çözümde hata oluştu:", e);
+        console.error("KRİTİK HATA: Veri çözülemedi. Muhtemelen link eksik kopyalanmış.", e);
     }
 }
 
-// Sayfa yüklendiğinde otomatik çalıştır
 window.onload = loadSharedTripOnStart;
-// Sayfa açılır açılmaz çalıştır
-window.addEventListener('load', loadSharedTripOnStart);
-
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();

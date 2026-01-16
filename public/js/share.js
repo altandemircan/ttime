@@ -151,18 +151,22 @@ function createShortTripLink() {
             n: item.name,
             c: item.category,
             d: item.day,
-            la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
-            lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
+            la: item.location ? item.location.lat : (item.lat || 0),
+            lo: item.location ? item.location.lng : (item.lon || 0)
         })),
         dn: window.customDayNames || {},
         td: window.tripDates || {}
     };
 
-    // JSON'u UTF-8 olarak güvenli bir şekilde Hex'e çeviriyoruz
     const jsonStr = JSON.stringify(minimalData);
-    const encoder = new TextEncoder();
-    const data = encoder.encode(jsonStr);
-    const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // TÜRKÇE KARAKTER HATASINI ÖNLEYEN GÜVENLİ ENCODE
+    const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode('0x' + p1);
+    }));
 
-    return `${window.location.origin}/?t=${hex}`;
+    // URL uyumlu hale getir (+ -> -, / -> _, = sil)
+    const urlSafe = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    
+    return `${window.location.origin}/?t=${urlSafe}`;
 }
