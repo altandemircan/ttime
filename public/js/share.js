@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı en başta temizleyip linkten gelenle dolduruyoruz
+        // 1. window.cart'ı resimler ve kategorilerle beraber doldur
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
             const [name, lat, lon, day, img, cat] = parts;
@@ -77,29 +77,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 lng: parseFloat(lon),
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
-                image: (img === "no-img" || !img) ? "" : decodeURIComponent(img),
+                image: img === "no-img" ? "" : decodeURIComponent(img),
                 category: cat || "Place"
             };
         });
 
-        // 2. AI Bilgisini ve Başlığı Yükle
+        // 2. AI Bilgisini ve Gezi Adını Geri Yükle
         if (tripData.ai) {
             localStorage.setItem('ai_information', tripData.ai);
-            if (typeof insertTripAiInfo === "function") {
-                const parts = tripData.ai.split('\n\n');
-                const staticAi = {
-                    summary: parts[0] ? parts[0].replace('Summary:', '').trim() : "",
-                    tip: parts[1] ? parts[1].replace('Tip:', '').trim() : "",
-                    highlight: parts[2] ? parts[2].replace('Highlight:', '').trim() : ""
-                };
-                insertTripAiInfo(null, staticAi);
-            }
         }
         
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // 3. Kritik: LocalStorage'ı hemen güncelle ki mainscript oradan okuyabilsin
+        // 3. LocalStorage Güncelle
         localStorage.setItem('cart', JSON.stringify(window.cart));
 
         // 4. UI'ı Hazırla
@@ -107,25 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // 5. ROTA VE HARİTA TAMİRİ
-        // Verilerin DOM'a işlenmesi ve haritanın rotayı çizmesi için kısa bir bekleme
+        // 5. Sistemi Ateşle (mainscript'teki listeleme fonksiyonu)
         setTimeout(() => {
-            if (typeof updateCart === 'function') {
-                updateCart(); // Bu fonksiyon hem listeyi dizer hem rotayı çizer
-            }
-            
-            // Haritayı ve markerları zorla yenile
-            if (window.map) {
-                window.map.invalidateSize();
-                // Eğer haritada markerlar görünmüyorsa haritayı rotaya odakla
-                if (window.cart.length > 0 && typeof fitMapToCart === 'function') {
-                    fitMapToCart();
-                }
-            }
-        }, 500); // 800 çok uzundu, 500 ideal.
+            if (typeof updateCart === 'function') updateCart();
+            // Haritayı yenile (sidebar açıldığı için kayma yapmasın)
+            if (window.map) window.map.invalidateSize();
+        }, 800);
 
     } catch (e) {
-        console.error("Rota Yükleme Hatası:", e);
+        console.error("Critical Load Error:", e);
     }
 });
 
