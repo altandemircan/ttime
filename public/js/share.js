@@ -3,16 +3,19 @@
 // ============================================================
 
 // --- 1. Link Oluşturucu (Pexels & Koordinat Fix) ---
+// --- 1. Link Oluşturucu (Lat/Lng Sırasını Garantiye Alıyoruz) ---
 function createShortTripLink() {
     const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
     const aiInfo = localStorage.getItem('ai_information') || "";
 
     const items = (window.cart || []).map(item => {
+        // Samsun hatasını önlemek için: Önce Lat, Sonra Lng!
         const lat = item.lat || (item.location && item.location.lat) || 0;
         const lng = item.lng || (item.location && item.location.lng) || 0;
-        // Pexels URL'sini linki bozmaması için çift encode yapıyoruz
+        
         const imgUrl = (item.image && item.image.length > 5) ? encodeURIComponent(item.image) : "no-img";
-        // Ayraç olarak | kullanıyoruz ki resimdeki : bölmesin
+        
+        // Format: Name | Lat | Lng | Day | Img
         return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgUrl}`;
     }).join('*');
 
@@ -21,7 +24,7 @@ function createShortTripLink() {
     return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-// --- 2. Linke Tıklanınca Yükleyen Ana Kısım ---
+// --- 2. Karşılayıcı (Veriyi Doğru Sırayla Okuma) ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
@@ -29,83 +32,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
-        
-        // 1. window.cart ve localStorage Hazırlığı
         const rawItems = tripData.items.split('*');
+        
         window.cart = rawItems.map(str => {
             const parts = str.split('|');
-            const [name, lat, lon, day, img] = parts;
-            const finalImg = (img === "no-img" || !img) ? "" : decodeURIComponent(decodeURIComponent(img));
+            // DİKKAT: Sıralama Linktekiyle Aynı Olmalı (Name|Lat|Lng|Day|Img)
+            const [name, latStr, lonStr, dayStr, imgStr] = parts;
+            
+            const latVal = parseFloat(latStr);
+            const lngVal = parseFloat(lonStr);
+            const finalImg = (imgStr === "no-img" || !imgStr) ? "" : decodeURIComponent(decodeURIComponent(imgStr));
+            
             return {
                 name: name,
-                lat: parseFloat(lat),
-                lng: parseFloat(lon),
-                location: { lat: parseFloat(lat), lng: parseFloat(lon) },
-                day: parseInt(day),
+                lat: latVal,
+                lng: lngVal,
+                location: { lat: latVal, lng: lngVal },
+                day: parseInt(dayStr) || 1,
                 image: finalImg,
                 category: "Place"
             };
         });
 
         localStorage.setItem('cart', JSON.stringify(window.cart));
+        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
         
-        // 2. AI VERİSİNİ MÜHÜRLE
-        if (tripData.ai) {
-            localStorage.setItem('ai_information', tripData.ai);
-            // Global değişkene de atalım ki her yer görsün
-            window.lastTripAIInfo = tripData.ai; 
-        }
-        
-        const titleEl = document.getElementById('trip_title');
-        if (titleEl) titleEl.innerText = tripData.n;
-
-        // 3. UI Katmanlarını Aç
+        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = tripData.n;
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
-        const overlay = document.getElementById('sidebar-overlay-trip');
-        if (overlay) overlay.classList.add('open');
+        if (document.getElementById('sidebar-overlay-trip')) document.getElementById('sidebar-overlay-trip').classList.add('open');
 
-        // 4. GARANTİ TETİKLEME DÖNGÜSÜ
-        let aiRendered = false;
-        const systemCheck = setInterval(() => {
-            // updateCart ve Harita gelmiş mi?
+        // AI ve Rota İçin Sistemin Hazır Olmasını Bekle
+        const checkSystem = setInterval(() => {
             if (typeof updateCart === 'function' && window.map) {
+                clearInterval(checkSystem);
                 
-                // Rotayı ve Mekanları Çiz
+                // Önce rota ve liste (Artık koordinatlar doğru olduğu için patlamayacak)
                 updateCart();
 
-                // AI Kutusunu Çiz (Eğer veri varsa ve henüz çizilmediyse)
-                if (tripData.ai && !aiRendered && typeof insertTripAiInfo === "function") {
-                    
-                    // Veriyi parçala (Summary:, Tip:, Highlight: formatına göre)
+                // AI Kutusunu Enjekte Et (Doğru Parametrelerle)
+                if (tripData.ai && typeof insertTripAiInfo === "function") {
                     const parts = tripData.ai.split('\n\n');
                     const staticAi = {
-                        summary: parts[0] ? parts[0].replace(/Summary:/i, '').trim() : "",
-                        tip: parts[1] ? parts[1].replace(/Tip:/i, '').trim() : "",
-                        highlight: parts[2] ? parts[2].replace(/Highlight:/i, '').trim() : ""
+                        summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
+                        tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
+                        highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
                     };
-
-                    // KRİTİK: insertTripAiInfo'yu doğru parametrelerle çağır
-                    // Fonksiyonun imzası: (onFirstToken, aiStaticInfo, cityOverride)
-                    insertTripAiInfo(null, staticAi, null);
-                    aiRendered = true;
                     
-                    console.log("AI Information enjekte edildi.");
-                    clearInterval(systemCheck); // Her şey tamam, döngüyü bitir.
+                    // Mainscript'in AI render'ını tetikle
+                    setTimeout(() => {
+                        insertTripAiInfo(null, staticAi, null);
+                    }, 500);
                 }
 
-                // Harita Hizalaması
+                // Haritayı Tazele
                 setTimeout(() => {
                     window.map.invalidateSize();
                     if (typeof fitMapToCart === 'function') fitMapToCart();
                 }, 1000);
             }
-        }, 300); // 300ms'de bir kontrol et
+        }, 200);
 
     } catch (e) {
-        console.error("Yükleme sırasında hata:", e);
+        console.error("Yükleme Hatası:", e);
     }
 });
-
 // Paylaşım metni oluşturucu (WhatsApp vb için)
 function generateShareableText() {
     let shareText = "Here's your trip plan!\n\n";
