@@ -10108,6 +10108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
+        // window.cart'ı resimlerle beraber doldur
         window.cart = rawItems.map(str => {
             const [name, lat, lon, day, img, cat] = str.split(':');
             return {
@@ -10121,21 +10122,25 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Verileri sisteme geri yüklüyoruz
-        localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
+        // 1. AI Bilgisini Geri Yükle (type_writer_ai.js bunu buradan okur)
+        if (tripData.ai) {
+            localStorage.setItem('ai_information', tripData.ai);
+        }
 
-        // Başlığı güncelliyoruz
+        // 2. Gezi Adını Geri Yükle
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // Görünümü tetikliyoruz
+        // 3. LocalStorage Güncelle ve UI Tetikle
+        localStorage.setItem('cart', JSON.stringify(window.cart));
+        
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
         
+        // mainscript.js'deki fonksiyonu çağırarak resimleri bastırıyoruz
         if (typeof updateCart === 'function') updateCart();
 
     } catch (e) {
-        console.error("Yükleme hatası:", e);
+        console.error("Yükleme sırasında hata oluştu:", e);
     }
 });
