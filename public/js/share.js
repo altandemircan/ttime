@@ -37,8 +37,25 @@ function generateShareableText() {
 }
 
 function createShortTripLink() {
-    const names = window.cart.map(item => item.name).join('|');
-    return `${window.location.origin}${window.location.pathname}?items=${encodeURIComponent(names)}`;
+    if (!window.cart || window.cart.length === 0) return window.location.origin;
+    
+    const tripData = {
+        i: window.cart.map(item => ({
+            n: item.name,
+            c: item.category,
+            d: item.day,
+            la: (item.lat || item.location?.lat || 0).toFixed(5),
+            lo: (item.lng || item.location?.lng || 0).toFixed(5)
+        })),
+        td: window.tripDates || {}
+    };
+
+    // Veriyi Base64 yap ama URL'de bozulmaması için güvenli hale getir
+    const jsonStr = JSON.stringify(tripData);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)))
+                   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    
+    return `${window.location.origin}${window.location.pathname}?t=${base64}`;
 }
 
 // WhatsApp share

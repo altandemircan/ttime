@@ -10100,63 +10100,58 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
+// mainscript.js sonuna ekle (defer olduğu için DOMContentLoaded içinde)
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const itemsRaw = params.get('items');
-    if (!itemsRaw) return;
+    const t = params.get('t');
+    if (!t) return;
 
-    const items = decodeURIComponent(itemsRaw).split('|');
+    try {
+        // 1. Veriyi Çöz
+        const base64 = t.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonStr = decodeURIComponent(escape(atob(base64)));
+        const tripData = JSON.parse(jsonStr);
 
-    // 1. window.cart'ı doldur (Harita buna bakacak)
-    window.cart = items.map(data => {
-        const [name, lat, lon] = data.split(':');
-        return {
-            name: name,
-            category: "Point",
-            day: 1,
-            lat: parseFloat(lat),
-            lng: parseFloat(lon),
-            location: { lat: parseFloat(lat), lng: parseFloat(lon) }
-        };
-    });
+        if (tripData && tripData.i) {
+            // 2. Senin sisteminin beklediği formatta window.cart'ı doldur
+            window.cart = tripData.i.map(item => ({
+                name: item.n,
+                category: item.c,
+                day: parseInt(item.d),
+                lat: parseFloat(item.la),
+                lng: parseFloat(item.lo),
+                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) }
+            }));
 
-    // 2. Overlay Tasarımı
-    const overlay = document.createElement('div');
-    overlay.id = "shared-trip-overlay";
-    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); font-family:sans-serif;";
+            if (tripData.td) window.tripDates = tripData.td;
+            
+            // 3. LocalStorage'a yaz (Sayfa yenilense de gitmesin)
+            localStorage.setItem('cart', JSON.stringify(window.cart));
 
-    const listHtml = items.map((data, i) => `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:10px; border-radius:12px; text-align:left;">
-            <span style="background:#ff5a5f; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;">${i+1}</span>
-            <span style="font-weight:600; color:#333;">${data.split(':')[0]}</span>
-        </div>
-    `).join('');
+            // 4. UI TEMİZLİK
+            const welcome = document.getElementById('tt-welcome');
+            if (welcome) welcome.style.display = 'none';
 
-    overlay.innerHTML = `
-        <div style="background:#fff; padding:25px; border-radius:20px; width:90%; max-width:360px; text-align:center; box-shadow:0 15px 40px rgba(0,0,0,0.4);">
-            <h2 style="margin:0 0 10px; color:#ff5a5f;">📍 Rota Paylaşıldı</h2>
-            <div style="max-height:250px; overflow-y:auto; margin-bottom:20px;">${listHtml}</div>
-            <button id="start-trip-btn" style="width:100%; background:#ff5a5f; color:#fff; border:none; padding:15px; border-radius:12px; cursor:pointer; font-weight:bold; font-size:16px;">Haritada Gör ve Başla</button>
-        </div>
-    `;
+            // 5. MOTORU ATEŞLE (SIRALAMA KRİTİK)
+            console.log("🛠️ Triptime Sistemleri Başlatılıyor...");
+            
+            // Önce listeyi doldur (fonsk.js içindeki fonksiyonun)
+            if (typeof updateCart === 'function') updateCart();
+            
+            // Tarih detaylarını bas
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(window.tripDates?.startDate || null);
+            }
 
-    document.body.appendChild(overlay);
-
-    // 3. BUTONA BASINCA SİSTEMİ ÇALIŞTIR
-    document.getElementById('start-trip-btn').onclick = function() {
-        // Overlay'i kaldır
-        overlay.remove();
-        
-        // Hoşgeldin ekranını kapat
-        const welcome = document.getElementById('tt-welcome');
-        if (welcome) welcome.style.display = 'none';
-
-        // Senin fonsk.js içindeki motoru ateşle
-        if (typeof updateCart === 'function') updateCart();
-        
-        setTimeout(() => {
-            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-            console.log("🚀 Harita canlandırıldı!");
-        }, 500);
-    };
-}); 
+            // Haritayı ve Yükseklik Verilerini (elevation-works) Render Et
+            setTimeout(() => {
+                if (typeof renderRouteForDay === 'function') {
+                    renderRouteForDay(1); // 1. günün rotasını çiz
+                    console.log("🚀 Rota ve Yükseklik Grafiği Yüklendi!");
+                }
+            }, 1000); // Harita kütüphanelerinin oturması için 1 sn bekle
+        }
+    } catch (e) {
+        console.error("Yükleme sırasında hata:", e);
+    }
+});
