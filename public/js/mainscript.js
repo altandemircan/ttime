@@ -1,18 +1,22 @@
-// mainscript.js içine yapıştır
+// mainscript.js - EN ALT SATIRA YAPIŞTIR
 function loadSharedTripOnStart() {
     const urlParams = new URLSearchParams(window.location.search);
     const t = urlParams.get('t');
     if (!t) return;
 
     try {
-        // 1. Veriyi çöz (Türkçe karakterleri kurtararak)
-        const decodedStr = decodeURIComponent(atob(t).split('').map(c => 
-            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-        ).join(''));
-        
+        console.log("🔗 Veri yükleniyor...");
+
+        // 1. URL'deki veriyi çöz (Türkçe karakter hatası almaz)
+        const binaryString = atob(t);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const decodedStr = new TextDecoder().decode(bytes);
         const tripData = JSON.parse(decodedStr);
 
-        // 2. Veriyi senin sisteminin anladığı dile (window.cart) çevir
+        // 2. Veriyi sisteme (window.cart) aktar
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
@@ -20,35 +24,52 @@ function loadSharedTripOnStart() {
                 day: item.day,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
-                lon: parseFloat(item.lo)
+                lon: parseFloat(item.lo),
+                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
             }));
             
-            // local_storage.js içindeki hafızaya kaydet ki sayfa yenilense de gitmesin
-            localStorage.setItem('cart', JSON.stringify(window.cart));
             if (tripData.td) window.tripDates = tripData.td;
+            if (tripData.dn) window.customDayNames = tripData.dn;
+
+            // LocalStorage'a kaydet (local_storage.js ile uyumlu)
+            localStorage.setItem('cart', JSON.stringify(window.cart));
         }
 
-        // 3. Ekranda ne varsa temizle (Chat box, hoşgeldin yazısı vb.)
-        if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = "";
+        // 3. Ekranda ne kadar engel varsa kaldır
         const welcome = document.getElementById('tt-welcome');
         if (welcome) welcome.style.display = 'none';
+        
+        const chatBox = document.getElementById("chat-box");
+        if (chatBox) chatBox.innerHTML = "";
 
-        // 4. Sitenin kendi fonksiyonlarını tetikle (Harita ve listeyi çizdir)
+        // 4. SİHRİ YAP: Haritayı ve Listeyi Çizdir
         setTimeout(() => {
+            // Sepeti/Listeyi güncelle
             if (typeof updateCart === 'function') updateCart();
-            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
+            
+            // Haritayı ve Detayları göster
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(window.tripDates?.startDate || null);
+            }
+            
+            // Rotaları çizdir (1. gün için)
+            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+            
+            console.log("✅ Plan başarıyla yüklendi ve çizildi.");
         }, 500);
 
     } catch (e) {
-        console.error("Yükleme hatası:", e);
+        console.error("Yükleme başarısız:", e);
     }
 }
 
-// Parantezsiz tetikleme
-window.addEventListener('load', loadSharedTripOnStart);
+// Sayfa açılır açılmaz çalıştır
+window.addEventListener('DOMContentLoaded', loadSharedTripOnStart);
 
-// Sayfa ilk açıldığında tetikle
-window.addEventListener('load', loadSharedTripOnStart);
+
+
+
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
