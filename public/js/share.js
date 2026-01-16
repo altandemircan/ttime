@@ -123,29 +123,56 @@ function createShortTripLink() {
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
-    if (!v1Raw) return;
+    const v2Raw = params.get('v2'); // Yeni kısa format
+    
+    if (!v1Raw && !v2Raw) return;
 
     showGlobalLoading();
 
     try {
-        const tripData = JSON.parse(decodeURIComponent(v1Raw));
-        const rawItems = tripData.items.split('*');
-        window.cart = rawItems.map(str => {
-            const parts = str.split('|');
-            const [name, latStr, lonStr, dayStr, imgStr] = parts;
-            const finalImg = (imgStr === "no-img" || !imgStr) ? "" : decodeURIComponent(decodeURIComponent(imgStr));
-            return {
-                name: name, lat: parseFloat(latStr), lng: parseFloat(lonStr),
-                location: { lat: parseFloat(latStr), lng: parseFloat(lonStr) },
-                day: parseInt(dayStr) || 1, image: finalImg, category: "Place"
-            };
-        });
+        let tripData = { n: "Trip Plan", items: "", ai: "" };
 
+        if (v2Raw) {
+            // ALTIN VURUŞ: v2 Formatını Çöz (Sıkıştırılmış Metin)
+            const decoded = decodeURIComponent(v2Raw);
+            const [title, itemsStr] = decoded.split('|');
+            tripData.n = title;
+            // v2'de öğeler virgülle ayrılmıştı: Isim,Lat,Lng,Gün,Resim
+            const rawItems = itemsStr.split('*');
+            window.cart = rawItems.map(str => {
+                const p = str.split(',');
+                const lat = parseFloat(p[1]);
+                const lng = parseFloat(p[2]);
+                return {
+                    name: p[0], lat: lat, lng: lng,
+                    location: { lat: lat, lng: lng },
+                    day: parseInt(p[3]) || 1, 
+                    image: p[4] === "1" ? "default" : "", // 1 ise resim var işareti
+                    category: "Place"
+                };
+            });
+        } else if (v1Raw) {
+            // ESKİ FORMAT: v1 (JSON)
+            const decodedV1 = JSON.parse(decodeURIComponent(v1Raw));
+            tripData = decodedV1;
+            const rawItems = tripData.items.split('*');
+            window.cart = rawItems.map(str => {
+                const parts = str.split('|');
+                const [name, latStr, lonStr, dayStr, imgStr] = parts;
+                const finalImg = (imgStr === "no-img" || !imgStr) ? "" : decodeURIComponent(decodeURIComponent(imgStr));
+                return {
+                    name: name, lat: parseFloat(latStr), lng: parseFloat(lonStr),
+                    location: { lat: parseFloat(latStr), lng: parseFloat(lonStr) },
+                    day: parseInt(dayStr) || 1, image: finalImg, category: "Place"
+                };
+            });
+        }
+
+        // --- Ortak İşlemler (Senin Kodun) ---
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = tripData.n;
         
-        // Welcome section aktif kalıyor
         const welcomeSection = document.getElementById('tt-welcome');
         if (welcomeSection) {
             welcomeSection.style.display = 'block';
@@ -155,12 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let attempts = 0;
         const checkEverything = setInterval(() => {
             attempts++;
-            const isFunctionsReady = typeof updateCart === 'function' && typeof insertTripAiInfo === 'function';
+            const isFunctionsReady = typeof updateCart === 'function'; 
+            // insertTripAiInfo opsiyonel olabilir, v2'de AI yoksa bile updateCart çalışmalı
 
             if (isFunctionsReady || attempts > 35) {
                 clearInterval(checkEverything);
                 try {
                     if (typeof updateCart === 'function') updateCart();
+                    
+                    // AI Bilgisini Enjekte Et (Sadece veri varsa)
                     if (tripData.ai && typeof insertTripAiInfo === "function") {
                         const parts = tripData.ai.split('\n\n');
                         const staticAi = {
@@ -170,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                         insertTripAiInfo(null, staticAi, null);
                     }
+                    
                     const overlay = document.getElementById('sidebar-overlay-trip');
                     if (overlay) overlay.classList.add('open');
                 } catch (err) {}
@@ -186,22 +217,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 300);
     } catch (e) {
+        console.error("Yükleme hatası:", e);
         hideGlobalLoading();
     }
 });
 
-/**
- * share.js - FIXED HTTPS SHORTENER
- * Created with triptime.ai!
- */
 
+// --- 1. VERİYİ JSON OLMADAN, DÜMDÜZ VE EN KISA HALİYLE PAKETLE ---
+function createOptimizedLongLink() {
+    const title = document.getElementById('trip_title')?.innerText || "Trip";
+    
+    // JSON'daki tırnak, parantez ve anahtar kelimeleri (n, items) tamamen siliyoruz.
+    // Format: Başlık | İsim,Lat,Lng,Gün,Resim * İsim,Lat,Lng,Gün,Resim
+    const items = (window.cart || []).map(item => {
+        const name = item.name.replace(/[|*,]/g, ''); // Ayırıcı karakterleri temizle
+        const lat = parseFloat(item.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || 0).toFixed(4);
+        const img = item.image ? "1" : "0";
+        return `${name},${lat},${lng},${item.day || 1},${img}`;
+    }).join('*');
+
+    const rawData = `${title}|${items}`; // En saf hali
+    const baseUrl = window.location.origin + window.location.pathname;
+    
+    // v1 yerine v2 diyelim ki yeni sıkıştırma formatını anlasın (Opsiyonel: v1 de kalabilir)
+    return `${baseUrl}?v2=${encodeURIComponent(rawData)}`;
+}
+
+// --- 2. WHATSAPP PAYLAŞIM (HTTPS VE TİNYURL FIX) ---
 async function shareOnWhatsApp() {
     if (typeof showGlobalLoading === 'function') showGlobalLoading();
     
     try {
         let shareText = "Check out my trip plan!\n\n";
         const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
-
         for (let day = 1; day <= maxDay; day++) {
             const dayItems = window.cart.filter(item => item.day == day && item.name);
             if (dayItems.length > 0) {
@@ -211,49 +260,22 @@ async function shareOnWhatsApp() {
             }
         }
 
-        const optimizedUrl = createOptimizedLongLink();
+        const longUrl = createOptimizedLongLink();
+        const tinyUrlApi = `https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`;
         
-        // DÜZELTME: Hem HTTPS hem de TAM ADRES (https://tinyurl.com/...)
-        const shortenerApi = `https://tinyurl.com/api-create?url=${encodeURIComponent(optimizedUrl)}`;
-        
-        const response = await fetch(shortenerApi);
-        
-        let shortUrl;
-        if (response.ok) {
-            shortUrl = await response.text();
-        } else {
-            shortUrl = optimizedUrl; // API cevap vermezse uzun haliyle devam et
-        }
+        const response = await fetch(tinyUrlApi);
+        const shortUrl = response.ok ? await response.text() : longUrl;
 
         shareText += `View full plan: ${shortUrl}`;
         shareText += "\n\nCreated with triptime.ai!";
 
-        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-        window.open(waUrl, '_blank');
-
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
     } catch (e) {
-        console.error("Link kısaltma hatası (Düzeltildi):", e);
-        // Hata olsa bile kullanıcıyı mağdur etme, uzun linkle devam et
-        const fallbackText = "Check out my trip plan!\n\nView full plan: " + createOptimizedLongLink() + "\n\nCreated with triptime.ai!";
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fallbackText)}`, '_blank');
+        console.error("Shortener failed:", e);
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent("Check out my trip plan!\n\n" + createOptimizedLongLink())}`, '_blank');
     } finally {
         if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
     }
-}
-
-// Bu fonksiyonu da kontrol et, URL'yi temiz üretir
-function createOptimizedLongLink() {
-    const title = document.getElementById('trip_title')?.innerText || "Trip";
-    const items = (window.cart || []).map(item => {
-        const lat = parseFloat(item.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || 0).toFixed(4);
-        const imgSign = item.image ? "1" : "0"; 
-        return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgSign}`;
-    }).join('*');
-
-    const payload = { n: title, items: items }; 
-    const baseUrl = window.location.origin + window.location.pathname;
-    return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
 function shareOnInstagram() {
