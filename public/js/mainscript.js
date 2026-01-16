@@ -1,58 +1,47 @@
 (function loadSharedTripOnStart() {
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        let t = urlParams.get('t');
+        // Hem URL parametresine hem de Hash (yeni yöntem) kısmına bakıyoruz
+        const hash = window.location.hash;
+        if (!hash || !hash.includes('plan=')) return;
 
-        if (t) {
-            console.log("🔗 Paylaşılan gezi yükleniyor...");
+        console.log("🔗 Paylaşılan gezi yükleniyor...");
 
-            // 1. URL-Safe'den normale döndür
-            t = t.replace(/-/g, '+').replace(/_/g, '/');
-            while (t.length % 4) t += '=';
+        const rawData = hash.split('plan=')[1];
+        const decodedStr = decodeURIComponent(rawData);
+        
+        // JSON'un tam olduğundan emin olmak için kontrol
+        const tripData = JSON.parse(decodedStr);
 
-            // 2. Base64 -> Binary String -> Uint8Array -> UTF8 String
-            const binaryString = atob(t);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
+        if (tripData.i) {
+            window.cart = tripData.i.map(item => ({
+                name: item.n,
+                category: item.c,
+                day: item.d,
+                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
+                lat: parseFloat(item.la),
+                lon: parseFloat(item.lo),
+                image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+            }));
+            window.customDayNames = tripData.dn || {};
+            window.tripDates = tripData.td || {};
             
-            const decodedStr = new TextDecoder().decode(bytes);
-            
-            // JSON içindeki gizli karakterleri parse etmeden önce tekrar temizle
-            const cleanJsonStr = decodedStr.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
-            const tripData = JSON.parse(cleanJsonStr);
-
-            if (tripData.i) {
-                window.cart = tripData.i.map(item => ({
-                    name: item.n,
-                    category: item.c,
-                    day: item.d,
-                    location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
-                    lat: parseFloat(item.la),
-                    lon: parseFloat(item.lo),
-                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
-                }));
-                window.customDayNames = tripData.dn || {};
-                window.tripDates = tripData.td || {};
-                
-                // localStorage'ı güncelle
-                localStorage.setItem('cart', JSON.stringify(window.cart));
-            }
-
-            // UI işlemleri
-            if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = "";
-            const inputWrapper = document.querySelector('.input-wrapper');
-            if (inputWrapper) inputWrapper.style.display = 'none';
-
-            setTimeout(() => {
-                if (typeof updateCart === 'function') updateCart();
-                if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
-                if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-            }, 300);
+            // local_storage.js ile uyumlu kayıt
+            localStorage.setItem('cart', JSON.stringify(window.cart));
         }
+
+        // Arayüzü temizle
+        if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = "";
+        const inputArea = document.querySelector('.input-wrapper');
+        if (inputArea) inputArea.style.display = 'none';
+
+        setTimeout(() => {
+            if (typeof updateCart === 'function') updateCart();
+            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
+            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+        }, 400);
+
     } catch (e) {
-        console.error("Yükleme hatası:", e);
+        console.error("Yükleme hatası (Hash Decode):", e);
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
