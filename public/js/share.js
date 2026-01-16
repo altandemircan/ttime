@@ -36,29 +36,6 @@ function generateShareableText() {
     return shareText;
 }
 
-function createShortTripLink() {
-    if (!window.cart || window.cart.length === 0) return window.location.origin;
-    
-    // Gezi Adını id="trip_title" olan elementten alıyoruz
-    const tripName = document.getElementById('trip_title')?.innerText || "Yeni Gezi";
-    
-    // type_writer_ai.js'nin oluşturduğu ve localStorage'a attığı bilgiyi çekiyoruz
-    const aiInfo = localStorage.getItem('ai_information') || "";
-
-    const items = window.cart.map(it => {
-        const name = it.name.replace(/[:|*]/g, "");
-        const la = it.lat || it.location?.lat || 0;
-        const lo = it.lng || it.location?.lng || 0;
-        const day = it.day || 1;
-        // photoget-proxy'den gelen resmi pakete ekliyoruz
-        const img = it.image ? encodeURIComponent(it.image) : "no-img"; 
-        const cat = it.category || "Place";
-        return `${name}:${la}:${lo}:${day}:${img}:${cat}`;
-    }).join('*');
-
-    const tripData = { n: tripName, ai: aiInfo, items: items };
-    return `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(tripData))}`;
-}
 
 // WhatsApp share
 function shareOnWhatsApp() {
@@ -115,79 +92,26 @@ function shareOnTwitter() {
 }
 
 
-// Tüm platformlarda, tüm Türkçe/emoji ve json kombinasyonlarında patlamaz:
-function safeBase64Decode(b64str) {
-    try {
-        // 1. encodeURIComponent ile encode edilmişse burada açılır (çoğu eski tasarımlar bunu kullanır)
-        let decoded = atob(b64str);
-        // Eğer decodeJSON gibi görünüyorsa (%7B ile başlıyorsa), decodeURIComponent uygula
-        if (decoded.startsWith('%')) {
-            decoded = decodeURIComponent(decoded);
-        } else {
-            // Yoksa, bytes'ı UTF-8'e çevirerek normalleştir (çünkü atob tek başına UTF-8 çözemez!)
-            try {
-                // Modern browserlarda TextDecoder çok hızlı/failsafe
-                decoded = new TextDecoder("utf-8").decode(Uint8Array.from(atob(b64str), c => c.charCodeAt(0)));
-            } catch (e) {
-                // Eski tarayıcılar için fallback
-                decoded = decodeURIComponent(escape(atob(b64str)));
-            }
-        }
-        return decoded;
-    } catch (err) {
-        return null;
-    }
+function createShortTripLink() {
+    if (!window.cart || window.cart.length === 0) return window.location.origin;
+    
+    // 1. Gezi Adı (id="trip_title" senin HTML'indeki başlık alanı)
+    const tripName = document.getElementById('trip_title')?.innerText || "Rome Trip Plan";
+    
+    // 2. AI Bilgisi (localStorage'dan tam metni alıyoruz)
+    const aiInfo = localStorage.getItem('ai_information') || "";
+
+    const items = window.cart.map(it => {
+        const name = it.name.replace(/[:|*]/g, "");
+        const la = it.lat || it.location?.lat || 0;
+        const lo = it.lng || it.location?.lng || 0;
+        const day = it.day || 1;
+        // RESİM BURADA PAKETE EKLENİYOR (Pexels linki)
+        const img = it.image ? encodeURIComponent(it.image) : "no-img"; 
+        const cat = it.category || "Place";
+        return `${name}:${la}:${lo}:${day}:${img}:${cat}`;
+    }).join('*');
+
+    const tripData = { n: tripName, ai: aiInfo, items: items };
+    return `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(tripData))}`;
 }
-function loadSharedTripOnStart() {
-    // Adres çubuğundaki #trip= kısmına bak
-    const hash = window.location.hash;
-    if (!hash || !hash.includes('trip=')) return;
-
-    try {
-        console.log("🔗 Plan Hash üzerinden yükleniyor...");
-        let base64 = hash.split('trip=')[1];
-        
-        // Base64 karakterlerini geri düzelt
-        base64 = base64.replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) base64 += '=';
-
-        // Byte byte geri çöz (Karakter hatasını %100 önler)
-        const jsonStr = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-
-        const tripData = JSON.parse(jsonStr);
-
-        if (tripData.i) {
-            window.cart = tripData.i.map(item => ({
-                name: item.n,
-                category: item.c,
-                day: item.day,
-                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
-                lat: parseFloat(item.la),
-                lon: parseFloat(item.lo),
-                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
-            }));
-            window.customDayNames = tripData.dn || {};
-            window.tripDates = tripData.td || {};
-            
-            // local_storage.js'deki yapıya kaydet
-            localStorage.setItem('cart', JSON.stringify(window.cart));
-        }
-
-        // Arayüzü temizle ve planı göster
-        const chatBox = document.getElementById("chat-box");
-        if (chatBox) chatBox.innerHTML = "";
-        
-        setTimeout(() => {
-            if (typeof updateCart === 'function') updateCart();
-            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
-        }, 500);
-
-    } catch (e) {
-        console.error("Kritik Yükleme Hatası:", e);
-    }
-}
-
-// Sayfa ilk açıldığında tetikle
-window.addEventListener('load', loadSharedTripOnStart);
