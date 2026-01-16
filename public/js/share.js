@@ -39,18 +39,29 @@ function generateShareableText() {
 function createShortTripLink() {
     if (!window.cart || window.cart.length === 0) return window.location.origin;
     
-    // Format: İsim:Lat:Lon:Gün:Kategori
+    // Gezi Adı (Input'tan veya bir değişkenden alıyorsan orayı buraya bağla)
+    const tripName = document.getElementById('trip-name-input')?.value || "Yeni Gezi";
+    
+    // AI Bilgisi (LocalStorage'dan çekiyoruz)
+    const aiInfo = localStorage.getItem('ai_information') || "";
+
     const items = window.cart.map(it => {
-        const name = it.name.replace(/[:|*]/g, ""); // Ayırıcı karakterleri temizle
+        const name = it.name.replace(/[:|*]/g, "");
         const la = (it.lat || it.location?.lat || 0);
         const lo = (it.lng || it.location?.lng || 0);
         const day = it.day || 1;
-        const cat = it.category || "P";
-        return `${name}:${la}:${lo}:${day}:${cat}`;
+        // Resim URL'sini pakete ekle (Pexels linki)
+        const img = encodeURIComponent(it.image || ""); 
+        return `${name}:${la}:${lo}:${day}:${img}`;
     }).join('*');
 
-    const finalUrl = `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(items)}`;
-    console.log("🔗 Oluşturulan Link:", finalUrl);
+    const tripData = {
+        n: tripName,
+        ai: aiInfo,
+        items: items
+    };
+
+    const finalUrl = `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(tripData))}`;
     return finalUrl;
 }
 
