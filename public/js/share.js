@@ -41,26 +41,16 @@ function hideGlobalLoading() {
     }
 }
 
-// --- 2. LİNK OLUŞTURUCU (v2 SIKIŞTIRILMIŞ FORMAT) ---
-function createOptimizedLongLink() {
-    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*,]/g, '');
-    const items = (window.cart || []).map(item => {
-        const name = item.name.replace(/[|*,]/g, ''); 
-        const lat = parseFloat(item.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || 0).toFixed(4);
-        const img = item.image ? "1" : "0";
-        return `${name},${lat},${lng},${item.day || 1},${img}`;
-    }).join('*');
+/**
+ * share.js - THE BULTIMATE FIX (With API Failover)
+ * Created with triptime.ai!
+ */
 
-    const rawData = `${title}|${items}`;
-    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(rawData)}`;
-}
-
-// --- 3. WHATSAPP PAYLAŞIM (HTTPS VE TİNYURL GÜNCEL) ---
 async function shareOnWhatsApp() {
     if (typeof showGlobalLoading === 'function') showGlobalLoading();
     
     try {
+        // 1. METİN FORMATIN (DOKUNULMAZ)
         let shareText = "Check out my trip plan!\n\n";
         const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
 
@@ -73,24 +63,59 @@ async function shareOnWhatsApp() {
             }
         }
 
-        const longV2Url = createOptimizedLongLink(); 
-        let shortUrl = longV2Url;
+        // 2. LİNKİ HAZIRLA (v2 FORMATI)
+        const longUrl = createOptimizedLongLink();
+        let shortUrl = "";
 
+        // 3. TINYURL'İ ZORLA (Proxy Olmadan Deneme)
         try {
-            const response = await fetch(`https://tinyurl.com/api-create?url=${encodeURIComponent(longV2Url)}`);
-            if (response.ok) {
-                const result = await response.text();
-                if (result && result.startsWith('http')) shortUrl = result;
+            const response = await fetch(`https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`, {
+                method: 'GET',
+                mode: 'no-cors' // CORS engelini aşmak için 'no-cors' deniyoruz
+            });
+            
+            // NOT: no-cors modunda response body okunamaz. 
+            // Bu yüzden eğer TinyURL naz yapıyorsa doğrudan is.gd gibi alternatiflere yönleniyoruz.
+            const altRes = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+            if (altRes.ok) {
+                shortUrl = await altRes.text();
             }
-        } catch (e) { console.error("Kısaltma Hatası"); }
+        } catch (e) {
+            console.log("Kısaltma servisleri meşgul.");
+        }
+
+        // 4. EĞER HALA KISALMADIYSA (ACİL DURUM PLANI)
+        // Linki mesajın en altına, çok kalabalık etmeyecek şekilde ekle
+        if (!shortUrl || !shortUrl.startsWith('http')) {
+            shortUrl = longUrl;
+        }
 
         shareText += `View full plan: ${shortUrl}`;
         shareText += "\n\nCreated with triptime.ai!";
 
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+        // 5. WHATSAPP'I AÇ
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        window.open(waUrl, '_blank');
+
+    } catch (err) {
+        console.error("WhatsApp share failed", err);
     } finally {
         if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
     }
+}
+
+// BU FONKSİYONU DA GÜNCELLE (EN KISA HALİ BU)
+function createOptimizedLongLink() {
+    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*,]/g, '');
+    const items = (window.cart || []).map(item => {
+        const name = item.name.substring(0, 20).replace(/[|*,]/g, ''); // İsimleri 20 karakterle kısıtladık ki link iyice küçülsün
+        const lat = parseFloat(item.lat || 0).toFixed(3); // Hassasiyeti 3'e düşürdük
+        const lng = parseFloat(item.lng || 0).toFixed(3);
+        return `${name},${lat},${lng},${item.day || 1},0`;
+    }).join('*');
+
+    const rawData = `${title}|${items}`;
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(rawData)}`;
 }
 
 // --- 4. SAYFA YÜKLENDİĞİNDE LİNKİ OKU (v1 VE v2 DESTEKLİ) ---
