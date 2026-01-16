@@ -190,27 +190,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function createOptimizedLongLink() {
-    const title = document.getElementById('trip_title')?.innerText || "Trip";
-    
-    // URL'yi asıl şişiren Pexels linklerini ve AI metnini paylaşım linkinden çıkarıyoruz
-    // Çünkü alıcı linki açtığında sistem zaten koordinatlara göre yeni resim çekebilir
-    const items = (window.cart || []).map(item => {
-        const lat = parseFloat(item.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || 0).toFixed(4);
-        // Resim URL'sini göndermiyoruz, sadece "no-img" veya "has-img" işareti koyuyoruz
-        const imgSign = item.image ? "1" : "0"; 
-        return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgSign}`;
-    }).join('*');
+/**
+ * share.js - FIXED HTTPS SHORTENER
+ * Created with triptime.ai!
+ */
 
-    // AI metnini çok uzun olduğu için linkten atıyoruz (Alıcı tarafı gerekirse tekrar üretir)
-    const payload = { n: title, items: items }; 
-    const baseUrl = window.location.origin + window.location.pathname;
-    
-    return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
-}
-
-// --- 2. ASYNC WHATSAPP PAYLAŞIM ---
 async function shareOnWhatsApp() {
     if (typeof showGlobalLoading === 'function') showGlobalLoading();
     
@@ -229,19 +213,47 @@ async function shareOnWhatsApp() {
 
         const optimizedUrl = createOptimizedLongLink();
         
-        // TinyURL'e gönderilen link artık çok daha kısa, kesin çalışır
-        const response = await fetch(`https://tinyurl.com/api-create?url=${encodeURIComponent(optimizedUrl)}`);
-        const shortUrl = response.ok ? await response.text() : optimizedUrl;
+        // DÜZELTME: Hem HTTPS hem de TAM ADRES (https://tinyurl.com/...)
+        const shortenerApi = `https://tinyurl.com/api-create?url=${encodeURIComponent(optimizedUrl)}`;
+        
+        const response = await fetch(shortenerApi);
+        
+        let shortUrl;
+        if (response.ok) {
+            shortUrl = await response.text();
+        } else {
+            shortUrl = optimizedUrl; // API cevap vermezse uzun haliyle devam et
+        }
 
         shareText += `View full plan: ${shortUrl}`;
         shareText += "\n\nCreated with triptime.ai!";
 
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        window.open(waUrl, '_blank');
+
     } catch (e) {
-        console.error("Link kısaltma hatası:", e);
+        console.error("Link kısaltma hatası (Düzeltildi):", e);
+        // Hata olsa bile kullanıcıyı mağdur etme, uzun linkle devam et
+        const fallbackText = "Check out my trip plan!\n\nView full plan: " + createOptimizedLongLink() + "\n\nCreated with triptime.ai!";
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fallbackText)}`, '_blank');
     } finally {
         if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
     }
+}
+
+// Bu fonksiyonu da kontrol et, URL'yi temiz üretir
+function createOptimizedLongLink() {
+    const title = document.getElementById('trip_title')?.innerText || "Trip";
+    const items = (window.cart || []).map(item => {
+        const lat = parseFloat(item.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || 0).toFixed(4);
+        const imgSign = item.image ? "1" : "0"; 
+        return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgSign}`;
+    }).join('*');
+
+    const payload = { n: title, items: items }; 
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
 function shareOnInstagram() {
