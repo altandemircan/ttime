@@ -36,42 +36,33 @@ function generateShareableText() {
     return shareText;
 }
 
-// share.js - createShortTripLink fonksiyonunu TAMAMEN bununla değiştir:
-
 function createShortTripLink() {
     try {
-        // 1. Veri Hazırlığı
         const minimalData = {
             i: window.cart.map(item => ({
                 n: item.name,
                 c: item.category,
                 d: item.day,
-                // Sayıları string'e çevirip kısalttık
-                la: parseFloat(item.location ? item.location.lat : (item.lat || 0)).toFixed(4),
-                lo: parseFloat(item.location ? item.location.lng : (item.lon || 0)).toFixed(4)
+                la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
+                lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
             })),
             dn: window.customDayNames || {},
             td: window.tripDates || {}
         };
 
-        // 2. JSON'a çevir
         const jsonStr = JSON.stringify(minimalData);
+        
+        // ÖNEMLİ: Unicode karakterleri (Türkçe) güvenli Base64'e çevirme
+        const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+            return String.fromCharCode('0x' + p1);
+        }));
 
-        // 3. Türkçe karakterleri bozmadan encode et (UTF-8)
-        const uriEncoded = encodeURIComponent(jsonStr);
+        // URL-Safe hale getir (+ -> -, / -> _, = sil)
+        const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-        // 4. Base64'e çevir
-        let base64 = btoa(uriEncoded);
-
-        // 5. URL-SAFE HALE GETİR (Kritik Nokta Burası)
-        // + yerine - koy, / yerine _ koy, = işaretlerini sil
-        base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-        return `${window.location.origin}/?t=${base64}`;
-
+        return `${window.location.origin}/?t=${urlSafeBase64}`;
     } catch (e) {
-        console.error("Link oluşturma hatası:", e);
-        alert("Link oluşturulurken bir hata oluştu.");
+        console.error("Link hatası:", e);
         return window.location.origin;
     }
 }

@@ -1,86 +1,72 @@
-// mainscript.js - loadSharedTripOnStart fonksiyonunu TAMAMEN bununla değiştir:
+// mainscript.js
 
-(function loadSharedTripOnStart() {
+// Fonksiyonu tanımlıyoruz
+function loadSharedTripOnStart() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        let sharedTrip = urlParams.get('t'); 
+        let t = urlParams.get('t');
 
-        if (sharedTrip) {
-            console.log("🔗 Shared trip detected...");
+        if (!t) return; // Linkte veri yoksa çık
 
-            // 1. URL-Safe karakterleri orijinal Base64 formatına geri çevir
-            // - işaretini + yap, _ işaretini / yap
-            sharedTrip = sharedTrip.replace(/-/g, '+').replace(/_/g, '/');
-            
-            // 2. Silinen padding (=) karakterlerini geri ekle
-            while (sharedTrip.length % 4) {
-                sharedTrip += '=';
-            }
+        console.log("🔗 Paylaşılan gezi algılandı, yükleniyor...");
 
-            // 3. Önce Base64'ten çöz (atob), sonra URI decode yap (Türkçe karakterler düzelir)
-            const jsonStr = decodeURIComponent(atob(sharedTrip));
-            const tripData = JSON.parse(jsonStr);
+        // 1. URL-Safe karakterleri standart Base64'e geri döndür
+        t = t.replace(/-/g, '+').replace(/_/g, '/');
+        while (t.length % 4) t += '=';
 
-            // 4. Window.cart'ı doldur
-            if (tripData.i) {
-                window.cart = (tripData.i || []).map(item => ({
-                    name: item.n,
-                    category: item.c,
-                    day: item.d,
-                    lat: item.la,
-                    lon: item.lo,
-                    location: { lat: Number(item.la), lng: Number(item.lo) },
-                    address: '', 
-                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
-                }));
-                window.customDayNames = tripData.dn || {};
-                window.tripDates = tripData.td || {};
-            } else {
-                // Eski link formatı desteği (varsa)
-                window.cart = tripData.cart || [];
-                window.customDayNames = tripData.customDayNames || {};
-                window.tripDates = tripData.tripDates || {};
-            }
-
-            // 5. Kaydet ve Arayüzü Temizle
-            localStorage.setItem('cart', JSON.stringify(window.cart));
-
-            // Chat ekranını temizle (Hoşgeldin mesajı vs. görünmesin)
-            const chatBox = document.getElementById("chat-box");
-            if (chatBox) chatBox.innerHTML = ""; 
-            
-            const inputWrapper = document.querySelector('.input-wrapper');
-            if (inputWrapper) inputWrapper.style.display = 'none';
-            
-            const welcomeSection = document.getElementById('tt-welcome');
-            if (welcomeSection) welcomeSection.style.display = 'none';
-
-            // Başlığı güncelle
-            window.lastUserQuery = "Shared Trip Plan";
-            updateTripTitle();
-
-            // 6. Planı Göster
-            setTimeout(() => {
-                if (typeof showTripDetails === 'function') {
-                    showTripDetails(tripData.td?.startDate || null);
-                }
-                if (typeof updateCart === 'function') updateCart();
-                if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-                
-                // Mobilde sidebar'ı aç
-                if (window.innerWidth <= 768) {
-                     const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
-                     if(sidebarOverlay) sidebarOverlay.classList.add('open');
-                }
-            }, 500);
+        // 2. URI Error hatasını önleyen güvenli Decode işlemi (Kesin Çözüm)
+        const binaryString = atob(t);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
         }
-    } catch(e) {
-        console.error("Shared trip loading error:", e);
-        // Hata varsa kullanıcıya göster
+        const decodedStr = new TextDecoder().decode(bytes);
+        const tripData = JSON.parse(decodeURIComponent(decodedStr));
+
+        // 3. Global değişkenleri (window.cart vb.) doldur
+        if (tripData.i) {
+            window.cart = tripData.i.map(item => ({
+                name: item.n,
+                category: item.c,
+                day: item.d,
+                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
+                lat: parseFloat(item.la),
+                lon: parseFloat(item.lo),
+                image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+            }));
+            window.customDayNames = tripData.dn || {};
+            window.tripDates = tripData.td || {};
+        }
+
+        // 4. Arayüzü Düzenle (Inputları gizle, hoşgeldin mesajını kaldır)
         const chatBox = document.getElementById("chat-box");
-        if(chatBox) chatBox.innerHTML = `<div class="bot-message" style="color:red; border:1px solid red; padding:10px;">⚠️ Bu gezi planı açılamadı. Link bozuk veya hatalı kopyalanmış olabilir.</div>`;
+        if (chatBox) chatBox.innerHTML = ""; 
+        
+        const inputWrapper = document.querySelector('.input-wrapper');
+        if (inputWrapper) inputWrapper.style.display = 'none';
+        
+        const welcomeSection = document.getElementById('tt-welcome');
+        if (welcomeSection) welcomeSection.style.display = 'none';
+
+        // 5. Görselleştirme Fonksiyonlarını Tetikle
+        setTimeout(() => {
+            if (typeof updateCart === 'function') updateCart();
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(window.tripDates?.startDate || null);
+            }
+            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+        }, 300);
+
+    } catch (e) {
+        console.error("Gezi yüklenirken hata oluştu:", e);
     }
-});
+}
+
+// Sayfa yüklendiğinde fonksiyonu çalıştır (Parantez karmaşası olmadan)
+window.addEventListener('DOMContentLoaded', loadSharedTripOnStart);
+
+
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
