@@ -539,3 +539,6 @@ function showTripDetails(startDate) {
     tripDetailsSection.appendChild(shareDiv);
 }
 
+
+
+

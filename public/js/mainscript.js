@@ -1,3 +1,5 @@
+
+
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
@@ -4426,10 +4428,16 @@ async function updateCart() {
     }
 
     // AI Bölümünü Göster
-    const aiInfoSection = document.querySelector('.ai-info-section');
-    if (aiInfoSection) {
-        aiInfoSection.style.display = ''; 
+   const aiInfoSection = document.querySelector('.ai-info-section');
+if (aiInfoSection) {
+    aiInfoSection.style.display = ''; 
+    // PAYLAŞILAN LİNKTEKİ AI VERİSİNİ YAZDIR:
+    const aiTextContent = document.getElementById('ai-summary-text'); // Senin AI metin alanın hangisiyse
+    const sharedAI = localStorage.getItem('ai_information');
+    if (aiTextContent && sharedAI) {
+        aiTextContent.innerText = sharedAI;
     }
+}
     
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
 
@@ -9518,7 +9526,6 @@ function wrapRouteControls(day) {
   bar.className = 'route-controls-bar';
   bar.id = `route-controls-bar-day${day}`;
   
-
   // Bar header
   const mapBarHeader = document.createElement('div');
   mapBarHeader.className = 'map-bar-header';
@@ -10082,11 +10089,6 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
     return L.polyline(latlngs, options).addTo(map);
 }
-
-
-
-
-
 
 
 

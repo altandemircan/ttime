@@ -26,7 +26,7 @@ function onCitySelected(city) {
     });
 } 
 
-// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar al
+// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar alf
 function extractFirstJson(str) {
     const start = str.indexOf('{');
     const end = str.lastIndexOf('}');
@@ -87,59 +87,56 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
     function cleanText(text) { return (text || "").replace(/🤖/g, '').replace(/AI:/g, '').trim(); }
 
-    function populateAndShow(data, timeElapsed = null) {
-        // Yanıt geldiğinde hâlâ aynı trip ve aynı token mı?
-        if (token !== window.__aiInfoRequestToken) return;
-        if (currentTripKey && window.activeTripKey !== currentTripKey) return;
+   function populateAndShow(data, timeElapsed = null) {
+    // Güvenlik kontrolleri
+    if (token !== window.__aiInfoRequestToken) return;
+    if (currentTripKey && window.activeTripKey !== currentTripKey) return;
 
-        if (aiSpinner) aiSpinner.style.display = "none";
+    if (aiSpinner) aiSpinner.style.display = "none";
 
-        // toggle butonu ekle (mevcut kod aynen)
-        if (!aiDiv.querySelector('#ai-toggle-btn')) {
-            const btn = document.createElement('button');
-            btn.id = "ai-toggle-btn";
-            btn.className = "arrow-btn";
-            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
-            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-            aiDiv.querySelector('#ai-toggle-header').appendChild(btn);
-            const aiIcon = btn.querySelector('.arrow-icon');
-            let expanded = true;
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                expanded = !expanded;
-                if (expanded) {
-                    aiContent.style.maxHeight = "1200px";
-                    aiContent.style.opacity = "1";
-                    aiIcon.classList.add('open');
-                } else {
-                    aiContent.style.maxHeight = "0";
-                    aiContent.style.opacity = "0";
-                    aiIcon.classList.remove('open');
-                }
-            });
-            if (aiIcon) aiIcon.classList.add('open');
-        }
+    // --- KRİTİK: PAYLAŞIM İÇİN VERİYİ MÜHÜRLE ---
+    const aiFullText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
+    localStorage.setItem('ai_information', aiFullText);
+    
+    window.cart = window.cart || [];
+    window.cart.aiData = data;
+    window.lastTripAIInfo = data;
+    // ------------------------------------------
 
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity   = "1";
-
-        const txtSummary   = cleanText(data.summary)   || "Info not available.";
-        const txtTip       = cleanText(data.tip)       || "Info not available.";
-        const txtHighlight = cleanText(data.highlight) || "Info not available.";
-
-        aiSummary.textContent   = txtSummary;
-        aiTip.textContent       = txtTip;
-        aiHighlight.textContent = txtHighlight;
-        aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
-
-        // Sonuçları sadece doğru trip için kaydet
-        if (currentTripKey && window.activeTripKey === currentTripKey) {
-            window.cart = window.cart || [];
-            window.cart.aiData = data;
-            window.lastTripAIInfo = data;
-            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-        }
+    // UI: Panel Oluşturma
+    if (!aiDiv.querySelector('#ai-toggle-btn')) {
+        const btn = document.createElement('button');
+        btn.id = "ai-toggle-btn";
+        btn.className = "arrow-btn";
+        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0 10px;";
+        btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
+        aiDiv.querySelector('#ai-toggle-header').appendChild(btn);
+        
+        const aiIcon = btn.querySelector('.arrow-icon');
+        let expanded = true;
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            expanded = !expanded;
+            aiContent.style.maxHeight = expanded ? "1200px" : "0";
+            aiContent.style.opacity = expanded ? "1" : "0";
+            expanded ? aiIcon.classList.add('open') : aiIcon.classList.remove('open');
+        });
+        if (aiIcon) aiIcon.classList.add('open');
     }
+
+    aiContent.style.maxHeight = "1200px";
+    aiContent.style.opacity   = "1";
+
+    // Metinleri Ekrana Yaz
+    aiSummary.textContent   = (data.summary || "").replace(/🤖/g, '').trim();
+    aiTip.textContent       = (data.tip || "").replace(/🤖/g, '').trim();
+    aiHighlight.textContent = (data.highlight || "").replace(/🤖/g, '').trim();
+    aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
+
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+    }
+}
 
     // Statik veri varsa doğrudan bas
     if (aiStaticInfo) {
