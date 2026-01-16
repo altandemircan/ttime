@@ -37,23 +37,12 @@ function generateShareableText() {
 }
 
 function createShortTripLink() {
-    const minimalData = {
-        i: window.cart.map(item => ({
-            n: item.name,
-            c: item.category,
-            d: item.day,
-            la: item.location ? item.location.lat : (item.lat || 0),
-            lo: item.location ? item.location.lng : (item.lon || 0)
-        })),
-        td: window.tripDates || {}
-    };
-
-    const jsonStr = JSON.stringify(minimalData);
-    // Şifreleme yapma, sadece URL-safe hale getir
-    const safeData = encodeURIComponent(jsonStr);
+    // Sadece isimleri al ve URL-safe hale getir
+    const names = window.cart.map(item => item.name).join('|');
+    const safeNames = encodeURIComponent(names);
     
-    // VERİYİ HASH (#) İLE GÖNDER (KESİLMEYİ ÖNLER)
-    return `${window.location.origin}${window.location.pathname}#p=${safeData}`;
+    // Linkin sonuna ekle
+    return `${window.location.origin}${window.location.pathname}?items=${safeNames}`;
 }
 
 // WhatsApp share
