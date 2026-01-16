@@ -70,10 +70,15 @@ function shareOnTwitter() {
 // --- 2. Link Oluşturucu (Tüm veriyi linke gömer) ---
 function createShortTripLink() {
     const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
-    const aiInfo = localStorage.getItem('ai_information') || ""; // Yukarıdaki kod burayı dolduruyor
+    const aiInfo = localStorage.getItem('ai_information') || "";
 
     const items = (window.cart || []).map(item => {
-        return `${item.name}:${item.lat}:${item.lng}:${item.day || 1}:${item.image || ''}`;
+        // Koordinatları garantiye alıyoruz (lat/lng veya location.lat/lng)
+        const lat = item.lat || (item.location && item.location.lat) || 0;
+        const lng = item.lng || (item.location && item.location.lng) || 0;
+        const img = item.image || "no-img";
+        
+        return `${item.name}:${lat}:${lng}:${item.day || 1}:${encodeURIComponent(img)}`;
     }).join('*');
 
     const payload = {
@@ -95,61 +100,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı doldur (Tertemiz, orijinal mantıkla)
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
-            const [name, lat, lon, day, img, cat] = parts;
+            const [name, lat, lon, day, img] = parts;
             return {
                 name: name,
                 lat: parseFloat(lat),
                 lng: parseFloat(lon),
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
-                image: (img === "no-img" || !img) ? "" : decodeURIComponent(img),
-                category: cat || "Place"
+                image: (img === "no-img" || !img) ? "" : decodeURIComponent(img)
             };
         });
 
-        // 2. Hafızayı güncelle
         localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (tripData.ai) {
-            localStorage.setItem('ai_information', tripData.ai);
-        }
+        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
         
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // 3. UI Ayarları
+        // Sayfayı hazırla
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // 4. TEK VE SAĞLAM TETİKLEME (HİÇBİR ŞEYİ BOZMAZ)
-        // 1 saniye bekle, her şey yerine otursun, sonra sadece bir kere update et.
+        // Harita ve Rotayı Tetikle
         setTimeout(() => {
-            if (typeof updateCart === 'function') {
-                updateCart(); // Listeyi dizer, rotayı çizer.
-            }
-
-            // En son AI kutusunu oluştur (Eğer veri varsa)
+            if (typeof updateCart === 'function') updateCart();
+            
+            // AI Kutusunu bas
             if (tripData.ai && typeof insertTripAiInfo === "function") {
                 const parts = tripData.ai.split('\n\n');
                 const staticAi = {
-                    summary: parts[0] ? parts[0].replace('Summary:', '').trim() : "",
-                    tip: parts[1] ? parts[1].replace('Tip:', '').trim() : "",
-                    highlight: parts[2] ? parts[2].replace('Highlight:', '').trim() : ""
+                    summary: parts[0]?.replace('Summary:', '').trim(),
+                    tip: parts[1]?.replace('Tip:', '').trim(),
+                    highlight: parts[2]?.replace('Highlight:', '').trim()
                 };
                 insertTripAiInfo(null, staticAi);
             }
+        }, 1000);
 
-            // Haritayı hizala
-            if (window.map) {
-                window.map.invalidateSize();
-                if (typeof fitMapToCart === 'function') fitMapToCart();
-            }
-        }, 1200); // 1.2 saniye bekleme süresi her şeyin yüklenmesi için en güvenli süredir.
-
-    } catch (e) {
-        console.error("Yükleme hatası:", e);
-    }
+    } catch (e) { console.error("Yükleme hatası:", e); }
 });
