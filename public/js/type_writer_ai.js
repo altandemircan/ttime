@@ -94,7 +94,12 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
         if (aiSpinner) aiSpinner.style.display = "none";
 
-        // toggle butonu ekle (mevcut kod aynen)
+        // --- KRİTİK EKLEME: Paylaşım için localStorage'a kaydet ---
+        const fullAiText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
+        localStorage.setItem('ai_information', fullAiText);
+        // ---------------------------------------------------------
+
+        // toggle butonu ekle (mevcut kodun devamı)
         if (!aiDiv.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
@@ -140,7 +145,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
         }
     }
-
     // Statik veri varsa doğrudan bas
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo, null);
