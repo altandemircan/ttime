@@ -223,25 +223,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- 1. VERİYİ JSON OLMADAN, DÜMDÜZ VE EN KISA HALİYLE PAKETLE ---
 function createOptimizedLongLink() {
-    const title = document.getElementById('trip_title')?.innerText || "Trip";
-    
-    // JSON'daki tırnak, parantez ve anahtar kelimeleri (n, items) tamamen siliyoruz.
-    // Format: Başlık | İsim,Lat,Lng,Gün,Resim * İsim,Lat,Lng,Gün,Resim
-    const items = (window.cart || []).map(item => {
-        const name = item.name.replace(/[|*,]/g, ''); // Ayırıcı karakterleri temizle
-        const lat = parseFloat(item.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || 0).toFixed(4);
-        const img = item.image ? "1" : "0";
-        return `${name},${lat},${lng},${item.day || 1},${img}`;
-    }).join('*');
+    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*,]/g, '');
+    const items = (window.cart || []).map(item => {
+        const name = item.name.replace(/[|*,]/g, ''); 
+        // Hassasiyeti 4'e çıkarıyoruz, backend null dönmesin
+        const lat = parseFloat(item.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || 0).toFixed(4);
+        return `${name},${lat},${lng},${item.day || 1},0`;
+    }).join('*');
 
-    const rawData = `${title}|${items}`; // En saf hali
-    const baseUrl = window.location.origin + window.location.pathname;
-    
-    // v1 yerine v2 diyelim ki yeni sıkıştırma formatını anlasın (Opsiyonel: v1 de kalabilir)
-    return `${baseUrl}?v2=${encodeURIComponent(rawData)}`;
+    const rawData = `${title}|${items}`;
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(rawData)}`;
 }
 
 // --- 2. WHATSAPP PAYLAŞIM (HTTPS VE TİNYURL FIX) ---
