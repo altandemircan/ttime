@@ -6,10 +6,11 @@
         const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
         
         if (sharedTrip) {
+            // Veriyi çözümle
             const jsonStr = decodeURIComponent(atob(sharedTrip));
             const tripData = JSON.parse(jsonStr);
             
-            // EĞER minimal veri formatındaysa (i, dn, td)
+            // Minimal veri formatı (i, dn, td) veya eski format destekle
             if (tripData.i) {
                 // Minimal veriyi tam veriye çevir
                 window.cart = (tripData.i || []).map(item => ({
@@ -25,28 +26,48 @@
                 }));
                 window.customDayNames = tripData.dn || {};
                 window.tripDates = tripData.td || {};
-            } 
-            // EĞER eski format daysa (cart, customDayNames, tripDates)
-            else {
+            } else {
+                // Eski format cart/customDayNames/tripDates
                 window.cart = tripData.cart || [];
                 window.customDayNames = tripData.customDayNames || {};
                 window.tripDates = tripData.tripDates || {};
             }
             
-            // Local storage'a kaydet
+            // Local storage'a da yaz (ileride offline açmak için)
             localStorage.setItem('cart', JSON.stringify(window.cart));
             
-            console.log("Shared trip loaded from URL:", tripData);
+            // PAYLAŞIM MODU - SADECE GÖRÜNTÜLE
+            window.__sharedTripView = true;
             
-            // Sayfa tam yüklendiğinde geziyi göster
+            // Sayfa tam yüklendiğinde detayları göster (readonly mod)
             setTimeout(() => {
                 if (typeof showTripDetails === 'function') {
                     const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
                     showTripDetails(startDate);
                 }
-            }, 1000);
+                
+                // UI'da sadece plan detayları kalsın; input ve chat'i gizle
+                document.querySelectorAll('.input-wrapper, .chat-footer, .sidebar-trip, #chat-box').forEach(function(el){
+                    if(el) el.style.display = 'none';
+                });
+
+                // Chat ekranı yerine detay ekranını göster (opsiyonel, temaya göre)
+                const chatScreen = document.getElementById('chat-screen');
+                if (chatScreen) chatScreen.style.display = '';
+
+                // Banner ekle (sayfanın üstüne)
+                let detailsSection = document.getElementById('tt-trip-details');
+                if (detailsSection && !detailsSection.querySelector('.shared-trip-banner')) {
+                    let banner = document.createElement('div');
+                    banner.className = 'shared-trip-banner';
+                    banner.innerHTML = `
+                        🔗 This is a shared trip plan &mdash; <a href="/">Plan your own trip</a>
+                    `;
+                    detailsSection.prepend(banner);
+                }
+            }, 800);
         }
-    } catch(e) {
+    } catch (e) {
         console.error("Failed to load shared trip from URL:", e);
     }
 })();
