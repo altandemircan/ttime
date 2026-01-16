@@ -1,30 +1,71 @@
 /**
- * share.js - FULL VERSION (Loading Fix + Social Media Text)
+ * share.js - Modern Loading + Welcome Visible + WhatsApp Koruma
  */
 
-// --- 1. Paylaşım Metni Oluşturucu (Geri Geldi!) ---
+// --- 1. MODERN LOADING UI (8a4af3 Rengiyle) ---
+function showGlobalLoading() {
+    let loader = document.getElementById('trip-loader');
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'trip-loader';
+        loader.innerHTML = `
+            <div class="loader-content">
+                <div class="modern-spinner"></div>
+                <p class="loading-text">Triptime AI Trip Planner is loading</p>
+            </div>
+            <style>
+                #trip-loader {
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(255, 255, 255, 0.98); z-index: 99999; 
+                    display: flex; align-items: center; justify-content: center; 
+                    font-family: 'Inter', sans-serif; backdrop-filter: blur(5px);
+                }
+                .loader-content { text-align: center; }
+                .modern-spinner {
+                    width: 60px; height: 60px;
+                    border: 4px solid rgba(138, 74, 243, 0.1);
+                    border-left-color: #8a4af3;
+                    border-radius: 50%;
+                    animation: modern-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+                    margin: 0 auto 20px;
+                }
+                .loading-text {
+                    color: #1a1a1a; font-weight: 500; font-size: 16px;
+                    letter-spacing: -0.5px; animation: pulse 1.5s infinite;
+                }
+                @keyframes modern-spin { to { transform: rotate(360deg); } }
+                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+            </style>
+        `;
+        document.body.appendChild(loader);
+    }
+}
+
+function hideGlobalLoading() {
+    const loader = document.getElementById('trip-loader');
+    if (loader) {
+        loader.style.transition = "opacity 0.6s ease-out";
+        loader.style.opacity = "0";
+        setTimeout(() => { if(loader) loader.remove(); }, 600);
+    }
+}
+
+// --- 2. PAYLAŞIM FONKSİYONLARI (WhatsApp Korumalı) ---
 function generateShareableText() {
     let shareText = "Here's your trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
-
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
             shareText += `--- Day ${day} ---\n`;
-            dayItems.forEach(item => {
-                shareText += `• ${item.name}\n`;
-            });
+            dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
             shareText += "\n";
         }
     } 
-
-    const shortLink = createShortTripLink();
-    shareText += `\nView full plan: ${shortLink}`;
-    shareText += "\n\nCreated with triptime.ai!"; 
+    shareText += `\nView full plan: ${createShortTripLink()}`;
     return shareText;
 }
 
-// --- 2. Link Oluşturucu (Pexels Fix) ---
 function createShortTripLink() {
     const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
     const aiInfo = localStorage.getItem('ai_information') || "";
@@ -38,13 +79,13 @@ function createShortTripLink() {
     return `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-// --- 3. Ana Karşılayıcı ve Loading Ayarı ---
+// --- 3. ANA KARŞILAYICI VE BAŞLATICI ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
     if (!v1Raw) return;
 
-    if (typeof showGlobalLoading === 'function') showGlobalLoading();
+    showGlobalLoading();
 
     try {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
@@ -62,15 +103,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
+        
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = tripData.n;
-        if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
+        
+        // BURASI DEĞİŞTİ: Artık tt-welcome gizlenmiyor (display: block kalıyor)
+        const welcomeSection = document.getElementById('tt-welcome');
+        if (welcomeSection) {
+            welcomeSection.style.display = 'block';
+            welcomeSection.classList.add('active');
+        }
 
         let attempts = 0;
         const checkEverything = setInterval(() => {
             attempts++;
             const isFunctionsReady = typeof updateCart === 'function' && typeof insertTripAiInfo === 'function';
+
             if (isFunctionsReady || attempts > 35) {
                 clearInterval(checkEverything);
+
                 try {
                     if (typeof updateCart === 'function') updateCart();
                     if (tripData.ai && typeof insertTripAiInfo === "function") {
@@ -87,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (err) {}
 
                 setTimeout(() => {
-                    if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
+                    hideGlobalLoading();
                     try {
                         if (window.map && typeof window.map.invalidateSize === 'function') {
                             window.map.invalidateSize();
@@ -98,21 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 300);
     } catch (e) {
-        if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
+        hideGlobalLoading();
     }
 });
 
-// --- 4. Sosyal Medya Paylaşım Fonksiyonları ---
 function shareOnWhatsApp() {
-    const text = encodeURIComponent(generateShareableText());
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-}
-
-function shareOnInstagram() {
-    const textToShare = generateShareableText();
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToShare).then(() => {
-            alert("Trip plan copied to clipboard for Instagram!");
-        });
-    }
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(generateShareableText())}`, '_blank');
 }
