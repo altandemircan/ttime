@@ -26,7 +26,7 @@ function onCitySelected(city) {
     });
 } 
 
-// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar al
+// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar alf
 function extractFirstJson(str) {
     const start = str.indexOf('{');
     const end = str.lastIndexOf('}');
@@ -137,7 +137,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
     }
 }
-    
+
     // Statik veri varsa doğrudan bas
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo, null);
