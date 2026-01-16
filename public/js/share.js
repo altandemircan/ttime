@@ -149,7 +149,7 @@ function createShortTripLink() {
     try {
         const minimalData = {
             i: window.cart.map(item => ({
-                n: item.name,
+                n: item.name.replace(/[\x00-\x1F\x7F-\x9F]/g, ""), // Kontrol karakterlerini temizle
                 c: item.category,
                 d: item.day,
                 la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
@@ -159,16 +159,22 @@ function createShortTripLink() {
             td: window.tripDates || {}
         };
 
-        const jsonStr = JSON.stringify(minimalData);
+        // JSON string'i oluştur ve tekrar temizle
+        let jsonStr = JSON.stringify(minimalData);
         
-        // Türkçe karakter dostu Hex Encode (Bozulma ihtimali SIFIR)
-        const encoder = new TextEncoder();
-        const data = encoder.encode(jsonStr);
-        const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('');
+        // Türkçe karakterleri bozmayan ve URL'de patlamayan en sağlam yöntem
+        const utf8Bytes = new TextEncoder().encode(jsonStr);
+        let binary = "";
+        utf8Bytes.forEach(b => binary += String.fromCharCode(b));
+        
+        const base64 = btoa(binary)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
 
-        return `${window.location.origin}/?t=${hex}`;
+        return `${window.location.origin}/?t=${base64}`;
     } catch (e) {
-        console.error("Paylaşım linki oluşturulurken hata:", e);
+        console.error("Link hatası:", e);
         return window.location.origin;
     }
 }
