@@ -37,12 +37,8 @@ function generateShareableText() {
 }
 
 function createShortTripLink() {
-    // Sadece isimleri al ve URL-safe hale getir
     const names = window.cart.map(item => item.name).join('|');
-    const safeNames = encodeURIComponent(names);
-    
-    // Linkin sonuna ekle
-    return `${window.location.origin}${window.location.pathname}?items=${safeNames}`;
+    return `${window.location.origin}${window.location.pathname}?items=${encodeURIComponent(names)}`;
 }
 
 // WhatsApp share

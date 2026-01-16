@@ -10143,3 +10143,36 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+
+window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    const itemsRaw = params.get('items');
+    if (!itemsRaw) return;
+
+    const items = decodeURIComponent(itemsRaw).split('|');
+
+    // HTML yapısını oluştur
+    const overlay = document.createElement('div');
+    overlay.id = "shared-trip-overlay";
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); font-family:sans-serif;";
+
+    const card = document.createElement('div');
+    card.style = "background:#fff; padding:25px; border-radius:15px; width:90%; max-width:380px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.4);";
+
+    let listHtml = items.map((name, i) => `
+        <div style="display:flex; align-items:center; margin-bottom:10px; text-align:left; background:#f4f4f4; padding:10px; border-radius:8px;">
+            <span style="background:#ff5a5f; color:#fff; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; margin-right:10px; font-size:12px;">${i+1}</span>
+            <span style="font-weight:600; color:#333;">${name}</span>
+        </div>
+    `).join('');
+
+    card.innerHTML = `
+        <h2 style="margin:0 0 10px; color:#ff5a5f;">📍 Paylaşılan Gezi</h2>
+        <p style="margin-bottom:20px; color:#666;">İşte senin için hazırlanan rota:</p>
+        <div style="max-height:300px; overflow-y:auto; margin-bottom:20px; padding-right:5px;">${listHtml}</div>
+        <button onclick="document.getElementById('shared-trip-overlay').remove()" style="width:100%; background:#ff5a5f; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;">Planı Kapat ve Başla</button>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+};
