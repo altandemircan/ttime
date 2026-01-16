@@ -146,22 +146,29 @@ function safeBase64Decode(b64str) {
     }
 }
 function createShortTripLink() {
-    const minimalData = {
-        i: window.cart.map(item => ({
-            n: item.name,
-            c: item.category,
-            d: item.day,
-            la: item.location ? item.location.lat : (item.lat || 0),
-            lo: item.location ? item.location.lng : (item.lon || 0)
-        })),
-        dn: window.customDayNames || {},
-        td: window.tripDates || {}
-    };
+    try {
+        const minimalData = {
+            i: window.cart.map(item => ({
+                n: item.name,
+                c: item.category,
+                d: item.day,
+                la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
+                lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
+            })),
+            dn: window.customDayNames || {},
+            td: window.tripDates || {}
+        };
 
-    // JSON'u string yap ve URI güvenli hale getir
-    const jsonStr = JSON.stringify(minimalData);
-    const safeData = encodeURIComponent(jsonStr);
-    
-    // Veriyi doğrudan hash içine koyuyoruz (Şifreleme yok, hata yok)
-    return `${window.location.origin}/#plan=${safeData}`;
+        const jsonStr = JSON.stringify(minimalData);
+        
+        // Türkçe karakter dostu Hex Encode (Bozulma ihtimali SIFIR)
+        const encoder = new TextEncoder();
+        const data = encoder.encode(jsonStr);
+        const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        return `${window.location.origin}/?t=${hex}`;
+    } catch (e) {
+        console.error("Paylaşım linki oluşturulurken hata:", e);
+        return window.location.origin;
+    }
 }

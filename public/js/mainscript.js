@@ -1,51 +1,52 @@
-function loadSharedTripOnStart() {
-    const hash = window.location.hash;
-    if (!hash || !hash.includes('plan=')) return;
-
+(function loadSharedTripOnStart() {
     try {
-        console.log("🔗 Plan yükleniyor...");
+        const urlParams = new URLSearchParams(window.location.search);
+        const t = urlParams.get('t');
 
-        // Hash'ten veriyi çek ve çöz
-        const rawData = hash.split('plan=')[1];
-        const decodedStr = decodeURIComponent(rawData);
-        const tripData = JSON.parse(decodedStr);
+        if (t) {
+            console.log("🔗 Paylaşılan gezi yükleniyor...");
 
-        if (tripData.i) {
-            window.cart = tripData.i.map(item => ({
-                name: item.n,
-                category: item.c,
-                day: item.day,
-                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
-                lat: parseFloat(item.la),
-                lon: parseFloat(item.lo),
-                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
-            }));
-            window.customDayNames = tripData.dn || {};
-            window.tripDates = tripData.td || {};
+            // Hex formatını geri çöz (Türkçe karakterleri korur)
+            const bytes = new Uint8Array(t.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            const decodedStr = new TextDecoder().decode(bytes);
+            const tripData = JSON.parse(decodedStr);
+
+            if (tripData.i) {
+                window.cart = tripData.i.map(item => ({
+                    name: item.n,
+                    category: item.c,
+                    day: item.day,
+                    location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
+                    lat: parseFloat(item.la),
+                    lon: parseFloat(item.lo),
+                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`,
+                    address: ""
+                }));
+                window.customDayNames = tripData.dn || {};
+                window.tripDates = tripData.td || {};
+
+                // LocalStorage'a kaydet (local_storage.js ile uyumlu)
+                localStorage.setItem('cart', JSON.stringify(window.cart));
+            }
+
+            // Arayüz düzenlemeleri
+            const chatBox = document.getElementById("chat-box");
+            if (chatBox) chatBox.innerHTML = "";
+            
+            const inputWrapper = document.querySelector('.input-wrapper');
+            if (inputWrapper) inputWrapper.style.display = 'none';
+
+            // Planı başlat
+            setTimeout(() => {
+                if (typeof updateCart === 'function') updateCart();
+                if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
+                if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+            }, 300);
         }
-
-        // Ekranı temizle
-        if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = ""; 
-        const inputArea = document.querySelector('.input-wrapper');
-        if (inputArea) inputArea.style.display = 'none';
-        const welcome = document.getElementById('tt-welcome');
-        if (welcome) welcome.style.display = 'none';
-
-        // Planı çiz
-        setTimeout(() => {
-            if (typeof updateCart === 'function') updateCart();
-            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
-            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-        }, 500);
-
     } catch (e) {
-        console.error("Yükleme Hatası:", e);
+        console.error("Gezi yüklenirken hata (Hex Decode):", e);
     }
-}
-
-// Olayları bağla
-window.addEventListener('load', loadSharedTripOnStart);
-window.addEventListener('hashchange', loadSharedTripOnStart);
+})();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
