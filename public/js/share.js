@@ -36,26 +36,44 @@ function generateShareableText() {
     return shareText;
 }
 
-// KISA LINK OLUŞTUR (TEK BIR FONKSIYON)
+// share.js - createShortTripLink fonksiyonunu TAMAMEN bununla değiştir:
+
 function createShortTripLink() {
-    // Sadeleştirilmiş veri
-    const minimalData = {
-        i: window.cart.map(item => ({
-            n: item.name,        // name
-            c: item.category,    // category
-            d: item.day,         // day
-            la: item.lat,        // lat
-            lo: item.lon         // lon
-        })),
-        dn: window.customDayNames || {},
-        td: window.tripDates || {}
-    };
-    
-    const jsonStr = JSON.stringify(minimalData);
-    const base64 = btoa(encodeURIComponent(jsonStr));
-    
-    // Parametreyi kısalt
-    return `${window.location.origin}/?t=${base64}`;
+    try {
+        // 1. Veri Hazırlığı
+        const minimalData = {
+            i: window.cart.map(item => ({
+                n: item.name,
+                c: item.category,
+                d: item.day,
+                // Sayıları string'e çevirip kısalttık
+                la: parseFloat(item.location ? item.location.lat : (item.lat || 0)).toFixed(4),
+                lo: parseFloat(item.location ? item.location.lng : (item.lon || 0)).toFixed(4)
+            })),
+            dn: window.customDayNames || {},
+            td: window.tripDates || {}
+        };
+
+        // 2. JSON'a çevir
+        const jsonStr = JSON.stringify(minimalData);
+
+        // 3. Türkçe karakterleri bozmadan encode et (UTF-8)
+        const uriEncoded = encodeURIComponent(jsonStr);
+
+        // 4. Base64'e çevir
+        let base64 = btoa(uriEncoded);
+
+        // 5. URL-SAFE HALE GETİR (Kritik Nokta Burası)
+        // + yerine - koy, / yerine _ koy, = işaretlerini sil
+        base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        return `${window.location.origin}/?t=${base64}`;
+
+    } catch (e) {
+        console.error("Link oluşturma hatası:", e);
+        alert("Link oluşturulurken bir hata oluştu.");
+        return window.location.origin;
+    }
 }
 
 // WhatsApp share
