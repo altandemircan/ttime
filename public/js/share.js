@@ -119,22 +119,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 4. Sosyal Medya Paylaşım Fonksiyonları ---
 function shareOnWhatsApp() {
-    // 1. Paylaşılacak linki oluştur (Mevcut fonksiyonunu kullanır)
-    const tripLink = createShortTripLink(); 
-    const text = encodeURIComponent("Check out my trip plan on Triptime! 🌍\n" + tripLink);
+    // Senin mevcut mesaj oluşturma fonksiyonun (İçeriğe dokunmuyoruz!)
+    const text = encodeURIComponent(generateShareableText()); 
 
-    // 2. Cihaz tespiti (Mobil mi Masaüstü mü?)
+    // Mobil mi Masaüstü mü kontrolü
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // 3. Linki belirle
-    // Mobil ise 'api.whatsapp', masaüstü ise 'web.whatsapp'
+    // Eğer mobildeyse uygulama protokolünü, masaüstündeyse web arayüzünü kullan
     const baseUrl = isMobile 
         ? "https://api.whatsapp.com/send" 
         : "https://web.whatsapp.com/send";
 
     const finalUrl = `${baseUrl}?text=${text}`;
 
-    // 4. Yeni sekmede aç
     window.open(finalUrl, '_blank');
 }
 
