@@ -1,51 +1,46 @@
-(function loadSharedTripOnStart() {
-    const hash = window.location.hash;
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    let rawData = "";
+(function showSharedPlanOverlay() {
+    const params = new URLSearchParams(window.location.search);
+    const itemsRaw = params.get('items');
+    if (!itemsRaw) return;
 
-    try {
-        if (hash && hash.startsWith('#p=')) {
-            // Yeni yöntem: Hash'ten oku (Kesilme ihtimali SIFIR)
-            rawData = decodeURIComponent(hash.substring(3));
-        } else if (urlParams.get('t')) {
-            // Eski yöntem: Base64 (Hala geliyorsa dene)
-            rawData = decodeURIComponent(escape(atob(urlParams.get('t'))));
-        }
+    const items = decodeURIComponent(itemsRaw).split('|');
 
-        if (!rawData) return;
+    // Şık bir tasarım oluştur (CSS ile birlikte)
+    const overlay = document.createElement('div');
+    overlay.style = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(5px); font-family: sans-serif;
+    `;
 
-        console.log("🔗 Veri enjekte ediliyor...");
-        const tripData = JSON.parse(rawData);
+    const card = document.createElement('div');
+    card.style = `
+        background: #fff; padding: 30px; border-radius: 20px;
+        width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        text-align: center; position: relative;
+    `;
 
-        if (tripData && tripData.i) {
-            window.cart = tripData.i.map(item => ({
-                name: item.n,
-                category: item.c,
-                day: parseInt(item.d || 1),
-                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
-                lat: parseFloat(item.la),
-                lng: parseFloat(item.lo)
-            }));
-            if (tripData.td) window.tripDates = tripData.td;
-            
-            localStorage.setItem('cart', JSON.stringify(window.cart));
-            
-            // UI Temizle
-            if(document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
+    let listHtml = items.map((name, index) => `
+        <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 16px; color: #333;">
+            <span style="background: #ff5a5f; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">${index + 1}</span>
+            <strong style="flex: 1; text-align: left;">${name}</strong>
+        </div>
+    `).join('');
 
-            // SİSTEMİ ÇALIŞTIR
-            window.addEventListener('load', () => {
-                setTimeout(() => {
-                    if (typeof updateCart === 'function') updateCart();
-                    if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-                    console.log("✅ Gezi yüklendi.");
-                }, 500);
-            });
-        }
-    } catch (e) {
-        console.error("Yükleme başarısız. Veri bozuk veya eksik gelmiş.", e);
-    }
+    card.innerHTML = `
+        <h2 style="margin-top: 0; color: #ff5a5f;">📍 Shared Trip Plan</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Someone shared this journey with you!</p>
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
+            ${listHtml}
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" style="background: #ff5a5f; color: white; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%;">
+            Close and Start Planning
+        </button>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
 })();
 
 
