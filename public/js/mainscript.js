@@ -1,83 +1,52 @@
-// mainscript.js - Paylaşılan geziyi sisteme zorla enjekte eden motor
 (function loadSharedTripOnStart() {
+    const hash = window.location.hash;
     const urlParams = new URLSearchParams(window.location.search);
-    const t = urlParams.get('t');
-    if (!t) return;
+    
+    let rawData = "";
 
     try {
-        console.log("🔗 Triptime AI: Paylaşılan gezi çözümleniyor...");
+        if (hash && hash.startsWith('#p=')) {
+            // Yeni yöntem: Hash'ten oku (Kesilme ihtimali SIFIR)
+            rawData = decodeURIComponent(hash.substring(3));
+        } else if (urlParams.get('t')) {
+            // Eski yöntem: Base64 (Hala geliyorsa dene)
+            rawData = decodeURIComponent(escape(atob(urlParams.get('t'))));
+        }
 
-        // 1. ADIM: Byte-level Decoding (Türkçe karakter ve kesilme koruması)
-        const b = atob(t.replace(/-/g, '+').replace(/_/g, '/'));
-        const bytes = new Uint8Array(b.length);
-        for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
-        const tripData = JSON.parse(new TextDecoder().decode(bytes));
+        if (!rawData) return;
+
+        console.log("🔗 Veri enjekte ediliyor...");
+        const tripData = JSON.parse(rawData);
 
         if (tripData && tripData.i) {
-            // 2. ADIM: window.cart'ı fonsk.js'nin beklediği formatta doldur
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
-                day: parseInt(item.d || item.day || 1),
-                lat: parseFloat(item.la),
-                lng: parseFloat(item.lo),
+                day: parseInt(item.d || 1),
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
-                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
+                lat: parseFloat(item.la),
+                lng: parseFloat(item.lo)
             }));
-
             if (tripData.td) window.tripDates = tripData.td;
-            if (tripData.dn) window.customDayNames = tripData.dn;
-
-            // 3. ADIM: LocalStorage'ı güncelle (local_storage.js senkronizasyonu)
+            
             localStorage.setItem('cart', JSON.stringify(window.cart));
             
-            // 4. ADIM: UI Temizliği (Hoşgeldin ekranını ve chat'i kapat)
-            const cleanup = () => {
-                const welcome = document.getElementById('tt-welcome');
-                if (welcome) welcome.style.display = 'none';
-                const chatBox = document.getElementById("chat-box");
-                if (chatBox) chatBox.innerHTML = "";
-                const inputWrap = document.querySelector('.input-wrapper');
-                if (inputWrap) inputWrap.style.display = 'none';
-            };
-            cleanup();
+            // UI Temizle
+            if(document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-            // 5. ADIM: KRİTİK TETİKLEME
-            // DOM hazır olduğunda senin fonsk.js fonksiyonlarını sırayla çalıştırıyoruz
-            const bootSystem = () => {
-                console.log("🚀 Sistem ateşleniyor...");
-                
-                if (typeof updateCart === 'function') {
-                    updateCart(); // Sepeti ve listeyi doldurur
-                }
-
-                if (typeof showTripDetails === 'function') {
-                    // Planın başlangıç tarihine göre detayları açar
-                    showTripDetails(window.tripDates?.startDate || null);
-                }
-
-                // Harita kütüphanesinin (Mapbox/Leaflet) yerleşmesi için kısa bir delay
+            // SİSTEMİ ÇALIŞTIR
+            window.addEventListener('load', () => {
                 setTimeout(() => {
-                    if (typeof renderRouteForDay === 'function') {
-                        renderRouteForDay(1); // 1. günün rotasını haritaya çizer
-                    }
-                    // URL'deki kalabalığı temizle (Opsiyonel: t parametresini siler)
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }, 800);
-            };
-
-            if (document.readyState === 'complete') {
-                bootSystem();
-            } else {
-                window.addEventListener('load', bootSystem);
-            }
+                    if (typeof updateCart === 'function') updateCart();
+                    if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
+                    console.log("✅ Gezi yüklendi.");
+                }, 500);
+            });
         }
     } catch (e) {
-        console.error("❌ Yükleme hatası (Syntax veya Decode):", e);
+        console.error("Yükleme başarısız. Veri bozuk veya eksik gelmiş.", e);
     }
 })();
-
-
 
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===

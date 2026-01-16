@@ -37,34 +37,23 @@ function generateShareableText() {
 }
 
 function createShortTripLink() {
-    try {
-        const minimalData = {
-            i: window.cart.map(item => ({
-                n: item.name,
-                c: item.category,
-                d: item.day,
-                la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
-                lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
-            })),
-            dn: window.customDayNames || {},
-            td: window.tripDates || {}
-        };
+    const minimalData = {
+        i: window.cart.map(item => ({
+            n: item.name,
+            c: item.category,
+            d: item.day,
+            la: item.location ? item.location.lat : (item.lat || 0),
+            lo: item.location ? item.location.lng : (item.lon || 0)
+        })),
+        td: window.tripDates || {}
+    };
 
-        const jsonStr = JSON.stringify(minimalData);
-        
-        // ÖNEMLİ: Unicode karakterleri (Türkçe) güvenli Base64'e çevirme
-        const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-            return String.fromCharCode('0x' + p1);
-        }));
-
-        // URL-Safe hale getir (+ -> -, / -> _, = sil)
-        const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-        return `${window.location.origin}/?t=${urlSafeBase64}`;
-    } catch (e) {
-        console.error("Link hatası:", e);
-        return window.location.origin;
-    }
+    const jsonStr = JSON.stringify(minimalData);
+    // Şifreleme yapma, sadece URL-safe hale getir
+    const safeData = encodeURIComponent(jsonStr);
+    
+    // VERİYİ HASH (#) İLE GÖNDER (KESİLMEYİ ÖNLER)
+    return `${window.location.origin}${window.location.pathname}#p=${safeData}`;
 }
 
 // WhatsApp share
