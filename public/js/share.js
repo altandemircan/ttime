@@ -146,31 +146,23 @@ function safeBase64Decode(b64str) {
     }
 }
 function createShortTripLink() {
-    try {
-        const minimalData = {
-            i: window.cart.map(item => ({
-                n: item.name,
-                c: item.category,
-                d: item.day,
-                la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
-                lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
-            })),
-            dn: window.customDayNames || {},
-            td: window.tripDates || {}
-        };
+    const minimalData = {
+        i: window.cart.map(item => ({
+            n: item.name,
+            c: item.category,
+            d: item.day,
+            la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
+            lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
+        })),
+        dn: window.customDayNames || {},
+        td: window.tripDates || {}
+    };
 
-        const jsonStr = JSON.stringify(minimalData);
-        
-        // UTF-8 karakterleri (Türkçe vs.) güvenli bir şekilde byte dizisine çevirip Base64 yapıyoruz
-        const utf8Bytes = new TextEncoder().encode(jsonStr);
-        let base64 = btoa(String.fromCharCode(...utf8Bytes));
+    // JSON'u UTF-8 olarak güvenli bir şekilde Hex'e çeviriyoruz
+    const jsonStr = JSON.stringify(minimalData);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(jsonStr);
+    const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('');
 
-        // URL-Safe hale getir
-        const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-        return `${window.location.origin}/?t=${urlSafeBase64}`;
-    } catch (e) {
-        console.error("Link oluşturma hatası:", e);
-        return window.location.origin;
-    }
+    return `${window.location.origin}/?t=${hex}`;
 }

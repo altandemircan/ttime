@@ -1,23 +1,16 @@
 function loadSharedTripOnStart() {
     const urlParams = new URLSearchParams(window.location.search);
-    let t = urlParams.get('t');
+    const t = urlParams.get('t');
     if (!t) return;
 
     try {
-        // 1. URL-Safe karakterleri düzelt
-        t = t.replace(/-/g, '+').replace(/_/g, '/');
-        while (t.length % 4) t += '=';
+        console.log("🔗 Veri çözülüyor...");
 
-        // 2. KESİN ÇÖZÜM: Unicode/Türkçe karakterleri bozmayan decode işlemi
-        const binaryString = atob(t);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
+        // Hex formatını geri JSON'a çeviriyoruz (En güvenli yol)
+        const bytes = new Uint8Array(t.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
         const decodedStr = new TextDecoder().decode(bytes);
         const tripData = JSON.parse(decodedStr);
 
-        // 3. Veriyi yükle
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
@@ -25,28 +18,31 @@ function loadSharedTripOnStart() {
                 day: item.d,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
-                lon: parseFloat(item.lo)
+                lon: parseFloat(item.lo),
+                image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
             }));
             window.customDayNames = tripData.dn || {};
             window.tripDates = tripData.td || {};
         }
 
-        // 4. Arayüzü temizle ve planı göster
+        // Arayüz temizliği
         document.getElementById("chat-box").innerHTML = ""; 
-        document.querySelector('.input-wrapper').style.display = 'none';
+        if(document.querySelector('.input-wrapper')) document.querySelector('.input-wrapper').style.display = 'none';
         if(document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
             if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-        }, 300);
+        }, 500);
 
     } catch (e) {
-        console.error("Yükleme hatası:", e);
+        console.error("Kesin çözümde hata oluştu:", e);
     }
 }
 
+// Sayfa yüklendiğinde otomatik çalıştır
+window.onload = loadSharedTripOnStart;
 // Sayfa açılır açılmaz çalıştır
 window.addEventListener('load', loadSharedTripOnStart);
 
