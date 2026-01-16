@@ -1,18 +1,14 @@
-// mainscript.js dosyasının en altına veya uygun bir yere ekle
 function loadSharedTripOnStart() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let t = urlParams.get('t');
+    if (!t) return;
+
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        let t = urlParams.get('t');
-
-        if (!t) return;
-
-        console.log("🔗 Shared trip detected, decoding...");
-
-        // 1. URL-Safe'den normale döndür
+        // 1. URL-Safe karakterleri düzelt
         t = t.replace(/-/g, '+').replace(/_/g, '/');
         while (t.length % 4) t += '=';
 
-        // 2. Base64'ten Byte dizisine, oradan UTF-8 string'e (Kesin çözüm)
+        // 2. KESİN ÇÖZÜM: Unicode/Türkçe karakterleri bozmayan decode işlemi
         const binaryString = atob(t);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -21,48 +17,38 @@ function loadSharedTripOnStart() {
         const decodedStr = new TextDecoder().decode(bytes);
         const tripData = JSON.parse(decodedStr);
 
-        // 3. Verileri Global Değişkenlere Aktar
+        // 3. Veriyi yükle
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
-                day: item.day,
+                day: item.d,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
-                lon: parseFloat(item.lo),
-                image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                lon: parseFloat(item.lo)
             }));
             window.customDayNames = tripData.dn || {};
             window.tripDates = tripData.td || {};
         }
 
-        // 4. UI Temizliği (Planı ön plana çıkar)
-        const chatBox = document.getElementById("chat-box");
-        if (chatBox) chatBox.innerHTML = ""; 
-        
-        const inputWrapper = document.querySelector('.input-wrapper');
-        if (inputWrapper) inputWrapper.style.display = 'none';
-        
-        const welcomeSection = document.getElementById('tt-welcome');
-        if (welcomeSection) welcomeSection.style.display = 'none';
+        // 4. Arayüzü temizle ve planı göster
+        document.getElementById("chat-box").innerHTML = ""; 
+        document.querySelector('.input-wrapper').style.display = 'none';
+        if(document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-        // 5. Planı Render Et
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(window.tripDates?.startDate || null);
-            }
+            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
             if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
         }, 300);
 
     } catch (e) {
-        console.error("Gezi yüklenirken hata oluştu (URI Hatası Çözüldü):", e);
+        console.error("Yükleme hatası:", e);
     }
 }
 
-// Fonksiyonu parantezsiz çağırmak için olay dinleyicisi:
+// Sayfa açılır açılmaz çalıştır
 window.addEventListener('load', loadSharedTripOnStart);
-
 
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
