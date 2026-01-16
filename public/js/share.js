@@ -119,20 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 4. Sosyal Medya Paylaşım Fonksiyonları ---
 function shareOnWhatsApp() {
-    // Senin mevcut mesaj oluşturma fonksiyonun (İçeriğe dokunmuyoruz!)
-    const text = encodeURIComponent(generateShareableText()); 
-
-    // Mobil mi Masaüstü mü kontrolü
+    const text = encodeURIComponent(generateShareableText()); // Senin metnin, dokunmuyoruz.
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    // Eğer mobildeyse uygulama protokolünü, masaüstündeyse web arayüzünü kullan
-    const baseUrl = isMobile 
-        ? "https://api.whatsapp.com/send" 
-        : "https://web.whatsapp.com/send";
-
-    const finalUrl = `${baseUrl}?text=${text}`;
-
-    window.open(finalUrl, '_blank');
+    const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
+    window.open(`${baseUrl}?text=${text}`, '_blank');
 }
 
 function shareOnInstagram() {

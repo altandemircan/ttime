@@ -88,18 +88,16 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     function cleanText(text) { return (text || "").replace(/🤖/g, '').replace(/AI:/g, '').trim(); }
 
     function populateAndShow(data, timeElapsed = null) {
-        // Yanıt geldiğinde hâlâ aynı trip ve aynı token mı?
         if (token !== window.__aiInfoRequestToken) return;
         if (currentTripKey && window.activeTripKey !== currentTripKey) return;
 
         if (aiSpinner) aiSpinner.style.display = "none";
 
-        // --- KRİTİK EKLEME: Paylaşım için localStorage'a kaydet ---
+        // --- AI VERİSİNİ PAYLAŞIMA HAZIRLA (ZORUNLU KISIM) ---
         const fullAiText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
         localStorage.setItem('ai_information', fullAiText);
-        // ---------------------------------------------------------
+        // ---------------------------------------------------
 
-        // toggle butonu ekle (mevcut kodun devamı)
         if (!aiDiv.querySelector('#ai-toggle-btn')) {
             const btn = document.createElement('button');
             btn.id = "ai-toggle-btn";
@@ -137,7 +135,6 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         aiHighlight.textContent = txtHighlight;
         aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
 
-        // Sonuçları sadece doğru trip için kaydet
         if (currentTripKey && window.activeTripKey === currentTripKey) {
             window.cart = window.cart || [];
             window.cart.aiData = data;
