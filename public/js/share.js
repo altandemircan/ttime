@@ -132,26 +132,31 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         let tripData = { n: "Trip Plan", items: "", ai: "" };
 
-        if (v2Raw) {
-            // ALTIN VURUŞ: v2 Formatını Çöz (Sıkıştırılmış Metin)
-            const decoded = decodeURIComponent(v2Raw);
-            const [title, itemsStr] = decoded.split('|');
-            tripData.n = title;
-            // v2'de öğeler virgülle ayrılmıştı: Isim,Lat,Lng,Gün,Resim
-            const rawItems = itemsStr.split('*');
-            window.cart = rawItems.map(str => {
-                const p = str.split(',');
-                const lat = parseFloat(p[1]);
-                const lng = parseFloat(p[2]);
-                return {
-                    name: p[0], lat: lat, lng: lng,
-                    location: { lat: lat, lng: lng },
-                    day: parseInt(p[3]) || 1, 
-                    image: p[4] === "1" ? "default" : "", // 1 ise resim var işareti
-                    category: "Place"
-                };
-            });
-        } else if (v1Raw) {
+        // share.js içindeki v2 çözme kısmını bununla güncelle abi
+if (v2Raw) {
+    const decoded = decodeURIComponent(v2Raw);
+    const [title, itemsStr] = decoded.split('|');
+    tripData.n = title;
+    const rawItems = itemsStr.split('*');
+    window.cart = rawItems.map(str => {
+        const p = str.split(',');
+        const latVal = parseFloat(p[1]);
+        const lngVal = parseFloat(p[2]);
+        
+        // EĞER LAT/LNG SAYI DEĞİLSE API PATLAR, KONTROL ET
+        if (isNaN(latVal) || isNaN(lngVal)) return null; 
+
+        return {
+            name: p[0], 
+            lat: latVal, 
+            lng: lngVal,
+            location: { lat: latVal, lng: lngVal },
+            day: parseInt(p[3]) || 1, 
+            image: p[4] === "1" ? "default" : "", 
+            category: "Place"
+        };
+    }).filter(item => item !== null); // Hatalı verileri temizle
+} else if (v1Raw) {
             // ESKİ FORMAT: v1 (JSON)
             const decodedV1 = JSON.parse(decodeURIComponent(v1Raw));
             tripData = decodedV1;
