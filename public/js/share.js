@@ -33,7 +33,7 @@ function showGlobalLoading() {
                     display: flex; align-items: center; justify-content: center;
                 }
                 .loader-logo {
-                    width: 45px; height: 45px; 
+                    width: 54px; height: 54px; 
                     z-index: 2;
                     display: block;
                     filter: drop-shadow(0 0 8px rgba(138, 74, 243, 0.15));
