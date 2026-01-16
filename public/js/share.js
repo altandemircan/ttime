@@ -136,26 +136,32 @@ function safeBase64Decode(b64str) {
         return null;
     }
 }
+// KISA LINK OLUŞTUR (GÜNCELLENMİŞ VERSİYON)
 function createShortTripLink() {
-    // Veriyi mümkün olduğunca küçültüyoruz (URL limitine takılmamak için)
     const minimalData = {
         i: window.cart.map(item => ({
-            n: item.name,        // name
-            c: item.category,    // category
-            d: item.day,         // day
-            // Koordinatları virgülden sonra 4 haneye yuvarla (URL tasarrufu)
+            n: item.name,
+            c: item.category,
+            d: item.day,
             la: item.location ? Number(item.location.lat).toFixed(4) : (item.lat ? Number(item.lat).toFixed(4) : 0),
             lo: item.location ? Number(item.location.lng).toFixed(4) : (item.lon ? Number(item.lon).toFixed(4) : 0)
         })),
-        dn: window.customDayNames || {}, // Özel gün isimleri (Day 1 -> Paris Tour)
-        td: window.tripDates || {}       // Tarihler
+        dn: window.customDayNames || {},
+        td: window.tripDates || {}
     };
     
-    // JSON -> String -> URI Encode -> Base64
+    // 1. JSON string'e çevir
     const jsonStr = JSON.stringify(minimalData);
     
-    // encodeURIComponent kullanıyoruz çünkü Base64 Türkçe karakterlerde (ş,ğ,ü) patlayabilir.
-    const base64 = btoa(encodeURIComponent(jsonStr));
+    // 2. Türkçe karakterleri %XX formatına çevir (Unicode uyumu için)
+    const uriEncoded = encodeURIComponent(jsonStr);
+    
+    // 3. Base64'e çevir
+    let base64 = btoa(uriEncoded);
+    
+    // 4. URL-Safe hale getir (+ yerine -, / yerine _, = kaldır)
+    // Bu adım, tarayıcının linki bozmasını engeller.
+    base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     
     return `${window.location.origin}/?t=${base64}`;
 }
