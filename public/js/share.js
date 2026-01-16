@@ -40,8 +40,8 @@ function showGlobalLoading() {
                     z-index: 1;
                 }
                 .loading-text {
-                    color: #1a1a1a; font-weight: 600; font-size: 17px;
-                    letter-spacing: -0.5px; animation: pulse 1.8s ease-in-out infinite;
+                    color: #1a1a1a; font-size: 14px; margin-top: 0px;
+                    
                 }
                 @keyframes modern-spin { to { transform: rotate(360deg); } }
                 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.98); } }
