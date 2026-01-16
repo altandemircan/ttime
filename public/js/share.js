@@ -148,7 +148,7 @@ function safeBase64Decode(b64str) {
 function createShortTripLink() {
     const minimalData = {
         i: window.cart.map(item => ({
-            n: item.name.replace(/"/g, "'"), // Tırnak işaretlerini temizle
+            n: item.name,
             c: item.category,
             d: item.day,
             la: item.location ? item.location.lat : (item.lat || 0),
@@ -158,13 +158,10 @@ function createShortTripLink() {
         td: window.tripDates || {}
     };
 
+    // JSON'u string yap ve Base64'e çevir
     const jsonStr = JSON.stringify(minimalData);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
     
-    // btoa yerine bunu kullanıyoruz: Türkçe karakterleri asla bozmaz
-    const safeBase64 = btoa(unescape(encodeURIComponent(jsonStr)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-    
-    return `${window.location.origin}/?t=${safeBase64}`;
+    // Veriyi '?' yerine '#' ile ekliyoruz. Bu, kesilme hatasını ÖNLER.
+    return `${window.location.origin}/#plan=${base64}`;
 }
