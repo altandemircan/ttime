@@ -10099,7 +10099,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// mainscript.js sonuna (DEFER eklediğin dosyaya)
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
@@ -10109,50 +10108,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı doldur (Resimler dahil)
+        // 1. window.cart'ı fotoğraflar ve kategorilerle beraber doldur
         window.cart = rawItems.map(str => {
-            const [name, lat, lon, day, img] = str.split(':');
+            const [name, lat, lon, day, img, cat] = str.split(':');
             return {
                 name: name,
                 lat: parseFloat(lat),
                 lng: parseFloat(lon),
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
-                image: img === "no-img" ? "" : decodeURIComponent(img)
+                image: img === "no-img" ? "" : decodeURIComponent(img),
+                category: cat ? decodeURIComponent(cat) : "Place"
             };
         });
 
-        // 2. LocalStorage ve AI Bilgisi
-        localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
+        // 2. AI Bilgisini Geri Yükle
+        if (tripData.ai) {
+            const aiObj = JSON.parse(decodeURIComponent(tripData.ai));
+            window.cart.aiData = aiObj;
+            window.lastTripAIInfo = aiObj;
+            // AI Paneli varsa doldur
+            if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(aiObj);
+        }
 
-        // 3. GEZİ ADINI GÜNCELLE (Trip Plan yazan yer)
+        // 3. Başlığı ve Custom Gün İsimlerini Geri Yükle
+        window.customDayNames = tripData.dn || {};
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // 4. SIDEBAR'I OTOMATİK AÇ (Senin class yapına uygun)
-        const overlay = document.getElementById('sidebar-overlay-trip');
-        if (overlay) {
-            overlay.classList.add('open'); // Overlay'i açar
-        }
-
-        // 5. SİSTEMİ ATEŞLE
+        // 4. UI Temizliği ve Sidebar Açılışı
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
+        const overlay = document.getElementById('sidebar-overlay-trip');
+        if (overlay) overlay.classList.add('open');
 
-        if (typeof updateCart === 'function') {
-            updateCart(); // Resimler ve liste burayla canlanacak
-        }
-
-        // 6. HARİTA VE ROTA (Gecikmeli çünkü DOM'un oturması lazım)
+        // 5. Sistemi Tetikle (Sanki local'den yüklenmiş gibi)
+        if (typeof updateCart === 'function') updateCart();
+        
         setTimeout(() => {
-            if (typeof renderRouteForDay === 'function') {
-                renderRouteForDay(1);
-            }
-            // Sidebar açıldığı için haritayı tazele
+            // Haritayı ve rotaları çiz
+            if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
             if (window.map) window.map.invalidateSize();
-        }, 1200);
+        }, 800);
 
     } catch (e) {
-        console.error("Yükleme sırasında hata:", e);
+        console.error("Yükleme sırasında kritik hata:", e);
     }
 });
