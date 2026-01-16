@@ -1,27 +1,27 @@
+// mainscript.js - loadSharedTripOnStart fonksiyonunu TAMAMEN bununla değiştir:
+
 (function loadSharedTripOnStart() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        let sharedTrip = urlParams.get('t'); // 't' parametresini al
+        let sharedTrip = urlParams.get('t'); 
 
         if (sharedTrip) {
             console.log("🔗 Shared trip detected...");
 
-            // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
             // 1. URL-Safe karakterleri orijinal Base64 formatına geri çevir
+            // - işaretini + yap, _ işaretini / yap
             sharedTrip = sharedTrip.replace(/-/g, '+').replace(/_/g, '/');
             
-            // 2. Eksik padding (=) karakterlerini tamamla
+            // 2. Silinen padding (=) karakterlerini geri ekle
             while (sharedTrip.length % 4) {
                 sharedTrip += '=';
             }
 
-            // 3. Önce Base64'ten çöz (atob), sonra URI component'i çöz (decodeURIComponent)
-            // Bu sıralama Türkçe karakter sorununu çözer.
+            // 3. Önce Base64'ten çöz (atob), sonra URI decode yap (Türkçe karakterler düzelir)
             const jsonStr = decodeURIComponent(atob(sharedTrip));
             const tripData = JSON.parse(jsonStr);
-            // --- DEĞİŞİKLİK BURADA BİTİYOR ---
 
-            // Buradan sonrası aynı mantıkla devam ediyor...
+            // 4. Window.cart'ı doldur
             if (tripData.i) {
                 window.cart = (tripData.i || []).map(item => ({
                     name: item.n,
@@ -36,14 +36,16 @@
                 window.customDayNames = tripData.dn || {};
                 window.tripDates = tripData.td || {};
             } else {
+                // Eski link formatı desteği (varsa)
                 window.cart = tripData.cart || [];
                 window.customDayNames = tripData.customDayNames || {};
                 window.tripDates = tripData.tripDates || {};
             }
 
+            // 5. Kaydet ve Arayüzü Temizle
             localStorage.setItem('cart', JSON.stringify(window.cart));
 
-            // Arayüz temizliği
+            // Chat ekranını temizle (Hoşgeldin mesajı vs. görünmesin)
             const chatBox = document.getElementById("chat-box");
             if (chatBox) chatBox.innerHTML = ""; 
             
@@ -53,17 +55,19 @@
             const welcomeSection = document.getElementById('tt-welcome');
             if (welcomeSection) welcomeSection.style.display = 'none';
 
+            // Başlığı güncelle
             window.lastUserQuery = "Shared Trip Plan";
             updateTripTitle();
 
+            // 6. Planı Göster
             setTimeout(() => {
                 if (typeof showTripDetails === 'function') {
-                    const startDate = tripData.td?.startDate || null;
-                    showTripDetails(startDate);
+                    showTripDetails(tripData.td?.startDate || null);
                 }
                 if (typeof updateCart === 'function') updateCart();
                 if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
                 
+                // Mobilde sidebar'ı aç
                 if (window.innerWidth <= 768) {
                      const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
                      if(sidebarOverlay) sidebarOverlay.classList.add('open');
@@ -71,9 +75,10 @@
             }, 500);
         }
     } catch(e) {
-        console.error("Failed to load shared trip from URL:", e);
+        console.error("Shared trip loading error:", e);
+        // Hata varsa kullanıcıya göster
         const chatBox = document.getElementById("chat-box");
-        if(chatBox) chatBox.innerHTML = `<div class="bot-message" style="color:red;">⚠️ Hata: Paylaşılan gezi planı açılamadı veya link bozuk.</div>`;
+        if(chatBox) chatBox.innerHTML = `<div class="bot-message" style="color:red; border:1px solid red; padding:10px;">⚠️ Bu gezi planı açılamadı. Link bozuk veya hatalı kopyalanmış olabilir.</div>`;
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
