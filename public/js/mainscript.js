@@ -10099,47 +10099,49 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-
+// mainscript.js sonuna (DEFER eklediğin dosyaya)
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const p = params.get('p'); // Yeni parametre p=
-    if (!p) return;
+    const v1 = params.get('v1');
+    if (!v1) return;
 
     try {
-        // 1. Veriyi doğrudan decode et (atob YOK, hata YOK)
-        const tripData = JSON.parse(decodeURIComponent(p));
+        const rawItems = decodeURIComponent(v1).split('*');
+        
+        // 1. window.cart'ı senin fonsk.js'nin anladığı dile çevir
+        window.cart = rawItems.map(str => {
+            const [name, lat, lon, day, cat] = str.split(':');
+            return {
+                name: name,
+                lat: parseFloat(lat),
+                lng: parseFloat(lon),
+                location: { lat: parseFloat(lat), lng: parseFloat(lon) },
+                day: parseInt(day),
+                category: cat,
+                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
+            };
+        });
 
-        if (tripData && tripData.i) {
-            // 2. window.cart'ı senin sistemine uygun doldur
-            window.cart = tripData.i.map(item => ({
-                name: item.n,
-                category: item.c,
-                day: parseInt(item.d || 1),
-                lat: parseFloat(item.la),
-                lng: parseFloat(item.lo),
-                location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) }
-            }));
+        console.log("📥 Veri başarıyla ayrıştırıldı:", window.cart);
+        localStorage.setItem('cart', JSON.stringify(window.cart));
 
-            if (tripData.td) window.tripDates = tripData.td;
-            localStorage.setItem('cart', JSON.stringify(window.cart));
+        // 2. UI Hazırlığı
+        if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-            // 3. EKRANI HAZIRLA
-            if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
-
-            // 4. SİSTEMLERİ TETİKLE (Birebir görünüm için)
-            console.log("🚀 Veri yüklendi, sistemler ateşleniyor...");
-
-            // Sol liste ve UI güncellensin
-            if (typeof updateCart === 'function') updateCart();
-
-            // Tarih detayları ve grafikler (elevation-works) tetiklensin
-            setTimeout(() => {
-                if (typeof renderRouteForDay === 'function') {
-                    renderRouteForDay(1); // 1. Gün rotasını ve yüksekliği çiz
-                }
-            }, 500);
+        // 3. SİSTEMİ ATEŞLE (SIRALAMA KRİTİK)
+        if (typeof updateCart === 'function') {
+            updateCart(); // Sol taraftaki listeyi ve günleri doldurur
         }
+
+        // Harita ve Yükseklik Grafiğini (elevation-works) tetikle
+        setTimeout(() => {
+            if (typeof renderRouteForDay === 'function') {
+                renderRouteForDay(1); // 1. Gün rotasını çiz ve grafikleri bas
+                console.log("🚀 Birebir görünüm yüklendi!");
+            }
+        }, 1000);
+
     } catch (e) {
-        console.error("Kritik Yükleme Hatası:", e);
+        console.error("Sistem ateşleme hatası:", e);
     }
 });

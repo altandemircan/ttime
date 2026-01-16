@@ -39,22 +39,19 @@ function generateShareableText() {
 function createShortTripLink() {
     if (!window.cart || window.cart.length === 0) return window.location.origin;
     
-    const tripData = {
-        i: window.cart.map(item => ({
-            n: item.name,
-            c: item.category,
-            d: item.day,
-            la: item.lat || item.location?.lat,
-            lo: item.lng || item.location?.lng
-        })),
-        td: window.tripDates || {}
-    };
+    // Format: İsim:Lat:Lon:Gün:Kategori
+    const items = window.cart.map(it => {
+        const name = it.name.replace(/[:|*]/g, ""); // Ayırıcı karakterleri temizle
+        const la = (it.lat || it.location?.lat || 0);
+        const lo = (it.lng || it.location?.lng || 0);
+        const day = it.day || 1;
+        const cat = it.category || "P";
+        return `${name}:${la}:${lo}:${day}:${cat}`;
+    }).join('*');
 
-    // JSON'u doğrudan URL dostu bir stringe çevir
-    const safeData = encodeURIComponent(JSON.stringify(tripData));
-    
-    // Veriyi 'p=' (payload) parametresiyle gönderiyoruz
-    return `${window.location.origin}${window.location.pathname}?p=${safeData}`;
+    const finalUrl = `${window.location.origin}${window.location.pathname}?v1=${encodeURIComponent(items)}`;
+    console.log("🔗 Oluşturulan Link:", finalUrl);
+    return finalUrl;
 }
 
 // WhatsApp share
