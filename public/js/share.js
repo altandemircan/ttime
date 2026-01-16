@@ -39,9 +39,10 @@ function generateShareableText() {
 function createShortTripLink() {
     if (!window.cart || window.cart.length === 0) return window.location.origin;
     
-    // Gezi Adını alıyoruz
+    // Gezi Adını id="trip_title" olan elementten alıyoruz
     const tripName = document.getElementById('trip_title')?.innerText || "Yeni Gezi";
-    // AI bilgisini alıyoruz
+    
+    // type_writer_ai.js'nin oluşturduğu ve localStorage'a attığı bilgiyi çekiyoruz
     const aiInfo = localStorage.getItem('ai_information') || "";
 
     const items = window.cart.map(it => {
@@ -49,9 +50,10 @@ function createShortTripLink() {
         const la = it.lat || it.location?.lat || 0;
         const lo = it.lng || it.location?.lng || 0;
         const day = it.day || 1;
-        // RESİM BURADA PAKETE GİRİYOR:
+        // photoget-proxy'den gelen resmi pakete ekliyoruz
         const img = it.image ? encodeURIComponent(it.image) : "no-img"; 
-        return `${name}:${la}:${lo}:${day}:${img}`;
+        const cat = it.category || "Place";
+        return `${name}:${la}:${lo}:${day}:${img}:${cat}`;
     }).join('*');
 
     const tripData = { n: tripName, ai: aiInfo, items: items };
