@@ -50,7 +50,7 @@ async function shareOnWhatsApp() {
     if (typeof showGlobalLoading === 'function') showGlobalLoading();
     
     try {
-        // 1. WHATSAPP METNİ (DOKUNULMAZ)
+        // 1. METİN FORMATIN (DOKUNULMAZ)
         let shareText = "Check out my trip plan!\n\n";
         const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
 
@@ -63,34 +63,42 @@ async function shareOnWhatsApp() {
             }
         }
 
-        // 2. LİNKİ HAZIRLA
+        // 2. LİNKİ HAZIRLA (v2 FORMATI)
         const longUrl = createOptimizedLongLink();
-        let shortUrl = longUrl;
+        let shortUrl = "";
 
-        // 3. TINYURL'İ ARACI (PROXY) İLE ÇAĞIR (CORS ENGELİNİ AŞMAK İÇİN)
+        // 3. TINYURL'İ ZORLA (Proxy Olmadan Deneme)
         try {
-            // TinyURL'i doğrudan değil, bir proxy servisi üzerinden çağırıyoruz
-            const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://tinyurl.com/api-create?url=' + encodeURIComponent(longUrl))}`);
+            const response = await fetch(`https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`, {
+                method: 'GET',
+                mode: 'no-cors' // CORS engelini aşmak için 'no-cors' deniyoruz
+            });
             
-            if (response.ok) {
-                const data = await response.json();
-                if (data.contents && data.contents.startsWith('http')) {
-                    shortUrl = data.contents;
-                }
+            // NOT: no-cors modunda response body okunamaz. 
+            // Bu yüzden eğer TinyURL naz yapıyorsa doğrudan is.gd gibi alternatiflere yönleniyoruz.
+            const altRes = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+            if (altRes.ok) {
+                shortUrl = await altRes.text();
             }
-        } catch (apiErr) {
-            console.error("Kısaltma servisi engellendi, uzun linke dönüldü.");
+        } catch (e) {
+            console.log("Kısaltma servisleri meşgul.");
         }
 
-        // 4. METNİ BİRLEŞTİR VE İMZA
+        // 4. EĞER HALA KISALMADIYSA (ACİL DURUM PLANI)
+        // Linki mesajın en altına, çok kalabalık etmeyecek şekilde ekle
+        if (!shortUrl || !shortUrl.startsWith('http')) {
+            shortUrl = longUrl;
+        }
+
         shareText += `View full plan: ${shortUrl}`;
         shareText += "\n\nCreated with triptime.ai!";
 
         // 5. WHATSAPP'I AÇ
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        window.open(waUrl, '_blank');
 
-    } catch (e) {
-        console.error("Hata oluştu:", e);
+    } catch (err) {
+        console.error("WhatsApp share failed", err);
     } finally {
         if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
     }
