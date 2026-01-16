@@ -10102,27 +10102,19 @@ document.addEventListener("DOMContentLoaded", function() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    let t = params.get('t');
-    if (!t) return;
+    const p = params.get('p'); // Yeni parametre p=
+    if (!p) return;
 
     try {
-        // 1. URL-safe karakterleri geri çevir
-        t = t.replace(/-/g, '+').replace(/_/g, '/');
-        while (t.length % 4) t += '='; // Padding ekle
-
-        // 2. Decode işlemi
-        const binary = atob(t);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const jsonStr = new TextDecoder().decode(bytes);
-        const tripData = JSON.parse(jsonStr);
+        // 1. Veriyi doğrudan decode et (atob YOK, hata YOK)
+        const tripData = JSON.parse(decodeURIComponent(p));
 
         if (tripData && tripData.i) {
-            // 3. Veriyi window.cart'a göm
+            // 2. window.cart'ı senin sistemine uygun doldur
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
-                day: parseInt(item.d),
+                day: parseInt(item.d || 1),
                 lat: parseFloat(item.la),
                 lng: parseFloat(item.lo),
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) }
@@ -10131,22 +10123,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tripData.td) window.tripDates = tripData.td;
             localStorage.setItem('cart', JSON.stringify(window.cart));
 
-            // 4. SİSTEMLERİ TETİKLE
+            // 3. EKRANI HAZIRLA
             if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-            // Listeyi güncelle
+            // 4. SİSTEMLERİ TETİKLE (Birebir görünüm için)
+            console.log("🚀 Veri yüklendi, sistemler ateşleniyor...");
+
+            // Sol liste ve UI güncellensin
             if (typeof updateCart === 'function') updateCart();
 
-            // Yükseklik ve Rota motorunu ateşle (fonsk.js)
+            // Tarih detayları ve grafikler (elevation-works) tetiklensin
             setTimeout(() => {
                 if (typeof renderRouteForDay === 'function') {
-                    renderRouteForDay(1);
-                    console.log("🚀 Gezi başarıyla restore edildi.");
+                    renderRouteForDay(1); // 1. Gün rotasını ve yüksekliği çiz
                 }
-            }, 800);
+            }, 500);
         }
     } catch (e) {
-        console.error("Kritik Decode Hatası:", e);
-        // Eğer hala hata alırsak URL'den 't' parametresini temizleyip sayfayı kurtaralım
+        console.error("Kritik Yükleme Hatası:", e);
     }
 });
