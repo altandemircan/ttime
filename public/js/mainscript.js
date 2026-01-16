@@ -10102,46 +10102,64 @@ document.addEventListener("DOMContentLoaded", function() {
 // mainscript.js sonuna (DEFER eklediğin dosyaya)
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const v1 = params.get('v1');
-    if (!v1) return;
+    const v1Raw = params.get('v1');
+    if (!v1Raw) return;
 
     try {
-        const rawItems = decodeURIComponent(v1).split('*');
+        const tripData = JSON.parse(decodeURIComponent(v1Raw));
+        const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı senin fonsk.js'nin anladığı dile çevir
+        // 1. window.cart'ı orijinal resimleriyle doldur
         window.cart = rawItems.map(str => {
-            const [name, lat, lon, day, cat] = str.split(':');
+            const [name, lat, lon, day, img] = str.split(':');
             return {
                 name: name,
                 lat: parseFloat(lat),
                 lng: parseFloat(lon),
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
-                category: cat,
-                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
+                image: decodeURIComponent(img) // Pexels'den gelen orijinal resim
             };
         });
 
-        console.log("📥 Veri başarıyla ayrıştırıldı:", window.cart);
+        // 2. AI Bilgisini ve Gezi Adını Yerleştir
+        if (tripData.ai) {
+            localStorage.setItem('ai_information', tripData.ai);
+            const aiContainer = document.getElementById('ai-info-display'); // AI bilgi id'si
+            if (aiContainer) aiContainer.innerHTML = tripData.ai;
+        }
+        
+        // Gezi Adını Güncelle (Trip Plan yerine)
+        const titleElement = document.getElementById('trip-title-display') || document.querySelector('.trip-title');
+        if (titleElement) titleElement.innerText = tripData.n;
+
         localStorage.setItem('cart', JSON.stringify(window.cart));
 
-        // 2. UI Hazırlığı
+        // 3. SIDEBAR'I AÇ (CSS Class'ına göre güncelle)
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.add('active'); // Senin sisteminde 'show' veya 'open' olabilir
+            sidebar.style.transform = "translateX(0)"; // Bazı sistemlerde transform ile açılır
+        }
+        document.body.classList.add('sidebar-open');
+
+        // 4. SİSTEMİ ATEŞLE
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-        // 3. SİSTEMİ ATEŞLE (SIRALAMA KRİTİK)
         if (typeof updateCart === 'function') {
-            updateCart(); // Sol taraftaki listeyi ve günleri doldurur
+            updateCart(); // Resimler artık window.cart'tan (Pexels) gelecek
         }
 
-        // Harita ve Yükseklik Grafiğini (elevation-works) tetikle
         setTimeout(() => {
             if (typeof renderRouteForDay === 'function') {
-                renderRouteForDay(1); // 1. Gün rotasını çiz ve grafikleri bas
-                console.log("🚀 Birebir görünüm yüklendi!");
+                renderRouteForDay(1);
+                console.log("🚀 Sidebar açık, AI bilgisi ve orijinal resimler yüklendi!");
             }
-        }, 1000);
+            // Harita boyutunu sidebar açıldığı için güncelle
+            if (window.map) window.map.invalidateSize();
+        }, 800);
 
     } catch (e) {
-        console.error("Sistem ateşleme hatası:", e);
+        console.error("Yükleme hatası:", e);
     }
 });
