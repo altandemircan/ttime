@@ -30,7 +30,7 @@ function generateShareableText() {
             });
             shareText += "\n";
         }
-    }
+    } 
 
     const shortLink = createShortTripLink();
     shareText += `\n\nView full plan: ${shortLink}`;
