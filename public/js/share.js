@@ -77,13 +77,10 @@ function createShortTripLink() {
         const lat = item.lat || (item.location && item.location.lat) || 0;
         const lng = item.lng || (item.location && item.location.lng) || 0;
         
-        // Resmi garantiye al (Pexels veya manuel yükleme)
-        let img = "no-img";
-        if (item.image && item.image !== "") {
-            img = item.image;
-        }
+        // Pexels URL'sini linki bozmaması için çift encode yapıyoruz
+        const imgUrl = (item.image && item.image.length > 5) ? encodeURIComponent(item.image) : "no-img";
 
-        return `${item.name}:${lat}:${lng}:${item.day || 1}:${encodeURIComponent(img)}`;
+        return `${item.name}:${lat}:${lng}:${item.day || 1}:${imgUrl}`;
     }).join('*');
 
     const payload = {
@@ -108,7 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
             const [name, lat, lon, day, img] = parts;
-            const finalImg = (img === "no-img" || !img) ? "" : decodeURIComponent(img);
+            
+            // Çift decode işlemi: Pexels linkindeki ? ve & karakterlerini kurtarır
+            const finalImg = (img === "no-img" || !img) ? "" : decodeURIComponent(decodeURIComponent(img));
             
             return {
                 name: name,
@@ -117,11 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
                 image: finalImg,
-                category: "Place" // Varsayılan kategori
+                category: "Place"
             };
         });
 
-        // Hafızayı tazele
+        // Verileri hafızaya yaz
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
         
@@ -133,13 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // SİSTEMİ ATEŞLE (Harita + Rota + AI + Resimler)
+        // Harita, Rota ve AI Kutusunu Ateşle
         setTimeout(() => {
-            if (typeof updateCart === 'function') {
-                updateCart(); // Resimler bu fonksiyon içindeki render döngüsüyle ekrana basılır
-            }
+            if (typeof updateCart === 'function') updateCart(); 
             
-            // AI Kutusunu bas
             if (tripData.ai && typeof insertTripAiInfo === "function") {
                 const parts = tripData.ai.split('\n\n');
                 const staticAi = {
@@ -150,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 insertTripAiInfo(null, staticAi);
             }
 
-            // Haritayı odakla
             if (window.map) {
                 window.map.invalidateSize();
                 if (typeof fitMapToCart === 'function') fitMapToCart();
@@ -158,6 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1200);
 
     } catch (e) {
-        console.error("Kritik Yükleme Hatası:", e);
+        console.error("Yükleme Hatası:", e);
     }
 });
