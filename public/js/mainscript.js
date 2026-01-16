@@ -80,7 +80,7 @@
         const chatBox = document.getElementById("chat-box");
         if(chatBox) chatBox.innerHTML = `<div class="bot-message" style="color:red; border:1px solid red; padding:10px;">⚠️ Bu gezi planı açılamadı. Link bozuk veya hatalı kopyalanmış olabilir.</div>`;
     }
-})();
+});
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
 window.__welcomeHiddenForever = false;
