@@ -61,12 +61,13 @@ function createShortTripLink() {
 }
 
 // --- 3. Ana Karşılayıcı ve Başlatıcı ---
+// --- 3. Ana Karşılayıcı ve Başlatıcı ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
     if (!v1Raw) return;
 
-    showGlobalLoading(); // Hemen loading başlasın
+    if (typeof showGlobalLoading === 'function') showGlobalLoading();
 
     try {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
@@ -96,22 +97,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = tripData.n;
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
 
-        // --- ZİNCİRLEME KONTROL DÖNGÜSÜ ---
         let attempts = 0;
         const checkEverything = setInterval(() => {
             attempts++;
-            const isMapReady = !!window.map;
+            
+            // Fonksiyonlar hazır mı diye bakıyoruz
             const isFunctionsReady = typeof updateCart === 'function' && typeof insertTripAiInfo === 'function';
 
-            // Harita ve Fonksiyonlar hazırsa veya 10 saniye geçtiyse (pes etme sınırı)
-            if ((isMapReady && isFunctionsReady) || attempts > 40) {
+            // Hazırsa veya 10 saniye geçtiyse içeri dal
+            if (isFunctionsReady || attempts > 35) {
                 clearInterval(checkEverything);
 
                 try {
-                    // 1. Planı ve Rotayı Çiz
                     if (typeof updateCart === 'function') updateCart();
 
-                    // 2. AI Kutusunu Enjekte Et
                     if (tripData.ai && typeof insertTripAiInfo === "function") {
                         const parts = tripData.ai.split('\n\n');
                         const staticAi = {
@@ -122,34 +121,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         insertTripAiInfo(null, staticAi, null);
                     }
 
-                    // 3. Sidebar'ı Aç
                     const overlay = document.getElementById('sidebar-overlay-trip');
                     if (overlay) overlay.classList.add('open');
-
                 } catch (err) {
-                    console.error("Yükleme sırasında hata oluştu, devam ediliyor:", err);
+                    console.warn("Çizim atlandı.");
                 }
 
-                // 4. SON ADIM: Loading'i kapat ve Haritayı zorla tazele
+                // LOADING'İ HER DURUMDA KAPATAN KISIM
                 setTimeout(() => {
-                    hideGlobalLoading(); // Önce perdeyi kaldır
+                    // Önce loading'i yok et
+                    if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
 
+                    // Harita hatasını burada hapsediyoruz (invalidateSize patlamasın)
                     try {
-                        // invalidateSize hatası gelse bile script durmasın
                         if (window.map && typeof window.map.invalidateSize === 'function') {
                             window.map.invalidateSize();
                             if (typeof fitMapToCart === 'function') fitMapToCart();
                         }
-                    } catch (mapErr) {
-                        console.warn("Harita tazeleme hatası (göz ardı edildi):", mapErr);
+                    } catch (e) {
+                        console.log("Harita hatası yutuldu, loading kapandı.");
                     }
-                }, 800);
+                }, 1000); // 1 saniye beklet ve aç
             }
         }, 300);
 
     } catch (e) {
-        console.error("Kritik Yükleme Hatası:", e);
-        hideGlobalLoading();
+        if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
     }
 });
 
