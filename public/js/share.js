@@ -145,32 +145,32 @@ function safeBase64Decode(b64str) {
         return null;
     }
 }
-// KISA LINK OLUŞTUR (GÜNCELLENMİŞ VERSİYON)
 function createShortTripLink() {
-    const minimalData = {
-        i: window.cart.map(item => ({
-            n: item.name,
-            c: item.category,
-            d: item.day,
-            la: item.location ? Number(item.location.lat).toFixed(4) : (item.lat ? Number(item.lat).toFixed(4) : 0),
-            lo: item.location ? Number(item.location.lng).toFixed(4) : (item.lon ? Number(item.lon).toFixed(4) : 0)
-        })),
-        dn: window.customDayNames || {},
-        td: window.tripDates || {}
-    };
-    
-    // 1. JSON string'e çevir
-    const jsonStr = JSON.stringify(minimalData);
-    
-    // 2. Türkçe karakterleri %XX formatına çevir (Unicode uyumu için)
-    const uriEncoded = encodeURIComponent(jsonStr);
-    
-    // 3. Base64'e çevir
-    let base64 = btoa(uriEncoded);
-    
-    // 4. URL-Safe hale getir (+ yerine -, / yerine _, = kaldır)
-    // Bu adım, tarayıcının linki bozmasını engeller.
-    base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    
-    return `${window.location.origin}/?t=${base64}`;
+    try {
+        const minimalData = {
+            i: window.cart.map(item => ({
+                n: item.name,
+                c: item.category,
+                d: item.day,
+                la: parseFloat(item.location?.lat || item.lat || 0).toFixed(4),
+                lo: parseFloat(item.location?.lng || item.lon || 0).toFixed(4)
+            })),
+            dn: window.customDayNames || {},
+            td: window.tripDates || {}
+        };
+
+        const jsonStr = JSON.stringify(minimalData);
+        
+        // UTF-8 karakterleri (Türkçe vs.) güvenli bir şekilde byte dizisine çevirip Base64 yapıyoruz
+        const utf8Bytes = new TextEncoder().encode(jsonStr);
+        let base64 = btoa(String.fromCharCode(...utf8Bytes));
+
+        // URL-Safe hale getir
+        const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        return `${window.location.origin}/?t=${urlSafeBase64}`;
+    } catch (e) {
+        console.error("Link oluşturma hatası:", e);
+        return window.location.origin;
+    }
 }

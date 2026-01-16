@@ -1,34 +1,32 @@
-// mainscript.js
-
-// Fonksiyonu tanımlıyoruz
+// mainscript.js dosyasının en altına veya uygun bir yere ekle
 function loadSharedTripOnStart() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         let t = urlParams.get('t');
 
-        if (!t) return; // Linkte veri yoksa çık
+        if (!t) return;
 
-        console.log("🔗 Paylaşılan gezi algılandı, yükleniyor...");
+        console.log("🔗 Shared trip detected, decoding...");
 
-        // 1. URL-Safe karakterleri standart Base64'e geri döndür
+        // 1. URL-Safe'den normale döndür
         t = t.replace(/-/g, '+').replace(/_/g, '/');
         while (t.length % 4) t += '=';
 
-        // 2. URI Error hatasını önleyen güvenli Decode işlemi (Kesin Çözüm)
+        // 2. Base64'ten Byte dizisine, oradan UTF-8 string'e (Kesin çözüm)
         const binaryString = atob(t);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
         }
         const decodedStr = new TextDecoder().decode(bytes);
-        const tripData = JSON.parse(decodeURIComponent(decodedStr));
+        const tripData = JSON.parse(decodedStr);
 
-        // 3. Global değişkenleri (window.cart vb.) doldur
+        // 3. Verileri Global Değişkenlere Aktar
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
                 category: item.c,
-                day: item.d,
+                day: item.day,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
                 lon: parseFloat(item.lo),
@@ -38,7 +36,7 @@ function loadSharedTripOnStart() {
             window.tripDates = tripData.td || {};
         }
 
-        // 4. Arayüzü Düzenle (Inputları gizle, hoşgeldin mesajını kaldır)
+        // 4. UI Temizliği (Planı ön plana çıkar)
         const chatBox = document.getElementById("chat-box");
         if (chatBox) chatBox.innerHTML = ""; 
         
@@ -48,7 +46,7 @@ function loadSharedTripOnStart() {
         const welcomeSection = document.getElementById('tt-welcome');
         if (welcomeSection) welcomeSection.style.display = 'none';
 
-        // 5. Görselleştirme Fonksiyonlarını Tetikle
+        // 5. Planı Render Et
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') {
@@ -58,12 +56,12 @@ function loadSharedTripOnStart() {
         }, 300);
 
     } catch (e) {
-        console.error("Gezi yüklenirken hata oluştu:", e);
+        console.error("Gezi yüklenirken hata oluştu (URI Hatası Çözüldü):", e);
     }
 }
 
-// Sayfa yüklendiğinde fonksiyonu çalıştır (Parantez karmaşası olmadan)
-window.addEventListener('DOMContentLoaded', loadSharedTripOnStart);
+// Fonksiyonu parantezsiz çağırmak için olay dinleyicisi:
+window.addEventListener('load', loadSharedTripOnStart);
 
 
 
