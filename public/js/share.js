@@ -24,7 +24,6 @@ function createShortTripLink() {
     return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-// --- 2. Karşılayıcı (Veriyi Doğru Sırayla Okuma) ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
@@ -36,9 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         window.cart = rawItems.map(str => {
             const parts = str.split('|');
-            // DİKKAT: Sıralama Linktekiyle Aynı Olmalı (Name|Lat|Lng|Day|Img)
             const [name, latStr, lonStr, dayStr, imgStr] = parts;
-            
             const latVal = parseFloat(latStr);
             const lngVal = parseFloat(lonStr);
             const finalImg = (imgStr === "no-img" || !imgStr) ? "" : decodeURIComponent(decodeURIComponent(imgStr));
@@ -61,36 +58,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
         if (document.getElementById('sidebar-overlay-trip')) document.getElementById('sidebar-overlay-trip').classList.add('open');
 
-        // AI ve Rota İçin Sistemin Hazır Olmasını Bekle
-        const checkSystem = setInterval(() => {
+        // --- AI VE ROTA BAŞLATICI (GARANTİCİ) ---
+        
+        // 1. AI Kutusunu Haritadan Bağımsız Bas (Hemen)
+        setTimeout(() => {
+            if (tripData.ai && typeof insertTripAiInfo === "function") {
+                const parts = tripData.ai.split('\n\n');
+                const staticAi = {
+                    summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
+                    tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
+                    highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
+                };
+                insertTripAiInfo(null, staticAi, null);
+                console.log("✅ AI Kutsu haritadan bağımsız basıldı.");
+            }
+        }, 500); // Yarım saniye sonra AI gelsin
+
+        // 2. Harita ve Rota İçin Döngü (Harita gelince çalışır)
+        const checkMap = setInterval(() => {
             if (typeof updateCart === 'function' && window.map) {
-                clearInterval(checkSystem);
+                clearInterval(checkMap);
+                updateCart(); // Rota ve Listeyi Çiz
                 
-                // Önce rota ve liste (Artık koordinatlar doğru olduğu için patlamayacak)
-                updateCart();
-
-                // AI Kutusunu Enjekte Et (Doğru Parametrelerle)
-                if (tripData.ai && typeof insertTripAiInfo === "function") {
-                    const parts = tripData.ai.split('\n\n');
-                    const staticAi = {
-                        summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
-                        tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
-                        highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
-                    };
-                    
-                    // Mainscript'in AI render'ını tetikle
-                    setTimeout(() => {
-                        insertTripAiInfo(null, staticAi, null);
-                    }, 500);
-                }
-
-                // Haritayı Tazele
                 setTimeout(() => {
                     window.map.invalidateSize();
                     if (typeof fitMapToCart === 'function') fitMapToCart();
                 }, 1000);
+                console.log("✅ Harita ve Rota hazır.");
             }
-        }, 200);
+        }, 500);
 
     } catch (e) {
         console.error("Yükleme Hatası:", e);
