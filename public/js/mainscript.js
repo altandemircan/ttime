@@ -1,23 +1,18 @@
+// mainscript.js içine yapıştır
 function loadSharedTripOnStart() {
-    // Adres çubuğundaki #trip= kısmına bak
-    const hash = window.location.hash;
-    if (!hash || !hash.includes('trip=')) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const t = urlParams.get('t');
+    if (!t) return;
 
     try {
-        console.log("🔗 Plan Hash üzerinden yükleniyor...");
-        let base64 = hash.split('trip=')[1];
+        // 1. Veriyi çöz (Türkçe karakterleri kurtararak)
+        const decodedStr = decodeURIComponent(atob(t).split('').map(c => 
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
         
-        // Base64 karakterlerini geri düzelt
-        base64 = base64.replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) base64 += '=';
+        const tripData = JSON.parse(decodedStr);
 
-        // Byte byte geri çöz (Karakter hatasını %100 önler)
-        const jsonStr = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-
-        const tripData = JSON.parse(jsonStr);
-
+        // 2. Veriyi senin sisteminin anladığı dile (window.cart) çevir
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
                 name: item.n,
@@ -25,29 +20,32 @@ function loadSharedTripOnStart() {
                 day: item.day,
                 location: { lat: parseFloat(item.la), lng: parseFloat(item.lo) },
                 lat: parseFloat(item.la),
-                lon: parseFloat(item.lo),
-                image: "https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350"
+                lon: parseFloat(item.lo)
             }));
-            window.customDayNames = tripData.dn || {};
-            window.tripDates = tripData.td || {};
             
-            // local_storage.js'deki yapıya kaydet
+            // local_storage.js içindeki hafızaya kaydet ki sayfa yenilense de gitmesin
             localStorage.setItem('cart', JSON.stringify(window.cart));
+            if (tripData.td) window.tripDates = tripData.td;
         }
 
-        // Arayüzü temizle ve planı göster
-        const chatBox = document.getElementById("chat-box");
-        if (chatBox) chatBox.innerHTML = "";
-        
+        // 3. Ekranda ne varsa temizle (Chat box, hoşgeldin yazısı vb.)
+        if (document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = "";
+        const welcome = document.getElementById('tt-welcome');
+        if (welcome) welcome.style.display = 'none';
+
+        // 4. Sitenin kendi fonksiyonlarını tetikle (Harita ve listeyi çizdir)
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
             if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
         }, 500);
 
     } catch (e) {
-        console.error("Kritik Yükleme Hatası:", e);
+        console.error("Yükleme hatası:", e);
     }
 }
+
+// Parantezsiz tetikleme
+window.addEventListener('load', loadSharedTripOnStart);
 
 // Sayfa ilk açıldığında tetikle
 window.addEventListener('load', loadSharedTripOnStart);
