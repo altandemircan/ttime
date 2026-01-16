@@ -228,18 +228,48 @@ if (v2Raw) {
 });
 
 
+// 1. PAYLAŞIM LİNKİ OLUŞTURMA (HATA YAPMA ŞANSI YOK)
 function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*,]/g, '');
     const items = (window.cart || []).map(item => {
         const name = item.name.replace(/[|*,]/g, ''); 
-        // Hassasiyeti 4'e çıkarıyoruz, backend null dönmesin
-        const lat = parseFloat(item.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || 0).toFixed(4);
-        return `${name},${lat},${lng},${item.day || 1},0`;
+        // Burada lat ve lng'nin doğru geldiğinden emin oluyoruz
+        const lat = parseFloat(item.lat || (item.location && item.location.lat) || 0).toFixed(4);
+        const lng = parseFloat(item.lng || (item.location && item.location.lng) || 0).toFixed(4);
+        const day = item.day || 1;
+        return `${name},${lat},${lng},${day},0`;
     }).join('*');
 
     const rawData = `${title}|${items}`;
     return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(rawData)}`;
+}
+
+// 2. SAYFA AÇILIŞINDA LİNKİ ÇÖZME (v2 PARSER)
+// DOMContentLoaded içindeki v2 kısmını bu blokla değiştir:
+if (v2Raw) {
+    const decoded = decodeURIComponent(v2Raw);
+    const [title, itemsStr] = decoded.split('|');
+    tripData.n = title;
+    const rawItems = itemsStr.split('*');
+    window.cart = rawItems.map(str => {
+        const p = str.split(',');
+        if (p.length < 3) return null; // Eksik veri varsa atla
+
+        const name = p[0];
+        const latVal = parseFloat(p[1]);
+        const lngVal = parseFloat(p[2]); // Burası 0 gelmemeli!
+        const dayVal = parseInt(p[3]) || 1;
+
+        return {
+            name: name,
+            lat: latVal,
+            lng: lngVal,
+            location: { lat: latVal, lng: lngVal },
+            day: dayVal,
+            image: p[4] === "1" ? "default" : "",
+            category: "Place"
+        };
+    }).filter(item => item !== null && item.lat !== 0); 
 }
 
 // --- 2. WHATSAPP PAYLAŞIM (HTTPS VE TİNYURL FIX) ---
