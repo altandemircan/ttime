@@ -1,44 +1,8 @@
 // ============================================================
-// share.js - FULL STABLE VERSION (10s DELAY & PEXELS FIX)
+// share.js - KESİN ÇÖZÜM (AI + PEXELS + ROTA)
 // ============================================================
 
-// --- 1. Paylaşım Metni Oluşturucu ---
-function generateShareableText() {
-    let shareText = "Here's your trip plan!\n\n";
-    const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
-    const dateOptions = { day: 'numeric', month: 'long' };
-
-    for (let day = 1; day <= maxDay; day++) {
-        const dayItems = window.cart.filter(item => item.day == day && item.name);
-        if (dayItems.length > 0) {
-            const dayName = (window.customDayNames && window.customDayNames[day]) || `Day ${day}`;
-            let dayHeader;
-            const startDateValue = window.tripDates && window.tripDates.startDate ? window.tripDates.startDate : null;
-            
-            if (startDateValue) {
-                const startDateObj = new Date(startDateValue);
-                const currentDate = new Date(startDateObj.setDate(startDateObj.getDate() + (day - 1)));
-                const formattedDate = currentDate.toLocaleDateString('en-US', dateOptions);
-                dayHeader = `--- ${dayName} - ${formattedDate} ---\n`;
-            } else {
-                dayHeader = `--- ${dayName} ---\n`;
-            }
-            
-            shareText += dayHeader;
-            dayItems.forEach(item => {
-                shareText += `• ${item.name} (${item.category || 'Place'})\n`;
-            });
-            shareText += "\n";
-        }
-    } 
-
-    const shortLink = createShortTripLink();
-    shareText += `\n\nView full plan: ${shortLink}`;
-    shareText += "\n\nThis plan was created with triptime.ai!"; 
-    return shareText;
-}
-
-// --- 2. Link Oluşturucu (Ayraç: | ) ---
+// --- 1. Link Oluşturucu (Pexels & Koordinat Fix) ---
 function createShortTripLink() {
     const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
     const aiInfo = localStorage.getItem('ai_information') || "";
@@ -46,23 +10,18 @@ function createShortTripLink() {
     const items = (window.cart || []).map(item => {
         const lat = item.lat || (item.location && item.location.lat) || 0;
         const lng = item.lng || (item.location && item.location.lng) || 0;
-        // Pexels linkini encode et
+        // Pexels URL'sini linki bozmaması için çift encode yapıyoruz
         const imgUrl = (item.image && item.image.length > 5) ? encodeURIComponent(item.image) : "no-img";
-        // Ayraç olarak | kullanıyoruz
+        // Ayraç olarak | kullanıyoruz ki resimdeki : bölmesin
         return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgUrl}`;
     }).join('*');
 
-    const payload = {
-        n: title,
-        ai: aiInfo,
-        items: items
-    };
-
+    const payload = { n: title, ai: aiInfo, items: items };
     const baseUrl = window.location.origin + window.location.pathname;
     return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-// --- 3. Linke Tıklanınca Veriyi Yükleyen Kısım ---
+// --- 2. Linke Tıklanınca Yükleyen Ana Kısım ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v1Raw = params.get('v1');
@@ -75,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.cart = rawItems.map(str => {
             const parts = str.split('|');
             const [name, lat, lon, day, img] = parts;
-            // Çift decode ile URL'yi kurtar
+            // Çift decode: Pexels linkini kurtarır
             const finalImg = (img === "no-img" || !img) ? "" : decodeURIComponent(decodeURIComponent(img));
             
             return {
@@ -89,11 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // LocalStorage'ı doldur
+        // Verileri hemen hafızaya ve başlığa yaz
         localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (tripData.ai) {
-            localStorage.setItem('ai_information', tripData.ai);
-        }
+        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
         
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
@@ -103,65 +60,63 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // --- KRİTİK BAŞLATICI ---
-        // Önce sistemin (mainscript) hazır olmasını bekle (max 10 saniye döngüde kalır)
-        let attempts = 0;
-        const waitForMain = setInterval(() => {
-            attempts++;
-            if ((typeof updateCart === 'function' && window.map) || attempts > 50) {
-                clearInterval(waitForMain);
+        // --- KRİTİK TETİKLEYİCİ ---
+        // Sistem (mainscript.js) hazır olana kadar bekle
+        let aiTriggered = false;
+        const waitForSystem = setInterval(() => {
+            // Eğer updateCart ve harita hazırsa başla
+            if (typeof updateCart === 'function' && window.map) {
                 
-                // 1. Rota ve Listeyi Çiz
+                // 1. Rota ve Listeyi Hemen Çiz
                 updateCart();
 
-                // 2. 10 SANİYE SONRA AI VE HARİTA FIX (Senin istediğin o garanti bekleme)
-                setTimeout(() => {
-                    // AI Kutusunu Oluştur
-                    if (tripData.ai && typeof insertTripAiInfo === "function") {
-                        const parts = tripData.ai.split('\n\n');
-                        const staticAi = {
-                            summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
-                            tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
-                            highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
-                        };
+                // 2. AI Kutusunu Garantili Çiz (Zorlama modunda)
+                if (tripData.ai && !aiTriggered && typeof insertTripAiInfo === "function") {
+                    const parts = tripData.ai.split('\n\n');
+                    const staticAi = {
+                        summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
+                        tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
+                        highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
+                    };
+                    
+                    // Önce UI'da yer aç, sonra bas
+                    setTimeout(() => {
                         insertTripAiInfo(null, staticAi);
-                    }
+                        aiTriggered = true;
+                    }, 500);
+                }
 
-                    // Haritayı Tazele ve Odakla
-                    if (window.map) {
-                        window.map.invalidateSize();
-                        if (typeof fitMapToCart === 'function') fitMapToCart();
-                    }
-                    console.log("Sistem 10 saniye sonra tam kapasite tetiklendi.");
-                }, 10000); // TAM 10 SANİYE
+                // 3. Haritayı son kez tazele (10 saniye sonra değil, hemen 1 saniye sonra)
+                setTimeout(() => {
+                    window.map.invalidateSize();
+                    if (typeof fitMapToCart === 'function') fitMapToCart();
+                }, 1000);
+
+                clearInterval(waitForSystem); // Döngüyü kapat
             }
-        }, 200);
+        }, 300);
 
     } catch (e) {
         console.error("Yükleme Hatası:", e);
     }
 });
 
-// --- 4. Sosyal Medya Paylaşım Fonksiyonları ---
-function shareOnWhatsApp() {
-    const text = encodeURIComponent(generateShareableText());
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    window.open(`${isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send"}?text=${text}`, '_blank');
-}
-
-function shareOnInstagram() {
-    const textToShare = generateShareableText();
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToShare).then(() => alert("Trip plan copied!"));
+// Paylaşım metni oluşturucu (WhatsApp vb için)
+function generateShareableText() {
+    let shareText = "Here's your trip plan!\n\n";
+    const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
+    for (let day = 1; day <= maxDay; day++) {
+        const dayItems = window.cart.filter(item => item.day == day);
+        if (dayItems.length > 0) {
+            shareText += `--- Day ${day} ---\n`;
+            dayItems.forEach(item => shareText += `• ${item.name}\n`);
+            shareText += "\n";
+        }
     }
+    shareText += `\nView full plan: ${createShortTripLink()}`;
+    return shareText;
 }
 
-function shareOnFacebook() {
-    const shortLink = createShortTripLink();
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortLink)}`, '_blank');
-}
-
-function shareOnTwitter() {
-    const textToShare = generateShareableText();
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(textToShare)}`, '_blank');
+function shareOnWhatsApp() {
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(generateShareableText())}`, '_blank');
 }
