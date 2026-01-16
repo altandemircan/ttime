@@ -73,18 +73,36 @@ function hideGlobalLoading() {
 }
 
 // --- 2. PAYLAŞIM FONKSİYONLARI ---
-function generateShareableText() {
+async function generateShareableText() {
     let shareText = "Check out my trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
+
+    // Günlük plan listesini oluştur
     for (let day = 1; day <= maxDay; day++) {
         const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
             shareText += `--- Day ${day} ---\n`;
-            dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
+            dayItems.forEach(item => {
+                shareText += `* ${item.name}\n`;
+            });
             shareText += "\n";
         }
-    } 
-    shareText += `\nView full plan: ${createShortTripLink()}`;
+    }
+
+    const longUrl = createShortTripLink(); // O devasa link
+    
+    try {
+        // ÜCRETSİZ ALTIN VURUŞ: TinyURL API ile linki küçült
+        const response = await fetch(`https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`);
+        if (!response.ok) throw new Error('Shortener error');
+        const shortUrl = await response.text();
+        shareText += `View full plan: ${shortUrl}`;
+    } catch (err) {
+        // API'de sorun olursa (internet kesikse vb.) eski uzun linki bas, sistem durmasın
+        shareText += `View full plan: ${longUrl}`;
+    }
+
+    shareText += "\n\nCreated with triptime.ai!"; 
     return shareText;
 }
 
@@ -172,6 +190,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function shareOnWhatsApp() {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(generateShareableText())}`, '_blank');
+async function shareOnWhatsApp() {
+    // Link kısalana kadar loading'i göster
+    if (typeof showGlobalLoading === 'function') showGlobalLoading();
+    
+    try {
+        const text = await generateShareableText();
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(waUrl, '_blank');
+    } catch (e) {
+        console.error("WhatsApp share error:", e);
+    } finally {
+        // İşlem bitince loading'i kapat
+        if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
+    }
+}
+
+function shareOnInstagram() {
+    // Instagram için de kısa linkli versiyonu kopyalayalım
+    if (typeof showGlobalLoading === 'function') showGlobalLoading();
+    generateShareableText().then(textToShare => {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(textToShare).then(() => {
+                alert("Trip plan with short link copied to clipboard!");
+            });
+        }
+        if (typeof hideGlobalLoading === 'function') hideGlobalLoading();
+    });
 }
