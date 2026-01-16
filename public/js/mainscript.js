@@ -3,21 +3,30 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
         if (sharedTrip) {
-            let jsonStr = "";
-            // Atob ile çöz
-            try {
-                jsonStr = atob(sharedTrip);
-                // Sadece yüzde ile başlıyorsa decodeURIComponent uygula
-                if (jsonStr.startsWith('%')) {
-                    try {
-                        jsonStr = decodeURIComponent(jsonStr);
-                    } catch(e) {
-                        // decodeURIComponent patlarsa, olduğu gibi bırak
+            // UTF-8'li veya normal kodlu tüm base64 girişleri için:
+            function safeBase64Decode(b64str) {
+                try {
+                    let decoded = atob(b64str);
+                    if (decoded.startsWith('%')) {
+                        decoded = decodeURIComponent(decoded);
+                    } else {
+                        try {
+                            // Modern browserlarda TextDecoder ile safer decode
+                            decoded = new TextDecoder("utf-8").decode(Uint8Array.from(atob(b64str), c => c.charCodeAt(0)));
+                        } catch (e) {
+                            // ES5 fallback (escape= eski usul, utf-8 için)
+                            decoded = decodeURIComponent(escape(atob(b64str)));
+                        }
                     }
+                    return decoded;
+                } catch (err) {
+                    return null;
                 }
-            } catch (e) {
-                // base64 bozuksa: yanlış linktir, parse etme
-                console.error("Base64 decode error:", e);
+            }
+
+            let jsonStr = safeBase64Decode(sharedTrip);
+            if (!jsonStr) {
+                alert("Plan açılırken veri çözümlenemedi. Link bozuk olabilir!");
                 return;
             }
 
@@ -25,17 +34,11 @@
             try {
                 tripData = JSON.parse(jsonStr);
             } catch(e) {
-                // bazen rare-case'de URI'li olmadığını yanlış algıladıysak 2. şans
-                try {
-                    jsonStr = decodeURIComponent(jsonStr);
-                    tripData = JSON.parse(jsonStr);
-                } catch(e2) {
-                    console.error("Failed to parse JSON from shared trip:", e2);
-                    return;
-                }
+                alert("Plan verisi bozuk veya eski. Lütfen bağlantıyı tekrar oluşturun.");
+                return;
             }
 
-            // BUNDAN SONRASI DEĞİŞMEYECEK
+            // aaaaallttaki kod hep aynı 
             if (tripData.i) {
                 window.cart = (tripData.i || []).map(item => ({
                     name: item.n,
@@ -81,6 +84,7 @@
         }
     } catch (e) {
         console.error("Failed to load shared trip from URL:", e);
+        alert("Paylaşım bağlantısı çözümlenirken hata oluştu. Link ya çok eski, ya hatalı.");
     }
 })();
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
