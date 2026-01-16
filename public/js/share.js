@@ -73,11 +73,16 @@ function createShortTripLink() {
     const aiInfo = localStorage.getItem('ai_information') || "";
 
     const items = (window.cart || []).map(item => {
-        // Koordinatları garantiye alıyoruz (lat/lng veya location.lat/lng)
+        // Koordinatları garantiye al
         const lat = item.lat || (item.location && item.location.lat) || 0;
         const lng = item.lng || (item.location && item.location.lng) || 0;
-        const img = item.image || "no-img";
         
+        // Resmi garantiye al (Pexels veya manuel yükleme)
+        let img = "no-img";
+        if (item.image && item.image !== "") {
+            img = item.image;
+        }
+
         return `${item.name}:${lat}:${lng}:${item.day || 1}:${encodeURIComponent(img)}`;
     }).join('*');
 
@@ -103,30 +108,36 @@ document.addEventListener('DOMContentLoaded', () => {
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
             const [name, lat, lon, day, img] = parts;
+            const finalImg = (img === "no-img" || !img) ? "" : decodeURIComponent(img);
+            
             return {
                 name: name,
                 lat: parseFloat(lat),
                 lng: parseFloat(lon),
                 location: { lat: parseFloat(lat), lng: parseFloat(lon) },
                 day: parseInt(day),
-                image: (img === "no-img" || !img) ? "" : decodeURIComponent(img)
+                image: finalImg,
+                category: "Place" // Varsayılan kategori
             };
         });
 
+        // Hafızayı tazele
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
         
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // Sayfayı hazırla
+        // UI Hazırla
         if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // Harita ve Rotayı Tetikle
+        // SİSTEMİ ATEŞLE (Harita + Rota + AI + Resimler)
         setTimeout(() => {
-            if (typeof updateCart === 'function') updateCart();
+            if (typeof updateCart === 'function') {
+                updateCart(); // Resimler bu fonksiyon içindeki render döngüsüyle ekrana basılır
+            }
             
             // AI Kutusunu bas
             if (tripData.ai && typeof insertTripAiInfo === "function") {
@@ -138,7 +149,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 insertTripAiInfo(null, staticAi);
             }
-        }, 1000);
 
-    } catch (e) { console.error("Yükleme hatası:", e); }
+            // Haritayı odakla
+            if (window.map) {
+                window.map.invalidateSize();
+                if (typeof fitMapToCart === 'function') fitMapToCart();
+            }
+        }, 1200);
+
+    } catch (e) {
+        console.error("Kritik Yükleme Hatası:", e);
+    }
 });
