@@ -148,7 +148,7 @@ function safeBase64Decode(b64str) {
 function createShortTripLink() {
     const minimalData = {
         i: window.cart.map(item => ({
-            n: item.name,
+            n: item.name.replace(/"/g, "'"), // Tırnak işaretlerini temizle
             c: item.category,
             d: item.day,
             la: item.location ? item.location.lat : (item.lat || 0),
@@ -158,16 +158,13 @@ function createShortTripLink() {
         td: window.tripDates || {}
     };
 
-    // 1. JSON yapısını oluştur
     const jsonStr = JSON.stringify(minimalData);
     
-    // 2. UTF-8 güvenli Base64 (Türkçe karakter dostu)
-    const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-        return String.fromCharCode('0x' + p1);
-    }));
-
-    // 3. URL'de sorun çıkaran karakterleri temizle
-    const safeUrl = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // btoa yerine bunu kullanıyoruz: Türkçe karakterleri asla bozmaz
+    const safeBase64 = btoa(unescape(encodeURIComponent(jsonStr)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
     
-    return window.location.origin + "/?t=" + safeUrl;
+    return `${window.location.origin}/?t=${safeBase64}`;
 }

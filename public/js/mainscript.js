@@ -4,20 +4,15 @@ function loadSharedTripOnStart() {
     if (!t) return;
 
     try {
-        console.log("🔗 Veri yükleniyor...");
+        console.log("🔗 Plan yükleniyor...");
 
-        // 1. URL-Safe karakterleri geri çevir
+        // 1. URL-Safe formatı geri çevir
         t = t.replace(/-/g, '+').replace(/_/g, '/');
         while (t.length % 4) t += '=';
 
-        // 2. Karakter bazlı güvenli decode (Türkçe karakterler için)
-        const binaryString = atob(t);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        const decodedStr = new TextDecoder().decode(bytes);
-        const tripData = JSON.parse(decodeURIComponent(encodeURIComponent(decodedStr)));
+        // 2. Güvenli Çözme (Türkçe karakter ve tırnak işareti dostu)
+        const decodedStr = decodeURIComponent(escape(atob(t)));
+        const tripData = JSON.parse(decodedStr);
 
         if (tripData.i) {
             window.cart = tripData.i.map(item => ({
@@ -33,26 +28,33 @@ function loadSharedTripOnStart() {
             window.tripDates = tripData.td || {};
         }
 
-        // UI GÜZELLEŞTİRME
-        if(document.getElementById("chat-box")) document.getElementById("chat-box").innerHTML = ""; 
+        // ARAYÜZ TEMİZLİĞİ (Güzel format burada başlıyor)
+        const chatBox = document.getElementById("chat-box");
+        if (chatBox) chatBox.innerHTML = ""; 
+        
         const inputWrap = document.querySelector('.input-wrapper');
-        if (inputWrap) inputWrap.style.display = 'none';
+        if (inputWrap) inputWrap.style.display = 'none'; // Yazma alanını kapat
+        
         const welcome = document.getElementById('tt-welcome');
         if (welcome) welcome.style.display = 'none';
 
+        // 3. Ekrana Bas
         setTimeout(() => {
             if (typeof updateCart === 'function') updateCart();
-            if (typeof showTripDetails === 'function') showTripDetails(window.tripDates?.startDate);
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(window.tripDates?.startDate || null);
+            }
             if (typeof renderRouteForDay === 'function') renderRouteForDay(1);
-        }, 300);
+        }, 400);
 
     } catch (e) {
         console.error("Yükleme Hatası:", e);
+        // Hata olursa en azından kullanıcıya mesaj ver
+        alert("Gezi planı yüklenirken bir hata oluştu. Link eksik olabilir.");
     }
 }
 
-// Olay dinleyiciyi en sade haliyle ekle
-window.addEventListener('load', loadSharedTripOnStart);
+
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
@@ -10153,3 +10155,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+
+// En alta ekle
+window.addEventListener('load', loadSharedTripOnStart);
