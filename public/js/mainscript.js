@@ -3,19 +3,59 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sharedTrip = urlParams.get('t') || urlParams.get('sharedTrip');
         if (sharedTrip) {
-            // UTF-8 güvenli base64 decode fonksiyonu
-            function b64DecodeUnicode(str) {
-                return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
+            // Hem encodeURIComponent'li hem sade base64 desteği
+            let jsonStr = atob(sharedTrip);
+            if (jsonStr[0] === "%") { // encodeURIComponent ile encode edilmişse
+                jsonStr = decodeURIComponent(jsonStr);
             }
-            const jsonStr = b64DecodeUnicode(sharedTrip);
             const tripData = JSON.parse(jsonStr);
 
-            // ... (diğer mantıklar yukarıda anlatıldığı gibi)
-            // Buradan sonrası aynı devam edebilir.
+            // Devamı: senin öz kodun
+            if (tripData.i) {
+                window.cart = (tripData.i || []).map(item => ({
+                    name: item.n,
+                    category: item.c,
+                    day: item.d,
+                    lat: item.la,
+                    lon: item.lo,
+                    address: '',
+                    website: '',
+                    opening_hours: '',
+                    image: `https://images.pexels.com/photos/3462098/pexels-photo-3462098.jpeg?auto=compress&cs=tinysrgb&h=350`
+                }));
+                window.customDayNames = tripData.dn || {};
+                window.tripDates = tripData.td || {};
+            } else {
+                window.cart = tripData.cart || [];
+                window.customDayNames = tripData.customDayNames || {};
+                window.tripDates = tripData.tripDates || {};
+            }
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+            window.__sharedTripView = true;
+
+            setTimeout(() => {
+                if (typeof showTripDetails === 'function') {
+                    const startDate = tripData.td?.startDate || tripData.tripDates?.startDate;
+                    showTripDetails(startDate);
+                }
+                document.querySelectorAll('.input-wrapper, .chat-footer, .sidebar-trip, #chat-box').forEach(function(el){
+                    if(el) el.style.display = 'none';
+                });
+                const chatScreen = document.getElementById('chat-screen');
+                if (chatScreen) chatScreen.style.display = '';
+
+                let detailsSection = document.getElementById('tt-trip-details');
+                if (detailsSection && !detailsSection.querySelector('.shared-trip-banner')) {
+                    let banner = document.createElement('div');
+                    banner.className = 'shared-trip-banner';
+                    banner.innerHTML = `
+                        🔗 This is a shared trip plan &mdash; <a href="/">Plan your own trip</a>
+                    `;
+                    detailsSection.prepend(banner);
+                }
+            }, 800);
         }
-    } catch(e) {
+    } catch (e) {
         console.error("Failed to load shared trip from URL:", e);
     }
 })();
