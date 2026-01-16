@@ -11,8 +11,8 @@ function showGlobalLoading() {
         loader.innerHTML = `
             <div class="loader-content">
                 <div class="logo-wrapper">
-                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo" alt="Triptime Logo">
                     <div class="modern-spinner"></div>
+                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo" alt="Triptime Logo">
                 </div>
                 <p class="loading-text">Triptime AI Trip Planner is loading</p>
             </div>
@@ -23,34 +23,45 @@ function showGlobalLoading() {
                     display: flex; align-items: center; justify-content: center; 
                     font-family: 'Inter', sans-serif; backdrop-filter: blur(8px);
                 }
-                .loader-content { text-align: center; }
+                .loader-content { 
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+                }
                 .logo-wrapper {
-                    position: relative; width: 80px; height: 80px; margin: 0 auto 25px;
+                    position: relative; 
+                    width: 80px; height: 80px; 
+                    margin-bottom: 20px;
                     display: flex; align-items: center; justify-content: center;
                 }
                 .loader-logo {
-                    width: 45px; height: 45px; z-index: 2;
-                    filter: drop-shadow(0 0 10px rgba(138, 74, 243, 0.2));
+                    width: 45px; height: 45px; 
+                    z-index: 2;
+                    display: block;
+                    filter: drop-shadow(0 0 8px rgba(138, 74, 243, 0.15));
                 }
                 .modern-spinner {
-                    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                    position: absolute; 
+                    /* Spinner wrapper'ı tam kaplar */
+                    top: 0; left: 0; right: 0; bottom: 0;
                     border: 3px solid rgba(138, 74, 243, 0.1);
-                    border-left-color: #8a4af3; border-radius: 50%;
+                    border-left-color: #8a4af3; 
+                    border-radius: 50%;
                     animation: modern-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
                     z-index: 1;
                 }
                 .loading-text {
-                    color: #1a1a1a; font-size: 14px; margin-top: 0px;
-                    
+                    color: #1a1a1a; 
+                    font-size: 14px; 
+                    margin: 0;
+                    font-weight: 500;
+                    animation: pulse 1.8s ease-in-out infinite;
                 }
-                @keyframes modern-spin { to { transform: rotate(360deg); } }
-                @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.98); } }
+                @keyframes modern-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
             </style>
         `;
         document.body.appendChild(loader);
     }
 }
-
 function hideGlobalLoading() {
     const loader = document.getElementById('trip-loader');
     if (loader) {
