@@ -38,6 +38,35 @@ function generateShareableText() {
     return shareText;
 }
 
+// --- 4. Sosyal Medya Paylaşım Fonksiyonları ---
+function shareOnWhatsApp() {
+    const text = encodeURIComponent(generateShareableText()); // Senin metnin, dokunmuyoruz.
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
+    window.open(`${baseUrl}?text=${text}`, '_blank');
+}
+
+function shareOnInstagram() {
+    const textToShare = generateShareableText();
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(textToShare).then(() => {
+            alert("Trip plan copied to clipboard!");
+        });
+    }
+}
+
+function shareOnFacebook() {
+    const shortLink = createShortTripLink();
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortLink)}`, '_blank');
+}
+
+function shareOnTwitter() {
+    const textToShare = generateShareableText();
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(textToShare)}`, '_blank');
+}
+
+
+
 // --- 2. Link Oluşturucu (Tüm veriyi linke gömer) ---
 function createShortTripLink() {
     const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
@@ -67,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tripData = JSON.parse(decodeURIComponent(v1Raw));
         const rawItems = tripData.items.split('*');
         
-        // 1. window.cart'ı doldur
+        // 1. window.cart'ı en başta temizleyip linkten gelenle dolduruyoruz
         window.cart = rawItems.map(str => {
             const parts = str.split(':');
             const [name, lat, lon, day, img, cat] = parts;
@@ -82,11 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // 2. AI Bilgisini ve Gezi Adını Geri Yükle + EKRANA BAS
+        // 2. AI Bilgisini ve Başlığı Yükle
         if (tripData.ai) {
             localStorage.setItem('ai_information', tripData.ai);
-            
-            // Linkten gelen AI metnini parçalayıp ekrandaki kutuya basıyoruz
             if (typeof insertTripAiInfo === "function") {
                 const parts = tripData.ai.split('\n\n');
                 const staticAi = {
@@ -94,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     tip: parts[1] ? parts[1].replace('Tip:', '').trim() : "",
                     highlight: parts[2] ? parts[2].replace('Highlight:', '').trim() : ""
                 };
-                // API'ye gitmeden eldeki veriyi UI'ya çizer
                 insertTripAiInfo(null, staticAi);
             }
         }
@@ -102,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleEl = document.getElementById('trip_title');
         if (titleEl) titleEl.innerText = tripData.n;
 
-        // 3. LocalStorage Güncelle
+        // 3. Kritik: LocalStorage'ı hemen güncelle ki mainscript oradan okuyabilsin
         localStorage.setItem('cart', JSON.stringify(window.cart));
 
         // 4. UI'ı Hazırla
@@ -110,40 +136,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('sidebar-overlay-trip');
         if (overlay) overlay.classList.add('open');
 
-        // 5. Sistemi Ateşle
+        // 5. ROTA VE HARİTA TAMİRİ
+        // Verilerin DOM'a işlenmesi ve haritanın rotayı çizmesi için kısa bir bekleme
         setTimeout(() => {
-            if (typeof updateCart === 'function') updateCart();
-            if (window.map) window.map.invalidateSize();
-        }, 800);
+            if (typeof updateCart === 'function') {
+                updateCart(); // Bu fonksiyon hem listeyi dizer hem rotayı çizer
+            }
+            
+            // Haritayı ve markerları zorla yenile
+            if (window.map) {
+                window.map.invalidateSize();
+                // Eğer haritada markerlar görünmüyorsa haritayı rotaya odakla
+                if (window.cart.length > 0 && typeof fitMapToCart === 'function') {
+                    fitMapToCart();
+                }
+            }
+        }, 500); // 800 çok uzundu, 500 ideal.
 
     } catch (e) {
-        console.error("Critical Load Error:", e);
+        console.error("Rota Yükleme Hatası:", e);
     }
 });
-
-// --- 4. Sosyal Medya Paylaşım Fonksiyonları ---
-function shareOnWhatsApp() {
-    const text = encodeURIComponent(generateShareableText()); // Senin metnin, dokunmuyoruz.
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
-    window.open(`${baseUrl}?text=${text}`, '_blank');
-}
-
-function shareOnInstagram() {
-    const textToShare = generateShareableText();
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToShare).then(() => {
-            alert("Trip plan copied to clipboard!");
-        });
-    }
-}
-
-function shareOnFacebook() {
-    const shortLink = createShortTripLink();
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortLink)}`, '_blank');
-}
-
-function shareOnTwitter() {
-    const textToShare = generateShareableText();
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(textToShare)}`, '_blank');
-}
