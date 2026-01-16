@@ -10086,11 +10086,6 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 
 
 
-
-
-
-
-
 document.addEventListener("DOMContentLoaded", function() {
     const inputEl = document.getElementById("user-input");
     if (inputEl) {
