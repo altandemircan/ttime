@@ -4682,7 +4682,10 @@ if (aiInfoSection) {
                 <img src="img/drag_move.svg" alt="Drag" class="drag-icon">
 
                 <div class="item-position">${listMarkerHtml}                
-                  <img src="${item.image}" alt="${item.name}" class="cart-image">
+                  <img src="${(item.image && item.image !== 'default') ? item.image : (window.cityImages && window.cityImages[idx % window.cityImages.length]) || 'img/default_place.jpg'}" 
+     onerror="this.src='img/default_place.jpg'" 
+     alt="${item.name}" 
+     class="cart-image">
                 </div>
 
                 <img src="${catIcon}" alt="${item.category}" class="category-icon">
