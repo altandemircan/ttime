@@ -7,7 +7,6 @@
 function showGlobalLoading() {
     let loader = document.getElementById('trip-loader');
     if (!loader) {
-        // AI Bekleme Mesajları
         const messages = [
             "AI is crafting your perfect route...",
             "Checking local gems for you...",
@@ -19,13 +18,20 @@ function showGlobalLoading() {
         loader = document.createElement('div');
         loader.id = 'trip-loader';
         loader.innerHTML = `
-            <div class="loader-content">
-                <div class="logo-wrapper">
-                    <div class="modern-spinner"></div>
-                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo-img" alt="Logo">
+            <div class="loader-card">
+                <div class="loader-header">
+                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo-static" alt="Logo">
+                    <span class="loader-brand">triptime.ai</span>
                 </div>
-                <p class="loading-text">${randomMsg}</p>
+                
+                <div class="loader-body">
+                    <div class="progress-container">
+                        <div class="progress-bar-fill"></div>
+                    </div>
+                    <p class="loading-text">${randomMsg}</p>
+                </div>
             </div>
+
             <style>
                 #trip-loader {
                     position: fixed;
@@ -33,73 +39,87 @@ function showGlobalLoading() {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: rgba(255, 255, 255, 0.6); /* Şeffaf beyaz arkası */
+                    background: #ffffff; /* Arkadaki yapıyı tamamen kapatmak için solid beyaz veya çok hafif gri */
                     z-index: 999999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-family: 'Inter', -apple-system, sans-serif;
-                    backdrop-filter: blur(15px); /* Efsane blur efekti */
-                    -webkit-backdrop-filter: blur(15px);
+                    font-family: 'Inter', system-ui, -apple-system, sans-serif;
                 }
 
-                .loader-content {
+                .loader-card {
+                    background: #fff;
+                    padding: 30px 40px;
+                    border-radius: 20px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
                     text-align: center;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
+                    width: 90%;
+                    max-width: 350px;
+                    border: 1px solid #eee;
                 }
 
-                .logo-wrapper {
-                    position: relative;
-                    width: 100px;
-                    height: 100px;
+                .loader-header {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin-bottom: 20px;
+                    gap: 10px;
+                    margin-bottom: 25px;
                 }
 
-                .modern-spinner {
+                .loader-logo-static {
+                    width: 30px;
+                    height: 30px;
+                }
+
+                .loader-brand {
+                    font-weight: 800;
+                    font-size: 20px;
+                    color: #222;
+                    letter-spacing: -0.5px;
+                }
+
+                /* Progress Bar Tasarımı */
+                .progress-container {
+                    width: 100%;
+                    height: 6px;
+                    background: #f0f0f0;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin-bottom: 15px;
+                    position: relative;
+                }
+
+                .progress-bar-fill {
+                    width: 40%;
+                    height: 100%;
+                    background: linear-gradient(90deg, #ff385c, #e61e4d);
+                    border-radius: 10px;
                     position: absolute;
-                    width: 80px;
-                    height: 80px;
-                    border: 4px solid rgba(255, 56, 92, 0.1); /* Silik halka */
-                    border-top: 4px solid #ff385c; /* Canlı kırmızı/pembe */
-                    border-radius: 50%;
-                    animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-                }
-
-                .loader-logo-img {
-                    width: 40px;
-                    height: 40px;
-                    z-index: 2;
-                    /* Logo hafifçe nefes alsın */
-                    animation: pulseLogo 2s ease-in-out infinite;
+                    left: -40%;
+                    animation: loading-slide 1.5s infinite ease-in-out;
                 }
 
                 .loading-text {
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #222;
+                    font-size: 15px;
+                    color: #666;
                     margin: 0;
-                    letter-spacing: -0.02em;
-                    animation: fadeInOut 1.5s ease-in-out infinite;
+                    font-weight: 500;
                 }
 
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
+                @keyframes loading-slide {
+                    0% { left: -40%; }
+                    50% { left: 40%; width: 60%; }
+                    100% { left: 100%; }
                 }
 
-                @keyframes pulseLogo {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.1); }
+                /* Hafif bir giriş animasyonu */
+                .loader-card {
+                    animation: fadeInUp 0.5s ease-out;
                 }
 
-                @keyframes fadeInOut {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.6; }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             </style>
         `;
