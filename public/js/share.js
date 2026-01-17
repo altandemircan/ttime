@@ -67,11 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window.cart = rawItems.map(str => {
             const p = str.split(',');
             if (p.length < 3) return null;
-            return {
-                name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
-                location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
-                day: parseInt(p[3]) || 1, image: "default", category: "Place"
-            };
+            const imgVal = p[4] === '0' ? 'default' : p[4];
+return {
+    name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
+    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
+    day: parseInt(p[3]) || 1, 
+    image: imgVal, 
+    category: "Place"
+};
         }).filter(item => item !== null);
 
         // 2. AI Verisi Varsa Yakala (Kritik Nokta!)
@@ -127,7 +130,9 @@ function createOptimizedLongLink() {
         const lngVal = item.lng || (item.location && (item.location.lng || item.location.x)) || 0;
         const lat = parseFloat(latVal).toFixed(4);
         const lng = parseFloat(lngVal).toFixed(4);
-        return `${name},${lat},${lng},${item.day || 1},0`;
+       // URL'yi çok uzatmamak için resim varsa gönderiyoruz
+const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
+return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
     }).join('*')
 
     // 2. AI Verisini Paketle
