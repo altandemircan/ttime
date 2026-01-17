@@ -62,7 +62,7 @@ function showGlobalLoading() {
                 }
 
                 .main-logo {
-                    width: 180px; 
+                    width: 200px; 
                     height: auto;
                     display: block;
                     margin: 0 auto;
