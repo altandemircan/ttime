@@ -129,86 +129,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showGlobalLoading();
 
-    try {
-        const decoded = decodeURIComponent(v2Raw);
-        // Format: Başlık | Öğeler | AI_Verisi | Şehir_İsmi
-        const parts = decoded.split('|');
-        const title = parts[0];
-        const itemsStr = parts[1];
-        const aiStr = parts[2];
-        const cityStr = parts[3]; // Kolaj için şehir ismi
-        
-        // 1. Şehir Planı Verileri
-        if (itemsStr) {
-            const rawItems = itemsStr.split('*');
-            window.cart = rawItems.map(str => {
-                const p = str.split(',');
-                if (p.length < 3) return null;
-                const imgVal = p[4] === '0' ? 'default' : p[4];
-                return {
-                    name: p[0], 
-                    lat: parseFloat(p[1]), 
-                    lng: parseFloat(p[2]),
-                    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
-                    day: parseInt(p[3]) || 1, 
-                    image: imgVal, 
-                    category: "Place"
-                };
-            }).filter(item => item !== null);
-        }
+    // --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ (GÜNCELLENMİŞ KISIM) ---
+try {
+    const decoded = decodeURIComponent(v2Raw);
+    // Format: Başlık | Öğeler | AI_Verisi | Şehir_İsmi
+    const parts = decoded.split('|');
+    const title = parts[0];
+    const itemsStr = parts[1];
+    const aiStr = parts[2];
+    const cityStr = parts[3]; // Kolaj için şehir ismi buradan geliyor
 
-        // 2. AI Verisi Varsa Yakala
-        if (aiStr) {
-            const [s, t, h] = aiStr.split('~');
-            window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
-        }
-
-        // 3. Kolaj Verisi Varsa Yakala
-        if (cityStr) {
-            window.sharedCityForCollage = cityStr;
-        }
-
-        // UI Güncelleme
-        localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
-        
-        let attempts = 0;
-        const checkReady = setInterval(() => {
-            attempts++;
-            const isCartReady = typeof updateCart === 'function';
-            if (isCartReady || attempts > 50) { 
-                clearInterval(checkReady);
-                try {
-                    if (isCartReady) updateCart();
-                    
-                    // AI Bilgisi Basma
-                    if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
-                        insertTripAiInfo(null, window.sharedAiStaticInfo);
-                    }
-
-                    // Fotoğraf Kolajlarını Basma (YENİ)
-                    if (window.sharedCityForCollage && typeof fetchPhotosForDay === 'function') {
-                        const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
-                        for(let d=1; d<=maxDay; d++) {
-                            fetchPhotosForDay(d, window.sharedCityForCollage);
-                        }
-                    }
-
-                    const overlay = document.getElementById('sidebar-overlay-trip');
-                    if (overlay) overlay.classList.add('open');
-                } catch(e) { console.error("Load Error:", e); }
-                
-                setTimeout(() => {
-                    hideGlobalLoading();
-                    if (window.map) window.map.invalidateSize();
-                }, 800);
-            }
-        }, 300);
-
-    } catch (e) { 
-        console.error("Critical Load Error:", e);
-        hideGlobalLoading();
+    // 1. Şehir Planı Verileri
+    if (itemsStr) {
+        const rawItems = itemsStr.split('*');
+        window.cart = rawItems.map(str => {
+            const p = str.split(',');
+            if (p.length < 3) return null;
+            const imgVal = p[4] === '0' ? 'default' : p[4];
+            return {
+                name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
+                location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
+                day: parseInt(p[3]) || 1, image: imgVal, category: "Place"
+            };
+        }).filter(item => item !== null);
     }
+
+    // 2. AI Verisi
+    if (aiStr && aiStr !== "") {
+        const [s, t, h] = aiStr.split('~');
+        window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
+    }
+
+    // 3. Kolaj Verisi (Kritik: Fotoğraflar için şehri hafızaya al)
+    if (cityStr) {
+        window.sharedCityForCollage = cityStr;
+    }
+
+    localStorage.setItem('cart', JSON.stringify(window.cart));
+    if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
+
+    let attempts = 0;
+    const checkReady = setInterval(() => {
+        attempts++;
+        const isCartReady = typeof updateCart === 'function';
+        // FOTOĞRAF MOTORU KONTROLÜ
+        const isPhotoReady = typeof fetchPhotosForDay === 'function';
+
+        if (isCartReady || attempts > 50) { 
+            clearInterval(checkReady);
+            try {
+                if (isCartReady) updateCart();
+
+                // AI Bilgisi Basma
+                if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
+                    insertTripAiInfo(null, window.sharedAiStaticInfo);
+                }
+
+                // FOTOĞRAF TETİKLEME (TAM YAZILAN KISIM)
+                if (window.sharedCityForCollage && isPhotoReady) {
+                    const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+                    for(let d=1; d<=maxDay; d++) {
+                        fetchPhotosForDay(d, window.sharedCityForCollage);
+                    }
+                }
+
+                const overlay = document.getElementById('sidebar-overlay-trip');
+                if (overlay) overlay.classList.add('open');
+            } catch(e) { console.error("Load Error:", e); }
+            
+            setTimeout(() => {
+                hideGlobalLoading();
+                if (window.map) window.map.invalidateSize();
+            }, 800);
+        }
+    }, 300);
+
+} catch (e) { 
+    console.error("Critical Load Error:", e);
+    hideGlobalLoading();
+}
 });
 
 // --- 3. PAYLAŞIM FONKSİYONLARI ---
@@ -240,10 +239,9 @@ function createOptimizedLongLink() {
     // 3. KOLAJ VERİSİ EKLEME (YENİ)
     // Eğer window.selectedCity varsa onu, yoksa ilk durağın adını şehir kabul et
     const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
-    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
+const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
 
-    // URL'ye collagePart'ı da ekliyoruz
-    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
+return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
 }
 
 // ... [shareOnWhatsApp fonksiyonu aynı kalsın, createOptimizedLongLink'i otomatik kullanacak zaten] ...
