@@ -87,13 +87,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // ... [updateCart ve hideGlobalLoading kısımları aynı] ...
 
         // Sayfa tamamen hazır olunca AI kutusunu bas
-        const checkAiReady = setInterval(() => {
-            if (typeof insertTripAiInfo === 'function' && window.sharedAiStaticInfo) {
-                clearInterval(checkAiReady);
-                // Statik veriyi bas, tekrar fetch yapmasın!
-                insertTripAiInfo(null, window.sharedAiStaticInfo);
+        // --- LOADER VE AI VERİSİ FİX ---
+        let attempts = 0;
+        const checkReady = setInterval(() => {
+            attempts++;
+            const isCartReady = typeof updateCart === 'function';
+            if (isCartReady || attempts > 50) { 
+                clearInterval(checkReady);
+                try {
+                    if (isCartReady) updateCart();
+                    if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
+                        insertTripAiInfo(null, window.sharedAiStaticInfo);
+                    }
+                    const overlay = document.getElementById('sidebar-overlay-trip');
+                    if (overlay) overlay.classList.add('open');
+                } catch(e) { console.error("Load Error:", e); }
+                setTimeout(() => {
+                    hideGlobalLoading();
+                    if (window.map) window.map.invalidateSize();
+                }, 800);
             }
-        }, 500);
+        }, 300);
 
     } catch (e) { 
         console.error("Critical Load Error:", e);
@@ -107,18 +121,14 @@ function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
     
     // 1. Durakları Paketle
-    const items = (window.cart || []).map(item => {
-        const name = item.name.replace(/[|*~,]/g, ''); 
-        
-        // KRİTİK DÜZELTME: Koordinatları farklı ihtimallere göre güvenli oku
-        const latVal = item.lat || (item.location && item.location.lat) || 0;
-        const lngVal = item.lng || (item.location && item.location.lng) || 0;
-        
+   const items = (window.cart || []).map(item => {
+        const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
+        const latVal = item.lat || (item.location && (item.location.lat || item.location.y)) || 0;
+        const lngVal = item.lng || (item.location && (item.location.lng || item.location.x)) || 0;
         const lat = parseFloat(latVal).toFixed(4);
         const lng = parseFloat(lngVal).toFixed(4);
-        
         return `${name},${lat},${lng},${item.day || 1},0`;
-    }).join('*');
+    }).join('*')
 
     // 2. AI Verisini Paketle
     let aiPart = "";
