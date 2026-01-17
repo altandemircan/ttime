@@ -121,40 +121,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 3. PAYLAŞIM FONKSİYONLARI ---
 async function shareOnWhatsApp() {
-    showGlobalLoading();
-    try {
-        let shareText = "Check out my trip plan!\n\n";
-        const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
+    console.log("WhatsApp tetiklendi...");
+    
+    let shareText = "Check out my trip plan!\n\n";
+    const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
 
-        for (let day = 1; day <= maxDay; day++) {
-            const dayItems = window.cart.filter(item => item.day == day && item.name);
-            if (dayItems.length > 0) {
-                shareText += `--- Day ${day} ---\n`;
-                dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
-                shareText += "\n";
-            }
+    for (let day = 1; day <= maxDay; day++) {
+        const dayItems = window.cart.filter(item => item.day == day && item.name);
+        if (dayItems.length > 0) {
+            shareText += `--- Day ${day} ---\n`;
+            dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
+            shareText += "\n";
         }
-
-        const longUrl = createOptimizedLongLink();
-        let shortUrl = longUrl;
-
-        // Proxy üzerinden TinyURL (CORS bypass)
-        try {
-            const apiTarget = `https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`;
-            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.contents && data.contents.startsWith('http')) shortUrl = data.contents;
-            }
-        } catch (e) { console.warn("Kısaltma servisi atlandı."); }
-
-        shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-    } finally {
-        hideGlobalLoading();
     }
-}
 
+    const longUrl = createOptimizedLongLink();
+    let shortUrl = longUrl;
+
+    // KENDİ SERVİSİMİZİ KULLANIYORUZ
+    try {
+        const response = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ longUrl: longUrl })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            shortUrl = result.shortUrl;
+        }
+    } catch (e) {
+        console.warn("Kendi kısaltma servisimiz cevap vermedi, uzun linkle devam ediliyor.");
+    }
+
+    shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+}
 function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*,]/g, '');
     const items = (window.cart || []).map(item => {

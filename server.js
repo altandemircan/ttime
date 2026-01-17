@@ -36,6 +36,54 @@ app.use('/clicked-ai', clickedAiRouter);
 app.use('/chat-stream', chatStreamRouter);
 console.log('Chat stream endpoint registered at /chat-stream');
 
+// --- KENDİ LİNK KISALTMA SERVİSİMİZ (DB Gerektirmez) ---
+const shortUrlsFile = path.join(__dirname, 'shorturls.json');
+
+// 1. Kısaltma Oluşturma (POST)
+app.post('/api/shorten', (req, res) => {
+    try {
+        const { longUrl } = req.body;
+        if (!longUrl) return res.status(400).json({ error: 'longUrl required' });
+
+        // 6 haneli rastgele ID üret
+        const shortId = Math.random().toString(36).substring(2, 8);
+        
+        let data = {};
+        if (fs.existsSync(shortUrlsFile)) {
+            data = JSON.parse(fs.readFileSync(shortUrlsFile, 'utf8'));
+        }
+        
+        data[shortId] = longUrl;
+        fs.writeFileSync(shortUrlsFile, JSON.stringify(data, null, 2));
+        
+        // Host adını dinamik al (stage veya prod fark etmez)
+        const protocol = req.protocol;
+        const host = req.get('host');
+        
+        res.json({ shortUrl: `${protocol}://${host}/s/${shortId}` });
+    } catch (e) {
+        console.error('[Shorten Error]', e);
+        res.status(500).json({ error: 'Shorten failed' });
+    }
+});
+
+// 2. Yönlendirme (GET /s/id) - DİKKAT: Bunu 'express.static' satırından önceye koy
+app.get('/s/:id', (req, res) => {
+    try {
+        if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
+        
+        const data = JSON.parse(fs.readFileSync(shortUrlsFile, 'utf8'));
+        const longUrl = data[req.params.id];
+        
+        if (longUrl) {
+            console.log(`[Redirect] ${req.params.id} -> ${longUrl.substring(0, 50)}...`);
+            return res.redirect(longUrl);
+        }
+        res.redirect('/');
+    } catch (e) {
+        res.redirect('/');
+    }
+});
  
 // Diğer API Routerları
 const photogetProxy = require('./photoget-proxy');
