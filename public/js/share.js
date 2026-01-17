@@ -120,119 +120,130 @@ function hideGlobalLoading() {
     }
 }
 
+Harika abi, artık photo_day_slider.js içindeki asıl motorun renderDayCollage olduğunu bildiğimize göre, paylaştığın bu koddaki hatalı çağırmayı (fetchPhotosForDay) düzeltip işi bitirelim.
+
+Senin share.js dosyanı, az önce attığın slider dosyasındaki fonksiyon isimlerine tam uyumlu hale getirdim. Aşağıdaki bloğu olduğu gibi kopyalayıp dosyanı güncelle:
+
+JavaScript
+
+/**
+ * share.js - THE FINAL ULTIMATE VERSION
+ * Created with triptime.ai!
+ */
+
+// --- 1. MODERN LOADING UI --- (Bu kısımlar aynı kalıyor)
+function showGlobalLoading() { /* ... loader kodların ... */ }
+function hideGlobalLoading() { /* ... loader kodların ... */ }
+
 // --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v2Raw = params.get('v2');
-    
     if (!v2Raw) return;
 
     showGlobalLoading();
 
-    // --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ (GÜNCELLENMİŞ KISIM) ---
-try {
-    const decoded = decodeURIComponent(v2Raw);
-    // Format: Başlık | Öğeler | AI_Verisi | Şehir_İsmi
-    const parts = decoded.split('|');
-    const title = parts[0];
-    const itemsStr = parts[1];
-    const aiStr = parts[2];
-    const cityStr = parts[3]; // Kolaj için şehir ismi buradan geliyor
+    try {
+        const decoded = decodeURIComponent(v2Raw);
+        const parts = decoded.split('|');
+        const title = parts[0];
+        const itemsStr = parts[1];
+        const aiStr = parts[2];
+        const cityStr = parts[3];
 
-    // 1. Şehir Planı Verileri
-    if (itemsStr) {
-        const rawItems = itemsStr.split('*');
-        window.cart = rawItems.map(str => {
-            const p = str.split(',');
-            if (p.length < 3) return null;
-            const imgVal = p[4] === '0' ? 'default' : p[4];
-            return {
-                name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
-                location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
-                day: parseInt(p[3]) || 1, image: imgVal, category: "Place"
-            };
-        }).filter(item => item !== null);
-    }
+        // 1. Şehir Planı Verileri
+        if (itemsStr) {
+            const rawItems = itemsStr.split('*');
+            window.cart = rawItems.map(str => {
+                const p = str.split(',');
+                if (p.length < 3) return null;
+                return {
+                    name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
+                    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
+                    day: parseInt(p[3]) || 1, image: p[4] === '0' ? 'default' : p[4],
+                    category: "Place"
+                };
+            }).filter(item => item !== null);
+        }
 
-    // 2. AI Verisi
-    if (aiStr && aiStr !== "") {
-        const [s, t, h] = aiStr.split('~');
-        window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
-    }
+        // 2. AI Verisi
+        if (aiStr && aiStr !== "") {
+            const [s, t, h] = aiStr.split('~');
+            window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
+        }
 
-    // 3. Kolaj Verisi (Kritik: Fotoğraflar için şehri hafızaya al)
-    if (cityStr) {
-        window.sharedCityForCollage = cityStr;
-    }
+        // 3. Kolaj Verisi (Global değişkenlere ata)
+        if (cityStr) {
+            window.sharedCityForCollage = cityStr;
+            window.selectedCity = cityStr; // slider.js'in beklentisi
+        }
 
-    localStorage.setItem('cart', JSON.stringify(window.cart));
-    if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
+        localStorage.setItem('cart', JSON.stringify(window.cart));
+        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
 
-    let attempts = 0;
-    // --- share.js içindeki DOMContentLoaded -> checkReady bloğu ---
-const checkReady = setInterval(() => {
-    attempts++;
-    const isCartReady = typeof updateCart === 'function';
-    // Fotoğraf çekme fonksiyonunun (photo_day_slider.js) hazır olup olmadığını kontrol et
-    const isPhotoReady = typeof fetchPhotosForDay === 'function';
+        let attempts = 0;
+        const checkReady = setInterval(() => {
+            attempts++;
+            const isCartReady = typeof updateCart === 'function';
+            // DOĞRU FONKSİYON KONTROLÜ: renderDayCollage
+            const isCollageReady = typeof window.renderDayCollage === 'function';
 
-    if (isCartReady || attempts > 50) { 
-        clearInterval(checkReady);
-        try {
-            if (isCartReady) updateCart();
+            if (isCartReady || attempts > 50) { 
+                clearInterval(checkReady);
+                try {
+                    if (isCartReady) updateCart();
 
-            // 1. AI Bilgisi Varsa Bas
-            if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
-                insertTripAiInfo(null, window.sharedAiStaticInfo);
-            }
+                    // AI Basma
+                    if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
+                        insertTripAiInfo(null, window.sharedAiStaticInfo);
+                    }
 
-            // 2. FOTOĞRAFLARI TETİKLE (Backend Proxy'ye İstek Atar)
-            // URL'den cityStr (Mardin vb.) gelmişse ve fonksiyon hazırsa çalıştır
-            if (window.sharedCityForCollage && isPhotoReady) {
-                // Plan kaç günlükse her gün için kolajı doldur
-                const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
-                console.log("Kolaj tetikleniyor: ", window.sharedCityForCollage);
+                    // FOTOĞRAF TETİKLEME (GÜNCELLENMİŞ DOĞRU MOTOR)
+                    if (window.sharedCityForCollage && isCollageReady) {
+                        const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+                        console.log("Slider tetikleniyor: ", window.sharedCityForCollage);
+                        
+                        for (let d = 1; d <= maxDay; d++) {
+                            // HTML'deki gün konteynerini bul
+                            const dayContainer = document.querySelector(`.day-section[data-day="${d}"]`) || 
+                                               document.querySelector(`#day-${d}`);
+                            
+                            if (dayContainer) {
+                                const dayItems = window.cart.filter(item => item.day === d);
+                                // SENİN FONKSİYONUN: renderDayCollage(day, container, items)
+                                window.renderDayCollage(d, dayContainer, dayItems);
+                            }
+                        }
+                    }
+
+                    const overlay = document.getElementById('sidebar-overlay-trip');
+                    if (overlay) overlay.classList.add('open');
+                } catch(e) { console.error("Load Error:", e); }
                 
-                for(let d = 1; d <= maxDay; d++) {
-                    // Bu fonksiyon senin proxy/slider endpoint'ine istek atar
-                    fetchPhotosForDay(d, window.sharedCityForCollage);
-                }
+                setTimeout(() => {
+                    hideGlobalLoading();
+                    if (window.map) window.map.invalidateSize();
+                }, 800);
             }
+        }, 300);
 
-            const overlay = document.getElementById('sidebar-overlay-trip');
-            if (overlay) overlay.classList.add('open');
-        } catch(e) { console.error("Load Error:", e); }
-        
-        setTimeout(() => {
-            hideGlobalLoading();
-            if (window.map) window.map.invalidateSize();
-        }, 800);
+    } catch (e) { 
+        console.error("Critical Load Error:", e);
+        hideGlobalLoading();
     }
-}, 300);
-
-} catch (e) { 
-    console.error("Critical Load Error:", e);
-    hideGlobalLoading();
-}
 });
 
 // --- 3. PAYLAŞIM FONKSİYONLARI ---
-
 function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
-    
-    // 1. Durakları Paketle
     const items = (window.cart || []).map(item => {
         const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
-        const latVal = item.lat || (item.location && (item.location.lat || item.location.y)) || 0;
-        const lngVal = item.lng || (item.location && (item.location.lng || item.location.x)) || 0;
-        const lat = parseFloat(latVal).toFixed(4);
-        const lng = parseFloat(lngVal).toFixed(4);
+        const lat = parseFloat(item.lat || item.location?.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || item.location?.lng || 0).toFixed(4);
         const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
         return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
     }).join('*');
 
-    // 2. AI Verisini Paketle
     let aiPart = "";
     const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
     if (aiSummaryText) {
@@ -240,10 +251,9 @@ function createOptimizedLongLink() {
         const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
         const h = (window.lastTripAIInfo?.highlight || document.getElementById('ai-highlight')?.innerText || "").replace(/[|*~]/g, '').trim();
         aiPart = `|${s}~${t}~${h}`;
-    }
+    } else { aiPart = "|"; }
 
-const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
-    // Linkin sonuna |Şehirİsmi ekliyoruz
+    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
     const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
 
     return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
