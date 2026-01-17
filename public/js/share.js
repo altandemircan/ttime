@@ -169,40 +169,46 @@ try {
     if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
 
     let attempts = 0;
-    const checkReady = setInterval(() => {
-        attempts++;
-        const isCartReady = typeof updateCart === 'function';
-        // FOTOĞRAF MOTORU KONTROLÜ
-        const isPhotoReady = typeof fetchPhotosForDay === 'function';
+    // --- share.js içindeki DOMContentLoaded -> checkReady bloğu ---
+const checkReady = setInterval(() => {
+    attempts++;
+    const isCartReady = typeof updateCart === 'function';
+    // Fotoğraf çekme fonksiyonunun (photo_day_slider.js) hazır olup olmadığını kontrol et
+    const isPhotoReady = typeof fetchPhotosForDay === 'function';
 
-        if (isCartReady || attempts > 50) { 
-            clearInterval(checkReady);
-            try {
-                if (isCartReady) updateCart();
+    if (isCartReady || attempts > 50) { 
+        clearInterval(checkReady);
+        try {
+            if (isCartReady) updateCart();
 
-                // AI Bilgisi Basma
-                if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
-                    insertTripAiInfo(null, window.sharedAiStaticInfo);
+            // 1. AI Bilgisi Varsa Bas
+            if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
+                insertTripAiInfo(null, window.sharedAiStaticInfo);
+            }
+
+            // 2. FOTOĞRAFLARI TETİKLE (Backend Proxy'ye İstek Atar)
+            // URL'den cityStr (Mardin vb.) gelmişse ve fonksiyon hazırsa çalıştır
+            if (window.sharedCityForCollage && isPhotoReady) {
+                // Plan kaç günlükse her gün için kolajı doldur
+                const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+                console.log("Kolaj tetikleniyor: ", window.sharedCityForCollage);
+                
+                for(let d = 1; d <= maxDay; d++) {
+                    // Bu fonksiyon senin proxy/slider endpoint'ine istek atar
+                    fetchPhotosForDay(d, window.sharedCityForCollage);
                 }
+            }
 
-                // FOTOĞRAF TETİKLEME (TAM YAZILAN KISIM)
-                if (window.sharedCityForCollage && isPhotoReady) {
-                    const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
-                    for(let d=1; d<=maxDay; d++) {
-                        fetchPhotosForDay(d, window.sharedCityForCollage);
-                    }
-                }
-
-                const overlay = document.getElementById('sidebar-overlay-trip');
-                if (overlay) overlay.classList.add('open');
-            } catch(e) { console.error("Load Error:", e); }
-            
-            setTimeout(() => {
-                hideGlobalLoading();
-                if (window.map) window.map.invalidateSize();
-            }, 800);
-        }
-    }, 300);
+            const overlay = document.getElementById('sidebar-overlay-trip');
+            if (overlay) overlay.classList.add('open');
+        } catch(e) { console.error("Load Error:", e); }
+        
+        setTimeout(() => {
+            hideGlobalLoading();
+            if (window.map) window.map.invalidateSize();
+        }, 800);
+    }
+}, 300);
 
 } catch (e) { 
     console.error("Critical Load Error:", e);
@@ -236,12 +242,11 @@ function createOptimizedLongLink() {
         aiPart = `|${s}~${t}~${h}`;
     }
 
-    // 3. KOLAJ VERİSİ EKLEME (YENİ)
-    // Eğer window.selectedCity varsa onu, yoksa ilk durağın adını şehir kabul et
-    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
-const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
+const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
+    // Linkin sonuna |Şehirİsmi ekliyoruz
+    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
 
-return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
 }
 
 // ... [shareOnWhatsApp fonksiyonu aynı kalsın, createOptimizedLongLink'i otomatik kullanacak zaten] ...
