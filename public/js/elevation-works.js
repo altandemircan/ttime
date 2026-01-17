@@ -2222,3 +2222,35 @@ window.__sb_onMouseUp = function() {
     }
   }
 };
+
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    // Tüm leaflet harita ve expanded maplerde invalidateSize çağır
+    if (window.leafletMaps) {
+      Object.values(window.leafletMaps).forEach(map => {
+        try { map.invalidateSize(); } catch(_) {}
+      });
+    }
+    if (window.expandedMaps) {
+      Object.values(window.expandedMaps).forEach(ex => {
+        if (ex?.expandedMap && typeof ex.expandedMap.invalidateSize === 'function') {
+          ex.expandedMap.invalidateSize();
+        }
+      });
+    }
+    // Tüm scale barlar için handleResize tetikle!
+    document.querySelectorAll('.scale-bar-track').forEach(track => {
+      if (typeof track.handleResize === "function") track.handleResize();
+    });
+    // Sliderları da refresh et!
+    document.querySelectorAll('.splide').forEach(sliderElem => {
+      if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
+        sliderElem._splideInstance.refresh();
+      }
+    });
+    // Bir de window event -- 2. kez güvenlik
+    setTimeout(function() {
+      window.dispatchEvent(new Event('resize'));
+    }, 220);
+  }, 360);
+});
