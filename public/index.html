@@ -133,19 +133,9 @@
  
 
 <body>
-
-<h1 class="visually-hidden">
-  New generation AI trip planner for routes, maps and travel planning
-</h1>
-
-<p class="visually-hidden">
-  Triptime AI helps users plan trips by creating routes, exploring places on maps
-  and building travel plans using AI-powered recommendations.
-</p>
-
-<!-- UYGULAMA DEVAMI BURADAN -->
-
-
+    <h1 class="visually-hidden"> New generation AI trip planner for routes, maps and travel planning </h1>
+    <p class="visually-hidden"> Triptime AI helps users plan trips by creating routes, exploring places on maps and building travel plans using AI-powered recommendations. </p>
+    <!-- UYGULAMA DEVAMI BURADAN -->
     <div id="main-header">
         <header class="fixed-header">
             <div class="header-container">
@@ -163,7 +153,7 @@
                         </button>
                     </div>
                     <div class="hamburger-menu">
-                        <div >
+                        <div>
                             <button class="hamburger-btn" onclick="toggleSidebarTrip()">
                                 <img src="/img/trips-icon.svg" alt="Menu">
                             </button>
@@ -179,260 +169,212 @@
                         <div class="toggleMenu" onclick="toggleMenu()">☰</div>
                         <div class="dropDown" id="menuDropdown">
                             <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
-                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI Chat
-                            </a>                     
+                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI Chat </a>
                             <a href="#" onclick="toggleSidebarMyTrips(); toggleMenu();" class="mytrips-btn">
-                                <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips
-                            </a>       
+                                <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips </a>
                             <a href="#" onclick="toggleSidebarFavoritePlaces(); toggleMenu();" class="favorite-places-btn">
-                                <img src="/img/favorites-icon.svg" alt="My Places">My Places
-                            </a>
+                                <img src="/img/favorites-icon.svg" alt="My Places">My Places </a>
                             <a href="#" onclick="toggleSidebarUpdates(); toggleMenu();" class="updates-btn">
-                                <img src="/img/updates-icon.svg" alt="Menu">Updates
-                            </a>                      
+                                <img src="/img/updates-icon.svg" alt="Menu">Updates </a>
                             <a href="#" onclick="toggleSidebarPrivacyTerms(); toggleMenu();" class="privacyterms-btn">
-                                <img src="/img/privacyterms-icon.svg" alt="Menu">Privacy & Terms
-                            </a>  
+                                <img src="/img/privacyterms-icon.svg" alt="Menu">Privacy & Terms </a>
                             <a href="#" onclick="toggleSidebarFeedback(); toggleMenu();" class="feedback-btn">
-                                <img src="/img/feedback-icon.svg" alt="Menu">Feedback
-                            </a>     
-                            <!--<a href="#" onclick="changeContent(2)" class="updates-btn">
-                                <img src="/img/about-icon.svg" alt="Menu">About Triptime
-                            </a>-->   
-                            
+                                <img src="/img/feedback-icon.svg" alt="Menu">Feedback </a>
+                            <!--<a href="#" onclick="changeContent(2)" class="updates-btn"><img src="/img/about-icon.svg" alt="Menu">About Triptime
+                            </a>-->
                         </div>
-                    </div>            
-                </div> 
+                    </div>
+                </div>
             </div>
         </header>
     </div>
     <div id="main-sidebar">
         <section id="tt-sidebar">
-
-    <!-- default sidebar -->
-    <div class="sidebar-overlay sidebar-default" id="sidebar-overlay-default">
-        <div id="sidebar-default">
-            <div class="logo"> 
-                <img src="/img/triptime_logo.svg" alt="Aiio Logo">
-                <p>Triptime AI is here to make travel planning effortless! We help you discover must-see places and exciting activities. We make your travel plan fast and easy. ✨</p>
-                <p>Whether it’s a weekend getaway or a long adventure, we offer personalized recommendations to make your trip unforgettable. We’ve thought of everything a traveler needs. 🏖️</p>
-                <p>Say goodbye to ordinary travel and hello to unforgettable experiences with Triptime AI. If you’re ready to explore, let’s get started! 🌍</p>
-                <a href="https://triptime.ai/" style="text-decoration: none;   color: #333333;   FONT-WEIGHT: 500;">Triptime AI – AI Trip Planner</a>         
+            <!-- default sidebar -->
+            <div class="sidebar-overlay sidebar-default" id="sidebar-overlay-default">
+                <div id="sidebar-default">
+                    <div class="logo">
+                        <img src="/img/triptime_logo.svg" alt="Aiio Logo">
+                        <p>Triptime AI is here to make travel planning effortless! We help you discover must-see places and exciting activities. We make your travel plan fast and easy. ✨</p>
+                        <p>Whether it’s a weekend getaway or a long adventure, we offer personalized recommendations to make your trip unforgettable. We’ve thought of everything a traveler needs. 🏖️</p>
+                        <p>Say goodbye to ordinary travel and hello to unforgettable experiences with Triptime AI. If you’re ready to explore, let’s get started! 🌍</p>
+                        <a href="https://triptime.ai/" style="text-decoration: none;   color: #333333;   FONT-WEIGHT: 500;">Triptime AI – AI Trip Planner</a>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div> 
-
-<div class="sidebar-overlay sidebar-feedback" id="sidebar-overlay-feedback">
-  <div id="sidebar-feedback">
-    <div class="sidebar_title">
-      Feedback Form
-      <button class="sidebar-toggle" onclick="toggleSidebarFeedback()">
-        <img src="/img/close-icon.svg" alt="Close">
-      </button>
-    </div>
-
-    <form id="feedback-form">
-      <label>
-        Type
-        <select name="type" required>
-          <option value="bug">Bug</option>
-          <option value="feature">Feature Request</option>
-          <option value="idea">Idea / Improvement</option>
-          <option value="other">Other</option>
-        </select>
-      </label>
- 
-      <label>
-        Message
-        <textarea name="message" rows="5" placeholder="Write the details..." required></textarea>
-      </label>
-
-      <label>
-        Email (optional)
-        <input type="email" name="userEmail" placeholder="So we can reach you back (optional)">
-      </label>
-
-      <label style="display:block;">
-        Screenshot (optional)
-        <input type="file" name="screenshot" accept="image/*">
-      </label>
-
-      <div class="feedback-actions">
-        <button type="submit">Submit</button>
-        <button type="button" id="feedback-cancel">Cancel</button>
-      </div>
-      <div id="feedback-status" class="feedback-status"></div>
-    </form>
-  </div>
-</div>
-
-
-    <!-- gallery sidebar -->
-    <style>
-        video {
-                width: 100%;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 8px;
-    transition: transform .3sease-in-out;
-        }
-    </style>
-    <div class="sidebar-overlay sidebar-gallery" id="sidebar-overlay-gallery">
-        <div id="sidebar-gallery">
-            <button class="sidebar-toggle" onclick="toggleSidebarGallery()">
-                <img src="/img/close-icon.svg" alt="Close">
-            </button>
-            <div class="sidebar_title">See travel themes</div>
-            <div class="gallery" id="gallery">
-                <div class="gallery-item">
-                  <video class="video" autoplay muted loop playsinline preload="metadata">
-                    <source src="/img/explore/explore_barcelona.mp4" type="video/mp4">
-Your browser does not support the video tag.                  </video>
-                  <div class="caption">
-                    <p>A 2-day museum and art tour in Barcelona</p>
-                  </div>
-                  <div class="add_theme">
-                    <img src="/img/addtochat_icon.svg">
-                  </div>
+            <div class="sidebar-overlay sidebar-feedback" id="sidebar-overlay-feedback">
+                <div id="sidebar-feedback">
+                    <div class="sidebar_title"> Feedback Form <button class="sidebar-toggle" onclick="toggleSidebarFeedback()">
+                            <img src="/img/close-icon.svg" alt="Close">
+                        </button>
+                    </div>
+                    <form id="feedback-form">
+                        <label> Type <select name="type" required>
+                                <option value="bug">Bug</option>
+                                <option value="feature">Feature Request</option>
+                                <option value="idea">Idea / Improvement</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </label>
+                        <label> Message <textarea name="message" rows="5" placeholder="Write the details..." required></textarea>
+                        </label>
+                        <label> Email (optional) <input type="email" name="userEmail" placeholder="So we can reach you back (optional)">
+                        </label>
+                        <label style="display:block;"> Screenshot (optional) <input type="file" name="screenshot" accept="image/*">
+                        </label>
+                        <div class="feedback-actions">
+                            <button type="submit">Submit</button>
+                            <button type="button" id="feedback-cancel">Cancel</button>
+                        </div>
+                        <div id="feedback-status" class="feedback-status"></div>
+                    </form>
                 </div>
-                <div class="gallery-item">
-                    <img class="video" src="/img/explore/explore_cappadocia.jpg">
-                    <div class="caption">
-                        <p>A 3-day nature and balloon tour in Cappadocia</p>
-                    </div>
-                    <div class="add_theme">
-                        <img src="/img/addtochat_icon.svg">
-                    </div>
-                </div>
-                <div class="gallery-item">
-                    <img class="video" src="/img/explore/explore_bali.jpg">
-                    <div class="caption">
-                        <p>Discover: 3 days in Bali</p>
-                    </div>
-                    <div class="add_theme">
-                        <img src="/img/addtochat_icon.svg">
-                    </div>
-                </div>
-
-
-                <div class="gallery-item">
-                  <video class="video" autoplay muted loop playsinline preload="metadata">
-                    <source src="/img/explore/explore_petra.mp4" type="video/mp4">
-Your browser does not support the video tag.                  </video>
-                  <div class="caption">
-                    <p>Search hidden treasures in Petra, Wadi Musa</p>
-                  </div>
-                  <div class="add_theme">
-                    <img src="/img/addtochat_icon.svg">
-                  </div>
-                </div>  
-                
-
-
-
-                <div class="gallery-item">
-                  <video class="video" autoplay muted loop playsinline preload="metadata">
-                    <source src="/img/explore/explore_antalya.mp4" type="video/mp4">
-Your browser does not support the video tag.                  </video>
-                  <div class="caption">
-                    <p>Sea and summer! One word: Antalya</p>
-                  </div>
-                  <div class="add_theme">
-                    <img src="/img/addtochat_icon.svg">
-                  </div>
-                </div>  
-                
-                <div class="gallery-item">
-                    <img class="video" src="/img/explore/explore_rio.jpg">
-                    <div class="caption">
-                        <p>Enjoy the beaches in Rio for 3 days</p>
-                    </div>
-                    <div class="add_theme">
-                        <img src="/img/addtochat_icon.svg">
-                    </div>
-                </div>   
-                            
-                <div class="gallery-item">
-                    <img class="video" src="/img/explore/explore_istanbul.jpg">
-                    <div class="caption">
-                        <p>Explore the historic peninsula in Istanbul for 2 days</p>
-                    </div>
-                    <div class="add_theme">
-                        <img src="/img/addtochat_icon.svg">
-                    </div>
-                </div> 
-
-                <div class="gallery-item">
-                  <video class="video" autoplay muted loop playsinline preload="metadata">
-                    <source src="/img/explore/explore_amsterdam.mp4" type="video/mp4">
-Your browser does not support the video tag.                  </video>
-                  <div class="caption">
-                    <p>A 3-day city tour in Amsterdam</p>
-                  </div>
-                  <div class="add_theme">
-                    <img src="/img/addtochat_icon.svg">
-                  </div>
-                </div>
-
-                <div class="gallery-item">
-                  <video class="video" autoplay muted loop playsinline preload="metadata">
-                    <source src="/img/explore/explore_pattaya.mp4" type="video/mp4">
-Your browser does not support the video tag.                  </video>
-                  <div class="caption">
-                    <p>Explore Pattaya beaches</p>
-                  </div>
-                  <div class="add_theme">
-                    <img src="/img/addtochat_icon.svg">
-                  </div>
-                </div>               
-               
-              
-
-                <div class="gallery-item">
-                    <img class="video" src="/img/explore/explore_kaleici.jpg">
-                    <div class="caption">
-                        <p>A weekend getaway in Kaleiçi, Antalya</p>
-                    </div>
-                    <div class="add_theme">
-                        <img src="/img/addtochat_icon.svg">
-                    </div>
-                </div>
-
-                 
-
-                <div class="gallery-item">
-                    <img class="video" src="/img/explore/explore_lima.jpg">
-                    <div class="caption">
-                        <p>A short stopover in Lima, the capital of Peru</p>
-                    </div>
-                    <div class="add_theme">
-                        <img src="/img/addtochat_icon.svg">
-                    </div>
-                </div> 
-
-                   
-
-                <div class="gallery-item">
-                  <video class="video" autoplay muted loop playsinline preload="metadata">
-                    <source src="/img/explore/explore_mardin.mp4" type="video/mp4">
-Your browser does not support the video tag.                  </video>
-                  <div class="caption">
-                    <p>A 2-day historical journey in Mardin</p>
-                  </div>
-                  <div class="add_theme">
-                    <img src="/img/addtochat_icon.svg">
-                  </div>
-                </div>
-
             </div>
-        </div>
-    </div>
-
-    <!-- trip sidebar -->
-    <div class="sidebar-overlay sidebar-trip" id="sidebar-overlay-trip">
+            <!-- gallery sidebar -->
+            <style>
+                video {
+                    width: 100%;
+                    height: 120px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    transition: transform .3sease-in-out;
+                }
+            </style>
+            <div class="sidebar-overlay sidebar-gallery" id="sidebar-overlay-gallery">
+                <div id="sidebar-gallery">
+                    <button class="sidebar-toggle" onclick="toggleSidebarGallery()">
+                        <img src="/img/close-icon.svg" alt="Close">
+                    </button>
+                    <div class="sidebar_title">See travel themes</div>
+                    <div class="gallery" id="gallery">
+                        <div class="gallery-item">
+                            <video class="video" autoplay muted loop playsinline preload="metadata">
+                                <source src="/img/explore/explore_barcelona.mp4" type="video/mp4"> Your browser does not support the video tag.
+                            </video>
+                            <div class="caption">
+                                <p>A 2-day museum and art tour in Barcelona</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img class="video" src="/img/explore/explore_cappadocia.jpg">
+                            <div class="caption">
+                                <p>A 3-day nature and balloon tour in Cappadocia</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img class="video" src="/img/explore/explore_bali.jpg">
+                            <div class="caption">
+                                <p>Discover: 3 days in Bali</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <video class="video" autoplay muted loop playsinline preload="metadata">
+                                <source src="/img/explore/explore_petra.mp4" type="video/mp4"> Your browser does not support the video tag.
+                            </video>
+                            <div class="caption">
+                                <p>Search hidden treasures in Petra, Wadi Musa</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <video class="video" autoplay muted loop playsinline preload="metadata">
+                                <source src="/img/explore/explore_antalya.mp4" type="video/mp4"> Your browser does not support the video tag.
+                            </video>
+                            <div class="caption">
+                                <p>Sea and summer! One word: Antalya</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img class="video" src="/img/explore/explore_rio.jpg">
+                            <div class="caption">
+                                <p>Enjoy the beaches in Rio for 3 days</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img class="video" src="/img/explore/explore_istanbul.jpg">
+                            <div class="caption">
+                                <p>Explore the historic peninsula in Istanbul for 2 days</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <video class="video" autoplay muted loop playsinline preload="metadata">
+                                <source src="/img/explore/explore_amsterdam.mp4" type="video/mp4"> Your browser does not support the video tag.
+                            </video>
+                            <div class="caption">
+                                <p>A 3-day city tour in Amsterdam</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <video class="video" autoplay muted loop playsinline preload="metadata">
+                                <source src="/img/explore/explore_pattaya.mp4" type="video/mp4"> Your browser does not support the video tag.
+                            </video>
+                            <div class="caption">
+                                <p>Explore Pattaya beaches</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img class="video" src="/img/explore/explore_kaleici.jpg">
+                            <div class="caption">
+                                <p>A weekend getaway in Kaleiçi, Antalya</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img class="video" src="/img/explore/explore_lima.jpg">
+                            <div class="caption">
+                                <p>A short stopover in Lima, the capital of Peru</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <video class="video" autoplay muted loop playsinline preload="metadata">
+                                <source src="/img/explore/explore_mardin.mp4" type="video/mp4"> Your browser does not support the video tag.
+                            </video>
+                            <div class="caption">
+                                <p>A 2-day historical journey in Mardin</p>
+                            </div>
+                            <div class="add_theme">
+                                <img src="/img/addtochat_icon.svg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- trip sidebar -->
+            <div class="sidebar-overlay sidebar-trip" id="sidebar-overlay-trip">
                 <div id="sidebar-trip">
                     <div class="sidebar_title">
-                        <div id="trip_title">Trip Plan</div>                 
+                        <div id="trip_title">Trip Plan</div>
                         <button class="sidebar-toggle" onclick="toggleSidebarTrip()">
                             <img src="/img/close-icon.svg" alt="Close">
                         </button>
@@ -444,508 +386,397 @@ Your browser does not support the video tag.                  </video>
                                 top: 22px;
                             }
                         </style>
-                        <div id="cart">  
+                        <div id="cart">
                             <div id="cart-items" class="cart-container">
                                 <div id="cart">
                                     <!-- Cart items will be added here dynamically -->
-                                </div> 
+                                </div>
                             </div>
                         </div>
-                       
                     </div>
                 </div>
             </div>
-
-
-
-    <!-- favorite places sidebar -->
-    <div class="sidebar-overlay sidebar-favorite-places" id="sidebar-overlay-favorite-places">
-        <div id="sidebar-favorite-places">
-            <div class="sidebar_title">My Places
-                <button class="sidebar-toggle" onclick="toggleSidebarFavoritePlaces()">
-                    <img src="/img/close-icon.svg" alt="Close">
-                </button>
-
-
-                <div id="favorite-places-panel"></div>
-<span id="main-query"></span>   
-
-                     
-            </div>
-        </div>
-    </div>
-
-
-    <!-- my trips sidebar -->
-    <div class="sidebar-overlay sidebar-mytrips" id="sidebar-overlay-mytrips">
-        <div id="sidebar-mytrips">
-            <div class="sidebar_title">My Trips
-                <button class="sidebar-toggle" onclick="toggleSidebarMyTrips()">
-                    <img src="/img/close-icon.svg" alt="Close">
-                </button>
-
-
-                <div id="my-trips-panel"></div>
-<span id="main-query"></span>
-            </div>
-        </div>
-    </div>
-
-
-
-
-
-    <!-- MiraAı Chat -->
-  
-    <div class="sidebar-overlay sidebar-login" id="sidebar-overlay-login">
-        <div id="sidebar-login">
-            <button class="sidebar-toggle" onclick="toggleSidebarLogin()">
-                <img src="/img/close-icon.svg" alt="Close">
-            </button>
-            <div class="sidebar_title">Chat with Mira!</div>
-
-            <div class="form-container">
-                            
-                <div id="login-form" class="form-content">
-                  
-                        <!-- AI Chat Sidebar/Box (Normal chat yapısına benzer) -->
-<div id="ai-chat-box">
-  <div id="ai-chat-messages"></div>
-  <div class="ai-input-wrapper">
-    <div class="chat-input-group">
-      <input type="text" id="ai-chat-input" placeholder="You can ask me anything about travel!">
-      <button id="ai-chat-send-btn">
-        <img src="/img/sendchat-icon.svg" alt="Send">
-      </button>
-    </div>
-  </div>
-</div>
-                       
-                 
-                    
+            <!-- favorite places sidebar -->
+            <div class="sidebar-overlay sidebar-favorite-places" id="sidebar-overlay-favorite-places">
+                <div id="sidebar-favorite-places">
+                    <div class="sidebar_title">My Places <button class="sidebar-toggle" onclick="toggleSidebarFavoritePlaces()">
+                            <img src="/img/close-icon.svg" alt="Close">
+                        </button>
+                        <div id="favorite-places-panel"></div>
+                        <span id="main-query"></span>
+                    </div>
                 </div>
-                
             </div>
-        </div>
-    </div>
-
-        <!-- updates -->
-    <div class="sidebar-overlay sidebar-updates" id="sidebar-overlay-updates">
-        <div id="sidebar-updates">
-            <div class="sidebar_title">
-                Updates
-                <button class="sidebar-toggle" onclick="toggleSidebarUpdates()">
-                    <img src="/img/close-icon.svg" alt="Close">
-                </button>
-                <div class="mytripsall">
-
-                    <div class="tripbox">
-                        <p class="date">Oct 17, 2025</p>                       
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>Food on the Route</span>
-                                <span class="custom-icon">+</span>
+            <!-- my trips sidebar -->
+            <div class="sidebar-overlay sidebar-mytrips" id="sidebar-overlay-mytrips">
+                <div id="sidebar-mytrips">
+                    <div class="sidebar_title">My Trips <button class="sidebar-toggle" onclick="toggleSidebarMyTrips()">
+                            <img src="/img/close-icon.svg" alt="Close">
+                        </button>
+                        <div id="my-trips-panel"></div>
+                        <span id="main-query"></span>
+                    </div>
+                </div>
+            </div>
+            <!-- MiraAı Chat -->
+            <div class="sidebar-overlay sidebar-login" id="sidebar-overlay-login">
+                <div id="sidebar-login">
+                    <button class="sidebar-toggle" onclick="toggleSidebarLogin()">
+                        <img src="/img/close-icon.svg" alt="Close">
+                    </button>
+                    <div class="sidebar_title">Chat with Mira!</div>
+                    <div class="form-container">
+                        <div id="login-form" class="form-content">
+                            <!-- AI Chat Sidebar/Box (Normal chat yapısına benzer) -->
+                            <div id="ai-chat-box">
+                                <div id="ai-chat-messages"></div>
+                                <div class="ai-input-wrapper">
+                                    <div class="chat-input-group">
+                                        <input type="text" id="ai-chat-input" placeholder="You can ask me anything about travel!">
+                                        <button id="ai-chat-send-btn">
+                                            <img src="/img/sendchat-icon.svg" alt="Send">
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                   🍝 Restaurant Module: Route-based restaurant search and add-to-trip action enabled by clicking on the map.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- updates -->
+            <div class="sidebar-overlay sidebar-updates" id="sidebar-overlay-updates">
+                <div id="sidebar-updates">
+                    <div class="sidebar_title"> Updates <button class="sidebar-toggle" onclick="toggleSidebarUpdates()">
+                            <img src="/img/close-icon.svg" alt="Close">
+                        </button>
+                        <div class="mytripsall">
+                            <div class="tripbox">
+                                <p class="date">Oct 17, 2025</p>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>Food on the Route</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> 🍝 Restaurant Module: Route-based restaurant search and add-to-trip action enabled by clicking on the map. </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tripbox">
+                                <p class="date">Oct 12, 2025</p>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>GPS data processing</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> 🛣️ Import GPS File: You can upload your GPX, TCX, FIT and KML files to the site via the module and make a travel plan based on the route. </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tripbox">
+                                <p class="date">Oct 9, 2025</p>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>Map Functions and Fav List</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p>🗺️ Start with map: Another way to create a trip. Click on a single point and see what happens. <br>
+                                            <br>📈 Elevation Segment: You can now access a detailed elevation profile by selecting an area from the scale bar. <br>
+                                            <br>🌟 Favorites: Under My Trips, you can add your favorite trips to your favorite list.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tripbox">
+                                <p class="date">Oct 1, 2025</p>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>Triptime AI Beta is online!</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> 🚀 Triptime AI: Now available with its first version! Under My Trips, you can view past trip plans, plan trips and days, create routes on the map and view elevation profiles, access transportation options, add locations with a category listing module, and add custom notes. <br>
+                                            <br>🧠 AI Trip Information: Analyzes the items in the trip plan, automatically generating AI information. <br>
+                                            <br>📤 Once the relevant date is assigned, the created trip plan can be quickly shared via WhatsApp and Instagram. A PDF file for each trip is available for download.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="tripbox">
+                                <div>Update Information</div>
+                                <p class="date">If you have something to share about upcoming improvements, please use the Feedback form. </p>
+                                <p class="date">
+                                    <strong>Important Note:</strong> Triptime AI is continuously evolving! Behind the scenes, we’re improving map accuracy, trip logic, and AI travel insights. The platform is currently in beta, and some features may change or be temporarily limited as we refine the experience. More features, transparency, and official updates will come with our full launch in late 2025.
                                 </p>
                             </div>
                         </div>
                     </div>
-
-
-                    <div class="tripbox">
-                        <p class="date">Oct 12, 2025</p>                       
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>GPS data processing</span>
-                                <span class="custom-icon">+</span>
+                </div>
+            </div>
+            <!-- privacy and terms -->
+            <div class="sidebar-overlay sidebar-privacyterms" id="sidebar-overlay-privacyterms">
+                <div id="sidebar-privacyterms">
+                    <div class="sidebar_title"> Privacy and Terms <button class="sidebar-toggle" onclick="toggleSidebarPrivacyTerms()">
+                            <img src="/img/close-icon.svg" alt="Close">
+                        </button>
+                        <div class="mytripsall">
+                            <div class="tripbox">
+                                <p class="date">1. PRIVACY AND DATA POLICY</p>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>1.1. Purpose and Scope</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> This Privacy and Data Policy explains how Triptime AI ("platform," "we," or "project") handles and protects user data. Triptime AI provides AI-powered travel recommendations and trip list management services. The platform currently does not require official membership or payments. User data is stored only on their own device. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>1.2. Collected Data and Sources</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> Trip lists and user preferences are stored locally on the user's device. Recommendations are generated using the <strong>llama 3.2:1b</strong> model and open-source software when possible. Location data is optional; users can activate it to see their position on the map or leave it off. Cookies or tracking are minimal and only used if necessary for platform functionality. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>1.3. Purposes of Data Usage</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> Data is used solely to provide travel planning features and AI-generated recommendations. User data is never shared with third parties or transferred externally. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>1.4. Data Security</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> All user data is stored on their device and cannot be accessed by the platform. Users can view, edit, or delete their data at any time. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>1.5. Policy Changes</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> This policy may be updated due to platform improvements or legal requirements. Changes will be announced on the website and take effect on the date published. </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                   🛣️ Import GPS File: You can upload your GPX, TCX, FIT and KML files to the site via the module and make a travel plan based on the route.
+                            <div class="tripbox">
+                                <p class="date">2. TERMS OF USE</p>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.1. Introduction and Definitions</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> These Terms govern the use of Triptime AI's AI-powered travel planning services. Users plan trips according to their own preferences. Official membership or payment systems are not required at this time. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.2. Service Description</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> Triptime AI allows users to create and visualize travel plans based on destination and duration, using a local trip list stored on the user's device. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.3. Membership and User Data</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> The platform is free to use. Users manage their trip lists locally and can freely create and edit their travel plans. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.4. User Responsibilities</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> Users are responsible for how they use the platform and manage their own data. The platform does not interfere with or access user data. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.5. Trip Lists and Personalized Services</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> The platform provides AI-generated recommendations. Users are fully responsible for planning and managing their trips. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.6. Responsibility and Usage</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> Triptime AI does not guarantee the accuracy or completeness of recommendations. Users plan trips based on their own judgment and preferences. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.7. Intellectual Property</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> All content, software, design, and graphics on the platform belong to Triptime AI. Users may freely use their own trip data stored on their device. </p>
+                                    </div>
+                                </div>
+                                <div class="custom-accordion">
+                                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                                        <span>2.8. Changes to Terms</span>
+                                        <span class="custom-icon">+</span>
+                                    </div>
+                                    <div class="custom-accordion-content">
+                                        <p> Triptime AI may update these Terms of Use. Updates are announced on the website and apply to continued use of the platform. </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="tripbox">
+                                <p class="date">Last updated: 26.02.2025</p>
+                                <p class="date">CONTACT AND SUPPORT</p>
+                                <p class="date">For questions about our privacy policy or data processing, please contact us:</p>
+                                <div>Email: info@triptime.ai</div>
+                                <div>Web: www.triptime.ai</div>
+                                <p class="date">
+                                    <strong>Important Note:</strong> These texts are prepared to provide a transparent and reliable service during our current phase (without official company status). Updates will be made upon formal company establishment.
                                 </p>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="tripbox">
-                        <p class="date">Oct 9, 2025</p>                       
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>Map Functions and Fav List</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>🗺️ Start with map: Another way to create a trip. Click on a single point and see what happens.
-<br><br>📈 Elevation Segment: You can now access a detailed elevation profile by selecting an area from the scale bar.<br><br>🌟 Favorites: Under My Trips, you can add your favorite trips to your favorite list. 
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="tripbox">
-                        <p class="date">Oct 1, 2025</p>                       
-                        <div class="custom-accordion">
-                            <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                                <span>Triptime AI Beta is online!</span>
-                                <span class="custom-icon">+</span>
-                            </div>
-                            <div class="custom-accordion-content">
-                                <p>
-                                   🚀 Triptime AI: Now available with its first version! Under My Trips, you can view past trip plans, plan trips and days, create routes on the map and view elevation profiles, access transportation options, add locations with a category listing module, and add custom notes. 
-<br><br>🧠 AI Trip Information: Analyzes the items in the trip plan, automatically generating AI information. <br><br>📤 Once the relevant date is assigned, the created trip plan can be quickly shared via WhatsApp and Instagram. A PDF file for each trip is available for download.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-                    <div class="tripbox">
-                        <div>Update Information</div>
-                       <p class="date">If you have something to share about upcoming improvements, please use the Feedback form.
-</p>                        <p class="date">
-                            <strong>Important Note:</strong>
-                            Triptime AI is continuously evolving! Behind the scenes, we’re improving map accuracy, trip logic, and AI travel insights. The platform is currently in beta, and some features may change or be temporarily limited as we refine the experience. More features, transparency, and official updates will come with our full launch in late 2025.
-
-
-                        </p>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
-
-
-
-<!-- privacy and terms -->
-<div class="sidebar-overlay sidebar-privacyterms" id="sidebar-overlay-privacyterms">
-    <div id="sidebar-privacyterms">
-        <div class="sidebar_title">
-            Privacy and Terms
-            <button class="sidebar-toggle" onclick="toggleSidebarPrivacyTerms()">
-                <img src="/img/close-icon.svg" alt="Close">
-            </button>
-            <div class="mytripsall">
-                <div class="tripbox">
-                    <p class="date">1. PRIVACY AND DATA POLICY</p>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>1.1. Purpose and Scope</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                This Privacy and Data Policy explains how Triptime AI ("platform," "we," or "project") handles and protects user data. Triptime AI provides AI-powered travel recommendations and trip list management services. The platform currently does not require official membership or payments. User data is stored only on their own device.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>1.2. Collected Data and Sources</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                Trip lists and user preferences are stored locally on the user's device.  
-                                Recommendations are generated using the <strong>llama 3.2:1b</strong> model and open-source software when possible.  
-                                Location data is optional; users can activate it to see their position on the map or leave it off.  
-                                Cookies or tracking are minimal and only used if necessary for platform functionality.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>1.3. Purposes of Data Usage</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                Data is used solely to provide travel planning features and AI-generated recommendations. User data is never shared with third parties or transferred externally.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>1.4. Data Security</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                All user data is stored on their device and cannot be accessed by the platform. Users can view, edit, or delete their data at any time.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>1.5. Policy Changes</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                This policy may be updated due to platform improvements or legal requirements. Changes will be announced on the website and take effect on the date published.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="tripbox">
-                    <p class="date">2. TERMS OF USE</p>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.1. Introduction and Definitions</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                These Terms govern the use of Triptime AI's AI-powered travel planning services. Users plan trips according to their own preferences. Official membership or payment systems are not required at this time.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.2. Service Description</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                Triptime AI allows users to create and visualize travel plans based on destination and duration, using a local trip list stored on the user's device.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.3. Membership and User Data</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                The platform is free to use. Users manage their trip lists locally and can freely create and edit their travel plans.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.4. User Responsibilities</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                Users are responsible for how they use the platform and manage their own data. The platform does not interfere with or access user data.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.5. Trip Lists and Personalized Services</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                The platform provides AI-generated recommendations. Users are fully responsible for planning and managing their trips.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.6. Responsibility and Usage</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                Triptime AI does not guarantee the accuracy or completeness of recommendations. Users plan trips based on their own judgment and preferences.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.7. Intellectual Property</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                All content, software, design, and graphics on the platform belong to Triptime AI. Users may freely use their own trip data stored on their device.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="custom-accordion">
-                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                            <span>2.8. Changes to Terms</span>
-                            <span class="custom-icon">+</span>
-                        </div>
-                        <div class="custom-accordion-content">
-                            <p>
-                                Triptime AI may update these Terms of Use. Updates are announced on the website and apply to continued use of the platform.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <hr>
-                <div class="tripbox">
-                    <p class="date">Last updated: 26.02.2025</p>
-                    <p class="date">CONTACT AND SUPPORT</p>
-                    <p class="date">For questions about our privacy policy or data processing, please contact us:</p>
-                    <div>Email: info@triptime.ai</div>
-                    <div>Web: www.triptime.ai</div>
-                    <p class="date">
-                        <strong>Important Note:</strong>
-                        These texts are prepared to provide a transparent and reliable service during our current phase (without official company status). Updates will be made upon formal company establishment.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-</section>
-    </div>
-
     <div id="main-welcome">
-<section id="tt-welcome" class="content-section active">
-    <div class="fixed-container">
-
-
-            <!-- BURAYA EKLE -->
-<div id="loading-panel" class="loading-panel" style="display:none;">
-  <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
-
-  <div class="loading-text">
-    <h2 id="loading-message">Analyzing your request...</h2>
-    <p>Mira is preparing your trip plan, please wait!</p> 
-  </div>
-</div>
-    <!-- BURAYA KADAR -->
- 
-
-        <div class="cw">
-           
-   <div class="circle-container">
-   <video
-    id="circleVideo"
-    class="circle-video"
-    autoplay
-    loop
-    muted
-    playsinline
-    preload="auto"
-    onloadedmetadata="this.currentTime = 0; this.play();"
->
-    <source src="/img/intro.webm" type="video/webm">
-    <source src="/img/intro.mp4" type="video/mp4">
-</video>
-<button class="sound-toggle" onclick="toggleSound()">
-    <img src="/img/mic_mute.svg" class="sound-icon" alt="">
-</button>
-</div>
-
-
-
-
-
-            <h1>Hello, <span>I'm Mira!</span> <img src="/img/mira-chat.gif"></h1>
-            <div id="welcome-content">
-                <p id="welcome-text">With Triptime AI, I help you build travel routes and suggest places to discover. Get ready for an extraordinary holiday plan!</p>
-                <div style="gap: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
-                    <img src="/img/step1.gif" style="width: 40px; height: 40px;">
-                    ..............
-                    <img src="/img/step2.gif" style="width: 40px; height: 40px;">
-                    ..............
-                    <img src="/img/step3.gif" style="width: 40px; height: 40px;">
+        <section id="tt-welcome" class="content-section active">
+            <div class="fixed-container">
+                <!-- BURAYA EKLE -->
+                <div id="loading-panel" class="loading-panel" style="display:none;">
+                    <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
+                    <div class="loading-text">
+                        <h2 id="loading-message">Analyzing your request...</h2>
+                        <p>Mira is preparing your trip plan, please wait!</p>
+                    </div>
                 </div>
-
+                <!-- BURAYA KADAR -->
+                <div class="cw">
+                    <div class="circle-container">
+                        <video id="circleVideo" class="circle-video" autoplay loop muted playsinline preload="auto" onloadedmetadata="this.currentTime = 0; this.play();">
+                            <source src="/img/intro.webm" type="video/webm">
+                            <source src="/img/intro.mp4" type="video/mp4">
+                        </video>
+                        <button class="sound-toggle" onclick="toggleSound()">
+                            <img src="/img/mic_mute.svg" class="sound-icon" alt="">
+                        </button>
+                    </div>
+                    <h1>Hello, <span>I'm Mira!</span>
+                        <img src="/img/mira-chat.gif">
+                    </h1>
+                    <div id="welcome-content">
+                        <p id="welcome-text">With Triptime AI, I help you build travel routes and suggest places to discover. Get ready for an extraordinary holiday plan!</p>
+                        <div style="gap: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                            <img src="/img/step1.gif" style="width: 40px; height: 40px;"> .............. <img src="/img/step2.gif" style="width: 40px; height: 40px;"> .............. <img src="/img/step3.gif" style="width: 40px; height: 40px;">
+                        </div>
+                    </div>
+                </div>
             </div>
+        </section>
+        <!-- Planner map (Start with map sonrası görünür). Eğer zaten benzeri varsa bu bloğu ekleme. -->
+        <div id="planner-map-wrapper" style="display:none; width:100%; height:420px; border:1px solid #ddd; border-radius:8px; margin:12px 0; position:relative;">
+            <div id="planner-map" style="width:100%; height:100%;"></div>
+            <div id="planner-map-hint" style="position:absolute; left:8px; top:8px; background:rgba(255,255,255,.85); padding:6px 10px; border-radius:6px; font-size:12px; line-height:1.3;"> Click the map to add points. <br> Add at least 2 points to see the route & elevation. </div>
         </div>
+        <section id="tt-about-us" class="content-section">
+            <div class="section-title">Triptime AI: AI-Powered Travel Planning Platform</div>
+            <p>Planning a trip, deciding on places to visit, and organizing activities can be a time-consuming and complex process. At Triptime AI, we make this process easy and enjoyable for you. With our AI-powered system, all you need to do is <span class="highlight">tell us your destination, the time you have for your trip, and the type of vacation you want</span>! </p>
+            <div class="section-title">What is Triptime AI?</div>
+            <p>Triptime AI is an AI-based platform that simplifies travel planning. It analyzes the options provided by Google and presents them to travelers. Going far beyond a standard trip plan, it responds to all a traveler's needs within seconds. This part of our system has already been completed, and we are actively working to provide the best travel combinations for our users. In the near future, you will see new features covering every stage of your travel planning. <br>
+                <br> Thanks to our AI-powered recommendations, you can make the most of your time and enjoy your trip without worrying about the details. <br>
+                <br>One of our top priorities is to enhance user experience. Our user-friendly interface allows you to effortlessly create your travel plan through our platform.
+            </p>
+            <div class="section-title">Upcoming Features</div>
+            <p>Triptime AI will not just be a travel planning platform; it will evolve into a comprehensive system where you can find everything related to travel in one place.</p>
+            <ul class="list">
+                <li>
+                    <span class="highlight">Hotel Booking System:</span> We will offer users the opportunity to book hotels at the best prices.
+                </li>
+                <li>
+                    <span class="highlight">Flight Ticket Listings:</span> Users will be able to view the most suitable flight options for their travel routes.
+                </li>
+                <li>
+                    <span class="highlight">Activities and Tours:</span> They will be able to easily book popular tourist activities and local experiences.
+                </li>
+                <li>
+                    <span class="highlight">Car Rental Options:</span> We will provide car rental services to meet your travel needs.
+                </li>
+            </ul>
+            <div class="section-title">Vision</div>
+            <p>Triptime AI aims to go beyond being just a travel planning tool and become a <span class="highlight">travel ecosystem</span> that meets the needs of travelers. <br>
+                <br>We will continuously integrate new technologies and update our system to ensure the best user experience. Every day, we strive to offer a more advanced platform. <br> In the short term, we will further develop our AI algorithms to provide users with the most suitable travel plans. In the long term, we aim to make Triptime AI a globally used platform by millions of travelers.
+            </p>
+            <div class="section-title">Open to Investment and Strategic Partnerships!</div>
+            <p>To achieve great goals, we are open to investment opportunities and collaborations that will bring our innovative ideas to life. We believe in the great potential of our project in the travel technology sector. <br>
+                <br>Triptime AI is promising and ready to start a new era in travel planning! <br>
+                <br>The travel industry is a rapidly digitalizing and continuously growing field. Triptime AI aims to take a leading role in this transformation. If you would like to be part of this journey, do not hesitate to contact us!
+            </p>
+            <br>
+            <div class="footer">
+                <strong>Triptime AI</strong> | All Rights Reserved.
+            </div>
+        </section>
     </div>
-</section>
-
-<!-- Planner map (Start with map sonrası görünür). Eğer zaten benzeri varsa bu bloğu ekleme. -->
-<div id="planner-map-wrapper" style="display:none; width:100%; height:420px; border:1px solid #ddd; border-radius:8px; margin:12px 0; position:relative;">
-  <div id="planner-map" style="width:100%; height:100%;"></div>
-  <div id="planner-map-hint" style="position:absolute; left:8px; top:8px; background:rgba(255,255,255,.85); padding:6px 10px; border-radius:6px; font-size:12px; line-height:1.3;">
-    Click the map to add points.<br>
-    Add at least 2 points to see the route & elevation.
-  </div>
-</div>
-
-
-<section id="tt-about-us" class="content-section">
-    <div class="section-title">Triptime AI: AI-Powered Travel Planning Platform</div>
-    <p>Planning a trip, deciding on places to visit, and organizing activities can be a time-consuming and complex process. At Triptime AI, we make this process easy and enjoyable for you. With our AI-powered system, all you need to do is <span class="highlight">tell us your destination, the time you have for your trip, and the type of vacation you want</span>!</p>
-
-    <div class="section-title">What is Triptime AI?</div>
-    <p>Triptime AI is an AI-based platform that simplifies travel planning. It analyzes the options provided by Google and presents them to travelers. Going far beyond a standard trip plan, it responds to all a traveler's needs within seconds. This part of our system has already been completed, and we are actively working to provide the best travel combinations for our users. In the near future, you will see new features covering every stage of your travel planning.<br><br> Thanks to our AI-powered recommendations, you can make the most of your time and enjoy your trip without worrying about the details.<br><br>One of our top priorities is to enhance user experience. Our user-friendly interface allows you to effortlessly create your travel plan through our platform.</p>
-
-    <div class="section-title">Upcoming Features</div>
-    <p>Triptime AI will not just be a travel planning platform; it will evolve into a comprehensive system where you can find everything related to travel in one place.</p>
-    <ul class="list">
-        <li>
-            <span class="highlight">Hotel Booking System:</span> We will offer users the opportunity to book hotels at the best prices.
-        </li>
-        <li>
-            <span class="highlight">Flight Ticket Listings:</span> Users will be able to view the most suitable flight options for their travel routes.
-        </li>
-        <li>
-            <span class="highlight">Activities and Tours:</span> They will be able to easily book popular tourist activities and local experiences.
-        </li>
-        <li>
-            <span class="highlight">Car Rental Options:</span> We will provide car rental services to meet your travel needs.
-        </li>
-    </ul>
-
-    <div class="section-title">Vision</div>
-    <p>Triptime AI aims to go beyond being just a travel planning tool and become a <span class="highlight">travel ecosystem</span> that meets the needs of travelers.<br><br>We will continuously integrate new technologies and update our system to ensure the best user experience. Every day, we strive to offer a more advanced platform.<br> In the short term, we will further develop our AI algorithms to provide users with the most suitable travel plans. In the long term, we aim to make Triptime AI a globally used platform by millions of travelers.</p>
-
-    <div class="section-title">Open to Investment and Strategic Partnerships!</div>
-    <p>To achieve great goals, we are open to investment opportunities and collaborations that will bring our innovative ideas to life. We believe in the great potential of our project in the travel technology sector.<br><br>Triptime AI is promising and ready to start a new era in travel planning!<br><br>The travel industry is a rapidly digitalizing and continuously growing field. Triptime AI aims to take a leading role in this transformation. If you would like to be part of this journey, do not hesitate to contact us!</p>  <br>
-    <div class="footer">
-        <strong>Triptime AI</strong> | All Rights Reserved.
-    </div>
-</section>
-    </div> 
-
-
     <div id="main-chat">
         <section id="tt-chat">
-    <div id="chat-container">
-        <div id="chat-box">
-            <div id="typing-indicator" class="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
+            <div id="chat-container">
+                <div id="chat-box">
+                    <div id="typing-indicator" class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="input-wrapper">
+                    <div class="chat-input-group">
+                        <input type="text" id="user-input" placeholder="Just specify a location and duration!">
+                        <button id="send-button">
+                            <img src="/img/sendchat-icon.svg" alt="Send">
+                        </button>
+                    </div>
+                    <div id="suggestions" class="tag-container"></div>
+                    <div class="canonical-preview" id="canonical-preview" style="display:none;"></div>
+                </div>
             </div>
-        </div>
-        <div class="input-wrapper">
-            <div class="chat-input-group">
-                <input type="text" id="user-input" placeholder="Just specify a location and duration!">
-                <button id="send-button">
-                    <img src="/img/sendchat-icon.svg" alt="Send">
-                </button>
-
-            </div>
-            <div id="suggestions" class="tag-container"></div>
-            <div class="canonical-preview" id="canonical-preview" style="display:none;"></div>
-
-        </div>
+        </section>
     </div>
-</section>
-    </div> 
-
     <!-- PDF & Canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-
-<script src="/js/pdf_download.js?v=__BUILD__" defer></script>
-<script src="/js/sidebar_change.js?v=__BUILD__" defer></script>
-<script src="/js/my_location.js?v=__BUILD__" defer></script>
-<script src="/js/local_storage.js?v=__BUILD__" defer></script>
-<script src="/js/calendar.js?v=__BUILD__" defer></script>
-<script src="/js/share.js?v=__BUILD__" defer></script>
-<script src="/js/route-importer.js?v=__BUILD__" defer></script>
-<script src="/js/type_writer_ai.js?v=__BUILD__" defer></script>
-<script src="/js/nearby_ai.js?v=__BUILD__" defer></script>
-<script src="/js/my_places.js?v=__BUILD__" defer></script>
-<script src="/js/circle-video.js?v=__BUILD__" defer></script>    
-
+    <script src="/js/pdf_download.js?v=__BUILD__" defer></script>
+    <script src="/js/sidebar_change.js?v=__BUILD__" defer></script>
+    <script src="/js/my_location.js?v=__BUILD__" defer></script>
+    <script src="/js/local_storage.js?v=__BUILD__" defer></script>
+    <script src="/js/calendar.js?v=__BUILD__" defer></script>
+    <script src="/js/share.js?v=__BUILD__" defer></script>
+    <script src="/js/route-importer.js?v=__BUILD__" defer></script>
+    <script src="/js/type_writer_ai.js?v=__BUILD__" defer></script>
+    <script src="/js/nearby_ai.js?v=__BUILD__" defer></script>
+    <script src="/js/my_places.js?v=__BUILD__" defer></script>
+    <script src="/js/circle-video.js?v=__BUILD__" defer></script>
 </body>
 </html>
