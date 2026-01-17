@@ -120,21 +120,6 @@ function hideGlobalLoading() {
     }
 }
 
-Harika abi, artık photo_day_slider.js içindeki asıl motorun renderDayCollage olduğunu bildiğimize göre, paylaştığın bu koddaki hatalı çağırmayı (fetchPhotosForDay) düzeltip işi bitirelim.
-
-Senin share.js dosyanı, az önce attığın slider dosyasındaki fonksiyon isimlerine tam uyumlu hale getirdim. Aşağıdaki bloğu olduğu gibi kopyalayıp dosyanı güncelle:
-
-JavaScript
-
-/**
- * share.js - THE FINAL ULTIMATE VERSION
- * Created with triptime.ai!
- */
-
-// --- 1. MODERN LOADING UI --- (Bu kısımlar aynı kalıyor)
-function showGlobalLoading() { /* ... loader kodların ... */ }
-function hideGlobalLoading() { /* ... loader kodların ... */ }
-
 // --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
