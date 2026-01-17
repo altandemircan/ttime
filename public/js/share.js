@@ -41,83 +41,105 @@ function hideGlobalLoading() {
     }
 }
 
-// --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ (v1 & v2) ---
+/**
+ * share.js - THE AI ENABLED ULTIMATE VERSION
+ * Created with triptime.ai!
+ */
+
+// ... [showGlobalLoading ve hideGlobalLoading kısımları aynı kalıyor] ...
+
+// --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const v1Raw = params.get('v1');
     const v2Raw = params.get('v2');
     
-    if (!v1Raw && !v2Raw) return;
+    if (!v2Raw) return; // v1 desteğini istersen tutabilirsin ama v2 ana odağımız
 
     showGlobalLoading();
 
     try {
-        let tripData = { n: "Trip Plan", ai: "" };
+        const decoded = decodeURIComponent(v2Raw);
+        // Yeni format: Başlık | Öğeler | AI_Verisi (Summary~Tip~Highlight)
+        const [title, itemsStr, aiStr] = decoded.split('|');
+        
+        // 1. Şehir Planı Verileri
+        const rawItems = itemsStr.split('*');
+        window.cart = rawItems.map(str => {
+            const p = str.split(',');
+            if (p.length < 3) return null;
+            return {
+                name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
+                location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
+                day: parseInt(p[3]) || 1, image: "default", category: "Place"
+            };
+        }).filter(item => item !== null);
 
-        if (v2Raw) {
-            const decoded = decodeURIComponent(v2Raw);
-            const [title, itemsStr] = decoded.split('|');
-            tripData.n = title;
-            const rawItems = itemsStr.split('*');
-            window.cart = rawItems.map(str => {
-                const p = str.split(',');
-                if (p.length < 3) return null;
-                const latVal = parseFloat(p[1]);
-                const lngVal = parseFloat(p[2]);
-                // Güvenlik: Koordinat 0 veya NaN ise ekleme
-                if (!latVal || !lngVal || isNaN(latVal) || isNaN(lngVal)) return null;
-                return {
-                    name: p[0], lat: latVal, lng: lngVal,
-                    location: { lat: latVal, lng: lngVal },
-                    day: parseInt(p[3]) || 1, 
-                    image: p[4] === "1" ? "default" : "", 
-                    category: "Place"
-                };
-            }).filter(item => item !== null);
-        } else if (v1Raw) {
-            const decodedV1 = JSON.parse(decodeURIComponent(v1Raw));
-            tripData = decodedV1;
-            const rawItems = (tripData.items || "").split('*');
-            window.cart = rawItems.map(str => {
-                const parts = str.split('|');
-                if (parts.length < 3) return null;
-                return {
-                    name: parts[0], lat: parseFloat(parts[1]), lng: parseFloat(parts[2]),
-                    location: { lat: parseFloat(parts[1]), lng: parseFloat(parts[2]) },
-                    day: parseInt(parts[3]) || 1, image: parts[4] === "no-img" ? "" : decodeURIComponent(parts[4]), category: "Place"
-                };
-            }).filter(item => item !== null);
+        // 2. AI Verisi Varsa Yakala (Kritik Nokta!)
+        if (aiStr) {
+            const [s, t, h] = aiStr.split('~');
+            window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
         }
 
-        // Temiz veriyi kaydet
+        // UI Güncelleme
         localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = tripData.n;
+        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
         
-        const welcomeSection = document.getElementById('tt-welcome');
-        if (welcomeSection) { welcomeSection.style.display = 'block'; welcomeSection.classList.add('active'); }
+        // ... [updateCart ve hideGlobalLoading kısımları aynı] ...
 
-        let attempts = 0;
-        const checkReady = setInterval(() => {
-            attempts++;
-            if (typeof updateCart === 'function' || attempts > 40) {
-                clearInterval(checkReady);
-                try {
-                    if (typeof updateCart === 'function') updateCart();
-                    const overlay = document.getElementById('sidebar-overlay-trip');
-                    if (overlay) overlay.classList.add('open');
-                } catch(e) {}
-                
-                setTimeout(() => {
-                    hideGlobalLoading();
-                    if (window.map) window.map.invalidateSize();
-                }, 1200);
+        // Sayfa tamamen hazır olunca AI kutusunu bas
+        const checkAiReady = setInterval(() => {
+            if (typeof insertTripAiInfo === 'function' && window.sharedAiStaticInfo) {
+                clearInterval(checkAiReady);
+                // Statik veriyi bas, tekrar fetch yapmasın!
+                insertTripAiInfo(null, window.sharedAiStaticInfo);
             }
-        }, 300);
+        }, 500);
+
     } catch (e) { 
         console.error("Critical Load Error:", e);
         hideGlobalLoading();
     }
 });
+
+// --- 3. PAYLAŞIM FONKSİYONLARI ---
+
+function createOptimizedLongLink() {
+    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
+    
+    // 1. Durakları Paketle
+    const items = (window.cart || []).map(item => {
+        const name = item.name.replace(/[|*~,]/g, ''); 
+        const lat = parseFloat(item.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || 0).toFixed(4);
+        return `${name},${lat},${lng},${item.day || 1},0`;
+    }).join('*');
+
+    // 2. AI Verisini Paketle (Summary~Tip~Highlight)
+    let aiPart = "";
+    const aiData = window.lastTripAIInfo; // insertTripAiInfo içindeki global değişken
+    if (aiData && aiData.summary) {
+        const s = (aiData.summary || "").replace(/[|*~]/g, '');
+        const t = (aiData.tip || "").replace(/[|*~]/g, '');
+        const h = (aiData.highlight || "").replace(/[|*~]/g, '');
+        aiPart = `|${s}~${t}~${h}`;
+    }
+
+    // URL'yi oluştur: v2=Başlık | Duraklar | AI_Verisi
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart)}`;
+}
+
+// ... [shareOnWhatsApp fonksiyonu aynı kalsın, createOptimizedLongLink'i otomatik kullanacak zaten] ...
+async function generateShareableText() {
+    const longUrl = createOptimizedLongLink();
+    let shortUrl = longUrl;
+    try {
+        const apiTarget = `https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`;
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
+        const data = await res.json();
+        if (data.contents && data.contents.startsWith('http')) shortUrl = data.contents;
+    } catch(e) {}
+    return `Check out my trip plan: ${shortUrl}\n\nCreated with triptime.ai!`;
+}
 
 // --- 3. PAYLAŞIM FONKSİYONLARI ---
 async function shareOnWhatsApp() {
@@ -156,26 +178,4 @@ async function shareOnWhatsApp() {
 
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-}
-function createOptimizedLongLink() {
-    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*,]/g, '');
-    const items = (window.cart || []).map(item => {
-        const name = item.name.replace(/[|*,]/g, ''); 
-        const lat = parseFloat(item.lat || (item.location && item.location.lat) || 0).toFixed(4);
-        const lng = parseFloat(item.lng || (item.location && item.location.lng) || 0).toFixed(4);
-        return `${name},${lat},${lng},${item.day || 1},0`;
-    }).join('*');
-    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items)}`;
-}
-
-async function generateShareableText() {
-    const longUrl = createOptimizedLongLink();
-    let shortUrl = longUrl;
-    try {
-        const apiTarget = `https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`;
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
-        const data = await res.json();
-        if (data.contents && data.contents.startsWith('http')) shortUrl = data.contents;
-    } catch(e) {}
-    return `Check out my trip plan: ${shortUrl}\n\nCreated with triptime.ai!`;
 }
