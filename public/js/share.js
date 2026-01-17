@@ -109,22 +109,29 @@ function createOptimizedLongLink() {
     // 1. Durakları Paketle
     const items = (window.cart || []).map(item => {
         const name = item.name.replace(/[|*~,]/g, ''); 
-        const lat = parseFloat(item.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || 0).toFixed(4);
+        
+        // KRİTİK DÜZELTME: Koordinatları farklı ihtimallere göre güvenli oku
+        const latVal = item.lat || (item.location && item.location.lat) || 0;
+        const lngVal = item.lng || (item.location && item.location.lng) || 0;
+        
+        const lat = parseFloat(latVal).toFixed(4);
+        const lng = parseFloat(lngVal).toFixed(4);
+        
         return `${name},${lat},${lng},${item.day || 1},0`;
     }).join('*');
 
-    // 2. AI Verisini Paketle (Summary~Tip~Highlight)
+    // 2. AI Verisini Paketle
     let aiPart = "";
-    const aiData = window.lastTripAIInfo; // insertTripAiInfo içindeki global değişken
-    if (aiData && aiData.summary) {
-        const s = (aiData.summary || "").replace(/[|*~]/g, '');
-        const t = (aiData.tip || "").replace(/[|*~]/g, '');
-        const h = (aiData.highlight || "").replace(/[|*~]/g, '');
+    // Önce global değişkeni, o yoksa DOM'daki metni kontrol et
+    const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
+    
+    if (aiSummaryText) {
+        const s = aiSummaryText.replace(/[|*~]/g, '').trim();
+        const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
+        const h = (window.lastTripAIInfo?.highlight || document.getElementById('ai-highlight')?.innerText || "").replace(/[|*~]/g, '').trim();
         aiPart = `|${s}~${t}~${h}`;
     }
 
-    // URL'yi oluştur: v2=Başlık | Duraklar | AI_Verisi
     return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart)}`;
 }
 
