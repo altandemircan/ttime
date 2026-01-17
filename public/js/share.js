@@ -39,87 +39,83 @@ function showGlobalLoading() {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: #ffffff; /* Arkadaki yapıyı tamamen kapatmak için solid beyaz veya çok hafif gri */
-                    z-index: 999999;
+                    background: #f8f9fa; /* Hafif kırık beyaz, arkadaki karmaşayı %100 kapatır */
+                    z-index: 9999999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                    font-family: 'Inter', -apple-system, sans-serif;
                 }
 
                 .loader-card {
-                    background: #fff;
-                    padding: 30px 40px;
-                    border-radius: 20px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                    background: #ffffff;
+                    padding: 40px;
+                    border-radius: 24px;
+                    box-shadow: 0 15px 35px rgba(138, 74, 243, 0.1), 0 5px 15px rgba(0,0,0,0.05);
                     text-align: center;
-                    width: 90%;
-                    max-width: 350px;
-                    border: 1px solid #eee;
+                    width: 85%;
+                    max-width: 380px;
+                    border: 1px solid rgba(138, 74, 243, 0.1);
+                    animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
                 }
 
                 .loader-header {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 10px;
-                    margin-bottom: 25px;
+                    gap: 12px;
+                    margin-bottom: 30px;
                 }
 
                 .loader-logo-static {
-                    width: 30px;
-                    height: 30px;
+                    width: 32px;
+                    height: 32px;
                 }
 
                 .loader-brand {
                     font-weight: 800;
-                    font-size: 20px;
-                    color: #222;
-                    letter-spacing: -0.5px;
+                    font-size: 22px;
+                    color: #1a1a1a;
+                    letter-spacing: -0.03em;
                 }
 
-                /* Progress Bar Tasarımı */
                 .progress-container {
                     width: 100%;
-                    height: 6px;
-                    background: #f0f0f0;
+                    height: 8px;
+                    background: #eeeef0;
                     border-radius: 10px;
                     overflow: hidden;
-                    margin-bottom: 15px;
+                    margin-bottom: 20px;
                     position: relative;
                 }
 
                 .progress-bar-fill {
-                    width: 40%;
+                    width: 45%;
                     height: 100%;
-                    background: linear-gradient(90deg, #ff385c, #e61e4d);
+                    background: linear-gradient(90deg, #8a4af3, #b084f7); /* İstediğin mor tonu */
                     border-radius: 10px;
                     position: absolute;
-                    left: -40%;
-                    animation: loading-slide 1.5s infinite ease-in-out;
+                    left: -45%;
+                    animation: loading-slide 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 .loading-text {
                     font-size: 15px;
-                    color: #666;
+                    color: #555;
                     margin: 0;
                     font-weight: 500;
+                    line-height: 1.4;
                 }
 
                 @keyframes loading-slide {
-                    0% { left: -40%; }
-                    50% { left: 40%; width: 60%; }
-                    100% { left: 100%; }
+                    0% { left: -45%; width: 30%; }
+                    50% { left: 30%; width: 60%; }
+                    100% { left: 100%; width: 30%; }
                 }
 
-                /* Hafif bir giriş animasyonu */
-                .loader-card {
-                    animation: fadeInUp 0.5s ease-out;
-                }
-
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
+                @keyframes cardEntrance {
+                    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
                 }
             </style>
         `;
