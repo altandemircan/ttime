@@ -120,56 +120,58 @@ function hideGlobalLoading() {
     }
 }
 
-/**
- * share.js - THE AI ENABLED ULTIMATE VERSION
- * Created with triptime.ai!
- */
-
-// ... [showGlobalLoading ve hideGlobalLoading kısımları aynı kalıyor] ...
-
 // --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v2Raw = params.get('v2');
     
-    if (!v2Raw) return; // v1 desteğini istersen tutabilirsin ama v2 ana odağımız
+    if (!v2Raw) return;
 
     showGlobalLoading();
 
     try {
         const decoded = decodeURIComponent(v2Raw);
-        // Yeni format: Başlık | Öğeler | AI_Verisi (Summary~Tip~Highlight)
-        const [title, itemsStr, aiStr] = decoded.split('|');
+        // Format: Başlık | Öğeler | AI_Verisi | Şehir_İsmi
+        const parts = decoded.split('|');
+        const title = parts[0];
+        const itemsStr = parts[1];
+        const aiStr = parts[2];
+        const cityStr = parts[3]; // Kolaj için şehir ismi
         
         // 1. Şehir Planı Verileri
-        const rawItems = itemsStr.split('*');
-        window.cart = rawItems.map(str => {
-            const p = str.split(',');
-            if (p.length < 3) return null;
-            const imgVal = p[4] === '0' ? 'default' : p[4];
-return {
-    name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
-    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
-    day: parseInt(p[3]) || 1, 
-    image: imgVal, 
-    category: "Place"
-};
-        }).filter(item => item !== null);
+        if (itemsStr) {
+            const rawItems = itemsStr.split('*');
+            window.cart = rawItems.map(str => {
+                const p = str.split(',');
+                if (p.length < 3) return null;
+                const imgVal = p[4] === '0' ? 'default' : p[4];
+                return {
+                    name: p[0], 
+                    lat: parseFloat(p[1]), 
+                    lng: parseFloat(p[2]),
+                    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
+                    day: parseInt(p[3]) || 1, 
+                    image: imgVal, 
+                    category: "Place"
+                };
+            }).filter(item => item !== null);
+        }
 
-        // 2. AI Verisi Varsa Yakala (Kritik Nokta!)
+        // 2. AI Verisi Varsa Yakala
         if (aiStr) {
             const [s, t, h] = aiStr.split('~');
             window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
+        }
+
+        // 3. Kolaj Verisi Varsa Yakala
+        if (cityStr) {
+            window.sharedCityForCollage = cityStr;
         }
 
         // UI Güncelleme
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
         
-        // ... [updateCart ve hideGlobalLoading kısımları aynı] ...
-
-        // Sayfa tamamen hazır olunca AI kutusunu bas
-        // --- LOADER VE AI VERİSİ FİX ---
         let attempts = 0;
         const checkReady = setInterval(() => {
             attempts++;
@@ -178,12 +180,24 @@ return {
                 clearInterval(checkReady);
                 try {
                     if (isCartReady) updateCart();
+                    
+                    // AI Bilgisi Basma
                     if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
                         insertTripAiInfo(null, window.sharedAiStaticInfo);
                     }
+
+                    // Fotoğraf Kolajlarını Basma (YENİ)
+                    if (window.sharedCityForCollage && typeof fetchPhotosForDay === 'function') {
+                        const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+                        for(let d=1; d<=maxDay; d++) {
+                            fetchPhotosForDay(d, window.sharedCityForCollage);
+                        }
+                    }
+
                     const overlay = document.getElementById('sidebar-overlay-trip');
                     if (overlay) overlay.classList.add('open');
                 } catch(e) { console.error("Load Error:", e); }
+                
                 setTimeout(() => {
                     hideGlobalLoading();
                     if (window.map) window.map.invalidateSize();
@@ -203,22 +217,19 @@ function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
     
     // 1. Durakları Paketle
-   const items = (window.cart || []).map(item => {
+    const items = (window.cart || []).map(item => {
         const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
         const latVal = item.lat || (item.location && (item.location.lat || item.location.y)) || 0;
         const lngVal = item.lng || (item.location && (item.location.lng || item.location.x)) || 0;
         const lat = parseFloat(latVal).toFixed(4);
         const lng = parseFloat(lngVal).toFixed(4);
-       // URL'yi çok uzatmamak için resim varsa gönderiyoruz
-const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
-return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
-    }).join('*')
+        const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
+        return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
+    }).join('*');
 
     // 2. AI Verisini Paketle
     let aiPart = "";
-    // Önce global değişkeni, o yoksa DOM'daki metni kontrol et
     const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
-    
     if (aiSummaryText) {
         const s = aiSummaryText.replace(/[|*~]/g, '').trim();
         const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
@@ -226,7 +237,13 @@ return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
         aiPart = `|${s}~${t}~${h}`;
     }
 
-    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart)}`;
+    // 3. KOLAJ VERİSİ EKLEME (YENİ)
+    // Eğer window.selectedCity varsa onu, yoksa ilk durağın adını şehir kabul et
+    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
+    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
+
+    // URL'ye collagePart'ı da ekliyoruz
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
 }
 
 // ... [shareOnWhatsApp fonksiyonu aynı kalsın, createOptimizedLongLink'i otomatik kullanacak zaten] ...
