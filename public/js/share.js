@@ -1,113 +1,297 @@
-// ============================================================
-// share.js - KESİN ÇÖZÜM (AI + PEXELS + ROTA)
-// ============================================================
+/**
+ * share.js - THE FINAL ULTIMATE VERSION
+ * Created with triptime.ai!
+ */
 
-// --- 1. Link Oluşturucu (Pexels & Koordinat Fix) ---
-// --- 1. Link Oluşturucu (Lat/Lng Sırasını Garantiye Alıyoruz) ---
-function createShortTripLink() {
-    const title = document.getElementById('trip_title')?.innerText || "My Trip Plan";
-    const aiInfo = localStorage.getItem('ai_information') || "";
+// --- 1. MODERN LOADING UI ---
+function showGlobalLoading() {
+    let loader = document.getElementById('trip-loader');
+    if (!loader) {
+        const messages = [
+            "AI is crafting your perfect route...",
+            "Checking local gems for you...",
+            "Organizing your travel days...",
+            "Almost ready for takeoff!"
+        ];
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
 
-    const items = (window.cart || []).map(item => {
-        // Samsun hatasını önlemek için: Önce Lat, Sonra Lng!
-        const lat = item.lat || (item.location && item.location.lat) || 0;
-        const lng = item.lng || (item.location && item.location.lng) || 0;
-        
-        const imgUrl = (item.image && item.image.length > 5) ? encodeURIComponent(item.image) : "no-img";
-        
-        // Format: Name | Lat | Lng | Day | Img
-        return `${item.name}|${lat}|${lng}|${item.day || 1}|${imgUrl}`;
-    }).join('*');
+        loader = document.createElement('div');
+        loader.id = 'trip-loader';
+        loader.innerHTML = `
+            <div class="loader-card">
+                <div class="loader-header">
+                    <img src="/img/triptime_logo.svg" class="main-logo" alt="Triptime AI">
+                </div>
+                
+                <div class="loader-body">
+                    <div class="progress-container">
+                        <div class="progress-bar-fill"></div>
+                    </div>
+                    <p class="loading-text">${randomMsg}</p>
+                </div>
+            </div>
 
-    const payload = { n: title, ai: aiInfo, items: items };
-    const baseUrl = window.location.origin + window.location.pathname;
-    return `${baseUrl}?v1=${encodeURIComponent(JSON.stringify(payload))}`;
+            <style>
+                #trip-loader {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #f8f9fa; /* Arkadaki hizasızlığı kapatan solid fon */
+                    z-index: 9999999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                }
+
+                .loader-card {
+                    background: #ffffff;
+                    padding: 40px 30px;
+                    border-radius: 24px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+                    text-align: center;
+                    width: 90%;
+                    max-width: 360px;
+                    animation: cardEntrance 0.5s ease-out;
+                }
+
+                .loader-header {
+                    margin-bottom: 25px;
+                }
+
+                .main-logo {
+                    width: 200px; 
+                    height: auto;
+                    display: block;
+                    margin: 0 auto;
+                }
+
+                .progress-container {
+                    width: 100%;
+                    height: 6px;
+                    background: #f0f0f2;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin-bottom: 15px;
+                    position: relative;
+                }
+
+                .progress-bar-fill {
+                    width: 40%;
+                    height: 100%;
+                    background: #8a4af3; /* İstediğin mor tonu */
+                    border-radius: 10px;
+                    position: absolute;
+                    left: -40%;
+                    animation: loading-slide 1.4s infinite cubic-bezier(0.45, 0, 0.55, 1);
+                }
+
+                .loading-text {
+                    font-size: 14px;
+                    color: #666;
+                    margin: 0;
+                    font-weight: 500;
+                }
+
+                @keyframes loading-slide {
+                    0% { left: -40%; width: 30%; }
+                    50% { width: 50%; }
+                    100% { left: 100%; width: 30%; }
+                }
+
+                @keyframes cardEntrance {
+                    from { opacity: 0; transform: translateY(15px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            </style>
+        `;
+        document.body.appendChild(loader);
+    }
+}
+function hideGlobalLoading() {
+    const loader = document.getElementById('trip-loader');
+    if (loader) {
+        loader.style.transition = "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)";
+        loader.style.opacity = "0";
+        loader.style.transform = "scale(1.1)";
+        setTimeout(() => { if(loader) loader.remove(); }, 600);
+    }
 }
 
+// --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const v1Raw = params.get('v1');
-    if (!v1Raw) return;
+    const v2Raw = params.get('v2');
+    if (!v2Raw) return;
+
+    showGlobalLoading();
 
     try {
-        const tripData = JSON.parse(decodeURIComponent(v1Raw));
-        const rawItems = tripData.items.split('*');
-        
-        window.cart = rawItems.map(str => {
-            const parts = str.split('|');
-            const [name, latStr, lonStr, dayStr, imgStr] = parts;
-            const latVal = parseFloat(latStr);
-            const lngVal = parseFloat(lonStr);
-            const finalImg = (imgStr === "no-img" || !imgStr) ? "" : decodeURIComponent(decodeURIComponent(imgStr));
-            
-            return {
-                name: name,
-                lat: latVal,
-                lng: lngVal,
-                location: { lat: latVal, lng: lngVal },
-                day: parseInt(dayStr) || 1,
-                image: finalImg,
-                category: "Place"
-            };
-        });
+        const decoded = decodeURIComponent(v2Raw);
+        const parts = decoded.split('|');
+        const title = parts[0];
+        const itemsStr = parts[1];
+        const aiStr = parts[2];
+        const cityStr = parts[3];
+
+        // 1. Şehir Planı Verileri
+        if (itemsStr) {
+            const rawItems = itemsStr.split('*');
+            window.cart = rawItems.map(str => {
+                const p = str.split(',');
+                if (p.length < 3) return null;
+                return {
+                    name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
+                    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
+                    day: parseInt(p[3]) || 1, image: p[4] === '0' ? 'default' : p[4],
+                    category: "Place"
+                };
+            }).filter(item => item !== null);
+        }
+
+        // 2. AI Verisi
+        if (aiStr && aiStr !== "") {
+            const [s, t, h] = aiStr.split('~');
+            window.sharedAiStaticInfo = { summary: s, tip: t, highlight: h };
+        }
+
+        // 3. Kolaj Verisi (Global değişkenlere ata)
+        if (cityStr) {
+            window.sharedCityForCollage = cityStr;
+            window.selectedCity = cityStr; // slider.js'in beklentisi
+        }
 
         localStorage.setItem('cart', JSON.stringify(window.cart));
-        if (tripData.ai) localStorage.setItem('ai_information', tripData.ai);
-        
-        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = tripData.n;
-        if (document.getElementById('tt-welcome')) document.getElementById('tt-welcome').style.display = 'none';
-        if (document.getElementById('sidebar-overlay-trip')) document.getElementById('sidebar-overlay-trip').classList.add('open');
+        if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
 
-        // --- AI VE ROTA BAŞLATICI (GARANTİCİ) ---
-        
-        // 1. AI Kutusunu Haritadan Bağımsız Bas (Hemen)
-        setTimeout(() => {
-            if (tripData.ai && typeof insertTripAiInfo === "function") {
-                const parts = tripData.ai.split('\n\n');
-                const staticAi = {
-                    summary: parts[0]?.replace(/Summary:\s*/i, '').trim() || "",
-                    tip: parts[1]?.replace(/Tip:\s*/i, '').trim() || "",
-                    highlight: parts[2]?.replace(/Highlight:\s*/i, '').trim() || ""
-                };
-                insertTripAiInfo(null, staticAi, null);
-                console.log("✅ AI Kutsu haritadan bağımsız basıldı.");
-            }
-        }, 500); // Yarım saniye sonra AI gelsin
+        let attempts = 0;
+        const checkReady = setInterval(() => {
+            attempts++;
+            const isCartReady = typeof updateCart === 'function';
+            // DOĞRU FONKSİYON KONTROLÜ: renderDayCollage
+            const isCollageReady = typeof window.renderDayCollage === 'function';
 
-        // 2. Harita ve Rota İçin Döngü (Harita gelince çalışır)
-        const checkMap = setInterval(() => {
-            if (typeof updateCart === 'function' && window.map) {
-                clearInterval(checkMap);
-                updateCart(); // Rota ve Listeyi Çiz
+            if (isCartReady || attempts > 50) { 
+                clearInterval(checkReady);
+                try {
+                    if (isCartReady) updateCart();
+
+                    // AI Basma
+                    if (window.sharedAiStaticInfo && typeof insertTripAiInfo === 'function') {
+                        insertTripAiInfo(null, window.sharedAiStaticInfo);
+                    }
+
+                    // FOTOĞRAF TETİKLEME (GÜNCELLENMİŞ DOĞRU MOTOR)
+                    if (window.sharedCityForCollage && isCollageReady) {
+                        const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
+                        console.log("Slider tetikleniyor: ", window.sharedCityForCollage);
+                        
+                        for (let d = 1; d <= maxDay; d++) {
+                            // HTML'deki gün konteynerini bul
+                            const dayContainer = document.querySelector(`.day-section[data-day="${d}"]`) || 
+                                               document.querySelector(`#day-${d}`);
+                            
+                            if (dayContainer) {
+                                const dayItems = window.cart.filter(item => item.day === d);
+                                // SENİN FONKSİYONUN: renderDayCollage(day, container, items)
+                                window.renderDayCollage(d, dayContainer, dayItems);
+                            }
+                        }
+                    }
+
+                    const overlay = document.getElementById('sidebar-overlay-trip');
+                    if (overlay) overlay.classList.add('open');
+                } catch(e) { console.error("Load Error:", e); }
                 
                 setTimeout(() => {
-                    window.map.invalidateSize();
-                    if (typeof fitMapToCart === 'function') fitMapToCart();
-                }, 1000);
-                console.log("✅ Harita ve Rota hazır.");
+                    hideGlobalLoading();
+                    if (window.map) window.map.invalidateSize();
+                }, 800);
             }
-        }, 500);
+        }, 300);
 
-    } catch (e) {
-        console.error("Yükleme Hatası:", e);
+    } catch (e) { 
+        console.error("Critical Load Error:", e);
+        hideGlobalLoading();
     }
 });
-// Paylaşım metni oluşturucu (WhatsApp vb için)
-function generateShareableText() {
-    let shareText = "Here's your trip plan!\n\n";
+
+// --- 3. PAYLAŞIM FONKSİYONLARI ---
+function createOptimizedLongLink() {
+    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
+    const items = (window.cart || []).map(item => {
+        const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
+        const lat = parseFloat(item.lat || item.location?.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || item.location?.lng || 0).toFixed(4);
+        const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
+        return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
+    }).join('*');
+
+    let aiPart = "";
+    const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
+    if (aiSummaryText) {
+        const s = aiSummaryText.replace(/[|*~]/g, '').trim();
+        const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
+        const h = (window.lastTripAIInfo?.highlight || document.getElementById('ai-highlight')?.innerText || "").replace(/[|*~]/g, '').trim();
+        aiPart = `|${s}~${t}~${h}`;
+    } else { aiPart = "|"; }
+
+    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
+    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
+
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
+}
+
+// ... [shareOnWhatsApp fonksiyonu aynı kalsın, createOptimizedLongLink'i otomatik kullanacak zaten] ...
+async function generateShareableText() {
+    const longUrl = createOptimizedLongLink();
+    let shortUrl = longUrl;
+    try {
+        const apiTarget = `https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`;
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
+        const data = await res.json();
+        if (data.contents && data.contents.startsWith('http')) shortUrl = data.contents;
+    } catch(e) {}
+    return `Check out my trip plan: ${shortUrl}\n\nCreated with triptime.ai!`;
+}
+
+// --- 3. PAYLAŞIM FONKSİYONLARI ---
+async function shareOnWhatsApp() {
+    console.log("WhatsApp tetiklendi...");
+    
+    let shareText = "Check out my trip plan!\n\n";
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
+
     for (let day = 1; day <= maxDay; day++) {
-        const dayItems = window.cart.filter(item => item.day == day);
+        const dayItems = window.cart.filter(item => item.day == day && item.name);
         if (dayItems.length > 0) {
             shareText += `--- Day ${day} ---\n`;
-            dayItems.forEach(item => shareText += `• ${item.name}\n`);
+            dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
             shareText += "\n";
         }
     }
-    shareText += `\nView full plan: ${createShortTripLink()}`;
-    return shareText;
-}
 
-function shareOnWhatsApp() {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(generateShareableText())}`, '_blank');
+    const longUrl = createOptimizedLongLink();
+    let shortUrl = longUrl;
+
+    // KENDİ SERVİSİMİZİ KULLANIYORUZ
+    try {
+        const response = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ longUrl: longUrl })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            shortUrl = result.shortUrl;
+        }
+    } catch (e) {
+        console.warn("Kendi kısaltma servisimiz cevap vermedi, uzun linkle devam ediliyor.");
+    }
+
+    shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
 }

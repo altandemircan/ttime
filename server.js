@@ -1,17 +1,17 @@
-try {
-  console.log('[startup] process.cwd():', process.cwd());
-console.log('[startup] __dirname:', __dirname);
-const fs = require('fs');
-console.log('[startup] .env exists:', fs.existsSync('./.env'));
-require('dotenv').config({ path: __dirname + '/.env' });
-  console.log('[startup] dotenv loaded');
-} catch (e) {
-  console.warn('[startup] dotenv not loaded:', e.code || e.message);
-}
-
+const fs = require('fs'); // 1. BURAYA AL (Global)
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
+
+try {
+    // Burada fs'i tekrar tanımlama, yukarıdakini kullan
+    console.log('[startup] process.cwd():', process.cwd());
+    console.log('[startup] .env exists:', fs.existsSync('./.env'));
+    require('dotenv').config({ path: __dirname + '/.env' });
+} catch (e) {
+    console.warn('[startup] dotenv not loaded:', e.message);
+}
+
 const app = express();
 
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
@@ -258,6 +258,50 @@ app.post('/api/elevation', async (req, res) => {
             source: 'fallback',
             error: error.message
         });
+    }
+});
+
+// --- KENDİ LİNK KISALTMA SERVİSİMİZ (DB Gerektirmez) ---
+const shortUrlsFile = path.join(__dirname, 'shorturls.json');
+
+// 1. Kısaltma Oluşturma (POST)
+app.post('/api/shorten', (req, res) => {
+    try {
+        const { longUrl } = req.body;
+        const shortId = Math.random().toString(36).substring(2, 8);
+        
+        let data = {};
+        if (fs.existsSync(shortUrlsFile)) {
+            const fileContent = fs.readFileSync(shortUrlsFile, 'utf8');
+            data = fileContent ? JSON.parse(fileContent) : {};
+        }
+        
+        data[shortId] = longUrl;
+        fs.writeFileSync(shortUrlsFile, JSON.stringify(data, null, 2));
+        
+        const host = req.get('host');
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        res.json({ shortUrl: `${protocol}://${host}/s/${shortId}` });
+    } catch (e) {
+        console.error('[Shorten Error]', e);
+        res.status(500).json({ error: 'Shorten failed' });
+    }
+});
+// 2. Yönlendirme (GET /s/id) - DİKKAT: Bunu 'express.static' satırından önceye koy
+app.get('/s/:id', (req, res) => {
+    try {
+        if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
+        
+        const data = JSON.parse(fs.readFileSync(shortUrlsFile, 'utf8'));
+        const longUrl = data[req.params.id];
+        
+        if (longUrl) {
+            console.log(`[Redirect] ${req.params.id} -> ${longUrl.substring(0, 50)}...`);
+            return res.redirect(longUrl);
+        }
+        res.redirect('/');
+    } catch (e) {
+        res.redirect('/');
     }
 });
 
