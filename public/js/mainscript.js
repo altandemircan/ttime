@@ -4675,17 +4675,31 @@ if (aiInfoSection) {
 
                const catIcon = getCategoryIcon(item.category);
 
-                li.innerHTML = `
+            // --- PAYLAŞIM GÖRSELİ FİX (Priority Logic) ---
+            let finalImg = item.image;
+            // Eğer resim '0', 'default' veya boş ise (Linkten boş geldiyse)
+            if (!finalImg || finalImg === 'default' || finalImg === '0') {
+                // 1. Önce Pexels listesine bak (Localdeysen burası çalışır)
+                if (window.cityImages && window.cityImages.length > 0) {
+                    finalImg = window.cityImages[idx % window.cityImages.length];
+                } else {
+                    // 2. O da yoksa (Paylaşım açıldı ve Pexels henüz yüklenmediyse)
+                    finalImg = 'img/default_place.jpg'; 
+                }
+            }
+            // ----------------------------------------------
+
+            li.innerHTML = `
           <div class="cart-item">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <img src="img/drag_move.svg" alt="Drag" class="drag-icon">
 
                 <div class="item-position">${listMarkerHtml}                
-                  <img src="${(item.image && item.image !== 'default') ? item.image : (window.cityImages && window.cityImages[idx % window.cityImages.length]) || 'img/default_place.jpg'}" 
-     onerror="this.src='img/default_place.jpg'" 
-     alt="${item.name}" 
-     class="cart-image">
+                  <img src="${finalImg}" 
+                       onerror="this.src='img/default_place.jpg'" 
+                       alt="${item.name}" 
+                       class="cart-image">
                 </div>
 
                 <img src="${catIcon}" alt="${item.category}" class="category-icon">
