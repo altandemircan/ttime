@@ -1,17 +1,17 @@
-try {
-  console.log('[startup] process.cwd():', process.cwd());
-console.log('[startup] __dirname:', __dirname);
-const fs = require('fs');
-console.log('[startup] .env exists:', fs.existsSync('./.env'));
-require('dotenv').config({ path: __dirname + '/.env' });
-  console.log('[startup] dotenv loaded');
-} catch (e) {
-  console.warn('[startup] dotenv not loaded:', e.code || e.message);
-}
-
+const fs = require('fs'); // 1. BURAYA AL (Global)
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
+
+try {
+    // Burada fs'i tekrar tanımlama, yukarıdakini kullan
+    console.log('[startup] process.cwd():', process.cwd());
+    console.log('[startup] .env exists:', fs.existsSync('./.env'));
+    require('dotenv').config({ path: __dirname + '/.env' });
+} catch (e) {
+    console.warn('[startup] dotenv not loaded:', e.message);
+}
+
 const app = express();
 
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
