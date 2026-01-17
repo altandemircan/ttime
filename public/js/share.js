@@ -20,8 +20,7 @@ function showGlobalLoading() {
         loader.innerHTML = `
             <div class="loader-card">
                 <div class="loader-header">
-                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo-static" alt="Logo">
-                    <span class="loader-brand">triptime.ai</span>
+                    <img src="/img/triptime_logo.svg" class="main-logo" alt="Triptime AI">
                 </div>
                 
                 <div class="loader-body">
@@ -39,83 +38,72 @@ function showGlobalLoading() {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: #f8f9fa; /* Hafif kırık beyaz, arkadaki karmaşayı %100 kapatır */
+                    background: #f8f9fa; /* Arkadaki hizasızlığı kapatan solid fon */
                     z-index: 9999999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-family: 'Inter', -apple-system, sans-serif;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
                 }
 
                 .loader-card {
                     background: #ffffff;
-                    padding: 40px;
+                    padding: 40px 30px;
                     border-radius: 24px;
-                    box-shadow: 0 15px 35px rgba(138, 74, 243, 0.1), 0 5px 15px rgba(0,0,0,0.05);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
                     text-align: center;
-                    width: 85%;
-                    max-width: 380px;
-                    border: 1px solid rgba(138, 74, 243, 0.1);
-                    animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+                    width: 90%;
+                    max-width: 360px;
+                    animation: cardEntrance 0.5s ease-out;
                 }
 
                 .loader-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 12px;
-                    margin-bottom: 30px;
+                    margin-bottom: 25px;
                 }
 
-                .loader-logo-static {
-                    width: 32px;
-                    height: 32px;
-                }
-
-                .loader-brand {
-                    font-weight: 800;
-                    font-size: 22px;
-                    color: #1a1a1a;
-                    letter-spacing: -0.03em;
+                .main-logo {
+                    width: 180px; 
+                    height: auto;
+                    display: block;
+                    margin: 0 auto;
                 }
 
                 .progress-container {
                     width: 100%;
-                    height: 8px;
-                    background: #eeeef0;
+                    height: 6px;
+                    background: #f0f0f2;
                     border-radius: 10px;
                     overflow: hidden;
-                    margin-bottom: 20px;
+                    margin-bottom: 15px;
                     position: relative;
                 }
 
                 .progress-bar-fill {
-                    width: 45%;
+                    width: 40%;
                     height: 100%;
-                    background: linear-gradient(90deg, #8a4af3, #b084f7); /* İstediğin mor tonu */
+                    background: #8a4af3; /* İstediğin mor tonu */
                     border-radius: 10px;
                     position: absolute;
-                    left: -45%;
-                    animation: loading-slide 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+                    left: -40%;
+                    animation: loading-slide 1.4s infinite cubic-bezier(0.45, 0, 0.55, 1);
                 }
 
                 .loading-text {
-                    font-size: 15px;
-                    color: #555;
+                    font-size: 14px;
+                    color: #666;
                     margin: 0;
                     font-weight: 500;
-                    line-height: 1.4;
                 }
 
                 @keyframes loading-slide {
-                    0% { left: -45%; width: 30%; }
-                    50% { left: 30%; width: 60%; }
+                    0% { left: -40%; width: 30%; }
+                    50% { width: 50%; }
                     100% { left: 100%; width: 30%; }
                 }
 
                 @keyframes cardEntrance {
-                    from { opacity: 0; transform: scale(0.9) translateY(20px); }
-                    to { opacity: 1; transform: scale(1) translateY(0); }
+                    from { opacity: 0; transform: translateY(15px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             </style>
         `;
