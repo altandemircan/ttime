@@ -7,30 +7,105 @@
 function showGlobalLoading() {
     let loader = document.getElementById('trip-loader');
     if (!loader) {
+        // AI Bekleme Mesajları
+        const messages = [
+            "AI is crafting your perfect route...",
+            "Checking local gems for you...",
+            "Organizing your travel days...",
+            "Almost ready for takeoff!"
+        ];
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+
         loader = document.createElement('div');
         loader.id = 'trip-loader';
         loader.innerHTML = `
             <div class="loader-content">
                 <div class="logo-wrapper">
                     <div class="modern-spinner"></div>
-                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo" alt="Triptime Logo">
+                    <img src="https://triptime.ai/img/for_favicon.png" class="loader-logo-img" alt="Logo">
                 </div>
-                <p class="loading-text">Triptime AI Trip Planner is loading</p>
+                <p class="loading-text">${randomMsg}</p>
             </div>
             <style>
-                #trip-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.98); z-index: 99999; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; backdrop-filter: blur(8px); }
-                .loader-content { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-                .logo-wrapper { position: relative; width: 80px; height: 80px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; }
-                .loader-logo { width: 54px; height: 54px; z-index: 2; filter: drop-shadow(0 0 8px rgba(138, 74, 243, 0.15)); }
-                .modern-spinner { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 3px solid rgba(138, 74, 243, 0.1); border-left-color: #8a4af3; border-radius: 50%; animation: modern-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; z-index: 1; }
-                .loading-text { color: #1a1a1a; font-size: 14px; font-weight: 500; animation: pulse 1.8s ease-in-out infinite; }
-                @keyframes modern-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-            </style>`;
+                #trip-loader {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(255, 255, 255, 0.6); /* Şeffaf beyaz arkası */
+                    z-index: 999999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Inter', -apple-system, sans-serif;
+                    backdrop-filter: blur(15px); /* Efsane blur efekti */
+                    -webkit-backdrop-filter: blur(15px);
+                }
+
+                .loader-content {
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .logo-wrapper {
+                    position: relative;
+                    width: 100px;
+                    height: 100px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 20px;
+                }
+
+                .modern-spinner {
+                    position: absolute;
+                    width: 80px;
+                    height: 80px;
+                    border: 4px solid rgba(255, 56, 92, 0.1); /* Silik halka */
+                    border-top: 4px solid #ff385c; /* Canlı kırmızı/pembe */
+                    border-radius: 50%;
+                    animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+                }
+
+                .loader-logo-img {
+                    width: 40px;
+                    height: 40px;
+                    z-index: 2;
+                    /* Logo hafifçe nefes alsın */
+                    animation: pulseLogo 2s ease-in-out infinite;
+                }
+
+                .loading-text {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #222;
+                    margin: 0;
+                    letter-spacing: -0.02em;
+                    animation: fadeInOut 1.5s ease-in-out infinite;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+
+                @keyframes pulseLogo {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                }
+
+                @keyframes fadeInOut {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.6; }
+                }
+            </style>
+        `;
         document.body.appendChild(loader);
     }
 }
-
 function hideGlobalLoading() {
     const loader = document.getElementById('trip-loader');
     if (loader) {
