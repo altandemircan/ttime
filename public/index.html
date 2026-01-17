@@ -82,7 +82,7 @@
   <script src="/js/start-map-buttons-init.js?v=__BUILD__" defer></script>
   <script src="/js/drag.js?v=__BUILD__" defer></script>
   <script src="/js/chat-stream-ai.js?v=__BUILD__" defer></script> 
-     
+
 
 
   <!-- ======================================================
@@ -178,7 +178,7 @@
                         <div class="toggleMenu" onclick="toggleMenu()">☰</div>
                         <div class="dropDown" id="menuDropdown">
                             <a href="#" onclick="toggleSidebarLogin(); toggleMenu();" class="profile-btn">
-                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI 
+                                <img src="/img/ai-chat-icon.svg" alt="Chat with Mira ">Mira AI Chat
                             </a>                     
                             <a href="#" onclick="toggleSidebarMyTrips(); toggleMenu();" class="mytrips-btn">
                                 <img src="/img/mytrips-icon.svg" alt="My Trips">My Trips
@@ -629,57 +629,6 @@ Your browser does not support the video tag.                  </video>
             </div>
         </div>
     </div>
-   
-
-
-
-
-
-
-    <style>
-        .custom-accordion {
-            margin-bottom: 0 !important;
-            transition: background 0.3s ease-in-out;
-        }
-        .custom-accordion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            padding: 12px;
-            font-size: 16px;            
-            border-radius: 5px;
-            transition: background 0.3s ease-in-out;
-        }
-        .custom-icon {
-            font-size: 18px;
-            transition: transform 0.3s ease-in-out;
-        }
-.custom-accordion-content {
-    max-height: 0;
-    overflow: hidden;
-    background: #fff;           
-    transition: max-height 0.5s cubic-bezier(.4,0,.2,1), padding 0.3s, background 0.3s;
-    margin-bottom: 4px !important;
-    padding: 0px 0px !important;
-    font-size: 0.9rem !important;
-    font-weight: 400 !important;
-}
-.custom-accordion.active .custom-accordion-content {
-    /* sadece padding değişebilir, max-height YOK! */
-    padding: 4px 0;
-    font-weight: 400;
-}
-        .custom-accordion-content p {
-            margin-block-start: 0em;
-        }
-       
-        .active .custom-icon {
-            transform: rotate(180deg);
-        }
-    </style>
-
-
 
         <!-- updates -->
     <div class="sidebar-overlay sidebar-updates" id="sidebar-overlay-updates">
@@ -992,73 +941,6 @@ Your browser does not support the video tag.                  </video>
 </div>
 
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const video = document.getElementById('circleVideo');
-    const icon  = document.querySelector('.sound-icon');
-
-    if (!video) return;
-
-    let playOnceMode = false;
-
-    // Başlangıç: sessiz + loop
-    video.muted = true;
-    video.loop = true;
-
-    // ZAMAN KONTROLÜ (son 1 saniyeyi kes)
-    video.addEventListener('timeupdate', () => {
-        if (!video.duration) return;
-
-        const cutTime = video.duration - 1;
-
-        // PLAY MODE: 1 kez çal, erken bitir
-        if (playOnceMode && video.currentTime >= cutTime) {
-            playOnceMode = false;
-
-            video.muted = true;
-            video.loop = true;
-            video.currentTime = 0;
-            video.play();
-
-            if (icon) icon.src = '/img/mic_mute.svg';
-        }
-
-        // LOOP MODE: sona girmeden başa sar
-        if (!playOnceMode && video.currentTime >= cutTime) {
-            video.currentTime = 0;
-        }
-    });
-
-    // PLAY / MUTE BUTONU
-    window.toggleSound = function () {
-
-        // MUTE → PLAY
-        if (video.muted) {
-            playOnceMode = true;
-
-            video.loop = false;
-            video.muted = false;
-            video.volume = 1;
-            video.currentTime = 0;
-            video.play();
-
-            if (icon) icon.src = '/img/mic_play.svg';
-        }
-        // PLAY → MUTE
-        else {
-            playOnceMode = false;
-
-            video.muted = true;
-            video.loop = true;
-            video.play();
-
-            if (icon) icon.src = '/img/mic_mute.svg';
-        }
-    };
-});
-</script>
-
-
 
 
 
@@ -1153,16 +1035,18 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- PDF & Canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-<script src="/js/pdf_download.js?v=v=41792548" defer></script>
-<script src="/js/sidebar_change.js?v=v=41792548" defer></script>
-<script src="/js/my_location.js?v=v=41792548" defer></script>
-<script src="/js/local_storage.js?v=v=41792548" defer></script>
-<script src="/js/calendar.js?v=v=41792548" defer></script>
-<script src="/js/share.js?v=v=41792548" defer></script>
-<script src="/js/route-importer.js?v=v=41792548" defer></script>
-<script src="/js/type_writer_ai.js?v=v=41792548" defer></script>
-<script src="/js/nearby_ai.js?v=v=41792548" defer></script>
-<script src="/js/my_places.js?v=v=41792548" defer></script>
+
+<script src="/js/pdf_download.js?v=__BUILD__" defer></script>
+<script src="/js/sidebar_change.js?v=__BUILD__" defer></script>
+<script src="/js/my_location.js?v=__BUILD__" defer></script>
+<script src="/js/local_storage.js?v=__BUILD__" defer></script>
+<script src="/js/calendar.js?v=__BUILD__" defer></script>
+<script src="/js/share.js?v=__BUILD__" defer></script>
+<script src="/js/route-importer.js?v=__BUILD__" defer></script>
+<script src="/js/type_writer_ai.js?v=__BUILD__" defer></script>
+<script src="/js/nearby_ai.js?v=__BUILD__" defer></script>
+<script src="/js/my_places.js?v=__BUILD__" defer></script>
+<script src="/js/circle-video.js?v=__BUILD__" defer></script>    
 
 <script>
     function toggleCustomAccordion(element) {
