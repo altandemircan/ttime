@@ -4109,15 +4109,12 @@ function toggleContent(arrowIcon) {
         contentDiv.style.display = 'block';
         
         // --- LEAFLET HARİTA YÖNETİMİ KALDIRILDI ---
-        // Sadece static image gösterilecek
         const item = cartItem.closest('.travel-item');
         if (!item) return;
         
         const mapDiv = item.querySelector('.leaflet-map');
         if (mapDiv && contentDiv.style.display !== 'none') {
             const mapId = mapDiv.id;
-            
-            // [SAFETY CHECK] Koordinatları güvenli al
             const latStr = item.getAttribute('data-lat');
             const lonStr = item.getAttribute('data-lon');
             
@@ -4131,19 +4128,21 @@ function toggleContent(arrowIcon) {
             const name = item.querySelector('.toggle-title') ? item.querySelector('.toggle-title').textContent : "Place";
             const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
 
-            // Static map göster
             createLeafletMapForItem(mapId, lat, lon, name, number);
         }
     } else {
         contentDiv.style.display = 'none';
     }
 
-// --- OK İŞARETİNİ DÖNDÜREN KRİTİK KISIM ---
-    // Eğer tıklanan element zaten IMG ise direkt onu kullanıyoruz
-    const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('img');
-    
+    // --- SADECE OK DÖNDÜRME GÜNCELLEMESİ ---
+    const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('.arrow-icon');
     if (arrowImg) {
-        arrowImg.classList.toggle('rotated');
+        // Toggle yerine kesin duruma göre sınıf ekle/çıkar (updateCart çakışmasını önler)
+        if (contentDiv.style.display === 'block') {
+            arrowImg.classList.add('rotated');
+        } else {
+            arrowImg.classList.remove('rotated');
+        }
     }
 }
 (function forceLeafletCssFix() {
