@@ -391,14 +391,10 @@ function changeContent(option) {
         }
 
         // About içeriğini göster
-        if (aboutUsSection) {
-            // Diğer her şeyi temizle
-            document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
-            
+       if (aboutUsSection) {
             aboutUsSection.classList.add('active', 'tt-overlay');
+            // Inline style'ı zorla block yap ve !important ekle ki döngüler kapatamasın
             aboutUsSection.style.setProperty('display', 'block', 'important');
-            
-            // Sayfayı en üste çek
             window.scrollTo({ top: 0, behavior: 'instant' });
         }
 
@@ -439,10 +435,13 @@ document.addEventListener('click', function(event) {
     }
 
     // NORMAL CHAT AKIŞI MANTIĞI (About kapalıyken)
-    if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
+   if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
+    // Sadece About overlay değilse bu gizleme/gösterme işlerini yap
+    if (aboutUsSection && !aboutUsSection.classList.contains('tt-overlay')) {
         if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
-            if (aboutUsSection) aboutUsSection.style.display = 'none';
+             aboutUsSection.style.display = 'none';
         }
         chatBox.style.display = 'block';
     }
+}
 });
