@@ -4105,10 +4105,20 @@ function toggleContent(arrowIcon) {
     
     // Aç/Kapa işlemi
     contentDiv.classList.toggle('open');
+    
+    // Ok ikonunu bul (Tıklanan elementin kendisi mi yoksa içindeki mi kontrol et)
+    const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('.arrow-icon');
+
     if (contentDiv.classList.contains('open')) {
         contentDiv.style.display = 'block';
         
-        // --- LEAFLET HARİTA YÖNETİMİ KALDIRILDI ---
+        // JS İLE CSS MÜDAHALESİ
+        if (arrowImg) {
+            arrowImg.style.transition = "transform 0.3s ease";
+            arrowImg.style.transform = "rotate(90deg)";
+        }
+        
+        // --- LEAFLET HARİTA YÖNETİMİ ---
         const item = cartItem.closest('.travel-item');
         if (!item) return;
         
@@ -4132,16 +4142,10 @@ function toggleContent(arrowIcon) {
         }
     } else {
         contentDiv.style.display = 'none';
-    }
-
-    // --- SADECE OK DÖNDÜRME GÜNCELLEMESİ ---
-    const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('.arrow-icon');
-    if (arrowImg) {
-        // Toggle yerine kesin duruma göre sınıf ekle/çıkar (updateCart çakışmasını önler)
-        if (contentDiv.style.display === 'block') {
-            arrowImg.classList.add('rotated');
-        } else {
-            arrowImg.classList.remove('rotated');
+        
+        // JS İLE CSS MÜDAHALESİ (Geri döndür)
+        if (arrowImg) {
+            arrowImg.style.transform = "rotate(0deg)";
         }
     }
 }
