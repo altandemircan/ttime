@@ -4226,14 +4226,9 @@ ease;
 }
 
 
-.arrow-icon {
-    transition: transform 0.2s ease !important;
-    transform: rotate(0deg);
-}
+.arrow-icon { transition: transform 0.2s; }
+.arrow-icon.rotated { transform: rotate(90deg) !important; }
 
-.arrow-icon.rotated {
-    transform: rotate(90deg) !important;
-}
 .ai-info-content {
   transition: max-height 0.2s, opacity 0.2s;
   overflow: hidden;

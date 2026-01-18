@@ -4138,8 +4138,9 @@ function toggleContent(arrowIcon) {
         contentDiv.style.display = 'none';
     }
 
-   // Ok işaretini döndür
- const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('.arrow-icon');
+// --- OK İŞARETİNİ DÖNDÜREN KRİTİK KISIM ---
+    // Eğer tıklanan element zaten IMG ise direkt onu kullanıyoruz
+    const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('img');
     
     if (arrowImg) {
         arrowImg.classList.toggle('rotated');
