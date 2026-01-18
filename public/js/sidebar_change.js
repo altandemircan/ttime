@@ -439,32 +439,34 @@ document.addEventListener('click', function(event) {
     if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) {
         if (!clickedInsideAboutUs && !clickedOnTtIcon && !event.target.closest('.updates-btn')) {
             aboutUsSection.style.display = 'none';
+            aboutUsSection.style.setProperty('display', 'none', 'important');
             aboutUsSection.classList.remove('active', 'tt-overlay');
 
-            // --- HARİTAYA GERİ DÖNÜŞ MANTIĞI ---
-            // --- HARİTAYA GERİ DÖNÜŞ MANTIĞI ---
             if (window._wasMapOpenBeforeAbout) {
-                // 1. Sidebar'ı aç
+                // 1. Önce Sidebar'ı aç
                 if (typeof window.toggleSidebarTrip === 'function') {
                     window.toggleSidebarTrip();
                 }
 
-                // 2. Haritayı büyütme (Expand) butonunu bul ve tıkla
-                // Kaydettiğimiz güne ait butonu ya da genel butonu tetikleyelim
+                // 2. Kısa bir süre sonra Expand Map butonunu tetikle
                 setTimeout(() => {
-                    const expandBtn = document.querySelector('.expand-map-btn');
-                    if (expandBtn) expandBtn.click();
+                    // Eğer belirli bir günün haritası açıktıysa o günün içindeki expand butonunu bulmaya çalış, yoksa genelini bul
+                    let expandBtn = null;
+                    if (window._lastActiveDay) {
+                        const dayContainer = document.querySelector(`.map-container[data-day="${window._lastActiveDay}"]`);
+                        if (dayContainer) expandBtn = dayContainer.closest('.tripbox')?.querySelector('.expand-map-btn');
+                    }
                     
-                    // Eğer harita render edilmesi gerekiyorsa invalidatedSize tetikle
-                    if (window.leafletMaps && window._lastActiveDay) {
-                         const map = window.leafletMaps[window._lastActiveDay];
-                         if (map) map.invalidateSize();
+                    if (!expandBtn) expandBtn = document.querySelector('.expand-map-btn');
+
+                    if (expandBtn) {
+                        expandBtn.click();
                     }
                     window._wasMapOpenBeforeAbout = false; 
-                }, 100); 
+                }, 150); // Sidebar'ın açılma animasyonu için kısa bekleme
 
             } else {
-                // Harita açık değilse normal chat düzenine dön
+                // Harita yoksa normal chat düzeni
                 chatBox.style.display = 'block';
                 if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
             }
