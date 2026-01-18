@@ -369,100 +369,61 @@ function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => section.classList.remove('active'));
 
-    const images = document.querySelectorAll('.theme-menu img');
-    images.forEach(img => img.classList.remove('active'));
-
     const chatBox = document.getElementById('chat-box');
     const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
 
-    if (chatBox) chatBox.style.display = 'none';
-    if (aboutUsSection) aboutUsSection.style.display = 'none';
-
     if (option === 1) {
+        if (aboutUsSection) {
+            aboutUsSection.style.display = 'none';
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+        }
         if (welcomeSection) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
         if (mainChat) mainChat.style.display = 'flex';
+        if (chatBox) chatBox.style.display = 'block';
      
     } else if (option === 2) {
-        // --- HARİTAYI OTOMATİK KAPATMA ---
-        // ".close-expanded-map" butonunu bul ve tıkla
-        const closeMapBtn = document.querySelector('.close-expanded-map');
-        if (closeMapBtn) {
-            closeMapBtn.click(); // Haritayı kapatan fonksiyonu tetikler
-        }
-
-        // About içeriğini göster
-        if (aboutUsSection) {
-            // Önce inline display:none varsa temizleyelim
-            aboutUsSection.style.display = ''; 
-            
-            // Class'ları ekle (CSS'teki !important her şeyi çözecek)
-            aboutUsSection.classList.add('active', 'tt-overlay');
-            
-            // Diğer her şeyi (chat vb.) gizle
-            if (mainChat) mainChat.style.display = 'none';
-            if (chatBox) chatBox.style.display = 'none';
-            
-            window.scrollTo({ top: 0, behavior: 'instant' });
-        }
-
-        const ttIcon = document.getElementById("about-icon");
-        if (ttIcon) ttIcon.classList.add('active');
-
-        // Ana chat alanını gizle
-        if (mainChat) {
-            mainChat.style.display = 'none';
+        // BURASI KRİTİK: showAboutTriptime'ı çağırıyoruz ki durum kaydı yapılsın
+        if (typeof window.showAboutTriptime === 'function') {
+            window.showAboutTriptime();
         }
     }
 }
-
+// Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
 document.addEventListener('click', function(event) {
-    const chatBox = document.getElementById('chat-box');
-    if (!chatBox) return;
-
-    const ttIcon = document.querySelector('img[src="img/about-icon.svg"]');
-    const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
-    const userMessageDiv = document.querySelector('.message.user-message');
-
-    let clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
-    let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
-    let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
-
+    const chatBox = document.getElementById('chat-box');
+    const ttIcon = document.getElementById("about-icon");
+    
     if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) {
-        if (!clickedInsideAboutUs && !clickedOnTtIcon && !event.target.closest('.updates-btn')) {
-            // About ekranını kapat
+        const clickedInsideAboutUs = aboutUsSection.contains(event.target);
+        const clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
+        const clickedOnUpdates = event.target.closest('.updates-btn');
+
+        if (!clickedInsideAboutUs && !clickedOnTtIcon && !clickedOnUpdates) {
+            // About perdesini kaldır
             aboutUsSection.style.setProperty('display', 'none', 'important');
             aboutUsSection.classList.remove('active', 'tt-overlay');
 
             if (window._wasMapOpenBeforeAbout) {
-                // Harita zaten arkada açık (Expand hali dahil), sadece orayı temiz tut
+                // EĞER ÖNCEDEN HARİTA AÇIKSA: Chat'i gizli tut, harita zaten arkada açık
                 if (chatBox) chatBox.style.display = 'none';
                 if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'none';
                 window._wasMapOpenBeforeAbout = false; 
             } else {
-                // Harita açık değilse normal chat düzenine dön
+                // EĞER HARİTA YOKSA: Normal chat düzenine dön
                 if (chatBox) chatBox.style.display = 'block';
                 if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
+                const welcome = document.getElementById('tt-welcome');
+                if (welcome) {
+                    welcome.style.display = 'block';
+                    welcome.classList.add('active');
+                }
             }
         }
-        return;
-    }
-
-   if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
-        // Eğer About Overlay modundaysa HİÇBİR ŞEY YAPMA, fonksiyondan çık
-        if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) return;
-
-        if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
-             if (aboutUsSection) {
-                 aboutUsSection.classList.remove('active');
-                 aboutUsSection.style.display = 'none';
-             }
-        }
-        chatBox.style.display = 'block';
     }
 });
