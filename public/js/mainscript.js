@@ -4735,7 +4735,7 @@ if (aiInfoSection) {
                 </div>
               </div>
               <span class="arrow">
-                <img src="img/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
+                <img src="img/right-arrow.svg" class="arrow-icon" style="transform: rotate(90deg);" onclick="toggleContent(this)">
               </span>
             </div>
             <div class="content">
