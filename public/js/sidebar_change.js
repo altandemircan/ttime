@@ -317,10 +317,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const about = document.getElementById('tt-about-us');
     if (!about) return;
 
-    about.classList.add('tt-overlay');
-    about.style.display = 'block';
+    // Önce tüm diğer içerik bölümlerinden 'active' sınıfını kaldır
+    document.querySelectorAll('.content-section').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+
+    // About kısmını zorla görünür yap
+    about.classList.add('tt-overlay', 'active');
+    about.style.setProperty('display', 'block', 'important'); // !important ile display:none'ı eziyoruz
     about.removeAttribute('hidden');
     about.setAttribute('aria-hidden', 'false');
+
+    // Chat alanını gizle (Beyaz ekranın arkasında kalmasın)
+    const mainChat = document.getElementById('main-chat');
+    if (mainChat) mainChat.style.display = 'none';
 
     try { about.scrollTop = 0; } catch (_) {}
     try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
