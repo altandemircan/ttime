@@ -4581,19 +4581,18 @@ if (aiInfoSection) {
         dayList.dataset.day = day;
 
         // O güne ait itemları filtrele
-// Bilgi mesajı mantığı
+// Global değişken kontrolü (dosya başında tanımlı olmalı: window.__dismissedAutoInfo = window.__dismissedAutoInfo || [];)
 const dayItems = window.cart.filter(item => item.day === day);
 
 if (dayItems.length >= 2 && !window.__dismissedAutoInfo.includes(day)) {
     window.__dismissedAutoInfo.push(day);
-    localStorage.setItem('dismissedAutoInfo', JSON.stringify(window.__dismissedAutoInfo));
 }
 
 if (dayItems.length === 1 && !window.__dismissedAutoInfo.includes(day)) {
     const infoDiv = document.createElement('div');
     infoDiv.className = 'auto-copy-info';
-    infoDiv.style = "background:#fff8e1; color:#856404; padding:6px 10px; border-radius:6px; font-size:0.75rem; margin-bottom:8px; border:1px dashed #ffe082; display:inline-block;";
-    infoDiv.innerHTML = `✨ Continued from Day ${day - 1}`;
+    infoDiv.style = "background:#fff8e1; color:#856404; padding:6px 10px; border-radius:6px; font-size:0.75rem; margin-bottom:8px; border:1px dashed #ffe082; display:block;";
+    infoDiv.innerHTML = `✨ Last item of Day ${day - 1} added`;
     dayList.appendChild(infoDiv);
 }
 
