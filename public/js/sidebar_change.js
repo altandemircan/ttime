@@ -416,27 +416,33 @@ document.addEventListener('click', function(event) {
     const chatBox = document.getElementById('chat-box');
     if (!chatBox) return;
 
+    const ttIcon = document.querySelector('img[src="img/about-icon.svg"]');
+    const welcomeSection = document.getElementById('tt-welcome');
+    const aboutUsSection = document.getElementById('tt-about-us');
+    const userMessageDiv = document.querySelector('.message.user-message');
 
-   // homeIcon ile ilgili satırları tamamen kaldır
-const ttIcon = document.querySelector('img[src="img/about-icon.svg"]');
-const welcomeSection = document.getElementById('tt-welcome');
-const aboutUsSection = document.getElementById('tt-about-us');
-const userMessageDiv = document.querySelector('.message.user-message');
+    let clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
+    let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
+    let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
 
-let clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
-let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
-let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
-
-if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
-    if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
-        // EĞER ABOUT AÇIK DEĞİLSE gizleme işlemini yap
-        if (aboutUsSection && !aboutUsSection.classList.contains('tt-overlay')) {
-             aboutUsSection.style.display = 'none';
+    // EĞER ABOUT EKRANI "OVERLAY" OLARAK AÇIKSA:
+    if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) {
+        // İçeriğe veya butona tıklanmadıysa (dışarı tıklandıysa) KAPAT
+        if (!clickedInsideAboutUs && !clickedOnTtIcon && !event.target.closest('.updates-btn')) {
+            aboutUsSection.style.display = 'none';
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+            // Chat'i geri getir
+            chatBox.style.display = 'block';
+            if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
         }
+        return; // About açıkken diğer mantıkları çalıştırma
     }
-    // About overlay modunda değilse chatbox'ı göster
-    if (aboutUsSection && !aboutUsSection.classList.contains('tt-overlay')) {
+
+    // NORMAL CHAT AKIŞI MANTIĞI (About kapalıyken)
+    if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
+        if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
+            if (aboutUsSection) aboutUsSection.style.display = 'none';
+        }
         chatBox.style.display = 'block';
     }
-}
 });
