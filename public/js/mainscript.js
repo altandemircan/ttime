@@ -3963,57 +3963,57 @@ function getPurpleRestaurantMarkerHtml(label) {
 //     setTimeout(function() { map.invalidateSize(); }, 120);
 // }
 
-// function toggleContent(arrowIcon) {
-//     const cartItem = arrowIcon.closest('.cart-item');
-//     if (!cartItem) return;
-//     const contentDiv = cartItem.querySelector('.content');
-//     if (!contentDiv) return;
+function toggleContent(arrowIcon) {
+    const cartItem = arrowIcon.closest('.cart-item');
+    if (!cartItem) return;
+    const contentDiv = cartItem.querySelector('.content');
+    if (!contentDiv) return;
     
-//     // Aç/Kapa işlemi
-//     contentDiv.classList.toggle('open');
-//     if (contentDiv.classList.contains('open')) {
-//         contentDiv.style.display = 'block';
-//     } else {
-//         contentDiv.style.display = 'none';
-//     }
+    // Aç/Kapa işlemi
+    contentDiv.classList.toggle('open');
+    if (contentDiv.classList.contains('open')) {
+        contentDiv.style.display = 'block';
+    } else {
+        contentDiv.style.display = 'none';
+    }
 
-//     // Ok işaretini döndür (Eğer CSS class ile yapıyorsan burası kalabilir)
-//     const arrowImg = arrowIcon.querySelector('img') || arrowIcon;
-//     if(arrowImg && arrowImg.classList) arrowImg.classList.toggle('rotated');
+    // Ok işaretini döndür (Eğer CSS class ile yapıyorsan burası kalabilir)
+    const arrowImg = arrowIcon.querySelector('img') || arrowIcon;
+    if(arrowImg && arrowImg.classList) arrowImg.classList.toggle('rotated');
 
-//     // --- LEAFLET HARİTA YÖNETİMİ (GÜVENLİ) ---
-//     const item = cartItem.closest('.travel-item');
-//     if (!item) return;
+    // --- LEAFLET HARİTA YÖNETİMİ (GÜVENLİ) ---
+    const item = cartItem.closest('.travel-item');
+    if (!item) return;
     
-//     const mapDiv = item.querySelector('.leaflet-map');
-//     // Sadece görünürse işlem yap
-//     if (mapDiv && contentDiv.style.display !== 'none') {
-//         const mapId = mapDiv.id;
+    const mapDiv = item.querySelector('.leaflet-map');
+    // Sadece görünürse işlem yap
+    if (mapDiv && contentDiv.style.display !== 'none') {
+        const mapId = mapDiv.id;
         
-//         // [SAFETY CHECK] Koordinatları güvenli al
-//         const latStr = item.getAttribute('data-lat');
-//         const lonStr = item.getAttribute('data-lon');
+        // [SAFETY CHECK] Koordinatları güvenli al
+        const latStr = item.getAttribute('data-lat');
+        const lonStr = item.getAttribute('data-lon');
         
-//         // Eğer veri yoksa veya sayı değilse işlemi durdur (ÇÖKMEYİ ENGELLER)
-//         if (!latStr || !lonStr || isNaN(parseFloat(latStr)) || isNaN(parseFloat(lonStr))) {
-//              console.warn("Harita için geçersiz koordinat, atlanıyor:", item);
-//              mapDiv.innerHTML = '<div class="map-error" style="padding:20px;text-align:center;color:#999;">Location data not available</div>';
-//              return;
-//         }
+        // Eğer veri yoksa veya sayı değilse işlemi durdur (ÇÖKMEYİ ENGELLER)
+        if (!latStr || !lonStr || isNaN(parseFloat(latStr)) || isNaN(parseFloat(lonStr))) {
+             console.warn("Harita için geçersiz koordinat, atlanıyor:", item);
+             mapDiv.innerHTML = '<div class="map-error" style="padding:20px;text-align:center;color:#999;">Location data not available</div>';
+             return;
+        }
 
-//         const lat = parseFloat(latStr);
-//         const lon = parseFloat(lonStr);
-//         const name = item.querySelector('.toggle-title') ? item.querySelector('.toggle-title').textContent : "Place";
-//         const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+        const lat = parseFloat(latStr);
+        const lon = parseFloat(lonStr);
+        const name = item.querySelector('.toggle-title') ? item.querySelector('.toggle-title').textContent : "Place";
+        const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
 
-//         // [PERFORMANS] Harita zaten varsa sadece boyutunu düzelt, yoksa oluştur
-//         if (window._leafletMaps && window._leafletMaps[mapId]) {
-//              setTimeout(() => { window._leafletMaps[mapId].invalidateSize(); }, 100);
-//         } else {
-//             createLeafletMapForItem(mapId, lat, lon, name, number);
-//         }
-//     }
-// }
+        // [PERFORMANS] Harita zaten varsa sadece boyutunu düzelt, yoksa oluştur
+        if (window._leafletMaps && window._leafletMaps[mapId]) {
+             setTimeout(() => { window._leafletMaps[mapId].invalidateSize(); }, 100);
+        } else {
+            createLeafletMapForItem(mapId, lat, lon, name, number);
+        }
+    }
+}
 
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
@@ -4735,7 +4735,7 @@ if (aiInfoSection) {
                 </div>
               </div>
               <span class="arrow">
-                <img src="img/right-arrow.svg" class="arrow-icon" style="transform: rotate(90deg);" onclick="toggleContent(this)">
+                <img src="img/right-arrow.svg" class="arrow-icon" onclick="toggleContent(this)">
               </span>
             </div>
             <div class="content">
