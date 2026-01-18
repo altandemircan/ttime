@@ -4580,20 +4580,33 @@ if (aiInfoSection) {
         dayList.className = "day-list";
         dayList.dataset.day = day;
 
-        // O güne ait itemları filtrele
-// Global değişken kontrolü (dosya başında tanımlı olmalı: window.__dismissedAutoInfo = window.__dismissedAutoInfo || [];)
-const dayItems = window.cart.filter(item => item.day === day);
+                        
+                    // Global değişken kontrolü (dosya başında tanımlı olmalı: window.__dismissedAutoInfo = window.__dismissedAutoInfo || [];)
+                    const dayItems = window.cart.filter(item => item.day === day);
 
-if (dayItems.length >= 2 && !window.__dismissedAutoInfo.includes(day)) {
-    window.__dismissedAutoInfo.push(day);
-}
+                    // 2 veya daha fazla item varsa bu gün için uyarıyı kapat
+                    if (dayItems.length >= 2 && !window.__dismissedAutoInfo.includes(day)) {
+                        window.__dismissedAutoInfo.push(day);
+                    }
 
-if (dayItems.length === 1 && !window.__dismissedAutoInfo.includes(day)) {
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'auto-copy-info';
-    infoDiv.style = "background:#fff8e1; color:#856404; padding:6px 10px; border-radius:6px; font-size:0.75rem; margin-bottom:8px; border:1px dashed #ffe082; display:block;";
-    infoDiv.innerHTML = `✨ Last item of Day ${day - 1} added`;
-    dayList.appendChild(infoDiv);
+                    // Sadece 1 item varken ve daha önce kapatılmamışsa mesajı göster
+                    if (dayItems.length === 1 && !window.__dismissedAutoInfo.includes(day)) {
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'auto-copy-info';
+                        // Verdiğin özel CSS değerleri:
+                        infoDiv.style = `
+                            background: rgb(254, 251, 239);
+                            color: rgb(133, 100, 4);
+                            padding: 6px 10px;
+                            border-radius: 6px;
+                            border: 1px dashed rgb(255, 224, 130);
+                            display: block;
+                            font-size: 0.85rem;
+                            font-weight: 500;
+                            margin-bottom: 20px;
+                        `;
+                        infoDiv.innerHTML = `✨ Bir önceki günün son itemı eklendi`;
+                        dayList.appendChild(infoDiv);
 }
 
         const containerId = `route-map-day${day}`;
