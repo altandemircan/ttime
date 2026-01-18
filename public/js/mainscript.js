@@ -4582,18 +4582,16 @@ if (aiInfoSection) {
 
                         
                     // Global değişken kontrolü (dosya başında tanımlı olmalı: window.__dismissedAutoInfo = window.__dismissedAutoInfo || [];)
+                    // Check for auto-copied item info
                     const dayItems = window.cart.filter(item => item.day === day);
 
-                    // 2 veya daha fazla item varsa bu gün için uyarıyı kapat
                     if (dayItems.length >= 2 && !window.__dismissedAutoInfo.includes(day)) {
                         window.__dismissedAutoInfo.push(day);
                     }
 
-                    // Sadece 1 item varken ve daha önce kapatılmamışsa mesajı göster
                     if (dayItems.length === 1 && !window.__dismissedAutoInfo.includes(day)) {
                         const infoDiv = document.createElement('div');
                         infoDiv.className = 'auto-copy-info';
-                        // Verdiğin özel CSS değerleri:
                         infoDiv.style = `
                             background: rgb(254, 251, 239);
                             color: rgb(133, 100, 4);
@@ -4605,9 +4603,9 @@ if (aiInfoSection) {
                             font-weight: 500;
                             margin-bottom: 20px;
                         `;
-                        infoDiv.innerHTML = `✨ Bir önceki günün son itemı eklendi`;
+                        infoDiv.innerHTML = `✨ Last item of Day ${day - 1} added`;
                         dayList.appendChild(infoDiv);
-}
+                    }
 
         const containerId = `route-map-day${day}`;
         const travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "driving";
