@@ -309,12 +309,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   window.showAboutTriptime = function () {
-    // --- HARİTA DURUMUNU KAYDET ---
+    // --- DURUMU VE AKTİF GÜNÜ KAYDET ---
     const tripSidebar = document.getElementById('sidebar-overlay-trip');
-    // Eğer harita sidebar'ı 'open' class'ına sahipse true kaydet
     window._wasMapOpenBeforeAbout = (tripSidebar && tripSidebar.classList.contains('open'));
+    
+    // O an ekranda açık olan (display:block olan) map-container'ın gününü bul
+    const activeMapContainer = document.querySelector('.map-container[style*="display: block"]');
+    window._lastActiveDay = activeMapContainer ? activeMapContainer.getAttribute('data-day') : null;
 
-    // --- HARİTAYI KAPATMA ---
+    // --- HARİTAYI KAPATMA (Expand kapatılır) ---
     const closeMapBtn = document.querySelector('.close-expanded-map');
     if (closeMapBtn) closeMapBtn.click();
 
@@ -439,13 +442,27 @@ document.addEventListener('click', function(event) {
             aboutUsSection.classList.remove('active', 'tt-overlay');
 
             // --- HARİTAYA GERİ DÖNÜŞ MANTIĞI ---
+            // --- HARİTAYA GERİ DÖNÜŞ MANTIĞI ---
             if (window._wasMapOpenBeforeAbout) {
-                // Eğer harita açıktıysa, harita sidebar'ını tekrar aç
+                // 1. Sidebar'ı aç
                 if (typeof window.toggleSidebarTrip === 'function') {
                     window.toggleSidebarTrip();
                 }
-                // Harita açıldığı için chatbox ve main-chat gizli kalmalı/kalabilir (tasarımına göre)
-                window._wasMapOpenBeforeAbout = false; // Resetle
+
+                // 2. Haritayı büyütme (Expand) butonunu bul ve tıkla
+                // Kaydettiğimiz güne ait butonu ya da genel butonu tetikleyelim
+                setTimeout(() => {
+                    const expandBtn = document.querySelector('.expand-map-btn');
+                    if (expandBtn) expandBtn.click();
+                    
+                    // Eğer harita render edilmesi gerekiyorsa invalidatedSize tetikle
+                    if (window.leafletMaps && window._lastActiveDay) {
+                         const map = window.leafletMaps[window._lastActiveDay];
+                         if (map) map.invalidateSize();
+                    }
+                    window._wasMapOpenBeforeAbout = false; 
+                }, 100); 
+
             } else {
                 // Harita açık değilse normal chat düzenine dön
                 chatBox.style.display = 'block';
