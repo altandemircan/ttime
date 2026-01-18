@@ -4603,7 +4603,7 @@ if (aiInfoSection) {
                             font-weight: 500;
                             margin-bottom: 20px;
                         `;
-                        infoDiv.innerHTML = `✨ Last item of Day ${day - 1} added`;
+                        infoDiv.innerHTML = `⚡ Last item of Day ${day - 1} added`;
                         dayList.appendChild(infoDiv);
                     }
 
