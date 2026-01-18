@@ -435,36 +435,18 @@ document.addEventListener('click', function(event) {
 
     if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) {
         if (!clickedInsideAboutUs && !clickedOnTtIcon && !event.target.closest('.updates-btn')) {
-            aboutUsSection.style.display = 'none';
+            // About ekranını kapat
             aboutUsSection.style.setProperty('display', 'none', 'important');
             aboutUsSection.classList.remove('active', 'tt-overlay');
 
             if (window._wasMapOpenBeforeAbout) {
-                // 1. Önce Sidebar'ı aç
-                if (typeof window.toggleSidebarTrip === 'function') {
-                    window.toggleSidebarTrip();
-                }
-
-                // 2. Kısa bir süre sonra Expand Map butonunu tetikle
-                setTimeout(() => {
-                    // Eğer belirli bir günün haritası açıktıysa o günün içindeki expand butonunu bulmaya çalış, yoksa genelini bul
-                    let expandBtn = null;
-                    if (window._lastActiveDay) {
-                        const dayContainer = document.querySelector(`.map-container[data-day="${window._lastActiveDay}"]`);
-                        if (dayContainer) expandBtn = dayContainer.closest('.tripbox')?.querySelector('.expand-map-btn');
-                    }
-                    
-                    if (!expandBtn) expandBtn = document.querySelector('.expand-map-btn');
-
-                    if (expandBtn) {
-                        expandBtn.click();
-                    }
-                    window._wasMapOpenBeforeAbout = false; 
-                }, 150); // Sidebar'ın açılma animasyonu için kısa bekleme
-
+                // Harita zaten arkada açık (Expand hali dahil), sadece orayı temiz tut
+                if (chatBox) chatBox.style.display = 'none';
+                if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'none';
+                window._wasMapOpenBeforeAbout = false; 
             } else {
-                // Harita yoksa normal chat düzeni
-                chatBox.style.display = 'block';
+                // Harita açık değilse normal chat düzenine dön
+                if (chatBox) chatBox.style.display = 'block';
                 if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
             }
         }
