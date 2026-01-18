@@ -8940,7 +8940,6 @@ function changeContent(option) {
     const chatBox = document.getElementById('chat-box');
     const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
-    // main-chat divini alıyoruz
     const mainChat = document.getElementById('main-chat');
 
     if (chatBox) chatBox.style.display = 'none';
@@ -8951,19 +8950,33 @@ function changeContent(option) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
-        // Ana sayfaya dönünce chat'i tekrar gösteriyoruz
-        if (mainChat) mainChat.style.display = 'flex'; // veya 'block'
+        if (mainChat) mainChat.style.display = 'flex';
      
     } else if (option === 2) {
+        // --- HARİTA KAPATMA ÖZELLİĞİ BURAYA EKLENDİ ---
+        // Eğer harita genişletilmiş (expanded) moddaysa, kapatma fonksiyonunu çağırıyoruz.
+        // Senin kodunda bu fonksiyon genellikle 'closeMapExpanded' veya 'closeMap' adındadır.
+        if (typeof closeMapExpanded === "function") {
+            closeMapExpanded(); 
+        } else if (typeof toggleMap === "function") {
+            // Bazı durumlarda aynı buton açıp kapatır, eğer harita açıksa kapatır.
+            // Eğer haritanın açık olduğunu kontrol eden bir class varsa (örn: body.map-active) onu kontrol edip kapatabiliriz:
+            if (document.body.classList.contains('map-expanded')) {
+                toggleMap();
+            }
+        }
+
+        // About içeriğini göster
         if (aboutUsSection) {
             aboutUsSection.style.display = 'block';
             aboutUsSection.classList.add('active');
+            // Sayfanın en üstüne odaklanmasını sağla
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
         const ttIcon = document.getElementById("about-icon");
         if (ttIcon) ttIcon.classList.add('active');
 
-        // --- BURASI EKLENDİ ---
-        // About tıklandığında main-chat'i gizle
         if (mainChat) {
             mainChat.style.display = 'none';
         }
