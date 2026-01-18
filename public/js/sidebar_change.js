@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
       #tt-about-us.tt-overlay {
         position: fixed;
         inset: 0;
-        z-index: 2147483647;
+        z-index: 150;
         background: #fff;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try { about.scrollTop = 0; } catch (_) {}
     try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
   };
-  
+
 })();
 
 /* === START WITH MAP -> TRIP SIDEBAR OPEN (EKLENDİ) ===
