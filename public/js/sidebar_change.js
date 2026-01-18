@@ -309,6 +309,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   window.showAboutTriptime = function () {
+    // --- HARİTA DURUMUNU KAYDET ---
+    const tripSidebar = document.getElementById('sidebar-overlay-trip');
+    // Eğer harita sidebar'ı 'open' class'ına sahipse true kaydet
+    window._wasMapOpenBeforeAbout = (tripSidebar && tripSidebar.classList.contains('open'));
+
     // --- HARİTAYI KAPATMA ---
     const closeMapBtn = document.querySelector('.close-expanded-map');
     if (closeMapBtn) closeMapBtn.click();
@@ -428,17 +433,26 @@ document.addEventListener('click', function(event) {
     let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
     let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
 
-    // EĞER ABOUT EKRANI "OVERLAY" OLARAK AÇIKSA:
     if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) {
-        // İçeriğe veya butona tıklanmadıysa (dışarı tıklandıysa) KAPAT
         if (!clickedInsideAboutUs && !clickedOnTtIcon && !event.target.closest('.updates-btn')) {
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
-            // Chat'i geri getir
-            chatBox.style.display = 'block';
-            if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
+
+            // --- HARİTAYA GERİ DÖNÜŞ MANTIĞI ---
+            if (window._wasMapOpenBeforeAbout) {
+                // Eğer harita açıktıysa, harita sidebar'ını tekrar aç
+                if (typeof window.toggleSidebarTrip === 'function') {
+                    window.toggleSidebarTrip();
+                }
+                // Harita açıldığı için chatbox ve main-chat gizli kalmalı/kalabilir (tasarımına göre)
+                window._wasMapOpenBeforeAbout = false; // Resetle
+            } else {
+                // Harita açık değilse normal chat düzenine dön
+                chatBox.style.display = 'block';
+                if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
+            }
         }
-        return; // About açıkken diğer mantıkları çalıştırma
+        return;
     }
 
    if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
