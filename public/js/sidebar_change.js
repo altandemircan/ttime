@@ -391,10 +391,17 @@ function changeContent(option) {
         }
 
         // About içeriğini göster
-       if (aboutUsSection) {
+        if (aboutUsSection) {
+            // Önce inline display:none varsa temizleyelim
+            aboutUsSection.style.display = ''; 
+            
+            // Class'ları ekle (CSS'teki !important her şeyi çözecek)
             aboutUsSection.classList.add('active', 'tt-overlay');
-            // Inline style'ı zorla block yap ve !important ekle ki döngüler kapatamasın
-            aboutUsSection.style.setProperty('display', 'block', 'important');
+            
+            // Diğer her şeyi (chat vb.) gizle
+            if (mainChat) mainChat.style.display = 'none';
+            if (chatBox) chatBox.style.display = 'none';
+            
             window.scrollTo({ top: 0, behavior: 'instant' });
         }
 
@@ -434,14 +441,16 @@ document.addEventListener('click', function(event) {
         return; // About açıkken diğer mantıkları çalıştırma
     }
 
-    // NORMAL CHAT AKIŞI MANTIĞI (About kapalıyken)
    if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
-    // Sadece About overlay değilse bu gizleme/gösterme işlerini yap
-    if (aboutUsSection && !aboutUsSection.classList.contains('tt-overlay')) {
+        // Eğer About Overlay modundaysa HİÇBİR ŞEY YAPMA, fonksiyondan çık
+        if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) return;
+
         if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
-             aboutUsSection.style.display = 'none';
+             if (aboutUsSection) {
+                 aboutUsSection.classList.remove('active');
+                 aboutUsSection.style.display = 'none';
+             }
         }
         chatBox.style.display = 'block';
     }
-}
 });

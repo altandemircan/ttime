@@ -373,10 +373,11 @@ ease;
 }
 
 .content-section.active {
-    opacity: 1;
-    visibility: visible;
-    height: auto;
-    overflow: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
 }
 
 /* Button Styling */
