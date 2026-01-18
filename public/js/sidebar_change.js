@@ -311,15 +311,12 @@ document.addEventListener('DOMContentLoaded', function () {
   window.showAboutTriptime = function () {
     // --- DURUMU VE AKTİF GÜNÜ KAYDET ---
     const tripSidebar = document.getElementById('sidebar-overlay-trip');
-    window._wasMapOpenBeforeAbout = (tripSidebar && tripSidebar.classList.contains('open'));
-    
-    // O an ekranda açık olan (display:block olan) map-container'ın gününü bul
-    const activeMapContainer = document.querySelector('.map-container[style*="display: block"]');
-    window._lastActiveDay = activeMapContainer ? activeMapContainer.getAttribute('data-day') : null;
-
-    // --- HARİTAYI KAPATMA (Expand kapatılır) ---
     const closeMapBtn = document.querySelector('.close-expanded-map');
-    if (closeMapBtn) closeMapBtn.click();
+    
+    // Eğer harita sidebar'ı açıksa VEYA harita şu an büyük ekransa (close düğmesi varsa)
+    window._wasMapOpenBeforeAbout = (tripSidebar && tripSidebar.classList.contains('open')) || !!closeMapBtn;
+    
+    // Haritayı KAPATMIYORUZ, sadece About'u üstüne bindiriyoruz.
 
     ensureAboutOverlayStyles();
     const about = document.getElementById('tt-about-us');
