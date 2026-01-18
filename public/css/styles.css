@@ -397,12 +397,16 @@ ease;
 /*  Remove specific styles for these sections */
 #tt-about-us
 {   
-        padding: 20px;
+    padding: 20px;
     overflow-y: scroll;
     top: 50px;
-
     width: calc(100% - 455px);
     background: #ffffff;
+}
+@media (max-width: 768px) {
+   #tt-about-us {
+    width: 100%;
+   }
 }
 
 /* iframe için ekstra stil */
