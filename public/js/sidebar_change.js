@@ -296,8 +296,6 @@ document.addEventListener('DOMContentLoaded', function () {
     style.id = 'tt-about-overlay-style';
     style.textContent = `
       #tt-about-us.tt-overlay {
-        position: fixed;
-        inset: 0;
         z-index: 150;
         background: #fff;
         overflow-y: auto;
