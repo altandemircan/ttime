@@ -8940,9 +8940,10 @@ function changeContent(option) {
     const chatBox = document.getElementById('chat-box');
     const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
+    // main-chat divini alıyoruz
+    const mainChat = document.getElementById('main-chat');
 
     if (chatBox) chatBox.style.display = 'none';
-
     if (aboutUsSection) aboutUsSection.style.display = 'none';
 
     if (option === 1) {
@@ -8950,6 +8951,8 @@ function changeContent(option) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
+        // Ana sayfaya dönünce chat'i tekrar gösteriyoruz
+        if (mainChat) mainChat.style.display = 'flex'; // veya 'block'
      
     } else if (option === 2) {
         if (aboutUsSection) {
@@ -8958,6 +8961,12 @@ function changeContent(option) {
         }
         const ttIcon = document.getElementById("about-icon");
         if (ttIcon) ttIcon.classList.add('active');
+
+        // --- BURASI EKLENDİ ---
+        // About tıklandığında main-chat'i gizle
+        if (mainChat) {
+            mainChat.style.display = 'none';
+        }
     }
 }
 
