@@ -400,7 +400,7 @@ ease;
         padding: 20px;
     overflow-y: scroll;
     top: 50px;
-    bottom: 180px;
+
     width: calc(100% - 455px);
     background: #ffffff;
 }
