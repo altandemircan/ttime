@@ -3965,11 +3965,16 @@ function getPurpleRestaurantMarkerHtml(label) {
 
 
 function toggleContent(element) {
-    const content = element.closest('.cart-item').querySelector('.content');
-    if (content.style.display === "none") {
+    const cartItem = element.closest('.cart-item');
+    const content = cartItem.querySelector('.content');
+    const arrow = element; // Tıklanan img (arrow-icon)
+
+    if (content.style.display === "none" || content.style.display === "") {
         content.style.display = "block";
+        arrow.style.transform = "rotate(90deg)"; // Oku aşağı döndür
     } else {
         content.style.display = "none";
+        arrow.style.transform = "rotate(0deg)"; // Oku sağa döndür
     }
 }
 
