@@ -4225,19 +4225,12 @@ ease;
     to { transform: rotate(360deg); }
 }
 
+
 .arrow-icon {
-  transition: transform 0.2s;
-}
-.arrow-icon.open {
-  transform: rotate(90deg); /* sağdan aşağıya çevirir */
-}
-/* Okun varsayılan hali (sağa bakan) */
-.arrow-icon {
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease !important;
     transform: rotate(0deg);
 }
 
-/* Tıklanınca dönecek hali (aşağı bakan) */
 .arrow-icon.rotated {
     transform: rotate(90deg) !important;
 }

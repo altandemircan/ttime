@@ -4139,7 +4139,8 @@ function toggleContent(arrowIcon) {
     }
 
    // Ok işaretini döndür
-    const arrowImg = arrowIcon.classList.contains('arrow-icon') ? arrowIcon : arrowIcon.querySelector('.arrow-icon');
+ const arrowImg = arrowIcon.tagName === 'IMG' ? arrowIcon : arrowIcon.querySelector('.arrow-icon');
+    
     if (arrowImg) {
         arrowImg.classList.toggle('rotated');
     }
