@@ -5188,16 +5188,6 @@ if (aiInfoSection) {
         window._lastSegmentEndKm = undefined;
     }
 
-    document.querySelectorAll('.cart-item').forEach(item => {
-    const content = item.querySelector('.content');
-    const arrow = item.querySelector('.arrow-icon');
-        
-        // Eğer içerik bir şekilde açıksa (display block ise), oku da döndür
-        if (content && content.style.display === 'block' && arrow) {
-            arrow.classList.add('rotated');
-        }
-    });
-    
 }
 
 function showRemoveItemConfirmation(index, btn) {
