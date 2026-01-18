@@ -405,19 +405,11 @@ ease;
 }
 @media (max-width: 768px) {
    #tt-about-us {
-    width: 100%;
+            width: fit-content;
+        overflow-y: visible;
    }
 }
 
-/* iframe için ekstra stil */
-#tt-about-us iframe {
-    display: block;
-    margin: 0;
-    padding: 0;
-    border: none;
-    width: 335px;
-    height: 225px;
-}
 
 /* Style for Welcome section to position it at the top */
 #tt-welcome {
