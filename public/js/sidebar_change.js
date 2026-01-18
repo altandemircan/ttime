@@ -66,6 +66,26 @@ window.toggleSidebarPrivacyTerms = function() {
 };
 });
 
+// --- ABOUT DIŞARI TIKLAYINCA KAPATMA ---
+document.addEventListener('click', function(event) {
+    const aboutUsSection = document.getElementById('tt-about-us');
+    if (aboutUsSection && aboutUsSection.style.display === 'block') {
+        if (!aboutUsSection.contains(event.target) && 
+            !event.target.closest('.updates-btn') && 
+            !event.target.closest('#about-icon')) {
+            
+            aboutUsSection.style.display = 'none';
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+
+            if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
+            if (document.getElementById('chat-box')) document.getElementById('chat-box').style.display = 'block';
+            if (document.getElementById('tt-welcome')) {
+                document.getElementById('tt-welcome').style.display = 'block';
+                document.getElementById('tt-welcome').classList.add('active');
+            }
+        }
+    }
+});
 
 // Ana Menü açma fonksiyonu (Sadece açma)
 function toggleSidebarGallery() {
@@ -289,6 +309,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   window.showAboutTriptime = function () {
+    // --- HARİTAYI KAPATMA ---
+    const closeMapBtn = document.querySelector('.close-expanded-map');
+    if (closeMapBtn) closeMapBtn.click();
+
     ensureAboutOverlayStyles();
     const about = document.getElementById('tt-about-us');
     if (!about) return;
