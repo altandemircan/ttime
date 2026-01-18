@@ -5887,7 +5887,7 @@ ease;
     background: linear-gradient(
         90deg,
         transparent,
-        rgba(139, 92, 246, 0.1), 
+        rgba(139, 92, 246, 0.2), 
         transparent
     );
     animation: light-sweep 4s infinite;

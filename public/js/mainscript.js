@@ -12,7 +12,7 @@ window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {
 window.cart = JSON.parse(localStorage.getItem('cart')) || [];
 window.__locationPickedFromSuggestions = false;
 window.selectedLocationLocked = false;
-
+window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Dünya yarıçapı metre cinsinden
@@ -4579,6 +4579,24 @@ if (aiInfoSection) {
         const dayList = document.createElement("ul");
         dayList.className = "day-list";
         dayList.dataset.day = day;
+
+        // O güne ait itemları filtrele
+const dayItems = window.cart.filter(item => item.day === day);
+
+// 2 veya daha fazla item varsa, bu gün için uyarıyı sonsuza kadar kapat
+if (dayItems.length >= 2 && !window.__dismissedAutoInfo.includes(day)) {
+    window.__dismissedAutoInfo.push(day);
+    localStorage.setItem('dismissedAutoInfo', JSON.stringify(window.__dismissedAutoInfo));
+}
+
+// Sadece 1 item varsa ve daha önce hiç 2 olmamışsa mesajı göster
+if (dayItems.length === 1 && !window.__dismissedAutoInfo.includes(day)) {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'auto-copy-info';
+    infoDiv.style = "background:#fff8e1; color:#856404; padding:10px; border-radius:8px; font-size:0.85rem; margin-bottom:12px; border:1px dashed #ffe082; display:flex; align-items:center; gap:8px;";
+    infoDiv.innerHTML = `<span>✨ We've carried over the last item from the previous day to help you continue your plan.</span>`;
+    dayList.appendChild(infoDiv); // li'den hemen önce görünür
+}
 
         const containerId = `route-map-day${day}`;
         const travelMode = typeof getTravelModeForDay === "function" ? getTravelModeForDay(day) : "driving";
