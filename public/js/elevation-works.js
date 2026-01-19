@@ -688,7 +688,7 @@ const response = await fetch('/api/elevation', {
         range: Math.round(max - min)
       });
 
-      
+
 
       container._elevationData = { smooth, min, max };
       container._elevationDataFull = { smooth: smooth.slice(), min, max };
@@ -708,6 +708,18 @@ const response = await fetch('/api/elevation', {
 
         const X = kmRel => (kmRel / spanKm) * width;
         const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+
+        console.log("[Y_CALC]", {
+  vizMin: Math.round(vizMin),
+  vizMax: Math.round(vizMax),
+  SVG_H: SVG_H,
+  sample_Y_values: [
+    Y(vizMin),
+    Y(vizMin + 500),
+    Y(vizMin + 1000),
+    Y(vizMax)
+  ]
+});
 
         while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
         while (segG.firstChild) segG.removeChild(segG.firstChild);
