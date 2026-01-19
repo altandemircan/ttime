@@ -217,8 +217,15 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         const { smooth, min, max } = container._elevationData;
         let vizMin = min, vizMax = max;
         const eSpan = max - min;
-        if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
-        else { vizMin = min - 1; vizMax = max + 1; }
+        // Padding: yukarıya %10, aşağıya %5
+        if (eSpan > 0) { 
+          vizMin = min - eSpan * 0.05; 
+          vizMax = max + eSpan * 0.10; 
+        }
+        else { 
+          vizMin = min - 1; 
+          vizMax = max + 1; 
+        }
         activeData = { smooth, vizMin, vizMax };
     }
 
