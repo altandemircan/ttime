@@ -1445,6 +1445,23 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     
+    // === ZOOM LOGGER EKLE ===
+    if (!m._zoomLoggerAdded) {
+        m.on('zoomstart', function() {
+            console.log('[ZOOM EVENT] Zoom başladı - Mevcut:', this.getZoom());
+        });
+        
+        m.on('zoom', function() {
+            console.log('[ZOOM EVENT] Zoom yapılıyor:', this.getZoom().toFixed(4));
+        });
+        
+        m.on('zoomend', function() {
+            console.log('[ZOOM EVENT] Zoom bitti - Son:', this.getZoom());
+        });
+        
+        m._zoomLoggerAdded = true;
+    }
+    
     // --- ZOOM KISMI (FIX: Manuel zoom + setView kullan) ---
     try {
         if (poly.getBounds().isValid()) {
@@ -1468,32 +1485,41 @@ function highlightSegmentOnMap(day, startKm, endKm) {
             
             console.log('[SEGMENT ZOOM] Segment uzunluğu:', segmentKm.toFixed(2), 'km → Hedef zoom:', targetZoom);
             
-            // FIX: fitBounds yerine setView kullan (tam sayı zoom garantisi)
-            m.setView(center, targetZoom, {
-                animate: true,
-                duration: 0.8,
-                easeLinearity: 0.25
-            });
+            // FIX: Haritayı önce durağan hale getir
+            m.stop(); // Tüm animasyonları durdur
             
-            // Zoom sonrası kontrol ve invalidate
+            // FIX: setZoom ile tam sayı garantisi + setView ile merkez
+            m.setZoom(targetZoom, { animate: false }); // Önce zoom'u ayarla
+            
             setTimeout(() => {
-                const finalZoom = m.getZoom();
-                console.log('[SEGMENT ZOOM] Son zoom seviyesi:', finalZoom);
+                m.panTo(center, { // Sonra merkeze git
+                    animate: true,
+                    duration: 0.8,
+                    easeLinearity: 0.25
+                });
                 
-                // FIX: Eğer zoom hala ondalıklıysa (örn 15.3), tam sayıya çek
-                if (finalZoom !== Math.round(finalZoom)) {
-                    console.warn('[SEGMENT ZOOM] Zoom ondalıklı! Düzeltiliyor:', finalZoom, '→', Math.round(finalZoom));
-                    m.setZoom(Math.round(finalZoom), { animate: false });
-                }
-                
-                try { 
-                    m.invalidateSize(); 
-                    // Canvas renderer'ı varsa yenile
-                    if (m._renderer && m._renderer._update) {
-                        m._renderer._update();
+                // Zoom sonrası kontrol
+                setTimeout(() => {
+                    const finalZoom = m.getZoom();
+                    console.log('[SEGMENT ZOOM] Son zoom seviyesi:', finalZoom);
+                    
+                    // FIX: Eğer zoom hala ondalıklıysa (örn 15.3), tam sayıya çek
+                    if (Math.abs(finalZoom - Math.round(finalZoom)) > 0.001) {
+                        console.warn('[SEGMENT ZOOM] ⚠️ Zoom ondalıklı! Düzeltiliyor:', finalZoom, '→', Math.round(finalZoom));
+                        m.setZoom(Math.round(finalZoom), { animate: false });
                     }
-                } catch(e) {}
-            }, 900);
+                    
+                    try { 
+                        m.invalidateSize(); 
+                        // Canvas renderer'ı varsa yenile
+                        if (m._renderer && m._renderer._update) {
+                            m._renderer._update();
+                        }
+                        // Polyline'ı yeniden çiz
+                        poly.redraw();
+                    } catch(e) {}
+                }, 100);
+            }, 50);
         }
     } catch(e) {
         console.error('[SEGMENT ZOOM] Hata:', e);
