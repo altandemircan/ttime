@@ -640,33 +640,21 @@ const response = await fetch('/api/elevation', {
         } else {
           foundKmAbs = startKmDom + percent * spanKm;
         }
-
 let minDist = Infinity;
-let bestIndex = 1;
-
-for (let i = 1; i < s.length; i++) {
-  const kmAbs1 = s[i - 1].distM / 1000;
-  const kmAbs2 = s[i].distM / 1000;
-  const midKm = (kmAbs1 + kmAbs2) / 2;
-  const dist = Math.abs(foundKmAbs - midKm);
+let bestIndex = 0;
+for (let i = 0; i < s.length; i++) {
+  const kmAbs = s[i].distM / 1000;
+  const dist = Math.abs(foundKmAbs - kmAbs);
   if (dist < minDist) {
     minDist = dist;
     bestIndex = i;
-    const dx = s[i].distM - s[i - 1].distM;
-    const dy = ed.smooth[i] - ed.smooth[i - 1];
-    foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+    if (i > 0) {
+      const dx = s[i].distM - s[i - 1].distM;
+      const dy = ed.smooth[i] - ed.smooth[i - 1];
+      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+    }
   }
 }
-
-// DEBUG LOG EKLE
-console.log("[TOOLTIP DEBUG]", {
-  foundKmAbs: foundKmAbs.toFixed(2),
-  bestIndex: bestIndex,
-  smooth_length: ed.smooth.length,
-  smooth_value_at_bestIndex: ed.smooth[bestIndex],
-  s_length: s.length
-});
-
 if (bestIndex < ed.smooth.length) {
   foundElev = Math.round(ed.smooth[bestIndex]);
 } else {
