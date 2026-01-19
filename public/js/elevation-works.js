@@ -670,10 +670,25 @@ const response = await fetch('/api/elevation', {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-      // ARTIK KESİN GEÇERLİDİR
-      const smooth = movingAverage(elevations, 3);
+       // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
+      console.log("[ELEV RAW]", {
+        totalPoints: elevations.length,
+        min: Math.min(...elevations.filter(e => e != null)),
+        max: Math.max(...elevations.filter(e => e != null)),
+        first5: elevations.slice(0, 5)
+      });
+      
+      const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
+      
+      console.log("[ELEV SMOOTH]", {
+        min: Math.round(min),
+        max: Math.round(max),
+        range: Math.round(max - min)
+      });
+
+      
 
       container._elevationData = { smooth, min, max };
       container._elevationDataFull = { smooth: smooth.slice(), min, max };
