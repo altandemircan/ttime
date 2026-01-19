@@ -2254,3 +2254,165 @@ window.addEventListener('DOMContentLoaded', function() {
     }, 220);
   }, 360);
 });
+
+/**
+ * elevation-works.js içine eklenecek kod
+ * 
+ * renderRouteScaleBar fonksiyonunda elevation verileri gelip 
+ * movingAverage yapılmadan HEMEN ÖNCE çalıştır
+ */
+
+// === ELEVATION VERİ TEMIZLEME FONKSİYONU ===
+window.cleanElevationData = function(elevations, samples = null) {
+    if (!Array.isArray(elevations) || elevations.length === 0) return elevations;
+    
+    const cleaned = elevations.slice();
+    const SPIKE_THRESHOLD = 25; // 25m'den fazla sıçrama = hata
+    
+    console.log("[ELEV CLEAN] Başlangıç:", {
+        total: cleaned.length,
+        nullCount: cleaned.filter(e => e == null).length,
+        min: Math.min(...cleaned.filter(e => e != null)),
+        max: Math.max(...cleaned.filter(e => e != null))
+    });
+    
+    // 1. Null/NaN değerleri komşuların ortalamasıyla doldur
+    for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] == null || !isFinite(cleaned[i])) {
+            let sum = 0, count = 0;
+            const range = 5; // 5 pixel yarıçapında ara
+            
+            for (let j = Math.max(0, i - range); j <= Math.min(cleaned.length - 1, i + range); j++) {
+                if (j !== i && cleaned[j] != null && isFinite(cleaned[j])) {
+                    sum += cleaned[j];
+                    count++;
+                }
+            }
+            
+            if (count > 0) {
+                cleaned[i] = sum / count;
+            } else {
+                cleaned[i] = 50; // Fallback: sea level
+            }
+        }
+    }
+    
+    // 2. Aşırı sıçramaları düzelt
+    let fixedCount = 0;
+    for (let i = 1; i < cleaned.length - 1; i++) {
+        const prev = cleaned[i - 1];
+        const curr = cleaned[i];
+        const next = cleaned[i + 1];
+        
+        const diffPrev = Math.abs(curr - prev);
+        const diffNext = Math.abs(next - curr);
+        
+        // Eğer bir tarafı komşu kadar benzer, diğer tarafı çok farklıysa = hata
+        if (diffPrev > SPIKE_THRESHOLD && diffNext < SPIKE_THRESHOLD / 2) {
+            cleaned[i] = prev + (curr - prev) * 0.3;
+            fixedCount++;
+        } else if (diffNext > SPIKE_THRESHOLD && diffPrev < SPIKE_THRESHOLD / 2) {
+            cleaned[i] = prev + (next - prev) * 0.5;
+            fixedCount++;
+        }
+    }
+    
+    // 3. Aşırı değerleri filtrele (dünya standartları: -500m ~ 9000m)
+    for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] < -500 || cleaned[i] > 9000) {
+            // Komşularından interpolate et
+            let neighbors = [];
+            for (let j = Math.max(0, i - 3); j <= Math.min(cleaned.length - 1, i + 3); j++) {
+                if (j !== i && cleaned[j] >= -500 && cleaned[j] <= 9000) {
+                    neighbors.push(cleaned[j]);
+                }
+            }
+            if (neighbors.length > 0) {
+                cleaned[i] = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+                fixedCount++;
+            }
+        }
+    }
+    
+    console.log("[ELEV CLEAN] Sonuç:", {
+        total: cleaned.length,
+        fixedCount: fixedCount,
+        min: Math.min(...cleaned),
+        max: Math.max(...cleaned)
+    });
+    
+    return cleaned;
+};
+
+// === PATCH: renderRouteScaleBar içinde veri temizleme ===
+(function() {
+    const origRenderRouteScaleBar = window.renderRouteScaleBar;
+    
+    if (!origRenderRouteScaleBar) return;
+    
+    window.renderRouteScaleBar = function(container, totalKm, markers) {
+        // Orijinal fonksiyonu sarala
+        const executeWithCleanup = async () => {
+            // Orijinal çağrısını yap - ama elevation fetch kısmında cleanup ekle
+            return origRenderRouteScaleBar.apply(this, arguments);
+        };
+        
+        return executeWithCleanup();
+    };
+})();
+
+// === PATCH: getElevationsForRoute sonrası temizleme ===
+(function() {
+    const origGetElev = window.getElevationsForRoute;
+    
+    if (!origGetElev) return;
+    
+    window.getElevationsForRoute = async function(samples, container, routeKey) {
+        try {
+            let elevations = await origGetElev.call(this, samples, container, routeKey);
+            
+            if (!elevations || elevations.length === 0) {
+                return elevations;
+            }
+            
+            // Veriyi temizle
+            console.log(`[ELEVATION] ${samples.length} noktanın elevation verisi alındı`);
+            elevations = window.cleanElevationData(elevations, samples);
+            
+            return elevations;
+        } catch (error) {
+            console.error('[ELEVATION] Hata:', error);
+            throw error;
+        }
+    };
+})();
+
+// === PATCH: movingAverage penceresini dinamik yap ===
+(function() {
+    const origMovingAvg = window.movingAverage;
+    
+    if (!origMovingAvg) return;
+    
+    window.movingAverage = function(arr, win = 5) {
+        if (!Array.isArray(arr) || arr.length === 0) return arr;
+        
+        // Varyasyon hesapla
+        let variance = 0;
+        const mean = arr.reduce((a, b) => a + (b || 0), 0) / arr.length;
+        
+        for (let i = 0; i < arr.length; i++) {
+            variance += Math.pow((arr[i] || mean) - mean, 2);
+        }
+        variance = variance / arr.length;
+        
+        // Yüksek varyasyon varsa (su geçişi gibi) = daha geniş window
+        let dynamicWin = win;
+        if (variance > 50) { // Varyans yüksek
+            dynamicWin = Math.max(7, Math.ceil(win * 1.5));
+            console.log(`[SMOOTH] Yüksek varyasyon tespit, window: ${win} → ${dynamicWin}`);
+        }
+        
+        // Orijinal smooth'u çalıştır
+        return origMovingAvg.call(this, arr, dynamicWin);
+    };
+})();
