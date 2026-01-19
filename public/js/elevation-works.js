@@ -1444,15 +1444,24 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     
-    // --- ZOOM KISMI ---
+    // --- ZOOM KISMI (FIX: maxZoom 18 ile sınırla) ---
     try {
         if (poly.getBounds().isValid()) {
-            m.fitBounds(poly.getBounds(), { 
-                padding: [100, 100], // Kenarlardan boşluk
-                maxZoom: 19,         // FIX: Daha derine zoom yapabilsin
+            // Bounds'ı biraz genişlet ki segment çok uçlarda olmasın
+            const bounds = poly.getBounds();
+            const paddedBounds = bounds.pad(0.15); // %15 genişletme
+            
+            m.fitBounds(paddedBounds, { 
+                padding: [80, 80], // Kenarlardan daha az boşluk
+                maxZoom: 18,       // DÜZELTME: 18 ile sınırla (22 çok yakın)
                 animate: true, 
                 duration: 1.0 
             });
+            
+            // Zoom sonrası haritayı invalidate et (koordinat kaymalarını önle)
+            setTimeout(() => {
+                try { m.invalidateSize(); } catch(e) {}
+            }, 1100);
         }
     } catch(e) {}
   });
