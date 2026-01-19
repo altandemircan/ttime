@@ -1410,7 +1410,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (subCoordsLeaflet.length < 2) return;
 
   // --- 3. 2D ÇİZİM VE ZOOM ---
-    // --- 3. 2D ÇİZİM VE ZOOM ---
+  // --- 3. 2D ÇİZİM VE ZOOM ---
   window._segmentHighlight = window._segmentHighlight || {};
   if (!window._segmentHighlight[day]) window._segmentHighlight[day] = {};
 
@@ -1445,41 +1445,54 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     
-    // --- ZOOM KISMI (FIX: Zoom seviyesini kontrol et) ---
+    // --- ZOOM KISMI (FIX: Manuel zoom + setView kullan) ---
     try {
         if (poly.getBounds().isValid()) {
             const bounds = poly.getBounds();
-            const paddedBounds = bounds.pad(0.2); // %20 genişletme
+            const center = bounds.getCenter();
             
             // Mevcut zoom seviyesini al
             const currentZoom = m.getZoom();
-            console.log('[SEGMENT ZOOM] Mevcut zoom:', currentZoom);
+            console.log('[SEGMENT ZOOM] Mevcut zoom:', currentZoom, 'Center:', center);
             
             // Segment uzunluğuna göre hedef zoom belirle
             const segmentKm = endKm - startKm;
-            let targetMaxZoom = 15; // Varsayılan
+            let targetZoom = 15; // Varsayılan
             
-            if (segmentKm < 0.5) targetMaxZoom = 16;      // 500m altı
-            else if (segmentKm < 1) targetMaxZoom = 15;   // 1km altı
-            else if (segmentKm < 3) targetMaxZoom = 14;   // 3km altı
-            else if (segmentKm < 5) targetMaxZoom = 13;   // 5km altı
-            else targetMaxZoom = 12;                       // 5km üstü
+            if (segmentKm < 0.5) targetZoom = 16;      // 500m altı
+            else if (segmentKm < 1) targetZoom = 15;   // 1km altı
+            else if (segmentKm < 3) targetZoom = 14;   // 3km altı
+            else if (segmentKm < 5) targetZoom = 13;   // 5km altı
+            else if (segmentKm < 10) targetZoom = 12;  // 10km altı
+            else targetZoom = 11;                       // 10km üstü
             
-            console.log('[SEGMENT ZOOM] Segment uzunluğu:', segmentKm.toFixed(2), 'km → Hedef maxZoom:', targetMaxZoom);
+            console.log('[SEGMENT ZOOM] Segment uzunluğu:', segmentKm.toFixed(2), 'km → Hedef zoom:', targetZoom);
             
-            m.fitBounds(paddedBounds, { 
-                padding: [100, 100],
-                maxZoom: targetMaxZoom,
-                minZoom: 10,           // Minimum zoom ekle (çok uzaklaşmasın)
-                animate: true, 
-                duration: 0.8 
+            // FIX: fitBounds yerine setView kullan (tam sayı zoom garantisi)
+            m.setView(center, targetZoom, {
+                animate: true,
+                duration: 0.8,
+                easeLinearity: 0.25
             });
             
-            // Zoom sonrası kontrol
+            // Zoom sonrası kontrol ve invalidate
             setTimeout(() => {
                 const finalZoom = m.getZoom();
                 console.log('[SEGMENT ZOOM] Son zoom seviyesi:', finalZoom);
-                try { m.invalidateSize(); } catch(e) {}
+                
+                // FIX: Eğer zoom hala ondalıklıysa (örn 15.3), tam sayıya çek
+                if (finalZoom !== Math.round(finalZoom)) {
+                    console.warn('[SEGMENT ZOOM] Zoom ondalıklı! Düzeltiliyor:', finalZoom, '→', Math.round(finalZoom));
+                    m.setZoom(Math.round(finalZoom), { animate: false });
+                }
+                
+                try { 
+                    m.invalidateSize(); 
+                    // Canvas renderer'ı varsa yenile
+                    if (m._renderer && m._renderer._update) {
+                        m._renderer._update();
+                    }
+                } catch(e) {}
             }, 900);
         }
     } catch(e) {
