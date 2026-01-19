@@ -1410,6 +1410,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (subCoordsLeaflet.length < 2) return;
 
   // --- 3. 2D ÇİZİM VE ZOOM ---
+    // --- 3. 2D ÇİZİM VE ZOOM ---
   window._segmentHighlight = window._segmentHighlight || {};
   if (!window._segmentHighlight[day]) window._segmentHighlight[day] = {};
 
@@ -1444,26 +1445,46 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     
-    // --- ZOOM KISMI (FIX: maxZoom 18 ile sınırla) ---
+    // --- ZOOM KISMI (FIX: Zoom seviyesini kontrol et) ---
     try {
         if (poly.getBounds().isValid()) {
-            // Bounds'ı biraz genişlet ki segment çok uçlarda olmasın
             const bounds = poly.getBounds();
-            const paddedBounds = bounds.pad(0.15); // %15 genişletme
+            const paddedBounds = bounds.pad(0.2); // %20 genişletme
+            
+            // Mevcut zoom seviyesini al
+            const currentZoom = m.getZoom();
+            console.log('[SEGMENT ZOOM] Mevcut zoom:', currentZoom);
+            
+            // Segment uzunluğuna göre hedef zoom belirle
+            const segmentKm = endKm - startKm;
+            let targetMaxZoom = 15; // Varsayılan
+            
+            if (segmentKm < 0.5) targetMaxZoom = 16;      // 500m altı
+            else if (segmentKm < 1) targetMaxZoom = 15;   // 1km altı
+            else if (segmentKm < 3) targetMaxZoom = 14;   // 3km altı
+            else if (segmentKm < 5) targetMaxZoom = 13;   // 5km altı
+            else targetMaxZoom = 12;                       // 5km üstü
+            
+            console.log('[SEGMENT ZOOM] Segment uzunluğu:', segmentKm.toFixed(2), 'km → Hedef maxZoom:', targetMaxZoom);
             
             m.fitBounds(paddedBounds, { 
-                padding: [80, 80], // Kenarlardan daha az boşluk
-                maxZoom: 18,       // DÜZELTME: 18 ile sınırla (22 çok yakın)
+                padding: [100, 100],
+                maxZoom: targetMaxZoom,
+                minZoom: 10,           // Minimum zoom ekle (çok uzaklaşmasın)
                 animate: true, 
-                duration: 1.0 
+                duration: 0.8 
             });
             
-            // Zoom sonrası haritayı invalidate et (koordinat kaymalarını önle)
+            // Zoom sonrası kontrol
             setTimeout(() => {
+                const finalZoom = m.getZoom();
+                console.log('[SEGMENT ZOOM] Son zoom seviyesi:', finalZoom);
                 try { m.invalidateSize(); } catch(e) {}
-            }, 1100);
+            }, 900);
         }
-    } catch(e) {}
+    } catch(e) {
+        console.error('[SEGMENT ZOOM] Hata:', e);
+    }
   });
 
   // --- 4. 3D ÇİZİM VE ZOOM ---
