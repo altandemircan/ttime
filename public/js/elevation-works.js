@@ -710,9 +710,10 @@ const response = await fetch('/api/elevation', {
 
        
         let vizMin, vizMax;
-        if (span > 0) { 
-          vizMin = min - span * 0.05; 
-          vizMax = max + span * 0.10; 
+        const eSpan = max - min;  // ← ADD THIS LINE
+        if (eSpan > 0) {
+          vizMin = min - eSpan * 0.05; 
+          vizMax = max + eSpan * 0.10; 
         } 
         else { 
           vizMin = min - 1; 
