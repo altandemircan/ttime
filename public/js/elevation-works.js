@@ -708,6 +708,7 @@ const response = await fetch('/api/elevation', {
         const startKmDom = Number(container._elevStartKm || 0);
         const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
+                let vizMin, vizMax;
         let vizMin, vizMax;
         if (span > 0) { 
           vizMin = min - span * 0.05; 
@@ -716,7 +717,7 @@ const response = await fetch('/api/elevation', {
         else { 
           vizMin = min - 1; 
           vizMax = max + 1; 
-}
+        }
 
         const X = kmRel => (kmRel / spanKm) * width;
         const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
