@@ -7073,19 +7073,23 @@ locBtn.onclick = function() {
     // Desktop-only smooth zoom/fade settings (no custom CSS, no inertia bounce)
   const isDesktop = window.innerWidth > 1024 && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
-  const expandedMapInstance = L.map(mapDivId, {
-        center: startCenter,
-        zoom: startZoom,
-        zoomControl: false,
-        scrollWheelZoom: true,
-        fadeAnimation: isDesktop,       // smooth tiles
-        zoomAnimation: isDesktop,       // smooth zoom in/out
-        markerZoomAnimation: isDesktop, // smooth marker scaling
-        inertia: false,                 // avoid snap-back/bounce
-        preferCanvas: true,
-        renderer: L.canvas({ padding: 0.5 }),
-        dragging: true
-    });
+ const expandedMapInstance = L.map(mapDivId, {
+    center: startCenter,
+    zoom: startZoom,
+    zoomControl: false,
+    scrollWheelZoom: true,
+    fadeAnimation: isDesktop,
+    zoomAnimation: isDesktop,
+    markerZoomAnimation: isDesktop,
+    inertia: true,              // ✓ Aktif et (momentum için)
+    inertiaDeceleration: 3000,  // ✓ Hızlı durdur (varsayılan: 3000)
+    inertiaMaxSpeed: 1500,      // ✓ Max hız sınırı
+    zoomSnap: 1,                // ✓ ZOOM MUTLAKA TAM SAYIYA OTUR
+    zoomDelta: 1,               // ✓ Her scroll/click 1 level zoom
+    preferCanvas: true,
+    renderer: L.canvas({ padding: 0.5 }),
+    dragging: true
+});
 
  
 
@@ -8930,77 +8934,7 @@ function getActiveDay(containerId) {
     return dayMatch ? parseInt(dayMatch[1], 10) : 1;
 }
 
-function changeContent(option) {
-    const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => section.classList.remove('active'));
 
-    const images = document.querySelectorAll('.theme-menu img');
-    images.forEach(img => img.classList.remove('active'));
-
-    const chatBox = document.getElementById('chat-box');
-    const welcomeSection = document.getElementById('tt-welcome');
-    const aboutUsSection = document.getElementById('tt-about-us');
-    const mainChat = document.getElementById('main-chat');
-
-    if (chatBox) chatBox.style.display = 'none';
-    if (aboutUsSection) aboutUsSection.style.display = 'none';
-
-    if (option === 1) {
-        if (welcomeSection) {
-            welcomeSection.style.display = 'block';
-            welcomeSection.classList.add('active');
-        }
-        if (mainChat) mainChat.style.display = 'flex';
-     
-    } else if (option === 2) {
-        // --- HARİTAYI OTOMATİK KAPATMA ---
-        // ".close-expanded-map" butonunu bul ve tıkla
-        const closeMapBtn = document.querySelector('.close-expanded-map');
-        if (closeMapBtn) {
-            closeMapBtn.click(); // Haritayı kapatan fonksiyonu tetikler
-        }
-
-        // About içeriğini göster
-        if (aboutUsSection) {
-            aboutUsSection.style.display = 'block';
-            aboutUsSection.classList.add('active');
-            // Sayfayı en üste çek (Haritadan sonra About metni başta gözüksün)
-            window.scrollTo({ top: 0, behavior: 'instant' });
-        }
-
-        const ttIcon = document.getElementById("about-icon");
-        if (ttIcon) ttIcon.classList.add('active');
-
-        // Ana chat alanını gizle
-        if (mainChat) {
-            mainChat.style.display = 'none';
-        }
-    }
-}
-
-document.addEventListener('click', function(event) {
-    const chatBox = document.getElementById('chat-box');
-    if (!chatBox) return;
-
-
-   // homeIcon ile ilgili satırları tamamen kaldır
-const ttIcon = document.querySelector('img[src="img/about-icon.svg"]');
-const welcomeSection = document.getElementById('tt-welcome');
-const aboutUsSection = document.getElementById('tt-about-us');
-const userMessageDiv = document.querySelector('.message.user-message');
-
-let clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
-let clickedInsideWelcome = welcomeSection && welcomeSection.contains(event.target);
-let clickedInsideAboutUs = aboutUsSection && aboutUsSection.contains(event.target);
-
-if (!clickedOnTtIcon && !clickedInsideWelcome && !clickedInsideAboutUs) {
-    if (userMessageDiv && userMessageDiv.textContent.trim() !== "") {
-        // Hide content sections only if user message exists
-        if (aboutUsSection) aboutUsSection.style.display = 'none';
-    }
-    chatBox.style.display = 'block';
-}
-});
 
 
   function toggleMenu() {

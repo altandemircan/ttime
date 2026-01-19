@@ -1410,7 +1410,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (subCoordsLeaflet.length < 2) return;
 
   // --- 3. 2D ÇİZİM VE ZOOM ---
-  // --- 3. 2D ÇİZİM VE ZOOM ---
+    // --- 3. 2D ÇİZİM VE ZOOM ---
   window._segmentHighlight = window._segmentHighlight || {};
   if (!window._segmentHighlight[day]) window._segmentHighlight[day] = {};
 
