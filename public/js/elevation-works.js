@@ -708,7 +708,7 @@ const response = await fetch('/api/elevation', {
         const startKmDom = Number(container._elevStartKm || 0);
         const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-                let vizMin, vizMax;
+       
         let vizMin, vizMax;
         if (span > 0) { 
           vizMin = min - span * 0.05; 
