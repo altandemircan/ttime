@@ -641,19 +641,28 @@ const response = await fetch('/api/elevation', {
           foundKmAbs = startKmDom + percent * spanKm;
         }
         let minDist = Infinity;
-        for (let i = 1; i < s.length; i++) {
-          const kmAbs1 = s[i - 1].distM / 1000;
-          const kmAbs2 = s[i].distM / 1000;
-          const midKm = (kmAbs1 + kmAbs2) / 2;
-          const dist = Math.abs(foundKmAbs - midKm);
-          if (dist < minDist) {
-            minDist = dist;
-            const dx = s[i].distM - s[i - 1].distM;
-            const dy = ed.smooth[i] - ed.smooth[i - 1];
-            foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-            foundElev = Math.round(ed.smooth[i]);
-          }
-        }
+let bestIndex = 1;  // ← ADD THIS
+
+for (let i = 1; i < s.length; i++) {
+  const kmAbs1 = s[i - 1].distM / 1000;
+  const kmAbs2 = s[i].distM / 1000;
+  const midKm = (kmAbs1 + kmAbs2) / 2;
+  const dist = Math.abs(foundKmAbs - midKm);
+  if (dist < minDist) {
+    minDist = dist;
+    bestIndex = i;  // ← ADD THIS
+    const dx = s[i].distM - s[i - 1].distM;
+    const dy = ed.smooth[i] - ed.smooth[i - 1];
+    foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+  }
+}
+
+// Bounds check ekle
+if (bestIndex < ed.smooth.length) {
+  foundElev = Math.round(ed.smooth[bestIndex]);
+} else {
+  foundElev = Math.round(ed.smooth[ed.smooth.length - 1]);
+}
         tooltip.style.opacity = '1';
         tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
         
