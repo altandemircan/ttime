@@ -1579,12 +1579,18 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const segmentMarkers = allMarkers.filter(m => m.distance >= startKm && m.distance <= endKm);
 
   const min = Math.min(...elevSmooth);
-  const max = Math.max(...elevSmooth, min + 1);
-  const span = max - min;
-  
-  let vizMin, vizMax;
-  if (span > 0) { vizMin = min - span * 0.50; vizMax = max + span * 1.0; } 
-  else { vizMin = min - 1; vizMax = max + 1; }
+const max = Math.max(...elevSmooth, min + 1);
+const span = max - min;
+
+let vizMin, vizMax;
+if (span > 0) { 
+  vizMin = min - span * 0.05; 
+  vizMax = max + span * 0.10; 
+} 
+else { 
+  vizMin = min - 1; 
+  vizMax = max + 1; 
+}
 
   container._elevationData = { smooth: elevSmooth, vizMin, vizMax, min, max };
   container._elevSamples = samples; 
