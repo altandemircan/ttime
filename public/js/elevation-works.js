@@ -640,8 +640,9 @@ const response = await fetch('/api/elevation', {
         } else {
           foundKmAbs = startKmDom + percent * spanKm;
         }
-        let minDist = Infinity;
-let bestIndex = 1;  // ← ADD THIS
+
+let minDist = Infinity;
+let bestIndex = 1;
 
 for (let i = 1; i < s.length; i++) {
   const kmAbs1 = s[i - 1].distM / 1000;
@@ -650,19 +651,28 @@ for (let i = 1; i < s.length; i++) {
   const dist = Math.abs(foundKmAbs - midKm);
   if (dist < minDist) {
     minDist = dist;
-    bestIndex = i;  // ← ADD THIS
+    bestIndex = i;
     const dx = s[i].distM - s[i - 1].distM;
     const dy = ed.smooth[i] - ed.smooth[i - 1];
     foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
   }
 }
 
-// Bounds check ekle
+// DEBUG LOG EKLE
+console.log("[TOOLTIP DEBUG]", {
+  foundKmAbs: foundKmAbs.toFixed(2),
+  bestIndex: bestIndex,
+  smooth_length: ed.smooth.length,
+  smooth_value_at_bestIndex: ed.smooth[bestIndex],
+  s_length: s.length
+});
+
 if (bestIndex < ed.smooth.length) {
   foundElev = Math.round(ed.smooth[bestIndex]);
 } else {
   foundElev = Math.round(ed.smooth[ed.smooth.length - 1]);
 }
+
         tooltip.style.opacity = '1';
         tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
         
