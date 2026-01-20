@@ -7944,7 +7944,7 @@ async function renderRouteForDay(day) {
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         const map = window.leafletMaps?.[containerId];
         if (map) {
-             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
+             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.Circle || l instanceof L.CircleMarker) map.removeLayer(l); });
              const p = points[0];
              L.marker([p.lat, p.lng], {
                 icon: L.divIcon({
@@ -8144,7 +8144,7 @@ async function renderRouteForDay(day) {
         }
     }
 
-    // --- SCALE BAR & ELEVATION GRAFİĞİ (DÜZELTİLDİ) ---
+    // --- SCALE BAR & ELEVATION GRAFİĞİ (GÜVENLİ) ---
     const expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
     if (expandedMapDiv) {
         let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
@@ -8166,9 +8166,13 @@ async function renderRouteForDay(day) {
             expandedScaleBar.innerHTML = "";
 
             if (typeof renderRouteScaleBar === 'function') {
-                const routeCoords = (isInTurkey && routeData && routeData.coords) 
-                                    ? routeData.coords.map(c => ({ lat: c[1], lng: c[0] })) 
-                                    : points;
+                // ÇÖZÜM: Coords yoksa fallback kullan (Crash'i önler)
+                let routeCoords = [];
+                if (isInTurkey && routeData && routeData.coords) {
+                    routeCoords = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
+                } else {
+                    routeCoords = points.map(p => ({ lat: p.lat, lng: p.lng }));
+                }
 
                 // 1. Önce Grafiği Çiz (AWAIT ile bekle!)
                 if (typeof window.getElevationsForRoute === 'function') {
@@ -8178,7 +8182,6 @@ async function renderRouteForDay(day) {
                 }
                 
                 // 2. Grafik çizildikten SONRA markerları (Scale Elements) yerleştir
-                // Bu sayede grafik boyutu oluşmuş olur ve dikey pozisyon doğru hesaplanır.
                 const track = expandedScaleBar.querySelector('.scale-bar-track');
                 if (track && typeof createScaleElements === 'function') {
                     createScaleElements(track, track.offsetWidth, totalKm, 0, markerPositions);
