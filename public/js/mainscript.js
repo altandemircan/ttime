@@ -7662,12 +7662,18 @@ function restoreMap(containerId, day) {
 
 // --- KESİN LİMİT AYARI ---
 const CURRENT_ROUTE_KM_LIMIT = 200; 
-window.__isRouteLimitChecking = false; // Çift kontrolü engellemek için kilit
 
-// --- 1. LİMİT KONTROL (SADECE UYARI VE SİLME) ---
+// GLOBAL KİLİT NESNESİ (Çift uyarıyı engeller)
+window.__limitCheckActive = {}; 
+
+// --- 1. LİMİT KONTROL (SIKI KİLİTLİ & SADECE UYARI) ---
 async function enforceDailyRouteLimit(day, maxKm) {
-    // Eğer şu an bir kontrol veya silme işlemi sürüyorsa tekrar çalışma
-    if (window.__isRouteLimitChecking) return false;
+    // 1. KİLİT KONTROLÜ: 
+    // Eğer bu gün için şu an bir kontrol yapılıyorsa veya kilit henüz açılmadıysa, BU İSTEĞİ YUT.
+    if (window.__limitCheckActive[day]) return false;
+
+    // Kapıyı Kilitle
+    window.__limitCheckActive[day] = true;
 
     try {
         let dayItems = window.cart.filter(item => 
@@ -7677,6 +7683,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
             isFinite(item.location.lng)
         );
         
+        // Yeterli nokta yoksa hemen çık (Kilidi finally bloğunda açacağız)
         if (dayItems.length <= 1) return false;
 
         let limitExceeded = false;
@@ -7686,7 +7693,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
 
         const isInTurkey = areAllPointsInTurkey(dayItems.map(i => i.location));
 
-        // A) TÜRKİYE İÇİ (OSRM İLE HESAPLAMA)
+        // A) TÜRKİYE İÇİ (OSRM)
         if (isInTurkey) {
             try {
                 const coords = dayItems.map(item => [item.location.lng, item.location.lat]);
@@ -7696,9 +7703,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
                 if (resp.ok) {
                     const data = await resp.json();
                     if (data.routes && data.routes[0]) {
-                        // Eğer toplam mesafe limiti aşıyorsa
                         if (data.routes[0].distance > LIMIT_METERS) {
-                            // Hangi bacakta patladığını bul
                             let accum = 0;
                             if (data.routes[0].legs) {
                                 for (let i = 0; i < data.routes[0].legs.length; i++) {
@@ -7710,7 +7715,6 @@ async function enforceDailyRouteLimit(day, maxKm) {
                                     }
                                 }
                             }
-                            // Bacaklarda bulunamadıysa son noktayı al
                             if (!limitExceeded) {
                                 splitIdx = dayItems.length - 1;
                                 limitExceeded = true;
@@ -7719,10 +7723,10 @@ async function enforceDailyRouteLimit(day, maxKm) {
                         }
                     }
                 }
-            } catch (e) { /* Hata varsa Haversine'e devam et */ }
+            } catch (e) { /* Hata varsa Haversine'e devam */ }
         } 
         
-        // B) YURTDIŞI VEYA HATA DURUMU (HAVERSINE İLE HESAPLAMA)
+        // B) YURTDIŞI VEYA HATA (HAVERSINE)
         if (!isInTurkey || (isInTurkey && !limitExceeded && splitIdx === -1)) {
             let meters = 0;
             for (let i = 1; i < dayItems.length; i++) {
@@ -7739,15 +7743,14 @@ async function enforceDailyRouteLimit(day, maxKm) {
             }
         }
 
-        // --- MÜDAHALE KISMI (SADECE UYARI VE SİLME) ---
+        // --- MÜDAHALE (UYARI & SİLME) ---
         if (limitExceeded && splitIdx > 0) {
-            window.__isRouteLimitChecking = true; // Kilidi kapat
             const itemsToProcess = dayItems.slice(splitIdx);
             
-            // Sadece UYARI veriyoruz (Soru sormuyoruz)
-            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed to stay within the limit.`);
+            // SADECE UYARI VERİYORUZ (Alert kodu bloklar, bu sırada kilit true kalır)
+            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed automatically.`);
 
-            // Limiti aşanları direkt SİLİYORUZ
+            // Limiti aşanları SİL
             itemsToProcess.forEach(item => {
                 const idx = window.cart.indexOf(item);
                 if (idx > -1) window.cart.splice(idx, 1);
@@ -7756,32 +7759,40 @@ async function enforceDailyRouteLimit(day, maxKm) {
             // Arayüzü güncelle
             if (typeof updateCart === "function") updateCart();
             
-            // Kısa bir süre sonra kilidi aç
-            setTimeout(() => { window.__isRouteLimitChecking = false; }, 1000);
-            
-            return true; // Çizimi durdur, çünkü veri değişti
+            return true; // Limit aşıldı ve işlem yapıldı
         }
 
     } catch(e) {
-        window.__isRouteLimitChecking = false;
+        console.error("Limit check error:", e);
+    } finally {
+        // ÇOK ÖNEMLİ: KİLİDİ GECİKMELİ AÇ
+        // Alert kapandıktan ve updateCart işlemleri bittikten sonra 
+        // 2.5 saniye daha kimsenin bu günü kontrol etmesine izin verme.
+        // Bu süre çift uyarıları (bouncing) kesin olarak engeller.
+        setTimeout(() => {
+            window.__limitCheckActive[day] = false;
+        }, 2500);
     }
+
     return false;
 }
 
 // --- 2. ANA RENDER FONKSİYONU ---
 async function renderRouteForDay(day) {
-    // Global Tanımlar (Hata almamak için)
+    // Global Tanımlar (Hata önleyici)
     window.lastRouteGeojsons = window.lastRouteGeojsons || {};
     window.lastRouteSummaries = window.lastRouteSummaries || {};
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
     window.directionsPolylines = window.directionsPolylines || {};
 
-    // Limit Kontrolü (Render başlamadan önce)
+    // 1. LİMİT KONTROLÜ (Render başlamadan önce)
+    // Eğer limit aşılırsa true döner ve render iptal edilir (çünkü updateCart yeniden başlatacak)
     const limitHandled = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitHandled) return;
 
     console.log(`=== RENDER START for day ${day} ===`);
     
+    // Temizlik
     window.selectedSegmentIndex = -1;
     window.selectedSegment = null;
     window._lastSegmentDay = null;
@@ -7799,12 +7810,18 @@ async function renderRouteForDay(day) {
         if (gpsRaw.length > 1) {
              ensureDayMapContainer(day);
              initEmptyDayMap(day);
-             // ... GPS Çizim Mantığı (Orijinal kodunuzda olduğu gibi çalışır) ...
-             // Kodu kısa tutmak için burayı detaylandırmıyorum, önceki çalışan kodunuz geçerlidir.
-             // Ancak scale bar çizimi için gerekli tetiklemeyi yapıyoruz:
+             
+             // GPS Çizim Mantığı (Özet)
+             const map = window.leafletMaps?.[containerId];
+             if (map) {
+                const latlngs = gpsRaw.map(pt => [pt.lat, pt.lng]);
+                const poly = addPolylineSafe(map, latlngs, { color: '#1565c0', weight: 5, opacity: 0.9 });
+                try { map.fitBounds(poly.getBounds(), { padding: [20, 20] }); } catch (_) { }
+             }
+
+             // GPS Scale Bar
              let expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
              if (expandedMapDiv) {
-                 // ... Scale bar logic for GPS ...
                  let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
                  if (!expandedScaleBar) {
                      expandedScaleBar = document.createElement('div');
@@ -7813,9 +7830,15 @@ async function renderRouteForDay(day) {
                      expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
                  }
                  if(typeof renderRouteScaleBar === 'function') {
-                     // Basit bir hesaplama
                      let d = 0; 
                      for(let i=1; i<gpsRaw.length; i++) d += haversine(gpsRaw[i-1].lat, gpsRaw[i-1].lng, gpsRaw[i].lat, gpsRaw[i].lng);
+                     
+                     // GPS verisi için snapped yerine raw kullanıyoruz
+                     const rawMarkerPositions = gpsRaw.map((p, i) => ({
+                        name: (i===0?"Start":(i===gpsRaw.length-1?"Finish":"")),
+                        distance: (i===0?0:d/1000), // Basitleştirilmiş
+                        snapped: true
+                     }));
                      renderRouteScaleBar(expandedScaleBar, d/1000, []);
                  }
              }
@@ -7963,7 +7986,7 @@ async function renderRouteForDay(day) {
         if (typeof updateDistanceDurationUI === 'function') updateDistanceDurationUI(summary.distance, summary.duration);
     }
 
-    // --- SCALE BAR & ELEVATION GRAFİĞİ ---
+    // --- SCALE BAR & ELEVATION GRAFİĞİ (GÜVENLİ & AWAIT) ---
     const expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
     if (expandedMapDiv) {
         let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
@@ -7974,6 +7997,7 @@ async function renderRouteForDay(day) {
             expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
         }
         
+        // Asenkron ve Kontrollü Render
         const ensureScaleBarRender = async (retryCount = 0) => {
             const width = expandedScaleBar.offsetWidth;
             if (width === 0 && retryCount < 10) {
@@ -7991,12 +8015,14 @@ async function renderRouteForDay(day) {
                     routeCoords = points.map(p => ({ lat: p.lat, lng: p.lng }));
                 }
 
+                // 1. Grafiği Çiz ve BEKLE (Await)
                 if (typeof window.getElevationsForRoute === 'function') {
                      await window.renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions, routeCoords);
                 } else {
                      renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
                 }
                 
+                // 2. Markerları Yerleştir (Grafik oluştuktan sonra)
                 const track = expandedScaleBar.querySelector('.scale-bar-track');
                 if (track && typeof createScaleElements === 'function') {
                     createScaleElements(track, track.offsetWidth, totalKm, 0, markerPositions);
