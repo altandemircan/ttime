@@ -1,4 +1,5 @@
 
+const CURRENT_ROUTE_KM_LIMIT = 200; // Test için 200
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
@@ -7659,6 +7660,44 @@ function restoreMap(containerId, day) {
         window.removeEventListener('touchend', window.__sb_onMouseUp);
     }
 }
+async function enforceDailyRouteLimit(day, maxKm) {
+    const points = getDayPoints(day);
+    let totalKm = 0, splitIdx = -1;
+    for (let i = 1; i < points.length; i++) {
+        totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+        if (totalKm > maxKm) {
+            splitIdx = i;
+            break;
+        }
+    }
+    if (splitIdx > 0) {
+        const proceed = confirm(
+            `Bu gün içerisindeki rotanız ${maxKm} km'yi aşıyor.\nAynı gün içerisinde maksimum ${maxKm} km rota çizilebilir.\nAşan noktalar yeni bir gün olarak eklenecektir. Onaylıyor musunuz?`
+        );
+        if (!proceed) return false;
+        let maxDay = Math.max(...window.cart.map(i => i.day || 1));
+        const newDay = maxDay + 1;
+        let movedCount = 0;
+        for (let i = splitIdx; i < points.length; i++) {
+            const p = points[i];
+            const cartIdx = window.cart.findIndex(item =>
+                item.day == day &&
+                item.location &&
+                Math.abs(item.location.lat - p.lat) < 1e-6 &&
+                Math.abs(item.location.lng - p.lng) < 1e-6 &&
+                item.name == p.name
+            );
+            if (cartIdx >= 0) {
+                window.cart[cartIdx].day = newDay;
+                movedCount++;
+            }
+        }
+        if (typeof updateCart === "function") updateCart();
+        addMessage(`${movedCount} yer yeni güne aktarıldı. Her gün için maksimum ${maxKm} km rota çizilebilir.`, "bot-message");
+        return true;
+    }
+    return false;
+}
 async function renderRouteForDay(day) {
 
     // 1. ADIM: TEMİZLİK (RESET)
@@ -8365,7 +8404,8 @@ try {
     // ŞİMDİ 3D haritaya "Bak veri hazır, index'i de -1 yaptım, git GENEL GÖRÜNÜMÜ çiz" diyoruz.
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
     
-    // Alttaki o "highlightSegmentOnMap" kodunu TAMAMEN sildik.
+  await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
+
 }
 
 
