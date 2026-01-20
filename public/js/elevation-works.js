@@ -154,15 +154,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   } else {
     widthPx = actualWidth;
   }
-  
 
-
-    console.log("Param Width:", widthPx);
-    console.log("Actual OffsetWidth:", actualWidth);
-    console.log("Span KM:", spanKm);
-    console.log("Elevation Data:", track?.parentElement?._elevationData ? "Mevcut ✅" : "YOK ❌");
-    console.groupEnd();
-    // --- DEBUG LOG END ---
 
     // 1. KONTROL: Element yoksa veya DOM'dan tamamen silinmişse işlemi durdur.
     if (!track || !track.isConnected) {
