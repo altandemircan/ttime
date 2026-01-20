@@ -7887,7 +7887,7 @@ if (expandedMapDiv) {
         if (!pts0 || pts0.length === 0) return;
     }
 
-    const containerId = `route-map-day${day}`;
+
     const points = getDayPoints(day);
 
     if (
