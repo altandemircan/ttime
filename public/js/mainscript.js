@@ -7666,73 +7666,119 @@ function restoreMap(containerId, day) {
     }
 }
 async function enforceDailyRouteLimit(day, maxKm) {
-    // Önce window.cart'tan tüm item'ları filtrele
-    const originalItemsOfDay = window.cart.filter(item => 
+    console.log(`[DEBUG] Checking limit for day ${day}`);
+    
+    // Cart'tan ilgili günün tüm item'larını al
+    let dayItems = window.cart.filter(item => 
         item.day == day && 
         item.location && 
         isFinite(item.location.lat) && 
         isFinite(item.location.lng)
     );
     
-    if (originalItemsOfDay.length <= 1) return false;
+    console.log(`[DEBUG] Day ${day} has ${dayItems.length} valid items`);
+    
+    if (dayItems.length <= 1) return false;
+
+    // Item'ları sırala (eğer sıralama önemliyse)
+    // Bu kısım uygulamanıza bağlı, gerekirse ekleyin
 
     let totalKm = 0;
     let splitIdx = -1;
 
-    // Mesafe hesapla
-    for (let i = 1; i < originalItemsOfDay.length; i++) {
-        totalKm += haversine(
-            originalItemsOfDay[i-1].location.lat, originalItemsOfDay[i-1].location.lng,
-            originalItemsOfDay[i].location.lat, originalItemsOfDay[i].location.lng
+    // Mesafeyi hesapla
+    for (let i = 1; i < dayItems.length; i++) {
+        const km = haversine(
+            dayItems[i-1].location.lat, dayItems[i-1].location.lng,
+            dayItems[i].location.lat, dayItems[i].location.lng
         ) / 1000;
+        
+        totalKm += km;
+        console.log(`[DEBUG] Segment ${i-1}-${i}: ${km.toFixed(2)}km, Total: ${totalKm.toFixed(2)}km`);
 
         if (totalKm > maxKm) {
             splitIdx = i;
+            console.log(`[DEBUG] Limit exceeded at item ${i} (${dayItems[i].name || 'unnamed'})`);
             break;
         }
     }
 
     if (splitIdx > 0) {
         const newDay = day + 1;
+        console.log(`[DEBUG] Splitting at index ${splitIdx}, moving to day ${newDay}`);
         
-        // KRİTİK: Önce taşınacak item'ların referanslarını kaydet
-        // itemsToMove, originalItemsOfDay'den alınan referanslar
-        const itemsToMove = originalItemsOfDay.slice(splitIdx);
+        // Taşınacak item'ların orijinal cart index'lerini bul
+        const itemsToMove = [];
         
-        // Sonraki günleri kaydır (yeni yer aç)
-        for (let i = 0; i < window.cart.length; i++) {
-            if (window.cart[i].day >= newDay) {
-                window.cart[i].day += 1;
+        for (let i = splitIdx; i < dayItems.length; i++) {
+            const itemToMove = dayItems[i];
+            // window.cart içinde bu item'ı bul
+            const cartIndex = window.cart.findIndex(item => item === itemToMove);
+            if (cartIndex !== -1) {
+                itemsToMove.push({
+                    cartIndex: cartIndex,
+                    item: window.cart[cartIndex]
+                });
             }
         }
         
-        // Kaydettiğimiz referanslarla window.cart'taki item'ları bul ve taşı
-        itemsToMove.forEach(itemToMove => {
-            // window.cart içinde bu item'ı bul
-            const cartIndex = window.cart.findIndex(cartItem => 
-                cartItem === itemToMove
-            );
-            
-            if (cartIndex !== -1) {
+        console.log(`[DEBUG] Found ${itemsToMove.length} items to move`);
+        
+        if (itemsToMove.length === 0) {
+            console.log(`[DEBUG] No items to move, returning false`);
+            return false;
+        }
+        
+        // ÖNEMLİ: Sonraki günlerin numaralarını güncelle
+        // newDay ve sonrasındaki tüm item'ların day'ini +1 artır
+        // Bunu tersten yap ki numaralar karışmasın
+        const maxDayInCart = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
+        
+        for (let d = maxDayInCart; d >= newDay; d--) {
+            window.cart.forEach(item => {
+                if (item.day === d) {
+                    item.day = d + 1;
+                }
+            });
+        }
+        
+        // Şimdi taşınacak item'ları yeni güne ata
+        itemsToMove.forEach(({ cartIndex }) => {
+            if (cartIndex >= 0 && window.cart[cartIndex]) {
                 window.cart[cartIndex].day = newDay;
+                console.log(`[DEBUG] Moved item at index ${cartIndex} to day ${newDay}`);
             }
         });
-
-        // Recursive olarak yeni günü de kontrol et
-        setTimeout(async () => {
-            await enforceDailyRouteLimit(newDay, maxKm);
-        }, 100);
-
+        
+        // Cart'ı güncelle
         if (typeof updateCart === "function") {
+            console.log(`[DEBUG] Calling updateCart()`);
             updateCart();
         }
         
-        addMessage(`Route limit reached (${maxKm}km). ${itemsToMove.length} places moved to Day ${newDay}.`, "bot-message");
+        addMessage(`Gün ${day} için rota limiti aşıldı (${maxKm}km). ${itemsToMove.length} konum Gün ${newDay}'e taşındı.`, "bot-message");
+        
+        // Yeni gün için de limit kontrolü yap (recursive)
+        setTimeout(() => {
+            console.log(`[DEBUG] Recursively checking new day ${newDay}`);
+            enforceDailyRouteLimit(newDay, maxKm);
+        }, 500);
+        
         return true;
     }
+    
+    console.log(`[DEBUG] Day ${day} within limit (${totalKm.toFixed(2)}/${maxKm}km)`);
     return false;
 }
 async function renderRouteForDay(day) {
+
+        console.log(`=== RENDER START for day ${day} ===`);
+    console.log(`Cart items for day ${day}:`, 
+        window.cart.filter(item => item.day === day).map((item, i) => 
+            `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
+        )
+    );
+    
     const limitExceeded = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitExceeded) return; // Eğer bölündüyse bu fonksiyon zaten updateCart üzerinden tekrar tetiklenecek
 
@@ -8429,6 +8475,7 @@ try {
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
     
 
+    console.log(`=== RENDER END for day ${day} ===`);
 
 }
 
