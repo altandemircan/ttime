@@ -7767,7 +7767,10 @@ async function enforceDailyRouteLimit(day, maxKm) {
             });
 
             // UI güncellemesi
-            if (typeof updateCart === "function") updateCart();
+            // Uyarı kutusu otomatik silinmesin istiyorsan, updateCart fonksiyonun içinde veya sonrasında bu bloğu BULUP SİL:
+let warnDiv = document.getElementById(`route-limit-warning-${day}`);
+if (warnDiv) warnDiv.remove();
+// YANİ updateCart veya başka yerde "route-limit-warning" id'li div'i kaldıran kodları TEMİZLE.
 
             return true;
         }
