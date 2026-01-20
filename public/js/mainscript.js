@@ -7666,9 +7666,9 @@ function restoreMap(containerId, day) {
     }
 }
 async function enforceDailyRouteLimit(day, maxKm) {
-    // Sadece mevcut güne ait ve koordinatı olanları al
+    // Sadece koordinatı olan geçerli öğeleri filtrele
     const itemsOfDay = window.cart.filter(item => 
-        Number(item.day) === Number(day) && item.location && isFinite(item.location.lat)
+        item.day == day && item.location && isFinite(item.location.lat) && isFinite(item.location.lng)
     );
     
     if (itemsOfDay.length <= 1) return false;
@@ -7683,7 +7683,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
         ) / 1000;
 
         if (totalKm > maxKm) {
-            splitIdx = i; // Limiti ilk geçen öğe
+            splitIdx = i; // Limiti ilk aşan öğenin indeksi
             break;
         }
     }
@@ -7691,25 +7691,28 @@ async function enforceDailyRouteLimit(day, maxKm) {
     if (splitIdx > 0) {
         const nextDay = Number(day) + 1;
 
-        // Önemli: Önce diğer günlerin numarasını kaydır (Çakışma olmaması için)
+        // 1. ADIM: Sonraki tüm günleri birer kaydır (Araya yeni gün açmak için)
         window.cart.forEach(item => {
-            if (Number(item.day) >= nextDay) {
-                item.day = Number(item.day) + 1;
-            }
+            if (item.day >= nextDay) item.day = Number(item.day) + 1;
         });
 
-        // Limiti aşan öğeleri yeni güne aktar (Referans üzerinden günceller)
+        // 2. ADIM: Limiti aşan öğeleri YENİ GÜNE ata
+        // Bu işlem window.cart içindeki referansları güncellediği için duplicate oluşmaz
         for (let i = splitIdx; i < itemsOfDay.length; i++) {
-            itemsOfDay[i].day = nextDay;
+            itemsOfDay[i].day = nextDay; 
         }
 
-        // Veriyi kaydet ve tüm arayüzü tek seferde tazele
-        localStorage.setItem('cart', JSON.stringify(window.cart));
+        console.log(`[Limit] Day ${day} exceeded ${maxKm}km. Moving excess to Day ${nextDay}`);
         
+        // 3. ADIM: UI ve Depolama Güncellemesi
         if (typeof updateCart === "function") {
-            updateCart(); 
+            updateCart();
         }
-        return true; 
+        if (typeof saveCurrentTripToStorage === "function") {
+            saveCurrentTripToStorage();
+        }
+
+        return true; // Bölme işlemi yapıldı
     }
     return false;
 }
@@ -7718,7 +7721,8 @@ async function renderRouteForDay(day) {
     const wasSplit = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (wasSplit) return;
 
-
+    // containerId tanımlaması SADECE BİR KEZ yapılmalı
+    const containerId = `route-map-day${day}`;
     const container = document.getElementById(containerId);
     if (!container) return;
 
