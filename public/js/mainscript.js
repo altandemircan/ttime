@@ -2311,7 +2311,7 @@ function addToCart(
 ) {
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
-    
+
 
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
@@ -7666,47 +7666,49 @@ function restoreMap(containerId, day) {
     }
 }
 async function enforceDailyRouteLimit(day, maxKm) {
-    // Sadece gerçek markerları sırala (starter/placeholder/Note gibi olmayanlar hariç)
-    const itemsOfDay = window.cart.filter(item =>
-        item.day == day &&
-        item.location &&
-        isFinite(item.location.lat) && isFinite(item.location.lng)
-    );
+    const itemsOfDay = window.cart.filter(item => item.day == day && item.location && isFinite(item.location.lat) && isFinite(item.location.lng));
     if (itemsOfDay.length <= 1) return false;
 
-    let totalKm = 0, splitIdx = -1;
+    let totalKm = 0;
+    let splitIdx = -1;
+
     for (let i = 1; i < itemsOfDay.length; i++) {
         totalKm += haversine(
-            itemsOfDay[i-1].location.lat,
-            itemsOfDay[i-1].location.lng,
-            itemsOfDay[i].location.lat,
-            itemsOfDay[i].location.lng
+            itemsOfDay[i-1].location.lat, itemsOfDay[i-1].location.lng,
+            itemsOfDay[i].location.lat, itemsOfDay[i].location.lng
         ) / 1000;
+
         if (totalKm > maxKm) {
             splitIdx = i;
             break;
         }
     }
+
     if (splitIdx > 0) {
-        const proceed = confirm(
-            `Your route for this day exceeds ${maxKm} km.\nFor a single day, the maximum allowed route is ${maxKm} km.\nDo you accept to move the excess places to a new day?`
-        );
-        if (!proceed) return false;
-        const newDay = Math.max(...window.cart.map(i => i.day || 1)) + 1;
+        // Otomatik bölme işlemi (confirm kaldırıldı)
+        const newDay = day + 1;
+        
+        // Mevcut ve sonraki tüm günleri bir kaydırarak yer aç (Opsiyonel ama temiz yapı için)
+        window.cart.forEach(item => {
+            if (item.day >= newDay) item.day += 1;
+        });
+
+        // Limiti aşan item'ları yeni güne taşı
         for (let i = splitIdx; i < itemsOfDay.length; i++) {
-            const cartIdx = window.cart.findIndex(item =>
-                item === itemsOfDay[i]
-            );
+            const cartIdx = window.cart.findIndex(item => item === itemsOfDay[i]);
             if (cartIdx >= 0) window.cart[cartIdx].day = newDay;
         }
+
         if (typeof updateCart === "function") updateCart();
-        if (typeof renderRouteForDay === "function") { await renderRouteForDay(day); await renderRouteForDay(newDay); }
-        addMessage(`${itemsOfDay.length - splitIdx} places have been moved to a new day.`, "bot-message");
+        
+        addMessage(`Route limit reached (${maxKm}km). Excess places moved to Day ${newDay}.`, "bot-message");
         return true;
     }
     return false;
 }
 async function renderRouteForDay(day) {
+    const limitExceeded = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
+    if (limitExceeded) return; // Eğer bölündüyse bu fonksiyon zaten updateCart üzerinden tekrar tetiklenecek
 
     // 1. ADIM: TEMİZLİK (RESET)
     // 3D Haritanın kafasını karıştıracak her şeyi siliyoruz.
