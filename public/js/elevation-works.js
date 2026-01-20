@@ -790,19 +790,27 @@ if (bestIndex < ed.smooth.length) {
         range: Math.round(max - min)
       });
 
+// DEBUG: Elevation data kontrolü
+console.log("🎯 ELEVATION DATA HAZIR:", {
+  containerId: container.id,
+  routeKey: routeKey,
+  smoothLength: smooth.length,
+  min: Math.round(min),
+  max: Math.round(max),
+  first5: smooth.slice(0, 5).map(v => Math.round(v))
+});
 
 container._elevationData = { smooth, min, max };
 container._elevationDataFull = { smooth: smooth.slice(), min, max };
 container.dataset.elevLoadedKey = routeKey;
 
-// DEBUG: Kontrol et
-console.log("✅ ELEVATION DATA SET EDİLDİ:", {
-  containerId: container.id,
-  smoothLength: smooth.length,
-  min: min,
-  max: max,
-  hasRedrawFunc: typeof container._redrawElevation === 'function'
-});
+// HEMEN ÇİZİM YAP
+if (typeof container._redrawElevation === 'function') {
+  console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
+  container._redrawElevation(container._elevationData);
+} else {
+  console.error("❌ _redrawElevation fonksiyonu YOK!");
+}
 
      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
