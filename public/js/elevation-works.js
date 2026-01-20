@@ -597,12 +597,6 @@ try {
   elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
 }
     
-    const data = await response.json();
-    
-    // Backend'den gelen formatı client formatına çevir
-    if (data && Array.isArray(data.results)) {
-        elevations = data.results.map(r => r.elevation || 0);
-    }
     
       
       // --- ROBUST DATA REPAIR (VERİ TAMİRİ) ---
