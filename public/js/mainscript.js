@@ -7661,39 +7661,55 @@ function restoreMap(containerId, day) {
     }
 }
 async function enforceDailyRouteLimit(day, maxKm) {
-    const points = getDayPoints(day);
+    // Sadece "real" marker'ları sırala (starter/placeholder/Note gibi olmayanlar)
+    const itemsOfDay = window.cart.filter(item =>
+        item.day == day &&
+        item.location &&
+        isFinite(item.location.lat) && isFinite(item.location.lng)
+    );
+
+    // Nokta yoksa yapacak iş yok:
+    if (itemsOfDay.length <= 1) return false;
+
+    // KM split index'i bul
     let totalKm = 0, splitIdx = -1;
-    for (let i = 1; i < points.length; i++) {
-        totalKm += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng) / 1000;
+    for (let i = 1; i < itemsOfDay.length; i++) {
+        totalKm += haversine(
+            itemsOfDay[i-1].location.lat,
+            itemsOfDay[i-1].location.lng,
+            itemsOfDay[i].location.lat,
+            itemsOfDay[i].location.lng
+        ) / 1000;
         if (totalKm > maxKm) {
             splitIdx = i;
             break;
         }
     }
     if (splitIdx > 0) {
+        // Onayı iste
         const proceed = confirm(
-            `Bu gün içerisindeki rotanız ${maxKm} km'yi aşıyor.\nAynı gün içerisinde maksimum ${maxKm} km rota çizilebilir.\nAşan noktalar yeni bir gün olarak eklenecektir. Onaylıyor musunuz?`
+            `Bu gün içerisindeki rotanız ${maxKm} km'yi aşıyor.
+Aynı gün içerisinde maksimum ${maxKm} km rota çizilebilir.
+Aşan noktalar yeni bir gün olarak eklenecektir. Onaylıyor musunuz?`
         );
         if (!proceed) return false;
-        let maxDay = Math.max(...window.cart.map(i => i.day || 1));
-        const newDay = maxDay + 1;
-        let movedCount = 0;
-        for (let i = splitIdx; i < points.length; i++) {
-            const p = points[i];
+
+        // Yeni gün numarası bul
+        const newDay = Math.max(...window.cart.map(i => i.day || 1)) + 1;
+
+        // split'e denk gelen ve sonrası tüm item'ların day'ını güncelle
+        for (let i = splitIdx; i < itemsOfDay.length; i++) {
+            // cart içindeki orijinal nesneyi bul
             const cartIdx = window.cart.findIndex(item =>
-                item.day == day &&
-                item.location &&
-                Math.abs(item.location.lat - p.lat) < 1e-6 &&
-                Math.abs(item.location.lng - p.lng) < 1e-6 &&
-                item.name == p.name
+                item === itemsOfDay[i]
             );
-            if (cartIdx >= 0) {
-                window.cart[cartIdx].day = newDay;
-                movedCount++;
-            }
+            if (cartIdx >= 0) window.cart[cartIdx].day = newDay;
         }
+
+        // Eğer senin updateCart, renderRouteForDay gibi her şeyi güncellemiyor ise:
         if (typeof updateCart === "function") updateCart();
-        addMessage(`${movedCount} yer yeni güne aktarıldı. Her gün için maksimum ${maxKm} km rota çizilebilir.`, "bot-message");
+        if (typeof renderRouteForDay === "function") { await renderRouteForDay(day); await renderRouteForDay(newDay); }
+        addMessage(`${itemsOfDay.length - splitIdx} yer yeni güne aktarıldı.`, "bot-message");
         return true;
     }
     return false;
