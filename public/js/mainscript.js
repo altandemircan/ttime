@@ -15,7 +15,7 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 
 document.addEventListener("DOMContentLoaded", function() {
     // #about yerine #about-triptime
-    if (window.location.hash === "#about-triptime-ai") {
+    if (window.location.hash === "#about-triptime") {
         if (typeof changeContent === "function") {
             changeContent(2);
             const chatMain = document.getElementById('main-chat');
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 window.addEventListener('hashchange', function() {
     // #about yerine #about-triptime
-    if (window.location.hash === "#about-triptime-ai") {
+    if (window.location.hash === "#about-triptime") {
         changeContent(2);
         document.getElementById('main-chat').style.display='none';
     } else {
