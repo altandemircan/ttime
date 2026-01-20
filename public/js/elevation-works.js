@@ -265,51 +265,55 @@ if ((!spanKm || spanKm < 0.01) && !customElevData) {
     }
 
     // --- MARKER POSITIONING ---
-    let activeData = null;
-   
-    // Container üzerinden elevation verisi al
-    if (container && container._elevationData) {
-        const { smooth, min, max } = container._elevationData;
-        let vizMin = min, vizMax = max;
-        const eSpan = max - min;
-        // Padding: yukarıya %10, aşağıya %5
-        if (eSpan > 0) { 
-          vizMin = min - eSpan * 0.05; 
-          vizMax = max + eSpan * 0.10; 
-        }
-        else { 
-          vizMin = min - 1; 
-          vizMax = max + 1; 
-        }
-        activeData = { smooth, vizMin, vizMax };
+    // --- MARKER POSITIONING ---
+let activeData = null;
+
+// Container üzerinden elevation verisi al
+if (container && container._elevationData) {
+    const { smooth, min, max } = container._elevationData;
+    let vizMin = min, vizMax = max;
+    const eSpan = max - min;
+    // Padding: yukarıya %10, aşağıya %5
+    if (eSpan > 0) { 
+      vizMin = min - eSpan * 0.05; 
+      vizMax = max + eSpan * 0.10; 
     }
+    else { 
+      vizMin = min - 1; 
+      vizMax = max + 1; 
+    }
+    activeData = { smooth, vizMin, vizMax };
+}
 
-    if (Array.isArray(markers)) {
-        markers.forEach((m, idx) => {
-            let dist = typeof m.distance === "number" ? m.distance : 0;
+if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+        let dist = typeof m.distance === "number" ? m.distance : 0;
+       
+        // Segment dışındakileri çizme
+        if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
+            return;
+        }
+
+        const relKm = dist - startKmDom;
+        let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+        left = Math.max(0, Math.min(100, left));
+
+        let bottomStyle = "2px"; 
+
+        // ELEVATION DATA YOKSA, SADECE ALTTA GÖSTER
+        if (!activeData || !activeData.smooth || activeData.smooth.length === 0) {
+            bottomStyle = "2px"; // Sabit altta
+        } else {
+            const { smooth, vizMin, vizMax } = activeData;
+            const pct = Math.max(0, Math.min(1, left / 100));
+            const sampleIdx = Math.floor(pct * (smooth.length - 1));
+            const val = smooth[sampleIdx];
            
-            // Segment dışındakileri çizme
-            if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
-                return;
+            if (typeof val === 'number') {
+                const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+                bottomStyle = `calc(${heightPct}% - 7px)`;
             }
-
-            const relKm = dist - startKmDom;
-            let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
-            left = Math.max(0, Math.min(100, left));
-
-            let bottomStyle = "2px"; 
-
-            if (activeData && activeData.smooth && activeData.smooth.length > 0) {
-                const { smooth, vizMin, vizMax } = activeData;
-                const pct = Math.max(0, Math.min(1, left / 100));
-                const sampleIdx = Math.floor(pct * (smooth.length - 1));
-                const val = smooth[sampleIdx];
-               
-                if (typeof val === 'number') {
-                    const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-                    bottomStyle = `calc(${heightPct}% - 7px)`;
-                }
-            }
+        }
 
             let transformX = '-50%';
             if (left < 1) transformX = '0%';
