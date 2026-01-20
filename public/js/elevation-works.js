@@ -124,12 +124,23 @@ bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 }
 
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null, retryCount = 0) {
     // 1. KONTROL: Element yoksa veya DOM'dan tamamen silinmişse işlemi durdur.
     if (!track || !track.isConnected) {
         return;
     }
+
+    // --- GENİŞLİK DOĞRULAMA (AUTO-FIX) ---
+    const actualWidth = track.offsetWidth;
+    // Eğer genişlik hatalı (200px varsayılan) veya henüz hazır değilse (0) biraz bekle
+    if ((actualWidth <= 200 || Math.abs(actualWidth - widthPx) > 5) && retryCount < 15) {
+        setTimeout(() => {
+            createScaleElements(track, track.offsetWidth, spanKm, startKmDom, markers, customElevData, retryCount + 1);
+        }, 150);
+        return; 
+    }
+    // Genişliği gerçek değerle güncelle ki grafik kutuya tam otursun
+    widthPx = actualWidth;
 
     // 2. KONTROL: Element var ama görünür değilse (örn: display:none), sonsuz döngüye girme.
     // Sadece 5 kere (yaklaşık 1.5 saniye) dene, sonra vazgeç.
