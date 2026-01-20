@@ -7663,14 +7663,13 @@ function restoreMap(containerId, day) {
 // --- KESİN LİMİT AYARI ---
 const CURRENT_ROUTE_KM_LIMIT = 200; 
 
-// GLOBAL ZAMAN KİLİDİ (Çift uyarıyı %100 engeller)
+// GLOBAL ZAMAN KİLİDİ (Çift uyarı engeli)
 window.__lastLimitAlertTime = 0; 
 
-// --- 1. LİMİT KONTROL (ZAMAN KİLİTLİ & SADECE UYARI) ---
 async function enforceDailyRouteLimit(day, maxKm) {
-        if (window.__isRouteLimitDialogActive) return true; // yeni
+    if (window.__isRouteLimitDialogActive) return true;
 
-    // KİLİT KONTROLÜ: Son 2.5 saniye içinde uyarı verildiyse, bu kontrolü iptal et.
+    // 2.5 sn tekrar koruması
     if (Date.now() - window.__lastLimitAlertTime < 2500) {
         return false;
     }
@@ -7722,7 +7721,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
                         }
                     }
                 }
-            } catch (e) { /* Hata varsa Haversine'e devam */ }
+            } catch (e) {}
         } 
         
         // B) YURTDIŞI VEYA HATA (HAVERSINE)
@@ -7742,34 +7741,34 @@ async function enforceDailyRouteLimit(day, maxKm) {
             }
         }
 
-        // --- MÜDAHALE (UYARI & SİLME) ---
+        // --- UYARI & SİLME ---
         if (limitExceeded && splitIdx > 0) {
-            // Kilidi güncelle (Şimdi uyarı vereceğiz)
             window.__lastLimitAlertTime = Date.now();
 
+            // Harita altına UYARI KUTUSU
             let msgId = `route-limit-warning-${day}`;
-let container = document.getElementById(`route-map-day${day}`);
-if (container) {
-    let existing = document.getElementById(msgId);
-    if (!existing) {
-        existing = document.createElement('div');
-        existing.id = msgId;
-        existing.style = "color:#b71c1c;background:#fff3e0;padding:10px 15px;border-radius:7px;font-weight:600;margin:10px 0;";
-        container.parentNode.insertBefore(existing, container.nextSibling);
-    }
-    existing.innerHTML = `🚦 Daily route limit exceeded! Your route: <b>${currentTotalKm} km</b>. Maximum allowed: <b>${maxKm} km</b>. The last places were not added.`;
-}
-            // Limiti aşanları bul ve SİL
+            let container = document.getElementById(`route-map-day${day}`);
+            if (container) {
+                let existing = document.getElementById(msgId);
+                if (!existing) {
+                    existing = document.createElement('div');
+                    existing.id = msgId;
+                    existing.style = "color:#b71c1c;background:#fff3e0;padding:10px 15px;border-radius:7px;font-weight:600;margin:10px 0;";
+                    container.parentNode.insertBefore(existing, container.nextSibling);
+                }
+                existing.innerHTML = `🚦 Daily route limit exceeded! Your route: <b>${currentTotalKm} km</b>. Maximum allowed: <b>${maxKm} km</b>. The last places were not added.`;
+            }
+
+            // Limit aşan noktaları sil
             const itemsToProcess = dayItems.slice(splitIdx);
             itemsToProcess.forEach(item => {
                 const idx = window.cart.indexOf(item);
                 if (idx > -1) window.cart.splice(idx, 1);
             });
 
-            // Arayüz güncelle
+            // UI güncellemesi
             if (typeof updateCart === "function") updateCart();
 
-            // Erken çıkış, başka işleme gerek yok!
             return true;
         }
 
