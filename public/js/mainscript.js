@@ -7741,25 +7741,21 @@ async function enforceDailyRouteLimit(day, maxKm) {
         }
 
         // --- MÜDAHALE (UYARI & SİLME) ---
-        if (limitExceeded && splitIdx > 0) {
-            // Kilidi güncelle (Şimdi uyarı vereceğiz)
-            window.__lastLimitAlertTime = Date.now();
+       if (limitExceeded && splitIdx > 0) {
+    // OK'e basılınca tekrar uyarı çıkmasın diye kilidi ileri şekilde güncelle
+    window.__lastLimitAlertTime = Date.now() + 10000; // 10 saniye sonra tekrar uyarıya izin ver
 
-            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed automatically.`);
+    alert(`⚠️ ROUTE LIMIT EXCEEDED ...`);
 
-            // Limiti aşanları bul ve SİL
-            const itemsToProcess = dayItems.slice(splitIdx);
-            itemsToProcess.forEach(item => {
-                const idx = window.cart.indexOf(item);
-                if (idx > -1) window.cart.splice(idx, 1);
-            });
+    const itemsToProcess = dayItems.slice(splitIdx);
+    itemsToProcess.forEach(item => {
+        const idx = window.cart.indexOf(item);
+        if (idx > -1) window.cart.splice(idx, 1);
+    });
 
-            // Arayüz güncelle
-            if (typeof updateCart === "function") updateCart();
-
-            // Erken çıkış, başka işleme gerek yok!
-            return true;
-        }
+    if (typeof updateCart === "function") updateCart();
+    return true;
+}
 
     } catch(e) {
         console.error("Limit check error:", e);
