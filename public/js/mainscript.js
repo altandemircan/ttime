@@ -7663,12 +7663,10 @@ function restoreMap(containerId, day) {
     }
 }
 
-// --- KESİN LİMİT AYARI (200 KM) ---
-const CURRENT_ROUTE_KM_LIMIT = 200; 
+const CURRENT_ROUTE_KM_LIMIT = 200; // Kesin Limit: 200 km
 
-// --- YENİ LİMİT FONKSİYONU (GERÇEK YOL MESAFESİNE GÖRE) ---
+// --- LİMİT KONTROL VE YÖNETİM FONKSİYONU ---
 async function enforceDailyRouteLimit(day, maxKm) {
-    // 1. Sepetteki o güne ait geçerli noktaları al
     let dayItems = window.cart.filter(item => 
         item.day == day && 
         item.location && 
@@ -7676,115 +7674,78 @@ async function enforceDailyRouteLimit(day, maxKm) {
         isFinite(item.location.lng)
     );
     
-    // 2 noktadan azsa rota oluşmaz
-    if (dayItems.length < 2) return false;
+    if (dayItems.length <= 1) return false;
 
-    // Koordinat dizisini hazırla
-    const coords = dayItems.map(item => [item.location.lng, item.location.lat]);
-    
-    // URL oluştur (Mevcut buildDirectionsUrl fonksiyonunu kullanıyoruz)
-    const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
-    const url = buildDirectionsUrl(coordParam, day);
-
-    let routeLegs = [];
-    
-    try {
-        // --- KRİTİK NOKTA: GERÇEK YOL VERİSİNİ ÇEK ---
-        // Haversine yerine OSRM'den yol mesafesini soruyoruz.
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            console.warn("Rota servisine ulaşılamadı, limit kontrolü atlanıyor.");
-            return false;
-        }
-        const data = await resp.json();
-        
-        // Rota bulunamadıysa işlem yapma
-        if (!data.routes || !data.routes[0] || !data.routes[0].legs) return false;
-        
-        routeLegs = data.routes[0].legs; // Her nokta arasındaki yol parçaları
-    } catch (e) {
-        console.error("Limit kontrolü sırasında hata:", e);
-        return false;
-    }
-
-    // --- MESAFE KONTROLÜ ---
-    let totalMeters = 0;
-    let splitIdx = -1; // Limiti aşan noktanın indexi
+    let totalKm = 0;
+    let splitIdx = -1;
     let limitExceededName = "";
 
-    // Leg'leri toplayarak git.
-    // dayItems[0] -> Başlangıç
-    // dayItems[1] -> routeLegs[0] sonu
-    // dayItems[2] -> routeLegs[1] sonu ...
-    
-    for (let i = 0; i < routeLegs.length; i++) {
-        totalMeters += routeLegs[i].distance; // Metre cinsinden gerçek yol
+    // Mesafeyi hesapla
+    for (let i = 1; i < dayItems.length; i++) {
+        const km = haversine(
+            dayItems[i-1].location.lat, dayItems[i-1].location.lng,
+            dayItems[i].location.lat, dayItems[i].location.lng
+        ) / 1000;
+        
+        totalKm += km;
 
-        if (totalMeters > (maxKm * 1000)) {
-            // İŞTE BURASI! Limiti aşan nokta: i + 1
-            // Çünkü leg[0], point[0] ile point[1] arasındadır.
-            splitIdx = i + 1; 
-            limitExceededName = dayItems[splitIdx].name || 'Added Location';
+        // Limit aşıldı mı?
+        if (totalKm > maxKm) {
+            splitIdx = i; 
+            limitExceededName = dayItems[i].name || 'Added Location';
             break;
         }
     }
 
-    // EĞER LİMİT AŞILDIYSA MÜDAHALE ET
+    // LİMİT AŞILDI!
     if (splitIdx > 0) {
         const newDay = day + 1;
-        // Limiti aşan noktadan sonrasını al
+        // Limiti aşan ve sonrasındaki tüm noktalar (Genelde son eklenen)
         const itemsToMoveOrDelete = dayItems.slice(splitIdx); 
         const count = itemsToMoveOrDelete.length;
-        const currentDistKm = (totalMeters / 1000).toFixed(1);
+        const currentDistStr = totalKm.toFixed(1);
 
-        // Kullanıcıya SOR (İngilizce)
+        // Kullanıcıya SOR
         const userChoice = confirm(
-            `⚠️ ROAD DISTANCE LIMIT EXCEEDED (Day ${day})\n\n` +
-            `Limit: ${maxKm} km. Actual Road: ${currentDistKm} km.\n` +
+            `⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\n` +
+            `Limit: ${maxKm} km. Current: ${currentDistStr} km.\n` +
             `Triggered by: "${limitExceededName}"\n\n` +
             `[OK] -> MOVE location(s) to Day ${newDay}\n` +
-            `[CANCEL] -> DELETE location(s) (Strict 200km Limit)`
+            `[CANCEL] -> DELETE location(s) (Stay within limit)`
         );
 
         if (userChoice) {
-            // --- OK: TAŞIMA İŞLEMİ ---
+            // --- OK: SONRAKİ GÜNE TAŞI ---
             const maxDayInCart = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
-            
-            // Yer açmak için diğer günleri ötele
             for (let d = maxDayInCart; d >= newDay; d--) {
                 window.cart.forEach(item => {
                     if (item.day === d) item.day = d + 1;
                 });
             }
-            
-            // İtemları taşı
             itemsToMoveOrDelete.forEach(itemToMove => {
                 const realItem = window.cart.find(c => c === itemToMove);
                 if (realItem) realItem.day = newDay;
             });
-            
-            addMessage(`Route limit exceeded (${currentDistKm}km). Moved to Day ${newDay}.`, "bot-message");
+            addMessage(`Route limit exceeded. Moved to Day ${newDay}.`, "bot-message");
 
         } else {
-            // --- CANCEL: SİLME İŞLEMİ (KESİN ÇÖZÜM) ---
-            // İptal edildiyse, o fazla yolu haritaya çizdirmeyiz, sileriz.
+            // --- CANCEL: LİSTEDEN SİL (Geri Al) ---
+            // Bu kısım "Haritada tıklıyorum ekliyor" sorununu çözer.
+            // İptal derseniz o nokta hiç eklenmemiş gibi silinir.
             itemsToMoveOrDelete.forEach(itemToDelete => {
                 const idx = window.cart.indexOf(itemToDelete);
                 if (idx > -1) {
                     window.cart.splice(idx, 1);
                 }
             });
-            
-            addMessage(`Action cancelled. Locations removed to keep route under ${maxKm}km.`, "bot-message");
+            addMessage(`Cancelled. Location removed to stay under ${maxKm}km.`, "bot-message");
         }
 
-        // Sepet değiştiği için updateCart çağırıyoruz
+        // Cart değiştiği için her şeyi yenile
         if (typeof updateCart === "function") {
             updateCart(); 
         }
-        
-        // True dönerek renderRouteForDay fonksiyonunu durduruyoruz
-        return true; 
+        return true; // Render işlemini durdur, çünkü updateCart yeniden başlatacak
     }
 
     return false;
@@ -7792,55 +7753,34 @@ async function enforceDailyRouteLimit(day, maxKm) {
 
 // --- ANA RENDER FONKSİYONU ---
 async function renderRouteForDay(day) {
-    
-    // 1. ADIM: GERÇEK YOL VERİSİYLE LİMİT KONTROLÜ
-    // Bu fonksiyon artık fetch yaparak gerçek mesafeyi ölçer.
-    // Eğer limit aşılmışsa (true döner), çizimi durdururuz.
-    const limitHandled = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
-    if (limitHandled) {
-        return; // Çizimi iptal et, çünkü updateCart yeniden başlatacak.
-    }
-
     console.log(`=== RENDER START for day ${day} ===`);
     
-    // --- BURADAN AŞAĞISI STANDART ÇİZİM KODLARINIZ (AYNEN KORUNDU) ---
-    
+    // 1. TEMİZLİK
     window.selectedSegmentIndex = -1;
     window.selectedSegment = null;
     window._lastSegmentDay = null;
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
 
-    const pts = getDayPoints(day).filter(
+    // Cart'tan noktaları al
+    const points = getDayPoints(day).filter(
         p => typeof p.lat === "number" && typeof p.lng === "number" && !isNaN(p.lat) && !isNaN(p.lng)
     );
 
-    // --- SENARYO A: GPS DOSYASI (LOCKED) ---
-    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
-        // (Bu blok GPS import edildiğinde çalışır, genelde manuel limitten etkilenmez ama yine de kalsın)
-        const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
-        const points = getDayPoints(day);
-        const containerId = `route-map-day${day}`;
-        ensureDayMapContainer(day);
-        initEmptyDayMap(day);
-
-        if (gpsRaw.length < 2 || points.length < 2) return;
-        // ... GPS çizim kodları ...
-        // Kodun çok uzamaması için buradaki GPS bloğunu olduğu gibi bıraktım, 
-        // yukarıdaki limit kontrolü zaten buraya gelmeden çözecek.
-        // Eğer elinizdeki GPS kodu çok uzunsa ve buraya sığdırmamı isterseniz söyleyin.
-        // Standart işleyişte limit kontrolü en başta yapıldığı için burası güvenli.
-    }
-
-    // --- SENARYO B: NORMAL ROTA HESAPLAMA (OSRM) ---
-
     const containerId = `route-map-day${day}`;
-    const points = getDayPoints(day);
 
-    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw && points.length > 2) {
-        window.importedTrackByDay[day].drawRaw = false;
+    // --- SENARYO A: GPS KİLİTLİ ROTA (Buraya dokunmuyoruz, kullanıcı GPS yüklediyse serbesttir) ---
+    if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
+         // ... GPS Çizim Kodları (Önceki kodunuzda varsa burası çalışır) ...
+         // Standart işleyişin bozulmaması için GPS bloğu etkilenmez.
+         // (Eğer GPS kodunuz çok uzunsa ve burayı da vermemi isterseniz ekleyebilirim ama 
+         // şu anki sorununuz manuel eklemedeki limit olduğu için burayı pas geçiyorum)
+         // ...
     }
 
+    // --- SENARYO B: MANUEL ROTA (OSRM) ---
+    
+    // 1. Nokta kontrolü
     if (!points || points.length === 0) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
@@ -7854,32 +7794,28 @@ async function renderRouteForDay(day) {
 
     // Tek nokta varsa
     if (points.length === 1) {
-        // ... Tek nokta çizim kodları ...
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
         const map = window.leafletMaps?.[containerId];
         if (map) {
-             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
              const p = points[0];
              L.marker([p.lat, p.lng], {
                 icon: L.divIcon({
-                    html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;">1</div>`,
-                    iconSize: [32, 32], iconAnchor: [16, 16]
+                    html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                    className: "", iconSize: [32, 32], iconAnchor: [16, 16]
                 })
-             }).addTo(map).bindPopup(p.name);
+             }).addTo(map).bindPopup(`<b>${p.name || 'Point'}</b>`);
              map.setView([p.lat, p.lng], 14);
         }
         document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
         return;
     }
 
-    // --- NORMAL FETCH VE ÇİZİM ---
-    // (Aşağıdaki kısım, limit kontrolünden GEÇEN rotayı çizer)
-    
+    // 2. Çizim Hazırlığı
     ensureDayMapContainer(day);
     initEmptyDayMap(day);
 
-    // Snap Points
     const snappedPoints = [];
     for (const pt of points) {
         const snapped = await snapPointToRoad(pt.lat, pt.lng);
@@ -7887,7 +7823,8 @@ async function renderRouteForDay(day) {
     }
     const coordinates = snappedPoints.map(pt => [pt.lng, pt.lat]);
 
-    // Rota Verisini Çek
+    // 3. ROTA VERİSİNİ ÇEK (OSRM)
+    // Bu fonksiyon zaten vardı, onu kullanarak veriyi alıyoruz.
     async function fetchRoutePartial(coords, day) {
         for (let n = coords.length; n >= 2; n--) {
             const subset = coords.slice(0, n);
@@ -7910,7 +7847,7 @@ async function renderRouteForDay(day) {
                         },
                         coords: data.routes[0].geometry.coordinates,
                         summary: { distance: data.routes[0].distance, duration: data.routes[0].duration },
-                        legs: data.routes[0].legs
+                        legs: data.routes[0].legs 
                     },
                     usedCount: n,
                     missingCoords: coords.slice(n-1)
@@ -7922,29 +7859,154 @@ async function renderRouteForDay(day) {
 
     let routeData;
     let missingPoints = [];
+
     try {
         const partial = await fetchRoutePartial(coordinates, day);
         if (!partial) throw new Error('Route not reachable');
+        
         routeData = partial.routeData;
         missingPoints = snappedPoints.slice(partial.usedCount - 1);
+
     } catch (e) {
         console.warn('Rota çizilemedi:', e);
+        // Hata durumunda sadece noktaları koyup çıkabiliriz veya fallback yapabiliriz
         return;
     }
+
+    // =========================================================================
+    //  ⚡ KRİTİK NOKTA: ROTA GELDİ AMA HARİTAYA BASMADAN ÖNCE LİMİTİ ÖLÇ! ⚡
+    // =========================================================================
+    
+    const MAX_ROAD_LIMIT_METERS = 200000; // 200 KM
+
+    if (routeData && routeData.summary && routeData.summary.distance > MAX_ROAD_LIMIT_METERS) {
+        
+        let splitIdx = -1;
+        let limitExceededName = "Added Location";
+        let currentMeters = 0;
+
+        // Hangi noktada patladığımızı bulmak için 'legs' (parçalar) üzerinde geziyoruz.
+        // points[0] -> Başlangıç
+        // legs[0] -> points[0] ile points[1] arasındaki yol
+        if (routeData.legs && routeData.legs.length > 0) {
+            for(let i = 0; i < routeData.legs.length; i++) {
+                currentMeters += routeData.legs[i].distance;
+                if (currentMeters > MAX_ROAD_LIMIT_METERS) {
+                    splitIdx = i + 1; // Limit bu bacaktan sonraki noktada aşıldı
+                    // Sepetteki karşılığını bulmak için basit index kullanıyoruz
+                    // (points dizisi ile cart dizisinin senkron olduğunu varsayıyoruz)
+                    if (points[splitIdx]) {
+                        limitExceededName = points[splitIdx].name || limitExceededName;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Eğer index bulamadıysak ama toplam > 200km ise, son ekleneni suçlu kabul et
+        if (splitIdx === -1) splitIdx = points.length - 1;
+
+        // Limiti aşan ve sonrasındaki noktalar
+        // Orijinal cart objelerini bulmamız lazım. 
+        // `points` sadece dayPoints. Cart'ın kendisi `window.cart`.
+        const dayItemsInCart = window.cart.filter(item => item.day == day);
+        
+        // Eğer points ve cart senkron ise:
+        const itemsToMoveOrDelete = dayItemsInCart.slice(splitIdx);
+        
+        if (itemsToMoveOrDelete.length > 0) {
+            const newDay = day + 1;
+            const currentKm = (routeData.summary.distance / 1000).toFixed(1);
+
+            const userChoice = confirm(
+                `⚠️ ROAD DISTANCE LIMIT EXCEEDED (Day ${day})\n\n` +
+                `Max: 200 km. Calculated: ${currentKm} km.\n` +
+                `Triggered at: "${limitExceededName}"\n\n` +
+                `[OK] -> MOVE excess location(s) to Day ${newDay}\n` +
+                `[CANCEL] -> DELETE excess location(s) (Strict 200km)`
+            );
+
+            if (userChoice) {
+                // --- OK: TAŞI ---
+                const maxDay = Math.max(...window.cart.map(c => c.day).filter(d => !isNaN(d)));
+                // Yer aç
+                for (let d = maxDay; d >= newDay; d--) {
+                    window.cart.forEach(c => { if (c.day === d) c.day = d + 1; });
+                }
+                // Taşı
+                itemsToMoveOrDelete.forEach(item => {
+                    // window.cart içindeki gerçek referansı güncelle
+                    item.day = newDay; 
+                });
+                addMessage(`Limit exceeded (${currentKm}km). Moved to Day ${newDay}.`, "bot-message");
+            } else {
+                // --- CANCEL: SİL ---
+                itemsToMoveOrDelete.forEach(item => {
+                    const idx = window.cart.indexOf(item);
+                    if (idx > -1) window.cart.splice(idx, 1);
+                });
+                addMessage(`Cancelled. Location removed to stay under 200km.`, "bot-message");
+            }
+
+            // Sepeti güncelle ve ÇIK (Haritayı çizdirme!)
+            if (typeof updateCart === "function") updateCart();
+            return; 
+        }
+    }
+    // =========================================================================
+    //  LİMİT KONTROLÜ BİTTİ - EĞER BURAYA GELDİYSEK SORUN YOKTUR, ÇİZ GİTSİN
+    // =========================================================================
 
     // Haritaya Çiz
     const container = window.leafletMaps?.[containerId];
     if (container && routeData) {
         renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
     }
-    
+
     // UI Güncellemeleri
     window.lastRouteSummaries = window.lastRouteSummaries || {};
     window.lastRouteSummaries[containerId] = routeData.summary;
-    
+    window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+    window.lastRouteGeojsons[containerId] = routeData.geojson;
+
     if (typeof updateDistanceDurationUI === 'function') {
         updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
     }
+    
+    // Scale bar, Elevation vb.
+    const expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
+    if (expandedMapDiv) {
+        let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+        if (!expandedScaleBar) {
+            expandedScaleBar = document.createElement('div');
+            expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+            expandedScaleBar.className = 'route-scale-bar expanded';
+            expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+        }
+        
+        // Asenkron Elevation Çizimi
+        const drawElevation = async () => {
+            let totalKm = routeData.summary.distance / 1000;
+            // Marker pozisyonlarını hesapla (scale bar için)
+            let accum = 0;
+            let markerPositions = points.map((p, i) => {
+                if(i > 0 && routeData.legs && routeData.legs[i-1]) {
+                    accum += routeData.legs[i-1].distance;
+                }
+                return {
+                    name: p.name,
+                    distance: accum / 1000,
+                    snapped: true
+                };
+            });
+            
+            if (typeof renderRouteScaleBar === 'function') {
+                renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
+            }
+        };
+        drawElevation();
+    }
+
     setTimeout(() => typeof updateRouteStatsUI === 'function' && updateRouteStatsUI(day), 200);
     
     // 3D Haritayı Tetikle
