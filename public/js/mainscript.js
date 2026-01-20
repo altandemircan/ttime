@@ -7719,9 +7719,9 @@ async function enforceDailyRouteLimit(day, maxKm) {
 async function renderRouteForDay(day) {
     // 200km kontrolü
     const wasSplit = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
-    if (wasSplit) return;
+    if (wasSplit) return; 
 
-    // containerId tanımlaması SADECE BİR KEZ yapılmalı
+    // containerId tanımlaması yapılıyor
     const containerId = `route-map-day${day}`;
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -7749,7 +7749,7 @@ async function renderRouteForDay(day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
-        const containerId = `route-map-day${day}`;
+        
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
