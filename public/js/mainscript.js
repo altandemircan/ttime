@@ -7877,8 +7877,61 @@ async function renderRouteForDay(day) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
-        if (gpsRaw.length < 2 || points.length < 2) return;
+      if (gpsRaw.length < 2 || points.length < 2) return;
 
+// GPS senaryosu için limit kontrolü - direk burada yap
+if (points.length > 1) {
+    let totalKm = 0;
+    let splitIdx = -1;
+    
+    for (let i = 1; i < points.length; i++) {
+        totalKm += haversine(
+            points[i-1].location.lat, points[i-1].location.lng,
+            points[i].location.lat, points[i].location.lng
+        ) / 1000;
+        
+        if (totalKm > CURRENT_ROUTE_KM_LIMIT) {
+            splitIdx = i;
+            break;
+        }
+    }
+    
+    if (splitIdx > 0) {
+        const newDay = day + 1;
+        const itemsToMove = points.slice(splitIdx);
+        const itemNames = itemsToMove.map(p => p.name || 'Unnamed').join(', ');
+        
+        if (!confirm(`Gün ${day} limiti (${CURRENT_ROUTE_KM_LIMIT}km) aşıldı! ${itemsToMove.length} konumu Gün ${newDay}'e taşı?`)) {
+            // İptal edildi, son item'ı çıkar
+            const lastItem = window.cart[window.cart.length - 1];
+            if (lastItem && lastItem.day === day) {
+                const idx = window.cart.findIndex(item => item === lastItem);
+                if (idx > -1) window.cart.splice(idx, 1);
+                if (typeof updateCart === "function") updateCart();
+            }
+            return;
+        }
+        
+        // Taşıma işlemi
+        const maxDay = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
+        for (let d = maxDay; d >= newDay; d--) {
+            window.cart.forEach(item => { if (item.day === d) item.day = d + 1; });
+        }
+        
+        itemsToMove.forEach(itemToMove => {
+            const cartIdx = window.cart.findIndex(item => item === itemToMove);
+            if (cartIdx > -1) window.cart[cartIdx].day = newDay;
+        });
+        
+        if (typeof updateCart === "function") updateCart();
+        
+        setTimeout(() => {
+            renderRouteForDay(day);
+            renderRouteForDay(newDay);
+        }, 300);
+        return;
+    }
+}
         let gpsCoords = gpsRaw.map(pt => [pt.lng, pt.lat]);
         let trackDistance = 0;
         for (let i = 1; i < gpsRaw.length; i++) {
