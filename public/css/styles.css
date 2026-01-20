@@ -7611,3 +7611,46 @@ scrollbar-width: thin;
         .active .custom-icon {
             transform: rotate(180deg);
         }
+
+        /* Sohbet içindeki yükleme animasyonu stilleri */
+.message.loading-message-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px 0;
+    width: fit-content;
+    max-width: 80%;
+    align-self: flex-start; /* Bot mesajı gibi sola yasla */
+}
+
+.chat-loader-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-loader-content img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.chat-loader-content h2 {
+    font-size: 16px;
+    color: #333;
+    margin: 0;
+    font-weight: 600;
+}
+
+.chat-loader-content p {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+}

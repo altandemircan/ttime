@@ -23,91 +23,94 @@
 })();
 
 window.showLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
     const chatBox = document.getElementById("chat-box");
-    // Hata veren msgEl burada tanımlanıyor:
-    const msgEl = document.getElementById('loading-message');
     
-    if (!panel) return;
-
-    // A. Loading Panelini Görünür Yap
-    panel.style.display = "flex"; 
-    
-    // B. Alttaki İçeriği (cw) Gizle ve Kilitle
+    // 1. Karşılama Ekranını (cw) Gizle ve Chat'in Görünür Olduğundan Emin Ol
     document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
     if (chatBox) {
         chatBox.classList.remove("awaiting-start");
     }
-    document.body.classList.add('app-locked'); 
-    if (document.activeElement) document.activeElement.blur(); 
 
-    // C. [KRİTİK] Üç Nokta Animasyonunu (Typing Indicator) Tetikle
-    // Bu fonksiyon mainscript.js içinde indikatörü en sona taşımalıdır.
-    if (typeof showTypingIndicator === "function") {
-        showTypingIndicator();
-    }
+    // 2. Mükerrer olmaması için varsa eski loader'ı temizle
+    const existingLoader = document.getElementById("chat-embedded-loader");
+    if (existingLoader) existingLoader.remove();
+
+    // 3. Yükleme Mesaj Baloncuğunu Oluştur (Dinamik HTML)
+    const loaderDiv = document.createElement("div");
+    loaderDiv.id = "chat-embedded-loader"; // Daha sonra silmek için ID veriyoruz
+    loaderDiv.className = "message bot-message loading-message-container";
     
-    // D. Sayfa Üstü Loading Mesaj Animasyonlarını Başlat
-    if (msgEl) {
-        msgEl.textContent = "Analyzing your request...";
-        msgEl.style.opacity = 1;
+    // HTML yapısı (Sizin orijinal gif ve metin yapınıza sadık kalarak)
+    loaderDiv.innerHTML = `
+        <div class="profile-img"><img src="/img/avatar_aiio.png" alt="AI"></div>
+        <div class="chat-loader-content">
+            <img src="/img/travel-destination.gif" alt="Loading...">
+            <div class="loading-text-wrapper">
+                <h2 id="chat-loading-message">Analyzing your request...</h2>
+                <p>Mira is preparing your trip plan...</p>
+            </div>
+        </div>
+    `;
+
+    // 4. Sohbet Kutusuna Ekle (Typing Indicator varsa onun önüne)
+    const typingIndicator = document.getElementById("typing-indicator");
+    if (typingIndicator) {
+        chatBox.insertBefore(loaderDiv, typingIndicator);
+    } else {
+        chatBox.appendChild(loaderDiv);
     }
 
+    // En aşağıya kaydır
+    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+
+    // 5. Metin Animasyonunu Başlat (Sırayla değişen mesajlar)
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
-        "Analyzing your request",
-        "Finding places",
-        "Exploring route options",
-        "Compiling your travel plan"
+        "Analyzing your request...",
+        "Finding the best spots...",
+        "Exploring route options...",
+        "Compiling your travel plan..."
     ];
     let current = 0;
-    let isTransitioning = false;
-
+    
     window.loadingInterval = setInterval(() => {
-        // Fonksiyon içinde DOM referansını tazeleyelim (hata almamak için)
-        const internalMsgEl = document.getElementById('loading-message');
-        if (!internalMsgEl || panel.style.display === 'none') return;
-        if (isTransitioning) return;
-        
-        isTransitioning = true;
-        internalMsgEl.style.transition = "opacity 0.5s ease";
-        internalMsgEl.style.opacity = 0;
+        const msgEl = document.getElementById('chat-loading-message');
+        if (!msgEl) return; // Element silindiyse dur
 
+        msgEl.style.opacity = 0.5; // Hafif sönükleşme efekti
+        
         setTimeout(() => {
             current = (current + 1) % messages.length;
-            if(internalMsgEl) {
-                internalMsgEl.textContent = messages[current];
-                internalMsgEl.style.opacity = 1;
+            if (msgEl) {
+                msgEl.textContent = messages[current];
+                msgEl.style.opacity = 1;
             }
-            setTimeout(() => { isTransitioning = false; }, 500); 
-        }, 500); 
-    }, 3000); 
+        }, 300);
+    }, 2500);
 };
 
 window.hideLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    if (panel) panel.style.display = "none";
-
-    // İndikatörü gizle
-    if (typeof hideTypingIndicator === "function") {
-        hideTypingIndicator();
+    // 1. Chat içindeki loader elementini bul
+    const loader = document.getElementById("chat-embedded-loader");
+    if (loader) {
+        // Silmeden önce hafifçe yok olma efekti (opsiyonel)
+        loader.style.opacity = '0';
+        loader.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => {
+            if(loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 500);
     }
 
+    // 2. Zamanlayıcıyı Temizle
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
     }
 
+    // 3. Body kilidini kaldır (Eğer kilit kaldıysa)
     document.body.classList.remove('app-locked');
-
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
 };
-
 window.showTypingIndicator = function() {
     const chatBox = document.getElementById("chat-box");
     let indicator = document.getElementById("typing-indicator");
