@@ -143,10 +143,10 @@ function showSuggestions() {
 
     const options = [
         { text: "Do a 1 day city tour in Antalya", flag: countryFlag("TR") },
-        { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },
-        { text: "1 day trip in Helsinki", flag: countryFlag("FI") },
+        { text: "1 day trip in Madrid", flag: countryFlag("ES") },
+        { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },        
         { text: "Paris 1 day trip plan", flag: countryFlag("FR") },
-        { text: "1-day city tour in London", flag: countryFlag("GB") }
+        { text: "1-day city tour in Berlin", flag: countryFlag("GE") }
     ];
 
     options.forEach(option => {
