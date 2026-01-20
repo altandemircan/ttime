@@ -5190,10 +5190,7 @@ if (aiInfoSection) {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-  const allDays = [...new Set(window.cart.map(i => i.day))];
-    for (const dayNum of allDays) {
-        await enforceDailyRouteLimit(dayNum, CURRENT_ROUTE_KM_LIMIT);
-    }
+
 }
 
 function showRemoveItemConfirmation(index, btn) {
