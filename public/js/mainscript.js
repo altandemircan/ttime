@@ -7781,9 +7781,6 @@ async function renderRouteForDay(day) {
     window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
     window.directionsPolylines = window.directionsPolylines || {};
 
-    // 1. LİMİT KONTROLÜ (Render başlamadan önce)
-    const limitHandled = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
-    if (limitHandled) return;
 
     console.log(`=== RENDER START for day ${day} ===`);
     
