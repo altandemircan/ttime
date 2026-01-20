@@ -8313,18 +8313,6 @@ try {
 
     routeData = partial.routeData;
 
-    // Rota 200 km'den fazla ise hatayı göster ve çık!
-    if (routeData && routeData.summary && typeof routeData.summary.distance === 'number') {
-        if (routeData.summary.distance > 200000) {
-            addMessage(
-                "Rota mesafesi 200 km'den uzun olduğu için rota çizilemedi. Lütfen daha kısa bir rota oluşturun.",
-                "bot-message"
-            );
-            const infoPanel = document.getElementById(`route-info-day${day}`);
-            if (infoPanel) infoPanel.textContent = "Rota uzunluğu 200 km üzerinde! Lütfen rotanızı kısaltın.";
-            return;
-        }
-    }
     // Başarılı çizilen noktalar dışındaki (kalan) noktaları missing olarak işaretle
     const usedCount = partial.usedCount;
     missingPoints = snappedPoints.slice(usedCount - 1); // son kullanılan + sonrası
