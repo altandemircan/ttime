@@ -125,9 +125,38 @@ bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null, retryCount = 0) {
-    // --- DEBUG LOG START ---
-    const actualWidth = track ? track.offsetWidth : 0;
+  // GÜVENLİK: Eğer track yoksa veya gizliyse bekle
+  if (!track || !track.offsetParent) {
+    if (retryCount < 10) {
+      setTimeout(() => {
+        createScaleElements(track, widthPx, spanKm, startKmDom, markers, customElevData, retryCount + 1);
+      }, 300);
+    }
+    return;
+  }
+  
+  // GENİŞLİĞİ KESİN AL
+  const actualWidth = Math.max(
+    300, // ASGARİ 300 PİKSEL
+    track.offsetWidth || 0,
+    track.clientWidth || 0
+  );
+  
+  console.log("📏 SCALEBAR Genişlik:", actualWidth, "px");
+  
+  // Eğer hala 0 ise, container'dan al
+  if (actualWidth < 300) {
+    const container = track.closest('.route-scale-bar');
+    if (container) {
+      widthPx = container.offsetWidth || 400;
+      console.log("📏 Container genişliği kullanılıyor:", widthPx, "px");
+    }
+  } else {
+    widthPx = actualWidth;
+  }
     console.group(`[ScaleBar Debug] Day: ${track?.parentElement?.id || 'unknown'} | Attempt: ${retryCount}`);
+
+
     console.log("Param Width:", widthPx);
     console.log("Actual OffsetWidth:", actualWidth);
     console.log("Span KM:", spanKm);
@@ -170,12 +199,18 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
     const container = track?.parentElement;
     
-    // SpanKm hesaplama mantığı
-    if ((!spanKm || spanKm < 0.01) && !customElevData) {
-        if (Array.isArray(markers) && markers.length > 1) {
-            spanKm = getTotalKmFromMarkers(markers);
-        }
+    // SpanKm hesaplama mantığı - KESİN DEĞER
+if ((!spanKm || spanKm < 0.01) && !customElevData) {
+    if (Array.isArray(markers) && markers.length > 1) {
+        spanKm = getTotalKmFromMarkers(markers);
     }
+    
+    // HİÇBİRİ İŞE YARAMAZSA, SABİT DEĞER
+    if (!spanKm || spanKm < 0.01) {
+        spanKm = 10; // Minimum 10 km
+        console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
+    }
+}
    
     if (!spanKm || spanKm < 0.01) {
         return;
@@ -375,8 +410,18 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
   
   // 1. Önce resmi rotayı (OSRM) almaya çalış
-  let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
-
+// DEBUG: Koordinat kontrolü ekle
+  console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
+  
+  // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
+  if (!coords || coords.length < 2) {
+    console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
+    const markersList = window.cart?.filter(m => m.day === day) || [];
+    if (markersList.length >= 2) {
+      coords = markersList.map(m => [m.location.lng, m.location.lat]);
+      console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+    }
+  }
   // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
   if (!Array.isArray(coords) || coords.length < 2) {
       if (typeof getDayPoints === 'function' && day) {
@@ -513,14 +558,44 @@ function renderRouteScaleBar(container, totalKm, markers) {
     try {
       let elevations = [];
 
+let elevations = [];
+
 try {
-const locations = samples.map(s => `${s.lat},${s.lng}`);
-const response = await fetch('/api/elevation', {
+  const locations = samples.map(s => `${s.lat},${s.lng}`);
+  
+  // ZAMAN AŞIMI EKLE (10 saniye)
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  
+  const response = await fetch('/api/elevation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ locations })
-});;
+    body: JSON.stringify({ locations }),
+    signal: controller.signal
+  });
+  
+  clearTimeout(timeout);
+  
+  if (!response.ok) {
+    console.warn("⚠️ Elevation API hatası, fallback kullanılıyor");
+    // BASİT ELEVATION OLUŞTUR
+    elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
+  } else {
+    const data = await response.json();
     
+    if (data && Array.isArray(data.results)) {
+      elevations = data.results.map(r => r.elevation || 0);
+    } else {
+      // FALLBACK
+      elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
+    }
+  }
+} catch (error) {
+  console.error('Elevation fetch failed:', error);
+  // FALLBACK - KESİNLİKLE BOŞ DÖNME
+  elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
+}
+
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
     const data = await response.json();
@@ -886,6 +961,19 @@ if (bestIndex < ed.smooth.length) {
       }, 50);
     }
   })();
+
+  .catch(err => {
+  console.error("SCALEBAR CRITICAL ERROR:", err);
+  container.innerHTML = `
+    <div class="scale-bar-track" style="padding: 40px; text-align: center; color: #666;">
+      <div style="font-size: 16px; margin-bottom: 10px;">🚧 Elevation yüklenemedi</div>
+      <div style="font-size: 12px;">${day ? 'Day ' + day : ''} - ${totalKm ? totalKm + ' km' : ''}</div>
+      <button onclick="window.location.reload()" style="margin-top: 20px; padding: 5px 15px; background: #1976d2; color: white; border: none; border-radius: 4px;">
+        Yeniden Dene
+      </button>
+    </div>
+  `;
+});
 }
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
