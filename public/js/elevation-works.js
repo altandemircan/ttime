@@ -142,7 +142,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     track.clientWidth || 0
   );
   
-  console.log("📏 SCALEBAR Genişlik:", actualWidth, "px");
+  
   
   // Eğer hala 0 ise, container'dan al
   if (actualWidth < 300) {
@@ -154,7 +154,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
   } else {
     widthPx = actualWidth;
   }
-    console.group(`[ScaleBar Debug] Day: ${track?.parentElement?.id || 'unknown'} | Attempt: ${retryCount}`);
+  
 
 
     console.log("Param Width:", widthPx);
@@ -416,9 +416,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     // 1. Önce resmi rotayı (OSRM) almaya çalış
     let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
-    // DEBUG: Koordinat kontrolü ekle
-    console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
-
+  
     // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
     if (!coords || coords.length < 2) {
       console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
@@ -681,7 +679,6 @@ try {
       svgElem.setAttribute('width', '100%');
       svgElem.setAttribute('height', SVG_H);
       track.appendChild(svgElem);
-      console.log("[SCALEBAR][SVG]", {svgElem, width, height: SVG_H, track});
 
       const gridG = document.createElementNS(svgNS, 'g');
       gridG.setAttribute('class', 'tt-elev-grid');
@@ -772,45 +769,16 @@ if (bestIndex < ed.smooth.length) {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-       // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
-      console.log("[ELEV RAW]", {
-        totalPoints: elevations.length,
-        min: Math.min(...elevations.filter(e => e != null)),
-        max: Math.max(...elevations.filter(e => e != null)),
-        first5: elevations.slice(0, 5)
-      });
       
       const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
-      
-      console.log("[ELEV SMOOTH]", {
-        min: Math.round(min),
-        max: Math.round(max),
-        range: Math.round(max - min)
-      });
-
-// DEBUG: Elevation data kontrolü
-console.log("🎯 ELEVATION DATA HAZIR:", {
-  containerId: container.id,
-  routeKey: routeKey,
-  smoothLength: smooth.length,
-  min: Math.round(min),
-  max: Math.round(max),
-  first5: smooth.slice(0, 5).map(v => Math.round(v))
-});
 
 container._elevationData = { smooth, min, max };
 container._elevationDataFull = { smooth: smooth.slice(), min, max };
 container.dataset.elevLoadedKey = routeKey;
 
-// HEMEN ÇİZİM YAP
-if (typeof container._redrawElevation === 'function') {
-  console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
-  container._redrawElevation(container._elevationData);
-} else {
-  console.error("❌ _redrawElevation fonksiyonu YOK!");
-}
+
 
      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
