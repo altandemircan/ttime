@@ -1,21 +1,156 @@
 /* ======================================================
-   TRIP LOADING & CHAT STATE MANAGEMENT
+   GLOBAL VARIABLES & MAP INITIALIZATION
+====================================================== */
+let map;
+let service;
+let directionsService;
+let directionsRenderer;
+let autocomplete;
+
+function initMap() {
+    const defaultLocation = { lat: 41.0082, lng: 28.9784 }; // İstanbul
+
+    // Harita ayarları (UI kapalı)
+    const mapOptions = {
+        center: defaultLocation,
+        zoom: 12,
+        disableDefaultUI: true,
+        styles: [
+            {
+                "featureType": "poi",
+                "stylers": [{ "visibility": "off" }]
+            }
+        ]
+    };
+
+    map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+        map: map,
+        suppressMarkers: false,
+        polylineOptions: {
+            strokeColor: "#4285F4",
+            strokeWeight: 5
+        }
+    });
+
+    service = new google.maps.places.PlacesService(map);
+
+    // Autocomplete kurulumu
+    const input = document.getElementById("location-input");
+    const options = {
+        fields: ["formatted_address", "geometry", "name"],
+        strictBounds: false,
+    };
+
+    autocomplete = new google.maps.places.Autocomplete(input, options);
+    autocomplete.bindTo("bounds", map);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) {
+            return;
+        }
+        // Kullanıcı bir yer seçtiğinde haritayı oraya odakla (Zoom yapma, sadece merkezle)
+        map.setCenter(place.geometry.location);
+    });
+}
+
+/* ======================================================
+   EVENT LISTENERS & MAIN LOGIC
+====================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+    // Welcome mesajını göster
+    if (typeof addWelcomeMessage === "function") {
+        addWelcomeMessage();
+    }
+
+    const planBtn = document.getElementById("plan-trip-btn");
+    const locationInput = document.getElementById("location-input");
+    const daysSelect = document.getElementById("days-select");
+
+    // Planla butonuna tıklama olayı
+    planBtn.addEventListener("click", () => {
+        const destination = locationInput.value.trim();
+        const days = daysSelect.value;
+
+        // Validasyon
+        if (!destination) {
+            addMessage("Lütfen bir gidilecek yer seçin.", "bot-message");
+            return;
+        }
+
+        // Kullanıcı mesajını ekle
+        addMessage(`I want to go to ${destination} for ${days} days.`, "user-message");
+
+        // Loading Başlat (Ekranı Kilitler)
+        showLoadingPanel();
+
+        // Arka planda işlemleri simüle et veya yap
+        // Not: Gerçek API çağrısı buraya gelecek. Şimdilik simülasyon:
+        setTimeout(() => {
+            // Rota hesaplama veya backend isteği burada yapılır
+            // Örnek: calculateRoute(destination);
+            
+            // İşlem bitince Loading'i kapat
+            hideLoadingPanel();
+
+            // Sonuçları göster (Örnek fonksiyon, senin kodunda varsa çalışır)
+            // showTripResults(...); 
+            
+            // Bot cevabı
+            addMessage(`Harika! ${destination} için ${days} günlük planını hazırladım. İşte detaylar...`, "bot-message survey-results");
+            
+        }, 5000); // 5 saniye bekleme simülasyonu
+    });
+
+    // Enter tuşu desteği
+    locationInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            planBtn.click();
+        }
+    });
+});
+
+
+/* ======================================================
+   TRIP LOADING & CHAT STATE MANAGEMENT (MOBILE FIXED)
 ====================================================== */
 
-// 1. Gerekli kilit stillerini sayfaya enjekte et (Tek seferlik)
+// 1. KİLİT MEKANİZMASI (MOBİL UYUMLU GÖRÜNMEZ KALKAN)
 (function injectLockStyles() {
     if (!document.getElementById('lock-style-injection')) {
         const style = document.createElement('style');
         style.id = 'lock-style-injection';
         style.innerHTML = `
+            /* Kilit aktifken body özellikleri */
             body.app-locked {
-                pointer-events: none !important;
-                user-select: none !important;
-                cursor: wait !important;
-                overflow: hidden !important;
+                overflow: hidden !important;       /* Scroll barı yok et */
+                height: 100vh !important;          /* Sayfa boyunu sabitle */
+                touch-action: none !important;     /* Mobilde parmak hareketini engelle */
+                -ms-touch-action: none !important;
+                overscroll-behavior: none !important;
             }
+
+            /* GÖRÜNMEZ KALKAN: Tüm ekranın önüne geçen şeffaf duvar */
+            body.app-locked::after {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0); /* Tam şeffaf */
+                z-index: 2147483647; /* En yüksek katman */
+                cursor: wait;
+                touch-action: none; /* Kalkana dokunulunca da işlem yapma */
+            }
+
+            /* Loading panel kalkanın arkasında kalmasın ama tıklanmasın da */
             body.app-locked .loading-panel {
-                pointer-events: auto !important;
+                z-index: 2147483646; /* Kalkandan bir tık altta, görsel olarak üstte */
+                position: relative;
             }
         `; 
         document.head.appendChild(style);
@@ -25,16 +160,20 @@
 window.showLoadingPanel = function() {
     const chatBox = document.getElementById("chat-box");
     
-    // Varsa eskisini temizle (çakışma olmasın)
+    // 1. EKRANI KİLİTLE (Görünmez kalkanı devreye sok)
+    document.body.classList.add('app-locked');
+    if (document.activeElement) document.activeElement.blur(); // Klavyeyi kapat
+
+    // 2. Varsa eski paneli temizle
     const existingPanel = document.getElementById("loading-panel");
     if (existingPanel) existingPanel.remove();
 
-    // 1. Paneli JS ile oluştur (HTML'dekiyle BİREBİR aynı yapıda)
+    // 3. Paneli Oluştur
     const panel = document.createElement("div");
-    panel.id = "loading-panel"; // ID aynı kalsın ki eski CSS stillerini alsın
+    panel.id = "loading-panel"; 
     panel.className = "loading-panel"; 
     
-    // İçeriği aynen koruyoruz (GIF ve Yazı)
+    // İçerik (GIF ve Yazı)
     panel.innerHTML = `
         <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
         <div class="loading-text">
@@ -43,14 +182,24 @@ window.showLoadingPanel = function() {
         </div>
     `;
 
-    // 2. Paneli Chat Kutusunun EN ALTINA ekle
+    // 4. Paneli Yerleştir (Sıralama Önceliği: Sonuç > Typing > En Son)
     if (chatBox) {
-        chatBox.appendChild(panel);
-        // Otomatik aşağı kaydır ki kullanıcı görsün
-        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        const targetResult = chatBox.querySelector(".survey-results"); 
+        const typingIndicator = document.getElementById("typing-indicator"); 
+
+        if (targetResult) {
+            chatBox.insertBefore(panel, targetResult);
+        } else if (typingIndicator) {
+            chatBox.insertBefore(panel, typingIndicator);
+        } else {
+            chatBox.appendChild(panel);
+        }
+
+        // Panele odaklan
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // 3. Yazı Değişme Animasyonu (Eski mantık aynen devam)
+    // 5. Animasyon Döngüsü
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
@@ -75,28 +224,27 @@ window.showLoadingPanel = function() {
         }, 300);
     }, 3000);
 };
-window.hideLoadingPanel = function() {
-    const panel = document.getElementById("loading-panel");
-    if (panel) panel.style.display = "none";
 
-    // İndikatörü gizle
-    if (typeof hideTypingIndicator === "function") {
-        hideTypingIndicator();
+window.hideLoadingPanel = function() {
+    // 1. KİLİDİ KALDIR (Kalkanı yok et)
+    document.body.classList.remove('app-locked');
+
+    // 2. Paneli sil
+    const panel = document.getElementById("loading-panel");
+    if (panel) {
+        panel.remove();
     }
 
+    // 3. Animasyonu durdur
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
     }
-
-    document.body.classList.remove('app-locked');
-
-    if (!window.__welcomeHiddenForever) {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "grid");
-    } else {
-        document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    }
 };
+
+/* ======================================================
+   CHAT UI HELPERS
+====================================================== */
 
 window.showTypingIndicator = function() {
     const chatBox = document.getElementById("chat-box");
@@ -128,7 +276,7 @@ function addCanonicalMessage(canonicalStr) {
   msg.className = "message canonical-message";
   msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
   <span>${canonicalStr}</span>`;
-  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
+  
   const typingIndicator = chatBox.querySelector('#typing-indicator');
   if (typingIndicator && typingIndicator.nextSibling) {
     chatBox.insertBefore(msg, typingIndicator.nextSibling);
@@ -137,22 +285,18 @@ function addCanonicalMessage(canonicalStr) {
   }
 }
 
-// Helper fonksiyonu güncelliyoruz
 function addWelcomeMessage() {
     if (!window.__welcomeShown) {
-        // BURASI DEĞİŞTİ:
         addMessage("Let's get started.", "bot-message request-bot-message");
         window.__welcomeShown = true;
     }
 }
-
     
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
     messageElement.className = "message " + className;
 
-    // Profil görseli mantığı
     let profileElem;
     if (className.includes("user-message")) {
         profileElem = document.createElement("div");
@@ -169,17 +313,13 @@ function addMessage(text, className) {
     contentDiv.innerHTML = text;
     messageElement.appendChild(contentDiv);
 
-    // --- KRİTİK DEĞİŞİKLİK: İndikatörü her zaman mesajın altına taşı ---
+    // İndikatörü her zaman mesajın altına taşı
     const typingIndicator = document.getElementById("typing-indicator");
     if (typingIndicator) {
-        // Mesajı indikatörün önüne ekle
         chatBox.insertBefore(messageElement, typingIndicator);
     } else {
         chatBox.appendChild(messageElement);
     }
     
-   chatBox.scrollTo({
-    top: chatBox.scrollHeight,
-    behavior: 'smooth'
-});
+   chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
 }
