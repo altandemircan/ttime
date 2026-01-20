@@ -6763,33 +6763,23 @@ width: 100%;
 
 
 .loading-panel {
-    /* position: absolute;  <-- BUNLARI SİLİYORUZ */
-    /* left: 0; */
-    /* right: 0; */
-    /* z-index: 1200; */
-    
-    display: none; /* Başlangıçta gizli, JS ile açılacak */
-    width: 100%;
+        width: 100%;
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     background: #ffffff;
-    
-    /* .cw sınıfı ile birebir aynı hizalama ayarları: */
-    max-width: 860px; 
-    gap: 30px;
-    padding: 20px 10px 60px 10px;
-    margin: 0 auto; 
+    max-width: 860px;
+    gap: 10px;
+    padding: 30px 10px;
+    margin: 0 auto;
+    display: flex;
 }
 .loading-text {
     text-align: center;
-    margin-bottom: 40px;
-    margin-top: -20px;
+
 }
-.loading-text h2 {
-    margin-bottom: 10px; 
-}
+
 #loading-message {
   transition: opacity 0.5s;
   opacity: 1;
@@ -7611,25 +7601,3 @@ scrollbar-width: thin;
         .active .custom-icon {
             transform: rotate(180deg);
         }
-
-        /* Yükleme paneli Chat kutusunun içindeyse stili bozmadan oraya sığdır */
-#chat-box #loading-panel {
-    position: relative !important; /* Sabit pozisyonu iptal et */
-    width: 100% !important;        /* Chat genişliğine yayıl */
-    height: auto !important;       /* Yüksekliği içeriğe göre ayarla */
-    background: transparent !important; /* Arka planı şeffaf yap */
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px 0;
-    margin-top: 10px;
-    border-radius: 8px;
-    /* Eski görünümü korumak için gerekirse border ekleyebilirsiniz */
-}
-
-/* Chat içindeyken metin ve görsel ortalansın */
-#chat-box #loading-panel img {
-    margin-bottom: 10px;
-}
