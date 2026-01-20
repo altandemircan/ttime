@@ -7692,7 +7692,7 @@ function restoreMap(containerId, day) {
 // =================================================================
 
 // Limit Ayarı (Değiştirmek isterseniz buradan değiştirin)
-const CURRENT_ROUTE_KM_LIMIT = 200; 
+const CURRENT_ROUTE_KM_LIMIT = 600; 
 
 /**
  * Yardımcı: Koordinat objesini güvenli bir şekilde {lat, lng} sayısına çevirir.
@@ -8477,7 +8477,7 @@ try {
    // ============================================================
     // 🛑 KESİN 200 KM DUVARI (OSRM VERİSİ İLE KONTROL) - GÜÇLENDİRİLMİŞ
     // ============================================================
-    if (routeData && routeData.summary && routeData.summary.distance > 200000) {
+    if (routeData && routeData.summary && routeData.summary.distance > 600000) {
         
         // --- ÇİFTE UYARI KİLİDİ ---
         const now = Date.now();
@@ -8486,7 +8486,7 @@ try {
         }
         window._lastLimitAlertTime = now;
 
-        console.error(`⛔ ROUTE BLOCKED: Actual Road Distance ${routeData.summary.distance}m > 200000m`);
+        console.error(`⛔ ROUTE BLOCKED: Actual Road Distance ${routeData.summary.distance}m > 600000m`);
 
         // 1. O günün son eklenen item'ını bul ve sil
         const currentDayItems = window.cart.filter(item => item.day == day);
@@ -8502,9 +8502,9 @@ try {
 
         // 2. Kullanıcıya Uyarı
         if (typeof showToast === "function") {
-            showToast("⛔ Route limit (200km) exceeded! Last location removed.", "error");
+            showToast("⛔ Route limit (600km) exceeded! Last location removed.", "error");
         } else {
-            alert("⛔ Route limit (200km) exceeded! Last location removed.");
+            alert("⛔ Route limit (600km) exceeded! Last location removed.");
         }
 
         // 3. KRİTİK TEMİZLİK: Önbelleği temizle ki Scale Bar bozulmasın
