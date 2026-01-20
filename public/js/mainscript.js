@@ -7668,104 +7668,116 @@ window.__lastLimitAlertTime = 0;
 
 // --- 1. LİMİT KONTROL (ZAMAN KİLİTLİ & SADECE UYARI) ---
 async function enforceDailyRouteLimit(day, maxKm) {
-        if (window.__isRouteLimitDialogActive) return true; // yeni
+    // Sadece patch için değil, limit zincirini gerçekten kökten çözmek için!
+    // (RouteExceeded alert'inin döngüye girmesini engeller)
+    if (window.__isRouteLimitDialogActive) return true;
 
-    // KİLİT KONTROLÜ: Son 2.5 saniye içinde uyarı verildiyse, bu kontrolü iptal et.
-    if (Date.now() - window.__lastLimitAlertTime < 2500) {
+    // Hızlı tekrar testine karşı koruma
+    if (Date.now() - window.__lastLimitAlertTime < 2000) {
         return false;
     }
 
     try {
-        let dayItems = window.cart.filter(item => 
-            item.day == day && 
-            item.location && 
-            isFinite(item.location.lat) && 
-            isFinite(item.location.lng)
-        );
-        
-        if (dayItems.length <= 1) return false;
+        let doLimitCheck = true;
+        let firstLoop = true;
 
-        let limitExceeded = false;
-        let splitIdx = -1;
-        let currentTotalKm = 0;
-        const LIMIT_METERS = maxKm * 1000;
+        while (doLimitCheck) {
+            doLimitCheck = false;
 
-        const isInTurkey = areAllPointsInTurkey(dayItems.map(i => i.location));
+            let dayItems = window.cart.filter(item =>
+                item.day == day &&
+                item.location &&
+                isFinite(item.location.lat) &&
+                isFinite(item.location.lng)
+            );
 
-        // A) TÜRKİYE İÇİ (OSRM)
-        if (isInTurkey) {
-            try {
-                const coords = dayItems.map(item => [item.location.lng, item.location.lat]);
-                const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
-                const url = buildDirectionsUrl(coordParam, day);
-                const resp = await fetch(url);
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (data.routes && data.routes[0]) {
-                        if (data.routes[0].distance > LIMIT_METERS) {
-                            let accum = 0;
-                            if (data.routes[0].legs) {
-                                for (let i = 0; i < data.routes[0].legs.length; i++) {
-                                    accum += data.routes[0].legs[i].distance;
-                                    if (accum > LIMIT_METERS) {
-                                        splitIdx = i + 1;
-                                        limitExceeded = true;
-                                        break;
+            if (dayItems.length <= 1) break;
+
+            let limitExceeded = false;
+            let splitIdx = -1;
+            let currentTotalKm = 0;
+            const LIMIT_METERS = maxKm * 1000;
+            const isInTurkey = areAllPointsInTurkey(dayItems.map(i => i.location));
+
+            // Türkiye içi limit kontrolü
+            if (isInTurkey) {
+                try {
+                    const coords = dayItems.map(item => [item.location.lng, item.location.lat]);
+                    const coordParam = coords.map(c => `${c[0]},${c[1]}`).join(';');
+                    const url = buildDirectionsUrl(coordParam, day);
+                    const resp = await fetch(url);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.routes && data.routes[0]) {
+                            if (data.routes[0].distance > LIMIT_METERS) {
+                                let accum = 0;
+                                if (data.routes[0].legs) {
+                                    for (let i = 0; i < data.routes[0].legs.length; i++) {
+                                        accum += data.routes[0].legs[i].distance;
+                                        if (accum > LIMIT_METERS) {
+                                            splitIdx = i + 1;
+                                            limitExceeded = true;
+                                            break;
+                                        }
                                     }
                                 }
+                                if (!limitExceeded) {
+                                    splitIdx = dayItems.length - 1;
+                                    limitExceeded = true;
+                                }
+                                currentTotalKm = (accum / 1000).toFixed(1);
                             }
-                            if (!limitExceeded) {
-                                splitIdx = dayItems.length - 1;
-                                limitExceeded = true;
-                            }
-                            currentTotalKm = (accum / 1000).toFixed(1);
                         }
                     }
+                } catch (e) { /* fallback */ }
+            }
+
+            // Yurtdışı veya osrm hatası
+            if (!isInTurkey || (isInTurkey && !limitExceeded && splitIdx === -1)) {
+                let meters = 0;
+                for (let i = 1; i < dayItems.length; i++) {
+                    meters += haversine(
+                        dayItems[i - 1].location.lat, dayItems[i - 1].location.lng,
+                        dayItems[i].location.lat, dayItems[i].location.lng
+                    );
+                    if (meters > LIMIT_METERS) {
+                        splitIdx = i;
+                        currentTotalKm = (meters / 1000).toFixed(1);
+                        limitExceeded = true;
+                        break;
+                    }
                 }
-            } catch (e) { /* Hata varsa Haversine'e devam */ }
-        } 
-        
-        // B) YURTDIŞI VEYA HATA (HAVERSINE)
-        if (!isInTurkey || (isInTurkey && !limitExceeded && splitIdx === -1)) {
-            let meters = 0;
-            for (let i = 1; i < dayItems.length; i++) {
-                meters += haversine(
-                    dayItems[i-1].location.lat, dayItems[i-1].location.lng,
-                    dayItems[i].location.lat, dayItems[i].location.lng
-                );
-                if (meters > LIMIT_METERS) {
-                    splitIdx = i;
-                    currentTotalKm = (meters / 1000).toFixed(1);
-                    limitExceeded = true;
-                    break;
+            }
+
+            // Eğer limit aşıldıysa: (ilk turda mesaj, sonrakilerde sessiz siler)
+            if (limitExceeded && splitIdx > 0) {
+                window.__lastLimitAlertTime = Date.now();
+                window.__isRouteLimitDialogActive = true;
+                if (firstLoop) {
+                    alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed automatically.`);
+                    firstLoop = false;
                 }
+                // Limiti aşanları bul ve sil
+                const itemsToProcess = dayItems.slice(splitIdx);
+                itemsToProcess.forEach(item => {
+                    const idx = window.cart.indexOf(item);
+                    if (idx > -1) window.cart.splice(idx, 1);
+                });
+                doLimitCheck = true; // döngüde bir daha kontrol et
             }
         }
 
-        // --- MÜDAHALE (UYARI & SİLME) ---
-        if (limitExceeded && splitIdx > 0) {
-            // Kilidi güncelle (Şimdi uyarı vereceğiz)
-            window.__lastLimitAlertTime = Date.now();
+        if (typeof updateCart === "function") updateCart();
 
-            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed automatically.`);
+        // kilidi geri aç
+        setTimeout(() => { window.__isRouteLimitDialogActive = false; }, 1500);
 
-            // Limiti aşanları bul ve SİL
-            const itemsToProcess = dayItems.slice(splitIdx);
-            itemsToProcess.forEach(item => {
-                const idx = window.cart.indexOf(item);
-                if (idx > -1) window.cart.splice(idx, 1);
-            });
+        // İlk turda limitExceeded olduysa true döndür
+        if (!firstLoop) return true;
 
-            // Arayüz güncelle
-            if (typeof updateCart === "function") updateCart();
-
-            // Erken çıkış, başka işleme gerek yok!
-            return true;
-        }
-
-    } catch(e) {
+    } catch (e) {
         console.error("Limit check error:", e);
-    } 
+    }
 
     return false;
 }
