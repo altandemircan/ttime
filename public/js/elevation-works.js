@@ -125,25 +125,22 @@ bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 
 
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null, retryCount = 0) {
+    // --- DEBUG LOG START ---
+    const actualWidth = track ? track.offsetWidth : 0;
+    console.group(`[ScaleBar Debug] Day: ${track?.parentElement?.id || 'unknown'} | Attempt: ${retryCount}`);
+    console.log("Param Width:", widthPx);
+    console.log("Actual OffsetWidth:", actualWidth);
+    console.log("Span KM:", spanKm);
+    console.log("Elevation Data:", track?.parentElement?._elevationData ? "Mevcut ✅" : "YOK ❌");
+    console.groupEnd();
+    // --- DEBUG LOG END ---
+
     // 1. KONTROL: Element yoksa veya DOM'dan tamamen silinmişse işlemi durdur.
     if (!track || !track.isConnected) {
         return;
     }
 
-    // --- GENİŞLİK DOĞRULAMA (AUTO-FIX) ---
-    const actualWidth = track.offsetWidth;
-    // Eğer genişlik hatalı (200px varsayılan) veya henüz hazır değilse (0) biraz bekle
-    if ((actualWidth <= 200 || Math.abs(actualWidth - widthPx) > 5) && retryCount < 15) {
-        setTimeout(() => {
-            createScaleElements(track, track.offsetWidth, spanKm, startKmDom, markers, customElevData, retryCount + 1);
-        }, 150);
-        return; 
-    }
-    // Genişliği gerçek değerle güncelle ki grafik kutuya tam otursun
-    widthPx = actualWidth;
-
-    // 2. KONTROL: Element var ama görünür değilse (örn: display:none), sonsuz döngüye girme.
-    // Sadece 5 kere (yaklaşık 1.5 saniye) dene, sonra vazgeç.
+    // 2. KONTROL: Element var ama görünür değilse (örn: display:none)
     if (track.offsetParent === null) {
         if (retryCount < 5) {
             setTimeout(() => {
@@ -152,6 +149,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         }
         return;
     }
+
+    // --- GENİŞLİK DOĞRULAMA ---
+    // Eğer genişlik bariz hatalıysa (200px varsayılan veya 0 ise) tekrar dene
+    if ((actualWidth <= 200 || Math.abs(actualWidth - widthPx) > 5) && retryCount < 10) {
+        console.warn(`[ScaleBar] Genişlik uyumsuz! Bekleniyor... (Actual: ${actualWidth}, Param: ${widthPx})`);
+        setTimeout(() => {
+            createScaleElements(track, track.offsetWidth, spanKm, startKmDom, markers, customElevData, retryCount + 1);
+        }, 200);
+        return;
+    }
+    
+    // Değeri güncelle
+    widthPx = actualWidth;
 
     // --- Mevcut Temizlik İşlemleri ---
     if (track) {
@@ -168,7 +178,6 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     }
    
     if (!spanKm || spanKm < 0.01) {
-        track.querySelectorAll('.marker-badge').forEach(el => el.remove());
         return;
     }
 
