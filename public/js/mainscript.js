@@ -7717,11 +7717,11 @@ async function enforceDailyRouteLimit(day, maxKm) {
     return false;
 }
 async function renderRouteForDay(day) {
-    // Çizime başlamadan önce 200km limitini kontrol et ve gerekirse böl
+// Çizime başlamadan önce 200km limitini kontrol et ve gerekirse böl
     const wasSplit = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (wasSplit) return; // Eğer bölündüyse, updateCart zaten tekrar render tetikleyecek, burada dur.
 
-    const containerId = `route-map-day${day}`;etiklenecek
+    const containerId = `route-map-day${day}`;
 
     // 1. ADIM: TEMİZLİK (RESET)
     // 3D Haritanın kafasını karıştıracak her şeyi siliyoruz.
