@@ -558,8 +558,6 @@ function renderRouteScaleBar(container, totalKm, markers) {
     try {
       let elevations = [];
 
-let elevations = [];
-
 try {
   const locations = samples.map(s => `${s.lat},${s.lng}`);
   
@@ -961,8 +959,8 @@ if (bestIndex < ed.smooth.length) {
       }, 50);
     }
   })();
-
-  .catch(err => {
+  // renderRouteScaleBar fonksiyonunun EN SONUNA ekle:
+.catch(err => {
   console.error("SCALEBAR CRITICAL ERROR:", err);
   container.innerHTML = `
     <div class="scale-bar-track" style="padding: 40px; text-align: center; color: #666;">
