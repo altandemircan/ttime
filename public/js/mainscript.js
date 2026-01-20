@@ -25,7 +25,9 @@ function haversine(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
 }
-
+function isRouteLengthValid(distanceInMeters) {
+    const LIMIT_METERS = 200000; // 200 KM
+    return distanceInMeters <= LIMIT_METERS;
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
         f.name === item.name &&
@@ -7727,8 +7729,14 @@ async function renderRouteForDay(day) {
         }
 
         const totalDistance = pairwiseSummaries.reduce((a, b) => a + (b.distance || 0), 0);
-        const totalDuration = durations.reduce((a, b) => a + (b || 0), 0);
 
+if (!isRouteLengthValid(totalDistance)) {
+    alert(`Rota çok uzun! ${(totalDistance / 1000).toFixed(1)} km hesaplandı. 200 km limitini aşamazsınız.`);
+    if (typeof hideLoadingPanel === 'function') hideLoadingPanel();
+    return; 
+}
+
+const totalDuration = durations.reduce((a, b) => a + (b || 0), 0);
         const finalGeojson = {
             type: "FeatureCollection",
             features: [{
