@@ -26,12 +26,6 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-function isRouteLengthValid(distanceInMeters) {
-    const LIMIT_METERS = 200000; // 200 KM
-    return distanceInMeters <= LIMIT_METERS;
-}
-
-
 function isTripFav(item) {
     return window.favTrips && window.favTrips.some(f =>
         f.name === item.name &&
@@ -7732,24 +7726,8 @@ async function renderRouteForDay(day) {
             prev = next;
         }
 
-   const totalDistance = pairwiseSummaries.reduce((a, b) => a + (b.distance || 0), 0);
-
-// --- 200 KM LİMİT KONTROLÜ BAŞLANGIÇ ---
-if (totalDistance > 200000) { // 200.000 Metre = 200 KM
-    const hesaplananKm = (totalDistance / 1000).toFixed(1);
-    alert(`Rota çok uzun! Seçtiğiniz noktalar arası mesafe ${hesaplananKm} km. Lütfen 200 km limitini aşmayacak noktalar seçin.`);
-    
-    // Yükleme animasyonunu/panelini kapat
-    if (typeof hideLoadingPanel === 'function') hideLoadingPanel();
-    
-    // Eğer varsa haritadaki eski rota çizimlerini temizle
-    if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-    
-    return; // Fonksiyonun geri kalanını (çizimi) çalıştırma
-}
-// --- 200 KM LİMİT KONTROLÜ BİTİŞ ---
-
-const totalDuration = pairwiseSummaries.reduce((a, b) => a + (b.duration || 0), 0);
+        const totalDistance = pairwiseSummaries.reduce((a, b) => a + (b.distance || 0), 0);
+        const totalDuration = durations.reduce((a, b) => a + (b || 0), 0);
 
         const finalGeojson = {
             type: "FeatureCollection",
@@ -8296,6 +8274,18 @@ try {
 
     routeData = partial.routeData;
 
+    // Rota 200 km'den fazla ise hatayı göster ve çık!
+    if (routeData && routeData.summary && typeof routeData.summary.distance === 'number') {
+        if (routeData.summary.distance > 200000) {
+            addMessage(
+                "Rota mesafesi 200 km'den uzun olduğu için rota çizilemedi. Lütfen daha kısa bir rota oluşturun.",
+                "bot-message"
+            );
+            const infoPanel = document.getElementById(`route-info-day${day}`);
+            if (infoPanel) infoPanel.textContent = "Rota uzunluğu 200 km üzerinde! Lütfen rotanızı kısaltın.";
+            return;
+        }
+    }
     // Başarılı çizilen noktalar dışındaki (kalan) noktaları missing olarak işaretle
     const usedCount = partial.usedCount;
     missingPoints = snappedPoints.slice(usedCount - 1); // son kullanılan + sonrası
