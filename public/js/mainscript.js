@@ -3586,75 +3586,75 @@ function initEmptyDayMap(day) {
 }
 
 
-(function initDirectDayExpandedMapPatch(){
-  if (window.__tt_directExpandedPatchApplied) return;
-  window.__tt_directExpandedPatchApplied = true;
+// (function initDirectDayExpandedMapPatch(){
+//   if (window.__tt_directExpandedPatchApplied) return;
+//   window.__tt_directExpandedPatchApplied = true;
 
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.start-map-btn');
-    if (!btn) return;
-    e.preventDefault();
-    const day = Number(btn.dataset.day || '1');
-    if (!Number.isFinite(day) || day < 1) return;
-    startDayMapPlanningAndExpand(day);
-  });
+//   document.addEventListener('click', (e) => {
+//     const btn = e.target.closest('.start-map-btn');
+//     if (!btn) return;
+//     e.preventDefault();
+//     const day = Number(btn.dataset.day || '1');
+//     if (!Number.isFinite(day) || day < 1) return;
+//     startDayMapPlanningAndExpand(day);
+//   });
 
-  function startDayMapPlanningAndExpand(day) {
-    console.log('[direct-expand] start map planning day=', day);
+//   function startDayMapPlanningAndExpand(day) {
+//     console.log('[direct-expand] start map planning day=', day);
 
-    // DİKKAT: Bu gün için "Start with map" butonunu gizle bayrağı
-    window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
-    window.__hideStartMapButtonByDay[day] = true;
+//     // DİKKAT: Bu gün için "Start with map" butonunu gizle bayrağı
+//     window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
+//     window.__hideStartMapButtonByDay[day] = true;
 
-    // Daha önce açık expanded map varsa kapat
-    if (window.expandedMaps) {
-      Object.keys(window.expandedMaps).forEach(cid => {
-        const ex = window.expandedMaps[cid];
-        if (ex && typeof restoreMap === 'function') {
-          try { restoreMap(cid, ex.day); } catch(_){}
-        }
-      });
-    }
+//     // Daha önce açık expanded map varsa kapat
+//     if (window.expandedMaps) {
+//       Object.keys(window.expandedMaps).forEach(cid => {
+//         const ex = window.expandedMaps[cid];
+//         if (ex && typeof restoreMap === 'function') {
+//           try { restoreMap(cid, ex.day); } catch(_){}
+//         }
+//       });
+//     }
 
-    window.mapPlanningActive = true;
-    window.mapPlanningDay = day;
-    window.currentDay = day;
+//     window.mapPlanningActive = true;
+//     window.mapPlanningDay = day;
+//     window.currentDay = day;
 
-    window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
-    window.__suppressMiniUntilFirstPoint[day] = true;
+//     window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+//     window.__suppressMiniUntilFirstPoint[day] = true;
 
-    if (!Array.isArray(window.cart)) window.cart = [];
-    const hasDay = window.cart.some(it => it.day === day);
-    if (!hasDay) {
-      window.cart.push({ day });
-    }
+//     if (!Array.isArray(window.cart)) window.cart = [];
+//     const hasDay = window.cart.some(it => it.day === day);
+//     if (!hasDay) {
+//       window.cart.push({ day });
+//     }
 
-    if (typeof updateCart === 'function') {
-      updateCart(); // yeniden çizimde buton gizlenecek
-    }
+//     if (typeof updateCart === 'function') {
+//       updateCart(); // yeniden çizimde buton gizlenecek
+//     }
 
-    ensureDayMapContainer(day);
-    initEmptyDayMap(day);
+//     ensureDayMapContainer(day);
+//     initEmptyDayMap(day);
 
-    const containerId = `route-map-day${day}`;
-    setTimeout(() => {
-      if (typeof expandMap === 'function') {
-        expandMap(containerId, day);
-      } else {
-        console.warn('[direct-expand] expandMap bulunamadı.');
-      }
-    }, 40);
+//     const containerId = `route-map-day${day}`;
+//     setTimeout(() => {
+//       if (typeof expandMap === 'function') {
+//         expandMap(containerId, day);
+//       } else {
+//         console.warn('[direct-expand] expandMap bulunamadı.');
+//       }
+//     }, 40);
 
-    setTimeout(() => {
-      try {
-        attachMapClickAddMode(day);
-        console.log('[direct-expand] click-add mode attached for day', day);
-      } catch (err) {
-        console.warn('[direct-expand] attachMapClickAddMode error', err);
-      }
-    }, 140);
-  }
-})();
+//     setTimeout(() => {
+//       try {
+//         attachMapClickAddMode(day);
+//         console.log('[direct-expand] click-add mode attached for day', day);
+//       } catch (err) {
+//         console.warn('[direct-expand] attachMapClickAddMode error', err);
+//       }
+//     }, 140);
+//   }
+// })();
 
 /* ================== END PATCH ================== */
 // Gün 1 için kullanılan global başlatıcıda da bayrağı set edin
