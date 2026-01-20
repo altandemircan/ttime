@@ -7690,18 +7690,28 @@ function restoreMap(containerId, day) {
 // --- KESİN LİMİT AYARI ---
 const CURRENT_ROUTE_KM_LIMIT = 200; 
 
-// Bu fonksiyon limiti kontrol eder. Aşım varsa OTOMATİK SİLER ve uyarır.
+// Yardımcı: Koordinatı güvenli şekilde sayıya çevir
+function getSafeCoord(item) {
+    let lat = 0, lng = 0;
+    // Farklı veri yapılarını kontrol et (item.lat veya item.location.lat)
+    if (item.location && typeof item.location.lat !== 'undefined') {
+        lat = item.location.lat;
+        lng = item.location.lng;
+    } else if (typeof item.lat !== 'undefined') {
+        lat = item.lat;
+        lng = item.lng;
+    }
+    return { lat: parseFloat(lat), lng: parseFloat(lng) };
+}
+
 async function enforceDailyRouteLimit(day, maxKm) {
-    // 1. Sepet verisini (Global Cart) çek
-    let dayItems = window.cart.filter(item => 
-        item.day == day && 
-        item.location && 
-        isFinite(item.location.lat) && 
-        isFinite(item.location.lng)
-    );
+    // 1. O güne ait geçerli itemları al
+    let dayItems = window.cart.filter(item => item.day == day);
     
-    // Yeterli nokta yoksa kontrol etme
+    // Eğer 0 veya 1 nokta varsa mesafe yoktur.
     if (dayItems.length <= 1) return false;
+
+    console.log(`[LimitCheck] Day ${day} analyzing ${dayItems.length} items...`);
 
     let totalKm = 0;
     let splitIdx = -1;
@@ -7709,25 +7719,34 @@ async function enforceDailyRouteLimit(day, maxKm) {
 
     // 2. Mesafeyi hesapla
     for (let i = 1; i < dayItems.length; i++) {
-        const km = haversine(
-            dayItems[i-1].location.lat, dayItems[i-1].location.lng,
-            dayItems[i].location.lat, dayItems[i].location.lng
-        ) / 1000;
-        
+        const p1 = getSafeCoord(dayItems[i-1]);
+        const p2 = getSafeCoord(dayItems[i]);
+
+        // Koordinat hatası varsa atla
+        if (isNaN(p1.lat) || isNaN(p1.lng) || isNaN(p2.lat) || isNaN(p2.lng)) {
+            console.warn("[LimitCheck] Invalid coordinates found, skipping item:", dayItems[i]);
+            continue;
+        }
+
+        const km = haversine(p1.lat, p1.lng, p2.lat, p2.lng) / 1000;
         totalKm += km;
+
+        console.log(`[LimitCheck] Step ${i}: +${km.toFixed(1)}km = Total ${totalKm.toFixed(1)}km`);
 
         // Limit aşıldı mı?
         if (totalKm > maxKm) {
-            splitIdx = i; // Bu index limiti patlatan yer
+            splitIdx = i; 
             limitExceededName = dayItems[i].name || 'Added Location';
+            console.warn(`[LimitCheck] LIMIT EXCEEDED at item index ${i} (${limitExceededName})`);
             break;
         }
     }
 
-    // 3. Limit Aşıldıysa: SİL VE UYAR (SORU YOK)
+    // 3. Limit Aşıldıysa: SİL VE UYAR
     if (splitIdx > 0) {
-        // Limiti aşan ve sonrasındaki tüm noktalar (Genelde son eklenen 1 tanedir)
         const itemsToDelete = dayItems.slice(splitIdx); 
+        
+        console.log(`[LimitCheck] Removing ${itemsToDelete.length} items...`);
 
         // A. Sepetten Sil
         itemsToDelete.forEach(itemToDelete => {
@@ -7737,30 +7756,23 @@ async function enforceDailyRouteLimit(day, maxKm) {
             }
         });
 
-        // B. Kullanıcıya Bilgi Ver (Sadece Uyarı)
-        // Eğer sisteminizde 'showToast' varsa onu kullanın, yoksa alert kalabilir.
+        // B. Kullanıcıya Bilgi Ver
         if (typeof showToast === "function") {
             showToast(`⚠️ Limit exceeded (${maxKm}km)! "${limitExceededName}" removed.`, "error");
         } else {
-            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe limit is ${maxKm} km. Adding "${limitExceededName}" exceeded this limit and it has been removed.`);
+            alert(`⚠️ LIMIT EXCEEDED: The route cannot exceed ${maxKm}km. "${limitExceededName}" was removed.`);
         }
 
-        // C. Chat/Log Mesajı (Opsiyonel)
-        if (typeof addMessage === "function") {
-            addMessage(`Route limit (${maxKm}km) exceeded. Item removed automatically.`, "bot-message");
-        }
-
-        // D. Arayüzü Güncelle
+        // C. Arayüzü Güncelle (Bu tekrar renderRouteForDay'i çağırır ama veri temiz olduğu için sorun çıkmaz)
         if (typeof updateCart === "function") {
-            // updateCart fonksiyonu renderRouteForDay'i tekrar tetikleyecektir.
-            updateCart(); 
+            // setTimeout ile hafif gecikmeli yap ki mevcut döngü çakışmasın
+            setTimeout(() => updateCart(), 50); 
         }
 
-        // true döndürerek mevcut render işlemini durduruyoruz.
+        // İşlemi durdur sinyali
         return true; 
     }
 
-    // Limit aşılmadı, her şey yolunda
     return false;
 }
 async function renderRouteForDay(day) {
