@@ -7747,8 +7747,18 @@ async function enforceDailyRouteLimit(day, maxKm) {
             // Kilidi güncelle (Şimdi uyarı vereceğiz)
             window.__lastLimitAlertTime = Date.now();
 
-            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed automatically.`);
-
+            let msgId = `route-limit-warning-${day}`;
+let container = document.getElementById(`route-map-day${day}`);
+if (container) {
+    let existing = document.getElementById(msgId);
+    if (!existing) {
+        existing = document.createElement('div');
+        existing.id = msgId;
+        existing.style = "color:#b71c1c;background:#fff3e0;padding:10px 15px;border-radius:7px;font-weight:600;margin:10px 0;";
+        container.parentNode.insertBefore(existing, container.nextSibling);
+    }
+    existing.innerHTML = `🚦 Daily route limit exceeded! Your route: <b>${currentTotalKm} km</b>. Maximum allowed: <b>${maxKm} km</b>. The last places were not added.`;
+}
             // Limiti aşanları bul ve SİL
             const itemsToProcess = dayItems.slice(splitIdx);
             itemsToProcess.forEach(item => {
