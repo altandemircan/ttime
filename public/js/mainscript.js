@@ -7667,7 +7667,6 @@ const CURRENT_ROUTE_KM_LIMIT = 200; // Kesin Limit: 200 km
 
 // --- LİMİT KONTROL VE YÖNETİM FONKSİYONU ---
 async function enforceDailyRouteLimit(day, maxKm) {
-    // 1. Sepet verisini (Global Cart) çek
     let dayItems = window.cart.filter(item => 
         item.day == day && 
         item.location && 
@@ -7675,14 +7674,13 @@ async function enforceDailyRouteLimit(day, maxKm) {
         isFinite(item.location.lng)
     );
     
-    // Tek nokta veya 0 nokta varsa mesafe yoktur, devam et.
     if (dayItems.length <= 1) return false;
 
     let totalKm = 0;
     let splitIdx = -1;
     let limitExceededName = "";
 
-    // 2. Mesafeyi hesapla
+    // Mesafeyi hesapla
     for (let i = 1; i < dayItems.length; i++) {
         const km = haversine(
             dayItems[i-1].location.lat, dayItems[i-1].location.lng,
@@ -7693,89 +7691,81 @@ async function enforceDailyRouteLimit(day, maxKm) {
 
         // Limit aşıldı mı?
         if (totalKm > maxKm) {
-            splitIdx = i; // Bu index limiti patlatan yer
+            splitIdx = i; 
             limitExceededName = dayItems[i].name || 'Added Location';
             break;
         }
     }
 
-    // 3. Limit Aşıldıysa MÜDAHALE ZAMANI
+    // LİMİT AŞILDI!
     if (splitIdx > 0) {
         const newDay = day + 1;
-        // Limiti aşan ve sonrasındaki tüm noktalar
+        // Limiti aşan ve sonrasındaki tüm noktalar (Genelde son eklenen)
         const itemsToMoveOrDelete = dayItems.slice(splitIdx); 
         const count = itemsToMoveOrDelete.length;
         const currentDistStr = totalKm.toFixed(1);
 
-        // --- SORU KUTUSU (İNGİLİZCE) ---
+        // Kullanıcıya SOR
         const userChoice = confirm(
             `⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\n` +
-            `The limit is ${maxKm} km. Currently: ${currentDistStr} km.\n` +
-            `Location triggering limit: "${limitExceededName}"\n\n` +
-            `[OK] -> Move ${count} location(s) to Day ${newDay}\n` +
-            `[CANCEL] -> Remove these location(s) from the plan`
+            `Limit: ${maxKm} km. Current: ${currentDistStr} km.\n` +
+            `Triggered by: "${limitExceededName}"\n\n` +
+            `[OK] -> MOVE location(s) to Day ${newDay}\n` +
+            `[CANCEL] -> DELETE location(s) (Stay within limit)`
         );
 
         if (userChoice) {
-            // --- SEÇENEK 1: OK (TAŞI) ---
-            
-            // 1.A: Gelecek günleri ötele (Yer aç)
+            // --- OK: SONRAKİ GÜNE TAŞI ---
             const maxDayInCart = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
             for (let d = maxDayInCart; d >= newDay; d--) {
                 window.cart.forEach(item => {
                     if (item.day === d) item.day = d + 1;
                 });
             }
-
-            // 1.B: İtemları yeni güne taşı
             itemsToMoveOrDelete.forEach(itemToMove => {
                 const realItem = window.cart.find(c => c === itemToMove);
                 if (realItem) realItem.day = newDay;
             });
-
-            addMessage(`Route limit exceeded. ${count} locations moved to Day ${newDay}.`, "bot-message");
+            addMessage(`Route limit exceeded. Moved to Day ${newDay}.`, "bot-message");
 
         } else {
-            // --- SEÇENEK 2: CANCEL (SİL) ---
-            // İptal edilirse, limiti aşan o noktalar silinir. Haritada kalmaz.
+            // --- CANCEL: LİSTEDEN SİL (Geri Al) ---
+            // Bu kısım "Haritada tıklıyorum ekliyor" sorununu çözer.
+            // İptal derseniz o nokta hiç eklenmemiş gibi silinir.
             itemsToMoveOrDelete.forEach(itemToDelete => {
                 const idx = window.cart.indexOf(itemToDelete);
                 if (idx > -1) {
                     window.cart.splice(idx, 1);
                 }
             });
-
-            addMessage(`Action cancelled. Route cannot exceed ${maxKm}km.`, "bot-message");
+            addMessage(`Cancelled. Location removed to stay under ${maxKm}km.`, "bot-message");
         }
 
-        // --- SONUÇ: Cart değişti, arayüzü güncelle ---
+        // Cart değiştiği için her şeyi yenile
         if (typeof updateCart === "function") {
             updateCart(); 
         }
-        return true; // "Müdahale edildi, çizimi durdur" sinyali
+        return true; // Render işlemini durdur, çünkü updateCart yeniden başlatacak
     }
 
-    // Limit aşılmadı, her şey yolunda
     return false;
 }
 
 // --- ANA RENDER FONKSİYONU ---
 async function renderRouteForDay(day) {
     
-    // --- LİMİT BEKÇİSİ (EN BAŞTA) ---
-    // Eğer limit aşılmışsa ve işlem yapıldıysa (taşıma veya silme), bu fonksiyon true döner.
-    // Biz de render işlemini burada keseriz (return). Çünkü updateCart yeniden render başlatacak.
+    // 1. ÖNCE LİMİTİ KONTROL ET
+    // Eğer limit aşılmışsa ve işlem yapıldıysa (taşıma veya silme),
+    // bu fonksiyon true döner ve biz çizimi iptal ederiz.
     const limitHandled = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitHandled) {
-        return; 
+        return; // Çizimi durdur.
     }
 
     console.log(`=== RENDER START for day ${day} ===`);
     
-    // 1. ADIM: TEMİZLİK (RESET)
-    window.selectedSegmentIndex = -1;
+   window.selectedSegmentIndex = -1;
     window.selectedSegment = null;
-    
     window._lastSegmentDay = null;
     window._lastSegmentStartKm = null;
     window._lastSegmentEndKm = null;
@@ -7852,7 +7842,6 @@ async function renderRouteForDay(day) {
 
         renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
 
-        // 3D Harita Güncellemesi
         document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
 
         const infoPanel = document.getElementById(`route-info-day${day}`);
