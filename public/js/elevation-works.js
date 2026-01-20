@@ -958,9 +958,7 @@ if (bestIndex < ed.smooth.length) {
           createScaleElements(track, width, totalKm, 0, markers, customElevData);
       }, 50);
     }
-  })();
-  // renderRouteScaleBar fonksiyonunun EN SONUNA ekle:
-.catch(err => {
+    .catch(err => {
   console.error("SCALEBAR CRITICAL ERROR:", err);
   container.innerHTML = `
     <div class="scale-bar-track" style="padding: 40px; text-align: center; color: #666;">
@@ -972,6 +970,9 @@ if (bestIndex < ed.smooth.length) {
     </div>
   `;
 });
+  })();
+  // renderRouteScaleBar fonksiyonunun EN SONUNA ekle:
+
 }
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
