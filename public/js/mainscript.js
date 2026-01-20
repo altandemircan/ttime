@@ -7086,7 +7086,7 @@ const expandedMapInstance = L.map(mapDivId, {
     center: startCenter,
     zoom: startZoom,
     minZoom: 4,              // (isteğe bağlı) Haritanın en uzak hali
-    maxZoom: 16,             // (KRİTİK!) En fazla yakınlaştırılabilecek seviye (ör. 15-16 önerilir)
+    maxZoom: 18,             // (KRİTİK!) En fazla yakınlaştırılabilecek seviye (ör. 15-16 önerilir)
     zoomControl: false,
     scrollWheelZoom: true,
     fadeAnimation: isDesktop,
