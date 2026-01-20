@@ -7082,21 +7082,20 @@ locBtn.onclick = function() {
     // Desktop-only smooth zoom/fade settings (no custom CSS, no inertia bounce)
   const isDesktop = window.innerWidth > 1024 && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
-const expandedMapInstance = L.map(mapDivId, {
+ const expandedMapInstance = L.map(mapDivId, {
     center: startCenter,
     zoom: startZoom,
-    minZoom: 4,              // (isteğe bağlı) Haritanın en uzak hali
-    maxZoom: 18,             // (KRİTİK!) En fazla yakınlaştırılabilecek seviye (ör. 15-16 önerilir)
+    maxZoom: 16,
     zoomControl: false,
     scrollWheelZoom: true,
     fadeAnimation: isDesktop,
     zoomAnimation: isDesktop,
     markerZoomAnimation: isDesktop,
-    inertia: true,
-    inertiaDeceleration: 3000,
-    inertiaMaxSpeed: 1500,
-    zoomSnap: 1,
-    zoomDelta: 1,
+    inertia: true,              // ✓ Aktif et (momentum için)
+    inertiaDeceleration: 3000,  // ✓ Hızlı durdur (varsayılan: 3000)
+    inertiaMaxSpeed: 1500,      // ✓ Max hız sınırı
+    zoomSnap: 1,                // ✓ ZOOM MUTLAKA TAM SAYIYA OTUR
+    zoomDelta: 1,               // ✓ Her scroll/click 1 level zoom
     preferCanvas: true,
     renderer: L.canvas({ padding: 0.5 }),
     dragging: true
