@@ -7690,10 +7690,9 @@ function restoreMap(containerId, day) {
 // --- KESİN LİMİT AYARI ---
 const CURRENT_ROUTE_KM_LIMIT = 200; 
 
-// Bu fonksiyon sadece limiti kontrol eder, aşım varsa kullanıcıya sorar ve işlemi yapar.
+// Bu fonksiyon limiti kontrol eder. Aşım varsa OTOMATİK SİLER ve uyarır.
 async function enforceDailyRouteLimit(day, maxKm) {
     // 1. Sepet verisini (Global Cart) çek
-    // Haritadaki çizimi beklemeden direkt ham veriye bakıyoruz.
     let dayItems = window.cart.filter(item => 
         item.day == day && 
         item.location && 
@@ -7701,7 +7700,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
         isFinite(item.location.lng)
     );
     
-    // Tek nokta veya 0 nokta varsa mesafe yoktur, devam et.
+    // Yeterli nokta yoksa kontrol etme
     if (dayItems.length <= 1) return false;
 
     let totalKm = 0;
@@ -7725,64 +7724,40 @@ async function enforceDailyRouteLimit(day, maxKm) {
         }
     }
 
-    // 3. Limit Aşıldıysa MÜDAHALE ZAMANI
+    // 3. Limit Aşıldıysa: SİL VE UYAR (SORU YOK)
     if (splitIdx > 0) {
-        const newDay = day + 1;
-        // Limiti aşan ve sonrasındaki tüm noktalar
-        const itemsToMoveOrDelete = dayItems.slice(splitIdx); 
-        const count = itemsToMoveOrDelete.length;
-        const currentDistStr = totalKm.toFixed(1);
+        // Limiti aşan ve sonrasındaki tüm noktalar (Genelde son eklenen 1 tanedir)
+        const itemsToDelete = dayItems.slice(splitIdx); 
 
-        // --- SORU KUTUSU (İNGİLİZCE) ---
-        // Kullanıcıya iki seçenek sunuyoruz: Kaydır veya İptal Et (Sil)
-        const userChoice = confirm(
-            `⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\n` +
-            `The limit is ${maxKm} km. Currently: ${currentDistStr} km.\n` +
-            `Location triggering limit: "${limitExceededName}"\n\n` +
-            `[OK] -> Move ${count} location(s) to Day ${newDay}\n` +
-            `[CANCEL] -> Remove these location(s) from the plan`
-        );
-
-        if (userChoice) {
-            // --- SEÇENEK 1: OK (TAŞI) ---
-            
-            // 1.A: Gelecek günleri ötele (Yer aç)
-            const maxDayInCart = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
-            for (let d = maxDayInCart; d >= newDay; d--) {
-                window.cart.forEach(item => {
-                    if (item.day === d) item.day = d + 1;
-                });
+        // A. Sepetten Sil
+        itemsToDelete.forEach(itemToDelete => {
+            const idx = window.cart.indexOf(itemToDelete);
+            if (idx > -1) {
+                window.cart.splice(idx, 1);
             }
+        });
 
-            // 1.B: İtemları yeni güne taşı
-            itemsToMoveOrDelete.forEach(itemToMove => {
-                const realItem = window.cart.find(c => c === itemToMove);
-                if (realItem) realItem.day = newDay;
-            });
-
-            addMessage(`Route limit exceeded. ${count} locations moved to Day ${newDay}.`, "bot-message");
-
+        // B. Kullanıcıya Bilgi Ver (Sadece Uyarı)
+        // Eğer sisteminizde 'showToast' varsa onu kullanın, yoksa alert kalabilir.
+        if (typeof showToast === "function") {
+            showToast(`⚠️ Limit exceeded (${maxKm}km)! "${limitExceededName}" removed.`, "error");
         } else {
-            // --- SEÇENEK 2: CANCEL (SİL) ---
-            // "200 km geçilemez" kuralı gereği, taşınmıyorsa silinmek zorunda.
-            
-            itemsToMoveOrDelete.forEach(itemToDelete => {
-                const idx = window.cart.indexOf(itemToDelete);
-                if (idx > -1) {
-                    window.cart.splice(idx, 1);
-                }
-            });
-
-            addMessage(`Action cancelled. Route cannot exceed ${maxKm}km.`, "bot-message");
+            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe limit is ${maxKm} km. Adding "${limitExceededName}" exceeded this limit and it has been removed.`);
         }
 
-        // --- SONUÇ: Cart değişti, arayüzü güncelle ---
+        // C. Chat/Log Mesajı (Opsiyonel)
+        if (typeof addMessage === "function") {
+            addMessage(`Route limit (${maxKm}km) exceeded. Item removed automatically.`, "bot-message");
+        }
+
+        // D. Arayüzü Güncelle
         if (typeof updateCart === "function") {
-            // updateCart tekrar renderRouteForDay çağıracak.
-            // O yüzden burası 'true' dönüp şu anki render'ı iptal etmeli.
+            // updateCart fonksiyonu renderRouteForDay'i tekrar tetikleyecektir.
             updateCart(); 
         }
-        return true; // "Müdahale edildi, çizimi durdur" sinyali
+
+        // true döndürerek mevcut render işlemini durduruyoruz.
+        return true; 
     }
 
     // Limit aşılmadı, her şey yolunda
