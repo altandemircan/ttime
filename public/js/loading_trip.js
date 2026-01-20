@@ -43,14 +43,28 @@ window.showLoadingPanel = function() {
         </div>
     `;
 
-    // 2. Paneli Chat Kutusunun EN ALTINA ekle
+    // 2. Paneli Chat Kutusuna Doğru Konumda Yerleştir
     if (chatBox) {
-        chatBox.appendChild(panel);
-        // Otomatik aşağı kaydır ki kullanıcı görsün
-        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        // Hedef elementleri kontrol et
+        const targetResult = chatBox.querySelector(".survey-results"); // Öncelik 1: Sonuç kartı
+        const typingIndicator = document.getElementById("typing-indicator"); // Öncelik 2: Üç nokta animasyonu
+
+        if (targetResult) {
+            // Eğer ekranda sonuç kartı varsa, loading onun HİZASINA (üstüne) gelsin
+            chatBox.insertBefore(panel, targetResult);
+        } else if (typingIndicator) {
+            // Sonuç yoksa ama yazıyor animasyonu varsa, onun üstüne gelsin
+            chatBox.insertBefore(panel, typingIndicator);
+        } else {
+            // Hiçbiri yoksa normal şekilde en sona ekle
+            chatBox.appendChild(panel);
+        }
+
+        // Kullanıcının görebilmesi için panele odaklan
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // 3. Yazı Değişme Animasyonu (Eski mantık aynen devam)
+    // 3. Yazı Değişme Animasyonu (Mevcut mantık)
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
@@ -74,7 +88,7 @@ window.showLoadingPanel = function() {
             }
         }, 300);
     }, 3000);
-};
+};;
 window.hideLoadingPanel = function() {
     // Chat içindeki paneli bul ve sil
     const panel = document.getElementById("loading-panel");
