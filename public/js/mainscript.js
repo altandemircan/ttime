@@ -8517,8 +8517,7 @@ try {
     // ============================================================
 
     // 2D Haritayı Çiz
-    renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
-
+renderLeafletRoute(containerId, routeData.geojson, points, routeData.summary, day, missingPoints);
     
     const expandedMapObj = window.expandedMaps?.[containerId];
     if (expandedMapObj?.expandedMap) {
