@@ -181,7 +181,7 @@
                                 <img src="/img/privacyterms-icon.svg" alt="Menu">Privacy & Terms </a>
                             <a href="#" onclick="toggleSidebarFeedback(); toggleMenu();" class="feedback-btn">
                                 <img src="/img/feedback-icon.svg" alt="Menu">Feedback </a>
-                            <a href="#" onclick="changeContent(2); document.getElementById('main-chat').style.display='none';" class="updates-btn">
+                            <a href="#about-triptime" onclick="changeContent(2); document.getElementById('main-chat').style.display='none';" class="updates-btn">
     <img src="/img/about-icon.svg">About Triptime
 </a>
                         </div>
@@ -697,7 +697,12 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                
+                <div style="position: absolute; bottom: 20px; left:0; right:0; text-align: center; z-index: 10; font-size: 0.85rem; color: #888;">
+                    <a href="#about" onclick="changeContent(2); document.getElementById('main-chat').style.display='none';" style="color: inherit; text-decoration: none; margin-right: 15px;">About Triptime AI</a>
+                    <a href="#privacy" onclick="toggleSidebarPrivacyTerms();" style="color: inherit; text-decoration: none;">Privacy & Terms</a>
+                </div>
+                </div>
         </section>
 
         <!-- Planner map (Start with map sonrası görünür). Eğer zaten benzeri varsa bu bloğu ekleme. -->

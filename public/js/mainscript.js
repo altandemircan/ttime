@@ -12,6 +12,26 @@ window.__locationPickedFromSuggestions = false;
 window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
+
+window.addEventListener('hashchange', function() {
+    if (window.location.hash === "#about") {
+        // About'a git
+        changeContent(2);
+        const chatMain = document.getElementById('main-chat');
+        if(chatMain) chatMain.style.display='none';
+    } else {
+        // Hash silindiyse (Geri tuşuna basıldıysa) Ana Ekrana / Welcome ekranına dön
+        // changeContent(0) fonksiyonunun "Welcome" ekranını açtığını varsayıyoruz.
+        if (typeof changeContent === "function") {
+            changeContent(0); 
+            
+            // Eğer chat kutusunun ana ekranda görünmesi gerekiyorsa:
+            const chatMain = document.getElementById('main-chat');
+            if(chatMain) chatMain.style.display='block'; 
+        }
+    }
+});
+
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Dünya yarıçapı metre cinsinden
     const dLat = (lat2 - lat1) * Math.PI / 180;
