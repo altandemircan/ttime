@@ -409,20 +409,23 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
   
-  // 1. Önce resmi rotayı (OSRM) almaya çalış
-// DEBUG: Koordinat kontrolü ekle
-  console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
-  
-  // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
-  if (!coords || coords.length < 2) {
-    console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
-    const markersList = window.cart?.filter(m => m.day === day) || [];
-    if (markersList.length >= 2) {
-      coords = markersList.map(m => [m.location.lng, m.location.lat]);
-      console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+    // 1. Önce resmi rotayı (OSRM) almaya çalış
+    let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
+
+    // DEBUG: Koordinat kontrolü ekle
+    console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
+
+    // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
+    if (!coords || coords.length < 2) {
+      console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
+      const markersList = window.cart?.filter(m => m.day === day) || [];
+      if (markersList.length >= 2) {
+        coords = markersList.map(m => [m.location.lng, m.location.lat]);
+        console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+      }
     }
-  }
-  // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
+
+      // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
   if (!Array.isArray(coords) || coords.length < 2) {
       if (typeof getDayPoints === 'function' && day) {
           const rawPoints = getDayPoints(day);
@@ -594,8 +597,7 @@ try {
   elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
 }
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    
+  
     const data = await response.json();
     
     // Backend'den gelen formatı client formatına çevir
@@ -958,18 +960,6 @@ if (bestIndex < ed.smooth.length) {
           createScaleElements(track, width, totalKm, 0, markers, customElevData);
       }, 50);
     }
-    .catch(err => {
-  console.error("SCALEBAR CRITICAL ERROR:", err);
-  container.innerHTML = `
-    <div class="scale-bar-track" style="padding: 40px; text-align: center; color: #666;">
-      <div style="font-size: 16px; margin-bottom: 10px;">🚧 Elevation yüklenemedi</div>
-      <div style="font-size: 12px;">${day ? 'Day ' + day : ''} - ${totalKm ? totalKm + ' km' : ''}</div>
-      <button onclick="window.location.reload()" style="margin-top: 20px; padding: 5px 15px; background: #1976d2; color: white; border: none; border-radius: 4px;">
-        Yeniden Dene
-      </button>
-    </div>
-  `;
-});
   })();
   // renderRouteScaleBar fonksiyonunun EN SONUNA ekle:
 
