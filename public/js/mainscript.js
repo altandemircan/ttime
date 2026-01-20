@@ -1,5 +1,4 @@
 
-const CURRENT_ROUTE_KM_LIMIT = 200; // Test için 200
 
 // === mainscript.js dosyasının en tepesine eklenecek global değişken ===
 window.__planGenerationId = Date.now();
@@ -7665,6 +7664,9 @@ function restoreMap(containerId, day) {
         window.removeEventListener('touchend', window.__sb_onMouseUp);
     }
 }
+
+const CURRENT_ROUTE_KM_LIMIT = 200;
+
 async function enforceDailyRouteLimit(day, maxKm) {
     console.log(`[DEBUG] Checking limit for day ${day}`);
     
@@ -7679,9 +7681,6 @@ async function enforceDailyRouteLimit(day, maxKm) {
     console.log(`[DEBUG] Day ${day} has ${dayItems.length} valid items`);
     
     if (dayItems.length <= 1) return false;
-
-    // Item'ları sırala (eğer sıralama önemliyse)
-    // Bu kısım uygulamanıza bağlı, gerekirse ekleyin
 
     let totalKm = 0;
     let splitIdx = -1;
@@ -7706,6 +7705,29 @@ async function enforceDailyRouteLimit(day, maxKm) {
     if (splitIdx > 0) {
         const newDay = day + 1;
         console.log(`[DEBUG] Splitting at index ${splitIdx}, moving to day ${newDay}`);
+        
+        // Kaç item taşınacak?
+        const itemsToMoveCount = dayItems.length - splitIdx;
+        const itemNamesToMove = dayItems.slice(splitIdx).map(item => item.name || 'Unnamed').join(', ');
+        
+        // Kullanıcıya onay soralım
+        const userConfirmed = await showLimitExceededConfirmation(
+            day, 
+            maxKm, 
+            totalKm.toFixed(2),
+            itemsToMoveCount,
+            itemNamesToMove,
+            newDay
+        );
+        
+        if (!userConfirmed) {
+            console.log(`[DEBUG] User cancelled the move operation for day ${day}`);
+            // Kullanıcı iptal etti, item eklenmesini engelle
+            return { cancelled: true };
+        }
+        
+        // Kullanıcı onayladı, devam et
+        console.log(`[DEBUG] User confirmed moving ${itemsToMoveCount} items to day ${newDay}`);
         
         // Taşınacak item'ların orijinal cart index'lerini bul
         const itemsToMove = [];
@@ -7770,17 +7792,160 @@ async function enforceDailyRouteLimit(day, maxKm) {
     console.log(`[DEBUG] Day ${day} within limit (${totalKm.toFixed(2)}/${maxKm}km)`);
     return false;
 }
-async function renderRouteForDay(day) {
 
-        console.log(`=== RENDER START for day ${day} ===`);
-    console.log(`Cart items for day ${day}:`, 
-        window.cart.filter(item => item.day === day).map((item, i) => 
-            `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
-        )
-    );
+// Kullanıcı onayı için modal/alert fonksiyonu
+async function showLimitExceededConfirmation(day, maxKm, actualKm, itemsCount, itemNames, newDay) {
+    return new Promise((resolve) => {
+        // Custom modal oluştur
+        const modalHtml = `
+            <div id="limit-exceeded-modal" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            ">
+                <div style="
+                    background: white;
+                    padding: 25px;
+                    border-radius: 12px;
+                    max-width: 500px;
+                    width: 90%;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    font-family: Arial, sans-serif;
+                ">
+                    <h3 style="color: #d32f2f; margin-top: 0; margin-bottom: 15px;">
+                        ⚠️ Günlük Rota Limiti Aşıldı
+                    </h3>
+                    
+                    <p style="margin-bottom: 15px; line-height: 1.5;">
+                        <strong>Gün ${day}</strong> için rota limiti (${maxKm}km) aşıldı.<br>
+                        <strong>Mevcut mesafe:</strong> ${actualKm}km
+                    </p>
+                    
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <strong>Taşınacak ${itemsCount} konum:</strong><br>
+                        ${itemNames}
+                    </div>
+                    
+                    <p style="margin-bottom: 20px; color: #666;">
+                        Bu konumları <strong>Gün ${newDay}</strong>'e taşımak ister misiniz?
+                    </p>
+                    
+                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                        <button id="cancel-move-btn" style="
+                            padding: 10px 20px;
+                            background: #f5f5f5;
+                            border: 1px solid #ddd;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">
+                            Hayır, İptal Et
+                        </button>
+                        <button id="confirm-move-btn" style="
+                            padding: 10px 20px;
+                            background: #1976d2;
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">
+                            Evet, Taşı
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Modalı DOM'a ekle
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = modalHtml;
+        document.body.appendChild(modalContainer);
+        
+        // Buton event'lerini ekle
+        document.getElementById('confirm-move-btn').onclick = () => {
+            document.body.removeChild(modalContainer);
+            resolve(true);
+        };
+        
+        document.getElementById('cancel-move-btn').onclick = () => {
+            document.body.removeChild(modalContainer);
+            resolve(false);
+        };
+        
+        // ESC tuşu ile iptal
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modalContainer);
+                document.removeEventListener('keydown', handleKeyDown);
+                resolve(false);
+            }
+        };
+        
+        document.addEventListener('keydown', handleKeyDown);
+        
+        // Modal dışına tıklayarak iptal
+        document.getElementById('limit-exceeded-modal').onclick = (e) => {
+            if (e.target.id === 'limit-exceeded-modal') {
+                document.body.removeChild(modalContainer);
+                document.removeEventListener('keydown', handleKeyDown);
+                resolve(false);
+            }
+        };
+    });
+}
+
+// renderRouteForDay fonksiyonunda da güncelleme yapalım:
+async function renderRouteForDay(day) {
+    // ÖNCE limit kontrolü yap
+    const limitResult = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     
-    const limitExceeded = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
-    if (limitExceeded) return; // Eğer bölündüyse bu fonksiyon zaten updateCart üzerinden tekrar tetiklenecek
+    // Eğer kullanıcı iptal ettiyse, render işlemini durdur
+    if (limitResult && limitResult.cancelled) {
+        console.log(`[RENDER] User cancelled limit enforcement for day ${day}, stopping render`);
+        
+        // Kullanıcı iptal etti, son eklenen item'ı cart'tan çıkar
+        // (Eğer yeni eklenen bir item varsa)
+        const lastItem = window.cart[window.cart.length - 1];
+        if (lastItem && lastItem.day === day) {
+            // Son item'ı bul ve kaldır
+            const itemIndex = window.cart.findIndex(item => 
+                item === lastItem && item.day === day
+            );
+            if (itemIndex !== -1) {
+                window.cart.splice(itemIndex, 1);
+                if (typeof updateCart === "function") {
+                    updateCart();
+                }
+                addMessage("Konum ekleme iptal edildi. Rota limiti aşıldı.", "bot-message");
+            }
+        }
+        
+        return;
+    }
+    
+    // Eğer limit aşıldıysa ve item'lar taşındıysa
+    if (limitResult === true) {
+        // ÖNEMLİ: updateCart çağrıldı, cart güncellendi
+        // Şimdi yeni düzenlenmiş günler için render et
+        setTimeout(() => {
+            // Orijinal günü tekrar render et (kalan item'lar için)
+            renderRouteForDay(day);
+            // Yeni günü de render et (taşınan item'lar için)
+            renderRouteForDay(day + 1);
+        }, 300);
+        return;
+    }
+    
+    // ... geri kalan render kodları (orijinal renderRouteForDay fonksiyonunun devamı) ...
+}
 
     // 1. ADIM: TEMİZLİK (RESET)
     // 3D Haritanın kafasını karıştıracak her şeyi siliyoruz.
