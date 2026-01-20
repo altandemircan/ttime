@@ -7775,7 +7775,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
                         setTimeout(() => acc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
                     }
                 }
-            }, 500);
+            }, 600);
             return true;
 
         } else {
@@ -7795,7 +7795,14 @@ async function enforceDailyRouteLimit(day, maxKm) {
 // --- 2. ANA RENDER FONKSİYONU ---
 async function renderRouteForDay(day) {
     
-    // Limit Kontrolü (Render başlamadan önce)
+    // --- ERROR FIX: Global Objeleri Hemen Başlat ---
+    // (Cannot set properties of undefined hatasını önler)
+    window.lastRouteGeojsons = window.lastRouteGeojsons || {};
+    window.lastRouteSummaries = window.lastRouteSummaries || {};
+    window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
+    window.directionsPolylines = window.directionsPolylines || {};
+
+    // Limit Kontrolü
     const limitHandled = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitHandled) return;
 
@@ -7871,11 +7878,8 @@ async function renderRouteForDay(day) {
             }]
         };
 
-        window.lastRouteGeojsons = window.lastRouteGeojsons || {};
         window.lastRouteGeojsons[containerId] = finalGeojson;
-        window.pairwiseRouteSummaries = window.pairwiseRouteSummaries || {};
         window.pairwiseRouteSummaries[containerId] = pairwiseSummaries;
-        window.lastRouteSummaries = window.lastRouteSummaries || {};
         window.lastRouteSummaries[containerId] = { distance: totalDistance, duration: totalDuration };
 
         renderLeafletRoute(containerId, finalGeojson, points, { distance: totalDistance, duration: totalDuration }, day);
@@ -7944,7 +7948,7 @@ async function renderRouteForDay(day) {
         if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
         const map = window.leafletMaps?.[containerId];
         if (map) {
-             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.Circle || l instanceof L.CircleMarker) map.removeLayer(l); });
+             map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
              const p = points[0];
              L.marker([p.lat, p.lng], {
                 icon: L.divIcon({
@@ -8087,10 +8091,33 @@ async function renderRouteForDay(day) {
         }
     }
 
-    // MARKER / SCALE BAR İÇİN HESAPLAMALAR
+    // --- MARKER POSITIONS HESABI (SOLA TOPLANMAYI ÖNLER) ---
     const container = window.leafletMaps?.[containerId];
     let totalKm = 0;
     let markerPositions = [];
+    let accumulatedDist = 0;
+
+    // Rota datası varsa (OSRM) ondan, yoksa Haversine'den hesapla
+    // ve markerPositions dizisini oluştur.
+    markerPositions = points.map((p, i) => {
+        let segDist = 0;
+        if (i > 0) {
+            if (isInTurkey && routeData && routeData.legs && routeData.legs[i-1]) {
+                segDist = routeData.legs[i-1].distance;
+            } else {
+                segDist = haversine(points[i-1].lat, points[i-1].lng, p.lat, p.lng);
+            }
+        }
+        accumulatedDist += segDist;
+        return {
+            name: p.name || "",
+            distance: accumulatedDist / 1000, // KM
+            lat: p.lat,
+            lng: p.lng,
+            snapped: (isInTurkey && routeData) ? true : false
+        };
+    });
+    totalKm = accumulatedDist / 1000;
 
     if (isInTurkey && routeData) {
         // TÜRKİYE İÇİ
@@ -8103,26 +8130,8 @@ async function renderRouteForDay(day) {
         if (typeof updateDistanceDurationUI === 'function') {
             updateDistanceDurationUI(routeData.summary.distance, routeData.summary.duration);
         }
-
-        // Marker Pozisyonlarını OSRM'den gelen LEG verisi ile hesapla
-        totalKm = routeData.summary.distance / 1000;
-        let acc = 0;
-        markerPositions = points.map((p, i) => {
-            if (i > 0 && routeData.legs && routeData.legs[i-1]) {
-                acc += routeData.legs[i-1].distance;
-            }
-            return { name: p.name, distance: acc / 1000, snapped: true };
-        });
-
     } else {
         // YURTDIŞI / FALLBACK
-        let acc = 0;
-        markerPositions = points.map((p, i) => {
-            if (i > 0) acc += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng);
-            return { name: p.name, distance: acc / 1000, snapped: false };
-        });
-        totalKm = acc / 1000;
-        
         const lineGeoJson = {
             type: "FeatureCollection",
             features: [{
@@ -8131,7 +8140,7 @@ async function renderRouteForDay(day) {
                 properties: {}
             }]
         };
-        const summary = { distance: acc, duration: acc / 13 };
+        const summary = { distance: accumulatedDist, duration: accumulatedDist / 13 };
 
         if (container) {
             renderLeafletRoute(containerId, lineGeoJson, points, summary, day, []);
@@ -8144,7 +8153,7 @@ async function renderRouteForDay(day) {
         }
     }
 
-    // --- SCALE BAR & ELEVATION GRAFİĞİ (GÜVENLİ) ---
+    // --- SCALE BAR & ELEVATION GRAFİĞİ ---
     const expandedMapDiv = document.getElementById(`expanded-map-${day}`) || document.getElementById(`expanded-route-map-day${day}`);
     if (expandedMapDiv) {
         let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
@@ -8166,7 +8175,7 @@ async function renderRouteForDay(day) {
             expandedScaleBar.innerHTML = "";
 
             if (typeof renderRouteScaleBar === 'function') {
-                // ÇÖZÜM: Coords yoksa fallback kullan (Crash'i önler)
+                // Rota koordinatlarını belirle (yoksa noktaları kullan)
                 let routeCoords = [];
                 if (isInTurkey && routeData && routeData.coords) {
                     routeCoords = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
@@ -8174,21 +8183,20 @@ async function renderRouteForDay(day) {
                     routeCoords = points.map(p => ({ lat: p.lat, lng: p.lng }));
                 }
 
-                // 1. Önce Grafiği Çiz (AWAIT ile bekle!)
+                // 1. Grafiği Çiz (Bekle)
                 if (typeof window.getElevationsForRoute === 'function') {
                      await window.renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions, routeCoords);
                 } else {
                      renderRouteScaleBar(expandedScaleBar, totalKm, markerPositions);
                 }
                 
-                // 2. Grafik çizildikten SONRA markerları (Scale Elements) yerleştir
+                // 2. Markerları Yerleştir
                 const track = expandedScaleBar.querySelector('.scale-bar-track');
                 if (track && typeof createScaleElements === 'function') {
                     createScaleElements(track, track.offsetWidth, totalKm, 0, markerPositions);
                 }
             }
         };
-        
         ensureScaleBarRender();
     }
 
@@ -8202,7 +8210,6 @@ async function renderRouteForDay(day) {
 
     console.log(`=== RENDER END for day ${day} ===`);
 }
-
 
 function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = {}) {
     const el = marker.getElement();
