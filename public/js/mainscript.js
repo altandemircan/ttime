@@ -8210,7 +8210,6 @@ async function renderRouteForDay(day) {
 
     console.log(`=== RENDER END for day ${day} ===`);
 }
-
 function attachLongPressDrag(marker, map, { delay = 400, moveThreshold = 12 } = {}) {
     const el = marker.getElement();
     if (!el) {
