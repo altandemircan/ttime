@@ -25,6 +25,9 @@
 window.showLoadingPanel = function() {
     const chatBox = document.getElementById("chat-box");
     
+    // ➤ [EKLENDİ] EKRANI KİLİTLE (Tıklamayı engelle)
+    document.body.classList.add('app-locked');
+
     // Varsa eskisini temizle (çakışma olmasın)
     const existingPanel = document.getElementById("loading-panel");
     if (existingPanel) existingPanel.remove();
@@ -88,8 +91,12 @@ window.showLoadingPanel = function() {
             }
         }, 300);
     }, 3000);
-};;
+};
+
 window.hideLoadingPanel = function() {
+    // ➤ [EKLENDİ] EKRAN KİLİDİNİ AÇ (Tıklamaya izin ver)
+    document.body.classList.remove('app-locked');
+
     // Chat içindeki paneli bul ve sil
     const panel = document.getElementById("loading-panel");
     if (panel) {
@@ -104,6 +111,7 @@ window.hideLoadingPanel = function() {
     // Eğer cw (welcome screen) gizliyse geri açma mantığı gerekiyorsa buraya eklenebilir,
     // ama chat akışında olduğumuz için genelde dokunmaya gerek yoktur.
 };
+
 window.showTypingIndicator = function() {
     const chatBox = document.getElementById("chat-box");
     let indicator = document.getElementById("typing-indicator");
