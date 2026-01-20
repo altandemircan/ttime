@@ -13,21 +13,28 @@ window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
 
+document.addEventListener("DOMContentLoaded", function() {
+    // #about yerine #about-triptime
+    if (window.location.hash === "#about-triptime-ai") {
+        if (typeof changeContent === "function") {
+            changeContent(2);
+            const chatMain = document.getElementById('main-chat');
+            if(chatMain) chatMain.style.display='none';
+        }
+    }
+});
+
 window.addEventListener('hashchange', function() {
-    if (window.location.hash === "#about") {
-        // About'a git
+    // #about yerine #about-triptime
+    if (window.location.hash === "#about-triptime-ai") {
         changeContent(2);
-        const chatMain = document.getElementById('main-chat');
-        if(chatMain) chatMain.style.display='none';
+        document.getElementById('main-chat').style.display='none';
     } else {
-        // Hash silindiyse (Geri tuşuna basıldıysa) Ana Ekrana / Welcome ekranına dön
-        // changeContent(0) fonksiyonunun "Welcome" ekranını açtığını varsayıyoruz.
         if (typeof changeContent === "function") {
             changeContent(0); 
-            
-            // Eğer chat kutusunun ana ekranda görünmesi gerekiyorsa:
+            // Ana sayfaya dönünce chat ekranını tekrar açmak gerekebilir:
             const chatMain = document.getElementById('main-chat');
-            if(chatMain) chatMain.style.display='block'; 
+            if(chatMain) chatMain.style.display='block';
         }
     }
 });
