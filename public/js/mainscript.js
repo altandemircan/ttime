@@ -3499,23 +3499,25 @@ function initEmptyDayMap(day) {
   }
 
   // --- HARİTA OLUŞTURMA (TAM KİLİTLİ) ---
-  const map = L.map(containerId, {
+ const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    zoomControl: false,      // Butonları kaldır
-    dragging: false,         // Kaydırmayı kapat
-    touchZoom: false,        // Parmak zoom kapat
-    scrollWheelZoom: false,  // Tekerlek zoom kapat
-    doubleClickZoom: false,  // Çift tık kapat
-    boxZoom: false,          // Kutu seçimini kapat
-    keyboard: false,         // Klavye kontrolünü kapat
-    tap: false,              // Mobil gecikmeyi önle
-    attributionControl: false, 
+    minZoom: 4,              // <-- EN AZ zoom seviyesi (isteğe göre değiştir)
+    maxZoom: 16,             // <-- EN FAZLA zoom seviyesi (ARTIK EN FAZLA BU KADAR YAKINLAŞILABİLİR)
+    zoomControl: false,
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    tap: false,
+    attributionControl: false,
     fadeAnimation: true,
     zoomAnimation: true,
     markerZoomAnimation: true,
     inertia: false
-  });
+});
 
   if (startBounds && startBounds.isValid()) {
       map.fitBounds(startBounds, { padding: [20, 20], animate: false });
