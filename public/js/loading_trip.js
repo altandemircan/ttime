@@ -29,21 +29,24 @@
 
 window.showLoadingPanel = function() {
     const chatBox = document.getElementById("chat-box");
-    
-    // 1. LOCK SCREEN
-    document.body.classList.add('app-locked');
-    if (document.activeElement) document.activeElement.blur(); // Close keyboard
 
-    // 2. Clear existing panel if any
+    // ➤ YENİ: Chat sorgusu başladığı an .cw (Karşılama Ekranı) gizlensin
+    document.querySelectorAll('.cw').forEach(el => el.style.display = 'none');
+    
+    // 1. EKRANI KİLİTLE (Mobilde dokunmayı engeller)
+    document.body.classList.add('app-locked');
+    if (document.activeElement) document.activeElement.blur(); 
+
+    // 2. Varsa eski paneli temizle
     const existingPanel = document.getElementById("loading-panel");
     if (existingPanel) existingPanel.remove();
 
-    // 3. Create Panel
+    // 3. Paneli Oluştur
     const panel = document.createElement("div");
     panel.id = "loading-panel"; 
     panel.className = "loading-panel"; 
     
-    // Content
+    // İçerik
     panel.innerHTML = `
         <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
         <div class="loading-text">
@@ -52,7 +55,7 @@ window.showLoadingPanel = function() {
         </div>
     `;
 
-    // 4. Place Panel (Priority: Above Result > Above Typing > Append)
+    // 4. Paneli Yerleştir
     if (chatBox) {
         const targetResult = chatBox.querySelector(".survey-results"); 
         const typingIndicator = document.getElementById("typing-indicator"); 
@@ -67,7 +70,7 @@ window.showLoadingPanel = function() {
         panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // 5. Animation Loop
+    // 5. Animasyon Döngüsü
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
