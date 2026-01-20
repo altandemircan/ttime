@@ -7076,7 +7076,7 @@ locBtn.onclick = function() {
   const expandedMapInstance = L.map(mapDivId, {
         center: startCenter,
         zoom: startZoom,
-        maxZoom: 16,
+        maxZoom: 19,
         zoomControl: false,
         scrollWheelZoom: true,
         fadeAnimation: isDesktop,       // smooth tiles
