@@ -8,19 +8,14 @@ let directionsRenderer;
 let autocomplete;
 
 function initMap() {
-    const defaultLocation = { lat: 41.0082, lng: 28.9784 }; // İstanbul
+    const defaultLocation = { lat: 41.0082, lng: 28.9784 }; // Istanbul
 
-    // Harita ayarları (UI kapalı)
+    // Map settings
     const mapOptions = {
         center: defaultLocation,
         zoom: 12,
         disableDefaultUI: true,
-        styles: [
-            {
-                "featureType": "poi",
-                "stylers": [{ "visibility": "off" }]
-            }
-        ]
+        styles: [{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }]
     };
 
     map = new google.maps.Map(document.getElementById("map"), mapOptions);
@@ -29,128 +24,105 @@ function initMap() {
     directionsRenderer = new google.maps.DirectionsRenderer({
         map: map,
         suppressMarkers: false,
-        polylineOptions: {
-            strokeColor: "#4285F4",
-            strokeWeight: 5
-        }
+        polylineOptions: { strokeColor: "#4285F4", strokeWeight: 5 }
     });
 
     service = new google.maps.places.PlacesService(map);
 
-    // Autocomplete kurulumu
+    // Autocomplete setup
     const input = document.getElementById("location-input");
-    const options = {
-        fields: ["formatted_address", "geometry", "name"],
-        strictBounds: false,
-    };
+    if (input) {
+        const options = {
+            fields: ["formatted_address", "geometry", "name"],
+            strictBounds: false,
+        };
 
-    autocomplete = new google.maps.places.Autocomplete(input, options);
-    autocomplete.bindTo("bounds", map);
+        autocomplete = new google.maps.places.Autocomplete(input, options);
+        autocomplete.bindTo("bounds", map);
 
-    autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (!place.geometry || !place.geometry.location) {
-            return;
-        }
-        // Kullanıcı bir yer seçtiğinde haritayı oraya odakla (Zoom yapma, sadece merkezle)
-        map.setCenter(place.geometry.location);
-    });
+        autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) return;
+            map.setCenter(place.geometry.location);
+        });
+    }
 }
 
 /* ======================================================
    EVENT LISTENERS & MAIN LOGIC
 ====================================================== */
 document.addEventListener("DOMContentLoaded", () => {
-    // Welcome mesajını göster
-    if (typeof addWelcomeMessage === "function") {
-        addWelcomeMessage();
-    }
 
     const planBtn = document.getElementById("plan-trip-btn");
     const locationInput = document.getElementById("location-input");
     const daysSelect = document.getElementById("days-select");
 
-    // Planla butonuna tıklama olayı
-    planBtn.addEventListener("click", () => {
-        const destination = locationInput.value.trim();
-        const days = daysSelect.value;
+    // Check if button exists before adding listener
+    if (planBtn) {
+        planBtn.addEventListener("click", () => {
+            if (!locationInput) return;
 
-        // Validasyon
-        if (!destination) {
-            addMessage("Lütfen bir gidilecek yer seçin.", "bot-message");
-            return;
-        }
+            const destination = locationInput.value.trim();
+            const days = daysSelect ? daysSelect.value : "3"; 
 
-        // Kullanıcı mesajını ekle
-        addMessage(`I want to go to ${destination} for ${days} days.`, "user-message");
+            if (!destination) {
+                if (typeof addMessage === "function") addMessage("Please enter a destination.", "bot-message");
+                return;
+            }
 
-        // Loading Başlat (Ekranı Kilitler)
-        showLoadingPanel();
+            if (typeof addMessage === "function") {
+                addMessage(`I want to go to ${destination} for ${days} days.`, "user-message");
+            }
 
-        // Arka planda işlemleri simüle et veya yap
-        // Not: Gerçek API çağrısı buraya gelecek. Şimdilik simülasyon:
-        setTimeout(() => {
-            // Rota hesaplama veya backend isteği burada yapılır
-            // Örnek: calculateRoute(destination);
-            
-            // İşlem bitince Loading'i kapat
-            hideLoadingPanel();
+            // Start Loading (Locks the screen)
+            if (typeof showLoadingPanel === "function") showLoadingPanel();
 
-            // Sonuçları göster (Örnek fonksiyon, senin kodunda varsa çalışır)
-            // showTripResults(...); 
-            
-            // Bot cevabı
-            addMessage(`Harika! ${destination} için ${days} günlük planını hazırladım. İşte detaylar...`, "bot-message survey-results");
-            
-        }, 5000); // 5 saniye bekleme simülasyonu
-    });
+            // Simulation
+            setTimeout(() => {
+                if (typeof hideLoadingPanel === "function") hideLoadingPanel();
+                if (typeof addMessage === "function") {
+                    addMessage(`Great! I have prepared your ${days}-day trip to ${destination}.`, "bot-message survey-results");
+                }
+            }, 5000);
+        });
+    }
 
-    // Enter tuşu desteği
-    locationInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-            planBtn.click();
-        }
-    });
+    // Enter key support
+    if (locationInput) {
+        locationInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && planBtn) planBtn.click();
+        });
+    }
 });
 
 
 /* ======================================================
-   TRIP LOADING & CHAT STATE MANAGEMENT (MOBILE FIXED)
+   TRIP LOADING & CHAT STATE MANAGEMENT (MOBILE SHIELD FIX)
 ====================================================== */
 
-// 1. KİLİT MEKANİZMASI (MOBİL UYUMLU GÖRÜNMEZ KALKAN)
+// 1. LOCK MECHANISM (INVISIBLE SHIELD FOR MOBILE)
 (function injectLockStyles() {
     if (!document.getElementById('lock-style-injection')) {
         const style = document.createElement('style');
         style.id = 'lock-style-injection';
         style.innerHTML = `
-            /* Kilit aktifken body özellikleri */
+            /* Body state when locked */
             body.app-locked {
-                overflow: hidden !important;       /* Scroll barı yok et */
-                height: 100vh !important;          /* Sayfa boyunu sabitle */
-                touch-action: none !important;     /* Mobilde parmak hareketini engelle */
-                -ms-touch-action: none !important;
-                overscroll-behavior: none !important;
+                overflow: hidden !important;
+                touch-action: none !important; /* Prevent swipe on mobile */
             }
 
-            /* GÖRÜNMEZ KALKAN: Tüm ekranın önüne geçen şeffaf duvar */
+            /* INVISIBLE SHIELD */
+            /* Covers the entire screen to block all touches */
             body.app-locked::after {
                 content: "";
                 position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(255, 255, 255, 0); /* Tam şeffaf */
-                z-index: 2147483647; /* En yüksek katman */
+                top: 0; left: 0; right: 0; bottom: 0;
+                width: 100vw; height: 100vh;
+                background: transparent; /* Transparent */
+                z-index: 2147483647; /* Max z-index */
+                pointer-events: auto !important; /* Capture all clicks/touches */
                 cursor: wait;
-                touch-action: none; /* Kalkana dokunulunca da işlem yapma */
-            }
-
-            /* Loading panel kalkanın arkasında kalmasın ama tıklanmasın da */
-            body.app-locked .loading-panel {
-                z-index: 2147483646; /* Kalkandan bir tık altta, görsel olarak üstte */
-                position: relative;
             }
         `; 
         document.head.appendChild(style);
@@ -160,20 +132,20 @@ document.addEventListener("DOMContentLoaded", () => {
 window.showLoadingPanel = function() {
     const chatBox = document.getElementById("chat-box");
     
-    // 1. EKRANI KİLİTLE (Görünmez kalkanı devreye sok)
+    // 1. LOCK SCREEN
     document.body.classList.add('app-locked');
-    if (document.activeElement) document.activeElement.blur(); // Klavyeyi kapat
+    if (document.activeElement) document.activeElement.blur(); // Close keyboard
 
-    // 2. Varsa eski paneli temizle
+    // 2. Clear existing panel if any
     const existingPanel = document.getElementById("loading-panel");
     if (existingPanel) existingPanel.remove();
 
-    // 3. Paneli Oluştur
+    // 3. Create Panel
     const panel = document.createElement("div");
     panel.id = "loading-panel"; 
     panel.className = "loading-panel"; 
     
-    // İçerik (GIF ve Yazı)
+    // Content
     panel.innerHTML = `
         <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
         <div class="loading-text">
@@ -182,7 +154,7 @@ window.showLoadingPanel = function() {
         </div>
     `;
 
-    // 4. Paneli Yerleştir (Sıralama Önceliği: Sonuç > Typing > En Son)
+    // 4. Place Panel (Priority: Above Result > Above Typing > Append)
     if (chatBox) {
         const targetResult = chatBox.querySelector(".survey-results"); 
         const typingIndicator = document.getElementById("typing-indicator"); 
@@ -194,12 +166,10 @@ window.showLoadingPanel = function() {
         } else {
             chatBox.appendChild(panel);
         }
-
-        // Panele odaklan
         panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // 5. Animasyon Döngüsü
+    // 5. Animation Loop
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
@@ -226,16 +196,14 @@ window.showLoadingPanel = function() {
 };
 
 window.hideLoadingPanel = function() {
-    // 1. KİLİDİ KALDIR (Kalkanı yok et)
+    // 1. UNLOCK SCREEN
     document.body.classList.remove('app-locked');
 
-    // 2. Paneli sil
+    // 2. Remove panel
     const panel = document.getElementById("loading-panel");
-    if (panel) {
-        panel.remove();
-    }
+    if (panel) panel.remove();
 
-    // 3. Animasyonu durdur
+    // 3. Stop animation
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
@@ -313,7 +281,6 @@ function addMessage(text, className) {
     contentDiv.innerHTML = text;
     messageElement.appendChild(contentDiv);
 
-    // İndikatörü her zaman mesajın altına taşı
     const typingIndicator = document.getElementById("typing-indicator");
     if (typingIndicator) {
         chatBox.insertBefore(messageElement, typingIndicator);
