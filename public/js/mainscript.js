@@ -7668,6 +7668,8 @@ window.__lastLimitAlertTime = 0;
 
 // --- 1. LİMİT KONTROL (ZAMAN KİLİTLİ & SADECE UYARI) ---
 async function enforceDailyRouteLimit(day, maxKm) {
+        if (window.__isRouteLimitDialogActive) return true; // yeni
+
     // KİLİT KONTROLÜ: Son 2.5 saniye içinde uyarı verildiyse, bu kontrolü iptal et.
     if (Date.now() - window.__lastLimitAlertTime < 2500) {
         return false;
@@ -7741,21 +7743,25 @@ async function enforceDailyRouteLimit(day, maxKm) {
         }
 
         // --- MÜDAHALE (UYARI & SİLME) ---
-       if (limitExceeded && splitIdx > 0) {
-    // OK'e basılınca tekrar uyarı çıkmasın diye kilidi ileri şekilde güncelle
-    window.__lastLimitAlertTime = Date.now() + 10000; // 10 saniye sonra tekrar uyarıya izin ver
+        if (limitExceeded && splitIdx > 0) {
+            // Kilidi güncelle (Şimdi uyarı vereceğiz)
+            window.__lastLimitAlertTime = Date.now();
 
-    alert(`⚠️ ROUTE LIMIT EXCEEDED ...`);
+            alert(`⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\nThe daily limit is ${maxKm} km.\nYour route is calculated as ~${currentTotalKm} km.\n\nThe last added location(s) will be removed automatically.`);
 
-    const itemsToProcess = dayItems.slice(splitIdx);
-    itemsToProcess.forEach(item => {
-        const idx = window.cart.indexOf(item);
-        if (idx > -1) window.cart.splice(idx, 1);
-    });
+            // Limiti aşanları bul ve SİL
+            const itemsToProcess = dayItems.slice(splitIdx);
+            itemsToProcess.forEach(item => {
+                const idx = window.cart.indexOf(item);
+                if (idx > -1) window.cart.splice(idx, 1);
+            });
 
-    if (typeof updateCart === "function") updateCart();
-    return true;
-}
+            // Arayüz güncelle
+            if (typeof updateCart === "function") updateCart();
+
+            // Erken çıkış, başka işleme gerek yok!
+            return true;
+        }
 
     } catch(e) {
         console.error("Limit check error:", e);
