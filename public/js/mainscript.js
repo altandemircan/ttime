@@ -3499,25 +3499,23 @@ function initEmptyDayMap(day) {
   }
 
   // --- HARİTA OLUŞTURMA (TAM KİLİTLİ) ---
- const map = L.map(containerId, {
+  const map = L.map(containerId, {
     center: startCenter,
     zoom: startZoom,
-    minZoom: 4,              // <-- EN AZ zoom seviyesi (isteğe göre değiştir)
-    maxZoom: 16,             // <-- EN FAZLA zoom seviyesi (ARTIK EN FAZLA BU KADAR YAKINLAŞILABİLİR)
-    zoomControl: false,
-    dragging: false,
-    touchZoom: false,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
-    boxZoom: false,
-    keyboard: false,
-    tap: false,
-    attributionControl: false,
+    zoomControl: false,      // Butonları kaldır
+    dragging: false,         // Kaydırmayı kapat
+    touchZoom: false,        // Parmak zoom kapat
+    scrollWheelZoom: false,  // Tekerlek zoom kapat
+    doubleClickZoom: false,  // Çift tık kapat
+    boxZoom: false,          // Kutu seçimini kapat
+    keyboard: false,         // Klavye kontrolünü kapat
+    tap: false,              // Mobil gecikmeyi önle
+    attributionControl: false, 
     fadeAnimation: true,
     zoomAnimation: true,
     markerZoomAnimation: true,
     inertia: false
-});
+  });
 
   if (startBounds && startBounds.isValid()) {
       map.fitBounds(startBounds, { padding: [20, 20], animate: false });
@@ -7084,19 +7082,21 @@ locBtn.onclick = function() {
     // Desktop-only smooth zoom/fade settings (no custom CSS, no inertia bounce)
   const isDesktop = window.innerWidth > 1024 && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
- const expandedMapInstance = L.map(mapDivId, {
+const expandedMapInstance = L.map(mapDivId, {
     center: startCenter,
     zoom: startZoom,
+    minZoom: 4,              // (isteğe bağlı) Haritanın en uzak hali
+    maxZoom: 16,             // (KRİTİK!) En fazla yakınlaştırılabilecek seviye (ör. 15-16 önerilir)
     zoomControl: false,
     scrollWheelZoom: true,
     fadeAnimation: isDesktop,
     zoomAnimation: isDesktop,
     markerZoomAnimation: isDesktop,
-    inertia: true,              // ✓ Aktif et (momentum için)
-    inertiaDeceleration: 3000,  // ✓ Hızlı durdur (varsayılan: 3000)
-    inertiaMaxSpeed: 1500,      // ✓ Max hız sınırı
-    zoomSnap: 1,                // ✓ ZOOM MUTLAKA TAM SAYIYA OTUR
-    zoomDelta: 1,               // ✓ Her scroll/click 1 level zoom
+    inertia: true,
+    inertiaDeceleration: 3000,
+    inertiaMaxSpeed: 1500,
+    zoomSnap: 1,
+    zoomDelta: 1,
     preferCanvas: true,
     renderer: L.canvas({ padding: 0.5 }),
     dragging: true
