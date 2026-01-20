@@ -596,8 +596,7 @@ try {
   // FALLBACK - KESİNLİKLE BOŞ DÖNME
   elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
 }
-
-  
+    
     const data = await response.json();
     
     // Backend'den gelen formatı client formatına çevir
@@ -605,11 +604,7 @@ try {
         elevations = data.results.map(r => r.elevation || 0);
     }
     
-} catch (error) {
-    console.error('Elevation fetch failed:', error);
-    // Fallback elevation
-    elevations = samples.map((_, i) => 60 + Math.sin(i * 0.1) * 20);
-}      
+      
       // --- ROBUST DATA REPAIR (VERİ TAMİRİ) ---
       // Veri null gelirse boş dizi yap, hata vermesin.
       if (!elevations) {
