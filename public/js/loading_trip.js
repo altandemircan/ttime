@@ -1,39 +1,33 @@
 /* ======================================================
-   TRIP LOADING & CHAT STATE MANAGEMENT (Mobile Fix)
+   TRIP LOADING & CHAT STATE MANAGEMENT (Mobile Fixed)
 ====================================================== */
 
-// 1. Gerekli kilit stillerini sayfaya enjekte et (MOBİL İÇİN GÜÇLENDİRİLDİ)
+// 1. KİLİT MEKANİZMASI (MOBİL UYUMLU GÖRÜNMEZ KALKAN)
 (function injectLockStyles() {
     if (!document.getElementById('lock-style-injection')) {
         const style = document.createElement('style');
         style.id = 'lock-style-injection';
         style.innerHTML = `
-            /* Mobilde kaydırmayı ve dokunmayı kesin engellemek için */
+            /* Kilit aktifken body özellikleri */
             body.app-locked {
-                overflow: hidden !important; /* Scroll bar'ı gizle */
-                touch-action: none !important; /* Mobilde parmak kaydırmayı kapat */
-                -webkit-overflow-scrolling: none !important; /* iOS scroll fix */
-                overscroll-behavior: none !important; /* Lastik bant efektini kapat */
-                user-select: none !important;
+                overflow: hidden !important;       /* Scroll barı yok et */
+                height: 100vh !important;          /* Sayfa boyunu sabitle */
+                touch-action: none !important;     /* Mobilde parmak hareketini engelle */
+                -ms-touch-action: none !important;
             }
 
-            /* Tüm ekranı kaplayan görünmez bir kalkan oluştur (Tıklamaları yutar) */
-            body.app-locked::before {
+            /* GÖRÜNMEZ KALKAN: Tüm ekranın önüne geçen şeffaf duvar */
+            body.app-locked::after {
                 content: "";
                 position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                width: 100%; height: 100%;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
                 background: rgba(255, 255, 255, 0); /* Tam şeffaf */
-                z-index: 99999; /* Çok yüksek katman */
-                pointer-events: auto !important; /* Dokunuşları yakala */
+                z-index: 2147483647; /* En, en üst katman */
                 cursor: wait;
-            }
-
-            /* Yükleme paneli kalkanın üstünde kalsın (Görünürlük için) */
-            body.app-locked .loading-panel {
-                position: relative; 
-                z-index: 100000 !important; /* Kalkandan daha yüksek */
-                pointer-events: auto !important;
+                touch-action: none; /* Kalkana dokunulunca da işlem yapma */
             }
         `; 
         document.head.appendChild(style);
@@ -43,19 +37,19 @@
 window.showLoadingPanel = function() {
     const chatBox = document.getElementById("chat-box");
     
-    // ➤ EKRANI KİLİTLE (Mobilde de çalışır)
+    // 1. EKRANI KİLİTLE (Görünmez kalkanı devreye sok)
     document.body.classList.add('app-locked');
 
-    // Varsa eskisini temizle
+    // 2. Varsa eski paneli temizle
     const existingPanel = document.getElementById("loading-panel");
     if (existingPanel) existingPanel.remove();
 
-    // 1. Paneli oluştur
+    // 3. Paneli Oluştur
     const panel = document.createElement("div");
     panel.id = "loading-panel"; 
     panel.className = "loading-panel"; 
     
-    // İçerik
+    // İçerik (GIF ve Yazı)
     panel.innerHTML = `
         <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
         <div class="loading-text">
@@ -64,7 +58,7 @@ window.showLoadingPanel = function() {
         </div>
     `;
 
-    // 2. Paneli Yerleştir (Sıralama Önceliği: Sonuç > Typing > En Son)
+    // 4. Paneli Yerleştir (Sıralama Önceliği: Sonuç > Typing > En Son)
     if (chatBox) {
         const targetResult = chatBox.querySelector(".survey-results"); 
         const typingIndicator = document.getElementById("typing-indicator"); 
@@ -77,11 +71,11 @@ window.showLoadingPanel = function() {
             chatBox.appendChild(panel);
         }
 
-        // Panele odaklan
+        // Panele odaklan (Kilitlenmeden hemen önce görünür olsun)
         panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // 3. Animasyon Döngüsü
+    // 5. Animasyon Döngüsü
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
@@ -108,22 +102,22 @@ window.showLoadingPanel = function() {
 };
 
 window.hideLoadingPanel = function() {
-    // ➤ EKRAN KİLİDİNİ AÇ
+    // 1. KİLİDİ KALDIR (Kalkanı yok et)
     document.body.classList.remove('app-locked');
 
-    // Paneli kaldır
+    // 2. Paneli sil
     const panel = document.getElementById("loading-panel");
     if (panel) {
         panel.remove();
     }
 
+    // 3. Animasyonu durdur
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
     }
 };
 
-/* Diğer fonksiyonlar aynen kalabilir */
 window.showTypingIndicator = function() {
     const chatBox = document.getElementById("chat-box");
     let indicator = document.getElementById("typing-indicator");
@@ -163,18 +157,38 @@ function addCanonicalMessage(canonicalStr) {
   }
 }
 
+function addCanonicalMessage(canonicalStr) {
+  const chatBox = document.getElementById("chat-box");
+  if (!chatBox) return;
+  const msg = document.createElement("div");
+  msg.className = "message canonical-message";
+  msg.innerHTML = `<img src="/img/profile-icon.svg" alt="Profile" class="profile-img">
+  <span>${canonicalStr}</span>`;
+  // Typing-indicator varsa hemen sonrasına ekle, yoksa direk ekle
+  const typingIndicator = chatBox.querySelector('#typing-indicator');
+  if (typingIndicator && typingIndicator.nextSibling) {
+    chatBox.insertBefore(msg, typingIndicator.nextSibling);
+  } else {
+    chatBox.appendChild(msg);
+  }
+}
+
+// Helper fonksiyonu güncelliyoruz
 function addWelcomeMessage() {
     if (!window.__welcomeShown) {
+        // BURASI DEĞİŞTİ:
         addMessage("Let's get started.", "bot-message request-bot-message");
         window.__welcomeShown = true;
     }
 }
+
     
 function addMessage(text, className) {
     const chatBox = document.getElementById("chat-box");
     const messageElement = document.createElement("div");
     messageElement.className = "message " + className;
 
+    // Profil görseli mantığı
     let profileElem;
     if (className.includes("user-message")) {
         profileElem = document.createElement("div");
@@ -191,12 +205,17 @@ function addMessage(text, className) {
     contentDiv.innerHTML = text;
     messageElement.appendChild(contentDiv);
 
+    // --- KRİTİK DEĞİŞİKLİK: İndikatörü her zaman mesajın altına taşı ---
     const typingIndicator = document.getElementById("typing-indicator");
     if (typingIndicator) {
+        // Mesajı indikatörün önüne ekle
         chatBox.insertBefore(messageElement, typingIndicator);
     } else {
         chatBox.appendChild(messageElement);
     }
     
-   chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+   chatBox.scrollTo({
+    top: chatBox.scrollHeight,
+    behavior: 'smooth'
+});
 }
