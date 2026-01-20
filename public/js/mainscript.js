@@ -7717,16 +7717,11 @@ async function enforceDailyRouteLimit(day, maxKm) {
     return false;
 }
 async function renderRouteForDay(day) {
-    // 1. LIMIT KONTROLÜ: Eğer 200km aşıldıysa bu fonksiyonu burada kesiyoruz.
-    // enforceDailyRouteLimit fonksiyonu window.cart'ı güncelleyip updateCart() çağıracağı için
-    // bu fonksiyon zaten temizlenmiş veriyle tekrar tetiklenecektir.
+    // Çizime başlamadan önce 200km limitini kontrol et ve gerekirse böl
     const wasSplit = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
-    if (wasSplit) return; 
+    if (wasSplit) return; // Eğer bölündüyse, updateCart zaten tekrar render tetikleyecek, burada dur.
 
-    // 2. DEĞİŞKEN TANIMLAMA: containerId'yi bir kez en tepede tanımlıyoruz.
-    const containerId = `route-map-day${day}`;
-    const container = document.getElementById(containerId);
-    if (!container) return;
+    const containerId = `route-map-day${day}`;etiklenecek
 
     // 1. ADIM: TEMİZLİK (RESET)
     // 3D Haritanın kafasını karıştıracak her şeyi siliyoruz.
@@ -7751,7 +7746,7 @@ async function renderRouteForDay(day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
-      
+        const containerId = `route-map-day${day}`;
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
@@ -7892,7 +7887,7 @@ if (expandedMapDiv) {
         if (!pts0 || pts0.length === 0) return;
     }
 
-
+    const containerId = `route-map-day${day}`;
     const points = getDayPoints(day);
 
     if (
