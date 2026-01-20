@@ -342,10 +342,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 })();
 
-/* === START WITH MAP -> TRIP SIDEBAR OPEN (EKLENDİ) ===
-   Dinamik oluşturulan #start-map-btn butonuna tıklanınca
-   #sidebar-overlay-trip elementine 'open' sınıfı eklenir ve diğer açık sidebarlar kapanır.
-*/
+
 document.addEventListener('click', function(e){
     if (e.target && e.target.id === 'start-map-btn') {
         const trip = document.getElementById('sidebar-overlay-trip');
