@@ -143,8 +143,8 @@ function showSuggestions() {
 
     const options = [
         { text: "Do a 1 day city tour in Antalya", flag: countryFlag("TR") },
-               { text: "1-day city tour in Berlin", flag: countryFlag("GE") },
-               { text: "1-day city tour in Tokyo", flag: countryFlag("JP") },
+        { text: "1-day city tour in Berlin", flag: countryFlag("DE") },
+        { text: "London holiday trip for 1 day", flag: countryFlag("GB") },
         { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },        
         { text: "1 day trip in Madrid", flag: countryFlag("ES") }
         
