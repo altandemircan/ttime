@@ -25,61 +25,47 @@
 window.showLoadingPanel = function() {
     const chatBox = document.getElementById("chat-box");
     
-    // 1. Karşılama Ekranını (cw) Gizle ve Chat'in Görünür Olduğundan Emin Ol
-    document.querySelectorAll('.cw').forEach(cw => cw.style.display = "none");
-    if (chatBox) {
-        chatBox.classList.remove("awaiting-start");
-    }
+    // Varsa eskisini temizle (çakışma olmasın)
+    const existingPanel = document.getElementById("loading-panel");
+    if (existingPanel) existingPanel.remove();
 
-    // 2. Mükerrer olmaması için varsa eski loader'ı temizle
-    const existingLoader = document.getElementById("chat-embedded-loader");
-    if (existingLoader) existingLoader.remove();
-
-    // 3. Yükleme Mesaj Baloncuğunu Oluştur (Dinamik HTML)
-    const loaderDiv = document.createElement("div");
-    loaderDiv.id = "chat-embedded-loader"; // Daha sonra silmek için ID veriyoruz
-    loaderDiv.className = "message bot-message loading-message-container";
+    // 1. Paneli JS ile oluştur (HTML'dekiyle BİREBİR aynı yapıda)
+    const panel = document.createElement("div");
+    panel.id = "loading-panel"; // ID aynı kalsın ki eski CSS stillerini alsın
+    panel.className = "loading-panel"; 
     
-    // HTML yapısı (Sizin orijinal gif ve metin yapınıza sadık kalarak)
-    loaderDiv.innerHTML = `
-        <div class="profile-img"><img src="/img/avatar_aiio.png" alt="AI"></div>
-        <div class="chat-loader-content">
-            <img src="/img/travel-destination.gif" alt="Loading...">
-            <div class="loading-text-wrapper">
-                <h2 id="chat-loading-message">Analyzing your request...</h2>
-                <p>Mira is preparing your trip plan...</p>
-            </div>
+    // İçeriği aynen koruyoruz (GIF ve Yazı)
+    panel.innerHTML = `
+        <img src="/img/travel-destination.gif" alt="Loading..." style="width: 72px; height: 72px;">
+        <div class="loading-text">
+            <h2 id="loading-message">Analyzing your request...</h2>
+            <p>Mira is preparing your trip plan, please wait!</p>
         </div>
     `;
 
-    // 4. Sohbet Kutusuna Ekle (Typing Indicator varsa onun önüne)
-    const typingIndicator = document.getElementById("typing-indicator");
-    if (typingIndicator) {
-        chatBox.insertBefore(loaderDiv, typingIndicator);
-    } else {
-        chatBox.appendChild(loaderDiv);
+    // 2. Paneli Chat Kutusunun EN ALTINA ekle
+    if (chatBox) {
+        chatBox.appendChild(panel);
+        // Otomatik aşağı kaydır ki kullanıcı görsün
+        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
     }
 
-    // En aşağıya kaydır
-    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-
-    // 5. Metin Animasyonunu Başlat (Sırayla değişen mesajlar)
+    // 3. Yazı Değişme Animasyonu (Eski mantık aynen devam)
     if (window.loadingInterval) clearInterval(window.loadingInterval);
 
     const messages = [
         "Analyzing your request...",
-        "Finding the best spots...",
+        "Finding places...",
         "Exploring route options...",
         "Compiling your travel plan..."
     ];
     let current = 0;
     
     window.loadingInterval = setInterval(() => {
-        const msgEl = document.getElementById('chat-loading-message');
-        if (!msgEl) return; // Element silindiyse dur
+        const msgEl = document.getElementById('loading-message');
+        if (!msgEl) return; 
 
-        msgEl.style.opacity = 0.5; // Hafif sönükleşme efekti
-        
+        msgEl.style.opacity = 0.5;
         setTimeout(() => {
             current = (current + 1) % messages.length;
             if (msgEl) {
@@ -87,29 +73,22 @@ window.showLoadingPanel = function() {
                 msgEl.style.opacity = 1;
             }
         }, 300);
-    }, 2500);
+    }, 3000);
 };
-
 window.hideLoadingPanel = function() {
-    // 1. Chat içindeki loader elementini bul
-    const loader = document.getElementById("chat-embedded-loader");
-    if (loader) {
-        // Silmeden önce hafifçe yok olma efekti (opsiyonel)
-        loader.style.opacity = '0';
-        loader.style.transition = 'opacity 0.5s ease';
-        setTimeout(() => {
-            if(loader.parentNode) loader.parentNode.removeChild(loader);
-        }, 500);
+    // Chat içindeki paneli bul ve sil
+    const panel = document.getElementById("loading-panel");
+    if (panel) {
+        panel.remove();
     }
 
-    // 2. Zamanlayıcıyı Temizle
     if (window.loadingInterval) {
         clearInterval(window.loadingInterval);
         window.loadingInterval = null;
     }
-
-    // 3. Body kilidini kaldır (Eğer kilit kaldıysa)
-    document.body.classList.remove('app-locked');
+    
+    // Eğer cw (welcome screen) gizliyse geri açma mantığı gerekiyorsa buraya eklenebilir,
+    // ama chat akışında olduğumuz için genelde dokunmaya gerek yoktur.
 };
 window.showTypingIndicator = function() {
     const chatBox = document.getElementById("chat-box");
