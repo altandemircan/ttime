@@ -7749,7 +7749,7 @@ async function renderRouteForDay(day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.routeLockByDay && window.routeLockByDay[day]) {
         const gpsRaw = window.importedTrackByDay[day].rawPoints || [];
         const points = getDayPoints(day);
-        
+      
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
@@ -7890,7 +7890,7 @@ if (expandedMapDiv) {
         if (!pts0 || pts0.length === 0) return;
     }
 
-    const containerId = `route-map-day${day}`;
+
     const points = getDayPoints(day);
 
     if (
