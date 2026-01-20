@@ -7877,7 +7877,24 @@ async function renderRouteForDay(day) {
         ensureDayMapContainer(day);
         initEmptyDayMap(day);
 
-      if (gpsRaw.length < 2 || points.length < 2) return;
+    if (gpsRaw.length < 2 || points.length < 2) {
+    // Burada sadece return yap
+    return;
+}
+
+// Buraya da aynı limit kontrol kodu, ama fonksiyon scope'unda
+const limitCheck = await checkGpsRouteLimit(day, points);
+if (limitCheck === 'CANCELLED') {
+    return;
+}
+if (limitCheck === 'SPLIT') {
+    // Taşıma yapıldı, yeni render
+    setTimeout(() => {
+        renderRouteForDay(day);
+        renderRouteForDay(day + 1);
+    }, 300);
+    return;
+}
 
 // GPS senaryosu için limit kontrolü - direk burada yap
 if (points.length > 1) {
