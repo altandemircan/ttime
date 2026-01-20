@@ -7766,11 +7766,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
 }
 async function renderRouteForDay(day) {
     // --- 1. LIMIT KONTROLÜ ---
-    // Eğer limit aşıldıysa ve kullanıcı "Evet taşı" dediyse, 
-    // fonksiyon true döner ve biz bu render'ı iptal ederiz (çünkü updateCart yeni render yapacak).
-    // Kullanıcı "Hayır" dediyse false döner ve harita çizilmeye devam eder.
-    const limitHandled = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
-    if (limitHandled) return;
+
 
     // --- STANDART RENDER BAŞLANGICI ---
     console.log(`=== RENDER START for day ${day} ===`);
@@ -8390,18 +8386,116 @@ async function fetchRoute() {
     }
 
 let routeData;
-let missingPoints = [];
-try {
-    const partial = await fetchRoutePartial(coordinates, day);
-    if (!partial) throw new Error('Route not reachable');
+    let missingPoints = [];
+    try {
+        const partial = await fetchRoutePartial(coordinates, day);
+        if (!partial) throw new Error('Route not reachable');
 
-    routeData = partial.routeData;
+        routeData = partial.routeData;
 
-    // Başarılı çizilen noktalar dışındaki (kalan) noktaları missing olarak işaretle
-    const usedCount = partial.usedCount;
-    missingPoints = snappedPoints.slice(usedCount - 1); // son kullanılan + sonrası
+        // --- 200 KM LİMİT KONTROLÜ (HİBRİT) ---
+        const MAX_METERS = CURRENT_ROUTE_KM_LIMIT * 1000;
+        let limitExceeded = false;
+        let splitIdx = -1;
+        let limitExceededName = "";
+        let currentTotalKm = 0;
 
-} catch (e) {
+        // A) Rota Verisi Varsa (Türkiye İçi / OSRM)
+        if (routeData && routeData.legs) {
+            let meters = 0;
+            for(let i = 0; i < routeData.legs.length; i++) {
+                meters += routeData.legs[i].distance;
+                if (meters > MAX_METERS) {
+                    splitIdx = i + 1; 
+                    currentTotalKm = (meters / 1000).toFixed(1);
+                    limitExceededName = points[splitIdx]?.name || "Location";
+                    limitExceeded = true;
+                    break;
+                }
+            }
+            if (!limitExceeded && routeData.summary.distance > MAX_METERS) {
+                limitExceeded = true;
+                splitIdx = points.length - 1;
+                currentTotalKm = (routeData.summary.distance / 1000).toFixed(1);
+                limitExceededName = points[splitIdx]?.name || "Last Location";
+            }
+        } 
+        // B) Rota Yoksa (Yurtdışı / Haversine)
+        else {
+            let meters = 0;
+            for (let i = 1; i < points.length; i++) {
+                meters += haversine(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng);
+                if (meters > MAX_METERS) {
+                    splitIdx = i;
+                    currentTotalKm = (meters / 1000).toFixed(1);
+                    limitExceededName = points[i].name || "Location";
+                    limitExceeded = true;
+                    break;
+                }
+            }
+        }
+
+        // --- MÜDAHALE (SOR / TAŞI / SİL / GEÇİŞ YAP) ---
+        if (limitExceeded && splitIdx > 0) {
+            const newDay = day + 1;
+            const dayItemsInCart = window.cart.filter(item => item.day == day);
+            const itemsToProcess = dayItemsInCart.slice(splitIdx);
+
+            if (itemsToProcess.length > 0) {
+                const userChoice = confirm(
+                    `⚠️ ROUTE LIMIT EXCEEDED (Day ${day})\n\n` +
+                    `Limit: ${CURRENT_ROUTE_KM_LIMIT} km. Calculated: ${currentTotalKm} km.\n` +
+                    `Triggered at: "${limitExceededName}"\n\n` +
+                    `[OK] -> MOVE excess location(s) to Day ${newDay}\n` +
+                    `[CANCEL] -> DELETE excess location(s) (Strict Limit)`
+                );
+
+                if (userChoice) {
+                    // OK -> TAŞI
+                    const maxDay = Math.max(...window.cart.map(c => c.day).filter(d => !isNaN(d)));
+                    for (let d = maxDay; d >= newDay; d--) {
+                        window.cart.forEach(c => { if (c.day === d) c.day = d + 1; });
+                    }
+                    itemsToProcess.forEach(item => { item.day = newDay; });
+                    addMessage(`Limit exceeded. Moved to Day ${newDay}.`, "bot-message");
+
+                    if (typeof updateCart === "function") updateCart();
+
+                    // --- OTO-GEÇİŞ (ACCORDION) ---
+                    setTimeout(() => {
+                        const nextMapDiv = document.getElementById(`route-map-day${newDay}`);
+                        if (nextMapDiv) {
+                            const acc = nextMapDiv.closest('.custom-accordion');
+                            if (acc) {
+                                if (!acc.classList.contains('active')) {
+                                    const header = acc.querySelector('.custom-accordion-header');
+                                    if (header) header.click();
+                                }
+                                setTimeout(() => acc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+                            }
+                        }
+                    }, 500);
+                    return; // Çizimi durdur
+
+                } else {
+                    // CANCEL -> SİL
+                    itemsToProcess.forEach(item => {
+                        const idx = window.cart.indexOf(item);
+                        if (idx > -1) window.cart.splice(idx, 1);
+                    });
+                    addMessage(`Cancelled. Location removed.`, "bot-message");
+                    if (typeof updateCart === "function") updateCart();
+                    return; // Çizimi durdur
+                }
+            }
+        }
+        // --- LİMİT KONTROLÜ SONU ---
+
+        // Başarılı çizilen noktalar dışındaki (kalan) noktaları missing olarak işaretle
+        const usedCount = partial.usedCount;
+        missingPoints = snappedPoints.slice(usedCount - 1); // son kullanılan + sonrası
+
+    } catch (e) {
     console.warn('Parçalı rota da çizilemedi, fallback devre dışı (isteğinize göre). Hata:', e);
     const infoPanel = document.getElementById(`route-info-day${day}`);
     if (infoPanel) infoPanel.textContent = ""; // Uyarı göstermeyin
