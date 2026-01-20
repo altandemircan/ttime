@@ -6105,15 +6105,10 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
-    // FIX: fitBounds yerine manuel zoom hesapla (ondalık zoom'u önle)
-    const isMobile = window.innerWidth <= 768;
-    const padding = isMobile ? [40, 40] : [20, 20];
-    const center = bounds.getCenter();
-    const zoom = map.getBoundsZoom(bounds, false, padding);
-    const safeZoom = Math.min(18, Math.max(10, Math.round(zoom)));
-    console.log('[renderLeafletRoute] Zoom:', zoom.toFixed(3), '→', safeZoom);
-    map.setView(center, safeZoom, { animate: false });
-}
+                // [FIX] Mobilde markerların köşeye yapışmaması için padding'i artırdık
+                const isMobile = window.innerWidth <= 768;
+                map.fitBounds(bounds, { padding: isMobile ? [40, 40] : [20, 20], animate: false });
+            }
         } catch (err) {}
     };
 
@@ -7078,23 +7073,20 @@ locBtn.onclick = function() {
     // Desktop-only smooth zoom/fade settings (no custom CSS, no inertia bounce)
   const isDesktop = window.innerWidth > 1024 && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
- const expandedMapInstance = L.map(mapDivId, {
-    center: startCenter,
-    zoom: startZoom,
-    zoomControl: false,
-    scrollWheelZoom: true,
-    fadeAnimation: isDesktop,
-    zoomAnimation: isDesktop,
-    markerZoomAnimation: isDesktop,
-    inertia: true,              // ✓ Aktif et (momentum için)
-    inertiaDeceleration: 3000,  // ✓ Hızlı durdur (varsayılan: 3000)
-    inertiaMaxSpeed: 1500,      // ✓ Max hız sınırı
-    zoomSnap: 1,                // ✓ ZOOM MUTLAKA TAM SAYIYA OTUR
-    zoomDelta: 1,               // ✓ Her scroll/click 1 level zoom
-    preferCanvas: true,
-    renderer: L.canvas({ padding: 0.5 }),
-    dragging: true
-});
+  const expandedMapInstance = L.map(mapDivId, {
+        center: startCenter,
+        zoom: startZoom,
+        maxZoom: 16,
+        zoomControl: false,
+        scrollWheelZoom: true,
+        fadeAnimation: isDesktop,       // smooth tiles
+        zoomAnimation: isDesktop,       // smooth zoom in/out
+        markerZoomAnimation: isDesktop, // smooth marker scaling
+        inertia: false,                 // avoid snap-back/bounce
+        preferCanvas: true,
+        renderer: L.canvas({ padding: 0.5 }),
+        dragging: true
+    });
 
  
 
@@ -7454,13 +7446,8 @@ function updateExpandedMap(expandedMap, day) {
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
         } else if (bounds.isValid()) {
-    // FIX: fitBounds yerine manuel merkez + zoom hesapla
-    const center = bounds.getCenter();
-    const zoom = expandedMap.getBoundsZoom(bounds, false, [50, 50]);
-    const safeZoom = Math.min(16, Math.max(10, Math.round(zoom)));
-    console.log('[updateExpandedMap] Zoom:', zoom.toFixed(3), '→', safeZoom);
-    expandedMap.setView(center, safeZoom, { animate: true, duration: 0.5 });
-} else {
+            expandedMap.fitBounds(bounds, { padding: [50, 50] });
+        } else {
             expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
     } catch(e) { console.warn("FitBounds error:", e); }
@@ -7607,12 +7594,8 @@ function restoreMap(containerId, day) {
                 setTimeout(() => {
                     originalMap.invalidateSize({ pan: false });
                     if (pts.length > 1) {
-    const bounds = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
-    const center = bounds.getCenter();
-    const zoom = originalMap.getBoundsZoom(bounds, false, [20, 20]);
-    const safeZoom = Math.min(16, Math.max(10, Math.round(zoom)));
-    originalMap.setView(center, safeZoom, { animate: true });
-} else if (pts.length === 1) {
+                        originalMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+                    } else if (pts.length === 1) {
                         originalMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
                     }
                 }, 120);
