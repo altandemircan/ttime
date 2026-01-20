@@ -146,7 +146,7 @@ function showSuggestions() {
         { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },
         { text: "1 day trip in Helsinki", flag: countryFlag("FI") },
         { text: "Paris 1 day trip plan", flag: countryFlag("FR") },
-        { text: "1-day city tour in London", flag: countryFlag("UK") }
+        { text: "1-day city tour in London", flag: countryFlag("GB") }
     ];
 
     options.forEach(option => {
