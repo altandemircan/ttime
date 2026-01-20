@@ -6494,7 +6494,7 @@ function refresh3DMapData(day) {
             const cartIdx = findCartIndexByDayPosition(day, idx);
             if (cartIdx > -1) {
                 window.cart.splice(cartIdx, 1);
-                if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
+                // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
                 if (typeof updateCart === "function") await updateCart();
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
                 refresh3DMapData(day);
@@ -6593,7 +6593,7 @@ function refresh3DMapData(day) {
             }
 
             window._lastSegmentDay = undefined;
-            if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
+            // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") updateCart();
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
@@ -8214,7 +8214,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
                   window.cart.splice(i, 1);
                   
                   // BEKLEME (AWAIT) EKLENDİ
-                  if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
+                  // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
                   if (typeof updateCart === "function") await updateCart();
                   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
 
@@ -8241,7 +8241,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
             window.cart.splice(cartIdx, 1);
             
             // BEKLEME (AWAIT) EKLENDİ
-            if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
+            // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") await updateCart();
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
           }
@@ -8333,7 +8333,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       }
 
       // BEKLEME (AWAIT)
-      if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
+      // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
       if (typeof updateCart === "function") updateCart();
       
       if (marker.dragging && marker.dragging.disable) marker.dragging.disable();
