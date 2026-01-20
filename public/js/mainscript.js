@@ -7774,37 +7774,44 @@ async function renderRouteForDay(day) {
         let expandedMapDiv =
             document.getElementById(`expanded-map-${day}`) ||
             document.getElementById(`expanded-route-map-day${day}`);
-        if (expandedMapDiv) {
-            let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
-            if (!expandedScaleBar) {
-                expandedScaleBar = document.createElement('div');
-                expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
-                expandedScaleBar.className = 'route-scale-bar expanded';
-                expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+       // --- SCALE BAR VE ELEVATION GÜNCELLEMESİ ---
+if (expandedMapDiv) {
+    let expandedScaleBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
+    if (!expandedScaleBar) {
+        expandedScaleBar = document.createElement('div');
+        expandedScaleBar.id = `expanded-route-scale-bar-day${day}`;
+        expandedScaleBar.className = 'route-scale-bar expanded';
+        expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
+    }
+    
+    // Temizlik ve Hazırlık
+    expandedScaleBar.style.display = "block";
+    expandedScaleBar.innerHTML = "";
+
+    // OSRM'den gelen koordinatları al
+    const routeCoords = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
+    const totalKm = routeData.summary.distance / 1000;
+
+    // ASYNC Çizim Fonksiyonu
+    const drawElevationGraph = async () => {
+        try {
+            // 1. Yükseklik verisini al (Mutlaka bekle!)
+            if (typeof window.getElevationsForRoute === 'function') {
+                // Bu satır grafik çizilmeden önce verinin gelmesini garantiler
+                await window.renderRouteScaleBar(expandedScaleBar, totalKm, snappedPoints, routeCoords);
+                console.log(`[ScaleBar] Grafik başarıyla çizildi: Day ${day}`);
             }
-            if (typeof renderRouteScaleBar === 'function' && expandedScaleBar) {
-                let samples = gpsRaw;
-                if (samples.length > 600) {
-                    const step = Math.ceil(samples.length / 600);
-                    samples = samples.filter((_, i) => i % step === 0);
-                }
-                let dist = 0, dists = [0];
-                for (let i = 1; i < samples.length; i++) {
-                    dist += haversine(samples[i - 1].lat, samples[i - 1].lng, samples[i].lat, samples[i].lng);
-                    dists.push(dist);
-                }
-                expandedScaleBar.innerHTML = "";
-                renderRouteScaleBar(
-                    expandedScaleBar,
-                    dist / 1000,
-                    samples.map((p, i) => ({
-                        name: (i === 0 ? "Start" : (i === samples.length - 1 ? "Finish" : "")),
-                        distance: dists[i] / 1000,
-                        snapped: true
-                    }))
-                );
+        } catch (err) {
+            console.error("[ScaleBar] Çizim hatası:", err);
+            // Fallback: Grafik çizilemezse bile barı oluştur
+            if (typeof renderRouteScaleBar === 'function') {
+                renderRouteScaleBar(expandedScaleBar, totalKm, snappedPoints);
             }
         }
+    };
+
+    drawElevationGraph();
+}
         return;
     }
 
