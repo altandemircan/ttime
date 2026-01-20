@@ -791,10 +791,18 @@ if (bestIndex < ed.smooth.length) {
       });
 
 
+container._elevationData = { smooth, min, max };
+container._elevationDataFull = { smooth: smooth.slice(), min, max };
+container.dataset.elevLoadedKey = routeKey;
 
-      container._elevationData = { smooth, min, max };
-      container._elevationDataFull = { smooth: smooth.slice(), min, max };
-      container.dataset.elevLoadedKey = routeKey;
+// DEBUG: Kontrol et
+console.log("✅ ELEVATION DATA SET EDİLDİ:", {
+  containerId: container.id,
+  smoothLength: smooth.length,
+  min: min,
+  max: max,
+  hasRedrawFunc: typeof container._redrawElevation === 'function'
+});
 
      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
