@@ -7663,9 +7663,10 @@ function restoreMap(containerId, day) {
     }
 }
 
-const CURRENT_ROUTE_KM_LIMIT = 200; // Limit 200 km
+const CURRENT_ROUTE_KM_LIMIT = 200; // Kesin Limit 200 km
+
 async function enforceDailyRouteLimit(day, maxKm) {
-    // Cart'tan ilgili günün geçerli konumlarını al
+    // 1. Cart verisini al
     let dayItems = window.cart.filter(item => 
         item.day == day && 
         item.location && 
@@ -7673,14 +7674,13 @@ async function enforceDailyRouteLimit(day, maxKm) {
         isFinite(item.location.lng)
     );
     
-    // Tek nokta varsa mesafe oluşmaz, çık
     if (dayItems.length <= 1) return false;
 
     let totalKm = 0;
     let splitIdx = -1;
     let limitExceededName = "";
 
-    // Mesafeyi hesapla ve limitin aşıldığı noktayı bul
+    // 2. Mesafeyi hesapla ve nerede patladığını bul
     for (let i = 1; i < dayItems.length; i++) {
         const km = haversine(
             dayItems[i-1].location.lat, dayItems[i-1].location.lng,
@@ -7689,63 +7689,66 @@ async function enforceDailyRouteLimit(day, maxKm) {
         
         totalKm += km;
 
+        // Limit aşıldı mı?
         if (totalKm > maxKm) {
-            splitIdx = i; // Bu index ve sonrası taşınacak
+            splitIdx = i; // Bu noktadan itibaren (dahil) kesilecek
             limitExceededName = dayItems[i].name || 'Unnamed Location';
             break;
         }
     }
 
-    // Eğer limit aşılmışsa KULLANICIYA SOR
+    // 3. Eğer limit aşılmışsa MÜDAHALE ET
     if (splitIdx > 0) {
         const newDay = day + 1;
-        const itemsToMoveCount = dayItems.length - splitIdx;
+        const itemsToMove = dayItems.slice(splitIdx); // Taşınacak veya silinecekler
+        const count = itemsToMove.length;
 
-        // --- İNGİLİZCE ONAY KUTUSU ---
-        const confirmMsg = `Route limit (${maxKm}km) exceeded for Day ${day}!\n` +
+        // Soru Metni
+        const confirmMsg = `HARD LIMIT WARNING: Route for Day ${day} exceeds 200km!\n` +
                            `Limit hit at: ${limitExceededName}\n` +
-                           `Current total would be: ${totalKm.toFixed(1)} km.\n\n` +
-                           `Do you want to move the last ${itemsToMoveCount} location(s) to Day ${newDay}?`;
+                           `Total distance: ${totalKm.toFixed(1)} km.\n\n` +
+                           `Click OK to MOVE ${count} location(s) to Day ${newDay}.\n` +
+                           `Click CANCEL to REMOVE the added location(s).`;
 
-        // Kullanıcı "Cancel" derse false döner, rota olduğu gibi (uzun haliyle) çizilir.
-        if (!confirm(confirmMsg)) {
-            return false; 
-        }
-        
-        // --- TAŞIMA İŞLEMİ ---
-        const itemsToMove = [];
-        
-        // Taşınacak item'ları belirle
-        for (let i = splitIdx; i < dayItems.length; i++) {
-            itemsToMove.push(dayItems[i]);
-        }
-        
-        // 1. Önce diğer günleri ötele (sondan başa doğru ki indexler karışmasın)
-        const maxDayInCart = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
-        for (let d = maxDayInCart; d >= newDay; d--) {
-            window.cart.forEach(item => {
-                if (item.day === d) {
-                    item.day = d + 1;
+        if (confirm(confirmMsg)) {
+            // --- SENARYO A: KULLANICI "OK" DEDİ -> TAŞI ---
+            
+            // Önce diğer günleri ötele (yer aç)
+            const maxDayInCart = Math.max(...window.cart.map(item => item.day).filter(d => !isNaN(d)));
+            for (let d = maxDayInCart; d >= newDay; d--) {
+                window.cart.forEach(item => {
+                    if (item.day === d) item.day = d + 1;
+                });
+            }
+            
+            // Taşıma işlemini yap
+            itemsToMove.forEach(itemToMove => {
+                const cartRef = window.cart.find(c => c === itemToMove);
+                if (cartRef) cartRef.day = newDay;
+            });
+
+            addMessage(`Route limit exceeded. ${count} locations moved to Day ${newDay}.`, "bot-message");
+
+        } else {
+            // --- SENARYO B: KULLANICI "CANCEL" DEDİ -> SİL ---
+            // "200 km geçemezsin" kuralı gereği, taşımıyorsa siliyoruz.
+            
+            itemsToMove.forEach(itemToRemove => {
+                const idx = window.cart.indexOf(itemToRemove);
+                if (idx > -1) {
+                    window.cart.splice(idx, 1);
                 }
             });
+
+            addMessage(`Location addition cancelled. Daily limit (${maxKm}km) cannot be exceeded.`, "bot-message");
         }
         
-        // 2. Limit aşan item'ları yeni güne ata
-        itemsToMove.forEach(itemToMove => {
-            const cartRef = window.cart.find(c => c === itemToMove);
-            if (cartRef) {
-                cartRef.day = newDay;
-            }
-        });
-        
-        // 3. Bilgi ver ve Cart'ı güncelle
-        addMessage(`Route limit exceeded for Day ${day}. ${itemsToMove.length} locations moved to Day ${newDay}.`, "bot-message");
-        
+        // Her iki durumda da (Taşı veya Sil) cart değişti, güncelle.
         if (typeof updateCart === "function") {
-            updateCart(); // Bu fonksiyon zaten renderRouteForDay'i tekrar tetikleyecektir.
+            updateCart(); 
         }
         
-        // True dönüyoruz ki renderRouteForDay çalışmayı durdursun (yeni render updateCart ile gelecek)
+        // True dönüyoruz ki render fonksiyonu eski (hatalı) haliyle çizim yapmasın.
         return true; 
     }
     
