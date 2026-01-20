@@ -103,8 +103,12 @@ function fitExpandedMapToRoute(day) {
     // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
-      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-    } else if (validPts.length === 1) {
+    const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
+    const center = bounds.getCenter();
+    const zoom = expObj.expandedMap.getBoundsZoom(bounds, false, [20, 20]);
+    const safeZoom = Math.min(16, Math.max(10, Math.round(zoom)));
+    expObj.expandedMap.setView(center, safeZoom, { animate: true });
+} else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
       expObj.expandedMap.setView([0, 0], 2);
@@ -6105,10 +6109,15 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
-                // [FIX] Mobilde markerların köşeye yapışmaması için padding'i artırdık
-                const isMobile = window.innerWidth <= 768;
-                map.fitBounds(bounds, { padding: isMobile ? [40, 40] : [20, 20], animate: false });
-            }
+    // FIX: fitBounds yerine manuel zoom hesapla (ondalık zoom'u önle)
+    const isMobile = window.innerWidth <= 768;
+    const padding = isMobile ? [40, 40] : [20, 20];
+    const center = bounds.getCenter();
+    const zoom = map.getBoundsZoom(bounds, false, padding);
+    const safeZoom = Math.min(18, Math.max(10, Math.round(zoom)));
+    console.log('[renderLeafletRoute] Zoom:', zoom.toFixed(3), '→', safeZoom);
+    map.setView(center, safeZoom, { animate: false });
+}
         } catch (err) {}
     };
 
@@ -7449,8 +7458,13 @@ function updateExpandedMap(expandedMap, day) {
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
         } else if (bounds.isValid()) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50] });
-        } else {
+    // FIX: fitBounds yerine manuel merkez + zoom hesapla
+    const center = bounds.getCenter();
+    const zoom = expandedMap.getBoundsZoom(bounds, false, [50, 50]);
+    const safeZoom = Math.min(16, Math.max(10, Math.round(zoom)));
+    console.log('[updateExpandedMap] Zoom:', zoom.toFixed(3), '→', safeZoom);
+    expandedMap.setView(center, safeZoom, { animate: true, duration: 0.5 });
+} else {
             expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
     } catch(e) { console.warn("FitBounds error:", e); }
@@ -7597,8 +7611,12 @@ function restoreMap(containerId, day) {
                 setTimeout(() => {
                     originalMap.invalidateSize({ pan: false });
                     if (pts.length > 1) {
-                        originalMap.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
-                    } else if (pts.length === 1) {
+    const bounds = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+    const center = bounds.getCenter();
+    const zoom = originalMap.getBoundsZoom(bounds, false, [20, 20]);
+    const safeZoom = Math.min(16, Math.max(10, Math.round(zoom)));
+    originalMap.setView(center, safeZoom, { animate: true });
+} else if (pts.length === 1) {
                         originalMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
                     }
                 }, 120);
