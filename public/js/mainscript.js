@@ -7718,8 +7718,7 @@ async function renderRouteForDay(day) {
     const wasSplit = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (wasSplit) return;
 
-    // containerId tanımlaması SADECE BİR KEZ yapılmalı
-    const containerId = `route-map-day${day}`;
+
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -7887,7 +7886,7 @@ if (expandedMapDiv) {
         if (!pts0 || pts0.length === 0) return;
     }
 
-
+    const containerId = `route-map-day${day}`;
     const points = getDayPoints(day);
 
     if (
