@@ -7666,7 +7666,7 @@ function restoreMap(containerId, day) {
 // --- KESİN LİMİT AYARI (200 KM) ---
 const CURRENT_ROUTE_KM_LIMIT = 200; 
 
-// --- ANA RENDER FONKSİYONU (TAM VE DETAYLI) ---
+// --- ANA RENDER FONKSİYONU (TAM EKSİKSİZ VERSİYON) ---
 async function renderRouteForDay(day) {
     console.log(`=== RENDER START for day ${day} ===`);
     
@@ -7777,10 +7777,8 @@ async function renderRouteForDay(day) {
             expandedScaleBar.style.display = "block";
             expandedScaleBar.innerHTML = "";
             
-            // GPS track olduğu için scale bar çizimi
             const routeCoords = finalGeojson.features[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
             const totalKm = totalDistance / 1000;
-             // Snap points gerekmediği için boş geçebiliriz veya points kullanabiliriz
             if (typeof renderRouteScaleBar === 'function') {
                  renderRouteScaleBar(expandedScaleBar, totalKm, [], routeCoords);
             }
@@ -7899,7 +7897,7 @@ async function renderRouteForDay(day) {
     let currentTotalKm = 0;
     const LIMIT_METERS = CURRENT_ROUTE_KM_LIMIT * 1000;
 
-    // A) TÜRKİYE İÇİ (GERÇEK YOL MESAFESİ)
+    // A) TÜRKİYE İÇİ (GERÇEK YOL MESAFESİ - OSRM)
     if (isInTurkey && routeData && routeData.legs) {
         let meters = 0;
         for(let i = 0; i < routeData.legs.length; i++) {
@@ -7907,13 +7905,12 @@ async function renderRouteForDay(day) {
             if (meters > LIMIT_METERS) {
                 splitIdx = i + 1; // Limit bu bacaktan sonraki noktada aşıldı
                 currentTotalKm = (meters / 1000).toFixed(1);
-                // dayItems ile points dizisi senkron kabul edilir
                 limitExceededName = points[splitIdx]?.name || "Location";
                 limitExceeded = true;
                 break;
             }
         }
-        // Eğer döngüde yakalanmadı ama toplam mesafe geçtiyse (örn: tek parça çok uzunsa)
+        // Eğer döngüde yakalanmadı ama toplam mesafe geçtiyse
         if (!limitExceeded && routeData.summary.distance > LIMIT_METERS) {
             limitExceeded = true;
             splitIdx = points.length - 1;
@@ -7988,7 +7985,7 @@ async function renderRouteForDay(day) {
     const container = window.leafletMaps?.[containerId];
 
     if (isInTurkey && routeData) {
-        // --- TÜRKİYE (OSRM) ---
+        // --- TÜRKİYE İÇİ ÇİZİM (OSRM) ---
         if (container) {
             renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
         }
@@ -8002,8 +7999,9 @@ async function renderRouteForDay(day) {
         }
 
     } else {
-        // --- YURTDIŞI (YAY/ÇİZGİ) ---
-        // Manuel GeoJSON oluştur
+        // --- YURTDIŞI ÇİZİM (YAY/ÇİZGİ) ---
+        
+        // Basit Haversine toplamı
         let totalMeters = 0;
         let markerPositions = [];
         for (let i = 0; i < points.length; i++) {
@@ -8019,6 +8017,7 @@ async function renderRouteForDay(day) {
             });
         }
         
+        // GeoJSON oluştur (Düz çizgiler)
         const lineGeoJson = {
             type: "FeatureCollection",
             features: [{
@@ -8034,6 +8033,7 @@ async function renderRouteForDay(day) {
         const summary = { distance: totalMeters, duration: totalMeters / 13 }; // Tahmini süre
 
         if (container) {
+            // Yurtdışı modunda OSRM datası olmadan render fonksiyonuna gönderiyoruz
             renderLeafletRoute(containerId, lineGeoJson, points, summary, day, []);
         }
 
@@ -8042,7 +8042,7 @@ async function renderRouteForDay(day) {
         window.lastRouteGeojsons = window.lastRouteGeojsons || {};
         window.lastRouteGeojsons[containerId] = lineGeoJson;
         
-        // Scale Bar / Elevation (Yurtdışı) için routeData taklidi yapalım ki aşağıdaki kod çalışsın
+        // Scale Bar / Elevation (Yurtdışı) için routeData taklidi yapalım
         routeData = { summary: summary, legs: [] };
     }
 
@@ -8082,7 +8082,6 @@ async function renderRouteForDay(day) {
             
             // Eğer Elevation fonksiyonu varsa çağır
             if (typeof renderRouteScaleBar === 'function') {
-                // Bu fonksiyon genellikle elevation-works.js içindedir
                 renderRouteScaleBar(expandedScaleBar, finalDistKm, mPos);
             }
         };
