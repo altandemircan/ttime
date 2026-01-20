@@ -8474,51 +8474,66 @@ try {
    // ============================================================
     // 🛑 KESİN 200 KM DUVARI (OSRM VERİSİ İLE KONTROL)
     // ============================================================
+   // ============================================================
+    // 🛑 KESİN 200 KM DUVARI (OSRM VERİSİ İLE KONTROL) - GÜÇLENDİRİLMİŞ
+    // ============================================================
     if (routeData && routeData.summary && routeData.summary.distance > 200000) {
         
-        // --- ÇİFTE UYARI ENGELLEYİCİ (YENİ) ---
-        // Eğer son 2 saniye içinde zaten uyarı verdiysek, burayı sessizce öldür.
+        // --- ÇİFTE UYARI KİLİDİ ---
         const now = Date.now();
         if (window._lastLimitAlertTime && (now - window._lastLimitAlertTime < 2000)) {
-            console.warn("⚠️ Duplicate limit alert prevented.");
-            return; // Çizimi durdur ve çık
+            return; // 2 saniye içinde ikinci uyarıyı verme, sessizce çık.
         }
-        // Zaman damgasını güncelle
         window._lastLimitAlertTime = now;
 
         console.error(`⛔ ROUTE BLOCKED: Actual Road Distance ${routeData.summary.distance}m > 200000m`);
 
-        // 1. Sepetten o günün son eklenen item'ını bul ve sil
+        // 1. O günün son eklenen item'ını bul ve sil
         const currentDayItems = window.cart.filter(item => item.day == day);
         if (currentDayItems.length > 1) { 
             const itemToRemove = currentDayItems[currentDayItems.length - 1]; 
             const removeIndex = window.cart.indexOf(itemToRemove);
             
             if (removeIndex > -1) {
-                window.cart.splice(removeIndex, 1); // Kalıcı sil
-                console.warn("Item automatically removed due to strict limit:", itemToRemove.name);
+                window.cart.splice(removeIndex, 1);
+                console.warn("Item removed:", itemToRemove.name);
             }
         }
 
-        // 2. Kullanıcıya net uyarı ver
+        // 2. Kullanıcıya Uyarı
         if (typeof showToast === "function") {
             showToast("⛔ Route limit (200km) exceeded! Last location removed.", "error");
         } else {
             alert("⛔ Route limit (200km) exceeded! Last location removed.");
         }
 
-        // 3. Arayüzü Yenile
+        // 3. KRİTİK TEMİZLİK: Önbelleği temizle ki Scale Bar bozulmasın
+        if (typeof clearRouteCachesForDay === 'function') {
+            clearRouteCachesForDay(day); // O günün rota hesaplarını sıfırla
+        }
+        if (typeof clearRouteVisualsForDay === 'function') {
+            clearRouteVisualsForDay(day); // Haritadaki çizgileri temizle
+        }
+
+        // Global rota verilerini de manuel sıfırla (Garanti olsun)
+        if (window.lastRouteGeojsons) window.lastRouteGeojsons[containerId] = null;
+        if (window.lastRouteSummaries) window.lastRouteSummaries[containerId] = null;
+
+        // 4. Arayüzü Yenile (updateCart temizlenmiş veriyle sıfırdan çizecek)
         if (typeof updateCart === "function") {
-            setTimeout(() => updateCart(), 50);
+            // Süreyi 50ms'den 100ms'ye çıkardık, DOM iyice temizlensin.
+            setTimeout(() => {
+                console.log("♻️ Refreshing cart after limit clean-up...");
+                updateCart(); 
+            }, 100);
         }
         
         return; // 🛑 ÇİZİMİ DURDUR
     }
     // ============================================================
-
-    // 2D Haritayı Çiz
-renderLeafletRoute(containerId, routeData.geojson, points, routeData.summary, day, missingPoints);
     
+    // 2D Haritayı Çiz (Buradaki 'points' parametresi doğru, değiştirmeyin)
+    renderLeafletRoute(containerId, routeData.geojson, points, routeData.summary, day, missingPoints);
     const expandedMapObj = window.expandedMaps?.[containerId];
     if (expandedMapObj?.expandedMap) {
         updateExpandedMap(expandedMapObj.expandedMap, day);
