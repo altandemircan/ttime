@@ -124,15 +124,52 @@ bar.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
 }
 
 
-
 function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], customElevData = null, retryCount = 0) {
+  // GÜVENLİK: Eğer track yoksa veya gizliyse bekle
+  if (!track || !track.offsetParent) {
+    if (retryCount < 10) {
+      setTimeout(() => {
+        createScaleElements(track, widthPx, spanKm, startKmDom, markers, customElevData, retryCount + 1);
+      }, 300);
+    }
+    return;
+  }
+  
+  // GENİŞLİĞİ KESİN AL
+  const actualWidth = Math.max(
+    300, // ASGARİ 300 PİKSEL
+    track.offsetWidth || 0,
+    track.clientWidth || 0
+  );
+  
+  console.log("📏 SCALEBAR Genişlik:", actualWidth, "px");
+  
+  // Eğer hala 0 ise, container'dan al
+  if (actualWidth < 300) {
+    const container = track.closest('.route-scale-bar');
+    if (container) {
+      widthPx = container.offsetWidth || 400;
+      console.log("📏 Container genişliği kullanılıyor:", widthPx, "px");
+    }
+  } else {
+    widthPx = actualWidth;
+  }
+    console.group(`[ScaleBar Debug] Day: ${track?.parentElement?.id || 'unknown'} | Attempt: ${retryCount}`);
+
+
+    console.log("Param Width:", widthPx);
+    console.log("Actual OffsetWidth:", actualWidth);
+    console.log("Span KM:", spanKm);
+    console.log("Elevation Data:", track?.parentElement?._elevationData ? "Mevcut ✅" : "YOK ❌");
+    console.groupEnd();
+    // --- DEBUG LOG END ---
+
     // 1. KONTROL: Element yoksa veya DOM'dan tamamen silinmişse işlemi durdur.
     if (!track || !track.isConnected) {
         return;
     }
 
-    // 2. KONTROL: Element var ama görünür değilse (örn: display:none), sonsuz döngüye girme.
-    // Sadece 5 kere (yaklaşık 1.5 saniye) dene, sonra vazgeç.
+    // 2. KONTROL: Element var ama görünür değilse (örn: display:none)
     if (track.offsetParent === null) {
         if (retryCount < 5) {
             setTimeout(() => {
@@ -142,6 +179,19 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
         return;
     }
 
+    // --- GENİŞLİK DOĞRULAMA ---
+    // Eğer genişlik bariz hatalıysa (200px varsayılan veya 0 ise) tekrar dene
+    if ((actualWidth <= 200 || Math.abs(actualWidth - widthPx) > 5) && retryCount < 10) {
+        console.warn(`[ScaleBar] Genişlik uyumsuz! Bekleniyor... (Actual: ${actualWidth}, Param: ${widthPx})`);
+        setTimeout(() => {
+            createScaleElements(track, track.offsetWidth, spanKm, startKmDom, markers, customElevData, retryCount + 1);
+        }, 200);
+        return;
+    }
+    
+    // Değeri güncelle
+    widthPx = actualWidth;
+
     // --- Mevcut Temizlik İşlemleri ---
     if (track) {
         track.querySelectorAll('.marker-badge').forEach(el => el.remove());
@@ -149,15 +199,20 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
 
     const container = track?.parentElement;
     
-    // SpanKm hesaplama mantığı
-    if ((!spanKm || spanKm < 0.01) && !customElevData) {
-        if (Array.isArray(markers) && markers.length > 1) {
-            spanKm = getTotalKmFromMarkers(markers);
-        }
+    // SpanKm hesaplama mantığı - KESİN DEĞER
+if ((!spanKm || spanKm < 0.01) && !customElevData) {
+    if (Array.isArray(markers) && markers.length > 1) {
+        spanKm = getTotalKmFromMarkers(markers);
     }
+    
+    // HİÇBİRİ İŞE YARAMAZSA, SABİT DEĞER
+    if (!spanKm || spanKm < 0.01) {
+        spanKm = 10; // Minimum 10 km
+        console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
+    }
+}
    
     if (!spanKm || spanKm < 0.01) {
-        track.querySelectorAll('.marker-badge').forEach(el => el.remove());
         return;
     }
 
@@ -210,44 +265,55 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     }
 
     // --- MARKER POSITIONING ---
-    let activeData = null;
-   
-    // Container üzerinden elevation verisi al
-    if (container && container._elevationData) {
-        const { smooth, min, max } = container._elevationData;
-        let vizMin = min, vizMax = max;
-        const eSpan = max - min;
-        if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
-        else { vizMin = min - 1; vizMax = max + 1; }
-        activeData = { smooth, vizMin, vizMax };
+    // --- MARKER POSITIONING ---
+let activeData = null;
+
+// Container üzerinden elevation verisi al
+if (container && container._elevationData) {
+    const { smooth, min, max } = container._elevationData;
+    let vizMin = min, vizMax = max;
+    const eSpan = max - min;
+    // Padding: yukarıya %10, aşağıya %5
+    if (eSpan > 0) { 
+      vizMin = min - eSpan * 0.05; 
+      vizMax = max + eSpan * 0.10; 
     }
+    else { 
+      vizMin = min - 1; 
+      vizMax = max + 1; 
+    }
+    activeData = { smooth, vizMin, vizMax };
+}
 
-    if (Array.isArray(markers)) {
-        markers.forEach((m, idx) => {
-            let dist = typeof m.distance === "number" ? m.distance : 0;
+if (Array.isArray(markers)) {
+    markers.forEach((m, idx) => {
+        let dist = typeof m.distance === "number" ? m.distance : 0;
+       
+        // Segment dışındakileri çizme
+        if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
+            return;
+        }
+
+        const relKm = dist - startKmDom;
+        let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
+        left = Math.max(0, Math.min(100, left));
+
+        let bottomStyle = "2px"; 
+
+        // ELEVATION DATA YOKSA, SADECE ALTTA GÖSTER
+        if (!activeData || !activeData.smooth || activeData.smooth.length === 0) {
+            bottomStyle = "2px"; // Sabit altta
+        } else {
+            const { smooth, vizMin, vizMax } = activeData;
+            const pct = Math.max(0, Math.min(1, left / 100));
+            const sampleIdx = Math.floor(pct * (smooth.length - 1));
+            const val = smooth[sampleIdx];
            
-            // Segment dışındakileri çizme
-            if (dist < startKmDom - 0.05 || dist > startKmDom + spanKm + 0.05) {
-                return;
+            if (typeof val === 'number') {
+                const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
+                bottomStyle = `calc(${heightPct}% - 7px)`;
             }
-
-            const relKm = dist - startKmDom;
-            let left = spanKm > 0 ? (relKm / spanKm) * 100 : 0;
-            left = Math.max(0, Math.min(100, left));
-
-            let bottomStyle = "2px"; 
-
-            if (activeData && activeData.smooth && activeData.smooth.length > 0) {
-                const { smooth, vizMin, vizMax } = activeData;
-                const pct = Math.max(0, Math.min(1, left / 100));
-                const sampleIdx = Math.floor(pct * (smooth.length - 1));
-                const val = smooth[sampleIdx];
-               
-                if (typeof val === 'number') {
-                    const heightPct = ((val - vizMin) / (vizMax - vizMin)) * 100;
-                    bottomStyle = `calc(${heightPct}% - 7px)`;
-                }
-            }
+        }
 
             let transformX = '-50%';
             if (left < 1) transformX = '0%';
@@ -347,10 +413,23 @@ function renderRouteScaleBar(container, totalKm, markers) {
   const day = dayMatch ? parseInt(dayMatch[1], 10) : null;
   const gjKey = day ? (window.lastRouteGeojsons && window.lastRouteGeojsons[`route-map-day${day}`]) : null;
   
-  // 1. Önce resmi rotayı (OSRM) almaya çalış
-  let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
+    // 1. Önce resmi rotayı (OSRM) almaya çalış
+    let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
-  // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
+    // DEBUG: Koordinat kontrolü ekle
+    console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
+
+    // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
+    if (!coords || coords.length < 2) {
+      console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
+      const markersList = window.cart?.filter(m => m.day === day) || [];
+      if (markersList.length >= 2) {
+        coords = markersList.map(m => [m.location.lng, m.location.lat]);
+        console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+      }
+    }
+
+      // 2. FALLBACK (B PLAN): Eğer resmi rota yoksa, markerları düz çizgiyle bağla.
   if (!Array.isArray(coords) || coords.length < 2) {
       if (typeof getDayPoints === 'function' && day) {
           const rawPoints = getDayPoints(day);
@@ -487,27 +566,43 @@ function renderRouteScaleBar(container, totalKm, markers) {
       let elevations = [];
 
 try {
-const locations = samples.map(s => `${s.lat},${s.lng}`);
-const response = await fetch('/api/elevation', {
+  const locations = samples.map(s => `${s.lat},${s.lng}`);
+  
+  // ZAMAN AŞIMI EKLE (10 saniye)
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  
+  const response = await fetch('/api/elevation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ locations })
-});;
-    
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    
+    body: JSON.stringify({ locations }),
+    signal: controller.signal
+  });
+  
+  clearTimeout(timeout);
+  
+  if (!response.ok) {
+    console.warn("⚠️ Elevation API hatası, fallback kullanılıyor");
+    // BASİT ELEVATION OLUŞTUR
+    elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
+  } else {
     const data = await response.json();
     
-    // Backend'den gelen formatı client formatına çevir
     if (data && Array.isArray(data.results)) {
-        elevations = data.results.map(r => r.elevation || 0);
+      elevations = data.results.map(r => r.elevation || 0);
+    } else {
+      // FALLBACK
+      elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
     }
-    
+  }
 } catch (error) {
-    console.error('Elevation fetch failed:', error);
-    // Fallback elevation
-    elevations = samples.map((_, i) => 60 + Math.sin(i * 0.1) * 20);
-}      
+  console.error('Elevation fetch failed:', error);
+  // FALLBACK - KESİNLİKLE BOŞ DÖNME
+  elevations = samples.map((_, i) => 100 + Math.sin(i * 0.05) * 30);
+}
+    
+    
+      
       // --- ROBUST DATA REPAIR (VERİ TAMİRİ) ---
       // Veri null gelirse boş dizi yap, hata vermesin.
       if (!elevations) {
@@ -633,20 +728,27 @@ const response = await fetch('/api/elevation', {
         } else {
           foundKmAbs = startKmDom + percent * spanKm;
         }
-        let minDist = Infinity;
-        for (let i = 1; i < s.length; i++) {
-          const kmAbs1 = s[i - 1].distM / 1000;
-          const kmAbs2 = s[i].distM / 1000;
-          const midKm = (kmAbs1 + kmAbs2) / 2;
-          const dist = Math.abs(foundKmAbs - midKm);
-          if (dist < minDist) {
-            minDist = dist;
-            const dx = s[i].distM - s[i - 1].distM;
-            const dy = ed.smooth[i] - ed.smooth[i - 1];
-            foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
-            foundElev = Math.round(ed.smooth[i]);
-          }
-        }
+let minDist = Infinity;
+let bestIndex = 0;
+for (let i = 0; i < s.length; i++) {
+  const kmAbs = s[i].distM / 1000;
+  const dist = Math.abs(foundKmAbs - kmAbs);
+  if (dist < minDist) {
+    minDist = dist;
+    bestIndex = i;
+    if (i > 0) {
+      const dx = s[i].distM - s[i - 1].distM;
+      const dy = ed.smooth[i] - ed.smooth[i - 1];
+      foundSlope = dx > 0 ? (dy / dx) * 100 : 0;
+    }
+  }
+}
+if (bestIndex < ed.smooth.length) {
+  foundElev = Math.round(ed.smooth[bestIndex]);
+} else {
+  foundElev = Math.round(ed.smooth[ed.smooth.length - 1]);
+}
+
         tooltip.style.opacity = '1';
         tooltip.textContent = `${foundKmAbs.toFixed(2)} km • ${foundElev ?? ''} m • %${foundSlope.toFixed(1)} slope`;
         
@@ -670,14 +772,45 @@ const response = await fetch('/api/elevation', {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-      // ARTIK KESİN GEÇERLİDİR
-      const smooth = movingAverage(elevations, 3);
+       // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
+      console.log("[ELEV RAW]", {
+        totalPoints: elevations.length,
+        min: Math.min(...elevations.filter(e => e != null)),
+        max: Math.max(...elevations.filter(e => e != null)),
+        first5: elevations.slice(0, 5)
+      });
+      
+      const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
+      
+      console.log("[ELEV SMOOTH]", {
+        min: Math.round(min),
+        max: Math.round(max),
+        range: Math.round(max - min)
+      });
 
-      container._elevationData = { smooth, min, max };
-      container._elevationDataFull = { smooth: smooth.slice(), min, max };
-      container.dataset.elevLoadedKey = routeKey;
+// DEBUG: Elevation data kontrolü
+console.log("🎯 ELEVATION DATA HAZIR:", {
+  containerId: container.id,
+  routeKey: routeKey,
+  smoothLength: smooth.length,
+  min: Math.round(min),
+  max: Math.round(max),
+  first5: smooth.slice(0, 5).map(v => Math.round(v))
+});
+
+container._elevationData = { smooth, min, max };
+container._elevationDataFull = { smooth: smooth.slice(), min, max };
+container.dataset.elevLoadedKey = routeKey;
+
+// HEMEN ÇİZİM YAP
+if (typeof container._redrawElevation === 'function') {
+  console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
+  container._redrawElevation(container._elevationData);
+} else {
+  console.error("❌ _redrawElevation fonksiyonu YOK!");
+}
 
      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
@@ -686,13 +819,32 @@ const response = await fetch('/api/elevation', {
         const startKmDom = Number(container._elevStartKm || 0);
         const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-        let vizMin = min, vizMax = max;
-        const eSpan = max - min;
-        if (eSpan > 0) { vizMin = min - eSpan * 0.50; vizMax = max + eSpan * 1.0; }
-        else { vizMin = min - 1; vizMax = max + 1; }
+       
+        let vizMin, vizMax;
+        const eSpan = max - min;  // ← ADD THIS LINE
+        if (eSpan > 0) {
+          vizMin = min - eSpan * 0.05; 
+          vizMax = max + eSpan * 0.10; 
+        } 
+        else { 
+          vizMin = min - 1; 
+          vizMax = max + 1; 
+        }
 
         const X = kmRel => (kmRel / spanKm) * width;
         const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
+
+        console.log("[Y_CALC]", {
+  vizMin: Math.round(vizMin),
+  vizMax: Math.round(vizMax),
+  SVG_H: SVG_H,
+  sample_Y_values: [
+    Y(vizMin),
+    Y(vizMin + 500),
+    Y(vizMin + 1000),
+    Y(vizMax)
+  ]
+});
 
         while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
         while (segG.firstChild) segG.removeChild(segG.firstChild);
@@ -796,28 +948,31 @@ const response = await fetch('/api/elevation', {
         if (typeof updateRouteStatsUI === "function") updateRouteStatsUI(day);
       }
      } catch (err) {
-      console.warn("Elevation fetch error:", err);
-      window.updateScaleBarLoadingText?.(container, 'Elevation temporarily unavailable');
-      
-      const placeholder = track.querySelector('.elevation-placeholder');
-      if (placeholder) {
-        placeholder.innerHTML = `
-          <div style="text-align:center;padding:20px;color:#dc3545;">
-            <div>⚠️ Elevation unavailable</div>
-            <small style="font-size:12px;">Using approximate profile</small>
-          </div>
-        `;
-      }
-      track.classList.remove('loading');
-      
-      // HATA OLSA BİLE MARKERLARI ÇİZ
-      const width = Math.max(200, Math.round(track.getBoundingClientRect().width)) || 400;
-      const customElevData = { vizMin: 0, vizMax: 100 };
-      setTimeout(() => {
-          createScaleElements(track, width, totalKm, 0, markers, customElevData);
-      }, 50);
-    }
+  console.warn("Elevation fetch error:", err);
+  
+  // FALLBACK: YAPAY ELEVATION DATA OLUŞTUR
+  const fallbackSmooth = [];
+  const samplesCount = container._elevSamples?.length || 100;
+  for (let i = 0; i < samplesCount; i++) {
+    fallbackSmooth.push(100 + Math.sin(i * 0.05) * 30);
+  }
+  
+  container._elevationData = { 
+    smooth: fallbackSmooth, 
+    min: Math.min(...fallbackSmooth), 
+    max: Math.max(...fallbackSmooth) 
+  };
+  
+  // SVG'Yİ ÇİZ
+  if (typeof container._redrawElevation === 'function') {
+    container._redrawElevation(container._elevationData);
+  }
+  
+  track.classList.remove('loading');
+}
   })();
+  // renderRouteScaleBar fonksiyonunun EN SONUNA ekle:
+
 }
 
 // === SCALE BAR DRAG GLOBAL HANDLERLARI (DEBUG MODU) ===
@@ -1362,6 +1517,7 @@ function highlightSegmentOnMap(day, startKm, endKm) {
   if (subCoordsLeaflet.length < 2) return;
 
   // --- 3. 2D ÇİZİM VE ZOOM ---
+    // --- 3. 2D ÇİZİM VE ZOOM ---
   window._segmentHighlight = window._segmentHighlight || {};
   if (!window._segmentHighlight[day]) window._segmentHighlight[day] = {};
 
@@ -1396,17 +1552,85 @@ function highlightSegmentOnMap(day, startKm, endKm) {
     window._segmentHighlight[day][`start_${m._leaflet_id}`] = L.circleMarker(startPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     window._segmentHighlight[day][`end_${m._leaflet_id}`] = L.circleMarker(endPt, { ...markerOptions, renderer: svgRenderer }).addTo(m);
     
-    // --- ZOOM KISMI ---
+    // === ZOOM LOGGER EKLE ===
+    if (!m._zoomLoggerAdded) {
+        m.on('zoomstart', function() {
+            console.log('[ZOOM EVENT] Zoom başladı - Mevcut:', this.getZoom());
+        });
+        
+        m.on('zoom', function() {
+            console.log('[ZOOM EVENT] Zoom yapılıyor:', this.getZoom().toFixed(4));
+        });
+        
+        m.on('zoomend', function() {
+            console.log('[ZOOM EVENT] Zoom bitti - Son:', this.getZoom());
+        });
+        
+        m._zoomLoggerAdded = true;
+    }
+    
+    // --- ZOOM KISMI (FIX: Manuel zoom + setView kullan) ---
     try {
         if (poly.getBounds().isValid()) {
-            m.fitBounds(poly.getBounds(), { 
-                padding: [100, 100], // Kenarlardan boşluk
-                maxZoom: 19,         // FIX: Daha derine zoom yapabilsin
-                animate: true, 
-                duration: 1.0 
-            });
+            const bounds = poly.getBounds();
+            const center = bounds.getCenter();
+            
+            // Mevcut zoom seviyesini al
+            const currentZoom = m.getZoom();
+            console.log('[SEGMENT ZOOM] Mevcut zoom:', currentZoom, 'Center:', center);
+            
+            // Segment uzunluğuna göre hedef zoom belirle
+            const segmentKm = endKm - startKm;
+            let targetZoom = 15; // Varsayılan
+            
+            if (segmentKm < 0.5) targetZoom = 16;      // 500m altı
+            else if (segmentKm < 1) targetZoom = 15;   // 1km altı
+            else if (segmentKm < 3) targetZoom = 14;   // 3km altı
+            else if (segmentKm < 5) targetZoom = 13;   // 5km altı
+            else if (segmentKm < 10) targetZoom = 12;  // 10km altı
+            else targetZoom = 11;                       // 10km üstü
+            
+            console.log('[SEGMENT ZOOM] Segment uzunluğu:', segmentKm.toFixed(2), 'km → Hedef zoom:', targetZoom);
+            
+            // FIX: Haritayı önce durağan hale getir
+            m.stop(); // Tüm animasyonları durdur
+            
+            // FIX: setZoom ile tam sayı garantisi + setView ile merkez
+            m.setZoom(targetZoom, { animate: false }); // Önce zoom'u ayarla
+            
+            setTimeout(() => {
+                m.panTo(center, { // Sonra merkeze git
+                    animate: true,
+                    duration: 0.8,
+                    easeLinearity: 0.25
+                });
+                
+                // Zoom sonrası kontrol
+                setTimeout(() => {
+                    const finalZoom = m.getZoom();
+                    console.log('[SEGMENT ZOOM] Son zoom seviyesi:', finalZoom);
+                    
+                    // FIX: Eğer zoom hala ondalıklıysa (örn 15.3), tam sayıya çek
+                    if (Math.abs(finalZoom - Math.round(finalZoom)) > 0.001) {
+                        console.warn('[SEGMENT ZOOM] ⚠️ Zoom ondalıklı! Düzeltiliyor:', finalZoom, '→', Math.round(finalZoom));
+                        m.setZoom(Math.round(finalZoom), { animate: false });
+                    }
+                    
+                    try { 
+                        m.invalidateSize(); 
+                        // Canvas renderer'ı varsa yenile
+                        if (m._renderer && m._renderer._update) {
+                            m._renderer._update();
+                        }
+                        // Polyline'ı yeniden çiz
+                        poly.redraw();
+                    } catch(e) {}
+                }, 100);
+            }, 50);
         }
-    } catch(e) {}
+    } catch(e) {
+        console.error('[SEGMENT ZOOM] Hata:', e);
+    }
   });
 
   // --- 4. 3D ÇİZİM VE ZOOM ---
@@ -1539,12 +1763,18 @@ function drawSegmentProfile(container, day, startKm, endKm, samples, elevSmooth)
   const segmentMarkers = allMarkers.filter(m => m.distance >= startKm && m.distance <= endKm);
 
   const min = Math.min(...elevSmooth);
-  const max = Math.max(...elevSmooth, min + 1);
-  const span = max - min;
-  
-  let vizMin, vizMax;
-  if (span > 0) { vizMin = min - span * 0.50; vizMax = max + span * 1.0; } 
-  else { vizMin = min - 1; vizMax = max + 1; }
+const max = Math.max(...elevSmooth, min + 1);
+const span = max - min;
+
+let vizMin, vizMax;
+if (span > 0) { 
+  vizMin = min - span * 0.05; 
+  vizMax = max + span * 0.10; 
+} 
+else { 
+  vizMin = min - 1; 
+  vizMax = max + 1; 
+}
 
   container._elevationData = { smooth: elevSmooth, vizMin, vizMax, min, max };
   container._elevSamples = samples; 
@@ -2222,3 +2452,197 @@ window.__sb_onMouseUp = function() {
     }
   }
 };
+
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    // Tüm leaflet harita ve expanded maplerde invalidateSize çağır
+    if (window.leafletMaps) {
+      Object.values(window.leafletMaps).forEach(map => {
+        try { map.invalidateSize(); } catch(_) {}
+      });
+    }
+    if (window.expandedMaps) {
+      Object.values(window.expandedMaps).forEach(ex => {
+        if (ex?.expandedMap && typeof ex.expandedMap.invalidateSize === 'function') {
+          ex.expandedMap.invalidateSize();
+        }
+      });
+    }
+    // Tüm scale barlar için handleResize tetikle!
+    document.querySelectorAll('.scale-bar-track').forEach(track => {
+      if (typeof track.handleResize === "function") track.handleResize();
+    });
+    // Sliderları da refresh et!
+    document.querySelectorAll('.splide').forEach(sliderElem => {
+      if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') {
+        sliderElem._splideInstance.refresh();
+      }
+    });
+    // Bir de window event -- 2. kez güvenlik
+    setTimeout(function() {
+      window.dispatchEvent(new Event('resize'));
+    }, 220);
+  }, 360);
+});
+
+/**
+ * elevation-works.js içine eklenecek kod
+ * 
+ * renderRouteScaleBar fonksiyonunda elevation verileri gelip 
+ * movingAverage yapılmadan HEMEN ÖNCE çalıştır
+ */
+
+// === ELEVATION VERİ TEMIZLEME FONKSİYONU ===
+window.cleanElevationData = function(elevations, samples = null) {
+    if (!Array.isArray(elevations) || elevations.length === 0) return elevations;
+    
+    const cleaned = elevations.slice();
+    const SPIKE_THRESHOLD = 25; // 25m'den fazla sıçrama = hata
+    
+    console.log("[ELEV CLEAN] Başlangıç:", {
+        total: cleaned.length,
+        nullCount: cleaned.filter(e => e == null).length,
+        min: Math.min(...cleaned.filter(e => e != null)),
+        max: Math.max(...cleaned.filter(e => e != null))
+    });
+    
+    // 1. Null/NaN değerleri komşuların ortalamasıyla doldur
+    for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] == null || !isFinite(cleaned[i])) {
+            let sum = 0, count = 0;
+            const range = 5; // 5 pixel yarıçapında ara
+            
+            for (let j = Math.max(0, i - range); j <= Math.min(cleaned.length - 1, i + range); j++) {
+                if (j !== i && cleaned[j] != null && isFinite(cleaned[j])) {
+                    sum += cleaned[j];
+                    count++;
+                }
+            }
+            
+            if (count > 0) {
+                cleaned[i] = sum / count;
+            } else {
+                cleaned[i] = 50; // Fallback: sea level
+            }
+        }
+    }
+    
+    // 2. Aşırı sıçramaları düzelt
+    let fixedCount = 0;
+    for (let i = 1; i < cleaned.length - 1; i++) {
+        const prev = cleaned[i - 1];
+        const curr = cleaned[i];
+        const next = cleaned[i + 1];
+        
+        const diffPrev = Math.abs(curr - prev);
+        const diffNext = Math.abs(next - curr);
+        
+        // Eğer bir tarafı komşu kadar benzer, diğer tarafı çok farklıysa = hata
+        if (diffPrev > SPIKE_THRESHOLD && diffNext < SPIKE_THRESHOLD / 2) {
+            cleaned[i] = prev + (curr - prev) * 0.3;
+            fixedCount++;
+        } else if (diffNext > SPIKE_THRESHOLD && diffPrev < SPIKE_THRESHOLD / 2) {
+            cleaned[i] = prev + (next - prev) * 0.5;
+            fixedCount++;
+        }
+    }
+    
+    // 3. Aşırı değerleri filtrele (dünya standartları: -500m ~ 9000m)
+    for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] < -500 || cleaned[i] > 9000) {
+            // Komşularından interpolate et
+            let neighbors = [];
+            for (let j = Math.max(0, i - 3); j <= Math.min(cleaned.length - 1, i + 3); j++) {
+                if (j !== i && cleaned[j] >= -500 && cleaned[j] <= 9000) {
+                    neighbors.push(cleaned[j]);
+                }
+            }
+            if (neighbors.length > 0) {
+                cleaned[i] = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+                fixedCount++;
+            }
+        }
+    }
+    
+    console.log("[ELEV CLEAN] Sonuç:", {
+        total: cleaned.length,
+        fixedCount: fixedCount,
+        min: Math.min(...cleaned),
+        max: Math.max(...cleaned)
+    });
+    
+    return cleaned;
+};
+
+// === PATCH: renderRouteScaleBar içinde veri temizleme ===
+(function() {
+    const origRenderRouteScaleBar = window.renderRouteScaleBar;
+    
+    if (!origRenderRouteScaleBar) return;
+    
+    window.renderRouteScaleBar = function(container, totalKm, markers) {
+        // Orijinal fonksiyonu sarala
+        const executeWithCleanup = async () => {
+            // Orijinal çağrısını yap - ama elevation fetch kısmında cleanup ekle
+            return origRenderRouteScaleBar.apply(this, arguments);
+        };
+        
+        return executeWithCleanup();
+    };
+})();
+
+// === PATCH: getElevationsForRoute sonrası temizleme ===
+(function() {
+    const origGetElev = window.getElevationsForRoute;
+    
+    if (!origGetElev) return;
+    
+    window.getElevationsForRoute = async function(samples, container, routeKey) {
+        try {
+            let elevations = await origGetElev.call(this, samples, container, routeKey);
+            
+            if (!elevations || elevations.length === 0) {
+                return elevations;
+            }
+            
+            // Veriyi temizle
+            console.log(`[ELEVATION] ${samples.length} noktanın elevation verisi alındı`);
+            elevations = window.cleanElevationData(elevations, samples);
+            
+            return elevations;
+        } catch (error) {
+            console.error('[ELEVATION] Hata:', error);
+            throw error;
+        }
+    };
+})();
+
+// === PATCH: movingAverage penceresini dinamik yap ===
+(function() {
+    const origMovingAvg = window.movingAverage;
+    
+    if (!origMovingAvg) return;
+    
+    window.movingAverage = function(arr, win = 5) {
+        if (!Array.isArray(arr) || arr.length === 0) return arr;
+        
+        // Varyasyon hesapla
+        let variance = 0;
+        const mean = arr.reduce((a, b) => a + (b || 0), 0) / arr.length;
+        
+        for (let i = 0; i < arr.length; i++) {
+            variance += Math.pow((arr[i] || mean) - mean, 2);
+        }
+        variance = variance / arr.length;
+        
+        // Yüksek varyasyon varsa (su geçişi gibi) = daha geniş window
+        let dynamicWin = win;
+        if (variance > 50) { // Varyans yüksek
+            dynamicWin = Math.max(7, Math.ceil(win * 1.5));
+            console.log(`[SMOOTH] Yüksek varyasyon tespit, window: ${win} → ${dynamicWin}`);
+        }
+        
+        // Orijinal smooth'u çalıştır
+        return origMovingAvg.call(this, arr, dynamicWin);
+    };
+})();

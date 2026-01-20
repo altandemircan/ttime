@@ -66,6 +66,26 @@ window.toggleSidebarPrivacyTerms = function() {
 };
 });
 
+// --- ABOUT DIŞARI TIKLAYINCA KAPATMA ---
+document.addEventListener('click', function(event) {
+    const aboutUsSection = document.getElementById('tt-about-us');
+    if (aboutUsSection && aboutUsSection.style.display === 'block') {
+        if (!aboutUsSection.contains(event.target) && 
+            !event.target.closest('.updates-btn') && 
+            !event.target.closest('#about-icon')) {
+            
+            aboutUsSection.style.display = 'none';
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+
+            if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
+            if (document.getElementById('chat-box')) document.getElementById('chat-box').style.display = 'block';
+            if (document.getElementById('tt-welcome')) {
+                document.getElementById('tt-welcome').style.display = 'block';
+                document.getElementById('tt-welcome').classList.add('active');
+            }
+        }
+    }
+});
 
 // Ana Menü açma fonksiyonu (Sadece açma)
 function toggleSidebarGallery() {
@@ -276,9 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
     style.id = 'tt-about-overlay-style';
     style.textContent = `
       #tt-about-us.tt-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 2147483647;
+        z-index: 150;
         background: #fff;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
@@ -289,18 +307,39 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   window.showAboutTriptime = function () {
+    // --- DURUMU VE AKTİF GÜNÜ KAYDET ---
+    const tripSidebar = document.getElementById('sidebar-overlay-trip');
+    const closeMapBtn = document.querySelector('.close-expanded-map');
+    
+    // Eğer harita sidebar'ı açıksa VEYA harita şu an büyük ekransa (close düğmesi varsa)
+    window._wasMapOpenBeforeAbout = (tripSidebar && tripSidebar.classList.contains('open')) || !!closeMapBtn;
+    
+    // Haritayı KAPATMIYORUZ, sadece About'u üstüne bindiriyoruz.
+
     ensureAboutOverlayStyles();
     const about = document.getElementById('tt-about-us');
     if (!about) return;
 
-    about.classList.add('tt-overlay');
-    about.style.display = 'block';
+    // Önce tüm diğer içerik bölümlerinden 'active' sınıfını kaldır
+    document.querySelectorAll('.content-section').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+
+    // About kısmını zorla görünür yap
+    about.classList.add('tt-overlay', 'active');
+    about.style.setProperty('display', 'block', 'important'); // !important ile display:none'ı eziyoruz
     about.removeAttribute('hidden');
     about.setAttribute('aria-hidden', 'false');
+
+    // Chat alanını gizle (Beyaz ekranın arkasında kalmasın)
+    const mainChat = document.getElementById('main-chat');
+    if (mainChat) mainChat.style.display = 'none';
 
     try { about.scrollTop = 0; } catch (_) {}
     try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
   };
+
 })();
 
 /* === START WITH MAP -> TRIP SIDEBAR OPEN (EKLENDİ) ===
@@ -324,3 +363,65 @@ document.addEventListener('click', function(e){
 });
 
 
+function changeContent(option) {
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => section.classList.remove('active'));
+
+    const chatBox = document.getElementById('chat-box');
+    const welcomeSection = document.getElementById('tt-welcome');
+    const aboutUsSection = document.getElementById('tt-about-us');
+    const mainChat = document.getElementById('main-chat');
+
+    if (option === 1) {
+        if (aboutUsSection) {
+            aboutUsSection.style.display = 'none';
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+        }
+        if (welcomeSection) {
+            welcomeSection.style.display = 'block';
+            welcomeSection.classList.add('active');
+        }
+        if (mainChat) mainChat.style.display = 'flex';
+        if (chatBox) chatBox.style.display = 'block';
+     
+    } else if (option === 2) {
+        // BURASI KRİTİK: showAboutTriptime'ı çağırıyoruz ki durum kaydı yapılsın
+        if (typeof window.showAboutTriptime === 'function') {
+            window.showAboutTriptime();
+        }
+    }
+}
+// Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
+document.addEventListener('click', function(event) {
+    const aboutUsSection = document.getElementById('tt-about-us');
+    const chatBox = document.getElementById('chat-box');
+    const ttIcon = document.getElementById("about-icon");
+    
+    if (aboutUsSection && aboutUsSection.classList.contains('tt-overlay')) {
+        const clickedInsideAboutUs = aboutUsSection.contains(event.target);
+        const clickedOnTtIcon = ttIcon && ttIcon.contains(event.target);
+        const clickedOnUpdates = event.target.closest('.updates-btn');
+
+        if (!clickedInsideAboutUs && !clickedOnTtIcon && !clickedOnUpdates) {
+            // About perdesini kaldır
+            aboutUsSection.style.setProperty('display', 'none', 'important');
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+
+            if (window._wasMapOpenBeforeAbout) {
+                // EĞER ÖNCEDEN HARİTA AÇIKSA: Chat'i gizli tut, harita zaten arkada açık
+                if (chatBox) chatBox.style.display = 'none';
+                if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'none';
+                window._wasMapOpenBeforeAbout = false; 
+            } else {
+                // EĞER HARİTA YOKSA: Normal chat düzenine dön
+                if (chatBox) chatBox.style.display = 'block';
+                if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
+                const welcome = document.getElementById('tt-welcome');
+                if (welcome) {
+                    welcome.style.display = 'block';
+                    welcome.classList.add('active');
+                }
+            }
+        }
+    }
+});

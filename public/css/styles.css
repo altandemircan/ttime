@@ -110,7 +110,7 @@ p {
     flex-direction: column;
 }
 li .highlight {
-    font-size: 1.2rem;
+    font-size: 1rem;
 }
 .navbar {
     background: #0073e6;
@@ -373,10 +373,11 @@ ease;
 }
 
 .content-section.active {
-    opacity: 1;
-    visibility: visible;
-    height: auto;
-    overflow: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
 }
 
 /* Button Styling */
@@ -397,23 +398,19 @@ ease;
 /*  Remove specific styles for these sections */
 #tt-about-us
 {   
-        padding: 20px;
+    padding: 20px;
     overflow-y: scroll;
     top: 50px;
-    bottom: 180px;
     width: calc(100% - 455px);
     background: #ffffff;
 }
-
-/* iframe için ekstra stil */
-#tt-about-us iframe {
-    display: block;
-    margin: 0;
-    padding: 0;
-    border: none;
-    width: 335px;
-    height: 225px;
+@media (max-width: 768px) {
+   #tt-about-us {
+            width: fit-content;
+        overflow-y: visible;
+   }
 }
+
 
 /* Style for Welcome section to position it at the top */
 #tt-welcome {
@@ -4225,12 +4222,6 @@ ease;
     to { transform: rotate(360deg); }
 }
 
-.arrow-icon {
-  transition: transform 0.2s;
-}
-.arrow-icon.open {
-  transform: rotate(90deg); /* sağdan aşağıya çevirir */
-}
 .ai-info-content {
   transition: max-height 0.2s, opacity 0.2s;
   overflow: hidden;
@@ -5888,7 +5879,7 @@ ease;
     background: linear-gradient(
         90deg,
         transparent,
-        rgba(139, 92, 246, 0.1), 
+        rgba(139, 92, 246, 0.2), 
         transparent
     );
     animation: light-sweep 4s infinite;
@@ -7578,3 +7569,45 @@ scrollbar-width: thin;
 .route-map .route-controls-bar {
     pointer-events: auto !important;
 }
+
+
+       .custom-accordion {
+            margin-bottom: 0 !important;
+            transition: background 0.3s ease-in-out;
+        }
+        .custom-accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 12px;
+            font-size: 16px;            
+            border-radius: 5px;
+            transition: background 0.3s ease-in-out;
+        }
+        .custom-icon {
+            font-size: 18px;
+            transition: transform 0.3s ease-in-out;
+        }
+.custom-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    background: #fff;           
+    transition: max-height 0.5s cubic-bezier(.4,0,.2,1), padding 0.3s, background 0.3s;
+    margin-bottom: 4px !important;
+    padding: 0px 0px !important;
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+}
+.custom-accordion.active .custom-accordion-content {
+    /* sadece padding değişebilir, max-height YOK! */
+    padding: 4px 0;
+    font-weight: 400;
+}
+        .custom-accordion-content p {
+            margin-block-start: 0em;
+        }
+       
+        .active .custom-icon {
+            transform: rotate(180deg);
+        }
