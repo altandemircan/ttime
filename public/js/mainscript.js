@@ -2311,11 +2311,7 @@ function addToCart(
 ) {
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
-    const totalKm = getTotalKmFromMarkers(dayPoints);
-    if (totalKm > CURRENT_ROUTE_KM_LIMIT) {
-        addMessage("Bu güne yeni nokta ekleyemezsiniz; rota toplamı 200 km'yi aşıyor.", "bot-message");
-        return false;
-    }
+    
 
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
