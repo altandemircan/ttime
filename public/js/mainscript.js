@@ -2311,6 +2311,12 @@ function addToCart(
 ) {
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
+    const totalKm = getTotalKmFromMarkers(dayPoints);
+    if (totalKm > CURRENT_ROUTE_KM_LIMIT) {
+        addMessage("Bu güne yeni nokta ekleyemezsiniz; rota toplamı 200 km'yi aşıyor.", "bot-message");
+        return false;
+    }
+
   // 1) Placeholder temizliği
   if (window._removeMapPlaceholderOnce) {
     window.cart = (window.cart || []).filter(it => !it._placeholder);
@@ -5192,9 +5198,9 @@ if (aiInfoSection) {
         window._lastSegmentEndKm = undefined;
     }
   const allDays = [...new Set(window.cart.map(i => i.day))];
-for (const dayNum of allDays) {
-    await enforceDailyRouteLimit(dayNum, CURRENT_ROUTE_KM_LIMIT);
-}
+    for (const dayNum of allDays) {
+        await enforceDailyRouteLimit(dayNum, CURRENT_ROUTE_KM_LIMIT);
+    }
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -7664,17 +7670,14 @@ function restoreMap(containerId, day) {
     }
 }
 async function enforceDailyRouteLimit(day, maxKm) {
-    // Sadece "real" marker'ları sırala (starter/placeholder/Note gibi olmayanlar)
+    // Sadece gerçek markerları sırala (starter/placeholder/Note gibi olmayanlar hariç)
     const itemsOfDay = window.cart.filter(item =>
         item.day == day &&
         item.location &&
         isFinite(item.location.lat) && isFinite(item.location.lng)
     );
-
-    // Nokta yoksa yapacak iş yok:
     if (itemsOfDay.length <= 1) return false;
 
-    // KM split index'i bul
     let totalKm = 0, splitIdx = -1;
     for (let i = 1; i < itemsOfDay.length; i++) {
         totalKm += haversine(
@@ -7689,30 +7692,20 @@ async function enforceDailyRouteLimit(day, maxKm) {
         }
     }
     if (splitIdx > 0) {
-        // Onayı iste
         const proceed = confirm(
-            `Bu gün içerisindeki rotanız ${maxKm} km'yi aşıyor.
-Aynı gün içerisinde maksimum ${maxKm} km rota çizilebilir.
-Aşan noktalar yeni bir gün olarak eklenecektir. Onaylıyor musunuz?`
+            `Your route for this day exceeds ${maxKm} km.\nFor a single day, the maximum allowed route is ${maxKm} km.\nDo you accept to move the excess places to a new day?`
         );
         if (!proceed) return false;
-
-        // Yeni gün numarası bul
         const newDay = Math.max(...window.cart.map(i => i.day || 1)) + 1;
-
-        // split'e denk gelen ve sonrası tüm item'ların day'ını güncelle
         for (let i = splitIdx; i < itemsOfDay.length; i++) {
-            // cart içindeki orijinal nesneyi bul
             const cartIdx = window.cart.findIndex(item =>
                 item === itemsOfDay[i]
             );
             if (cartIdx >= 0) window.cart[cartIdx].day = newDay;
         }
-
-        // Eğer senin updateCart, renderRouteForDay gibi her şeyi güncellemiyor ise:
         if (typeof updateCart === "function") updateCart();
         if (typeof renderRouteForDay === "function") { await renderRouteForDay(day); await renderRouteForDay(newDay); }
-        addMessage(`${itemsOfDay.length - splitIdx} yer yeni güne aktarıldı.`, "bot-message");
+        addMessage(`${itemsOfDay.length - splitIdx} places have been moved to a new day.`, "bot-message");
         return true;
     }
     return false;
