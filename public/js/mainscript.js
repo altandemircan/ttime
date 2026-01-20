@@ -7687,68 +7687,87 @@ function restoreMap(containerId, day) {
     }
 }
 
-// --- KESİN LİMİT AYARI ---
+// =================================================================
+// 🛑 GÜVENLİK VE LİMİT FONKSİYONLARI (mainscript.js içine)
+// =================================================================
+
+// Limit Ayarı (Değiştirmek isterseniz buradan değiştirin)
 const CURRENT_ROUTE_KM_LIMIT = 200; 
 
-// Yardımcı: Koordinatı güvenli şekilde sayıya çevir
+/**
+ * Yardımcı: Koordinat objesini güvenli bir şekilde {lat, lng} sayısına çevirir.
+ * Veri formatı farklı gelse bile (string, eksik field vb.) patlamayı önler.
+ */
 function getSafeCoord(item) {
     let lat = 0, lng = 0;
-    // Farklı veri yapılarını kontrol et (item.lat veya item.location.lat)
-    if (item.location && typeof item.location.lat !== 'undefined') {
+    
+    // 1. item.location.lat kontrolü
+    if (item.location && (typeof item.location.lat !== 'undefined')) {
         lat = item.location.lat;
         lng = item.location.lng;
-    } else if (typeof item.lat !== 'undefined') {
+    } 
+    // 2. item.lat kontrolü (bazı durumlarda direkt root'ta olabilir)
+    else if (typeof item.lat !== 'undefined') {
         lat = item.lat;
         lng = item.lng;
     }
+
+    // String gelme ihtimaline karşı Float'a çevir
     return { lat: parseFloat(lat), lng: parseFloat(lng) };
 }
 
+/**
+ * Bu fonksiyon, harita çizilmeden ÖNCE kuş uçuşu mesafeyi kontrol eder.
+ * Eğer bariz bir limit aşımı varsa (örn: 500km), API'yi yormadan item'ı siler.
+ */
 async function enforceDailyRouteLimit(day, maxKm) {
-    // 1. O güne ait geçerli itemları al
+    // 1. O güne ait itemları al
+    // window.cart tanımlı değilse hata vermesin diye kontrol ekledik
+    if (!window.cart) return false;
+
     let dayItems = window.cart.filter(item => item.day == day);
     
-    // Eğer 0 veya 1 nokta varsa mesafe yoktur.
+    // Eğer 0 veya 1 nokta varsa mesafe oluşmaz, işlem yapma.
     if (dayItems.length <= 1) return false;
 
-    console.log(`[LimitCheck] Day ${day} analyzing ${dayItems.length} items...`);
+    console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
 
     let totalKm = 0;
     let splitIdx = -1;
     let limitExceededName = "";
 
-    // 2. Mesafeyi hesapla
+    // 2. Mesafeyi Kümülatif Hesapla
     for (let i = 1; i < dayItems.length; i++) {
         const p1 = getSafeCoord(dayItems[i-1]);
         const p2 = getSafeCoord(dayItems[i]);
 
-        // Koordinat hatası varsa atla
+        // Koordinat hatası varsa (NaN), bu item'ı atla ve log düş
         if (isNaN(p1.lat) || isNaN(p1.lng) || isNaN(p2.lat) || isNaN(p2.lng)) {
-            console.warn("[LimitCheck] Invalid coordinates found, skipping item:", dayItems[i]);
+            console.warn("[LimitCheck] Invalid coordinates detected, skipping calculation for item:", dayItems[i]);
             continue;
         }
 
+        // Kuş uçuşu mesafe (Haversine)
         const km = haversine(p1.lat, p1.lng, p2.lat, p2.lng) / 1000;
         totalKm += km;
-
-        console.log(`[LimitCheck] Step ${i}: +${km.toFixed(1)}km = Total ${totalKm.toFixed(1)}km`);
 
         // Limit aşıldı mı?
         if (totalKm > maxKm) {
             splitIdx = i; 
             limitExceededName = dayItems[i].name || 'Added Location';
-            console.warn(`[LimitCheck] LIMIT EXCEEDED at item index ${i} (${limitExceededName})`);
-            break;
+            console.warn(`[LimitCheck] 🛑 LIMIT EXCEEDED at item #${i} ("${limitExceededName}") - Total: ${totalKm.toFixed(1)}km`);
+            break; // İlk taştığı yerde döngüyü kır
         }
     }
 
     // 3. Limit Aşıldıysa: SİL VE UYAR
     if (splitIdx > 0) {
+        // Limiti aşan noktadan itibaren hepsini al (genelde sondaki 1 tanedir)
         const itemsToDelete = dayItems.slice(splitIdx); 
         
-        console.log(`[LimitCheck] Removing ${itemsToDelete.length} items...`);
+        console.log(`[LimitCheck] Automatically removing ${itemsToDelete.length} items to fix route.`);
 
-        // A. Sepetten Sil
+        // A. Sepetten (window.cart) Sil
         itemsToDelete.forEach(itemToDelete => {
             const idx = window.cart.indexOf(itemToDelete);
             if (idx > -1) {
@@ -7760,19 +7779,23 @@ async function enforceDailyRouteLimit(day, maxKm) {
         if (typeof showToast === "function") {
             showToast(`⚠️ Limit exceeded (${maxKm}km)! "${limitExceededName}" removed.`, "error");
         } else {
-            alert(`⚠️ LIMIT EXCEEDED: The route cannot exceed ${maxKm}km. "${limitExceededName}" was removed.`);
+            alert(`⚠️ LIMIT EXCEEDED: The route cannot exceed ${maxKm}km.\n"${limitExceededName}" was removed.`);
         }
 
-        // C. Arayüzü Güncelle (Bu tekrar renderRouteForDay'i çağırır ama veri temiz olduğu için sorun çıkmaz)
+        // C. Arayüzü Güncelle
+        // renderRouteForDay içindeysek çakışmayı önlemek için minik bir gecikme ile çağırıyoruz.
         if (typeof updateCart === "function") {
-            // setTimeout ile hafif gecikmeli yap ki mevcut döngü çakışmasın
-            setTimeout(() => updateCart(), 50); 
+            setTimeout(() => {
+                console.log("[LimitCheck] Refreshing cart UI...");
+                updateCart(); 
+            }, 50);
         }
 
-        // İşlemi durdur sinyali
+        // true döndürerek çağıran fonksiyona "işlemi durdur, ben müdahale ettim" diyoruz.
         return true; 
     }
 
+    // Limit aşılmadı, her şey yolunda
     return false;
 }
 async function renderRouteForDay(day) {
@@ -8448,9 +8471,35 @@ try {
         }
     }
 
-    // 2D Haritayı Çiz
-    renderLeafletRoute(containerId, routeData.geojson, snappedPoints, routeData.summary, day, missingPoints);
+   if (routeData && routeData.summary && routeData.summary.distance > 200000) {
+        console.error(`⛔ ROUTE BLOCKED: Actual Road Distance ${routeData.summary.distance}m > 200000m`);
 
+        // 1. Sepetten o günün son eklenen item'ını bul ve sil
+        const currentDayItems = window.cart.filter(item => item.day == day);
+        if (currentDayItems.length > 1) { 
+            const itemToRemove = currentDayItems[currentDayItems.length - 1]; 
+            const removeIndex = window.cart.indexOf(itemToRemove);
+            
+            if (removeIndex > -1) {
+                window.cart.splice(removeIndex, 1); // Kalıcı sil
+                console.warn("Item automatically removed due to strict limit:", itemToRemove.name);
+            }
+        }
+
+        // 2. Kullanıcıya net uyarı ver
+        if (typeof showToast === "function") {
+            showToast("⛔ Route limit (200km) exceeded! Last location removed.", "error");
+        } else {
+            alert("⛔ Route limit (200km) exceeded! Last location removed.");
+        }
+
+        // 3. Arayüzü Yenile (updateCart fonksiyonu temizlenmiş liste ile tekrar render başlatır)
+        if (typeof updateCart === "function") {
+            setTimeout(() => updateCart(), 50);
+        }
+        
+        return; // 🛑 ÇİZİMİ DURDUR, KODU BURADA KES.
+    }
     const expandedMapObj = window.expandedMaps?.[containerId];
     if (expandedMapObj?.expandedMap) {
         updateExpandedMap(expandedMapObj.expandedMap, day);
