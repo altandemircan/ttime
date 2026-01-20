@@ -7717,11 +7717,13 @@ async function enforceDailyRouteLimit(day, maxKm) {
     return false;
 }
 async function renderRouteForDay(day) {
-    // 200km kontrolü
+    // 1. LIMIT KONTROLÜ: Eğer 200km aşıldıysa bu fonksiyonu burada kesiyoruz.
+    // enforceDailyRouteLimit fonksiyonu window.cart'ı güncelleyip updateCart() çağıracağı için
+    // bu fonksiyon zaten temizlenmiş veriyle tekrar tetiklenecektir.
     const wasSplit = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (wasSplit) return; 
 
-    // containerId tanımlaması yapılıyor
+    // 2. DEĞİŞKEN TANIMLAMA: containerId'yi bir kez en tepede tanımlıyoruz.
     const containerId = `route-map-day${day}`;
     const container = document.getElementById(containerId);
     if (!container) return;
