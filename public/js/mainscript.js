@@ -103,12 +103,8 @@ function fitExpandedMapToRoute(day) {
     // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
-    const bounds = L.latLngBounds(validPts.map(p => [p.lat, p.lng]));
-    const center = bounds.getCenter();
-    const zoom = expObj.expandedMap.getBoundsZoom(bounds, false, [20, 20]);
-    const safeZoom = Math.min(16, Math.max(10, Math.round(zoom)));
-    expObj.expandedMap.setView(center, safeZoom, { animate: true });
-} else if (validPts.length === 1) {
+      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+    } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
       expObj.expandedMap.setView([0, 0], 2);
