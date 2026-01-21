@@ -1,19 +1,19 @@
-// Typewriter efekti, her harf için delay uygular
-// function typeWriterEffect(element, text, speed = 18, callback) {
-//     let i = 0;
-//     element.innerHTML = "🤖 "; // Emoji sabit başta!
-//     function type() {
-//         if (i < text.length) {
-//             element.innerHTML += text.charAt(i);
-//             i++;
-//             setTimeout(type, speed);
-//         } else if (callback) {
-//             callback();
-//         }
-//     }
-//     type();
-// }
-// Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
+Typewriter efekti, her harf için delay uygular
+function typeWriterEffect(element, text, speed = 18, callback) {
+    let i = 0;
+    element.innerHTML = "🤖 "; // Emoji sabit başta!
+    function type() {
+        if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+        } else if (callback) {
+            callback();
+        }
+    }
+    type();
+}
+Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
 function onCitySelected(city) {
     let planAktif = false;
         window.lastTripAIInfo = null;
