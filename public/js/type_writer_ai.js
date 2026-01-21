@@ -1,4 +1,4 @@
-Typewriter efekti, her harf için delay uygular
+
 function typeWriterEffect(element, text, speed = 18, callback) {
     let i = 0;
     element.innerHTML = "🤖 "; // Emoji sabit başta!
@@ -13,7 +13,7 @@ function typeWriterEffect(element, text, speed = 18, callback) {
     }
     type();
 }
-Şehir seçince çağrılır: AI başlasın, ilk karakter gelince plan aktifleşsin
+
 function onCitySelected(city) {
     let planAktif = false;
         window.lastTripAIInfo = null;
