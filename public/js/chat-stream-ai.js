@@ -61,7 +61,7 @@ if (!document.getElementById(styleId)) {
             background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);  /* YENİ GRADIENT */
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 4px 10px rgba(18, 165, 232, 0.25);  /* MAVİ GÖLGE */
+            box-shadow: 0 2px 10px rgba(18, 165, 232, 0.3);  /* MAVİ GÖLGE */
         }
 
         /* Geçmiş Listesi Alanı */

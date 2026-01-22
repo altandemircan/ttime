@@ -7684,7 +7684,7 @@ display: block !important;
     
 }
 .btn-purple:hover {
-    box-shadow: 0 8px 20px rgba(164, 117, 241, 0.5); /* Hover'da gölge artar */
+    box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3); /* Hover'da gölge artar */
         background: linear-gradient(135deg, #976cdf 0%, #bc9af4 100%);
 }
 
@@ -7694,7 +7694,7 @@ display: block !important;
    
 }
 .btn-blue:hover {
-    box-shadow: 0 8px 20px rgba(69, 170, 232, 0.5);
+    box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
     background: linear-gradient(135deg, #1996d6 0%, #2dd4d0 100%);
 }
 .main-icon {
