@@ -197,12 +197,26 @@ function showSuggestions() {
             let city = null;
             let tokens = rawText.split(/in |for |to |at |on /i);
             for (let k = tokens.length - 1; k >= 0; k--) {
-                let candWords = tokens[k].replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore|discover)/gi, "").replace(/\d+/, "").trim().split(" ");
-                let cand = candWords[candWords.length - 1];
-                if (cand && cand.length > 2) {
-                    city = cand;
-                    break;
-                }
+                // Bütün kirli kelimeleri sil, kalan tek anlamlı kelimeyi şehir olarak çek
+            let cleaned = tokens[k]
+                .replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore|discover)/gi, "")
+                .replace(/\d+/g, "")
+                .replace(/[-–—]/g, "")
+                .replace(/\s{2,}/g, " ")
+                .trim();
+
+            // Sonunda fazladan boşluk varsa, temizle
+            cleaned = cleaned.replace(/^\s+|\s+$/g, "");
+
+            // Sadece harflerden oluşan en uzun kelimeyi al (örn: "London" ya da "Antalya" gibi)
+            let subTokens = cleaned.split(" ").filter(t => t.length > 1 && /^[A-Za-zÇĞİÖŞÜçğıöşü]+$/i.test(t));
+            let cand = subTokens.length ? subTokens[subTokens.length-1] : "";
+
+            // Hala ismini belirleyemediysek, fallback:
+            if (cand && cand.length > 1) {
+                city = cand;
+                break;
+            }
             }
             if (!city || /(guide|days?|trip|tour|itinerary|discover|explore|visit)/i.test(city)) {
                 let m = rawText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)/);
