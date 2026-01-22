@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- 2. CSS STYLES ---
     const styleId = 'tt-ai-sidebar-styles';
- if (!document.getElementById(styleId)) {
+if (!document.getElementById(styleId)) {
     const css = `
         /* Kontrol Butonları (Başlık Altı) */
         #ai-chat-controls {
@@ -53,15 +53,15 @@ document.addEventListener("DOMContentLoaded", function() {
             box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
         .ai-nav-btn:hover {
-            background: #faf8ff;
-            border-color: #c745e8;  /* GRADIENT BAŞLANGIÇ RENGİ */
-            color: #c745e8;         /* GRADIENT BAŞLANGIÇ RENGİ */
+            background: #f4fbff;
+            border-color: #12a5e8;  /* YENİ MAVİ */
+            color: #12a5e8;         /* YENİ MAVİ */
         }
         .ai-nav-btn.active {
-            background: linear-gradient(135deg, #c745e8 0%, #2dd4d0 100%);  /* GRADIENT */
+            background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);  /* YENİ GRADIENT */
             color: #fff;
-            border-color: transparent;  /* Kenarlığı kaldır çünkü gradient var */
-            box-shadow: 0 4px 10px rgba(199, 69, 232, 0.2);  /* MOR RENK */
+            border-color: transparent;
+            box-shadow: 0 4px 10px rgba(18, 165, 232, 0.25);  /* MAVİ GÖLGE */
         }
 
         /* Geçmiş Listesi Alanı */
@@ -91,9 +91,9 @@ document.addEventListener("DOMContentLoaded", function() {
             margin-top: 1px;
         }
         .history-card:hover {
-            border-color: #c745e8;  /* GRADIENT BAŞLANGIÇ RENGİ */
+            border-color: #12a5e8;  /* YENİ MAVİ */
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(199, 69, 232, 0.1);  /* MOR RENK */
+            box-shadow: 0 4px 12px rgba(18, 165, 232, 0.12); /* MAVİ GÖLGE */
         }
         .h-title {
             font-weight: 600;
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", function() {
             top: 8px;
             background: transparent;
             border: none;
-            color: #ffcccc;
+            color: #ffd1d1;
             font-size: 16px;
             line-height: 1;
             cursor: pointer;
@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", function() {
             position: absolute;
             left: 0;
             top: 0;
-            color: #c745e8;  /* GRADIENT BAŞLANGIÇ RENGİ */
+            color: #12a5e8;  /* YENİ MAVİ */
             font-weight: bold;
             animation: typing-dots 1.5s infinite steps(4);
         }
