@@ -351,7 +351,6 @@ ease;
     left: 0;
     top: 40px;
     bottom: 0;
-    width: calc(100% - 415px);
     background: #ffffff;
     padding: 30px;
     overflow-y: auto !important;
@@ -365,6 +364,7 @@ ease;
     overflow-y: auto;     /* Scroll barı getir */
     padding: 30px;        /* İç boşluk */
     box-sizing: border-box; /* İSTEDİĞİN GİBİ: Sadece tıklandığında çalışır */
+    width: calc(100% - 415px)
 }
 @media (max-width: 768px) {
    #tt-about-us {
