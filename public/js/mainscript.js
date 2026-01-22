@@ -3078,71 +3078,68 @@ let lastRequestTime = 0;
 // ==================================================
 
 // 1. UNESCO Verisinde Arama Yapan Fonksiyon
-function searchUnescoData(query) {
+// === UNESCO ENTEGRASYONU (KESİN ÇÖZÜM) ===
+
+// 1. Arama mantığı
+function searchUnesco(query) {
     if (!window.UNESCO_DATA) return [];
-    
     const q = query.toLowerCase().trim();
-    // İsim içinde aranan kelime geçiyor mu?
-    return window.UNESCO_DATA
-        .filter(item => item.name.toLowerCase().includes(q))
+    return window.UNESCO_DATA.filter(item => item.name.toLowerCase().includes(q))
         .map(item => ({
             properties: {
                 name: item.name,
-                // Formatted alanını elle oluşturuyoruz ki renderSuggestions'da görünsün
-                formatted: `${item.name}, ${item.country_code} (UNESCO Site)`,
+                // Görünüm formatı: İsim, Ülke Kodu (UNESCO)
+                formatted: `${item.name}, ${item.country_code} (UNESCO)`,
                 lat: item.lat,
                 lon: item.lon,
                 country_code: item.country_code.toLowerCase(),
-                result_type: 'unesco_site', // Puanlama için kritik etiket
+                result_type: 'unesco_site', // Puanlama anahtarı
                 place_type: 'unesco_site',
-                category: 'tourism.sights'
+                category: 'tourism'
             },
-            geometry: {
-                type: "Point",
-                coordinates: [item.lon, item.lat]
-            }
-        })).slice(0, 5); // En iyi 5 sonucu al
+            geometry: { type: "Point", coordinates: [item.lon, item.lat] }
+        })).slice(0, 5);
 }
 
-// 2. Ana Arama Fonksiyonunu (Override) Güncelle
-// Bu fonksiyonu mainscript.js içinde bulmana gerek yok, en alta ekleyince ezer.
-async function geoapifyLocationAutocomplete(query) {
+// 2. Ana arama fonksiyonunu override et
+// (Eski fonksiyon ne olursa olsun bunu kullanacak)
+window.geoapifyLocationAutocomplete = async function(query) {
+    // A) Önce UNESCO verisi
+    const localResults = searchUnesco(query);
     
-    // A) ÖNCE UNESCO (LOCAL)
-    const localResults = searchUnescoData(query);
-
     try {
-        // B) SONRA API (REMOTE) - Limit 15
+        // B) Sonra API verisi
         const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=15`);
         let apiFeatures = [];
         if (resp.ok) {
             const data = await resp.json();
             apiFeatures = data.features || [];
         }
-
-        // C) BİRLEŞTİR (UNESCO ÖNDE)
+        
+        // C) Birleştir (UNESCO önce gelir)
         const combined = [...localResults, ...apiFeatures];
-
-        // D) AYNI İSİMLİLERİ TEMİZLE
+        
+        // D) Çift kayıtları temizle
         const unique = [];
         const seen = new Set();
         combined.forEach(item => {
-            const nameKey = (item.properties.name || "").toLowerCase().substring(0, 15);
-            if (!seen.has(nameKey)) {
-                seen.add(nameKey);
+            const key = (item.properties.name || "").toLowerCase().substring(0, 10);
+            if (!seen.has(key)) {
+                seen.add(key);
                 unique.push(item);
             }
         });
-        
+
         // renderSuggestions fonksiyonuna gönder
         return renderSuggestions(unique, query);
-
     } catch (e) {
-        console.error("API Error:", e);
+        // Hata varsa sadece local veriyi göster
         return renderSuggestions(localResults, query);
     }
-}
+};
 
+// 3. Eğer 'Add Place' farklı bir fonksiyon kullanıyorsa onu da bağla
+window.geoapifyAutocomplete = window.geoapifyLocationAutocomplete;
 // 3. Eğer kodda 'geoapifyAutocomplete' diye başka bir fonksiyon kullanılıyorsa onu da buna eşitle
 window.geoapifyAutocomplete = async function(query) {
     // Sadece sonuç listesini döndürür (renderSuggestions çağırmaz), Add Place burayı kullanır.
