@@ -306,7 +306,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.head.appendChild(style);
   }
 
-
   window.showAboutTriptime = function () {
     // --- DURUMU VE AKTİF GÜNÜ KAYDET ---
     const tripSidebar = document.getElementById('sidebar-overlay-trip');
@@ -344,6 +343,21 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 
+document.addEventListener('click', function(e){
+    if (e.target && e.target.id === 'start-map-btn') {
+        const trip = document.getElementById('sidebar-overlay-trip');
+        if (trip) {
+            trip.classList.add('open');
+            if (!trip.classList.contains('sidebar-trip')) {
+                trip.classList.add('sidebar-trip');
+            }
+            // Diğer açık side-barları kapat
+            document.querySelectorAll('.sidebar-overlay.open').forEach(el=>{
+                if (el !== trip) el.classList.remove('open');
+            });
+        }
+    }
+});
 
 function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
@@ -353,7 +367,7 @@ function changeContent(option) {
     // Tüm bölümleri gizle
     sections.forEach(section => {
         section.style.display = 'none';
-        section.classList.remove('active', 'tt-overlay');
+        section.classList.remove('active');
     });
     
     if (option === 1) {
@@ -363,6 +377,11 @@ function changeContent(option) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
+        
+        // CW elementlerini görünür yap
+        document.querySelectorAll('.cw').forEach(el => {
+            el.style.display = '';
+        });
         
         // Chat bölümlerini göster
         if (mainChat) mainChat.style.display = 'flex';
@@ -374,6 +393,8 @@ function changeContent(option) {
         if (aboutUsSection) {
             aboutUsSection.style.display = 'block';
             aboutUsSection.classList.add('active', 'tt-overlay');
+            
+            // About ekranına özel stil uygula
             aboutUsSection.style.zIndex = '150';
             aboutUsSection.style.background = '#fff';
             aboutUsSection.style.overflowY = 'auto';
@@ -383,7 +404,8 @@ function changeContent(option) {
             if (chatBox) chatBox.style.display = 'none';
         }
     }
-}// Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
+}
+// Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
 document.addEventListener('click', function(event) {
     const aboutUsSection = document.getElementById('tt-about-us');
     const chatBox = document.getElementById('chat-box');
