@@ -3113,10 +3113,11 @@ const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
 let lastRequestTime = 0;
 async function geoapifyAutocomplete(query) {
-  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
+  // LİMİTİ ARTIRDIK: Varsayılan (5) yerine 20 sonuç istiyoruz.
+  // Böylece popüler yerler listenin sonlarında gelse bile yakalayacağız.
+  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
   if (!resp.ok) throw new Error("API error");
   const data = await resp.json();
-  // Eğer sıralama fonksiyonun varsa burada uygula
   return data.features || [];
 }
 
@@ -3239,34 +3240,93 @@ function initPlaceSearch(day) {
 
     if (!input || !detailsDiv) return;
 
-    // Önceki listener'ı kaldır
+    // Önceki listener'ı kaldır (Memory leak önlemi)
     if (input._autocompleteHandler) {
         input.removeEventListener("input", input._autocompleteHandler);
     }
 
     input._autocompleteHandler = debounce(async function() {
-        const query = this.value.trim();
-        if (query.length < 3) {
+        const query = this.value.trim().toLowerCase();
+        if (query.length < 2) { // 2 karakterden azsa arama yapma
             detailsDiv.innerHTML = "";
             return;
         }
+        
         detailsDiv.innerHTML = "<div class='loading'>Searching...</div>";
+        
         try {
-            const suggestions = await geoapifyAutocomplete(query);
+            // 1. Sonuçları çek (geoapifyAutocomplete artık 20 sonuç getiriyor)
+            let suggestions = await geoapifyAutocomplete(query);
             detailsDiv.innerHTML = "";
+
+            // === 2. AKILLI SIRALAMA (SMART SORT) BAŞLANGICI ===
+            suggestions.sort((a, b) => {
+                const pA = a.properties || {};
+                const pB = b.properties || {};
+                
+                let scoreA = 0;
+                let scoreB = 0;
+
+                const nameA = (pA.name || "").toLowerCase();
+                const nameB = (pB.name || "").toLowerCase();
+                const typeA = (pA.result_type || pA.place_type || "").toLowerCase();
+                const typeB = (pB.result_type || pB.place_type || "").toLowerCase();
+                const catA = (pA.category || "").toLowerCase();
+                const catB = (pB.category || "").toLowerCase();
+
+                // Kriter 1: Tam İsim Eşleşmesi (En önemli)
+                if (nameA === query) scoreA += 1000;
+                if (nameB === query) scoreB += 1000;
+                
+                // Kriter 2: İsim ile Başlama
+                if (nameA.startsWith(query)) scoreA += 500;
+                if (nameB.startsWith(query)) scoreB += 500;
+
+                // Kriter 3: Tür Önceliği (Bölge ve Turistik yerleri öne al)
+                // Kapadokya 'tourism' veya 'region' döner, İtalya köyü 'village' döner.
+                function getTypeScore(t, c) {
+                    if (t === 'amenity' || t === 'tourism' || c.includes('tourism')) return 300;
+                    if (t === 'region' || t === 'area' || t === 'state') return 200; // Kapadokya buraya girer
+                    if (t === 'city') return 100;
+                    if (t === 'town') return 50;
+                    if (t === 'village' || t === 'hamlet') return -50; // Köyleri geriye at
+                    return 0;
+                }
+
+                scoreA += getTypeScore(typeA, catA);
+                scoreB += getTypeScore(typeB, catB);
+
+                // Kriter 4: Popülarite İpucu (Adres Kısalığı)
+                // Ünlü yerlerin adresi kısadır: "Cappadocia, Turkey"
+                // Ünsüz yerler uzundur: "Cappadocia, Via Roma, L'Aquila, Italy"
+                if (pA.formatted && pA.formatted.length < 40) scoreA += 50;
+                if (pB.formatted && pB.formatted.length < 40) scoreB += 50;
+
+                // Kriter 5: Türkiye Torpili (Opsiyonel ama etkili)
+                if (pA.country_code === 'tr') scoreA += 100;
+                if (pB.country_code === 'tr') scoreB += 100;
+
+                return scoreB - scoreA; // Yüksek puandan düşüğe sırala
+            });
+            // === AKILLI SIRALAMA BİTİŞİ ===
+
+            // 3. Sıralanmış listeden en iyi 5 tanesini seçip göster
             const uniqueResults = getUniqueResults(suggestions, 5);
+            
             if (uniqueResults.length === 0) {
                 detailsDiv.innerHTML = "<div class='no-results'>No matching places found</div>";
                 return;
             }
+            
             for (const result of uniqueResults) {
                 await appendSuggestion(result, detailsDiv, day);
             }
+
         } catch (error) {
             console.error("Search error:", error);
             detailsDiv.innerHTML = "<div class='error'>Search failed. Try again later.</div>";
         }
-    }, 500);
+    }, 500); // 500ms debounce
 
     input.addEventListener("input", input._autocompleteHandler);
 }
