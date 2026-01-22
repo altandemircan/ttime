@@ -372,11 +372,41 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             else score += 100;
         }
         
-        const type = (p.result_type || p.place_type || '').toLowerCase();
-        if (type === 'city') score += 80;
-        else if (type === 'town') score += 60;
-        else if (type === 'village') score += 40;
-        else if (type === 'county') score += 30;
+                                        // === YENİ AKILLI PUANLAMA (Kapadokya Fix) ===
+                                const type = (p.result_type || p.place_type || '').toLowerCase();
+                                const category = (p.category || '').toLowerCase();
+
+                                // 1. Turistik ve Bölgesel Yerlere AŞIRI Öncelik Ver
+                                // Kapadokya, Toscana, Bali gibi yerler 'region' veya 'tourism' olarak gelir.
+                                if (type === 'amenity' || type === 'tourism' || category.includes('tourism')) {
+                                    score += 500; // Turistik yer ise en tepeye fırlat
+                                } 
+                                else if (type === 'region' || type === 'area' || type === 'state') {
+                                    score += 400; // Bölge ise (Örn: Cappadocia Region)
+                                }
+                                // 2. Şehirler Standart Kalsın
+                                else if (type === 'city') {
+                                    score += 150; 
+                                } 
+                                // 3. Küçük Kasabaları Cezalandır (İtalya'daki Cappadocia buraya takılacak)
+                                else if (type === 'town' || type === 'village' || type === 'hamlet') {
+                                    score -= 50; // Puan kır ki popüler olanın önüne geçemesin
+                                }
+                                else if (type === 'county') {
+                                    score += 30;
+                                }
+
+                                // 4. Popülarite İpucu: Kısa Adres = Ünlü Yer
+                                // "Cappadocia, Turkey" (Kısa) vs "Cappadocia, L'Aquila, Abruzzo, Italy" (Uzun)
+                                if (p.formatted && p.formatted.length < 40) {
+                                    score += 100;
+                                }
+
+                                // 5. Türkiye Torpili (Opsiyonel: Türk kullanıcılar için TR sonuçlarını öne alır)
+                                if (p.country_code === 'tr') {
+                                    score += 50;
+                                }
+                                
         
         const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
         if (commercialWords.some(word => name.includes(word))) score -= 2000;
