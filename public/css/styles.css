@@ -7540,40 +7540,32 @@ scrollbar-width: thin;
     bottom: 0;
     background: #ffffff;
     padding: 30px;
-    overflow-y: auto !important;
     z-index: 999;
     
-    /* Genişliği buraya sabitledim, böylece açılırken genişlik hesaplamasıyla titreme yapmaz */
-    width: calc(100% - 415px); 
-    box-sizing: border-box; 
+    width: calc(100% - 415px);
+    box-sizing: border-box;
+    overflow-y: auto !important;
 
-    /* --- TRANSITION (GEÇİŞ) AYARLARI --- */
-    opacity: 0;                   /* Başlangıçta tam şeffaf */
-    visibility: hidden;           /* Görünmez ve tıklanamaz */
-    transform: translateY(20px);  /* Hafif aşağıda başlasın (Yukarı kayarak gelecek) */
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak ve profesyonel geçiş hızı */
+    /* --- ANİMASYON BAŞLANGIÇ AYARLARI --- */
+    display: none; /* Varsayılan olarak GİZLİ */
+    opacity: 0;
+    transform: translateY(30px); /* Aşağıda başla */
+    transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-#tt-about-us.active, 
-#tt-about-us.tt-overlay {
-    /* display: block !important;  <--BUNU KALDIR (veya JS display:none eklemiyorsa gerek yok) */
-    
-    /* --- AKTİF DURUM --- */
-    opacity: 1;               /* Tam görünür */
-    visibility: visible;      /* Tıklanabilir */
-    transform: translateY(0); /* Orijinal yerine kaysın */
-    
-    /* Scrollbar Ayarları */
-    scrollbar-width: thin;
-    scrollbar-color: #d1b6ff #ffffff;
+/* Sadece Active Sınıfı Eklendiğinde Görünür Ol (Display'i JS halledecek) */
+#tt-about-us.active {
+    opacity: 1;
+    transform: translateY(0); /* Yerine otur */
 }
+
+/* Mobilde genişlik ayarı */
 @media (max-width: 768px) {
    #tt-about-us {
-            width: fit-content;
-        overflow-y: visible;
+       width: 100%;
    }
 }
-
 
 /* Style for Welcome section to position it at the top */
 #tt-welcome {

@@ -361,37 +361,53 @@ document.addEventListener('click', function(e){
 
 function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => section.classList.remove('active'));
+    sections.forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+    });
 
     const chatBox = document.getElementById('chat-box');
     const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
 
+    // --- SEÇENEK 1: ANASAYFA (HOME) ---
     if (option === 1) {
-        // 1. Loading sırasında gizlenen .cw içeriğinin kilidini kaldır (Display none'ı sil)
-        document.querySelectorAll('.cw').forEach(el => {
-            el.style.display = ''; 
-            el.style.removeProperty('display');
-        });
+        // Loading kilidini kaldır
+        document.querySelectorAll('.cw').forEach(el => el.style.display = '');
 
+        // About'u kapat (Animasyonsuz, hızlıca)
         if (aboutUsSection) {
-            aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
+            aboutUsSection.style.display = 'none';
         }
-        
+
+        // Welcome'ı aç
         if (welcomeSection) {
-            // Bölümü kesin olarak görünür yap
             welcomeSection.style.display = 'block';
-            welcomeSection.classList.add('active');
+            setTimeout(() => welcomeSection.classList.add('active'), 10);
         }
-        
+
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
       
-    } else if (option === 2) {
-        if (typeof window.showAboutTriptime === 'function') {
-            window.showAboutTriptime();
+    } 
+    // --- SEÇENEK 2: HAKKIMIZDA (ABOUT) ---
+    else if (option === 2) {
+        // Çakışan içerikleri gizle
+        document.querySelectorAll('.cw').forEach(el => el.style.display = 'none');
+        if (mainChat) mainChat.style.display = 'none';
+
+        // --- ANİMASYONLU AÇILIŞ ---
+        if (aboutUsSection) {
+            // 1. Önce görünür yap (ama hala şeffaf)
+            aboutUsSection.style.display = 'block';
+            aboutUsSection.classList.add('tt-overlay'); // Overlay gerekiyorsa
+            
+            // 2. Çok kısa bekle ve animasyonu tetikle (Browser render trick)
+            setTimeout(() => {
+                aboutUsSection.classList.add('active');
+            }, 20); // 20ms gecikme animasyonun çalışmasını garantiler
         }
     }
 }
