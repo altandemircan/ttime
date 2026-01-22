@@ -360,11 +360,11 @@ document.addEventListener('click', function(e){
 });
 
 function changeContent(option) {
-    // 1. Önce tüm içerik bölümlerini sıfırla (Active'i sil, inline display'i temizle)
+    // 1. Önce tüm içerik bölümlerini tamamen temizle/gizle
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => {
         section.classList.remove('active');
-        section.style.removeProperty('display'); // Inline style='display:...' varsa siler, CSS'e bırakır
+        section.style.display = 'none'; 
     });
 
     const chatBox = document.getElementById('chat-box');
@@ -374,34 +374,36 @@ function changeContent(option) {
 
     // --- SEÇENEK 1: ANASAYFA (HOME) ---
     if (option === 1) {
-        // A. Loading sırasında gizlenen .cw (Video ve Başlık) kısmını geri aç
-        // style="display: none" eklenmişti, bunu tamamen siliyoruz ki CSS dosyasındaki (flex/block) neyse o devreye girsin.
-        document.querySelectorAll('.cw').forEach(el => el.style.display = '');
+        // A. KRİTİK DÜZELTME: Loading'in koyduğu "gizle" kilidini kırıyoruz
+        // style="display: none" satırını elementten söküp atıyoruz.
+        document.querySelectorAll('.cw').forEach(el => {
+            el.style.display = ''; 
+            el.style.removeProperty('display'); 
+        });
 
         // B. Hakkımızda bölümünü kapat
         if (aboutUsSection) {
             aboutUsSection.classList.remove('active', 'tt-overlay');
-            aboutUsSection.style.display = 'none'; // Bunu zorla gizle
+            aboutUsSection.style.display = 'none'; 
         }
 
-        // C. Welcome Section'ı AKTİF ET (Kritik Nokta)
+        // C. Anasayfayı (Welcome) ZORLA GÖSTER
         if (welcomeSection) {
-            // Önce display: block verip görünür yapıyoruz, sonra active ekliyoruz
-            welcomeSection.style.display = 'block'; 
-            // Minik bir gecikmeyle active ekle ki tarayıcı render edebilsin
+            welcomeSection.style.display = 'block'; // Önce görünür yap
+            // Tarayıcının algılaması için minik bir gecikmeyle active ekle
             setTimeout(() => {
                 welcomeSection.classList.add('active');
             }, 10);
         }
 
-        // D. Chat kutularını görünür yap
+        // D. Chat kutularını geri getir
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
       
     } 
     // --- SEÇENEK 2: HAKKIMIZDA (ABOUT) ---
     else if (option === 2) {
-        // Hakkımızda açılınca arkadaki .cw'leri gizle
+        // Hakkımızda açılınca, arkada çakışma olmasın diye .cw'yi gizle
         document.querySelectorAll('.cw').forEach(el => el.style.display = 'none');
 
         if (typeof window.showAboutTriptime === 'function') {
