@@ -348,7 +348,7 @@ ease;
 #tt-about-us
 {   
     padding: 30px;
-    overflow-y: scroll;
+    overflow-y: scroll !important;
     top: 40px;
     width: calc(100% - 475px);
     background: #ffffff;
