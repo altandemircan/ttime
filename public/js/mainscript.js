@@ -932,7 +932,7 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
     
     // Sadece kontrol ediyorsak (İşlem başı)
     if (checkOnly) {
-        // Eğer sayaç 5 veya daha fazlaysa FALSE döndür (İzin verme)
+        // Eğer sayaç 10 veya daha fazlaysa FALSE döndür (İzin verme)
         return usage.count < MAX_DAILY;
     }
     
@@ -952,7 +952,7 @@ async function handleAnswer(answer) {
       if (typeof hideLoadingPanel === 'function') hideLoadingPanel(); 
       if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
       window.isProcessing = false; 
-      addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 😊", "bot-message request-bot-message");
+      addMessage("You have reached your daily trip plan limit (10). Please come back tomorrow! 😊", "bot-message request-bot-message");
       return; 
   }
 
