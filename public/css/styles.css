@@ -7638,25 +7638,40 @@ scrollbar-width: thin;
 }
 
 /* Ortak Modern Buton Stili */
+/* Ortak Modern Buton Stili */
 .main-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px; /* İkon ve yazı arası boşluk */
-    padding: 9px 12px; /* Daha geniş, ferah tıklama alanı */
-    border-radius: 12px; /* Tam yuvarlak (Pill shape) - çok daha modern */
+    gap: 8px; 
+    padding: 9px 12px; 
+    border-radius: 12px; 
     font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
     color: #ffffff !important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak geçiş */
-    border: 1px solid rgba(255,255,255,0.1); /* Hafif cam etkisi için ince sınır */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+    border: 1px solid rgba(255,255,255,0.1); 
     letter-spacing: 0.5px;
+
+    /* --- TIKLAMA SORUNU ÇÖZÜMÜ --- */
+    cursor: pointer !important;  /* El işareti çıksın */
+    position: relative;          /* Z-index için gerekli */
+    z-index: 1000;               /* Diğer her şeyin (video, gif) üstüne çık */
+    user-select: none;           /* Metin seçimini engelle */
 }
 
-/* Hover (Üzerine gelince) Efektleri - Ortak */
+/* Butonun içindeki İKON ve YAZI tıklamayı engellemesin */
+.main-btn svg, 
+.main-btn img,
+.main-btn span {
+    pointer-events: none; /* Tıklama bu ikonları delip geçsin, direkt linke (a) ulaşsın */
+}
+
+/* Hover Efekti */
 .main-btn:hover {
-    transform: translateY(-3px); /* Hafifçe yukarı kalksın */
+    transform: translateY(-3px); 
+    z-index: 1001; /* Hover olunca daha da üste çıksın */
 }
 
 /* Mor Buton (About Triptime) */
