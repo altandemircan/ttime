@@ -369,9 +369,9 @@ function changeContent(option) {
     const mainChat = document.getElementById('main-chat');
 
     if (option === 1) {
-        // 1. Loading sırasında gizlenen .cw içeriğinin kilidini kaldır (Display none'ı sil)
+        // Welcome ekranına dön
         document.querySelectorAll('.cw').forEach(el => {
-            el.style.display = ''; 
+            el.style.display = '';
             el.style.removeProperty('display');
         });
 
@@ -381,7 +381,6 @@ function changeContent(option) {
         }
         
         if (welcomeSection) {
-            // Bölümü kesin olarak görünür yap
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
@@ -390,6 +389,7 @@ function changeContent(option) {
         if (chatBox) chatBox.style.display = 'block';
       
     } else if (option === 2) {
+        // About ekranını göster
         if (typeof window.showAboutTriptime === 'function') {
             window.showAboutTriptime();
         }
