@@ -714,25 +714,38 @@
     <div class="button-container">
         
 <a href="javascript:;" onclick="
+    console.log('About butonu tıklandı');
     const aboutUs = document.getElementById('tt-about-us');
     const welcome = document.getElementById('tt-welcome');
-    const mainChat = document.getElementById('main-chat');
-    const chatBox = document.getElementById('chat-box');
     
+    console.log('aboutUs:', aboutUs);
+    console.log('aboutUs display:', aboutUs.style.display);
+    console.log('aboutUs classes:', aboutUs.className);
+    
+    // Önce welcome'ı gizle
     if (welcome) {
         welcome.style.display = 'none';
         welcome.classList.remove('active');
     }
     
+    // About'u göster
     if (aboutUs) {
         aboutUs.style.display = 'block';
         aboutUs.style.zIndex = '150';
         aboutUs.style.background = '#fff';
         aboutUs.style.overflowY = 'auto';
         aboutUs.classList.add('active', 'tt-overlay');
+        
+        // Inline style'daki display:none'ı kaldır
         aboutUs.style.removeProperty('display');
+        
+        console.log('Son durum - display:', aboutUs.style.display);
+        console.log('Son durum - classes:', aboutUs.className);
     }
     
+    // Chat'i gizle
+    const mainChat = document.getElementById('main-chat');
+    const chatBox = document.getElementById('chat-box');
     if (mainChat) mainChat.style.display = 'none';
     if (chatBox) chatBox.style.display = 'none';
     
