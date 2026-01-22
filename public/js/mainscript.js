@@ -408,33 +408,29 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // 1. VERİ HAZIRLIĞI (INPUTA GİDECEK GERÇEK UZUN VERİ)
-        // Hiçbir kesme işlemi yapmıyoruz, veritabanından ne geliyorsa o.
+        // 1. TAM VERİYİ HAZIRLA (INPUTA GİDECEK OLAN)
         let rawName = "";
         if (props.city && props.city.trim()) rawName = props.city;
         else if (props.name && props.name.trim()) rawName = props.name;
         
-        // Yedek kontrol
         if (!rawName || rawName.length < 2) rawName = props.formatted || "";
 
-        // Temizleme (Virgülden sonrasını atma kararı - UNESCO ise atma)
-        let LONG_DATA_NAME = rawName;
+        let LONG_INPUT_NAME = rawName;
+        // Eğer UNESCO değilse virgülden sonrasını temizle (Standart davranış)
         if (props.result_type !== 'unesco_site' && rawName.includes(',')) {
-             LONG_DATA_NAME = rawName.split(',')[0].trim();
+             LONG_INPUT_NAME = rawName.split(',')[0].trim();
         }
 
-        // Detayları ekle (Ülke kodu vb.) -> Bu "Görünecek Metin" için
+        // 2. GÖRÜNECEK TAM METNİ HAZIRLA (TOOLTIP VE GENİŞLEME İÇİN)
         const regionParts = [];
-        if (props.city && props.city !== LONG_DATA_NAME) regionParts.push(props.city);
+        if (props.city && props.city !== LONG_INPUT_NAME) regionParts.push(props.city);
         
         const countryCode = props.country_code || "";
         const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
         
-        // FULL DISPLAY TEXT: Hem listede görünecek (CSS ile kırpılacak) hem de inputa tam hali gidecek
-        let fullDisplayText = LONG_DATA_NAME;
+        let fullDisplayText = LONG_INPUT_NAME;
         if (regionParts.length > 0) fullDisplayText += ", " + regionParts.join(', ');
         if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
-        
         fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
 
         // Çift Kayıt Kontrolü
@@ -442,33 +438,39 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
 
+        // 3. GÖRÜNECEK KISA METNİ HAZIRLA (İLK BAKIŞ İÇİN)
+        // ==> ZORLA KESME İŞLEMİ (JS) <==
+        let shortDisplayText = fullDisplayText;
+        if (props.result_type === 'unesco_site' && fullDisplayText.length > 35) {
+            // 32 karakter al + ... ekle
+            shortDisplayText = fullDisplayText.substring(0, 32) + "..."; 
+        }
+
         // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // İçeriğe TAM METNİ koyuyoruz. (Kesme işlemini aşağıda CSS yapacak)
-        div.textContent = fullDisplayText; 
-        div.title = fullDisplayText; // Mouse üzerine gelince ipucu çıkar
+        // BAŞLANGIÇTA KISA HALİNİ YAZIYORUZ
+        div.textContent = shortDisplayText; 
+        
+        div.title = fullDisplayText; // Mouse gelince tam halini gör
         div.dataset.displayText = fullDisplayText;
 
-        // ==> CSS İLE KISALTMA (LİSTEDE KISA GÖRÜNME) <==
-        // Bu ayarlar yazıyı tek satıra zorlar ve sığmazsa "..." koyar.
+        // Görünüm Ayarları
         div.style.whiteSpace = "nowrap";       
         div.style.overflow = "hidden";         
-        div.style.textOverflow = "ellipsis";   
+        // textOverflow'u kapattım çünkü JS ile zaten "..." koyduk
+        // div.style.textOverflow = "ellipsis";   
         div.style.display = "block";
-        div.style.maxWidth = "100%"; // Genişliği sınırla ki taşmasın
 
-        // ==> UNESCO STİLİ VE BADGE <==
+        // ==> UNESCO STİLİ <==
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
-            // Yazı badge'in altına girmesin diye sağdan boşluk
             div.style.paddingRight = "115px"; 
 
             const badge = document.createElement("span");
             badge.textContent = "World Heritage";
-            
             badge.style.position = "absolute";
             badge.style.top = "50%";
             badge.style.transform = "translateY(-50%)";
@@ -484,25 +486,49 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // 3. TIKLAMA OLAYI (KRİTİK NOKTA)
-        // Burada div'in üzerindeki görüntüyü değil, yukarıda hesapladığımız 'fullDisplayText'i kullanıyoruz.
+        // 4. TIKLAMA OLAYI
         div.onclick = () => {
-            // Tıklayınca önce görsel olarak "Seçildi" efekti verelim
+            // A) ÖNCE GÖRSEL OLARAK GENİŞLET (Senin istediğin 2. aşama)
+            div.textContent = fullDisplayText; 
+            // Badge silinmesin diye tekrar eklememiz gerekebilir veya 
+            // textContent tüm içeriği sildiği için badge'i korumak adına innerText kullanmayıp text node güncelliyoruz:
+            
+            // Hızlı çözüm: UNESCO ise badge'i tekrar ekle
+            if (props.result_type === 'unesco_site') {
+                 // Metni güncelle ama badge için HTML yapısını koru
+                 div.innerHTML = ""; 
+                 div.textContent = fullDisplayText;
+                 
+                 const badge = document.createElement("span");
+                 badge.textContent = "World Heritage";
+                 badge.style.position = "absolute";
+                 badge.style.top = "50%";
+                 badge.style.transform = "translateY(-50%)";
+                 badge.style.right = "10px";
+                 badge.style.fontSize = "0.65rem";
+                 badge.style.fontWeight = "bold";
+                 badge.style.backgroundColor = "#54afd6"; 
+                 badge.style.color = "#fff";
+                 badge.style.padding = "2px 6px";
+                 badge.style.borderRadius = "4px";
+                 div.appendChild(badge);
+            }
+
+            // Genişletme stilleri
+            div.style.whiteSpace = "normal"; 
+            div.style.overflow = "visible";
+            
+            // Seçim Efekti
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
 
-            // ==> GENİŞLEME EFEKTİ (İsteğe bağlı) <==
-            // Tıklandığı an yazının tamamını göstermek için CSS kısıtlamasını kaldırıyoruz
-            div.style.whiteSpace = "normal"; 
-            div.style.overflow = "visible";
-
             window.selectedSuggestion = { 
-                displayText: fullDisplayText, // <-- BURASI HEP UZUN OLACAK
+                displayText: fullDisplayText,
                 props,
                 selectedLocation: {
-                    name: LONG_DATA_NAME, // <-- BURASI HEP UZUN OLACAK
-                    city: props.city || LONG_DATA_NAME,
+                    name: LONG_INPUT_NAME, // Tam isim
+                    city: props.city || LONG_INPUT_NAME,
                     country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
@@ -517,11 +543,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // Chat inputuna TAM UZUN İSMİ basıyoruz
-            let canonicalStr = `Plan a ${days}-day tour for ${LONG_DATA_NAME}`;
+            // B) INPUTA UZUN İSMİ YAZ (3. Aşama)
+            let canonicalStr = `Plan a ${days}-day tour for ${LONG_INPUT_NAME}`;
             
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${LONG_DATA_NAME} ${days} days`);
+                const c = formatCanonicalPlan(`${LONG_INPUT_NAME} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
 
