@@ -62,26 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 
-// --- ABOUT DIŞARI TIKLAYINCA KAPATMA ---
-document.addEventListener('click', function(event) {
-    const aboutUsSection = document.getElementById('tt-about-us');
-    if (aboutUsSection && aboutUsSection.style.display === 'block') {
-        if (!aboutUsSection.contains(event.target) && 
-            !event.target.closest('.updates-btn') && 
-            !event.target.closest('#about-icon')) {
-            
-            aboutUsSection.style.display = 'none';
-            aboutUsSection.classList.remove('active', 'tt-overlay');
-
-            if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
-            if (document.getElementById('chat-box')) document.getElementById('chat-box').style.display = 'block';
-            if (document.getElementById('tt-welcome')) {
-                document.getElementById('tt-welcome').style.display = 'block';
-                document.getElementById('tt-welcome').classList.add('active');
-            }
-        }
-    }
-});
 
 // Sidebar açma fonksiyonları (kısa versiyonlar)
 function toggleSidebarGallery() {
@@ -297,6 +277,7 @@ document.addEventListener('click', function(e){
     }
 });
 
+
 // Basitleştirilmiş changeContent
 function changeContent(option) {
     const welcomeSection = document.getElementById('tt-welcome');
@@ -316,6 +297,11 @@ function changeContent(option) {
         }
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
+
+        // URL'den #about-triptime hash'ini kaldır (YENİ EKLENDİ)
+        if (window.location.hash === "#about-triptime") {
+            window.history.pushState("", document.title, window.location.pathname + window.location.search);
+        }
     } else if (option === 2) {
         // About ekranını göster
         if (typeof window.showAboutTriptime === 'function') {
@@ -336,9 +322,16 @@ document.addEventListener('click', function(event) {
         const clickedOnUpdates = event.target.closest('.updates-btn');
 
         if (!clickedInsideAboutUs && !clickedOnTtIcon && !clickedOnUpdates) {
+            // 1. About'u gizle
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
 
+            // 2. URL'den #about-triptime hash'ini kaldır (YENİ EKLENDİ)
+            if (window.location.hash === "#about-triptime") {
+                window.history.pushState("", document.title, window.location.pathname + window.location.search);
+            }
+
+            // 3. Diğer ekranları göster
             if (chatBox) chatBox.style.display = 'block';
             if (document.getElementById('main-chat')) document.getElementById('main-chat').style.display = 'flex';
             
