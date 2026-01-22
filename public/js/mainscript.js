@@ -1133,7 +1133,6 @@ function sendMessage() {
     const input = document.getElementById("user-input");
     if (!input) return;
     
-    // DİKKAT: 'const' yerine 'let' yaptık
     let val = input.value.trim(); 
     if (!val) return;
 
@@ -1154,7 +1153,7 @@ function sendMessage() {
         }
     }
 
-    // 2. Gereksiz Kelimeleri Sil (trip, tour vb. dahil)
+    // 2. Gereksiz Kelimeleri Sil
     const stopWords = [
         "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
         "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
@@ -1169,8 +1168,7 @@ function sendMessage() {
     if (location.length > 0) {
         location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
         
-        // ==> GÜNCELLEME BURADA: "3-day trip to [Location]" <==
-        // Markaya uygun (trip) ve gramer olarak doğru (3-day).
+        // Markaya uygun: "Plan a 3-day trip to Antalya"
         val = `Plan a ${days}-day trip to ${location}`;
         
         console.log(`🧹 Triptime Formatı: "${input.value}" -> "${val}"`);
@@ -1186,25 +1184,8 @@ function sendMessage() {
     // İlk mesaj
     addWelcomeMessage();
 
-    const formatted = formatCanonicalPlan(val);
-
-    // 1. Diff (Düzeltme) Senaryosu
-    if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
-        const diffHtml = `
-          <div class="canonical-diff">
-            <span class="raw-strike">${strikeThrough(val)}</span>
-            <span class="canon-arrow">→</span>
-            <span class="canon-text">${formatted.canonical}</span>
-          </div>
-        `;
-        addMessage(diffHtml, "user-message request-user-message");
-        window.__suppressNextUserEcho = true;
-        
-        showLoadingPanel(); 
-        handleAnswer(`${formatted.city} ${formatted.days} days`);
-        input.value = "";
-        return;
-    }
+    // --- BURADAKİ DIFF / ÜZERİNİ ÇİZME KODLARI SİLİNDİ ---
+    // Artık direkt işleme geçiyoruz.
 
     // Lokasyon kilidi
     if (!window.selectedLocationLocked || !window.selectedLocation) {
@@ -1212,27 +1193,25 @@ function sendMessage() {
         return;
     }
 
-    // 2. Canonical Match (REGEX GÜNCELLENDİ)
-    // Artık hem "tour" hem "trip", hem "for" hem "to" kabul ediyor.
+    // 1. Canonical Match (REGEX)
     const m = val.match(/Plan a (\d+)-day (?:tour|trip) (?:for|to) (.+)$/i);
     
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
-        // Şehir ismini regex'ten (m[2]) veya kilitli lokasyondan al
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
         
+        // Kullanıcının mesajını ekrana bas (Düzeltilmiş halini)
         addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
         showLoadingPanel(); 
-        // Arkadaki sisteme "City Days days" formatında gönderiyoruz
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
-    // 3. Standart Akış
+    // 2. Standart Akış
     showLoadingPanel(); 
     handleAnswer(val); 
     input.value = ""; 
