@@ -444,10 +444,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
         // ==> BURASI EKLENDİ: UNESCO İSE TURUNCU YAP <==
         if (props.result_type === 'unesco_site') {
-            div.style.backgroundColor = "#ff9900"; // Arka plan turuncu
-            div.style.color = "#fff"; // Yazı beyaz (daha iyi okunur)
-            div.style.fontWeight = "bold"; // Kalın yazı
-            div.style.borderBottom = "1px solid #e68a00"; // Hafif kenarlık
+            div.style.backgroundColor = "#f2fce4;
+           
         }
         // ===============================================
 
