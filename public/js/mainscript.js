@@ -944,7 +944,7 @@ if (savedText === currentText && currentText.length > 1) {             // Sadece
 // === GÜNLÜK LİMİT KONTROL FONKSİYONU ===
 function checkAndIncrementDailyLimit(checkOnly = false) {
     const STORAGE_KEY = 'daily_plan_usage';
-    const MAX_DAILY = 5;
+    const MAX_DAILY = 10;
     const today = new Date().toDateString(); // Örn: "Sun Jan 04 2026"
     
     let usage = {};
