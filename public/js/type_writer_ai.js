@@ -202,4 +202,4 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         }
         console.error("AI Error:", e);
     }
-};;
+};
