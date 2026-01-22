@@ -182,35 +182,38 @@ function showSuggestions() {
 
         // --- BURAYA EKLE ---
         suggestion.onclick = function() {
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            suggestion.classList.add("selected-suggestion");
+    Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+    suggestion.classList.add("selected-suggestion");
 
-            const { city, days } = extractCityAndDaysFromTheme(option.text);
+    // Burayı değiştir!
+    // const { city, days } = extractCityAndDaysFromTheme(option.text);
+    const rawText = suggestion.textContent.replace(/🇦🇹|🇮🇹|🇬🇧|🇫🇷|🇪🇸|🇹🇷/g, "").trim();
+    const { city, days } = extractCityAndDaysFromTheme(rawText);
 
-            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${city} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
+    let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+    if (typeof formatCanonicalPlan === "function") {
+        const c = formatCanonicalPlan(`${city} ${days} days`);
+        if (c && c.canonical) canonicalStr = c.canonical;
+    }
 
-            window.__programmaticInput = true;
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
+    window.__programmaticInput = true;
+    if (typeof setChatInputValue === "function") {
+        setChatInputValue(canonicalStr);
+    } else {
+        chatInput.value = canonicalStr;
+    }
+    setTimeout(() => { window.__programmaticInput = false; }, 0);
 
-            window.selectedSuggestion = { displayText: canonicalStr, city, days };
-            window.selectedLocation = { city, days };
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton?.();
-            showSuggestionsDiv?.();
-            if (typeof updateCanonicalPreview === "function") {
-                updateCanonicalPreview();
-            }
-        };
+    window.selectedSuggestion = { displayText: canonicalStr, city, days };
+    window.selectedLocation = { city, days };
+    window.selectedLocationLocked = true;
+    window.__locationPickedFromSuggestions = true;
+    enableSendButton?.();
+    showSuggestionsDiv?.();
+    if (typeof updateCanonicalPreview === "function") {
+        updateCanonicalPreview();
+    }
+};
 
         suggestionsDiv.appendChild(suggestion);
     });
@@ -685,23 +688,11 @@ function parsePlanRequest(text) {
     if (!days || isNaN(days) || days < 1) days = 2;
 
     // Konum bulunamadıysa metinden tahmin et
-    // Konum bulunamadıysa metinden tahmin et
     if (!location) {
-        // EKLEME: Sabit temalardaki şehirleri "Days" kelimesinden önce yakalamak için öncelik veriyoruz
-        const fixedCities = ["Antalya", "Rome", "London", "Paris", "Madrid", "Berlin"];
-        for (let city of fixedCities) {
-            if (text.toLowerCase().includes(city.toLowerCase())) {
-                location = city;
-                break; // Şehri bulduğumuz an döngüden çıkıyoruz
-            }
-        }
-
-        // Eğer yukarıdaki sabit şehirlerden biri bulunamadıysa mevcut regex'in çalışsın (Input'u bozmaz)
-        if (!location) {
-            let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
-            if (wordMatch) location = wordMatch[1];
-        }
+        let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
+        if (wordMatch) location = wordMatch[1];
     }
+
     // Fonksiyon artık 3 veri döndürüyor: Konum, Gün ve Kırpılma Durumu
     return { location, days, isCapped }; 
 }
