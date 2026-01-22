@@ -7617,7 +7617,7 @@ scrollbar-width: thin;
     justify-content: center;
     gap: 8px; /* İkon ve yazı arası boşluk */
     padding: 9px 12px; /* Daha geniş, ferah tıklama alanı */
-    border-radius: 50px; /* Tam yuvarlak (Pill shape) - çok daha modern */
+    border-radius: 12px; /* Tam yuvarlak (Pill shape) - çok daha modern */
     font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
