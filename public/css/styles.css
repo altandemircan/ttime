@@ -344,28 +344,38 @@ ease;
     background: #fff;
 }
 
-/*  Remove specific styles for these sections */
-#tt-about-us
-{   
-       position: fixed;
+#tt-about-us {
+    position: fixed;
     left: 0;
     top: 40px;
     bottom: 0;
     background: #ffffff;
     padding: 30px;
     overflow-y: auto !important;
-    /* z-index: 999 !important; */
-   
+    z-index: 999;
+    
+    /* Genişliği buraya sabitledim, böylece açılırken genişlik hesaplamasıyla titreme yapmaz */
+    width: calc(100% - 415px); 
+    box-sizing: border-box; 
+
+    /* --- TRANSITION (GEÇİŞ) AYARLARI --- */
+    opacity: 0;                   /* Başlangıçta tam şeffaf */
+    visibility: hidden;           /* Görünmez ve tıklanamaz */
+    transform: translateY(20px);  /* Hafif aşağıda başlasın (Yukarı kayarak gelecek) */
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak ve profesyonel geçiş hızı */
 }
+
 #tt-about-us.active, 
 #tt-about-us.tt-overlay {
-    display: block !important;
-    bottom: 0;            /* Aşağıya kadar uzat */
-    overflow-y: auto;     /* Scroll barı getir */
-    padding: 30px;        /* İç boşluk */
-    box-sizing: border-box; /* İSTEDİĞİN GİBİ: Sadece tıklandığında çalışır */
-    width: calc(100% - 415px);
-        scrollbar-width: thin;
+    /* display: block !important;  <--BUNU KALDIR (veya JS display:none eklemiyorsa gerek yok) */
+    
+    /* --- AKTİF DURUM --- */
+    opacity: 1;               /* Tam görünür */
+    visibility: visible;      /* Tıklanabilir */
+    transform: translateY(0); /* Orijinal yerine kaysın */
+    
+    /* Scrollbar Ayarları */
+    scrollbar-width: thin;
     scrollbar-color: #d1b6ff #ffffff;
 }
 @media (max-width: 768px) {
