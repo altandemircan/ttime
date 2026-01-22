@@ -408,66 +408,64 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // 1. TAM İSMİ OLUŞTUR (Bu veritabanına gidecek olan gerçek metin)
-        let fullName = "";
-        if (props.city && props.city.trim()) fullName = props.city;
-        else if (props.name && props.name.trim()) fullName = props.name.split(",")[0];
+        // 1. GERÇEK UZUN İSMİ BELİRLE (Input'a bu yazılacak)
+        let rawName = "";
+        if (props.city && props.city.trim()) rawName = props.city;
+        else if (props.name && props.name.trim()) rawName = props.name; // split yapmadan ham hali
         
-        if (!fullName || fullName.trim().length < 2) return;
+        // Eğer rawName çok kısaysa veya yoksa yedeğe geç
+        if (!rawName || rawName.length < 2) rawName = props.formatted || "";
 
-        // Detayları ekle (Şehir, Ülke vs.)
+        // Temiz isim (Virgülden öncesini alalım mı? UNESCO ise ALMAYALIM, tam kalsın)
+        let LONG_NAME_FOR_INPUT = rawName;
+        if (props.result_type !== 'unesco_site' && rawName.includes(',')) {
+             LONG_NAME_FOR_INPUT = rawName.split(',')[0].trim();
+        }
+
+        // 2. DETAYLAR (Şehir, Ülke)
         const regionParts = [];
-        if (props.city && props.city !== fullName) regionParts.push(props.city);
+        // Eğer isim şehir ismiyle aynı değilse detaya ekle
+        if (props.city && props.city !== LONG_NAME_FOR_INPUT) regionParts.push(props.city);
         
         const countryCode = props.country_code || "";
         const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
         
-        // fullDisplayText: "Göreme National Park..., TR 🇹🇷" (Tam Hali)
-        let fullDisplayText = fullName;
-        if (regionParts.length > 0) fullDisplayText += ", " + regionParts.join(', ');
-        if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
-        fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
-
-        // Çift Kayıt Kontrolü (Tam isme göre yapılır)
-        const normalizedText = fullDisplayText.toLowerCase().replace(/[^a-z0-9]/g, '');
+        // 3. GÖRÜNECEK METNİ OLUŞTUR
+        let displayString = LONG_NAME_FOR_INPUT;
+        
+        if (regionParts.length > 0) displayString += ", " + regionParts.join(', ');
+        if (countryCode) displayString += ", " + countryCode.toUpperCase() + flag;
+        
+        displayString = displayString.replace(/^,\s*/, "").trim();
+        
+        // Çift Kayıt Engelleme
+        const normalizedText = displayString.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
-
-        // 2. GÖRÜNECEK KISA İSMİ OLUŞTUR (Ekranda yazan hali)
-        let visualText = fullDisplayText;
         
-        // ==> KESME İŞLEMİ BURADA YAPILIYOR <==
-        // Eğer UNESCO ise ve 35 karakterden uzunsa, acımasızca kesip "..." koyarız.
-        if (props.result_type === 'unesco_site' && visualText.length > 35) {
-            visualText = visualText.substring(0, 32) + "...";
-            // Eğer kesilen metnin sonunda ülke kodu yoksa, kullanıcı anlasın diye sonuna ekleyelim (Opsiyonel)
-            if (countryCode && !visualText.includes(countryCode.toUpperCase())) {
-                visualText += ` ${countryCode.toUpperCase()}${flag}`;
-            }
-        }
-
         // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // EKRANA KISA HALİNİ YAZIYORUZ
-        div.textContent = visualText; 
+        // Ekranda görünecek yazı (CSS bunu otomatik kırpacaktır)
+        div.textContent = displayString; 
         
-        // Arka planda tam halini saklıyoruz (Tooltip için)
-        div.title = fullDisplayText; 
-        div.dataset.displayText = fullDisplayText;
+        // Mouse üzerine gelince tam metni görsün
+        div.title = displayString; 
+        div.dataset.displayText = displayString;
 
-        // CSS: Taşmaları engelle (Garanti olsun diye)
-        div.style.whiteSpace = "nowrap";
-        div.style.overflow = "hidden";
-        div.style.textOverflow = "ellipsis";
-        div.style.display = "block";
+        // ==> CSS AYARLARI (GÖRÜNTÜ KISALTMA) <==
+        div.style.whiteSpace = "nowrap";       // Alt satıra inme
+        div.style.overflow = "hidden";         // Taşanı gizle
+        div.style.textOverflow = "ellipsis";   // Sonuna ... koy
+        div.style.display = "block";           // Blok yap
 
         // ==> UNESCO STİLİ VE BADGE <==
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
-            div.style.paddingRight = "110px"; // Badge payı
+            // Yazı badge'in altına girmesin diye sağdan boşluk (Kritik!)
+            div.style.paddingRight = "115px"; 
 
             const badge = document.createElement("span");
             badge.textContent = "World Heritage";
@@ -490,18 +488,18 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // 3. TIKLAMA OLAYI (BURADA TAM İSİM KULLANILIR)
+        // 4. TIKLAMA OLAYI (BURADA "LONG_NAME_FOR_INPUT" KULLANIYORUZ)
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
 
             window.selectedSuggestion = { 
-                displayText: fullDisplayText, // <-- Tam metin
+                displayText: displayString, 
                 props,
                 selectedLocation: {
-                    name: fullName, // <-- Tam isim
-                    city: props.city || fullName,
+                    name: LONG_NAME_FOR_INPUT, // <-- BAK BURASI TAM İSİM
+                    city: props.city || LONG_NAME_FOR_INPUT,
                     country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
@@ -517,9 +515,12 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
             // Chat kutusuna TAM isim yazılır
-            let canonicalStr = `Plan a ${days}-day tour for ${fullName}`;
+            // displayString yerine LONG_NAME_FOR_INPUT kullanıyoruz
+            let canonicalStr = `Plan a ${days}-day tour for ${LONG_NAME_FOR_INPUT}`;
+            
+            // Eğer format fonksiyonu varsa ona da tam ismi gönder
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${fullName} ${days} days`);
+                const c = formatCanonicalPlan(`${LONG_NAME_FOR_INPUT} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
 
