@@ -347,9 +347,9 @@ ease;
 /*  Remove specific styles for these sections */
 #tt-about-us
 {   
-    padding: 20px;
+    padding: 30px;
     overflow-y: scroll;
-    top: 50px;
+    top: 40px;
     width: calc(100% - 455px);
     background: #ffffff;
 }
