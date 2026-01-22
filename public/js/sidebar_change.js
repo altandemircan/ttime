@@ -361,37 +361,47 @@ document.addEventListener('click', function(e){
 
 function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => section.classList.remove('active'));
-
     const chatBox = document.getElementById('chat-box');
-    const welcomeSection = document.getElementById('tt-welcome');
-    const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
-
+    
+    // Tüm bölümleri gizle
+    sections.forEach(section => {
+        section.style.display = 'none';
+        section.classList.remove('active');
+    });
+    
     if (option === 1) {
-        // Welcome ekranına dön
-        document.querySelectorAll('.cw').forEach(el => {
-            el.style.display = '';
-            el.style.removeProperty('display');
-        });
-
-        if (aboutUsSection) {
-            aboutUsSection.style.display = 'none';
-            aboutUsSection.classList.remove('active', 'tt-overlay');
-        }
-        
+        // Welcome ekranını göster
+        const welcomeSection = document.getElementById('tt-welcome');
         if (welcomeSection) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
         
+        // CW elementlerini görünür yap
+        document.querySelectorAll('.cw').forEach(el => {
+            el.style.display = '';
+        });
+        
+        // Chat bölümlerini göster
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
       
     } else if (option === 2) {
         // About ekranını göster
-        if (typeof window.showAboutTriptime === 'function') {
-            window.showAboutTriptime();
+        const aboutUsSection = document.getElementById('tt-about-us');
+        if (aboutUsSection) {
+            aboutUsSection.style.display = 'block';
+            aboutUsSection.classList.add('active', 'tt-overlay');
+            
+            // About ekranına özel stil uygula
+            aboutUsSection.style.zIndex = '150';
+            aboutUsSection.style.background = '#fff';
+            aboutUsSection.style.overflowY = 'auto';
+            
+            // Chat'i gizle
+            if (mainChat) mainChat.style.display = 'none';
+            if (chatBox) chatBox.style.display = 'none';
         }
     }
 }

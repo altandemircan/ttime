@@ -7542,6 +7542,7 @@ scrollbar-width: thin;
     padding: 30px;
     overflow-y: auto !important;
     z-index: 999;
+     display: none; /* Varsayılan olarak gizli */
     
     /* Genişliği buraya sabitledim, böylece açılırken genişlik hesaplamasıyla titreme yapmaz */
     width: calc(100% - 415px); 
@@ -7556,8 +7557,7 @@ scrollbar-width: thin;
 
 #tt-about-us.active, 
 #tt-about-us.tt-overlay {
-    /* display: block !important;  <--BUNU KALDIR (veya JS display:none eklemiyorsa gerek yok) */
-    
+display: block !important;    
     /* --- AKTİF DURUM --- */
     opacity: 1;               /* Tam görünür */
     visibility: visible;      /* Tıklanabilir */
