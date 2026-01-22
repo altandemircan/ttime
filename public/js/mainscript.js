@@ -1119,7 +1119,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function sendMessage() {
+// ... existing code ...
+async function sendMessage() {
     // Kilit kontrolü (Loading sırasında tekrar basılmasın)
     if (window.isProcessing) {
         const panel = document.getElementById('loading-panel');
@@ -1131,10 +1132,60 @@ function sendMessage() {
         }
     }
 
-    const input = document.getElementById("user-input");
-    if (!input) return;
-    const val = input.value.trim();
-    if (!val) return;
+    const inputField = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const suggestionsDiv = document.getElementById("suggestions");
+
+    // 1. HAM VERİYİ AL
+    let rawText = inputField ? inputField.value.trim() : "";
+    if (!rawText) return;
+
+    // --- BURASI YENİ: SATIR ARASI TEMİZLİKÇİ (INLINE PARSER) ---
+    // Başka fonksiyon yok, her şey burada bitiyor.
+    
+    let text = rawText.toLowerCase(); // Hepsini küçült
+    let days = 1; // Varsayılan gün
+
+    // A. GÜN SAYISINI ÇEK AL (Regex: 3 gün, 3 day, ya da sadece 3)
+    // "2025" gibi yılları gün sanmasın diye 60 sınırı koyduk.
+    const numMatch = text.match(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|gunde|günlük)?/i);
+    if (numMatch) {
+        let val = parseInt(numMatch[1], 10);
+        if (val > 0 && val < 60) {
+            days = val;
+            text = text.replace(numMatch[0], " "); // Sayıyı cümleden sil
+        }
+    }
+
+    // B. GEREKSİZ KELİMELERİ SİL (Çöpçü)
+    const stopWords = [
+        "plan", "a", "tour", "trip", "visit", "for", "to", "in", "the", "with", "and", "&",
+        "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
+        "hakkında", "ile", "gün", "day", "days"
+    ];
+    stopWords.forEach(w => {
+        text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
+    });
+
+    // C. ŞEHİR ADINI TEMİZLE VE BÜYÜT
+    // Özel karakterleri at, boşlukları temizle
+    let location = text.replace(/[^\w\s\u00C0-\u017F-]/g, " ").replace(/\s+/g, " ").trim();
+    
+    // Baş harfleri büyüt (istanbul -> Istanbul)
+    if (location.length > 0) {
+        location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
+
+    // D. FİNAL MESAJI OLUŞTUR (Sisteme gidecek olan temiz format)
+    // Eğer parse edemediysek (boş kaldıysa) ham halini (rawText) gönder, bozmayalım.
+    const message = location ? `${days}-day ${location}` : rawText;
+
+    console.log(`🧹 Temizlik Sonucu: "${rawText}" -> "${message}"`);
+    
+    // Eski kodlarla uyumluluk için değişkenleri eşle
+    const input = inputField;
+    const val = message; // Artık temizlenmiş mesajı kullanıyoruz
+    // -----------------------------------------------------------
 
     if (!window.__locationPickedFromSuggestions) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
@@ -1191,6 +1242,7 @@ function sendMessage() {
     handleAnswer(val);
     input.value = ""; 
 }
+// ... existing code ...
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
