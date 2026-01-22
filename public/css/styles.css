@@ -366,17 +366,6 @@ ease;
     box-sizing: border-box; /* ➤ İSTEDİĞİN GİBİ: Sadece açılınca hesaplansın */
 }
 
-/* Scrollbar Güzelleştirme (Opsiyonel) */
-#tt-about-us.active::-webkit-scrollbar {
-    width: 8px;
-}
-#tt-about-us.active::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-#tt-about-us.active::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
-}
 @media (max-width: 768px) {
    #tt-about-us {
             width: fit-content;
