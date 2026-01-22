@@ -493,6 +493,75 @@ function showRouteInfoBanner(day) {
 }
 
 
+// Add this function to nearby_ai.js to handle the click event
+window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
+    try {
+        // 1. Retrieve the place data from the global cache created in showNearbyPlacesPopup
+        const place = window._lastNearbyPlaces && window._lastNearbyPlaces[index];
+        
+        if (!place) {
+            console.error("Place not found in cache. Index:", index);
+            return;
+        }
+
+        const p = place.properties;
+        const name = p.name || p.formatted || "Unknown Place";
+        const address = p.formatted || "";
+        const category = place.category || 'Place'; // Uses the category logic from generation
+        
+        // 2. Try to get an image (or use placeholder)
+        let imageUrl = "img/placeholder.png";
+        
+        // If we have a cached photo list, try to use it (optional optimization)
+        // Otherwise, fetch a new one or use placeholder
+        if (typeof getPexelsImage === "function") {
+            try {
+                // Determine search query for image
+                const city = window.selectedCity || "";
+                imageUrl = await getPexelsImage(`${name} ${category} ${city}`);
+            } catch (e) {
+                console.warn('Image fetch failed, using placeholder');
+            }
+        }
+
+        // 3. Add to Cart using the mainscript.js function
+        if (typeof addToCart === "function") {
+            addToCart(
+                name,
+                imageUrl,
+                parseInt(day),
+                category,
+                address,
+                null, // rating
+                null, // user_ratings_total
+                p.opening_hours || "",
+                p.place_id,
+                { lat: parseFloat(lat), lng: parseFloat(lon) },
+                p.website || ""
+            );
+            
+            // Visual Feedback (Change button content temporarily)
+            const btn = document.activeElement;
+            if (btn && btn.tagName === 'BUTTON') {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = "✓";
+                btn.style.color = "green";
+                btn.style.borderColor = "green";
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.color = "";
+                    btn.style.borderColor = "";
+                }, 2000);
+            }
+        } else {
+            console.error("addToCart function is missing!");
+        }
+
+    } catch (error) {
+        console.error("Error adding nearby place to trip:", error);
+    }
+};
+
 function handlePopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
         .then(src => {
