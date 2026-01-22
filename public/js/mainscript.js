@@ -481,10 +481,9 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // 4. TIKLAMA OLAYI (AKILLI RESET)
-       // 4. TIKLAMA OLAYI (STANDART & TEMİZ FORMAT)
+       // 4. TIKLAMA OLAYI (TRIPTIME FORMATI KORUNACAK)
         div.onclick = () => {
-            // A) GÖRSEL DÜZENLEME (Diğerlerini gizle, seçileni aç)
+            // A) GÖRSEL DÜZENLEME
             Array.from(suggestionsDiv.children).forEach(child => {
                 if (child !== div) child.style.display = 'none';
             });
@@ -494,18 +493,17 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.style.overflow = "visible";
             if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
 
-            // B) GÜN SAYISINI MEVCUT GİRİŞTEN YAKALA
+            // B) GÜN SAYISINI YAKALA
             const raw = chatInput.value.trim();
-            // "3-day" veya "3 gün" yazdıysa onu koru, yoksa 1 kabul et
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // C) STANDART YAZDIRMA (KRİTİK DÜZELTME)
-            // "Plan a tour..." falan yok. Formatlayıcı fonksiyon çağırmak yok.
-            // Direkt: "3-day Şehir İsmi"
-            chatInput.value = `${days}-day ${LONG_INPUT_NAME}`;
+            // C) INPUTA YAZILACAK FORMAT (İŞTE BURASI DÜZELDİ)
+            // Eskiden: chatInput.value = `${days}-day ${LONG_INPUT_NAME}`; (Kuru format)
+            // Şimdi: Senin sevdiğin format
+            chatInput.value = `Plan a ${days}-day trip to ${LONG_INPUT_NAME}`;
 
-            // D) KİLİTLEME (Sistem "elle yazıldı" sanıp hata vermesin)
+            // D) SİSTEMİ KİLİTLE
             const finalLocation = {
                 name: LONG_INPUT_NAME,
                 city: props.city || LONG_INPUT_NAME,
@@ -529,7 +527,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             if (typeof enableSendButton === "function") enableSendButton();
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
 
-            // Kilidi hemen kaldırma
             setTimeout(() => { window.__programmaticInput = false; }, 300);
         };
 
