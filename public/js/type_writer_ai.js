@@ -108,7 +108,7 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
         const btn = document.createElement('button');
         btn.id = "ai-toggle-btn";
         btn.className = "arrow-btn";
-        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;";
+        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer; padding:0";
         btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
         aiDiv.querySelector('#ai-toggle-header').appendChild(btn);
         
