@@ -323,11 +323,12 @@ if (typeof hideSuggestionsDiv !== "function") {
 let currentFocus = -1; // Global focus takibi
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
-    currentFocus = -1; 
+    currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
-    
+
     if (!suggestionsDiv || !chatInput) return;
+    
     suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
@@ -335,123 +336,110 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // A. KELİMEYE GÖRE AKILLI SIRALAMA
+    // --- 1. SIRALAMA ALGORİTMASI (Kapadokya Fix Kısmı) ---
     const targetTerm = manualQuery.toLowerCase().trim();
     
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
         
-        // Veri Temizliği
         const name = (p.name || "").toLowerCase();
         const city = (p.city || "").toLowerCase();
         const county = (p.county || "").toLowerCase();
         const formatted = (p.formatted || "").toLowerCase();
-        // UNESCO entegrasyonundan gelen tipi yakala
         const type = (p.result_type || p.place_type || '').toLowerCase();
         const category = (p.category || '').toLowerCase();
 
-        // 1. FİLTRELEME
-        // UNESCO verisi bazen city/county içermez, sadece name veya formatted kontrolü hayat kurtarır.
-        const containsTarget = name.includes(targetTerm) || 
-                               city.includes(targetTerm) || 
-                               county.includes(targetTerm) ||
-                               formatted.includes(targetTerm); // Formatted kontrolü eklendi
-        
-        if (!containsTarget) {
-            return { item, score: -9999 };
-        }
+        // Filtreleme
+        const containsTarget = name.includes(targetTerm) || city.includes(targetTerm) || county.includes(targetTerm) || formatted.includes(targetTerm);
+        if (!containsTarget) return { item, score: -9999 };
         
         let score = 0;
         
-        // === 2. KRİTİK DÜZELTME: UNESCO VIP PUANI ===
-        // Bu blok, isim tam tutmasa bile (Örn: Göreme vs Cappadocia) 
-        // UNESCO verisini her zaman en tepeye kilitler.
-        if (type === 'unesco_site') {
-            score += 20000; // Diğer tüm puanların toplamından fazla
-        }
+        // UNESCO ve Turistik Yer Torpili
+        if (type === 'unesco_site') score += 20000;
+        else if (type === 'amenity' || type === 'tourism' || category.includes('tourism')) score += 500;
+        else if (type === 'region' || type === 'area' || type === 'island') score += 400;
+        else if (type === 'city') score += 150;
+        else if (type === 'town' || type === 'village') score -= 50;
 
-        // === 3. İSİM EŞLEŞME PUANLARI ===
+        // İsim Eşleşmesi
         if (name === targetTerm) score += 1500;
         else if (name.startsWith(targetTerm)) score += 800;
         
-        if (city === targetTerm) score += 1000;
-        
-        // === 4. TÜR (TYPE) PUANLAMASI ===
-        if (type === 'amenity' || type === 'tourism' || category.includes('tourism')) {
-            score += 500; 
-        } 
-        else if (type === 'region' || type === 'area' || type === 'state' || type === 'island') {
-            score += 400; // Bölge ise
-        }
-        else if (type === 'city') {
-            score += 150; 
-        } 
-        else if (type === 'town' || type === 'village') {
-            score -= 50; // Küçük yerleri düşür
-        }
-
-        // === 5. POPÜLARİTE VE ÜLKE ===
-        // Kısa adres genelde popüler yerdir
+        // Ülke ve Popülarite
         if (p.formatted && p.formatted.length < 45) score += 100;
-        
-        // Türkiye önceliği
         if (p.country_code === 'tr') score += 100;
 
-        // Gereksiz ticari yerleri düşür
-        const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
-        if (commercialWords.some(word => name.includes(word))) score -= 2000;
-        
         return { item, score };
     });
 
-    // B. SIRALA VE GÖSTER
+    // Sırala
     scoredResults.sort((a, b) => b.score - a.score);
-
+    
     // En iyi 8 sonucu al
-    const finalResults = scoredResults
-        .filter(sr => sr.score > -5000) // Sadece geçerli olanlar
-        .slice(0, 8)
-        .map(sr => sr.item);
+    const finalResults = scoredResults.filter(sr => sr.score > -5000).slice(0, 8).map(sr => sr.item);
 
-    // HTML OLUŞTURMA (Değişiklik yok, mevcut kodun aynı mantığı)
+    // --- 2. GÖRSEL FORMAT (Bayrakları Geri Getiren Kısım) ---
     const seenSuggestions = new Set();
     
-    finalResults.forEach((result, index) => {
+    finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // Ekranda görünecek isim mantığı
-        let displayName = props.name; // Varsayılan
-        
-        // Eğer şehir ismi varsa ve isimden kısaysa/anlamlıysa onu kullan
-        if (props.city && props.city.toLowerCase() !== displayName.toLowerCase()) {
-            // Şehir ismi bazen daha temizdir
-        }
-        
-        // Görüntü metni oluşturma
-        let displayText = displayName;
-        
-        // UNESCO ise özel format (Kullanıcı güven duysun)
-        if (props.result_type === 'unesco_site') {
-            // Zaten formatted içinde "(UNESCO Site)" yazıyor olmalı, yoksa ekle
-        } 
-        else if (props.formatted) {
-             displayText = props.formatted.split(',').slice(0, 3).join(', '); // Çok uzun adresleri kırp
+        // İsim belirleme (Senin eski kodun mantığı)
+        let displayName = "";
+        if (props.city && props.city.trim()) {
+            displayName = props.city;
+        } else if (props.name && props.name.trim()) {
+            // Ticari kelime temizliği
+            const nameParts = props.name.split(",").map(p => p.trim());
+            const firstPart = nameParts[0].toLowerCase();
+            const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
+            if (commercialWords.some(word => firstPart.includes(word)) && nameParts.length > 1) {
+                displayName = nameParts[1];
+            } else {
+                displayName = nameParts[0];
+            }
+        } else if (props.county && props.county.trim()) {
+            displayName = props.county;
         }
 
+        if (!displayName || displayName.trim().length < 2) return;
+
+        // Detaylar (Şehir, İlçe ekleme)
+        const regionParts = [];
+        if (props.city && props.city.trim() && props.city !== displayName) regionParts.push(props.city);
+        if (props.county && props.county.trim() && props.county !== displayName && props.county !== props.city) regionParts.push(props.county);
+
+        // --- BAYRAK VE ÜLKE KODU (BURASI DÜZELTİLDİ) ---
+        const countryCode = props.country_code || "";
+        // countryFlag fonksiyonu mainscript.js içinde tanımlı varsayıyorum
+        const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
+        
+        let displayText = displayName;
+        if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
+        
+        // Format: "Cappadocia, Nevşehir, TR 🇹🇷"
+        if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
+
+        // Temizlik
+        displayText = displayText.replace(/^,\s*/, "").trim();
         const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
-        
+
+        // HTML Oluşturma
         const div = document.createElement("div");
         div.className = "category-area-option";
-        div.textContent = displayText;
+        div.innerHTML = displayText; // Bayrak emoji olduğu için textContent yerine innerHTML de olur ama textContent daha güvenli, ikisi de çalışır.
         div.dataset.displayText = displayText;
 
-        // Seçili kalma mantığı (Mevcut kodunuzdan)
+        // Seçili gelme durumu
         if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
             div.classList.add("selected-suggestion");
         }
-        
+
+        // Tıklama Olayı (Aynen korundu)
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
@@ -466,7 +454,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
                     country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
-                    country_code: props.country_code || ""
+                    country_code: countryCode
                 }
             };
             
@@ -474,7 +462,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             window.selectedLocationLocked = true;
             window.__locationPickedFromSuggestions = true;
 
-            // Gün sayısını koruyarak inputu güncelle
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
@@ -482,7 +469,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
             let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
             if (typeof formatCanonicalPlan === "function") {
-                 // Format fonksiyonu varsa kullan
                  const c = formatCanonicalPlan(`${displayName} ${days} days`);
                  if (c && c.canonical) canonicalStr = c.canonical;
             }
