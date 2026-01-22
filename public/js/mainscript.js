@@ -482,34 +482,30 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         }
 
         // 4. TIKLAMA OLAYI (AKILLI RESET)
+       // 4. TIKLAMA OLAYI (STANDART & TEMİZ FORMAT)
         div.onclick = () => {
-            // A) GÖRSEL RESET VE GENİŞLEME
+            // A) GÖRSEL DÜZENLEME (Diğerlerini gizle, seçileni aç)
             Array.from(suggestionsDiv.children).forEach(child => {
-                if (child !== div) {
-                    child.style.display = 'none'; // Diğerlerini gizle
-                }
+                if (child !== div) child.style.display = 'none';
             });
             div.style.display = 'block';
             div.classList.add("selected-suggestion");
-            
-            // Satırı genişlet ve tam ismi göster
-            if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
             div.style.whiteSpace = "normal"; 
             div.style.overflow = "visible";
+            if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
 
-            // B) GÜN SAYISINI YAKALA
+            // B) GÜN SAYISINI MEVCUT GİRİŞTEN YAKALA
             const raw = chatInput.value.trim();
+            // "3-day" veya "3 gün" yazdıysa onu koru, yoksa 1 kabul et
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // C) INPUTA YAZILACAK SORGUNUN FORMATI (KRİTİK DEĞİŞİKLİK)
-            // Senin sisteminin anladığı "1-day ŞEHİR İSMİ" formatına dönüyoruz.
-            // LONG_INPUT_NAME burada "Göreme National Park and the Rock Sites of Cappadocia" olacak.
-            let simpleQuery = `${days}-day ${LONG_INPUT_NAME}`;
-            
-            chatInput.value = simpleQuery;
+            // C) STANDART YAZDIRMA (KRİTİK DÜZELTME)
+            // "Plan a tour..." falan yok. Formatlayıcı fonksiyon çağırmak yok.
+            // Direkt: "3-day Şehir İsmi"
+            chatInput.value = `${days}-day ${LONG_INPUT_NAME}`;
 
-            // D) SİSTEMİ KİLİTLE (Hata almamak için)
+            // D) KİLİTLEME (Sistem "elle yazıldı" sanıp hata vermesin)
             const finalLocation = {
                 name: LONG_INPUT_NAME,
                 city: props.city || LONG_INPUT_NAME,
@@ -518,15 +514,22 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
                 country_code: countryCode
             };
 
+            window.selectedSuggestion = { 
+                displayText: fullDisplayText,
+                props: props,
+                selectedLocation: finalLocation
+            };
+
             window.selectedLocation = finalLocation;
             window.selectedLocationLocked = true; 
             window.__locationPickedFromSuggestions = true;
             window.__programmaticInput = true;
 
-            // E) BUTONU AKTİFLEŞTİR
+            // E) UI GÜNCELLEME
             if (typeof enableSendButton === "function") enableSendButton();
-            
-            // Input değişiminin sistem tarafından "elle yazıldı" sanılmasını engellemek için kısa bekleme
+            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+
+            // Kilidi hemen kaldırma
             setTimeout(() => { window.__programmaticInput = false; }, 300);
         };
 
