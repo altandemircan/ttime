@@ -311,10 +311,10 @@ ease;
 
 /* Sadece content-section class'ına sahip section'lar için stil */
 .content-section {
-    opacity: 0;
-    visibility: hidden;
+    opacity: 1;
+    visibility: visible;
     height: 0;
-    overflow: hidden;
+    overflow: visible ;
     transition: opacity 0.5s ease, visibility 0.5s ease, height 0.5s ease;
     position: absolute; /* Use absolute positioning */
     top: 100px; /* Position from the top */
