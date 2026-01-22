@@ -167,12 +167,11 @@ function showSuggestions() {
     suggestionsDiv.innerHTML = "";
 
     const options = [
-        { text: "Do a 1 day city tour in Antalya", flag: countryFlag("TR") },
-        { text: "1-day city tour in Berlin", flag: countryFlag("DE") },
-        { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },
-        { text: "1 day holiday trip in Paris ", flag: countryFlag("JP") },          
-        { text: "1 day trip in Madrid", flag: countryFlag("ES") }
-        
+    { text: "3 days in Antalya", flag: countryFlag("TR") },
+    { text: "Berlin 2-day guide", flag: countryFlag("DE") },
+    { text: "Explore Rome for 1 day", flag: countryFlag("IT") },
+    { text: "3-day Paris itinerary", flag: countryFlag("FR") },
+    { text: "Visit Madrid in 2 days", flag: countryFlag("ES") }        
     ];
 
     options.forEach(option => {
