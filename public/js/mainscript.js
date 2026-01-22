@@ -833,16 +833,24 @@ function extractCityAndDays(input) {
             }
         }
     }
-
-    // 5. fallback: cümledeki harfli uzun kelimelerden en sonuncusu
-    if (!city) {
-        let fallback = input.match(/([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/g);
-        if (fallback && fallback.length) city = fallback[fallback.length-1].trim();
+// Eğer şehir, day veya days kelimesiyse: Mantıklı bir kelimeyi seç!
+if (city && /^(days?|gün)$/i.test(city.trim())) {
+    // "in" ve "for" ile split ile sonuncu kelimeyi al
+    let toks = input.split(/in |for |to |at |on/i);
+    // Son kelime iki harften uzunsa onu şehir olarak al
+    for (let i = toks.length - 1; i >= 0; i--) {
+        let candidate = toks[i].replace(/[\d]+.*/, '').replace(/days?.*/, '').replace(/gün.*/, '').trim();
+        if (candidate.length > 2 && !/^(days?|gün)$/i.test(candidate)) {
+            city = candidate;
+            break;
+        }
     }
-
-    // 6. Son çare: ilk kelime
-if (!city) city = input.split(" ")[0].trim();
-
+    // Hala bulamadıysan, inputtaki büyük harfle başlayan kelimeyi seç
+    if (city && /^(days?|gün)$/i.test(city.trim())) {
+        let word = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})/);
+        if (word) city = word[1];
+    }
+}
 // Eğer city yanlışlıkla 'Day' veya 'Days' ise, kelimeyi inputtan tekrar doğru bulmaya çalış
 if (city && (city.toLowerCase() === 'days' || city.toLowerCase() === 'day')) {
     // Genellikle son kelime şehir olur, onu al
