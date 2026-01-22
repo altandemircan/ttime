@@ -436,18 +436,45 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
         
-        // --- HTML OLUŞTURMA VE RENKLENDİRME ---
+        // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
+        // DİKKAT: textContent kullanıyoruz, badge'i sonra append edeceğiz.
         div.textContent = displayText; 
         div.dataset.displayText = displayText;
 
-        // ==> BURASI EKLENDİ: UNESCO İSE TURUNCU YAP <==
+        // ==> BURASI GÜNCELLENDİ: UNESCO İSE RENK VE ETİKET EKLE <==
         if (props.result_type === 'unesco_site') {
+            // 1. Arka plan rengi (İstediğin renk)
             div.style.backgroundColor = "#f2fce4"; 
-               }
-        // ===============================================
+            
+            // 2. Absolute pozisyonlama için kapsayıcıya relative ver
+            div.style.position = "relative";
+            // Uzun isimler etiketin altında kalmasın diye sağdan boşluk bırak
+            div.style.paddingRight = "110px"; 
 
+            // 3. "World Heritage" etiketini oluştur
+            const badge = document.createElement("span");
+            badge.textContent = "World Heritage";
+            
+            // 4. Etiketi sağ tarafa konumlandır ve süsle
+            badge.style.position = "absolute";
+            badge.style.top = "50%"; // Dikeyde ortala
+            badge.style.transform = "translateY(-50%)"; // Tam ortalamak için düzeltme
+            badge.style.right = "10px"; // Sağdan 10px içeride
+            // Etiket tasarımı (Küçük, yeşil, şık)
+            badge.style.fontSize = "0.7rem";
+            badge.style.fontWeight = "bold";
+            badge.style.backgroundColor = "#388e3c"; // Koyu yeşil bir arka plan
+            badge.style.color = "#fff"; // Beyaz yazı
+            badge.style.padding = "3px 8px";
+            badge.style.borderRadius = "4px"; // Köşeleri yuvarlat
+            badge.style.boxShadow = "0 1px 2px rgba(0,0,0,0.2)";
+            
+            // 5. Etiketi ana kutunun içine ekle
+            div.appendChild(badge);
+        }
+        // ==========================================================
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
