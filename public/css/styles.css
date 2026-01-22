@@ -288,110 +288,6 @@ ease;
     background: #f1f2f6;
 }
 
-@media (max-width:768px) {
-    #tt-welcome h1 {
-        font-size: 1.6rem;
-    }
-    .cw {
-        margin-top: -50px !important;
-        gap: 20px;
-    }
-    #tt-welcome p {
-        font-size: 0.95rem;
-    }
-    #tt-welcome img {
-        width: 100px;
-    }
-    .circle-container {
-        width: 100px;
-        height: 100px;
-    }
-}
-
-
-/* Sadece content-section class'ına sahip section'lar için stil */
-.content-section {
-    opacity: 1;
-    visibility: visible;
-    height: 0;
-    overflow: visible ;
-    transition: opacity 0.5s ease, visibility 0.5s ease, height 0.5s ease;
-    position: absolute;
-    top: 100px; /* Position from the top */
-    width: 100%; /* Ensure full width */
-}
-
-.content-section.active {
-    opacity: 1 !important;
-    visibility: visible !important;
-    height: auto !important;
-    overflow: visible !important;
-    display: block !important;
-}
-
-/* Button Styling */
-.info-btn.active {
-    color: #8a4af3; /* Purple color for active */
-}
-
-.info-btn {
-    padding: 10px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #000000; /* Black color for inactive buttons */
-    background: #fff;
-}
-
-#tt-about-us {
-    position: fixed;
-    left: 0;
-    top: 40px;
-    bottom: 0;
-    background: #ffffff;
-    padding: 30px;
-    overflow-y: auto !important;
-    z-index: 999;
-    
-    /* Genişliği buraya sabitledim, böylece açılırken genişlik hesaplamasıyla titreme yapmaz */
-    width: calc(100% - 415px); 
-    box-sizing: border-box; 
-
-    /* --- TRANSITION (GEÇİŞ) AYARLARI --- */
-    opacity: 0;                   /* Başlangıçta tam şeffaf */
-    visibility: hidden;           /* Görünmez ve tıklanamaz */
-    transform: translateY(20px);  /* Hafif aşağıda başlasın (Yukarı kayarak gelecek) */
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak ve profesyonel geçiş hızı */
-}
-
-#tt-about-us.active, 
-#tt-about-us.tt-overlay {
-    /* display: block !important;  <--BUNU KALDIR (veya JS display:none eklemiyorsa gerek yok) */
-    
-    /* --- AKTİF DURUM --- */
-    opacity: 1;               /* Tam görünür */
-    visibility: visible;      /* Tıklanabilir */
-    transform: translateY(0); /* Orijinal yerine kaysın */
-    
-    /* Scrollbar Ayarları */
-    scrollbar-width: thin;
-    scrollbar-color: #d1b6ff #ffffff;
-}
-@media (max-width: 768px) {
-   #tt-about-us {
-            width: fit-content;
-        overflow-y: visible;
-   }
-}
-
-
-/* Style for Welcome section to position it at the top */
-#tt-welcome {
-    position: relative; /* Allow normal flow for Welcome */
-    top: auto; /* Reset top positioning */  
-}
-
 
 /* Chat Ekranı */
 .chat {
@@ -7576,6 +7472,114 @@ scrollbar-width: thin;
             transform: rotate(180deg);
         }
 
+
+
+
+
+
+@media (max-width:768px) {
+    #tt-welcome h1 {
+        font-size: 1.6rem;
+    }
+    .cw {
+        margin-top: -50px !important;
+        gap: 20px;
+    }
+    #tt-welcome p {
+        font-size: 0.95rem;
+    }
+    #tt-welcome img {
+        width: 100px;
+    }
+    .circle-container {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+
+/* Sadece content-section class'ına sahip section'lar için stil */
+.content-section {
+    opacity: 1;
+    visibility: visible;
+    height: 0;
+    overflow: visible ;
+    transition: opacity 0.5s ease, visibility 0.5s ease, height 0.5s ease;
+    position: absolute;
+    top: 100px; /* Position from the top */
+    width: 100%; /* Ensure full width */
+}
+
+.content-section.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+}
+
+/* Button Styling */
+.info-btn.active {
+    color: #8a4af3; /* Purple color for active */
+}
+
+.info-btn {
+    padding: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #000000; /* Black color for inactive buttons */
+    background: #fff;
+}
+
+#tt-about-us {
+    position: fixed;
+    left: 0;
+    top: 40px;
+    bottom: 0;
+    background: #ffffff;
+    padding: 30px;
+    overflow-y: auto !important;
+    z-index: 999;
+    
+    /* Genişliği buraya sabitledim, böylece açılırken genişlik hesaplamasıyla titreme yapmaz */
+    width: calc(100% - 415px); 
+    box-sizing: border-box; 
+
+    /* --- TRANSITION (GEÇİŞ) AYARLARI --- */
+    opacity: 0;                   /* Başlangıçta tam şeffaf */
+    visibility: hidden;           /* Görünmez ve tıklanamaz */
+    transform: translateY(20px);  /* Hafif aşağıda başlasın (Yukarı kayarak gelecek) */
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak ve profesyonel geçiş hızı */
+}
+
+#tt-about-us.active, 
+#tt-about-us.tt-overlay {
+    /* display: block !important;  <--BUNU KALDIR (veya JS display:none eklemiyorsa gerek yok) */
+    
+    /* --- AKTİF DURUM --- */
+    opacity: 1;               /* Tam görünür */
+    visibility: visible;      /* Tıklanabilir */
+    transform: translateY(0); /* Orijinal yerine kaysın */
+    
+    /* Scrollbar Ayarları */
+    scrollbar-width: thin;
+    scrollbar-color: #d1b6ff #ffffff;
+}
+@media (max-width: 768px) {
+   #tt-about-us {
+            width: fit-content;
+        overflow-y: visible;
+   }
+}
+
+
+/* Style for Welcome section to position it at the top */
+#tt-welcome {
+    position: relative; /* Allow normal flow for Welcome */
+    top: auto; /* Reset top positioning */  
+}
 
 
 .cw {
