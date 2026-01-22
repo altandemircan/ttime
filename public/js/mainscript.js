@@ -1216,7 +1216,6 @@ function sendMessage() {
     handleAnswer(val); 
     input.value = ""; 
 }
-
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
