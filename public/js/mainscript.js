@@ -408,55 +408,66 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // 1. İsim Belirleme (Tam isim alınır)
-        let displayName = "";
-        if (props.city && props.city.trim()) displayName = props.city;
-        else if (props.name && props.name.trim()) displayName = props.name.split(",")[0];
+        // 1. TAM İSMİ OLUŞTUR (Bu veritabanına gidecek olan gerçek metin)
+        let fullName = "";
+        if (props.city && props.city.trim()) fullName = props.city;
+        else if (props.name && props.name.trim()) fullName = props.name.split(",")[0];
         
-        if (!displayName || displayName.trim().length < 2) return;
+        if (!fullName || fullName.trim().length < 2) return;
 
-        // --- HATA DÜZELTME: JS ile kırpma kodu SİLİNDİ ---
-        // Artık displayName üzerinde oynama yapmıyoruz, CSS halledecek.
-
-        // 2. Detaylar (Şehir vs.)
+        // Detayları ekle (Şehir, Ülke vs.)
         const regionParts = [];
-        // displayName TAM İSİM olduğu için bu kontrol artık doğru çalışır
-        if (props.city && props.city !== displayName) regionParts.push(props.city);
+        if (props.city && props.city !== fullName) regionParts.push(props.city);
         
         const countryCode = props.country_code || "";
         const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
         
-        let displayText = displayName;
-        
-        if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
-        if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
-        
-        displayText = displayText.replace(/^,\s*/, "").trim();
-        
-        // Çift Kayıt Kontrolü
-        const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
+        // fullDisplayText: "Göreme National Park..., TR 🇹🇷" (Tam Hali)
+        let fullDisplayText = fullName;
+        if (regionParts.length > 0) fullDisplayText += ", " + regionParts.join(', ');
+        if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
+        fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
+
+        // Çift Kayıt Kontrolü (Tam isme göre yapılır)
+        const normalizedText = fullDisplayText.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
+
+        // 2. GÖRÜNECEK KISA İSMİ OLUŞTUR (Ekranda yazan hali)
+        let visualText = fullDisplayText;
         
+        // ==> KESME İŞLEMİ BURADA YAPILIYOR <==
+        // Eğer UNESCO ise ve 35 karakterden uzunsa, acımasızca kesip "..." koyarız.
+        if (props.result_type === 'unesco_site' && visualText.length > 35) {
+            visualText = visualText.substring(0, 32) + "...";
+            // Eğer kesilen metnin sonunda ülke kodu yoksa, kullanıcı anlasın diye sonuna ekleyelim (Opsiyonel)
+            if (countryCode && !visualText.includes(countryCode.toUpperCase())) {
+                visualText += ` ${countryCode.toUpperCase()}${flag}`;
+            }
+        }
+
         // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
-        div.textContent = displayText; 
-        div.dataset.displayText = displayText;
-        div.title = displayText; // Mouse üzerine gelince tam isim görünür
+        
+        // EKRANA KISA HALİNİ YAZIYORUZ
+        div.textContent = visualText; 
+        
+        // Arka planda tam halini saklıyoruz (Tooltip için)
+        div.title = fullDisplayText; 
+        div.dataset.displayText = fullDisplayText;
 
-        // ==> CSS İLE KISALTMA (ELLIPSIS) - Bu satırlar "..." işini yapar <==
+        // CSS: Taşmaları engelle (Garanti olsun diye)
         div.style.whiteSpace = "nowrap";
         div.style.overflow = "hidden";
         div.style.textOverflow = "ellipsis";
         div.style.display = "block";
 
-        // ==> UNESCO STİLİ <==
+        // ==> UNESCO STİLİ VE BADGE <==
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
-            // Sağdan boşluk bırak ki yazı Badge'in altına girmesin
-            div.style.paddingRight = "115px"; 
+            div.style.paddingRight = "110px"; // Badge payı
 
             const badge = document.createElement("span");
             badge.textContent = "World Heritage";
@@ -479,18 +490,18 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // Tıklama Olayı
+        // 3. TIKLAMA OLAYI (BURADA TAM İSİM KULLANILIR)
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
 
             window.selectedSuggestion = { 
-                displayText, 
+                displayText: fullDisplayText, // <-- Tam metin
                 props,
                 selectedLocation: {
-                    name: props.name,
-                    city: props.city || props.name,
+                    name: fullName, // <-- Tam isim
+                    city: props.city || fullName,
                     country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
@@ -505,9 +516,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            let canonicalStr = `Plan a ${days}-day tour for ${props.name}`;
+            // Chat kutusuna TAM isim yazılır
+            let canonicalStr = `Plan a ${days}-day tour for ${fullName}`;
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${props.name} ${days} days`);
+                const c = formatCanonicalPlan(`${fullName} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
 
