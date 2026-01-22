@@ -359,13 +359,12 @@ document.addEventListener('click', function(e){
     }
 });
 
-
 function changeContent(option) {
-    // 1. Tüm sectionlardan active sınıfını temizle
+    // 1. Önce tüm sectionlardan active'i sil ve gizle (Temiz başlangıç)
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => {
         section.classList.remove('active');
-        section.style.display = 'none'; // Temizlik: Hepsini gizle
+        section.style.display = 'none';
     });
 
     const chatBox = document.getElementById('chat-box');
@@ -373,34 +372,28 @@ function changeContent(option) {
     const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
 
-    // --- SEÇENEK 1: ANASAYFA (HOME) ---
     if (option === 1) {
-        // A. Loading animasyonu yüzünden gizlenen .cw (Video/Başlık) kısmını geri aç
+        // Loading animasyonu .cw class'ını gizlemişti, onu geri açıyoruz
         document.querySelectorAll('.cw').forEach(el => el.style.display = '');
 
-        // B. Hakkımızda açıksa kapat
+        // About açıksa kapat
         if (aboutUsSection) {
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
         }
 
-        // C. Welcome Section'ı ZORLA Aktif Yap
+        // Welcome Section'ı GÖSTER ve ACTIVE yap
         if (welcomeSection) {
-            welcomeSection.style.display = 'block';     // Görünür yap
-            welcomeSection.classList.add('active');     // Active sınıfını ekle
+            welcomeSection.style.display = 'block';
+            setTimeout(() => { // Tarayıcı render hatasını önlemek için minik gecikme ile active ekle
+                welcomeSection.classList.add('active');
+            }, 10);
         }
 
-        // D. Chat kutularını aç
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
       
-    } 
-    // --- SEÇENEK 2: HAKKIMIZDA (ABOUT) ---
-    else if (option === 2) {
-        // Çakışmayı önlemek için anasayfa içeriğini (.cw) gizle
-        document.querySelectorAll('.cw').forEach(el => el.style.display = 'none');
-
-        // Durum kaydı ve About açılışı
+    } else if (option === 2) {
         if (typeof window.showAboutTriptime === 'function') {
             window.showAboutTriptime();
         }
