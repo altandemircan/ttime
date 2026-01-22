@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function() {
             padding: 8px 12px;
             border: 1px solid #eee;
             background: #fff;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-family: "Satoshi", sans-serif;
             font-size: 0.85rem;
