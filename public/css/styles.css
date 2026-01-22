@@ -7608,7 +7608,6 @@ scrollbar-width: thin;
     display: flex;
     gap: 15px; /* Butonlar arası boşluk */
     justify-content: center;
-    margin-top: 15px;
 }
 
 /* Ortak Modern Buton Stili */
@@ -7617,7 +7616,7 @@ scrollbar-width: thin;
     align-items: center;
     justify-content: center;
     gap: 8px; /* İkon ve yazı arası boşluk */
-    padding: 12px 24px; /* Daha geniş, ferah tıklama alanı */
+    padding: 9px 12px; /* Daha geniş, ferah tıklama alanı */
     border-radius: 50px; /* Tam yuvarlak (Pill shape) - çok daha modern */
     font-size: 0.9rem;
     font-weight: 600;
