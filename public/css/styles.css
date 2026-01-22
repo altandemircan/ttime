@@ -7685,12 +7685,12 @@ display: block !important;
 }
 .btn-purple:hover {
     box-shadow: 0 8px 20px rgba(164, 117, 241, 0.5); /* Hover'da gölge artar */
-    background: linear-gradient(135deg, #b084f5 0%, #9a66e3 100%);
+        background: linear-gradient(135deg, #976cdf 0%, #bc9af4 100%);
 }
 
 /* Mavi Buton (Mira AI Chat) */
 .btn-blue {
-    background: linear-gradient(135deg, #c745e8 0%, #2dd4d0 100%);
+        background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
    
 }
 .btn-blue:hover {
