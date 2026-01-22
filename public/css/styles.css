@@ -355,7 +355,7 @@ ease;
     padding: 30px;
     overflow-y: auto !important;
     /* z-index: 999 !important; */
-    box-sizing: border-box;
+   
 }
 #tt-about-us.active, 
 #tt-about-us.tt-overlay {
@@ -364,7 +364,9 @@ ease;
     overflow-y: auto;     /* Scroll barı getir */
     padding: 30px;        /* İç boşluk */
     box-sizing: border-box; /* İSTEDİĞİN GİBİ: Sadece tıklandığında çalışır */
-    width: calc(100% - 415px)
+    width: calc(100% - 415px);
+        scrollbar-width: thin;
+    scrollbar-color: #d1b6ff #ffffff;
 }
 @media (max-width: 768px) {
    #tt-about-us {
