@@ -483,69 +483,51 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
         // 4. TIKLAMA OLAYI (AKILLI RESET)
         div.onclick = () => {
-            // A) ÖNCE DİĞERLERİNİ KAPAT (RESETLE)
+            // A) GÖRSEL RESET VE GENİŞLEME
             Array.from(suggestionsDiv.children).forEach(child => {
                 if (child !== div) {
-                    // CSS'i eski haline getir
-                    child.style.whiteSpace = "nowrap";
-                    child.style.overflow = "hidden";
-                    child.classList.remove("selected-suggestion");
-                    
-                    // Metni KISA haline getir (Badge'i silmeden!)
-                    // child.firstChild genelde yazı node'udur.
-                    if (child.firstChild && child.dataset.shortText) {
-                        child.firstChild.nodeValue = child.dataset.shortText;
-                    }
+                    child.style.display = 'none'; // Diğerlerini gizle
                 }
             });
-
-            // B) TIKLANANI AÇ (GENİŞLET)
+            div.style.display = 'block';
             div.classList.add("selected-suggestion");
+            
+            // Satırı genişlet ve tam ismi göster
+            if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
             div.style.whiteSpace = "normal"; 
             div.style.overflow = "visible";
-            
-            // Metni UZUN haline getir (Badge'i koruyarak)
-            if (div.firstChild) {
-                div.firstChild.nodeValue = fullDisplayText;
-            }
 
-            // C) SEÇİM İŞLEMLERİ
-            window.__programmaticInput = true;
-            window.selectedSuggestion = { 
-                displayText: fullDisplayText,
-                props,
-                selectedLocation: {
-                    name: LONG_INPUT_NAME,
-                    city: props.city || LONG_INPUT_NAME,
-                    country: props.country || "",
-                    lat: props.lat,
-                    lon: props.lon,
-                    country_code: countryCode
-                }
-            };
-            
-            window.selectedLocation = window.selectedSuggestion.selectedLocation;
-            window.selectedLocationLocked = true;
-            
+            // B) GÜN SAYISINI YAKALA
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // Inputa UZUN ismi yaz
-            let canonicalStr = `Plan a ${days}-day tour for ${LONG_INPUT_NAME}`;
+            // C) INPUTA YAZILACAK SORGUNUN FORMATI (KRİTİK DEĞİŞİKLİK)
+            // Senin sisteminin anladığı "1-day ŞEHİR İSMİ" formatına dönüyoruz.
+            // LONG_INPUT_NAME burada "Göreme National Park and the Rock Sites of Cappadocia" olacak.
+            let simpleQuery = `${days}-day ${LONG_INPUT_NAME}`;
             
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${LONG_INPUT_NAME} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
+            chatInput.value = simpleQuery;
 
-            if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
-            else chatInput.value = canonicalStr;
+            // D) SİSTEMİ KİLİTLE (Hata almamak için)
+            const finalLocation = {
+                name: LONG_INPUT_NAME,
+                city: props.city || LONG_INPUT_NAME,
+                lat: props.lat,
+                lon: props.lon,
+                country_code: countryCode
+            };
 
+            window.selectedLocation = finalLocation;
+            window.selectedLocationLocked = true; 
+            window.__locationPickedFromSuggestions = true;
+            window.__programmaticInput = true;
+
+            // E) BUTONU AKTİFLEŞTİR
             if (typeof enableSendButton === "function") enableSendButton();
-            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
             
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
+            // Input değişiminin sistem tarafından "elle yazıldı" sanılmasını engellemek için kısa bekleme
+            setTimeout(() => { window.__programmaticInput = false; }, 300);
         };
 
         suggestionsDiv.appendChild(div);
