@@ -3,7 +3,7 @@ const path = require('path');
 
 // Dosya yolları
 const xmlPath = path.join(__dirname, 'unesco_world_heritage.xml');
-const outputPath = path.join(__dirname, 'public', 'unesco_data.js'); // Public klasörüne kaydediyoruz
+const outputPath = path.join(__dirname, 'public', 'js', 'unesco_data.js');
 
 try {
     console.log("Dosya okunuyor...");
