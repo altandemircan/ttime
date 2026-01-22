@@ -167,87 +167,74 @@ function showSuggestions() {
     suggestionsDiv.innerHTML = "";
 
     const options = [
-    { text: "2 days in Antalya", flag: countryFlag("TR") },
-    { text: "Explore Rome for 3 day", flag: countryFlag("IT") },
-    { text: "1 days in Tokyo", flag: countryFlag("JP") },
-    { text: "London 2-day guide", flag: countryFlag("GB") },
-    { text: "3-day Paris itinerary", flag: countryFlag("FR") },
-    { text: "Visit Madrid in 1 days", flag: countryFlag("ES") },
-    { text: "3 days in Bangkok", flag: countryFlag("TH") },    
-    { text: "Discover Petra for 2 day", flag: countryFlag("JO") }
-];
+        { text: "2 days in Antalya",         flag: countryFlag("TR") }, // Türkiye
+        { text: "Explore Rome for 3 day",    flag: countryFlag("IT") }, // İtalya
+        { text: "1 days in Tokyo",           flag: countryFlag("JP") }, // Japonya
+        { text: "London 2-day guide",        flag: countryFlag("GB") }, // İngiltere
+        { text: "3-day Paris itinerary",     flag: countryFlag("FR") }, // Fransa
+        { text: "Visit Madrid in 1 days",    flag: countryFlag("ES") }, // İspanya
+        { text: "3 days in Bangkok",         flag: countryFlag("TH") }, // Tayland
+        { text: "Discover Petra for 2 day",  flag: countryFlag("JO") }  // Ürdün
+    ];
 
     options.forEach(option => {
         const suggestion = document.createElement("div");
         suggestion.className = "category-area-option";
         suggestion.innerText = `${option.text} ${option.flag}`;
 
-        // --- BURAYA EKLE ---
+        // --- TIKLAYINCA INPUTU DOLDUR ---
         suggestion.onclick = function() {
-    Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-    suggestion.classList.add("selected-suggestion");
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            suggestion.classList.add("selected-suggestion");
 
-    // Burayı değiştir!
-    // const { city, days } = extractCityAndDaysFromTheme(option.text);
-    const rawText = suggestion.textContent.replace(/🇦🇹|🇮🇹|🇬🇧|🇫🇷|🇪🇸|🇹🇷/g, "").trim();
-   // --- DOĞRU ŞEHİR AYIKLAMA ---
-// Önce gün sayısını ayıkla
-let dayMatch = rawText.match(/(\d+)\s*-?\s*(day|days|gün)/i);
-let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
+            const rawText = suggestion.textContent.replace(/🇯🇴|🇹🇭|🇯🇵|🇪🇸|🇫🇷|🇬🇧|🇮🇹|🇹🇷/g, "").trim();
 
-// Şehir adı ayıkla: 'guide', 'days', 'itinerary' gibi tur kelimelerini atla
-// Örneğin: "London 2-day guide" -> "London"
-let city = null;
+            // GÜN sayısı
+            let dayMatch = rawText.match(/(\d+)\s*-?\s*(day|days|gün)/i);
+            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
 
-// 1. "in", "for", "to", "at" ile split
-let tokens = rawText.split(/in |for |to |at |on /i);
-for (let k = tokens.length - 1; k >= 0; k--) {
-    // "Explore Rome", "Visit Madrid" ise sonda sadece son kelimeyi al!
-    let candWords = tokens[k].replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore)/gi, "").replace(/\d+/, "").trim().split(" ");
-    let cand = candWords[candWords.length - 1];
-    if (cand && cand.length > 2) {
-        city = cand;
-        break;
-    }
-}
+            // ŞEHİR ismini düzgün ayıkla!
+            let city = null;
+            let tokens = rawText.split(/in |for |to |at |on /i);
+            for (let k = tokens.length - 1; k >= 0; k--) {
+                let candWords = tokens[k].replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore|discover)/gi, "").replace(/\d+/, "").trim().split(" ");
+                let cand = candWords[candWords.length - 1];
+                if (cand && cand.length > 2) {
+                    city = cand;
+                    break;
+                }
+            }
+            if (!city || /(guide|days?|trip|tour|itinerary|discover|explore|visit)/i.test(city)) {
+                let m = rawText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)/);
+                if (m) city = m[1];
+            }
+            if (!city) city = rawText.split(" ")[0].trim();
+            city = city.charAt(0).toUpperCase() + city.slice(1);
 
-// 2. Hala bulamazsan, baştan büyük harfle başlayan ilk kelimeyi al
-if (!city || /(guide|days?|trip|tour|itinerary)/i.test(city)) {
-    let m = rawText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)/);
-    if (m) city = m[1];
-}
+            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+            if (typeof formatCanonicalPlan === "function") {
+                const c = formatCanonicalPlan(`${city} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
+            }
 
-// 3. Hala bulamazsan, ilk kelimeyi al
-if (!city) city = rawText.split(" ")[0].trim();
+            window.__programmaticInput = true;
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
 
-// 4. Son kez büyük harfe zorla
-city = city.charAt(0).toUpperCase() + city.slice(1);
-
-// Plan formatı oluştur
-let canonicalStr = `Plan a ${days}-day tour for ${city}`;
-    if (typeof formatCanonicalPlan === "function") {
-        const c = formatCanonicalPlan(`${city} ${days} days`);
-        if (c && c.canonical) canonicalStr = c.canonical;
-    }
-
-    window.__programmaticInput = true;
-    if (typeof setChatInputValue === "function") {
-        setChatInputValue(canonicalStr);
-    } else {
-        chatInput.value = canonicalStr;
-    }
-    setTimeout(() => { window.__programmaticInput = false; }, 0);
-
-    window.selectedSuggestion = { displayText: canonicalStr, city, days };
-    window.selectedLocation = { city, days };
-    window.selectedLocationLocked = true;
-    window.__locationPickedFromSuggestions = true;
-    enableSendButton?.();
-    showSuggestionsDiv?.();
-    if (typeof updateCanonicalPreview === "function") {
-        updateCanonicalPreview();
-    }
-};
+            window.selectedSuggestion = { displayText: canonicalStr, city, days };
+            window.selectedLocation = { city, days };
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton?.();
+            showSuggestionsDiv?.();
+            if (typeof updateCanonicalPreview === "function") {
+                updateCanonicalPreview();
+            }
+        };
 
         suggestionsDiv.appendChild(suggestion);
     });
