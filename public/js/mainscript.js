@@ -3073,76 +3073,89 @@ let lastRequestTime = 0;
 // Yardımcı Fonksiyon: Unesco verisinde arama yap
 // === UNESCO ARAMA VE ENTEGRASYON MANTIĞI ===
 
-// 1. UNESCO verisinde arama yapan yardımcı fonksiyon
+// ==================================================
+// UNESCO ENTEGRASYONU (MAINSEARCH & ADD PLACE)
+// ==================================================
+
+// 1. UNESCO Verisinde Arama Yapan Fonksiyon
 function searchUnescoData(query) {
-    if (typeof window.UNESCO_DATA === 'undefined') return [];
-    const q = query.toLowerCase().trim();
+    if (!window.UNESCO_DATA) return [];
     
+    const q = query.toLowerCase().trim();
+    // İsim içinde aranan kelime geçiyor mu?
     return window.UNESCO_DATA
         .filter(item => item.name.toLowerCase().includes(q))
         .map(item => ({
             properties: {
                 name: item.name,
+                // Formatted alanını elle oluşturuyoruz ki renderSuggestions'da görünsün
                 formatted: `${item.name}, ${item.country_code} (UNESCO Site)`,
                 lat: item.lat,
                 lon: item.lon,
                 country_code: item.country_code.toLowerCase(),
-                result_type: 'unesco_site', // Özel tip
+                result_type: 'unesco_site', // Puanlama için kritik etiket
+                place_type: 'unesco_site',
                 category: 'tourism.sights'
             },
             geometry: {
                 type: "Point",
                 coordinates: [item.lon, item.lat]
             }
-        })).slice(0, 3); // İlk 3 UNESCO sonucunu al
+        })).slice(0, 5); // En iyi 5 sonucu al
 }
 
+// 2. Ana Arama Fonksiyonunu (Override) Güncelle
+// Bu fonksiyonu mainscript.js içinde bulmana gerek yok, en alta ekleyince ezer.
 async function geoapifyLocationAutocomplete(query) {
-    // A) UNESCO Verisinde Ara
-    let unescoMatches = [];
-    if (window.UNESCO_DATA) {
-        const q = query.toLowerCase().trim();
-        unescoMatches = window.UNESCO_DATA
-            .filter(item => item.name.toLowerCase().includes(q))
-            .map(item => ({
-                properties: {
-                    name: item.name,
-                    formatted: `${item.name}, ${item.country_code} (UNESCO Site)`,
-                    lat: item.lat,
-                    lon: item.lon,
-                    country_code: item.country_code.toLowerCase(),
-                    result_type: 'unesco_site', // Puanlama için kritik
-                    place_id: 'unesco_' + Math.random().toString(36).substr(2, 9)
-                },
-                geometry: { type: "Point", coordinates: [item.lon, item.lat] }
-            })).slice(0, 3);
-    }
+    
+    // A) ÖNCE UNESCO (LOCAL)
+    const localResults = searchUnescoData(query);
 
     try {
-        // B) API'den Ara (Limit 20)
-        const response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
-        const data = await response.json();
-        const apiFeatures = data.features || [];
+        // B) SONRA API (REMOTE) - Limit 15
+        const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=15`);
+        let apiFeatures = [];
+        if (resp.ok) {
+            const data = await resp.json();
+            apiFeatures = data.features || [];
+        }
 
-        // C) Birleştir ve Çiftleri Temizle
-        let combined = [...unescoMatches, ...apiFeatures];
+        // C) BİRLEŞTİR (UNESCO ÖNDE)
+        const combined = [...localResults, ...apiFeatures];
+
+        // D) AYNI İSİMLİLERİ TEMİZLE
         const unique = [];
         const seen = new Set();
-        combined.forEach(feat => {
-            const key = (feat.properties.name || "").toLowerCase().substring(0, 15);
-            if (!seen.has(key)) {
-                seen.add(key);
-                unique.push(feat);
+        combined.forEach(item => {
+            const nameKey = (item.properties.name || "").toLowerCase().substring(0, 15);
+            if (!seen.has(nameKey)) {
+                seen.add(nameKey);
+                unique.push(item);
             }
         });
-
-        // SIRALAMAYA GÖNDER
+        
+        // renderSuggestions fonksiyonuna gönder
         return renderSuggestions(unique, query);
+
     } catch (e) {
-        console.error("Autocomplete error:", e);
-        return renderSuggestions(unescoMatches, query);
+        console.error("API Error:", e);
+        return renderSuggestions(localResults, query);
     }
 }
+
+// 3. Eğer kodda 'geoapifyAutocomplete' diye başka bir fonksiyon kullanılıyorsa onu da buna eşitle
+window.geoapifyAutocomplete = async function(query) {
+    // Sadece sonuç listesini döndürür (renderSuggestions çağırmaz), Add Place burayı kullanır.
+    const localResults = searchUnescoData(query);
+    try {
+        const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=15`);
+        const data = await resp.json();
+        const apiFeatures = data.features || [];
+        return [...localResults, ...apiFeatures];
+    } catch(e) {
+        return localResults;
+    }
+};
 // Sadece photoget-proxy ile çalışıyor!
 async function getPexelsImage(query) {
     return await getPhoto(query, "pexels");
