@@ -118,7 +118,23 @@ function disableSendButton() {
       btn.setAttribute("disabled","disabled");
       btn.classList.add("disabled");
     }
+// Input'a tıklandığında veya boşken bu özel seçenekleri gösteren yer
+function showInitialOptions() {
+    const userInput = inputField.value.toLowerCase().trim();
+    
+    // Eğer kullanıcı bir şey yazmadıysa veya yazdığı kelime 
+    // bizim options listemizdeki şehirlerden biriyse öncelik ver
+    const filteredOptions = options.filter(opt => {
+        const cityName = opt.text.split(' ').find(word => 
+            ["Antalya", "Rome", "London", "Paris", "Madrid"].includes(word)
+        );
+        return opt.text.toLowerCase().includes(userInput);
+    });
 
+    // Listeyi render et (Burada API'den gelen sonuçları değil, 
+    // sadece yukarıdaki filteredOptions'ı basmalısın)
+    renderSuggestions(filteredOptions);
+}
 function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
