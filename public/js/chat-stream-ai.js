@@ -30,14 +30,14 @@ document.addEventListener("DOMContentLoaded", function() {
         #ai-chat-controls {
             display: flex;
             gap: 8px;
-            padding: 0 0 15px 0; /* Alt boşluk */
+            padding: 0 0 15px 0;
             margin-bottom: 10px;
             border-bottom: 1px solid #f0f0f0;
         }
         .ai-nav-btn {
             flex: 1;
             padding: 8px 12px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #eee;
             background: #fff;
             border-radius: 8px;
             cursor: pointer;
@@ -49,24 +49,24 @@ document.addEventListener("DOMContentLoaded", function() {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px; 
+            gap: 6px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
         .ai-nav-btn:hover {
-            background: #f0f8ff;
-            border-color: #45aae8;
-            color: #45aae8;
+            background: #faf8ff;
+            border-color: #45aae8;  /* MOR -> MAVİ */
+            color: #45aae8;         /* MOR -> MAVİ */
         }
         .ai-nav-btn.active {
-            background: #45aae8;
+            background: #45aae8;    /* MOR -> MAVİ */
             color: #fff;
-            border-color: #45aae8;
-            box-shadow: 0 4px 10px rgba(69, 170, 232, 0.2);
+            border-color: #45aae8;  /* MOR -> MAVİ */
+            box-shadow: 0 4px 10px rgba(69, 170, 232, 0.2);  /* MOR -> MAVİ */
         }
 
         /* Geçmiş Listesi Alanı */
         #ai-history-list {
-            display: none; /* JS ile açılacak */
+            display: none;
             flex-direction: column;
             width: 100%;
             height: 100%;
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function() {
         /* Geçmiş Kartı */
         .history-card {
             background: #f9f9f9;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #eee;
             border-radius: 10px;
             padding: 12px;
             cursor: pointer;
@@ -91,9 +91,9 @@ document.addEventListener("DOMContentLoaded", function() {
             margin-top: 1px;
         }
         .history-card:hover {
-            border-color: #45aae8;
+            border-color: #45aae8;  /* MOR -> MAVİ */
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(69, 170, 232, 0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         .h-title {
             font-weight: 600;
@@ -136,14 +136,14 @@ document.addEventListener("DOMContentLoaded", function() {
         .typing {
             display: inline-block;
             position: relative;
-            color: transparent !important; /* Orjinal noktaları gizle */
+            color: transparent !important;
         }
         .typing::after {
             content: '';
             position: absolute;
             left: 0;
             top: 0;
-            color: #45aae8; /* Nokta rengi MAVİ */
+            color: #1e293b;
             font-weight: bold;
             animation: typing-dots 1.5s infinite steps(4);
         }
@@ -152,37 +152,6 @@ document.addEventListener("DOMContentLoaded", function() {
             25% { content: '.'; }
             50% { content: '..'; }
             75% { content: '...'; }
-        }
-
-        /* AI MESAJ BALONCUKLARI - Mavi Tema */
-        .chat-message.ai-message {
-            background: #f0f8ff;
-            border-left: 3px solid #45aae8;
-        }
-        
-        /* Kullanıcı mesaj baloncuğu */
-        .chat-message.user-message {
-            background: #f5f5f5;
-            border-left: 3px solid #ddd;
-        }
-        
-        /* Limit uyarı mesajı - mavi tema */
-        .chat-message.ai-message[style*="background: #ffeaea"] {
-            background: #e6f3ff !important;
-            border: 1px solid #45aae8 !important;
-            color: #1e293b !important;
-        }
-        
-        /* Input alanı odaklandığında mavi çerçeve */
-        #ai-chat-input:focus {
-            border-color: #45aae8;
-            box-shadow: 0 0 0 2px rgba(69, 170, 232, 0.2);
-        }
-        
-        /* Gönder butonu hover - mavi */
-        #ai-chat-send-btn:hover {
-            background-color: #45aae8;
-            color: white;
         }
     `;
     const style = document.createElement('style');
