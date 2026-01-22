@@ -408,22 +408,19 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // 1. İsim Belirleme
+        // 1. İsim Belirleme (Tam isim alınır)
         let displayName = "";
         if (props.city && props.city.trim()) displayName = props.city;
         else if (props.name && props.name.trim()) displayName = props.name.split(",")[0];
         
         if (!displayName || displayName.trim().length < 2) return;
 
-        // ==> İSİM KISALTMA MANTIĞI (Görüntü kirliliğini önler) <==
-        // Eğer UNESCO ise ve isim 35 karakterden uzunsa kırp.
-        // Örn: "Fertö / Neusiedlersee Cultural Landscape" -> "Fertö / Neusiedlersee..."
-        if (props.result_type === 'unesco_site' && displayName.length > 35) {
-            displayName = displayName.substring(0, 32) + "...";
-        }
-        
-        // Detaylar (Şehir vs.)
+        // --- HATA DÜZELTME: JS ile kırpma kodu SİLİNDİ ---
+        // Artık displayName üzerinde oynama yapmıyoruz, CSS halledecek.
+
+        // 2. Detaylar (Şehir vs.)
         const regionParts = [];
+        // displayName TAM İSİM olduğu için bu kontrol artık doğru çalışır
         if (props.city && props.city !== displayName) regionParts.push(props.city);
         
         const countryCode = props.country_code || "";
@@ -431,9 +428,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         let displayText = displayName;
         
-        // NOT: Buradaki "(UNESCO)" eklemesini KALDIRDIK. Zaten badge var.
-        // if (props.result_type === 'unesco_site') displayText += ` (UNESCO)`;  <-- BU SATIR SİLİNDİ
-
         if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
         if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
         
@@ -449,19 +443,20 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         div.className = "category-area-option";
         div.textContent = displayText; 
         div.dataset.displayText = displayText;
-        div.title = props.name; // Mouse üzerine gelince TAM ismini görsün
+        div.title = displayText; // Mouse üzerine gelince tam isim görünür
 
-        // CSS: Tek satıra sığdır
+        // ==> CSS İLE KISALTMA (ELLIPSIS) - Bu satırlar "..." işini yapar <==
         div.style.whiteSpace = "nowrap";
         div.style.overflow = "hidden";
         div.style.textOverflow = "ellipsis";
         div.style.display = "block";
 
-        // ==> UNESCO STİLİ (SADELEŞTİRİLMİŞ) <==
+        // ==> UNESCO STİLİ <==
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
-            div.style.paddingRight = "105px"; // Badge için yer aç
+            // Sağdan boşluk bırak ki yazı Badge'in altına girmesin
+            div.style.paddingRight = "115px"; 
 
             const badge = document.createElement("span");
             badge.textContent = "World Heritage";
@@ -473,7 +468,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             badge.style.right = "10px";
             
             // Badge Tasarımı
-            badge.style.fontSize = "0.65rem"; // Biraz daha küçülttük
+            badge.style.fontSize = "0.65rem";
             badge.style.fontWeight = "bold";
             badge.style.backgroundColor = "#54afd6"; 
             badge.style.color = "#fff";
@@ -484,7 +479,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // Tıklama Olayı (Tam veriyi kullanır)
+        // Tıklama Olayı
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
@@ -494,7 +489,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
                 displayText, 
                 props,
                 selectedLocation: {
-                    name: props.name, // Kırpılmamış tam ismi gönderiyoruz
+                    name: props.name,
                     city: props.city || props.name,
                     country: props.country || "",
                     lat: props.lat,
@@ -510,7 +505,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // Chat inputuna tam ismi yazdır
             let canonicalStr = `Plan a ${days}-day tour for ${props.name}`;
             if (typeof formatCanonicalPlan === "function") {
                 const c = formatCanonicalPlan(`${props.name} ${days} days`);
