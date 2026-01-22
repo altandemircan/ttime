@@ -316,7 +316,7 @@ ease;
     height: 0;
     overflow: visible ;
     transition: opacity 0.5s ease, visibility 0.5s ease, height 0.5s ease;
-    /*position: absolute;*/
+    position: absolute;
     top: 100px; /* Position from the top */
     width: 100%; /* Ensure full width */
 }
@@ -347,7 +347,7 @@ ease;
 /*  Remove specific styles for these sections */
 #tt-about-us
 {   
-    padding: 60px 30px 30px 30px;
+    padding: 30px;
     overflow-y: scroll;
     top: 40px;
     width: calc(100% - 475px);
