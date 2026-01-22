@@ -1119,12 +1119,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ... existing code ...
-async function sendMessage() {
-    // Kilit kontrolü (Loading sırasında tekrar basılmasın)
+function sendMessage() {
+    // Kilit kontrolü
     if (window.isProcessing) {
         const panel = document.getElementById('loading-panel');
-        // Eğer panel ekranda yoksa ama kilit varsa, kilidi aç (Hata koruması)
         if (!panel || panel.style.display === 'none') {
              window.isProcessing = false; 
         } else {
@@ -1132,32 +1130,35 @@ async function sendMessage() {
         }
     }
 
-    const inputField = document.getElementById('user-input');
-    const sendButton = document.getElementById('send-button');
-    const suggestionsDiv = document.getElementById("suggestions");
-
-    // 1. HAM VERİYİ AL
-    let rawText = inputField ? inputField.value.trim() : "";
-    if (!rawText) return;
-
-    // --- BURASI YENİ: SATIR ARASI TEMİZLİKÇİ (INLINE PARSER) ---
-    // Başka fonksiyon yok, her şey burada bitiyor.
+    const input = document.getElementById("user-input");
+    if (!input) return;
     
-    let text = rawText.toLowerCase(); // Hepsini küçült
-    let days = 1; // Varsayılan gün
+    // DİKKAT: 'const' yerine 'let' yaptık ki içeriği değiştirebilelim
+    let val = input.value.trim(); 
+    if (!val) return;
 
-    // A. GÜN SAYISINI ÇEK AL (Regex: 3 gün, 3 day, ya da sadece 3)
-    // "2025" gibi yılları gün sanmasın diye 60 sınırı koyduk.
+    // ============================================================
+    // === 🧹 AKILLI INPUT TEMİZLEYİCİ (SENKRON & INLINE) ===
+    // Kullanıcı "istanbul 3", "3 gün antalya", "bana 1-day paris ver" yazsa bile
+    // burası onu yakalayıp "3-day Istanbul" formatına çevirir.
+    // ============================================================
+    
+    // 1. Analiz için küçült
+    let text = val.toLowerCase(); 
+    let days = 1; // Varsayılan
+
+    // 2. Gün Sayısını Yakala (3 gün, 3 day, ya da sadece 3)
     const numMatch = text.match(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|gunde|günlük)?/i);
     if (numMatch) {
-        let val = parseInt(numMatch[1], 10);
-        if (val > 0 && val < 60) {
-            days = val;
+        let detectedVal = parseInt(numMatch[1], 10);
+        // Yıl olmasın (2025 gibi), mantıklı bir gün sayısı olsun (0-60 arası)
+        if (detectedVal > 0 && detectedVal < 60) {
+            days = detectedVal;
             text = text.replace(numMatch[0], " "); // Sayıyı cümleden sil
         }
     }
 
-    // B. GEREKSİZ KELİMELERİ SİL (Çöpçü)
+    // 3. Gereksiz Kelimeleri Sil (Çöpçü)
     const stopWords = [
         "plan", "a", "tour", "trip", "visit", "for", "to", "in", "the", "with", "and", "&",
         "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
@@ -1167,25 +1168,19 @@ async function sendMessage() {
         text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
     });
 
-    // C. ŞEHİR ADINI TEMİZLE VE BÜYÜT
-    // Özel karakterleri at, boşlukları temizle
+    // 4. Şehir Adını Temizle ve Baş Harfini Büyüt
     let location = text.replace(/[^\w\s\u00C0-\u017F-]/g, " ").replace(/\s+/g, " ").trim();
-    
-    // Baş harfleri büyüt (istanbul -> Istanbul)
     if (location.length > 0) {
         location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        
+        // Eğer geçerli bir şehir bulduysak, val değişkenini GÜNCELLİYORUZ.
+        // Artık kodun geri kalanı "3-day Istanbul" formatıyla çalışacak.
+        val = `${days}-day ${location}`;
+        
+        console.log(`🧹 Input Düzeldi: "${input.value}" -> "${val}"`);
     }
+    // ============================================================
 
-    // D. FİNAL MESAJI OLUŞTUR (Sisteme gidecek olan temiz format)
-    // Eğer parse edemediysek (boş kaldıysa) ham halini (rawText) gönder, bozmayalım.
-    const message = location ? `${days}-day ${location}` : rawText;
-
-    console.log(`🧹 Temizlik Sonucu: "${rawText}" -> "${message}"`);
-    
-    // Eski kodlarla uyumluluk için değişkenleri eşle
-    const input = inputField;
-    const val = message; // Artık temizlenmiş mesajı kullanıyoruz
-    // -----------------------------------------------------------
 
     if (!window.__locationPickedFromSuggestions) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
@@ -1209,7 +1204,7 @@ async function sendMessage() {
         addMessage(diffHtml, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
+        showLoadingPanel(); 
         handleAnswer(`${formatted.city} ${formatted.days} days`);
         input.value = "";
         return;
@@ -1222,6 +1217,9 @@ async function sendMessage() {
     }
 
     // 2. Canonical Match (Plan a X days...)
+    // Not: Yukarıdaki temizlik sayesinde val artık "3-day Istanbul" formatında olduğu için
+    // aşağıdaki Regex'in yakalama şansı düşüktür ama zararı yoktur.
+    // Bizim temizlediğimiz veri direkt 3. adıma (Standart Akış) düşüp handleAnswer'a gider.
     const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
     if (m) {
         let days = parseInt(m[1], 10);
@@ -1231,18 +1229,17 @@ async function sendMessage() {
         addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
+        showLoadingPanel(); 
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
-    // 3. Standart Akış
-    showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
-    handleAnswer(val);
+    // 3. Standart Akış (Temizlenmiş 'val' buraya düşer)
+    showLoadingPanel(); 
+    handleAnswer(val); // Buraya "3-day Istanbul" gider
     input.value = ""; 
 }
-// ... existing code ...
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
