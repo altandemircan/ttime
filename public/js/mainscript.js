@@ -323,10 +323,11 @@ if (typeof hideSuggestionsDiv !== "function") {
 let currentFocus = -1; // Global focus takibi
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
-    currentFocus = -1;
+    currentFocus = -1; // Her çizimde seçimi sıfırla
     const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
 
+  
+    const chatInput = document.getElementById("user-input");
     if (!suggestionsDiv || !chatInput) return;
     
     suggestionsDiv.innerHTML = "";
@@ -336,61 +337,102 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // --- 1. SIRALAMA ALGORİTMASI (Kapadokya Fix Kısmı) ---
-    const targetTerm = manualQuery.toLowerCase().trim();
+    // A. KELİMEYE GÖRE AKILLI SIRALAMA
+    const targetTerm = manualQuery.toLowerCase();
     
+    // 1. ÖNCE TÜM SONUÇLARI PUANLA
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
         
+        // İsim alanları (küçük harfe çevir)
         const name = (p.name || "").toLowerCase();
         const city = (p.city || "").toLowerCase();
         const county = (p.county || "").toLowerCase();
-        const formatted = (p.formatted || "").toLowerCase();
-        const type = (p.result_type || p.place_type || '').toLowerCase();
-        const category = (p.category || '').toLowerCase();
-
-        // Filtreleme
-        const containsTarget = name.includes(targetTerm) || city.includes(targetTerm) || county.includes(targetTerm) || formatted.includes(targetTerm);
-        if (!containsTarget) return { item, score: -9999 };
+        
+        // "kemer" içermiyorsa ele
+        const containsTarget = name.includes(targetTerm) || 
+                               city.includes(targetTerm) || 
+                               county.includes(targetTerm);
+        
+        if (!containsTarget) {
+            return { item, score: -9999 };
+        }
         
         let score = 0;
         
-        // UNESCO ve Turistik Yer Torpili
-        if (type === 'unesco_site') score += 20000;
-        else if (type === 'amenity' || type === 'tourism' || category.includes('tourism')) score += 500;
-        else if (type === 'region' || type === 'area' || type === 'island') score += 400;
-        else if (type === 'city') score += 150;
-        else if (type === 'town' || type === 'village') score -= 50;
-
-        // İsim Eşleşmesi
-        if (name === targetTerm) score += 1500;
-        else if (name.startsWith(targetTerm)) score += 800;
+        // Puanlama Sistemi
+        if (name === targetTerm || city === targetTerm || county === targetTerm) score += 1500;
+        if (name.startsWith(targetTerm)) score += 800;
+        else if (city.startsWith(targetTerm)) score += 600;
+        else if (county.startsWith(targetTerm)) score += 400;
         
-        // Ülke ve Popülarite
-        if (p.formatted && p.formatted.length < 45) score += 100;
-        if (p.country_code === 'tr') score += 100;
+        if (containsTarget) {
+            const allWords = [...name.split(/[\s,\-]+/), ...city.split(/[\s,\-]+/), ...county.split(/[\s,\-]+/)];
+            if (allWords.some(word => word === targetTerm)) score += 700;
+            else score += 100;
+        }
+        
+                                        // === YENİ AKILLI PUANLAMA (Kapadokya Fix) ===
+                                const type = (p.result_type || p.place_type || '').toLowerCase();
+                                const category = (p.category || '').toLowerCase();
 
+                                // 1. Turistik ve Bölgesel Yerlere AŞIRI Öncelik Ver
+                                // Kapadokya, Toscana, Bali gibi yerler 'region' veya 'tourism' olarak gelir.
+                                if (type === 'amenity' || type === 'tourism' || category.includes('tourism')) {
+                                    score += 500; // Turistik yer ise en tepeye fırlat
+                                } 
+                                else if (type === 'region' || type === 'area' || type === 'state') {
+                                    score += 400; // Bölge ise (Örn: Cappadocia Region)
+                                }
+                                // 2. Şehirler Standart Kalsın
+                                else if (type === 'city') {
+                                    score += 150; 
+                                } 
+                                // 3. Küçük Kasabaları Cezalandır (İtalya'daki Cappadocia buraya takılacak)
+                                else if (type === 'town' || type === 'village' || type === 'hamlet') {
+                                    score -= 50; // Puan kır ki popüler olanın önüne geçemesin
+                                }
+                                else if (type === 'county') {
+                                    score += 30;
+                                }
+
+                                // 4. Popülarite İpucu: Kısa Adres = Ünlü Yer
+                                // "Cappadocia, Turkey" (Kısa) vs "Cappadocia, L'Aquila, Abruzzo, Italy" (Uzun)
+                                if (p.formatted && p.formatted.length < 40) {
+                                    score += 100;
+                                }
+
+                                // 5. Türkiye Torpili (Opsiyonel: Türk kullanıcılar için TR sonuçlarını öne alır)
+                                if (p.country_code === 'tr') {
+                                    score += 50;
+                                }
+                                
+        
+        const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
+        if (commercialWords.some(word => name.includes(word))) score -= 2000;
+        
         return { item, score };
     });
 
-    // Sırala
+    // 2. SIRALA VE FİLTRELE
     scoredResults.sort((a, b) => b.score - a.score);
-    
-    // En iyi 8 sonucu al
-    const finalResults = scoredResults.filter(sr => sr.score > -5000).slice(0, 8).map(sr => sr.item);
 
-    // --- 2. GÖRSEL FORMAT (Bayrakları Geri Getiren Kısım) ---
+    const finalResults = scoredResults
+        .filter(sr => sr.score > 0)
+        .slice(0, 8)
+        .map(sr => sr.item);
+
+    // B. GÖRÜNÜM
     const seenSuggestions = new Set();
     
-    finalResults.forEach((result) => {
+    finalResults.forEach((result, index) => {
         const props = result.properties || {};
         
-        // İsim belirleme (Senin eski kodun mantığı)
+        // === İSİM BELİRLEME MANTIĞI ===
         let displayName = "";
         if (props.city && props.city.trim()) {
             displayName = props.city;
         } else if (props.name && props.name.trim()) {
-            // Ticari kelime temizliği
             const nameParts = props.name.split(",").map(p => p.trim());
             const firstPart = nameParts[0].toLowerCase();
             const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
@@ -402,44 +444,43 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         } else if (props.county && props.county.trim()) {
             displayName = props.county;
         }
-
+        
         if (!displayName || displayName.trim().length < 2) return;
-
-        // Detaylar (Şehir, İlçe ekleme)
+        
+        // === DETAYLAR ===
         const regionParts = [];
         if (props.city && props.city.trim() && props.city !== displayName) regionParts.push(props.city);
         if (props.county && props.county.trim() && props.county !== displayName && props.county !== props.city) regionParts.push(props.county);
-
-        // --- BAYRAK VE ÜLKE KODU (BURASI DÜZELTİLDİ) ---
+        
         const countryCode = props.country_code || "";
-        // countryFlag fonksiyonu mainscript.js içinde tanımlı varsayıyorum
-        const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
+        const flag = countryCode ? " " + countryFlag(countryCode) : "";
         
         let displayText = displayName;
         if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
-        
-        // Format: "Cappadocia, Nevşehir, TR 🇹🇷"
         if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
-
-        // Temizlik
-        displayText = displayText.replace(/^,\s*/, "").trim();
-        const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
         
-        if (seenSuggestions.has(normalizedText)) return;
+        displayText = displayText.replace(/^,\s*/, "").trim();
+        
+        const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (seenSuggestions.has(normalizedText) || displayText.startsWith(",")) return;
         seenSuggestions.add(normalizedText);
-
-        // HTML Oluşturma
+        
+        // === HTML OLUŞTURMA ===
         const div = document.createElement("div");
         div.className = "category-area-option";
-        div.innerHTML = displayText; // Bayrak emoji olduğu için textContent yerine innerHTML de olur ama textContent daha güvenli, ikisi de çalışır.
+        
+        // --- [FIX] İLK SEÇENEK OTOMATİK SEÇİLMİYOR ARTIK ---
+        // if (index === 0) div.classList.add("selected-suggestion"); // SİLİNDİ
+        
+        div.textContent = displayText;
         div.dataset.displayText = displayText;
 
-        // Seçili gelme durumu
+        // [FIX] Eğer bu şehir zaten seçiliyse, gün sayısı değişse bile listede seçili kalsın
         if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
             div.classList.add("selected-suggestion");
         }
-
-        // Tıklama Olayı (Aynen korundu)
+        
+        // === TIKLAMA OLAYI ===
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
@@ -447,14 +488,14 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
             window.selectedSuggestion = { 
                 displayText, 
-                props, 
+                props,
                 selectedLocation: {
                     name: displayName,
                     city: props.city || displayName,
                     country: props.country || "",
-                    lat: props.lat,
-                    lon: props.lon,
-                    country_code: countryCode
+                    lat: props.lat ?? props.latitude ?? null,
+                    lon: props.lon ?? props.longitude ?? null,
+                    country_code: countryCode || ""
                 }
             };
             
@@ -469,12 +510,15 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
             let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
             if (typeof formatCanonicalPlan === "function") {
-                 const c = formatCanonicalPlan(`${displayName} ${days} days`);
-                 if (c && c.canonical) canonicalStr = c.canonical;
+                const c = formatCanonicalPlan(`${displayName} ${days} days`);
+                if (c && c.canonical) canonicalStr = c.canonical;
             }
 
-            if (typeof setChatInputValue === "function") setChatInputValue(canonicalStr);
-            else chatInput.value = canonicalStr;
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
 
             if (typeof enableSendButton === "function") enableSendButton();
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
@@ -3068,91 +3112,16 @@ const apiCache = new Map();
 const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
 let lastRequestTime = 0;
-// mainscript.js içine entegre edilecek fonksiyon
-
-// Yardımcı Fonksiyon: Unesco verisinde arama yap
-// === UNESCO ARAMA VE ENTEGRASYON MANTIĞI ===
-
-// ==================================================
-// UNESCO ENTEGRASYONU (MAINSEARCH & ADD PLACE)
-// ==================================================
-
-// 1. UNESCO Verisinde Arama Yapan Fonksiyon
-// === UNESCO ENTEGRASYONU (KESİN ÇÖZÜM) ===
-
-// 1. Arama mantığı
-function searchUnesco(query) {
-    if (!window.UNESCO_DATA) return [];
-    const q = query.toLowerCase().trim();
-    return window.UNESCO_DATA.filter(item => item.name.toLowerCase().includes(q))
-        .map(item => ({
-            properties: {
-                name: item.name,
-                // Görünüm formatı: İsim, Ülke Kodu (UNESCO)
-                formatted: `${item.name}, ${item.country_code} (UNESCO)`,
-                lat: item.lat,
-                lon: item.lon,
-                country_code: item.country_code.toLowerCase(),
-                result_type: 'unesco_site', // Puanlama anahtarı
-                place_type: 'unesco_site',
-                category: 'tourism'
-            },
-            geometry: { type: "Point", coordinates: [item.lon, item.lat] }
-        })).slice(0, 5);
+async function geoapifyAutocomplete(query) {
+  // LİMİTİ ARTIRDIK: Varsayılan (5) yerine 20 sonuç istiyoruz.
+  // Böylece popüler yerler listenin sonlarında gelse bile yakalayacağız.
+  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+  if (!resp.ok) throw new Error("API error");
+  const data = await resp.json();
+  return data.features || [];
 }
 
-// 2. Ana arama fonksiyonunu override et
-// (Eski fonksiyon ne olursa olsun bunu kullanacak)
-window.geoapifyLocationAutocomplete = async function(query) {
-    // A) Önce UNESCO verisi
-    const localResults = searchUnesco(query);
-    
-    try {
-        // B) Sonra API verisi
-        const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=15`);
-        let apiFeatures = [];
-        if (resp.ok) {
-            const data = await resp.json();
-            apiFeatures = data.features || [];
-        }
-        
-        // C) Birleştir (UNESCO önce gelir)
-        const combined = [...localResults, ...apiFeatures];
-        
-        // D) Çift kayıtları temizle
-        const unique = [];
-        const seen = new Set();
-        combined.forEach(item => {
-            const key = (item.properties.name || "").toLowerCase().substring(0, 10);
-            if (!seen.has(key)) {
-                seen.add(key);
-                unique.push(item);
-            }
-        });
 
-        // renderSuggestions fonksiyonuna gönder
-        return renderSuggestions(unique, query);
-    } catch (e) {
-        // Hata varsa sadece local veriyi göster
-        return renderSuggestions(localResults, query);
-    }
-};
-
-// 3. Eğer 'Add Place' farklı bir fonksiyon kullanıyorsa onu da bağla
-window.geoapifyAutocomplete = window.geoapifyLocationAutocomplete;
-// 3. Eğer kodda 'geoapifyAutocomplete' diye başka bir fonksiyon kullanılıyorsa onu da buna eşitle
-window.geoapifyAutocomplete = async function(query) {
-    // Sadece sonuç listesini döndürür (renderSuggestions çağırmaz), Add Place burayı kullanır.
-    const localResults = searchUnescoData(query);
-    try {
-        const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=15`);
-        const data = await resp.json();
-        const apiFeatures = data.features || [];
-        return [...localResults, ...apiFeatures];
-    } catch(e) {
-        return localResults;
-    }
-};
 // Sadece photoget-proxy ile çalışıyor!
 async function getPexelsImage(query) {
     return await getPhoto(query, "pexels");
