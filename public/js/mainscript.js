@@ -444,9 +444,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
         // ==> BURASI EKLENDİ: UNESCO İSE TURUNCU YAP <==
         if (props.result_type === 'unesco_site') {
-            div.style.backgroundColor = "#f2fce4;
-           
-        }
+            div.style.backgroundColor = "#f2fce4"; 
+               }
         // ===============================================
 
         div.onclick = () => {
