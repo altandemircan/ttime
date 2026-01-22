@@ -54,14 +54,14 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         .ai-nav-btn:hover {
             background: #faf8ff;
-            border-color: #45aae8;  /* MOR -> MAVİ */
-            color: #45aae8;         /* MOR -> MAVİ */
+            border-color: #c745e8;  /* GRADIENT BAŞLANGIÇ RENGİ */
+            color: #c745e8;         /* GRADIENT BAŞLANGIÇ RENGİ */
         }
         .ai-nav-btn.active {
-            background: #45aae8;    /* MOR -> MAVİ */
+            background: linear-gradient(135deg, #c745e8 0%, #2dd4d0 100%);  /* GRADIENT */
             color: #fff;
-            border-color: #45aae8;  /* MOR -> MAVİ */
-            box-shadow: 0 4px 10px rgba(69, 170, 232, 0.2);  /* MOR -> MAVİ */
+            border-color: transparent;  /* Kenarlığı kaldır çünkü gradient var */
+            box-shadow: 0 4px 10px rgba(199, 69, 232, 0.2);  /* MOR RENK */
         }
 
         /* Geçmiş Listesi Alanı */
@@ -91,9 +91,9 @@ document.addEventListener("DOMContentLoaded", function() {
             margin-top: 1px;
         }
         .history-card:hover {
-            border-color: #45aae8;  /* MOR -> MAVİ */
+            border-color: #c745e8;  /* GRADIENT BAŞLANGIÇ RENGİ */
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(199, 69, 232, 0.1);  /* MOR RENK */
         }
         .h-title {
             font-weight: 600;
@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", function() {
             position: absolute;
             left: 0;
             top: 0;
-            color: #1e293b;
+            color: #c745e8;  /* GRADIENT BAŞLANGIÇ RENGİ */
             font-weight: bold;
             animation: typing-dots 1.5s infinite steps(4);
         }
