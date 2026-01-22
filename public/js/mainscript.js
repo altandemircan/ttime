@@ -685,22 +685,9 @@ function parsePlanRequest(text) {
     if (!days || isNaN(days) || days < 1) days = 2;
 
     // Konum bulunamadıysa metinden tahmin et
-    // Konum bulunamadıysa metinden tahmin et
     if (!location) {
-        // SABİT ŞEHİRLER İÇİN ÖNCELİKLİ EKLEME (Regex'ten önce çalışır)
-        const fixedCities = ["Antalya", "Rome", "London", "Paris", "Madrid", "Berlin"];
-        for (let city of fixedCities) {
-            if (text.toLowerCase().includes(city.toLowerCase())) {
-                location = city;
-                break; 
-            }
-        }
-
-        // Eğer sabit şehirlerden biri değilse mevcut regex'in çalışsın
-        if (!location) {
-            let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
-            if (wordMatch) location = wordMatch[1];
-        }
+        let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
+        if (wordMatch) location = wordMatch[1];
     }
 
     // Fonksiyon artık 3 veri döndürüyor: Konum, Gün ve Kırpılma Durumu
