@@ -388,6 +388,14 @@ function changeContent(option) {
         }
     }
 }
+
+window.openAbout = function() {
+    document.getElementById('tt-welcome').style.display='none';
+    document.getElementById('tt-about-us').style.display='block';
+    document.getElementById('tt-about-us').classList.add('active','tt-overlay');
+    document.getElementById('main-chat').style.display='none';
+    return false;
+};
 // Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
 document.addEventListener('click', function(event) {
     const aboutUsSection = document.getElementById('tt-about-us');
