@@ -7636,7 +7636,7 @@ scrollbar-width: thin;
 /* Mor Buton (About Triptime) */
 .btn-purple {
     background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%); /* Hafif gradyan */
-    box-shadow: 0 4px 15px rgba(164, 117, 241, 0.3); /* Mor gölge */
+    
 }
 .btn-purple:hover {
     box-shadow: 0 8px 20px rgba(164, 117, 241, 0.5); /* Hover'da gölge artar */
@@ -7646,7 +7646,7 @@ scrollbar-width: thin;
 /* Mavi Buton (Mira AI Chat) */
 .btn-blue {
     background: linear-gradient(135deg, #45aae8 0%, #2d94d4 100%); /* Hafif gradyan */
-    box-shadow: 0 4px 15px rgba(69, 170, 232, 0.3); /* Mavi gölge */
+   
 }
 .btn-blue:hover {
     box-shadow: 0 8px 20px rgba(69, 170, 232, 0.5);
