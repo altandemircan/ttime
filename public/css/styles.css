@@ -316,7 +316,7 @@ ease;
     height: 0;
     overflow: visible ;
     transition: opacity 0.5s ease, visibility 0.5s ease, height 0.5s ease;
-    position: absolute; /* Use absolute positioning */
+    /*position: absolute;*/
     top: 100px; /* Position from the top */
     width: 100%; /* Ensure full width */
 }
