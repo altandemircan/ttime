@@ -7587,8 +7587,7 @@ display: block !important;
     width: 100%;
     display: grid;
     max-width: 860px;
-    gap: 30px;
-    padding: 60px 10px;
+    gap: 30px;  
     margin: 0 auto;
 }
 /* Welcome kısmı */
