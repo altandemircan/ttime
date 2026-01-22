@@ -370,11 +370,6 @@ function changeContent(option) {
     const mainChat = document.getElementById('main-chat');
 
     if (option === 1) {
-        // --- BU SATIRI EKLE (DÜZELTME) ---
-        // Loading sırasında gizlenen .cw içeriğinin kilidini açıyoruz:
-        document.querySelectorAll('.cw').forEach(el => el.style.display = ''); 
-        // ----------------------------------
-
         if (aboutUsSection) {
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
@@ -385,8 +380,9 @@ function changeContent(option) {
         }
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
-      
+     
     } else if (option === 2) {
+        // BURASI KRİTİK: showAboutTriptime'ı çağırıyoruz ki durum kaydı yapılsın
         if (typeof window.showAboutTriptime === 'function') {
             window.showAboutTriptime();
         }
