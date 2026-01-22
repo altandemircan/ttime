@@ -359,42 +359,32 @@ document.addEventListener('click', function(e){
     }
 });
 
+
 function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => section.classList.remove('active'));
+
     const chatBox = document.getElementById('chat-box');
+    const welcomeSection = document.getElementById('tt-welcome');
+    const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
-    
-    // Tüm bölümleri gizle
-    sections.forEach(section => {
-        section.style.display = 'none';
-        section.classList.remove('active', 'tt-overlay');
-    });
-    
+
     if (option === 1) {
-        // Welcome ekranını göster
-        const welcomeSection = document.getElementById('tt-welcome');
+        if (aboutUsSection) {
+            aboutUsSection.style.display = 'none';
+            aboutUsSection.classList.remove('active', 'tt-overlay');
+        }
         if (welcomeSection) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
-        
-        // Chat bölümlerini göster
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
-      
+     
     } else if (option === 2) {
-        // About ekranını göster
-        const aboutUsSection = document.getElementById('tt-about-us');
-        if (aboutUsSection) {
-            aboutUsSection.style.display = 'block';
-            aboutUsSection.classList.add('active', 'tt-overlay');
-            aboutUsSection.style.zIndex = '150';
-            aboutUsSection.style.background = '#fff';
-            aboutUsSection.style.overflowY = 'auto';
-            
-            // Chat'i gizle
-            if (mainChat) mainChat.style.display = 'none';
-            if (chatBox) chatBox.style.display = 'none';
+        // BURASI KRİTİK: showAboutTriptime'ı çağırıyoruz ki durum kaydı yapılsın
+        if (typeof window.showAboutTriptime === 'function') {
+            window.showAboutTriptime();
         }
     }
 }
