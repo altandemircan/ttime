@@ -118,23 +118,7 @@ function disableSendButton() {
       btn.setAttribute("disabled","disabled");
       btn.classList.add("disabled");
     }
-// Input'a tıklandığında veya boşken bu özel seçenekleri gösteren yer
-function showInitialOptions() {
-    const userInput = inputField.value.toLowerCase().trim();
-    
-    // Eğer kullanıcı bir şey yazmadıysa veya yazdığı kelime 
-    // bizim options listemizdeki şehirlerden biriyse öncelik ver
-    const filteredOptions = options.filter(opt => {
-        const cityName = opt.text.split(' ').find(word => 
-            ["Antalya", "Rome", "London", "Paris", "Madrid"].includes(word)
-        );
-        return opt.text.toLowerCase().includes(userInput);
-    });
 
-    // Listeyi render et (Burada API'den gelen sonuçları değil, 
-    // sadece yukarıdaki filteredOptions'ı basmalısın)
-    renderSuggestions(filteredOptions);
-}
 function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
@@ -701,9 +685,22 @@ function parsePlanRequest(text) {
     if (!days || isNaN(days) || days < 1) days = 2;
 
     // Konum bulunamadıysa metinden tahmin et
+    // Konum bulunamadıysa metinden tahmin et
     if (!location) {
-        let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
-        if (wordMatch) location = wordMatch[1];
+        // SABİT ŞEHİRLER İÇİN ÖNCELİKLİ EKLEME (Regex'ten önce çalışır)
+        const fixedCities = ["Antalya", "Rome", "London", "Paris", "Madrid", "Berlin"];
+        for (let city of fixedCities) {
+            if (text.toLowerCase().includes(city.toLowerCase())) {
+                location = city;
+                break; 
+            }
+        }
+
+        // Eğer sabit şehirlerden biri değilse mevcut regex'in çalışsın
+        if (!location) {
+            let wordMatch = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü'’]+)\b/);
+            if (wordMatch) location = wordMatch[1];
+        }
     }
 
     // Fonksiyon artık 3 veri döndürüyor: Konum, Gün ve Kırpılma Durumu
