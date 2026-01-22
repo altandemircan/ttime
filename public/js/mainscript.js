@@ -439,19 +439,27 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
-        // DİKKAT: textContent kullanıyoruz, badge'i sonra append edeceğiz.
         div.textContent = displayText; 
         div.dataset.displayText = displayText;
+        
+        // ==> 1. YENİ ÖZELLİK: Üzerine gelince tam ismi göster (Tooltip)
+        div.title = displayText;
+
+        // ==> 2. YENİ ÖZELLİK: İsim sığmazsa "..." koy
+        div.style.whiteSpace = "nowrap";
+        div.style.overflow = "hidden";
+        div.style.textOverflow = "ellipsis";
+        div.style.display = "block"; // Satır yapısını koru
 
         // ==> BURASI GÜNCELLENDİ: UNESCO İSE RENK VE ETİKET EKLE <==
         if (props.result_type === 'unesco_site') {
-            // 1. Arka plan rengi (İstediğin renk)
+            // 1. Arka plan rengi (Senin kodun)
             div.style.backgroundColor = "#f2fce4"; 
             
             // 2. Absolute pozisyonlama için kapsayıcıya relative ver
             div.style.position = "relative";
             // Uzun isimler etiketin altında kalmasın diye sağdan boşluk bırak
-            div.style.paddingRight = "110px"; 
+            div.style.paddingRight = "120px"; // 110px biraz dar olabilir, 120 yaptım garanti olsun
 
             // 3. "World Heritage" etiketini oluştur
             const badge = document.createElement("span");
@@ -462,10 +470,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             badge.style.top = "50%"; // Dikeyde ortala
             badge.style.transform = "translateY(-50%)"; // Tam ortalamak için düzeltme
             badge.style.right = "10px"; // Sağdan 10px içeride
-            // Etiket tasarımı (Küçük, yeşil, şık)
+            
+            // Etiket tasarımı (Senin istediğin mavi renk: #54afd6)
             badge.style.fontSize = "0.7rem";
             badge.style.fontWeight = "bold";
-            badge.style.backgroundColor = "#54afd6"; // Koyu yeşil bir arka plan
+            badge.style.backgroundColor = "#54afd6"; 
             badge.style.color = "#fff"; // Beyaz yazı
             badge.style.padding = "3px 8px";
             badge.style.borderRadius = "4px"; // Köşeleri yuvarlat
