@@ -177,83 +177,49 @@ function showSuggestions() {
         { text: "Discover Petra for 2 day",  flag: countryFlag("JO") }  // Ürdün
     ];
 
-    options.forEach(option => {
-        const suggestion = document.createElement("div");
-        suggestion.className = "category-area-option";
-        suggestion.innerText = `${option.text} ${option.flag}`;
+   options.forEach(option => {
+    const suggestion = document.createElement("div");
+    suggestion.className = "category-area-option";
+    suggestion.innerText = `${option.text} ${option.flag}`;
 
-        // --- TIKLAYINCA INPUTU DOLDUR ---
-        suggestion.onclick = function() {
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            suggestion.classList.add("selected-suggestion");
+    suggestion.onclick = function() {
+        Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+        suggestion.classList.add("selected-suggestion");
 
-            const rawText = suggestion.textContent.replace(/🇯🇴|🇹🇭|🇯🇵|🇪🇸|🇫🇷|🇬🇧|🇮🇹|🇹🇷/g, "").trim();
+        // SABİT VE GARANTİLİ ŞEHİR-GÜN TANIMI!
+        let city, days;
+        switch(option.text) {
+            case "2 days in Antalya":          city = "Antalya"; days = 2; break;
+            case "Explore Rome for 3 day":     city = "Rome";    days = 3; break;
+            case "1 days in Tokyo":            city = "Tokyo";   days = 1; break;
+            case "London 2-day guide":         city = "London";  days = 2; break;
+            case "3-day Paris itinerary":      city = "Paris";   days = 3; break;
+            case "Visit Madrid in 1 days":     city = "Madrid";  days = 1; break;
+            case "3 days in Bangkok":          city = "Bangkok"; days = 3; break;
+            case "Discover Petra for 2 day":   city = "Petra";   days = 2; break;
+            default: /* fallback */            city = "City";    days = 2; break;
+        }
+        let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+        window.__programmaticInput = true;
+        if (typeof setChatInputValue === "function") {
+            setChatInputValue(canonicalStr);
+        } else {
+            chatInput.value = canonicalStr;
+        }
+        setTimeout(() => { window.__programmaticInput = false; }, 0);
 
-            // GÜN sayısı
-            let dayMatch = rawText.match(/(\d+)\s*-?\s*(day|days|gün)/i);
-            let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
-
-            // ŞEHİR ismini düzgün ayıkla!
-            let city = null;
-            let tokens = rawText.split(/in |for |to |at |on /i);
-            for (let k = tokens.length - 1; k >= 0; k--) {
-                // Bütün kirli kelimeleri sil, kalan tek anlamlı kelimeyi şehir olarak çek
-            let cleaned = tokens[k]
-    .replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore|discover)/gi, "")
-    .replace(/\d+/g, "")
-    .replace(/[^\p{L}\s]+/gu, "")        // Sayı ve noktalama hariç sadece harf ve boşluk kalsın
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-// Çok kelimelik şehir için ("Rio de Janeiro" gibi), temiz ve uzun olanlardan sonuncusunu seç
-let subTokens = cleaned.split(" ").filter(w => w.length > 1);
-
-// Son kelime olur, ör: "London"
-let cand = subTokens.length ? subTokens[subTokens.length-1] : "";
-
-// İki veya daha fazla kelimelik bir şehir ismi ise (ve emin olmak istersen),
-// let cand = subTokens.join(" ");
-
-// Son kontrol
-if (cand && cand.length > 1) {
-    city = cand;
-    break;
-}
-            }
-            if (!city || /(guide|days?|trip|tour|itinerary|discover|explore|visit)/i.test(city)) {
-                let m = rawText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)/);
-                if (m) city = m[1];
-            }
-            if (!city) city = rawText.split(" ")[0].trim();
-            city = city.charAt(0).toUpperCase() + city.slice(1);
-
-            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${city} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            window.__programmaticInput = true;
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
-
-            window.selectedSuggestion = { displayText: canonicalStr, city, days };
-            window.selectedLocation = { city, days };
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton?.();
-            showSuggestionsDiv?.();
-            if (typeof updateCanonicalPreview === "function") {
-                updateCanonicalPreview();
-            }
-        };
-
-        suggestionsDiv.appendChild(suggestion);
-    });
+        window.selectedSuggestion = { displayText: canonicalStr, city, days };
+        window.selectedLocation = { city, days };
+        window.selectedLocationLocked = true;
+        window.__locationPickedFromSuggestions = true;
+        enableSendButton?.();
+        showSuggestionsDiv?.();
+        if (typeof updateCanonicalPreview === "function") {
+            updateCanonicalPreview();
+        }
+    };
+    suggestionsDiv.appendChild(suggestion);
+});
     showSuggestionsDiv?.();
 }
     if (!chatInput) return;
