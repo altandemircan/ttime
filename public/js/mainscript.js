@@ -841,7 +841,18 @@ function extractCityAndDays(input) {
     }
 
     // 6. Son çare: ilk kelime
-    if (!city) city = input.split(" ")[0].trim();
+if (!city) city = input.split(" ")[0].trim();
+
+// Eğer city yanlışlıkla 'Day' veya 'Days' ise, kelimeyi inputtan tekrar doğru bulmaya çalış
+if (city && (city.toLowerCase() === 'days' || city.toLowerCase() === 'day')) {
+    // Genellikle son kelime şehir olur, onu al
+    const tokens = input.trim().split(/\s+/);
+    // Sayısal, "day/days" ve "trip/tour" vb. kelimeleri filtrele
+    const filterTokens = tokens.filter(w => !/^\d+$/.test(w) && !/(day|days|gün|trip|tour|itinerary)/i.test(w));
+    if (filterTokens.length) city = filterTokens[filterTokens.length-1];
+}
+// Son kez, ilk harfi büyük yap
+city = city.charAt(0).toUpperCase() + city.slice(1);
 
     // Gün sayısı bulunamazsa default 2
     if (!days || isNaN(days) || days < 1) days = 2;
