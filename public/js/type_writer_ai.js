@@ -40,22 +40,24 @@ function extractFirstJson(str) {
 window.__aiInfoRequestToken = window.__aiInfoRequestToken || null;
 
 window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, cityOverride = null) {
+    // 1. Temizlik: Eski panelleri kaldır
     document.querySelectorAll('.ai-info-section').forEach(el => el.remove());
 
     const tripTitleDiv = document.getElementById('trip_title');
     if (!tripTitleDiv) return;
 
-    const currentTripKey = window.activeTripKey;           // aktif gezi
+    const currentTripKey = window.activeTripKey;            // aktif gezi
     const currentCity    = window.selectedCity;
 
     let city = cityOverride || (window.selectedCity || '').replace(/ trip plan.*$/i, '').trim();
     let country = (window.selectedLocation && window.selectedLocation.country) || "";
     if (!city && !aiStaticInfo) return;
 
-    // Yeni istek için token üret
+    // 2. Token Yönetimi
     const token = `${Date.now()}_${Math.random()}`;
     window.__aiInfoRequestToken = token;
 
+    // 3. HTML İskeletini Oluştur
     const aiDiv = document.createElement('div');
     aiDiv.className = 'ai-info-section';
     aiDiv.innerHTML = `
@@ -78,73 +80,102 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
     `;
     tripTitleDiv.insertAdjacentElement('afterend', aiDiv);
 
-    const aiSummary  = aiDiv.querySelector('#ai-summary');
-    const aiTip      = aiDiv.querySelector('#ai-tip');
-    const aiHighlight= aiDiv.querySelector('#ai-highlight');
-    const aiTime     = aiDiv.querySelector('.ai-info-time');
-    const aiSpinner  = aiDiv.querySelector('#ai-spinner');
-    const aiContent  = aiDiv.querySelector('.ai-info-content');
+    // Element Referansları
+    const aiSummary   = aiDiv.querySelector('#ai-summary');
+    const aiTip       = aiDiv.querySelector('#ai-tip');
+    const aiHighlight = aiDiv.querySelector('#ai-highlight');
+    const aiTime      = aiDiv.querySelector('.ai-info-time');
+    const aiSpinner   = aiDiv.querySelector('#ai-spinner');
+    const aiContent   = aiDiv.querySelector('.ai-info-content');
 
-   function cleanText(text) { return (text || "").replace(/🤖/g, '').replace(/AI:/g, '').trim(); }
+    // Yardımcı temizleme
+    function cleanText(text) { return (text || "").replace(/🤖/g, '').replace(/AI:/g, '').trim(); }
 
-   function populateAndShow(data, timeElapsed = null) {
-    // Güvenlik kontrolleri
-    if (token !== window.__aiInfoRequestToken) return;
-    if (currentTripKey && window.activeTripKey !== currentTripKey) return;
+    // --- İÇ FONKSİYON: POPULATE AND SHOW ---
+    function populateAndShow(data, timeElapsed = null) {
+        // Güvenlik kontrolleri
+        if (token !== window.__aiInfoRequestToken) return;
+        if (currentTripKey && window.activeTripKey !== currentTripKey) return;
 
-    if (aiSpinner) aiSpinner.style.display = "none";
+        if (aiSpinner) aiSpinner.style.display = "none";
 
-    // --- KRİTİK: PAYLAŞIM İÇİN VERİYİ MÜHÜRLE ---
-    const aiFullText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
-    localStorage.setItem('ai_information', aiFullText);
-    
-    window.cart = window.cart || [];
-    window.cart.aiData = data;
-    window.lastTripAIInfo = data;
-    // ------------------------------------------
-
-    // UI: Panel Oluşturma
-    if (!aiDiv.querySelector('#ai-toggle-btn')) {
-        const btn = document.createElement('button');
-        btn.id = "ai-toggle-btn";
-        btn.className = "arrow-btn";
-        btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0";
-        btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;vertical-align:middle;transition:transform 0.2s;">`;
-        aiDiv.querySelector('#ai-toggle-header').appendChild(btn);
+        // Veriyi kaydet
+        const aiFullText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
+        localStorage.setItem('ai_information', aiFullText);
         
-        const aiIcon = btn.querySelector('.arrow-icon');
-        let expanded = true;
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            expanded = !expanded;
-            aiContent.style.maxHeight = expanded ? "1200px" : "0";
-            aiContent.style.opacity = expanded ? "1" : "0";
-            expanded ? aiIcon.classList.add('open') : aiIcon.classList.remove('open');
-        });
-        if (aiIcon) aiIcon.classList.add('open');
+        window.cart = window.cart || [];
+        window.cart.aiData = data;
+        window.lastTripAIInfo = data;
+
+        // --- CSS EKLEME (OK İŞARETİ İÇİN) ---
+        if (!document.getElementById('ai-arrow-style')) {
+            const style = document.createElement('style');
+            style.id = 'ai-arrow-style';
+            style.innerHTML = `
+                .arrow-icon {
+                    transform: rotate(0deg); /* Kapalıyken SAĞA */
+                    transition: transform 0.2s ease;
+                    display: inline-block;
+                }
+                .arrow-icon.open {
+                    transform: rotate(90deg); /* Açıkken AŞAĞI */
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // --- BUTON OLUŞTURMA VE MANTIK ---
+        if (!aiDiv.querySelector('#ai-toggle-btn')) {
+            const btn = document.createElement('button');
+            btn.id = "ai-toggle-btn";
+            btn.className = "arrow-btn";
+            btn.style = "border:none;background:transparent;font-size:18px;cursor:pointer;padding:0;display:flex;align-items:center;";
+            // Varsayılan olarak 'open' class'ı ekliyoruz çünkü panel açık geliyor
+            btn.innerHTML = `<img src="https://www.svgrepo.com/show/520912/right-arrow.svg" class="arrow-icon open" style="width:18px;">`;
+            
+            aiDiv.querySelector('#ai-toggle-header').appendChild(btn);
+            
+            const aiIcon = btn.querySelector('.arrow-icon');
+            let expanded = true; // Başlangıç durumu açık
+
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                expanded = !expanded;
+                
+                // Paneli aç/kapa
+                aiContent.style.maxHeight = expanded ? "1200px" : "0";
+                aiContent.style.opacity = expanded ? "1" : "0";
+                
+                // İkonu döndür
+                if (expanded) {
+                    aiIcon.classList.add('open'); // Aşağı
+                } else {
+                    aiIcon.classList.remove('open'); // Sağa
+                }
+            });
+        }
+
+        // İçeriği göster
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity   = "1";
+
+        // Metinleri bas
+        aiSummary.textContent   = (data.summary || "").replace(/🤖/g, '').trim();
+        aiTip.textContent       = (data.tip || "").replace(/🤖/g, '').trim();
+        aiHighlight.textContent = (data.highlight || "").replace(/🤖/g, '').trim();
+        aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
+
+        if (typeof saveCurrentTripToStorage === "function") {
+            saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+        }
     }
 
-    aiContent.style.maxHeight = "1200px";
-    aiContent.style.opacity   = "1";
-
-    // Metinleri Ekrana Yaz
-    aiSummary.textContent   = (data.summary || "").replace(/🤖/g, '').trim();
-    aiTip.textContent       = (data.tip || "").replace(/🤖/g, '').trim();
-    aiHighlight.textContent = (data.highlight || "").replace(/🤖/g, '').trim();
-    aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
-
-    if (typeof saveCurrentTripToStorage === "function") {
-        saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-    }
-}
-
-    // Statik veri varsa doğrudan bas
+    // 4. Veri Akışı (Statik veya Fetch)
     if (aiStaticInfo) {
         populateAndShow(aiStaticInfo, null);
         return;
     }
 
-    // API çağrısı
     const t0 = performance.now();
     try {
         const resp = await fetch('/plan-summary', {
@@ -165,11 +196,10 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
         populateAndShow(aiData, elapsed);
     } catch (e) {
-        // Hata olursa, token kontrolü yine de gerekli
         if (token === window.__aiInfoRequestToken && aiTime) {
             aiTime.innerHTML = "<span style='color:red'>AI info could not be retrieved.</span>";
             if (aiSpinner) aiSpinner.style.display = "none";
         }
         console.error("AI Error:", e);
     }
-};
+};;
