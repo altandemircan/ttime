@@ -465,7 +465,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             // Etiket tasarımı (Küçük, yeşil, şık)
             badge.style.fontSize = "0.7rem";
             badge.style.fontWeight = "bold";
-            badge.style.backgroundColor = "#388e3c"; // Koyu yeşil bir arka plan
+            badge.style.backgroundColor = "#54afd6"; // Koyu yeşil bir arka plan
             badge.style.color = "#fff"; // Beyaz yazı
             badge.style.padding = "3px 8px";
             badge.style.borderRadius = "4px"; // Köşeleri yuvarlat
