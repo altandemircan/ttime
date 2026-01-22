@@ -1133,34 +1133,30 @@ function sendMessage() {
     const input = document.getElementById("user-input");
     if (!input) return;
     
-    // DİKKAT: 'const' yerine 'let' yaptık ki içeriği değiştirebilelim
+    // DİKKAT: 'const' yerine 'let' yaptık
     let val = input.value.trim(); 
     if (!val) return;
 
     // ============================================================
-    // === 🧹 AKILLI INPUT TEMİZLEYİCİ (SENKRON & INLINE) ===
-    // Kullanıcı "istanbul 3", "3 gün antalya", "bana 1-day paris ver" yazsa bile
-    // burası onu yakalayıp "3-day Istanbul" formatına çevirir.
+    // === 🧹 AKILLI INPUT TEMİZLEYİCİ (TRIPTIME EDITION) ===
     // ============================================================
     
-    // 1. Analiz için küçült
     let text = val.toLowerCase(); 
     let days = 1; // Varsayılan
 
-    // 2. Gün Sayısını Yakala (3 gün, 3 day, ya da sadece 3)
+    // 1. Gün Sayısını Yakala
     const numMatch = text.match(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|gunde|günlük)?/i);
     if (numMatch) {
         let detectedVal = parseInt(numMatch[1], 10);
-        // Yıl olmasın (2025 gibi), mantıklı bir gün sayısı olsun (0-60 arası)
         if (detectedVal > 0 && detectedVal < 60) {
             days = detectedVal;
-            text = text.replace(numMatch[0], " "); // Sayıyı cümleden sil
+            text = text.replace(numMatch[0], " "); 
         }
     }
 
-    // 3. Gereksiz Kelimeleri Sil (Çöpçü)
+    // 2. Gereksiz Kelimeleri Sil (trip, tour vb. dahil)
     const stopWords = [
-        "plan", "a", "tour", "trip", "visit", "for", "to", "in", "the", "with", "and", "&",
+        "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
         "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
         "hakkında", "ile", "gün", "day", "days"
     ];
@@ -1168,17 +1164,16 @@ function sendMessage() {
         text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
     });
 
-    // 4. Şehir Adını Temizle ve Baş Harfini Büyüt
+    // 3. Şehir Adını Temizle ve Baş Harfini Büyüt
     let location = text.replace(/[^\w\s\u00C0-\u017F-]/g, " ").replace(/\s+/g, " ").trim();
     if (location.length > 0) {
         location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
         
-        // ==> BURAYI GÜNCELLEDİK: Daha şık ve kurumsal bir cümle formatı <==
-        // Eskisi: val = `${days}-day ${location}`;
-        // Yenisi:
-        val = `Plan a ${days}-day tour for ${location}`;
+        // ==> GÜNCELLEME BURADA: "3-day trip to [Location]" <==
+        // Markaya uygun (trip) ve gramer olarak doğru (3-day).
+        val = `Plan a ${days}-day trip to ${location}`;
         
-        console.log(`🧹 Input Düzeldi: "${input.value}" -> "${val}"`);
+        console.log(`🧹 Triptime Formatı: "${input.value}" -> "${val}"`);
     }
     // ============================================================
 
@@ -1188,7 +1183,7 @@ function sendMessage() {
         return;
     }
 
-    // İlk mesaj (Let's get started)
+    // İlk mesaj
     addWelcomeMessage();
 
     const formatted = formatCanonicalPlan(val);
@@ -1217,28 +1212,29 @@ function sendMessage() {
         return;
     }
 
-    // 2. Canonical Match (Plan a X days...)
-    // Not: Yukarıdaki temizlik sayesinde val artık "3-day Istanbul" formatında olduğu için
-    // aşağıdaki Regex'in yakalama şansı düşüktür ama zararı yoktur.
-    // Bizim temizlediğimiz veri direkt 3. adıma (Standart Akış) düşüp handleAnswer'a gider.
-    const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
+    // 2. Canonical Match (REGEX GÜNCELLENDİ)
+    // Artık hem "tour" hem "trip", hem "for" hem "to" kabul ediyor.
+    const m = val.match(/Plan a (\d+)-day (?:tour|trip) (?:for|to) (.+)$/i);
+    
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
+        // Şehir ismini regex'ten (m[2]) veya kilitli lokasyondan al
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
         
         addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
         showLoadingPanel(); 
+        // Arkadaki sisteme "City Days days" formatında gönderiyoruz
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
-    // 3. Standart Akış (Temizlenmiş 'val' buraya düşer)
+    // 3. Standart Akış
     showLoadingPanel(); 
-    handleAnswer(val); // Buraya "3-day Istanbul" gider
+    handleAnswer(val); 
     input.value = ""; 
 }
 
