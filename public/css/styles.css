@@ -350,7 +350,7 @@ ease;
     padding: 30px;
     overflow-y: scroll;
     top: 40px;
-    width: calc(100% - 455px);
+    width: calc(100% - 475px);
     background: #ffffff;
 }
 @media (max-width: 768px) {
