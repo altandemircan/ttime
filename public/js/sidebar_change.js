@@ -367,7 +367,7 @@ function changeContent(option) {
     // Tüm bölümleri gizle
     sections.forEach(section => {
         section.style.display = 'none';
-        section.classList.remove('active');
+        section.classList.remove('active', 'tt-overlay');
     });
     
     if (option === 1) {
@@ -377,11 +377,6 @@ function changeContent(option) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
-        
-        // CW elementlerini görünür yap
-        document.querySelectorAll('.cw').forEach(el => {
-            el.style.display = '';
-        });
         
         // Chat bölümlerini göster
         if (mainChat) mainChat.style.display = 'flex';
@@ -393,8 +388,6 @@ function changeContent(option) {
         if (aboutUsSection) {
             aboutUsSection.style.display = 'block';
             aboutUsSection.classList.add('active', 'tt-overlay');
-            
-            // About ekranına özel stil uygula
             aboutUsSection.style.zIndex = '150';
             aboutUsSection.style.background = '#fff';
             aboutUsSection.style.overflowY = 'auto';
@@ -404,8 +397,7 @@ function changeContent(option) {
             if (chatBox) chatBox.style.display = 'none';
         }
     }
-}
-// Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
+}// Global tıklama dinleyicisi (About'tan haritaya veya chat'e dönüş)
 document.addEventListener('click', function(event) {
     const aboutUsSection = document.getElementById('tt-about-us');
     const chatBox = document.getElementById('chat-box');
