@@ -713,16 +713,13 @@
 
     <div class="button-container">
         
-        <a href="#about-triptime" 
-   onclick="event.preventDefault(); changeContent(2); document.getElementById('main-chat').style.display='none';" 
-   class="main-btn btn-purple" 
-   style="pointer-events: auto;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+        <a href="javascript:;" onclick="changeContent(2); document.getElementById('main-chat').style.display='none'; return false;" class="main-btn btn-purple">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="16" x2="12" y2="12"></line>
         <line x1="12" y1="8" x2="12.01" y2="8"></line>
     </svg>
-    <span style="pointer-events: none;">About Triptime</span>
+    About Triptime
 </a>
 
         <a href="#mira-ai" onclick="toggleSidebarLogin();" class="main-btn btn-blue">
