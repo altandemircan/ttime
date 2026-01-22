@@ -7553,6 +7553,7 @@ scrollbar-width: thin;
     visibility: hidden;           /* Görünmez ve tıklanamaz */
     transform: translateY(20px);  /* Hafif aşağıda başlasın (Yukarı kayarak gelecek) */
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak ve profesyonel geçiş hızı */
+    height: auto !important;
 }
 
 #tt-about-us.active, 
@@ -7661,7 +7662,7 @@ display: block !important;
     /* --- TIKLAMA SORUNU ÇÖZÜMÜ --- */
     cursor: pointer !important;  /* El işareti çıksın */
     position: relative;          /* Z-index için gerekli */
-    z-index: 1000;               /* Diğer her şeyin (video, gif) üstüne çık */
+ 
     user-select: none;           /* Metin seçimini engelle */
 }
 
