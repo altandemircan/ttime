@@ -370,36 +370,26 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
-        
         const name = (p.name || "").toLowerCase();
-        const city = (p.city || "").toLowerCase();
         const formatted = (p.formatted || "").toLowerCase();
         const type = (p.result_type || p.place_type || '').toLowerCase();
         
         // Filtre
-        const containsTarget = name.includes(targetTerm) || city.includes(targetTerm) || formatted.includes(targetTerm);
+        const containsTarget = name.includes(targetTerm) || formatted.includes(targetTerm);
         if (!containsTarget) return { item, score: -9999 };
         
         let score = 0;
         
-        // --- 1. TİP HİYERARŞİSİ (EVRENSEL KURAL) ---
-        // UNESCO > Turistik Yer > Bölge > Büyük Şehir > Kasaba
+        // Puanlama Kuralları
         if (type === 'unesco_site') score += 50000; 
         else if (type === 'amenity' || type === 'tourism') score += 500; 
-        else if (type === 'region' || type === 'area') score += 400; 
         else if (type === 'city') score += 150; 
         else if (type === 'town' || type === 'village') score -= 50; 
 
-        // --- 2. İSİM EŞLEŞMESİ ---
         if (name === targetTerm) score += 1500;
         else if (name.startsWith(targetTerm)) score += 800;
-        else if (city.startsWith(targetTerm)) score += 600;
 
-        // --- 3. GENEL POPÜLARİTE ---
-        // Kısa adresler (Paris, France) genelde uzun adreslerden (Paris, Texas, USA) daha önemlidir.
         if (p.formatted && p.formatted.length < 45) score += 100;
-        
-        // NOT: Ülke bazlı puanlama kaldırıldı.
 
         return { item, score };
     });
@@ -412,7 +402,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         .slice(0, 8)
         .map(sr => sr.item);
 
-    // B. LİSTELEME VE GÖRSEL (Aynı Format)
+    // B. LİSTELEME VE RENKLENDİRME
     const seenSuggestions = new Set();
     
     finalResults.forEach((result) => {
@@ -421,38 +411,45 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         // İsim Belirleme
         let displayName = "";
         if (props.city && props.city.trim()) displayName = props.city;
-        else if (props.name && props.name.trim()) displayName = props.name.split(",")[0]; // Basit ve temiz
+        else if (props.name && props.name.trim()) displayName = props.name.split(",")[0];
         
         if (!displayName || displayName.trim().length < 2) return;
         
-        // Detaylar
+        // Detaylar ve Bayrak
         const regionParts = [];
         if (props.city && props.city !== displayName) regionParts.push(props.city);
-        if (props.county && props.county !== displayName && props.county !== props.city) regionParts.push(props.county);
         
-        // Bayrak Ekleme (Varsa)
         const countryCode = props.country_code || "";
         const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
         
         let displayText = displayName;
         
-        if (props.result_type === 'unesco_site') displayText += ` (UNESCO Site)`; 
+        // UNESCO etiketi ekle (Görselde de belli olsun)
+        if (props.result_type === 'unesco_site') displayText += ` (UNESCO)`; 
 
         if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
         if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
         
         displayText = displayText.replace(/^,\s*/, "").trim();
         
-        // Çift Kayıt Kontrolü
         const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
         
-        // HTML Element
+        // --- HTML OLUŞTURMA VE RENKLENDİRME ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         div.textContent = displayText; 
         div.dataset.displayText = displayText;
+
+        // ==> BURASI EKLENDİ: UNESCO İSE TURUNCU YAP <==
+        if (props.result_type === 'unesco_site') {
+            div.style.backgroundColor = "#ff9900"; // Arka plan turuncu
+            div.style.color = "#fff"; // Yazı beyaz (daha iyi okunur)
+            div.style.fontWeight = "bold"; // Kalın yazı
+            div.style.borderBottom = "1px solid #e68a00"; // Hafif kenarlık
+        }
+        // ===============================================
 
         div.onclick = () => {
             window.__programmaticInput = true;
@@ -465,14 +462,13 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
                 selectedLocation: {
                     name: displayName,
                     city: props.city || displayName,
-                    country: props.country || "", // API'den gelmiyorsa boş kalsın
+                    country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
                     country_code: countryCode
                 }
             };
             
-            // ... (Kalan tıklama mantığı aynen devam ediyor) ...
             window.selectedLocation = window.selectedSuggestion.selectedLocation;
             window.selectedLocationLocked = true;
             
