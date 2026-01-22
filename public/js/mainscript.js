@@ -200,8 +200,10 @@ let city = null;
 // 1. "in", "for", "to", "at" ile split
 let tokens = rawText.split(/in |for |to |at |on /i);
 for (let k = tokens.length - 1; k >= 0; k--) {
-    let cand = tokens[k].replace(/(days?|gün|guide|trip|tour|itinerary|visit)/gi, "").replace(/\d+/, "").trim();
-    if (cand.length > 2) {
+    // "Explore Rome", "Visit Madrid" ise sonda sadece son kelimeyi al!
+    let candWords = tokens[k].replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore)/gi, "").replace(/\d+/, "").trim().split(" ");
+    let cand = candWords[candWords.length - 1];
+    if (cand && cand.length > 2) {
         city = cand;
         break;
     }
