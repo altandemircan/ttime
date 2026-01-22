@@ -408,75 +408,71 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // 1. GERÇEK UZUN İSMİ BELİRLE (Input'a bu yazılacak)
+        // 1. VERİ HAZIRLIĞI (INPUTA GİDECEK GERÇEK UZUN VERİ)
+        // Hiçbir kesme işlemi yapmıyoruz, veritabanından ne geliyorsa o.
         let rawName = "";
         if (props.city && props.city.trim()) rawName = props.city;
-        else if (props.name && props.name.trim()) rawName = props.name; // split yapmadan ham hali
+        else if (props.name && props.name.trim()) rawName = props.name;
         
-        // Eğer rawName çok kısaysa veya yoksa yedeğe geç
+        // Yedek kontrol
         if (!rawName || rawName.length < 2) rawName = props.formatted || "";
 
-        // Temiz isim (Virgülden öncesini alalım mı? UNESCO ise ALMAYALIM, tam kalsın)
-        let LONG_NAME_FOR_INPUT = rawName;
+        // Temizleme (Virgülden sonrasını atma kararı - UNESCO ise atma)
+        let LONG_DATA_NAME = rawName;
         if (props.result_type !== 'unesco_site' && rawName.includes(',')) {
-             LONG_NAME_FOR_INPUT = rawName.split(',')[0].trim();
+             LONG_DATA_NAME = rawName.split(',')[0].trim();
         }
 
-        // 2. DETAYLAR (Şehir, Ülke)
+        // Detayları ekle (Ülke kodu vb.) -> Bu "Görünecek Metin" için
         const regionParts = [];
-        // Eğer isim şehir ismiyle aynı değilse detaya ekle
-        if (props.city && props.city !== LONG_NAME_FOR_INPUT) regionParts.push(props.city);
+        if (props.city && props.city !== LONG_DATA_NAME) regionParts.push(props.city);
         
         const countryCode = props.country_code || "";
         const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
         
-        // 3. GÖRÜNECEK METNİ OLUŞTUR
-        let displayString = LONG_NAME_FOR_INPUT;
+        // FULL DISPLAY TEXT: Hem listede görünecek (CSS ile kırpılacak) hem de inputa tam hali gidecek
+        let fullDisplayText = LONG_DATA_NAME;
+        if (regionParts.length > 0) fullDisplayText += ", " + regionParts.join(', ');
+        if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
         
-        if (regionParts.length > 0) displayString += ", " + regionParts.join(', ');
-        if (countryCode) displayString += ", " + countryCode.toUpperCase() + flag;
-        
-        displayString = displayString.replace(/^,\s*/, "").trim();
-        
-        // Çift Kayıt Engelleme
-        const normalizedText = displayString.toLowerCase().replace(/[^a-z0-9]/g, '');
+        fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
+
+        // Çift Kayıt Kontrolü
+        const normalizedText = fullDisplayText.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
-        
+
         // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // Ekranda görünecek yazı (CSS bunu otomatik kırpacaktır)
-        div.textContent = displayString; 
-        
-        // Mouse üzerine gelince tam metni görsün
-        div.title = displayString; 
-        div.dataset.displayText = displayString;
+        // İçeriğe TAM METNİ koyuyoruz. (Kesme işlemini aşağıda CSS yapacak)
+        div.textContent = fullDisplayText; 
+        div.title = fullDisplayText; // Mouse üzerine gelince ipucu çıkar
+        div.dataset.displayText = fullDisplayText;
 
-        // ==> CSS AYARLARI (GÖRÜNTÜ KISALTMA) <==
-        div.style.whiteSpace = "nowrap";       // Alt satıra inme
-        div.style.overflow = "hidden";         // Taşanı gizle
-        div.style.textOverflow = "ellipsis";   // Sonuna ... koy
-        div.style.display = "block";           // Blok yap
+        // ==> CSS İLE KISALTMA (LİSTEDE KISA GÖRÜNME) <==
+        // Bu ayarlar yazıyı tek satıra zorlar ve sığmazsa "..." koyar.
+        div.style.whiteSpace = "nowrap";       
+        div.style.overflow = "hidden";         
+        div.style.textOverflow = "ellipsis";   
+        div.style.display = "block";
+        div.style.maxWidth = "100%"; // Genişliği sınırla ki taşmasın
 
         // ==> UNESCO STİLİ VE BADGE <==
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
-            // Yazı badge'in altına girmesin diye sağdan boşluk (Kritik!)
+            // Yazı badge'in altına girmesin diye sağdan boşluk
             div.style.paddingRight = "115px"; 
 
             const badge = document.createElement("span");
             badge.textContent = "World Heritage";
             
-            // Badge Pozisyonu
             badge.style.position = "absolute";
             badge.style.top = "50%";
             badge.style.transform = "translateY(-50%)";
             badge.style.right = "10px";
-            
-            // Badge Tasarımı
             badge.style.fontSize = "0.65rem";
             badge.style.fontWeight = "bold";
             badge.style.backgroundColor = "#54afd6"; 
@@ -488,18 +484,25 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // 4. TIKLAMA OLAYI (BURADA "LONG_NAME_FOR_INPUT" KULLANIYORUZ)
+        // 3. TIKLAMA OLAYI (KRİTİK NOKTA)
+        // Burada div'in üzerindeki görüntüyü değil, yukarıda hesapladığımız 'fullDisplayText'i kullanıyoruz.
         div.onclick = () => {
+            // Tıklayınca önce görsel olarak "Seçildi" efekti verelim
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
             div.classList.add("selected-suggestion");
 
+            // ==> GENİŞLEME EFEKTİ (İsteğe bağlı) <==
+            // Tıklandığı an yazının tamamını göstermek için CSS kısıtlamasını kaldırıyoruz
+            div.style.whiteSpace = "normal"; 
+            div.style.overflow = "visible";
+
             window.selectedSuggestion = { 
-                displayText: displayString, 
+                displayText: fullDisplayText, // <-- BURASI HEP UZUN OLACAK
                 props,
                 selectedLocation: {
-                    name: LONG_NAME_FOR_INPUT, // <-- BAK BURASI TAM İSİM
-                    city: props.city || LONG_NAME_FOR_INPUT,
+                    name: LONG_DATA_NAME, // <-- BURASI HEP UZUN OLACAK
+                    city: props.city || LONG_DATA_NAME,
                     country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
@@ -514,13 +517,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // Chat kutusuna TAM isim yazılır
-            // displayString yerine LONG_NAME_FOR_INPUT kullanıyoruz
-            let canonicalStr = `Plan a ${days}-day tour for ${LONG_NAME_FOR_INPUT}`;
+            // Chat inputuna TAM UZUN İSMİ basıyoruz
+            let canonicalStr = `Plan a ${days}-day tour for ${LONG_DATA_NAME}`;
             
-            // Eğer format fonksiyonu varsa ona da tam ismi gönder
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${LONG_NAME_FOR_INPUT} ${days} days`);
+                const c = formatCanonicalPlan(`${LONG_DATA_NAME} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
 
