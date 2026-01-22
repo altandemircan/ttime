@@ -167,53 +167,59 @@ function showSuggestions() {
     suggestionsDiv.innerHTML = "";
 
     const options = [
-        { text: "Do a 1 day city tour in Antalya", flag: countryFlag("TR") },
-        { text: "1-day city tour in Berlin", flag: countryFlag("DE") },
-        { text: "Plan a 1-day tour for Rome", flag: countryFlag("IT") },
-        { text: "1 day holiday trip in Paris ", flag: countryFlag("JP") },          
-        { text: "1 day trip in Madrid", flag: countryFlag("ES") }
-        
+        { text: "2 days in Antalya",         flag: countryFlag("TR") }, // Türkiye
+        { text: "Explore Rome for 3 day",    flag: countryFlag("IT") }, // İtalya
+        { text: "1 days in Tokyo",           flag: countryFlag("JP") }, // Japonya
+        { text: "London 2-day guide",        flag: countryFlag("GB") }, // İngiltere
+        { text: "3-day Paris itinerary",     flag: countryFlag("FR") }, // Fransa
+        { text: "Visit Madrid in 1 days",    flag: countryFlag("ES") }, // İspanya
+        { text: "3 days in Bangkok",         flag: countryFlag("TH") }, // Tayland
+        { text: "Discover Petra for 2 day",  flag: countryFlag("JO") }  // Ürdün
     ];
 
-    options.forEach(option => {
-        const suggestion = document.createElement("div");
-        suggestion.className = "category-area-option";
-        suggestion.innerText = `${option.text} ${option.flag}`;
+   options.forEach(option => {
+    const suggestion = document.createElement("div");
+    suggestion.className = "category-area-option";
+    suggestion.innerText = `${option.text} ${option.flag}`;
 
-        // --- BURAYA EKLE ---
-        suggestion.onclick = function() {
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            suggestion.classList.add("selected-suggestion");
+    suggestion.onclick = function() {
+        Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+        suggestion.classList.add("selected-suggestion");
 
-            const { city, days } = extractCityAndDaysFromTheme(option.text);
+        // SABİT VE GARANTİLİ ŞEHİR-GÜN TANIMI!
+        let city, days;
+        switch(option.text) {
+            case "2 days in Antalya":          city = "Antalya"; days = 2; break;
+            case "Explore Rome for 3 day":     city = "Rome";    days = 3; break;
+            case "1 days in Tokyo":            city = "Tokyo";   days = 1; break;
+            case "London 2-day guide":         city = "London";  days = 2; break;
+            case "3-day Paris itinerary":      city = "Paris";   days = 3; break;
+            case "Visit Madrid in 1 days":     city = "Madrid";  days = 1; break;
+            case "3 days in Bangkok":          city = "Bangkok"; days = 3; break;
+            case "Discover Petra for 2 day":   city = "Petra";   days = 2; break;
+            default: /* fallback */            city = "City";    days = 2; break;
+        }
+        let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+        window.__programmaticInput = true;
+        if (typeof setChatInputValue === "function") {
+            setChatInputValue(canonicalStr);
+        } else {
+            chatInput.value = canonicalStr;
+        }
+        setTimeout(() => { window.__programmaticInput = false; }, 0);
 
-            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${city} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
-
-            window.__programmaticInput = true;
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
-
-            window.selectedSuggestion = { displayText: canonicalStr, city, days };
-            window.selectedLocation = { city, days };
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
-            enableSendButton?.();
-            showSuggestionsDiv?.();
-            if (typeof updateCanonicalPreview === "function") {
-                updateCanonicalPreview();
-            }
-        };
-
-        suggestionsDiv.appendChild(suggestion);
-    });
+        window.selectedSuggestion = { displayText: canonicalStr, city, days };
+        window.selectedLocation = { city, days };
+        window.selectedLocationLocked = true;
+        window.__locationPickedFromSuggestions = true;
+        enableSendButton?.();
+        showSuggestionsDiv?.();
+        if (typeof updateCanonicalPreview === "function") {
+            updateCanonicalPreview();
+        }
+    };
+    suggestionsDiv.appendChild(suggestion);
+});
     showSuggestionsDiv?.();
 }
     if (!chatInput) return;
@@ -227,23 +233,53 @@ let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
 async function geoapifyLocationAutocomplete(query) {
-    // 1. İlk autocomplete isteği
-    let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
-    let data = await response.json();
-    let features = data.features || [];
-
-    // 2. Eğer hiç sonuç yoksa, sadece ülke parametresiyle tekrar dene (bu genel bir UX fallback, manuel değil)
-    if (!features.length) {
-        response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
-        data = await response.json();
-        features = data.features || [];
+    // 1. UNESCO (LOCAL) ARAMA - Evrensel
+    let unescoResults = [];
+    if (window.UNESCO_DATA) {
+        const q = query.toLowerCase().trim();
+        unescoResults = window.UNESCO_DATA
+            .filter(item => item.name.toLowerCase().includes(q))
+            .map(item => ({
+                properties: {
+                    name: item.name,
+                    city: item.name, 
+                    // Elle "Turkey" yazmak yok. Veri neyse o.
+                    country_code: item.country_code ? item.country_code.toLowerCase() : "", 
+                    formatted: `${item.name} (UNESCO Site)`, // Ülke kodunu bayrak halleder
+                    lat: item.lat,
+                    lon: item.lon,
+                    result_type: 'unesco_site', // Tek kriterimiz bu etiket
+                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
+                }
+            })).slice(0, 3);
     }
 
-    // 3. Region/area suggestion varsa, onun koordinatına yakın şehirleri de ekle
-    const region = features.find(f => {
+    // 2. API ARAMASI
+    let apiFeatures = [];
+    try {
+        let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+        let data = await response.json();
+        apiFeatures = data.features || [];
+        
+        // Yedek deneme
+        if (!apiFeatures.length) {
+            response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
+            data = await response.json();
+            apiFeatures = data.features || [];
+        }
+    } catch (e) {
+        console.warn("API hatası:", e);
+    }
+
+    // 3. BİRLEŞTİRME
+    let combined = [...unescoResults, ...apiFeatures];
+
+    // ... (Bölge/Şehir tamamlama kodların aynen kalıyor) ...
+    const region = combined.find(f => {
         const t = f.properties.result_type || f.properties.place_type || '';
         return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
     });
+
     if (region) {
         try {
             const resNearby = await fetch(
@@ -254,20 +290,19 @@ async function geoapifyLocationAutocomplete(query) {
                 const t = f.properties.result_type || f.properties.place_type || '';
                 return ['city', 'town', 'village'].includes(t);
             });
-            // Aynı isimdeki şehirleri çıkar
-            const regionNames = new Set(features.map(f =>
+            
+            const existingNames = new Set(combined.map(f =>
                 (f.properties.city || f.properties.name || '').toLowerCase()
             ));
+            
             nearbyCities = nearbyCities.filter(f =>
-                !regionNames.has((f.properties.city || f.properties.name || '').toLowerCase())
+                !existingNames.has((f.properties.city || f.properties.name || '').toLowerCase())
             );
-            features = [...features, ...nearbyCities];
-        } catch (err) {
-            // Hata olursa sessizce atla
-        }
+            combined = [...combined, ...nearbyCities];
+        } catch (err) {}
     }
 
-    return sortLocations(features);
+    return combined;
 }
  
 
@@ -323,11 +358,10 @@ if (typeof hideSuggestionsDiv !== "function") {
 let currentFocus = -1; // Global focus takibi
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
-    currentFocus = -1; // Her çizimde seçimi sıfırla
+    currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
-
-  
     const chatInput = document.getElementById("user-input");
+    
     if (!suggestionsDiv || !chatInput) return;
     
     suggestionsDiv.innerHTML = "";
@@ -337,169 +371,173 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // A. KELİMEYE GÖRE AKILLI SIRALAMA
-    const targetTerm = manualQuery.toLowerCase();
+    // A. PUANLAMA
+    const targetTerm = manualQuery.toLowerCase().trim();
     
-    // 1. ÖNCE TÜM SONUÇLARI PUANLA
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
-        
-        // İsim alanları (küçük harfe çevir)
         const name = (p.name || "").toLowerCase();
-        const city = (p.city || "").toLowerCase();
-        const county = (p.county || "").toLowerCase();
+        const formatted = (p.formatted || "").toLowerCase();
+        const type = (p.result_type || p.place_type || '').toLowerCase();
         
-        // "kemer" içermiyorsa ele
-        const containsTarget = name.includes(targetTerm) || 
-                               city.includes(targetTerm) || 
-                               county.includes(targetTerm);
-        
-        if (!containsTarget) {
-            return { item, score: -9999 };
-        }
+        // Filtre
+        const containsTarget = name.includes(targetTerm) || formatted.includes(targetTerm);
+        if (!containsTarget) return { item, score: -9999 };
         
         let score = 0;
         
-        // Puanlama Sistemi
-        if (name === targetTerm || city === targetTerm || county === targetTerm) score += 1500;
-        if (name.startsWith(targetTerm)) score += 800;
-        else if (city.startsWith(targetTerm)) score += 600;
-        else if (county.startsWith(targetTerm)) score += 400;
-        
-        if (containsTarget) {
-            const allWords = [...name.split(/[\s,\-]+/), ...city.split(/[\s,\-]+/), ...county.split(/[\s,\-]+/)];
-            if (allWords.some(word => word === targetTerm)) score += 700;
-            else score += 100;
-        }
-        
-        const type = (p.result_type || p.place_type || '').toLowerCase();
-        if (type === 'city') score += 80;
-        else if (type === 'town') score += 60;
-        else if (type === 'village') score += 40;
-        else if (type === 'county') score += 30;
-        
-        const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
-        if (commercialWords.some(word => name.includes(word))) score -= 2000;
-        
+        // Puanlama Kuralları
+        if (type === 'unesco_site') score += 50000; 
+        else if (type === 'amenity' || type === 'tourism') score += 500; 
+        else if (type === 'city') score += 150; 
+        else if (type === 'town' || type === 'village') score -= 50; 
+
+        if (name === targetTerm) score += 1500;
+        else if (name.startsWith(targetTerm)) score += 800;
+
+        if (p.formatted && p.formatted.length < 45) score += 100;
+
         return { item, score };
     });
 
-    // 2. SIRALA VE FİLTRELE
+    // Sırala
     scoredResults.sort((a, b) => b.score - a.score);
 
     const finalResults = scoredResults
-        .filter(sr => sr.score > 0)
+        .filter(sr => sr.score > -5000)
         .slice(0, 8)
         .map(sr => sr.item);
 
-    // B. GÖRÜNÜM
+    // B. LİSTELEME VE GÖRSEL
     const seenSuggestions = new Set();
     
-    finalResults.forEach((result, index) => {
+    finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // === İSİM BELİRLEME MANTIĞI ===
-        let displayName = "";
-        if (props.city && props.city.trim()) {
-            displayName = props.city;
-        } else if (props.name && props.name.trim()) {
-            const nameParts = props.name.split(",").map(p => p.trim());
-            const firstPart = nameParts[0].toLowerCase();
-            const commercialWords = ['finance', 'center', 'business', 'commercial', 'mall', 'plaza'];
-            if (commercialWords.some(word => firstPart.includes(word)) && nameParts.length > 1) {
-                displayName = nameParts[1];
-            } else {
-                displayName = nameParts[0];
-            }
-        } else if (props.county && props.county.trim()) {
-            displayName = props.county;
+        // 1. TAM VERİ (INPUTA GİDECEK)
+        let rawName = "";
+        if (props.city && props.city.trim()) rawName = props.city;
+        else if (props.name && props.name.trim()) rawName = props.name;
+        if (!rawName || rawName.length < 2) rawName = props.formatted || "";
+
+        let LONG_INPUT_NAME = rawName;
+        if (props.result_type !== 'unesco_site' && rawName.includes(',')) {
+             LONG_INPUT_NAME = rawName.split(',')[0].trim();
         }
-        
-        if (!displayName || displayName.trim().length < 2) return;
-        
-        // === DETAYLAR ===
+
+        // 2. GÖRÜNECEK TAM METİN (GENİŞLEYİNCE ÇIKACAK)
         const regionParts = [];
-        if (props.city && props.city.trim() && props.city !== displayName) regionParts.push(props.city);
-        if (props.county && props.county.trim() && props.county !== displayName && props.county !== props.city) regionParts.push(props.county);
+        if (props.city && props.city !== LONG_INPUT_NAME) regionParts.push(props.city);
         
         const countryCode = props.country_code || "";
-        const flag = countryCode ? " " + countryFlag(countryCode) : "";
+        const flag = (countryCode && typeof countryFlag === 'function') ? " " + countryFlag(countryCode) : "";
         
-        let displayText = displayName;
-        if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
-        if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
-        
-        displayText = displayText.replace(/^,\s*/, "").trim();
-        
-        const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (seenSuggestions.has(normalizedText) || displayText.startsWith(",")) return;
+        let fullDisplayText = LONG_INPUT_NAME;
+        if (regionParts.length > 0) fullDisplayText += ", " + regionParts.join(', ');
+        if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
+        fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
+
+        const normalizedText = fullDisplayText.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
-        
-        // === HTML OLUŞTURMA ===
+
+        // 3. GÖRÜNECEK KISA METİN (LİSTEDE DURACAK)
+        let shortDisplayText = fullDisplayText;
+        if (props.result_type === 'unesco_site' && fullDisplayText.length > 35) {
+            shortDisplayText = fullDisplayText.substring(0, 32) + "..."; 
+        }
+
+        // --- HTML OLUŞTURMA ---
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // --- [FIX] İLK SEÇENEK OTOMATİK SEÇİLMİYOR ARTIK ---
-        // if (index === 0) div.classList.add("selected-suggestion"); // SİLİNDİ
+        // Başlangıçta KISA halini yaz
+        div.textContent = shortDisplayText; 
         
-        div.textContent = displayText;
-        div.dataset.displayText = displayText;
+        // Verileri sakla (Resetlerken lazım olacak)
+        div.dataset.shortText = shortDisplayText;
+        div.dataset.fullText = fullDisplayText;
+        div.title = fullDisplayText;
 
-        // [FIX] Eğer bu şehir zaten seçiliyse, gün sayısı değişse bile listede seçili kalsın
-        if (window.selectedSuggestion && window.selectedSuggestion.displayText === displayText) {
-            div.classList.add("selected-suggestion");
-        }
-        
-        // === TIKLAMA OLAYI ===
-        div.onclick = () => {
-            window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            div.classList.add("selected-suggestion");
+        // Görünüm Ayarları
+        div.style.whiteSpace = "nowrap";       
+        div.style.overflow = "hidden";         
+        div.style.display = "block";
 
-            window.selectedSuggestion = { 
-                displayText, 
-                props,
-                selectedLocation: {
-                    name: displayName,
-                    city: props.city || displayName,
-                    country: props.country || "",
-                    lat: props.lat ?? props.latitude ?? null,
-                    lon: props.lon ?? props.longitude ?? null,
-                    country_code: countryCode || ""
-                }
-            };
+        // UNESCO Badge Ekleme
+        if (props.result_type === 'unesco_site') {
+            div.style.backgroundColor = "#f2fce4"; 
+            div.style.position = "relative";
+            div.style.paddingRight = "115px"; 
+
+            const badge = document.createElement("span");
+            badge.textContent = "World Heritage";
+            badge.style.position = "absolute";
+            badge.style.top = "50%";
+            badge.style.transform = "translateY(-50%)";
+            badge.style.right = "10px";
+            badge.style.fontSize = "0.65rem";
+            badge.style.fontWeight = "bold";
+            badge.style.backgroundColor = "#54afd6"; 
+            badge.style.color = "#fff";
+            badge.style.padding = "2px 6px";
+            badge.style.borderRadius = "4px";
+            badge.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
             
-            window.selectedLocation = window.selectedSuggestion.selectedLocation;
-            window.selectedLocationLocked = true;
-            window.__locationPickedFromSuggestions = true;
+            div.appendChild(badge);
+        }
 
+       // 4. TIKLAMA OLAYI (TRIPTIME FORMATI KORUNACAK)
+        div.onclick = () => {
+            // A) GÖRSEL DÜZENLEME
+            Array.from(suggestionsDiv.children).forEach(child => {
+                if (child !== div) child.style.display = 'none';
+            });
+            div.style.display = 'block';
+            div.classList.add("selected-suggestion");
+            div.style.whiteSpace = "normal"; 
+            div.style.overflow = "visible";
+            if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
+
+            // B) GÜN SAYISINI YAKALA
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-            if (!days || days < 1) days = 1;
 
-            let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
-            if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${displayName} ${days} days`);
-                if (c && c.canonical) canonicalStr = c.canonical;
-            }
+            // C) INPUTA YAZILACAK FORMAT (İŞTE BURASI DÜZELDİ)
+            // Eskiden: chatInput.value = `${days}-day ${LONG_INPUT_NAME}`; (Kuru format)
+            // Şimdi: Senin sevdiğin format
+            chatInput.value = `Plan a ${days}-day trip to ${LONG_INPUT_NAME}`;
 
-            if (typeof setChatInputValue === "function") {
-                setChatInputValue(canonicalStr);
-            } else {
-                chatInput.value = canonicalStr;
-            }
+            // D) SİSTEMİ KİLİTLE
+            const finalLocation = {
+                name: LONG_INPUT_NAME,
+                city: props.city || LONG_INPUT_NAME,
+                lat: props.lat,
+                lon: props.lon,
+                country_code: countryCode
+            };
 
+            window.selectedSuggestion = { 
+                displayText: fullDisplayText,
+                props: props,
+                selectedLocation: finalLocation
+            };
+
+            window.selectedLocation = finalLocation;
+            window.selectedLocationLocked = true; 
+            window.__locationPickedFromSuggestions = true;
+            window.__programmaticInput = true;
+
+            // E) UI GÜNCELLEME
             if (typeof enableSendButton === "function") enableSendButton();
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-            if (typeof updateCanonicalPreview === "function") updateCanonicalPreview();
 
-            setTimeout(() => { window.__programmaticInput = false; }, 0);
+            setTimeout(() => { window.__programmaticInput = false; }, 300);
         };
 
         suggestionsDiv.appendChild(div);
     });
-
     if (suggestionsDiv.children.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     } else {
@@ -798,15 +836,34 @@ function extractCityAndDays(input) {
             }
         }
     }
-
-    // 5. fallback: cümledeki harfli uzun kelimelerden en sonuncusu
-    if (!city) {
-        let fallback = input.match(/([A-Za-zÇĞİÖŞÜçğıöşü'’\-\s]{2,})/g);
-        if (fallback && fallback.length) city = fallback[fallback.length-1].trim();
+// Eğer şehir, day veya days kelimesiyse: Mantıklı bir kelimeyi seç!
+if (city && /^(days?|gün)$/i.test(city.trim())) {
+    // "in" ve "for" ile split ile sonuncu kelimeyi al
+    let toks = input.split(/in |for |to |at |on/i);
+    // Son kelime iki harften uzunsa onu şehir olarak al
+    for (let i = toks.length - 1; i >= 0; i--) {
+        let candidate = toks[i].replace(/[\d]+.*/, '').replace(/days?.*/, '').replace(/gün.*/, '').trim();
+        if (candidate.length > 2 && !/^(days?|gün)$/i.test(candidate)) {
+            city = candidate;
+            break;
+        }
     }
-
-    // 6. Son çare: ilk kelime
-    if (!city) city = input.split(" ")[0].trim();
+    // Hala bulamadıysan, inputtaki büyük harfle başlayan kelimeyi seç
+    if (city && /^(days?|gün)$/i.test(city.trim())) {
+        let word = input.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})/);
+        if (word) city = word[1];
+    }
+}
+// Eğer city yanlışlıkla 'Day' veya 'Days' ise, kelimeyi inputtan tekrar doğru bulmaya çalış
+if (city && (city.toLowerCase() === 'days' || city.toLowerCase() === 'day')) {
+    // Genellikle son kelime şehir olur, onu al
+    const tokens = input.trim().split(/\s+/);
+    // Sayısal, "day/days" ve "trip/tour" vb. kelimeleri filtrele
+    const filterTokens = tokens.filter(w => !/^\d+$/.test(w) && !/(day|days|gün|trip|tour|itinerary)/i.test(w));
+    if (filterTokens.length) city = filterTokens[filterTokens.length-1];
+}
+// Son kez, ilk harfi büyük yap
+city = city.charAt(0).toUpperCase() + city.slice(1);
 
     // Gün sayısı bulunamazsa default 2
     if (!days || isNaN(days) || days < 1) days = 2;
@@ -858,7 +915,7 @@ if (savedText === currentText && currentText.length > 1) {             // Sadece
 // === GÜNLÜK LİMİT KONTROL FONKSİYONU ===
 function checkAndIncrementDailyLimit(checkOnly = false) {
     const STORAGE_KEY = 'daily_plan_usage';
-    const MAX_DAILY = 5;
+    const MAX_DAILY = 10;
     const today = new Date().toDateString(); // Örn: "Sun Jan 04 2026"
     
     let usage = {};
@@ -875,7 +932,7 @@ function checkAndIncrementDailyLimit(checkOnly = false) {
     
     // Sadece kontrol ediyorsak (İşlem başı)
     if (checkOnly) {
-        // Eğer sayaç 5 veya daha fazlaysa FALSE döndür (İzin verme)
+        // Eğer sayaç 10 veya daha fazlaysa FALSE döndür (İzin verme)
         return usage.count < MAX_DAILY;
     }
     
@@ -895,7 +952,7 @@ async function handleAnswer(answer) {
       if (typeof hideLoadingPanel === 'function') hideLoadingPanel(); 
       if (typeof hideTypingIndicator === 'function') hideTypingIndicator();
       window.isProcessing = false; 
-      addMessage("You have reached your daily trip plan limit (5). Please come back tomorrow! 😊", "bot-message request-bot-message");
+      addMessage("You have reached your daily trip plan limit (10). Please come back tomorrow! 😊", "bot-message request-bot-message");
       return; 
   }
 
@@ -1085,10 +1142,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function sendMessage() {
-    // Kilit kontrolü (Loading sırasında tekrar basılmasın)
+    // Kilit kontrolü
     if (window.isProcessing) {
         const panel = document.getElementById('loading-panel');
-        // Eğer panel ekranda yoksa ama kilit varsa, kilidi aç (Hata koruması)
         if (!panel || panel.style.display === 'none') {
              window.isProcessing = false; 
         } else {
@@ -1098,36 +1154,60 @@ function sendMessage() {
 
     const input = document.getElementById("user-input");
     if (!input) return;
-    const val = input.value.trim();
+    
+    let val = input.value.trim(); 
     if (!val) return;
+
+    // ============================================================
+    // === 🧹 AKILLI INPUT TEMİZLEYİCİ (TRIPTIME EDITION) ===
+    // ============================================================
+    
+    let text = val.toLowerCase(); 
+    let days = 1; // Varsayılan
+
+    // 1. Gün Sayısını Yakala
+    const numMatch = text.match(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|gunde|günlük)?/i);
+    if (numMatch) {
+        let detectedVal = parseInt(numMatch[1], 10);
+        if (detectedVal > 0 && detectedVal < 60) {
+            days = detectedVal;
+            text = text.replace(numMatch[0], " "); 
+        }
+    }
+
+    // 2. Gereksiz Kelimeleri Sil
+    const stopWords = [
+        "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
+        "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
+        "hakkında", "ile", "gün", "day", "days"
+    ];
+    stopWords.forEach(w => {
+        text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
+    });
+
+    // 3. Şehir Adını Temizle ve Baş Harfini Büyüt
+    let location = text.replace(/[^\w\s\u00C0-\u017F-]/g, " ").replace(/\s+/g, " ").trim();
+    if (location.length > 0) {
+        location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        
+        // Markaya uygun: "Plan a 3-day trip to Antalya"
+        val = `Plan a ${days}-day trip to ${location}`;
+        
+        console.log(`🧹 Triptime Formatı: "${input.value}" -> "${val}"`);
+    }
+    // ============================================================
+
 
     if (!window.__locationPickedFromSuggestions) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
-    // İlk mesaj (Let's get started)
+    // İlk mesaj
     addWelcomeMessage();
 
-    const formatted = formatCanonicalPlan(val);
-
-    // 1. Diff (Düzeltme) Senaryosu
-    if (window.__locationPickedFromSuggestions && formatted.canonical && formatted.changed) {
-        const diffHtml = `
-          <div class="canonical-diff">
-            <span class="raw-strike">${strikeThrough(val)}</span>
-            <span class="canon-arrow">→</span>
-            <span class="canon-text">${formatted.canonical}</span>
-          </div>
-        `;
-        addMessage(diffHtml, "user-message request-user-message");
-        window.__suppressNextUserEcho = true;
-        
-        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
-        handleAnswer(`${formatted.city} ${formatted.days} days`);
-        input.value = "";
-        return;
-    }
+    // --- BURADAKİ DIFF / ÜZERİNİ ÇİZME KODLARI SİLİNDİ ---
+    // Artık direkt işleme geçiyoruz.
 
     // Lokasyon kilidi
     if (!window.selectedLocationLocked || !window.selectedLocation) {
@@ -1135,28 +1215,29 @@ function sendMessage() {
         return;
     }
 
-    // 2. Canonical Match (Plan a X days...)
-    const m = val.match(/Plan a (\d+)-day tour for (.+)$/i);
+    // 1. Canonical Match (REGEX)
+    const m = val.match(/Plan a (\d+)-day (?:tour|trip) (?:for|to) (.+)$/i);
+    
     if (m) {
         let days = parseInt(m[1], 10);
         if (!days || days < 1) days = 2;
         const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
         
+        // Kullanıcının mesajını ekrana bas (Düzeltilmiş halini)
         addMessage(val, "user-message request-user-message");
         window.__suppressNextUserEcho = true;
         
-        showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
+        showLoadingPanel(); 
         handleAnswer(`${city} ${days} days`);
         input.value = "";
         return;
     }
 
-    // 3. Standart Akış
-    showLoadingPanel(); // <--- BURASI ÇOK ÖNEMLİ
-    handleAnswer(val);
+    // 2. Standart Akış
+    showLoadingPanel(); 
+    handleAnswer(val); 
     input.value = ""; 
 }
-
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
@@ -3083,10 +3164,11 @@ const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
 let lastRequestTime = 0;
 async function geoapifyAutocomplete(query) {
-  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
+  // LİMİTİ ARTIRDIK: Varsayılan (5) yerine 20 sonuç istiyoruz.
+  // Böylece popüler yerler listenin sonlarında gelse bile yakalayacağız.
+  const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
   if (!resp.ok) throw new Error("API error");
   const data = await resp.json();
-  // Eğer sıralama fonksiyonun varsa burada uygula
   return data.features || [];
 }
 
@@ -3209,34 +3291,93 @@ function initPlaceSearch(day) {
 
     if (!input || !detailsDiv) return;
 
-    // Önceki listener'ı kaldır
+    // Önceki listener'ı kaldır (Memory leak önlemi)
     if (input._autocompleteHandler) {
         input.removeEventListener("input", input._autocompleteHandler);
     }
 
     input._autocompleteHandler = debounce(async function() {
-        const query = this.value.trim();
-        if (query.length < 3) {
+        const query = this.value.trim().toLowerCase();
+        if (query.length < 2) { // 2 karakterden azsa arama yapma
             detailsDiv.innerHTML = "";
             return;
         }
+        
         detailsDiv.innerHTML = "<div class='loading'>Searching...</div>";
+        
         try {
-            const suggestions = await geoapifyAutocomplete(query);
+            // 1. Sonuçları çek (geoapifyAutocomplete artık 20 sonuç getiriyor)
+            let suggestions = await geoapifyAutocomplete(query);
             detailsDiv.innerHTML = "";
+
+            // === 2. AKILLI SIRALAMA (SMART SORT) BAŞLANGICI ===
+            suggestions.sort((a, b) => {
+                const pA = a.properties || {};
+                const pB = b.properties || {};
+                
+                let scoreA = 0;
+                let scoreB = 0;
+
+                const nameA = (pA.name || "").toLowerCase();
+                const nameB = (pB.name || "").toLowerCase();
+                const typeA = (pA.result_type || pA.place_type || "").toLowerCase();
+                const typeB = (pB.result_type || pB.place_type || "").toLowerCase();
+                const catA = (pA.category || "").toLowerCase();
+                const catB = (pB.category || "").toLowerCase();
+
+                // Kriter 1: Tam İsim Eşleşmesi (En önemli)
+                if (nameA === query) scoreA += 1000;
+                if (nameB === query) scoreB += 1000;
+                
+                // Kriter 2: İsim ile Başlama
+                if (nameA.startsWith(query)) scoreA += 500;
+                if (nameB.startsWith(query)) scoreB += 500;
+
+                // Kriter 3: Tür Önceliği (Bölge ve Turistik yerleri öne al)
+                // Kapadokya 'tourism' veya 'region' döner, İtalya köyü 'village' döner.
+                function getTypeScore(t, c) {
+                    if (t === 'amenity' || t === 'tourism' || c.includes('tourism')) return 300;
+                    if (t === 'region' || t === 'area' || t === 'state') return 200; // Kapadokya buraya girer
+                    if (t === 'city') return 100;
+                    if (t === 'town') return 50;
+                    if (t === 'village' || t === 'hamlet') return -50; // Köyleri geriye at
+                    return 0;
+                }
+
+                scoreA += getTypeScore(typeA, catA);
+                scoreB += getTypeScore(typeB, catB);
+
+                // Kriter 4: Popülarite İpucu (Adres Kısalığı)
+                // Ünlü yerlerin adresi kısadır: "Cappadocia, Turkey"
+                // Ünsüz yerler uzundur: "Cappadocia, Via Roma, L'Aquila, Italy"
+                if (pA.formatted && pA.formatted.length < 40) scoreA += 50;
+                if (pB.formatted && pB.formatted.length < 40) scoreB += 50;
+
+                // Kriter 5: Türkiye Torpili (Opsiyonel ama etkili)
+                if (pA.country_code === 'tr') scoreA += 100;
+                if (pB.country_code === 'tr') scoreB += 100;
+
+                return scoreB - scoreA; // Yüksek puandan düşüğe sırala
+            });
+            // === AKILLI SIRALAMA BİTİŞİ ===
+
+            // 3. Sıralanmış listeden en iyi 5 tanesini seçip göster
             const uniqueResults = getUniqueResults(suggestions, 5);
+            
             if (uniqueResults.length === 0) {
                 detailsDiv.innerHTML = "<div class='no-results'>No matching places found</div>";
                 return;
             }
+            
             for (const result of uniqueResults) {
                 await appendSuggestion(result, detailsDiv, day);
             }
+
         } catch (error) {
             console.error("Search error:", error);
             detailsDiv.innerHTML = "<div class='error'>Search failed. Try again later.</div>";
         }
-    }, 500);
+    }, 500); // 500ms debounce
 
     input.addEventListener("input", input._autocompleteHandler);
 }
@@ -4418,11 +4559,10 @@ if (aiInfoSection) {
             No item has been added for this day yet.<br>
             Select a point on the map to start the trip!
           </p>
-   <!--     <div>
+        <div>
 <button id="start-map-btn" type="button">Start with map</button>
 </div>
           <div style="text-align:center; padding:10px 0 4px; font-weight:500;">or</div>
-            -->
           <div class="empty-day-actions" style="display:block;text-align:center;">
             <button type="button" class="import-btn gps-import" data-import-type="multi" data-global="1" title="Supports GPX, TCX, FIT, KML">
               Import GPS File

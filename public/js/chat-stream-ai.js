@@ -24,141 +24,141 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- 2. CSS STYLES ---
     const styleId = 'tt-ai-sidebar-styles';
-    if (!document.getElementById(styleId)) {
-        const css = `
-            /* Kontrol Butonları (Başlık Altı) */
-            #ai-chat-controls {
-                display: flex;
-                gap: 8px;
-                padding: 0 0 15px 0; /* Alt boşluk */
-                margin-bottom: 10px;
-                border-bottom: 1px solid #f0f0f0;
-            }
-            .ai-nav-btn {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #eee;
-                background: #fff;
-                border-radius: 8px;
-                cursor: pointer;
-                font-family: "Satoshi", sans-serif;
-                font-size: 0.85rem;
-                font-weight: 600;
-                color: #555;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 6px; 
-                box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-            }
-            .ai-nav-btn:hover {
-                background: #faf8ff;
-                border-color: #8a4af3;
-                color: #8a4af3;
-            }
-            .ai-nav-btn.active {
-                background: #9868e8;
-                color: #fff;
-                border-color: #9868e8;
-                box-shadow: 0 4px 10px rgba(138, 74, 243, 0.2);
-            }
+if (!document.getElementById(styleId)) {
+    const css = `
+        /* Kontrol Butonları (Başlık Altı) */
+        #ai-chat-controls {
+            display: flex;
+            gap: 8px;
+            padding: 0 0 15px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .ai-nav-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #eee;
+            background: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: "Satoshi", sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #555;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .ai-nav-btn:hover {
+            background: #f4fbff;
+            border-color: #12a5e8;  /* YENİ MAVİ */
+            color: #12a5e8;         /* YENİ MAVİ */
+        }
+        .ai-nav-btn.active {
+            background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);  /* YENİ GRADIENT */
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 2px 10px rgba(18, 165, 232, 0.3);  /* MAVİ GÖLGE */
+        }
 
-            /* Geçmiş Listesi Alanı */
-            #ai-history-list {
-                display: none; /* JS ile açılacak */
-                flex-direction: column;
-                width: 100%;
-                height: 100%;
-                overflow-y: auto;
-                padding-right: 4px;
-                gap: 10px;
-                order: 10;
-                margin-top: 4px;
-            }
-            
-            /* Geçmiş Kartı */
-            .history-card {
-                background: #f9f9f9;
-                border: 1px solid #eee;
-                border-radius: 10px;
-                padding: 12px;
-                cursor: pointer;
-                position: relative;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
-                text-align: left;
-                margin-top: 1px;
-            }
-            .history-card:hover {
-                border-color: #8a4af3;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            }
-            .h-title {
-                font-weight: 600;
-                font-size: 0.9rem;
-                color: #1e293b;
-                margin-bottom: 4px;
-                display: block;
-                padding-right: 24px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .h-date {
-                font-size: 0.75rem;
-                color: #959595;
-            }
-            .h-delete {
-                position: absolute;
-                right: 8px;
-                top: 8px;
-                background: transparent;
-                border: none;
-                color: #ffcccc;
-                font-size: 16px;
-                line-height: 1;
-                cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
-                transition: all 0.2s;
-            }
-            .h-delete:hover {
-                color: #ff4444;
-                background: #fff5f5;
-            }
+        /* Geçmiş Listesi Alanı */
+        #ai-history-list {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 4px;
+            gap: 10px;
+            order: 10;
+            margin-top: 4px;
+        }
+        
+        /* Geçmiş Kartı */
+        .history-card {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            text-align: left;
+            margin-top: 1px;
+        }
+        .history-card:hover {
+            border-color: #12a5e8;  /* YENİ MAVİ */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(18, 165, 232, 0.12); /* MAVİ GÖLGE */
+        }
+        .h-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e293b;
+            margin-bottom: 4px;
+            display: block;
+            padding-right: 24px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .h-date {
+            font-size: 0.75rem;
+            color: #959595;
+        }
+        .h-delete {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: transparent;
+            border: none;
+            color: #ffd1d1;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .h-delete:hover {
+            color: #ff4444;
+            background: #fff5f5;
+        }
 
-            /* Gizleme Helper'ı */
-            .view-hidden { display: none !important; }
+        /* Gizleme Helper'ı */
+        .view-hidden { display: none !important; }
 
-            /* --- TYPING ANIMASYONU --- */
-            .typing {
-                display: inline-block;
-                position: relative;
-                color: transparent !important; /* Orjinal noktaları gizle */
-            }
-            .typing::after {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 0;
-                color: #1e293b; /* Nokta rengi */
-                font-weight: bold;
-                animation: typing-dots 1.5s infinite steps(4);
-            }
-            @keyframes typing-dots {
-                0% { content: ''; }
-                25% { content: '.'; }
-                50% { content: '..'; }
-                75% { content: '...'; }
-            }
-        `;
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = css;
-        document.head.appendChild(style);
-    }
+        /* --- TYPING ANIMASYONU --- */
+        .typing {
+            display: inline-block;
+            position: relative;
+            color: transparent !important;
+        }
+        .typing::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #12a5e8;  /* YENİ MAVİ */
+            font-weight: bold;
+            animation: typing-dots 1.5s infinite steps(4);
+        }
+        @keyframes typing-dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+    `;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = css;
+    document.head.appendChild(style);
+}
 
     // --- 3. UI YERLEŞTİRME (Insert Logic) ---
 
