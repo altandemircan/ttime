@@ -1173,9 +1173,10 @@ function sendMessage() {
     if (location.length > 0) {
         location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
         
-        // Eğer geçerli bir şehir bulduysak, val değişkenini GÜNCELLİYORUZ.
-        // Artık kodun geri kalanı "3-day Istanbul" formatıyla çalışacak.
-        val = `${days}-day ${location}`;
+        // ==> BURAYI GÜNCELLEDİK: Daha şık ve kurumsal bir cümle formatı <==
+        // Eskisi: val = `${days}-day ${location}`;
+        // Yenisi:
+        val = `Plan a ${days}-day tour for ${location}`;
         
         console.log(`🧹 Input Düzeldi: "${input.value}" -> "${val}"`);
     }
