@@ -345,20 +345,18 @@ ease;
 }
 
 /*  Remove specific styles for these sections */
-#tt-about-us {
-    position: fixed; /* Sayfada sabit dursun */
-    left: 0; /* Sola yaslansın */
-    top: 40px; /* Üstten header boşluğu */
-    bottom: 0; /* En aşağıya kadar uzansın (Height yerine bunu kullanmak daha garantidir) */
-    
-    width: calc(100% - 475px); /* Senin verdiğin genişlik */
+#tt-about-us
+{   
+       position: fixed;
+    left: 0;
+    top: 40px;
+    bottom: 0;
+    width: calc(100% - 415px);
     background: #ffffff;
     padding: 30px;
-    
-    /* İŞTE SİHİRLİ KODLAR BURADA: */
-    overflow-y: auto; /* İçerik taşarsa scrollbar çıkar */
-    z-index: 999; /* Diğer her şeyin üstünde olsun */
-    box-sizing: border-box; /* Padding ekleyince genişlik şişmesin */
+    overflow-y: auto !important;
+    /* z-index: 999 !important; */
+    box-sizing: border-box;
 }
 @media (max-width: 768px) {
    #tt-about-us {
