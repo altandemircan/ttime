@@ -168,6 +168,7 @@ function showSuggestions() {
 
     const options = [
     { text: "3 days in Antalya", flag: countryFlag("TR") },
+    { text: "Explore Rome for 1 day", flag: countryFlag("IT") },
     { text: "London 2-day guide", flag: countryFlag("GB") },
     { text: "Explore Rome for 1 day", flag: countryFlag("IT") },
     { text: "3-day Paris itinerary", flag: countryFlag("FR") },
