@@ -361,28 +361,46 @@ document.addEventListener('click', function(e){
 
 
 function changeContent(option) {
+    // 1. Tüm sectionlardan active sınıfını temizle
     const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => section.classList.remove('active'));
+    sections.forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none'; // Temizlik: Hepsini gizle
+    });
 
     const chatBox = document.getElementById('chat-box');
     const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
 
+    // --- SEÇENEK 1: ANASAYFA (HOME) ---
     if (option === 1) {
+        // A. Loading animasyonu yüzünden gizlenen .cw (Video/Başlık) kısmını geri aç
+        document.querySelectorAll('.cw').forEach(el => el.style.display = '');
+
+        // B. Hakkımızda açıksa kapat
         if (aboutUsSection) {
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
         }
+
+        // C. Welcome Section'ı ZORLA Aktif Yap
         if (welcomeSection) {
-            welcomeSection.style.display = 'block';
-            welcomeSection.classList.add('active');
+            welcomeSection.style.display = 'block';     // Görünür yap
+            welcomeSection.classList.add('active');     // Active sınıfını ekle
         }
+
+        // D. Chat kutularını aç
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
-     
-    } else if (option === 2) {
-        // BURASI KRİTİK: showAboutTriptime'ı çağırıyoruz ki durum kaydı yapılsın
+      
+    } 
+    // --- SEÇENEK 2: HAKKIMIZDA (ABOUT) ---
+    else if (option === 2) {
+        // Çakışmayı önlemek için anasayfa içeriğini (.cw) gizle
+        document.querySelectorAll('.cw').forEach(el => el.style.display = 'none');
+
+        // Durum kaydı ve About açılışı
         if (typeof window.showAboutTriptime === 'function') {
             window.showAboutTriptime();
         }
