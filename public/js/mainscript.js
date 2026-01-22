@@ -188,9 +188,39 @@ function showSuggestions() {
     // Burayı değiştir!
     // const { city, days } = extractCityAndDaysFromTheme(option.text);
     const rawText = suggestion.textContent.replace(/🇦🇹|🇮🇹|🇬🇧|🇫🇷|🇪🇸|🇹🇷/g, "").trim();
-    const { city, days } = extractCityAndDaysFromTheme(rawText);
+   // --- DOĞRU ŞEHİR AYIKLAMA ---
+// Önce gün sayısını ayıkla
+let dayMatch = rawText.match(/(\d+)\s*-?\s*(day|days|gün)/i);
+let days = dayMatch ? parseInt(dayMatch[1], 10) : 2;
 
-    let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+// Şehir adı ayıkla: 'guide', 'days', 'itinerary' gibi tur kelimelerini atla
+// Örneğin: "London 2-day guide" -> "London"
+let city = null;
+
+// 1. "in", "for", "to", "at" ile split
+let tokens = rawText.split(/in |for |to |at |on /i);
+for (let k = tokens.length - 1; k >= 0; k--) {
+    let cand = tokens[k].replace(/(days?|gün|guide|trip|tour|itinerary|visit)/gi, "").replace(/\d+/, "").trim();
+    if (cand.length > 2) {
+        city = cand;
+        break;
+    }
+}
+
+// 2. Hala bulamazsan, baştan büyük harfle başlayan ilk kelimeyi al
+if (!city || /(guide|days?|trip|tour|itinerary)/i.test(city)) {
+    let m = rawText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)/);
+    if (m) city = m[1];
+}
+
+// 3. Hala bulamazsan, ilk kelimeyi al
+if (!city) city = rawText.split(" ")[0].trim();
+
+// 4. Son kez büyük harfe zorla
+city = city.charAt(0).toUpperCase() + city.slice(1);
+
+// Plan formatı oluştur
+let canonicalStr = `Plan a ${days}-day tour for ${city}`;
     if (typeof formatCanonicalPlan === "function") {
         const c = formatCanonicalPlan(`${city} ${days} days`);
         if (c && c.canonical) canonicalStr = c.canonical;
