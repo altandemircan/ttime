@@ -360,47 +360,36 @@ document.addEventListener('click', function(e){
 });
 
 function changeContent(option) {
-    // 1. Önce tüm sectionları temizle (Hepsini gizle)
     const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => {
-        section.classList.remove('active');
-        section.style.display = 'none'; // Hepsini baştan gizle ki çakışma olmasın
-    });
+    sections.forEach(section => section.classList.remove('active'));
 
     const chatBox = document.getElementById('chat-box');
     const welcomeSection = document.getElementById('tt-welcome');
     const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
 
-    // --- SEÇENEK 1: ANASAYFA (HOME) ---
     if (option === 1) {
-        
-        // A. Loading animasyonu yüzünden gizlenen içerikleri (.cw) geri aç
-        // Eğer bunu yapmazsak kutu gelir ama içi boş görünür.
-        document.querySelectorAll('.cw').forEach(el => el.style.display = '');
+        // 1. Loading sırasında gizlenen .cw içeriğinin kilidini kaldır (Display none'ı sil)
+        document.querySelectorAll('.cw').forEach(el => {
+            el.style.display = ''; 
+            el.style.removeProperty('display');
+        });
 
-        // B. Hakkımızda açıksa kapat
         if (aboutUsSection) {
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
         }
-
-        // C. Welcome Section'ı GÖSTER (display: none'ı kaldır)
+        
         if (welcomeSection) {
-            welcomeSection.style.display = 'block'; // display: none kaldırılır
-            welcomeSection.classList.add('active'); // CSS animasyonları için class eklenir
+            // Bölümü kesin olarak görünür yap
+            welcomeSection.style.display = 'block';
+            welcomeSection.classList.add('active');
         }
-
-        // D. Chat kutularını aç
+        
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
       
-    } 
-    // --- SEÇENEK 2: HAKKIMIZDA (ABOUT) ---
-    else if (option === 2) {
-        // About açılırken arkadaki .cw içeriklerini gizle
-        document.querySelectorAll('.cw').forEach(el => el.style.display = 'none');
-
+    } else if (option === 2) {
         if (typeof window.showAboutTriptime === 'function') {
             window.showAboutTriptime();
         }
