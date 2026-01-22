@@ -359,7 +359,6 @@ document.addEventListener('click', function(e){
     }
 });
 
-
 function changeContent(option) {
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => section.classList.remove('active'));
@@ -369,20 +368,33 @@ function changeContent(option) {
     const aboutUsSection = document.getElementById('tt-about-us');
     const mainChat = document.getElementById('main-chat');
 
+    // DÜZELTME: Loading sırasında gizlenen .cw (Video/Hello Mira) alanlarını seçiyoruz
+    const welcomeContent = document.querySelectorAll('.cw');
+
     if (option === 1) {
+        // --- HOME (ANASAYFA) SEÇİLDİ ---
+        
         if (aboutUsSection) {
             aboutUsSection.style.display = 'none';
             aboutUsSection.classList.remove('active', 'tt-overlay');
         }
+
+        // .cw KISMINI GERİ GETİR (Loading gizlemişti, şimdi açıyoruz)
+        welcomeContent.forEach(el => el.style.display = ''); 
+
         if (welcomeSection) {
             welcomeSection.style.display = 'block';
             welcomeSection.classList.add('active');
         }
         if (mainChat) mainChat.style.display = 'flex';
         if (chatBox) chatBox.style.display = 'block';
-     
+      
     } else if (option === 2) {
-        // BURASI KRİTİK: showAboutTriptime'ı çağırıyoruz ki durum kaydı yapılsın
+        // --- ABOUT (HAKKIMIZDA) SEÇİLDİ ---
+
+        // About açılırken .cw kısmını gizle ki yazılar birbirine girmesin
+        welcomeContent.forEach(el => el.style.display = 'none');
+
         if (typeof window.showAboutTriptime === 'function') {
             window.showAboutTriptime();
         }
