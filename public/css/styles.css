@@ -356,7 +356,26 @@ ease;
     padding: 30px;
     overflow-y: auto !important;
     /* z-index: 999 !important; */
-    box-sizing: border-box;
+}
+#tt-about-us.active, 
+#tt-about-us.tt-overlay {
+    display: block !important;
+    bottom: 0;           /* Aşağıya kadar uzat */
+    overflow-y: auto;    /* Scroll barı getir */
+    padding: 30px;       /* İç boşluk */
+    box-sizing: border-box; /* ➤ İSTEDİĞİN GİBİ: Sadece açılınca hesaplansın */
+}
+
+/* Scrollbar Güzelleştirme (Opsiyonel) */
+#tt-about-us.active::-webkit-scrollbar {
+    width: 8px;
+}
+#tt-about-us.active::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+#tt-about-us.active::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
 }
 @media (max-width: 768px) {
    #tt-about-us {
