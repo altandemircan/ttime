@@ -7601,3 +7601,54 @@ scrollbar-width: thin;
         .active .custom-icon {
             transform: rotate(180deg);
         }
+
+
+/* Butonların kapsayıcısı için düzen */
+.button-container {
+    display: flex;
+    gap: 15px; /* Butonlar arası boşluk */
+    justify-content: center;
+    margin-top: 15px;
+}
+
+/* Ortak Modern Buton Stili */
+.modern-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* İkon ve yazı arası boşluk */
+    padding: 12px 24px; /* Daha geniş, ferah tıklama alanı */
+    border-radius: 50px; /* Tam yuvarlak (Pill shape) - çok daha modern */
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #ffffff !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak geçiş */
+    border: 1px solid rgba(255,255,255,0.1); /* Hafif cam etkisi için ince sınır */
+    letter-spacing: 0.5px;
+}
+
+/* Hover (Üzerine gelince) Efektleri - Ortak */
+.modern-btn:hover {
+    transform: translateY(-3px); /* Hafifçe yukarı kalksın */
+}
+
+/* Mor Buton (About Triptime) */
+.btn-purple {
+    background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%); /* Hafif gradyan */
+    box-shadow: 0 4px 15px rgba(164, 117, 241, 0.3); /* Mor gölge */
+}
+.btn-purple:hover {
+    box-shadow: 0 8px 20px rgba(164, 117, 241, 0.5); /* Hover'da gölge artar */
+    background: linear-gradient(135deg, #b084f5 0%, #9a66e3 100%);
+}
+
+/* Mavi Buton (Mira AI Chat) */
+.btn-blue {
+    background: linear-gradient(135deg, #45aae8 0%, #2d94d4 100%); /* Hafif gradyan */
+    box-shadow: 0 4px 15px rgba(69, 170, 232, 0.3); /* Mavi gölge */
+}
+.btn-blue:hover {
+    box-shadow: 0 8px 20px rgba(69, 170, 232, 0.5);
+    background: linear-gradient(135deg, #5bbbf7 0%, #3ca0df 100%);
+}
