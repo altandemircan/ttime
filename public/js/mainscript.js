@@ -402,20 +402,27 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         .slice(0, 8)
         .map(sr => sr.item);
 
-    // B. LİSTELEME VE RENKLENDİRME
+    // B. LİSTELEME VE GÖRSEL
     const seenSuggestions = new Set();
     
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // İsim Belirleme
+        // 1. İsim Belirleme
         let displayName = "";
         if (props.city && props.city.trim()) displayName = props.city;
         else if (props.name && props.name.trim()) displayName = props.name.split(",")[0];
         
         if (!displayName || displayName.trim().length < 2) return;
+
+        // ==> İSİM KISALTMA MANTIĞI (Görüntü kirliliğini önler) <==
+        // Eğer UNESCO ise ve isim 35 karakterden uzunsa kırp.
+        // Örn: "Fertö / Neusiedlersee Cultural Landscape" -> "Fertö / Neusiedlersee..."
+        if (props.result_type === 'unesco_site' && displayName.length > 35) {
+            displayName = displayName.substring(0, 32) + "...";
+        }
         
-        // Detaylar ve Bayrak
+        // Detaylar (Şehir vs.)
         const regionParts = [];
         if (props.city && props.city !== displayName) regionParts.push(props.city);
         
@@ -424,14 +431,15 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         let displayText = displayName;
         
-        // UNESCO etiketi ekle (Görselde de belli olsun)
-        if (props.result_type === 'unesco_site') displayText += ` (UNESCO)`; 
+        // NOT: Buradaki "(UNESCO)" eklemesini KALDIRDIK. Zaten badge var.
+        // if (props.result_type === 'unesco_site') displayText += ` (UNESCO)`;  <-- BU SATIR SİLİNDİ
 
         if (regionParts.length > 0) displayText += ", " + regionParts.join(', ');
         if (countryCode) displayText += ", " + countryCode.toUpperCase() + flag;
         
         displayText = displayText.replace(/^,\s*/, "").trim();
         
+        // Çift Kayıt Kontrolü
         const normalizedText = displayText.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
@@ -441,49 +449,42 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         div.className = "category-area-option";
         div.textContent = displayText; 
         div.dataset.displayText = displayText;
-        
-        // ==> 1. YENİ ÖZELLİK: Üzerine gelince tam ismi göster (Tooltip)
-        div.title = displayText;
+        div.title = props.name; // Mouse üzerine gelince TAM ismini görsün
 
-        // ==> 2. YENİ ÖZELLİK: İsim sığmazsa "..." koy
+        // CSS: Tek satıra sığdır
         div.style.whiteSpace = "nowrap";
         div.style.overflow = "hidden";
         div.style.textOverflow = "ellipsis";
-        div.style.display = "block"; // Satır yapısını koru
+        div.style.display = "block";
 
-        // ==> BURASI GÜNCELLENDİ: UNESCO İSE RENK VE ETİKET EKLE <==
+        // ==> UNESCO STİLİ (SADELEŞTİRİLMİŞ) <==
         if (props.result_type === 'unesco_site') {
-            // 1. Arka plan rengi (Senin kodun)
             div.style.backgroundColor = "#f2fce4"; 
-            
-            // 2. Absolute pozisyonlama için kapsayıcıya relative ver
             div.style.position = "relative";
-            // Uzun isimler etiketin altında kalmasın diye sağdan boşluk bırak
-            div.style.paddingRight = "120px"; // 110px biraz dar olabilir, 120 yaptım garanti olsun
+            div.style.paddingRight = "105px"; // Badge için yer aç
 
-            // 3. "World Heritage" etiketini oluştur
             const badge = document.createElement("span");
             badge.textContent = "World Heritage";
             
-            // 4. Etiketi sağ tarafa konumlandır ve süsle
+            // Badge Pozisyonu
             badge.style.position = "absolute";
-            badge.style.top = "50%"; // Dikeyde ortala
-            badge.style.transform = "translateY(-50%)"; // Tam ortalamak için düzeltme
-            badge.style.right = "10px"; // Sağdan 10px içeride
+            badge.style.top = "50%";
+            badge.style.transform = "translateY(-50%)";
+            badge.style.right = "10px";
             
-            // Etiket tasarımı (Senin istediğin mavi renk: #54afd6)
-            badge.style.fontSize = "0.7rem";
+            // Badge Tasarımı
+            badge.style.fontSize = "0.65rem"; // Biraz daha küçülttük
             badge.style.fontWeight = "bold";
             badge.style.backgroundColor = "#54afd6"; 
-            badge.style.color = "#fff"; // Beyaz yazı
-            badge.style.padding = "3px 8px";
-            badge.style.borderRadius = "4px"; // Köşeleri yuvarlat
-            badge.style.boxShadow = "0 1px 2px rgba(0,0,0,0.2)";
+            badge.style.color = "#fff";
+            badge.style.padding = "2px 6px";
+            badge.style.borderRadius = "4px";
+            badge.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
             
-            // 5. Etiketi ana kutunun içine ekle
             div.appendChild(badge);
         }
-        // ==========================================================
+
+        // Tıklama Olayı (Tam veriyi kullanır)
         div.onclick = () => {
             window.__programmaticInput = true;
             Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
@@ -493,8 +494,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
                 displayText, 
                 props,
                 selectedLocation: {
-                    name: displayName,
-                    city: props.city || displayName,
+                    name: props.name, // Kırpılmamış tam ismi gönderiyoruz
+                    city: props.city || props.name,
                     country: props.country || "",
                     lat: props.lat,
                     lon: props.lon,
@@ -509,9 +510,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            let canonicalStr = `Plan a ${days}-day tour for ${displayName}`;
+            // Chat inputuna tam ismi yazdır
+            let canonicalStr = `Plan a ${days}-day tour for ${props.name}`;
             if (typeof formatCanonicalPlan === "function") {
-                const c = formatCanonicalPlan(`${displayName} ${days} days`);
+                const c = formatCanonicalPlan(`${props.name} ${days} days`);
                 if (c && c.canonical) canonicalStr = c.canonical;
             }
 
@@ -526,7 +528,6 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
         suggestionsDiv.appendChild(div);
     });
-
     if (suggestionsDiv.children.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     } else {
