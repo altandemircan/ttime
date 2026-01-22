@@ -713,44 +713,7 @@
 
     <div class="button-container">
         
-<a href="javascript:;" onclick="
-    console.log('About butonu tıklandı');
-    const aboutUs = document.getElementById('tt-about-us');
-    const welcome = document.getElementById('tt-welcome');
-    
-    console.log('aboutUs:', aboutUs);
-    console.log('aboutUs display:', aboutUs.style.display);
-    console.log('aboutUs classes:', aboutUs.className);
-    
-    // Önce welcome'ı gizle
-    if (welcome) {
-        welcome.style.display = 'none';
-        welcome.classList.remove('active');
-    }
-    
-    // About'u göster
-    if (aboutUs) {
-        aboutUs.style.display = 'block';
-        aboutUs.style.zIndex = '150';
-        aboutUs.style.background = '#fff';
-        aboutUs.style.overflowY = 'auto';
-        aboutUs.classList.add('active', 'tt-overlay');
-        
-        // Inline style'daki display:none'ı kaldır
-        aboutUs.style.removeProperty('display');
-        
-        console.log('Son durum - display:', aboutUs.style.display);
-        console.log('Son durum - classes:', aboutUs.className);
-    }
-    
-    // Chat'i gizle
-    const mainChat = document.getElementById('main-chat');
-    const chatBox = document.getElementById('chat-box');
-    if (mainChat) mainChat.style.display = 'none';
-    if (chatBox) chatBox.style.display = 'none';
-    
-    return false;
-" class="main-btn btn-purple">
+<a href="javascript:void(0)" onclick="document.getElementById('tt-welcome').style.display='none';document.getElementById('tt-about-us').style.display='block';document.getElementById('tt-about-us').classList.add('active','tt-overlay');document.getElementById('main-chat').style.display='none';console.log('About açıldı');return false;" class="main-btn btn-purple">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="16" x2="12" y2="12"></line>
