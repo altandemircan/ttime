@@ -3115,67 +3115,55 @@ let lastRequestTime = 0;
 // mainscript.js içine entegre edilecek fonksiyon
 
 // Yardımcı Fonksiyon: Unesco verisinde arama yap
-function searchUnescoData(query) {
-    // Veri yüklenmemişse boş dön
-    if (typeof window.UNESCO_DATA === 'undefined') return [];
+// === UNESCO ARAMA VE ENTEGRASYON MANTIĞI ===
 
+// 1. UNESCO verisinde arama yapan yardımcı fonksiyon
+function searchUnescoData(query) {
+    if (typeof window.UNESCO_DATA === 'undefined') return [];
     const q = query.toLowerCase().trim();
     
-    // Filtreleme yap
-    const matches = window.UNESCO_DATA.filter(item => {
-        return item.name.toLowerCase().includes(q);
-    });
-
-    // Geoapify formatına çevir (Frontend bozulmasın diye)
-    return matches.map(item => ({
-        properties: {
-            name: item.name,
-            formatted: `${item.name}, ${item.country_code}`, // Örn: Historic Areas of Istanbul, TR
-            lat: item.lat,
-            lon: item.lon,
-            country_code: item.country_code.toLowerCase(),
-            result_type: 'tourism', // Puanlamada yüksek çıksın diye
-            category: 'unesco',
-            place_type: 'unesco_site' // Özel tip
-        },
-        geometry: {
-            type: "Point",
-            coordinates: [item.lon, item.lat]
-        }
-    }));
+    return window.UNESCO_DATA
+        .filter(item => item.name.toLowerCase().includes(q))
+        .map(item => ({
+            properties: {
+                name: item.name,
+                formatted: `${item.name}, ${item.country_code} (UNESCO Site)`,
+                lat: item.lat,
+                lon: item.lon,
+                country_code: item.country_code.toLowerCase(),
+                result_type: 'unesco_site', // Özel tip
+                category: 'tourism.sights'
+            },
+            geometry: {
+                type: "Point",
+                coordinates: [item.lon, item.lat]
+            }
+        })).slice(0, 3); // İlk 3 UNESCO sonucunu al
 }
 
-// MEVCUT geoapifyAutocomplete FONKSİYONUNU GÜNCELLE
+// 2. Mevcut geoapifyAutocomplete fonksiyonunu UNESCO destekli hale getir
+// Not: Eğer dosyanızda bu isimde başka bir fonksiyon varsa onunla yer değiştirin.
 async function geoapifyAutocomplete(query) {
-    
-    // 1. ÖNCE LOKAL (UNESCO) ARAMA YAP
-    // Bu işlem milisaniyeler sürer, API beklemez.
-    let localResults = searchUnescoData(query);
-
-    // İlk 5 sonucu al (Çok fazla gelirse arayüzü boğmasın)
-    localResults = localResults.slice(0, 5);
+    // Önce UNESCO verisinden çek
+    const localResults = searchUnescoData(query);
 
     try {
-        // 2. SONRA API ARAMASI YAP (Limit 20)
+        // Sonra API'den çek (Limit 20)
         const resp = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
         let apiFeatures = [];
-        
         if (resp.ok) {
             const data = await resp.json();
             apiFeatures = data.features || [];
         }
 
-        // 3. İKİ LİSTEYİ BİRLEŞTİR
-        // UNESCO sonuçlarını API sonuçlarının ÖNÜNE ekle
+        // Birleştir (UNESCO en üstte)
         let combined = [...localResults, ...apiFeatures];
 
-        // Çift kayıtları temizle (İsim ve Koordinat çok yakınsa)
-        // (Basit bir filtreleme, detaylandırılabilir)
+        // İsim benzerliğine göre çift kayıtları temizle
         const unique = [];
         const seen = new Set();
-
         combined.forEach(item => {
-            const key = (item.properties.name || "").toLowerCase().substring(0, 10); // İlk 10 harf benzerse
+            const key = (item.properties.name || "").toLowerCase().substring(0, 15);
             if (!seen.has(key)) {
                 seen.add(key);
                 unique.push(item);
@@ -3183,13 +3171,10 @@ async function geoapifyAutocomplete(query) {
         });
 
         return unique;
-
     } catch (e) {
-        console.error("API Error, falling back to local data", e);
-        return localResults; // API hata verirse en azından Unesco sonuçlarını göster
+        return localResults; // Hata olursa sadece UNESCO sonuçlarını göster
     }
 }
-
 
 // Sadece photoget-proxy ile çalışıyor!
 async function getPexelsImage(query) {
