@@ -7651,3 +7651,6 @@ scrollbar-width: thin;
     box-shadow: 0 8px 20px rgba(69, 170, 232, 0.5);
     background: linear-gradient(135deg, #5bbbf7 0%, #3ca0df 100%);
 }
+.main-icon {
+    gap: 15px; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 25px; opacity: 0.9;
+}
