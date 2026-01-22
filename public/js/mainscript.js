@@ -446,7 +446,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         // ==> BURASI GÜNCELLENDİ: UNESCO İSE RENK VE ETİKET EKLE <==
         if (props.result_type === 'unesco_site') {
             // 1. Arka plan rengi (İstediğin renk)
-            div.style.backgroundColor = "#49b1df"; 
+            div.style.backgroundColor = "#f2fce4"; 
             
             // 2. Absolute pozisyonlama için kapsayıcıya relative ver
             div.style.position = "relative";
