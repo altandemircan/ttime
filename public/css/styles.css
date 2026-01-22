@@ -7691,12 +7691,12 @@ display: block !important;
 
 /* Mavi Buton (Mira AI Chat) */
 .btn-blue {
-    background: linear-gradient(135deg, #45aae8 0%, #2d94d4 100%); /* Hafif gradyan */
+    background: linear-gradient(135deg, #c745e8 0%, #2dd4d0 100%);
    
 }
 .btn-blue:hover {
     box-shadow: 0 8px 20px rgba(69, 170, 232, 0.5);
-    background: linear-gradient(135deg, #5bbbf7 0%, #3ca0df 100%);
+    background: linear-gradient(135deg, #c745e8 0%, #2dd4d0 100%);
 }
 .main-icon {
     gap: 15px; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 25px; opacity: 0.9;
