@@ -408,20 +408,18 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     finalResults.forEach((result) => {
         const props = result.properties || {};
         
-        // 1. TAM VERİYİ HAZIRLA (INPUTA GİDECEK OLAN)
+        // 1. TAM VERİ (INPUTA GİDECEK)
         let rawName = "";
         if (props.city && props.city.trim()) rawName = props.city;
         else if (props.name && props.name.trim()) rawName = props.name;
-        
         if (!rawName || rawName.length < 2) rawName = props.formatted || "";
 
         let LONG_INPUT_NAME = rawName;
-        // Eğer UNESCO değilse virgülden sonrasını temizle (Standart davranış)
         if (props.result_type !== 'unesco_site' && rawName.includes(',')) {
              LONG_INPUT_NAME = rawName.split(',')[0].trim();
         }
 
-        // 2. GÖRÜNECEK TAM METNİ HAZIRLA (TOOLTIP VE GENİŞLEME İÇİN)
+        // 2. GÖRÜNECEK TAM METİN (GENİŞLEYİNCE ÇIKACAK)
         const regionParts = [];
         if (props.city && props.city !== LONG_INPUT_NAME) regionParts.push(props.city);
         
@@ -433,16 +431,13 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
         fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
 
-        // Çift Kayıt Kontrolü
         const normalizedText = fullDisplayText.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (seenSuggestions.has(normalizedText)) return;
         seenSuggestions.add(normalizedText);
 
-        // 3. GÖRÜNECEK KISA METNİ HAZIRLA (İLK BAKIŞ İÇİN)
-        // ==> ZORLA KESME İŞLEMİ (JS) <==
+        // 3. GÖRÜNECEK KISA METİN (LİSTEDE DURACAK)
         let shortDisplayText = fullDisplayText;
         if (props.result_type === 'unesco_site' && fullDisplayText.length > 35) {
-            // 32 karakter al + ... ekle
             shortDisplayText = fullDisplayText.substring(0, 32) + "..."; 
         }
 
@@ -450,20 +445,20 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // BAŞLANGIÇTA KISA HALİNİ YAZIYORUZ
+        // Başlangıçta KISA halini yaz
         div.textContent = shortDisplayText; 
         
-        div.title = fullDisplayText; // Mouse gelince tam halini gör
-        div.dataset.displayText = fullDisplayText;
+        // Verileri sakla (Resetlerken lazım olacak)
+        div.dataset.shortText = shortDisplayText;
+        div.dataset.fullText = fullDisplayText;
+        div.title = fullDisplayText;
 
         // Görünüm Ayarları
         div.style.whiteSpace = "nowrap";       
         div.style.overflow = "hidden";         
-        // textOverflow'u kapattım çünkü JS ile zaten "..." koyduk
-        // div.style.textOverflow = "ellipsis";   
         div.style.display = "block";
 
-        // ==> UNESCO STİLİ <==
+        // UNESCO Badge Ekleme
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
@@ -486,48 +481,41 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-        // 4. TIKLAMA OLAYI
+        // 4. TIKLAMA OLAYI (AKILLI RESET)
         div.onclick = () => {
-            // A) ÖNCE GÖRSEL OLARAK GENİŞLET (Senin istediğin 2. aşama)
-            div.textContent = fullDisplayText; 
-            // Badge silinmesin diye tekrar eklememiz gerekebilir veya 
-            // textContent tüm içeriği sildiği için badge'i korumak adına innerText kullanmayıp text node güncelliyoruz:
-            
-            // Hızlı çözüm: UNESCO ise badge'i tekrar ekle
-            if (props.result_type === 'unesco_site') {
-                 // Metni güncelle ama badge için HTML yapısını koru
-                 div.innerHTML = ""; 
-                 div.textContent = fullDisplayText;
-                 
-                 const badge = document.createElement("span");
-                 badge.textContent = "World Heritage";
-                 badge.style.position = "absolute";
-                 badge.style.top = "50%";
-                 badge.style.transform = "translateY(-50%)";
-                 badge.style.right = "10px";
-                 badge.style.fontSize = "0.65rem";
-                 badge.style.fontWeight = "bold";
-                 badge.style.backgroundColor = "#54afd6"; 
-                 badge.style.color = "#fff";
-                 badge.style.padding = "2px 6px";
-                 badge.style.borderRadius = "4px";
-                 div.appendChild(badge);
-            }
+            // A) ÖNCE DİĞERLERİNİ KAPAT (RESETLE)
+            Array.from(suggestionsDiv.children).forEach(child => {
+                if (child !== div) {
+                    // CSS'i eski haline getir
+                    child.style.whiteSpace = "nowrap";
+                    child.style.overflow = "hidden";
+                    child.classList.remove("selected-suggestion");
+                    
+                    // Metni KISA haline getir (Badge'i silmeden!)
+                    // child.firstChild genelde yazı node'udur.
+                    if (child.firstChild && child.dataset.shortText) {
+                        child.firstChild.nodeValue = child.dataset.shortText;
+                    }
+                }
+            });
 
-            // Genişletme stilleri
+            // B) TIKLANANI AÇ (GENİŞLET)
+            div.classList.add("selected-suggestion");
             div.style.whiteSpace = "normal"; 
             div.style.overflow = "visible";
             
-            // Seçim Efekti
-            window.__programmaticInput = true;
-            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-            div.classList.add("selected-suggestion");
+            // Metni UZUN haline getir (Badge'i koruyarak)
+            if (div.firstChild) {
+                div.firstChild.nodeValue = fullDisplayText;
+            }
 
+            // C) SEÇİM İŞLEMLERİ
+            window.__programmaticInput = true;
             window.selectedSuggestion = { 
                 displayText: fullDisplayText,
                 props,
                 selectedLocation: {
-                    name: LONG_INPUT_NAME, // Tam isim
+                    name: LONG_INPUT_NAME,
                     city: props.city || LONG_INPUT_NAME,
                     country: props.country || "",
                     lat: props.lat,
@@ -543,7 +531,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // B) INPUTA UZUN İSMİ YAZ (3. Aşama)
+            // Inputa UZUN ismi yaz
             let canonicalStr = `Plan a ${days}-day tour for ${LONG_INPUT_NAME}`;
             
             if (typeof formatCanonicalPlan === "function") {
