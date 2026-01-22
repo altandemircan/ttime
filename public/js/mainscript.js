@@ -199,24 +199,26 @@ function showSuggestions() {
             for (let k = tokens.length - 1; k >= 0; k--) {
                 // Bütün kirli kelimeleri sil, kalan tek anlamlı kelimeyi şehir olarak çek
             let cleaned = tokens[k]
-                .replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore|discover)/gi, "")
-                .replace(/\d+/g, "")
-                .replace(/[-–—]/g, "")
-                .replace(/\s{2,}/g, " ")
-                .trim();
+    .replace(/(days?|gün|guide|trip|tour|itinerary|visit|explore|discover)/gi, "")
+    .replace(/\d+/g, "")
+    .replace(/[^\p{L}\s]+/gu, "")        // Sayı ve noktalama hariç sadece harf ve boşluk kalsın
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
-            // Sonunda fazladan boşluk varsa, temizle
-            cleaned = cleaned.replace(/^\s+|\s+$/g, "");
+// Çok kelimelik şehir için ("Rio de Janeiro" gibi), temiz ve uzun olanlardan sonuncusunu seç
+let subTokens = cleaned.split(" ").filter(w => w.length > 1);
 
-            // Sadece harflerden oluşan en uzun kelimeyi al (örn: "London" ya da "Antalya" gibi)
-            let subTokens = cleaned.split(" ").filter(t => t.length > 1 && /^[A-Za-zÇĞİÖŞÜçğıöşü]+$/i.test(t));
-            let cand = subTokens.length ? subTokens[subTokens.length-1] : "";
+// Son kelime olur, ör: "London"
+let cand = subTokens.length ? subTokens[subTokens.length-1] : "";
 
-            // Hala ismini belirleyemediysek, fallback:
-            if (cand && cand.length > 1) {
-                city = cand;
-                break;
-            }
+// İki veya daha fazla kelimelik bir şehir ismi ise (ve emin olmak istersen),
+// let cand = subTokens.join(" ");
+
+// Son kontrol
+if (cand && cand.length > 1) {
+    city = cand;
+    break;
+}
             }
             if (!city || /(guide|days?|trip|tour|itinerary|discover|explore|visit)/i.test(city)) {
                 let m = rawText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)/);
