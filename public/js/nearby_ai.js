@@ -1463,12 +1463,13 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
     const isMapLibre = !!map.addSource;
+     clearAllCategoryMarkers(map);
     
-    // Kategori konfigürasyonları
+       // categoryConfig objesini güncelle (her kategoriye farklı renk)
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#ffffff',
+            color: '#FF5252', // Kırmızı
             iconUrl: '/img/restaurant_icon.svg',
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
@@ -1476,7 +1477,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'hotels': {
             apiCategories: 'accommodation',
-            color: '#ffffff',
+            color: '#2196F3', // Mavi
             iconUrl: '/img/accommodation_icon.svg',
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
@@ -1484,7 +1485,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#ffffff',
+            color: '#4CAF50', // Yeşil
             iconUrl: '/img/market_icon.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
@@ -1492,7 +1493,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
-            color: '#ffffff',
+            color: '#FF9800', // Turuncu
             iconUrl: '/img/touristic_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
@@ -1560,18 +1561,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
                         }
                     });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 
-                            'line-color': config.color, 
-                            'line-width': 4, 
-                            'line-opacity': 0.8, 
-                            'line-dasharray': [2, 2] 
-                        }
-                    });
+                   // 3D harita çizgi rengi:
+map.addLayer({
+    id: layerId,
+    type: 'line',
+    source: sourceId,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 
+        'line-color': '#4CAF50', // YEŞİL
+        'line-width': 4, 
+        'line-opacity': 0.8, 
+        'line-dasharray': [2, 2] 
+    }
+});
                     window[layer3DKey].push(layerId, sourceId);
                 }
                 
@@ -1608,13 +1610,13 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 // 2D HARİTA (Leaflet)
                 map[layerKey] = map[layerKey] || [];
                 
-                // Çizgi
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: config.color, 
-                    weight: 4, 
-                    opacity: 0.95, 
-                    dashArray: "8,8" 
-                }).addTo(map);
+                // 2D harita çizgi rengi:
+const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+    color: '#4CAF50', // YEŞİL
+    weight: 4, 
+    opacity: 0.95, 
+    dashArray: "8,8" 
+}).addTo(map);
                 map[layerKey].push(line);
                 
                 // Marker
