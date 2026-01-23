@@ -1468,7 +1468,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#1976d2',
+            color: '#ffffff',
             iconUrl: 'https://www.svgrepo.com/show/327200/restaurant-sharp.svg',
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
@@ -1476,7 +1476,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'hotels': {
             apiCategories: 'accommodation',
-            color: '#1976d2',
+            color: '#ffffff',
             iconUrl: 'https://www.svgrepo.com/show/327200/hotel.svg',
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
@@ -1484,7 +1484,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#1976d2',
+            color: '#fffffff',
             iconUrl: 'https://www.svgrepo.com/show/327200/shopping-cart.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
@@ -1492,7 +1492,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
-            color: '#1976d2',
+            color: '#ffffff',
             iconUrl: '/img/touristic_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
@@ -1643,13 +1643,11 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
 // Yardımcı fonksiyon: Kategoriye göre marker HTML'i
 function getCategoryMarkerHtml(color, iconUrl, categoryType) {
-    // Entertainment için zorunlu beyaz arka plan
-    const bgColor = categoryType === "entertainment" ? "#fff" : color;
     return `
       <div class="custom-marker-outer" style="
         position:relative;
         width:32px;height:32px;
-        background:${bgColor};
+        background:${color};
         border-radius:50%;
         display:flex;
         align-items:center;
@@ -1658,7 +1656,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         border:2px solid #fff;
       ">
         <img src="${iconUrl}"
-             style="width:18px;height:18px;" alt="${categoryType}">
+             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="${categoryType}">
       </div>
     `;
 }
