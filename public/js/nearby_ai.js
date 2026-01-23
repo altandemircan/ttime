@@ -1839,43 +1839,32 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                     data: circleGeoJSON
                 });
                 
-                map.addLayer({
-                    id: circleId + '-layer',
-                    type: 'fill',
-                    source: circleId,
-                    paint: {
-                        'fill-color': circleColor,
-                        'fill-opacity': 0.15,
-                        'fill-outline-color': circleColor
-                    }
-                });
-                
-                map.addLayer({
-                    id: circleId + '-stroke',
-                    type: 'line',
-                    source: circleId,
-                    paint: {
-                        'line-color': circleColor,
-                        'line-width': 2,
-                        'line-opacity': 0.4,
-                        'line-dasharray': [4, 4]
-                    }
-                });
+              // 3D MapLibre için:
+map.addLayer({
+    id: circleId + '-layer',
+    type: 'fill',
+    source: circleId,
+    paint: {
+        'fill-color': circleColor,
+        'fill-opacity': 0.08,      // DAHA ŞEFFAF (0.15 → 0.08)
+        'fill-outline-color': 'transparent'  // BORDER YOK
+    }
+});
                 
                 window._categoryRadiusCircle3D = circleId;
                 
             } else {
-                // 2D Leaflet için
-                window._categoryRadiusCircle = L.circle([lat, lng], {
-                    radius: radiusMeters,
-                    color: circleColor,
-                    weight: 2,
-                    opacity: 0.4,
-                    fillColor: circleColor,
-                    fillOpacity: 0.15,
-                    dashArray: '8, 8',
-                    className: `category-radius-circle ${categoryType}`
-                }).addTo(map);
+               // 2D Leaflet için:
+window._categoryRadiusCircle = L.circle([lat, lng], {
+    radius: radiusMeters,
+    color: circleColor,
+    weight: 1,           // DAHA İNCE (border kalkacak gibi)
+    opacity: 0.3,        // DAHA ŞEFFAF (0.4 → 0.3)
+    fillColor: circleColor,
+    fillOpacity: 0.08,   // DAHA ŞEFFAF (0.15 → 0.08)
+    dashArray: '0',      // KESİKLİ ÇİZGİ YOK
+    className: `category-radius-circle ${categoryType}`
+}).addTo(map);
                 
                 // Daireye tooltip ekle (mesafeyi göster)
                 window._categoryRadiusCircle.bindTooltip(
