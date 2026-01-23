@@ -1093,25 +1093,27 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 });
 
             // "Search wider area" butonları için event handler
-            document.querySelectorAll('.search-wider-btn').forEach(btn => {
-                btn.onclick = function() {
-                    const category = this.dataset.category;
-                    const widerRadius = 5000;   // Daha geniş alan (5km)
-                    
-                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-                    
-                    // Daha geniş alanda arama yap
-                    if (category === 'restaurants') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
-                    } else if (category === 'hotels') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
-                    } else if (category === 'markets') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
-                    } else if (category === 'entertainment') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
-                    }
-                };
-            });
+document.querySelectorAll('.search-wider-btn').forEach(btn => {
+    btn.onclick = function(e) {
+        e.stopPropagation(); // +++ YENİ: EVENT BUBBLING'İ DURDUR +++
+        const category = this.dataset.category;
+        const widerRadius = 5000;
+        
+        // +++ ESKİ KODU KALDIR: closeNearbyPopup çağrısını kaldır +++
+        // if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+        
+        // Daha geniş alanda arama yap
+        if (category === 'restaurants') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
+        } else if (category === 'hotels') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
+        } else if (category === 'markets') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
+        } else if (category === 'entertainment') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
+        }
+    };
+});
         }, 250);
 
 // Şehir bilgisi ve AI açıklaması
@@ -1644,18 +1646,19 @@ const line = L.polyline([[lat, lng], [pLat, pLng]], {
 }
 
 // Yardımcı fonksiyon: Kategoriye göre marker HTML'i
+// Yardımcı fonksiyon: Kategoriye göre marker HTML'i
 function getCategoryMarkerHtml(color, iconUrl, categoryType) {
     return `
       <div class="custom-marker-outer" style="
         position:relative;
         width:32px;height:32px;
-        background:${color};
+        background:white; /* BEYAZ ARKA PLAN */
         border-radius:50%;
         display:flex;
         align-items:center;
         justify-content:center;
-        box-shadow:0 2px 8px #888;
-        border:2px solid #0bf;
+        box-shadow:0 2px 8px rgba(0,0,0,0.2);
+        border:3px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
       ">
         <img src="${iconUrl}"
              style="width:18px;height:18px;" alt="${categoryType}">
