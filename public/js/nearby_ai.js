@@ -1484,7 +1484,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#fffffff',
+            color: '#ffffff',
             iconUrl: '/img/market_icon.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
