@@ -522,7 +522,7 @@ window.closeNearbyPopup = function() {
         popupElement.remove();
     }
     
-    // 2. Radius daireleri temizle
+    // 2. İLK TIKLAMA İÇİN RADIUS DAIRELERİNİ TEMİZLE
     if (window._nearbyRadiusCircle) {
         try { window._nearbyRadiusCircle.remove(); } catch(e) {}
         window._nearbyRadiusCircle = null;
@@ -540,7 +540,25 @@ window.closeNearbyPopup = function() {
         window._nearbyRadiusCircle3D = null;
     }
     
-    // 3. Global Değişken Temizliği (Leaflet & MapLibre)
+    // 3. KATEGORİ SHOW MORE İÇİN RADIUS DAIRELERİNİ TEMİZLE
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._categoryRadiusCircle3D;
+            
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
+    // 4. Global Değişken Temizliği (Leaflet & MapLibre)
     if (window._nearbyPulseMarker) {
         try { window._nearbyPulseMarker.remove(); } catch(e) {}
         window._nearbyPulseMarker = null;
@@ -550,7 +568,7 @@ window.closeNearbyPopup = function() {
         window._nearbyPulseMarker3D = null;
     }
 
-    // 4. TÜM KATEGORİLERİN MARKERLARINI TEMİZLE
+    // 5. TÜM KATEGORİLERİN MARKERLARINI TEMİZLE
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
     categories.forEach(category => {
@@ -572,7 +590,7 @@ window.closeNearbyPopup = function() {
         }
     });
 
-    // 5. LEAFLET KATMAN TARAMASI (Tüm kategoriler için)
+    // 6. LEAFLET KATMAN TARAMASI (Tüm kategoriler için)
     const mapsToCheck = [];
     if (window.leafletMaps) mapsToCheck.push(...Object.values(window.leafletMaps));
     if (window.expandedMaps) mapsToCheck.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
@@ -603,7 +621,7 @@ window.closeNearbyPopup = function() {
         }
     });
     
-    // 6. Diğer temizlikler
+    // 7. Diğer temizlikler
     if (window.leafletMaps) {
         Object.values(window.leafletMaps).forEach(map => {
             const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
@@ -1755,11 +1773,92 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 }
 
 
+// showNearbyPlacesByCategory fonksiyonu (tam güncel)
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
     const isMapLibre = !!map.addSource;
-     clearAllCategoryMarkers(map);
     
-       // categoryConfig objesini güncelle (her kategoriye farklı renk)
+    // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
+    clearAllCategoryMarkers(map);
+    
+    // +++ BU KATEGORİ İÇİN RADIUS DAIRE EKLE +++
+    const radiusMeters = 1000; // Show more için 1000 metre
+    
+    // Önceki daireyi temizle
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(_) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(_) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
+    // Kategoriye göre renk
+    const categoryColors = {
+        'restaurants': '#FF5252', // Kırmızı
+        'hotels': '#2196F3',      // Mavi
+        'markets': '#4CAF50',     // Yeşil
+        'entertainment': '#FF9800' // Turuncu
+    };
+    
+    const circleColor = categoryColors[categoryType] || '#1976d2';
+    
+    // Daire ekle
+    if (isMapLibre) {
+        // 3D MapLibre için
+        const circleId = `category-radius-${categoryType}-${Date.now()}`;
+        const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+        
+        map.addSource(circleId, {
+            type: 'geojson',
+            data: circleGeoJSON
+        });
+        
+        map.addLayer({
+            id: circleId + '-layer',
+            type: 'fill',
+            source: circleId,
+            paint: {
+                'fill-color': circleColor,
+                'fill-opacity': 0.15,
+                'fill-outline-color': circleColor
+            }
+        });
+        
+        map.addLayer({
+            id: circleId + '-stroke',
+            type: 'line',
+            source: circleId,
+            paint: {
+                'line-color': circleColor,
+                'line-width': 2,
+                'line-opacity': 0.4,
+                'line-dasharray': [4, 4]
+            }
+        });
+        
+        window._categoryRadiusCircle3D = circleId;
+        
+    } else {
+        // 2D Leaflet için
+        window._categoryRadiusCircle = L.circle([lat, lng], {
+            radius: radiusMeters,
+            color: circleColor,
+            weight: 2,
+            opacity: 0.4,
+            fillColor: circleColor,
+            fillOpacity: 0.15,
+            dashArray: '8, 8',
+            className: `category-radius-circle ${categoryType}`
+        }).addTo(map);
+    }
+    
+    // Kategori konfigürasyonları
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
@@ -1829,6 +1928,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         if (!data.features || data.features.length === 0) {
             alert(`No ${categoryType} found nearby.`);
+            
+            // Daireyi de sil (çünkü sonuç yok)
+            if (window._categoryRadiusCircle) {
+                try { window._categoryRadiusCircle.remove(); } catch(_) {}
+                window._categoryRadiusCircle = null;
+            }
             return;
         }
         
@@ -1855,19 +1960,18 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
                         }
                     });
-                   // 3D harita çizgi rengi:
-map.addLayer({
-    id: layerId,
-    type: 'line',
-    source: sourceId,
-    layout: { 'line-join': 'round', 'line-cap': 'round' },
-    paint: { 
-        'line-color': '#4CAF50', // YEŞİL
-        'line-width': 6, 
-        'line-opacity': 0.8, 
-        'line-dasharray': [2, 2] 
-    }
-});
+                    map.addLayer({
+                        id: layerId,
+                        type: 'line',
+                        source: sourceId,
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: { 
+                            'line-color': '#4CAF50', // YEŞİL
+                            'line-width': 8,  // KALIN
+                            'line-opacity': 0.9,  // Biraz daha opak
+                            'line-dasharray': [4, 4]  // Kesikleri de biraz büyüt
+                        }
+                    });
                     window[layer3DKey].push(layerId, sourceId);
                 }
                 
@@ -1881,7 +1985,6 @@ map.addLayer({
                 const popup = new maplibregl.Popup({ 
                     offset: 25, 
                     maxWidth: '360px',
-
                     closeButton: true,
                     className: 'tt-unified-popup'
                 }).setHTML(popupContent);
@@ -1904,13 +2007,13 @@ map.addLayer({
                 // 2D HARİTA (Leaflet)
                 map[layerKey] = map[layerKey] || [];
                 
-                // 2D harita çizgi rengi:
-const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-    color: '#4CAF50', // YEŞİL
-    weight: 4, 
-    opacity: 0.95, 
-    dashArray: "8,8" 
-}).addTo(map);
+                // Çizgi
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+                    color: '#4CAF50', // YEŞİL
+                    weight: 8,  // KALIN
+                    opacity: 0.95, 
+                    dashArray: "10,6"  // Kesikleri de biraz büyüt
+                }).addTo(map);
                 map[layerKey].push(line);
                 
                 // Marker
@@ -1934,11 +2037,16 @@ const line = L.polyline([[lat, lng], [pLat, pLng]], {
     } catch (err) {
         console.error(err);
         alert(`Error fetching ${categoryType}.`);
+        
+        // Hata durumunda daireyi de sil
+        if (window._categoryRadiusCircle) {
+            try { window._categoryRadiusCircle.remove(); } catch(_) {}
+            window._categoryRadiusCircle = null;
+        }
     }
 }
 
-// Yardımcı fonksiyon: Kategoriye göre marker HTML'i
-// Yardımcı fonksiyon: Kategoriye göre marker HTML'i
+// Yardımcı fonksiyon: Kategoriye göre marker HTML'i (güncellenmiş)
 function getCategoryMarkerHtml(color, iconUrl, categoryType) {
     return `
       <div class="custom-marker-outer" style="
@@ -1950,7 +2058,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         align-items:center;
         justify-content:center;
         box-shadow:0 2px 8px rgba(0,0,0,0.2);
-        border:2px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
+        border:3px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
       ">
         <img src="${iconUrl}"
              style="width:18px;height:18px;" alt="${categoryType}">
@@ -1998,6 +2106,8 @@ function getFastPlacePopupHTML(f, imgId, day, config) {
       </div>
     `;
 }
+
+
 
 // Yardımcı fonksiyon: Popup açıldığında resim yükleme
 function handlePlacePopupImageLoading(f, imgId, categoryType) {
