@@ -204,22 +204,181 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker3D = null;
     }
 
-    // 2. Marker HTML
-    const pulseHtml = `
-      <div class="nearby-pulse-marker">
-        <div class="nearby-pulse-core"></div>
-        <div class="nearby-pulse-ring"></div>
-        <div class="nearby-pulse-ring2"></div>
-      </div>
+// 2. YENİ VE ÇARPIÇI PULSE MARKER HTML
+const pulseHtml = `
+  <div class="tt-pulse-marker">
+    <!-- Ana dot (daha büyük ve parlaktır) -->
+    <div class="tt-pulse-dot">
+      <div class="tt-pulse-dot-inner"></div>
+    </div>
+    
+    <!-- Hızlı pulsating rings -->
+    <div class="tt-pulse-ring tt-pulse-ring-1"></div>
+    <div class="tt-pulse-ring tt-pulse-ring-2"></div>
+    <div class="tt-pulse-ring tt-pulse-ring-3"></div>
+    
+    <!-- Parlaklık efekti -->
+    <div class="tt-pulse-glow"></div>
+    
+    <!-- İç halka (daha hızlı) -->
+    <div class="tt-pulse-inner-ring"></div>
+  </div>
+`;
+
+// CSS'i inline ekle
+if (!document.getElementById('tt-pulse-styles')) {
+    const style = document.createElement('style');
+    style.id = 'tt-pulse-styles';
+    style.textContent = `
+        .tt-pulse-marker {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    /* transform: translate(-20px, -20px); BU SATIRI KALDIR! */
+    pointer-events: none;
+    z-index: 1000;
+    filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
+}
+        
+        .tt-pulse-dot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1976d2, #64b5f6);
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 
+                0 0 15px rgba(25, 118, 210, 0.8),
+                0 0 30px rgba(25, 118, 210, 0.4),
+                inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            z-index: 10;
+            animation: tt-pulse-dot 2s ease-in-out infinite;
+        }
+        
+        .tt-pulse-dot-inner {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .tt-pulse-ring {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            border: 2px solid rgba(25, 118, 210, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+        }
+        
+        .tt-pulse-ring-1 {
+            width: 20px;
+            height: 20px;
+            animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        
+        .tt-pulse-ring-2 {
+            width: 20px;
+            height: 20px;
+            animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
+        }
+        
+        .tt-pulse-ring-3 {
+            width: 20px;
+            height: 20px;
+            animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
+        }
+        
+        .tt-pulse-glow {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 40px;
+            height: 40px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 1;
+            animation: tt-pulse-glow 2s ease-in-out infinite;
+        }
+        
+        .tt-pulse-inner-ring {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 30px;
+            height: 30px;
+            border: 1.5px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: tt-pulse-inner 1.5s linear infinite;
+            opacity: 0.7;
+        }
+        
+        @keyframes tt-pulse-dot {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 
+                    0 0 15px rgba(25, 118, 210, 0.8),
+                    0 0 30px rgba(25, 118, 210, 0.4);
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.1);
+                box-shadow: 
+                    0 0 25px rgba(25, 118, 210, 1),
+                    0 0 50px rgba(25, 118, 210, 0.6);
+            }
+        }
+        
+        @keyframes tt-pulse-wave {
+            0% {
+                width: 20px;
+                height: 20px;
+                opacity: 0.8;
+                border-width: 2px;
+            }
+            100% {
+                width: 80px;
+                height: 80px;
+                opacity: 0;
+                border-width: 1px;
+            }
+        }
+        
+        @keyframes tt-pulse-glow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+        
+        @keyframes tt-pulse-inner {
+            0% { 
+                transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                opacity: 0.7;
+            }
+            100% { 
+                transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
+                opacity: 0;
+            }
+        }
     `;
+    document.head.appendChild(style);
+}
 
     // 3. Harita Tipine Göre Ekleme
-    const isMapLibre = !!map.addSource; // MapLibre kontrolü
+    const isMapLibre = !!map.addSource;
 
     if (isMapLibre) {
         // --- 3D MOD (MapLibre) ---
         const el = document.createElement('div');
-        el.className = 'nearby-pulse-icon-wrapper'; // CSS class
+        el.className = 'nearby-pulse-icon-wrapper';
         el.innerHTML = pulseHtml;
         
         window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
@@ -228,13 +387,13 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
             
     } else {
         // --- 2D MOD (Leaflet) ---
-        const pulseIcon = L.divIcon({
-            html: pulseHtml,
-            className: 'nearby-pulse-icon-wrapper',
-            iconSize: [18,18],
-            iconAnchor: [9,9]
-        });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+const pulseIcon = L.divIcon({
+    html: pulseHtml,
+    className: 'nearby-pulse-icon-wrapper',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]  // Bu DOĞRU zaten
+});
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 }
 
@@ -1093,25 +1252,27 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 });
 
             // "Search wider area" butonları için event handler
-            document.querySelectorAll('.search-wider-btn').forEach(btn => {
-                btn.onclick = function() {
-                    const category = this.dataset.category;
-                    const widerRadius = 5000;   // Daha geniş alan (5km)
-                    
-                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-                    
-                    // Daha geniş alanda arama yap
-                    if (category === 'restaurants') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
-                    } else if (category === 'hotels') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
-                    } else if (category === 'markets') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
-                    } else if (category === 'entertainment') {
-                        showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
-                    }
-                };
-            });
+document.querySelectorAll('.search-wider-btn').forEach(btn => {
+    btn.onclick = function(e) {
+        e.stopPropagation(); // +++ YENİ: EVENT BUBBLING'İ DURDUR +++
+        const category = this.dataset.category;
+        const widerRadius = 5000;
+        
+        // +++ ESKİ KODU KALDIR: closeNearbyPopup çağrısını kaldır +++
+        // if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+        
+        // Daha geniş alanda arama yap
+        if (category === 'restaurants') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
+        } else if (category === 'hotels') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
+        } else if (category === 'markets') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
+        } else if (category === 'entertainment') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
+        }
+    };
+});
         }, 250);
 
 // Şehir bilgisi ve AI açıklaması
@@ -1463,12 +1624,13 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
     const isMapLibre = !!map.addSource;
+     clearAllCategoryMarkers(map);
     
-    // Kategori konfigürasyonları
+       // categoryConfig objesini güncelle (her kategoriye farklı renk)
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#ffffff',
+            color: '#FF5252', // Kırmızı
             iconUrl: '/img/restaurant_icon.svg',
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
@@ -1476,7 +1638,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'hotels': {
             apiCategories: 'accommodation',
-            color: '#ffffff',
+            color: '#2196F3', // Mavi
             iconUrl: '/img/accommodation_icon.svg',
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
@@ -1484,7 +1646,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#ffffff',
+            color: '#4CAF50', // Yeşil
             iconUrl: '/img/market_icon.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
@@ -1492,7 +1654,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
-            color: '#ffffff',
+            color: '#FF9800', // Turuncu
             iconUrl: '/img/touristic_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
@@ -1560,18 +1722,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
                         }
                     });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 
-                            'line-color': config.color, 
-                            'line-width': 4, 
-                            'line-opacity': 0.8, 
-                            'line-dasharray': [2, 2] 
-                        }
-                    });
+                   // 3D harita çizgi rengi:
+map.addLayer({
+    id: layerId,
+    type: 'line',
+    source: sourceId,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 
+        'line-color': '#4CAF50', // YEŞİL
+        'line-width': 6, 
+        'line-opacity': 0.8, 
+        'line-dasharray': [2, 2] 
+    }
+});
                     window[layer3DKey].push(layerId, sourceId);
                 }
                 
@@ -1608,13 +1771,13 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 // 2D HARİTA (Leaflet)
                 map[layerKey] = map[layerKey] || [];
                 
-                // Çizgi
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: config.color, 
-                    weight: 4, 
-                    opacity: 0.95, 
-                    dashArray: "8,8" 
-                }).addTo(map);
+                // 2D harita çizgi rengi:
+const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+    color: '#4CAF50', // YEŞİL
+    weight: 4, 
+    opacity: 0.95, 
+    dashArray: "8,8" 
+}).addTo(map);
                 map[layerKey].push(line);
                 
                 // Marker
@@ -1642,18 +1805,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 }
 
 // Yardımcı fonksiyon: Kategoriye göre marker HTML'i
+// Yardımcı fonksiyon: Kategoriye göre marker HTML'i
 function getCategoryMarkerHtml(color, iconUrl, categoryType) {
     return `
       <div class="custom-marker-outer" style="
         position:relative;
         width:32px;height:32px;
-        background:${color};
+        background:white; /* BEYAZ ARKA PLAN */
         border-radius:50%;
         display:flex;
         align-items:center;
         justify-content:center;
-        box-shadow:0 2px 8px #888;
-        border:2px solid #0bf;
+        box-shadow:0 2px 8px rgba(0,0,0,0.2);
+        border:2px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
       ">
         <img src="${iconUrl}"
              style="width:18px;height:18px;" alt="${categoryType}">
