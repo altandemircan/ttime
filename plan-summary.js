@@ -104,7 +104,7 @@ RULES:
             };
         }
     })();
-
+ 
     // İşlemi belleğe 'pending' olarak kaydet
     aiCache[cacheKey] = {
         status: 'pending',
