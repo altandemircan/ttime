@@ -1,7 +1,5 @@
 const express = require('express');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 const http = require('http');
 const router = express.Router();
 
@@ -13,30 +11,9 @@ const keepAliveAgent = new http.Agent({
     timeout: 0
 });
 
-const CACHE_FILE = path.join(__dirname, 'ai_cache_db.json');
-
-// --- BAŞLANGIÇTA VARSA ESKİ CACHE'İ YÜKLE ---
+// Artık sadece in-memory (bellek içi) çalışıyoruz. 
+// Sunucu restart edildiğinde bu veri sıfırlanır.
 let aiCache = {};
-if (fs.existsSync(CACHE_FILE)) {
-    try {
-        const rawData = fs.readFileSync(CACHE_FILE, 'utf8');
-        aiCache = JSON.parse(rawData);
-        console.log(`[AI SERVER] ${Object.keys(aiCache).length} kayıt diskten yüklendi.`);
-    } catch (e) {
-        aiCache = {};
-    }
-}
-
-// Helper: Diske Kaydet
-function saveCacheToDisk() {
-    const dataToSave = {};
-    for (const key in aiCache) {
-        if (aiCache[key].status === 'done') {
-            dataToSave[key] = aiCache[key];
-        }
-    }
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(dataToSave, null, 2));
-}
 
 // --- ENDPOINT ---
 router.post('/', async (req, res) => {
@@ -46,40 +23,32 @@ router.post('/', async (req, res) => {
         return;
     }
 
-    console.log(`[AI PLAN-REQ] city="${city}" country="${country}"`);
-
     const cacheKey = country ? `${city}-${country}` : city;
-    console.log(`[AI REQ] ${cacheKey}`);
+    console.log(`[AI PLAN-REQ] key="${cacheKey}"`);
 
-    // --- CACHE DOSYASINI TEKRAR OKU + TEMİZLE ---
-    let cleanedCache = {};
-    if (fs.existsSync(CACHE_FILE)) {
+    // --- MEVCUT BELLEK KONTROLÜ ---
+    // Eğer aynı şehir için işlem bitmişse direkt döndür
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'done') {
+        console.log(`[AI CACHE-HIT] ${cacheKey}`);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        return res.json(aiCache[cacheKey].data);
+    }
+
+    // Eğer şu an işleniyorsa (pending), o işlemin bitmesini bekle
+    if (aiCache[cacheKey] && aiCache[cacheKey].status === 'pending') {
+        console.log(`[AI PENDING-WAIT] ${cacheKey}`);
         try {
-            cleanedCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
-            let cleanedCount = 0;
-
-            for (const key in cleanedCache) {
-                if (cleanedCache[key]?.data?.summary === "Info unavailable.") {
-                    delete cleanedCache[key];
-                    cleanedCount++;
-                }
-            }
-
-            if (cleanedCount > 0) {
-                console.log(`[AI SERVER] ${cleanedCount} bozuk cache kaydı temizlendi.`);
-                fs.writeFileSync(CACHE_FILE, JSON.stringify(cleanedCache, null, 2));
-            }
-
-            aiCache = cleanedCache;
-
-        } catch (e) {
-            console.error('[AI SERVER] Cache bozuk, siliniyor:', e.message);
-            aiCache = {};
-            try { fs.unlinkSync(CACHE_FILE); } catch {}
+            const result = await aiCache[cacheKey].promise;
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            return res.json(result);
+        } catch (err) {
+            return res.status(500).json({ error: 'AI Error during pending' });
         }
     }
 
-    // --- YENİ İŞLEM ---
+    // --- YENİ İŞLEM BAŞLAT ---
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
         const activeModel = "llama3:8b";
@@ -96,11 +65,7 @@ RULES:
 { "summary": "...", "tip": "...", "highlight": "..." }
 `.trim();
 
-        console.log('[AI] Prompt:', prompt);
-
         try {
-            console.log('[AI] Ollama /api/generate çağrısı yapılıyor...');
-
             const response = await axios({
                 method: 'post',
                 url: 'http://127.0.0.1:11434/api/generate',
@@ -116,34 +81,22 @@ RULES:
                         max_tokens: 200
                     }
                 },
-                timeout: 0 // ❗ ASLA TIMEOUT OLMAZ
+                timeout: 0 
             });
 
-            console.log('[AI] Ollama response status:', response.status);
-
             let jsonText = response.data?.response || '';
-
-            if (!jsonText) {
-                console.log('[AI] Response boş:', response.data);
-                throw new Error('Empty AI response');
-            }
+            if (!jsonText) throw new Error('Empty AI response');
 
             try {
-                const parsed = JSON.parse(jsonText);
-                console.log('[AI] JSON parse başarılı');
-                return parsed;
+                return JSON.parse(jsonText);
             } catch (err) {
-                console.error('[AI] JSON parse hatası:', err.message);
                 const match = jsonText.match(/\{[\s\S]*\}/);
-                if (match) {
-                    return JSON.parse(match[0]);
-                }
+                if (match) return JSON.parse(match[0]);
                 throw err;
             }
 
         } catch (err) {
             console.error("LLM Error:", err.message);
-            console.error("LLM Error details:", err.response?.data || 'No response data');
             return {
                 summary: "Info unavailable.",
                 tip: "Info unavailable.",
@@ -152,26 +105,23 @@ RULES:
         }
     })();
 
-    // --- PENDING ---
+    // İşlemi belleğe 'pending' olarak kaydet
     aiCache[cacheKey] = {
         status: 'pending',
         promise: processingPromise
     };
 
-    // --- BEKLE ---
     try {
         const result = await processingPromise;
 
+        // İşlem bittiğinde belleği güncelle
         aiCache[cacheKey] = {
             status: 'done',
             data: result
         };
 
-        saveCacheToDisk();
-
         console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
-        console.log(`[AI PLAN-RESP for city=${city}]`, result);
-
+        
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json(result);
