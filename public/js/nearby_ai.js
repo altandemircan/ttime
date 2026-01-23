@@ -1730,8 +1730,8 @@ map.addLayer({
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 
         'line-color': '#4CAF50', // YEŞİL
-        'line-width': 9, 
-        'line-opacity': 1, 
+        'line-width': 6, 
+        'line-opacity': 0.8, 
         'line-dasharray': [2, 2] 
     }
 });
