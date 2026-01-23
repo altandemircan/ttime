@@ -961,7 +961,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600; font-size: 13px; color: #333; 
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                                             margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
                                     ${name}
                                 </div>
