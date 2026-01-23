@@ -961,7 +961,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600; font-size: 13px; color: #333; 
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                                             margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
                                     ${name}
                                 </div>
@@ -1075,22 +1075,22 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
 
             document.querySelectorAll('.show-category-btn').forEach(btn => {
-                btn.onclick = function() {
-                    const category = this.dataset.category;
-                    
-                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-                    
-                    if (category === 'restaurants') {
-                        showNearbyRestaurants(lat, lng, map, day);
-                    } else if (category === 'hotels') {
-                        showNearbyHotels(lat, lng, map, day);
-                    } else if (category === 'markets') {
-                        showNearbyMarkets(lat, lng, map, day);
-                    } else if (category === 'entertainment') {
-                        showNearbyEntertainment(lat, lng, map, day);
-                    }
-                };
-            });
+    btn.onclick = function() {
+        const category = this.dataset.category;
+        
+        // closeNearbyPopup kaldırıldı! Sidebar kapanmayacak
+
+        if (category === 'restaurants') {
+            showNearbyRestaurants(lat, lng, map, day);
+        } else if (category === 'hotels') {
+            showNearbyHotels(lat, lng, map, day);
+        } else if (category === 'markets') {
+            showNearbyMarkets(lat, lng, map, day);
+        } else if (category === 'entertainment') {
+            showNearbyEntertainment(lat, lng, map, day);
+        }
+    };
+});
 
             // "Search wider area" butonları için event handler
             document.querySelectorAll('.search-wider-btn').forEach(btn => {
@@ -1468,32 +1468,32 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#1976d2',
-            iconUrl: 'https://www.svgrepo.com/show/327200/restaurant-sharp.svg',
+            color: '#ffffff',
+            iconUrl: '/img/restaurant_icon.svg',
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
             layerPrefix: 'restaurant'
         },
         'hotels': {
             apiCategories: 'accommodation',
-            color: '#1976d2',
-            iconUrl: 'https://www.svgrepo.com/show/327200/hotel.svg',
+            color: '#ffffff',
+            iconUrl: '/img/accommodation_icon.svg',
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
             layerPrefix: 'hotel'
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#1976d2',
-            iconUrl: 'https://www.svgrepo.com/show/327200/shopping-cart.svg',
+            color: '#ffffff',
+            iconUrl: '/img/market_icon.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
             layerPrefix: 'market'
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
-            color: '#1976d2',
-            iconUrl: 'https://www.svgrepo.com/show/327200/theater.svg',
+            color: '#ffffff',
+            iconUrl: '/img/touristic_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
             layerPrefix: 'entertainment'
@@ -1585,6 +1585,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const popup = new maplibregl.Popup({ 
                     offset: 25, 
                     maxWidth: '360px',
+
                     closeButton: true,
                     className: 'tt-unified-popup'
                 }).setHTML(popupContent);
@@ -1652,10 +1653,10 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         align-items:center;
         justify-content:center;
         box-shadow:0 2px 8px #888;
-        border:2px solid #fff;
+        border:2px solid #0bf;
       ">
         <img src="${iconUrl}"
-             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="${categoryType}">
+             style="width:18px;height:18px;" alt="${categoryType}">
       </div>
     `;
 }
@@ -1693,7 +1694,7 @@ function getFastPlacePopupHTML(f, imgId, day, config) {
         <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <button class="add-point-to-cart-btn"
             onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon}, '${config.layerPrefix}')"
-            style="width: 32px; height: 32px; background: ${config.color}; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            style="width: 32px; height: 32px; background: #9159ed; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
             +
           </button>
         </div>
