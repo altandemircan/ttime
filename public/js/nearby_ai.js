@@ -1585,6 +1585,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const popup = new maplibregl.Popup({ 
                     offset: 25, 
                     maxWidth: '360px',
+                    
                     closeButton: true,
                     className: 'tt-unified-popup'
                 }).setHTML(popupContent);
@@ -1642,11 +1643,13 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
 // Yardımcı fonksiyon: Kategoriye göre marker HTML'i
 function getCategoryMarkerHtml(color, iconUrl, categoryType) {
+    // Entertainment için zorunlu beyaz arka plan
+    const bgColor = categoryType === "entertainment" ? "#fff" : color;
     return `
       <div class="custom-marker-outer" style="
         position:relative;
         width:32px;height:32px;
-        background:${color};
+        background:${bgColor};
         border-radius:50%;
         display:flex;
         align-items:center;
