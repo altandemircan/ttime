@@ -1493,7 +1493,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'entertainment': {
             apiCategories: 'entertainment,leisure',
             color: '#1976d2',
-            iconUrl: '/img/entertainment_icon.svg',
+            iconUrl: '/img/touristic_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
             layerPrefix: 'entertainment'
@@ -1585,7 +1585,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const popup = new maplibregl.Popup({ 
                     offset: 25, 
                     maxWidth: '360px',
-                    
+
                     closeButton: true,
                     className: 'tt-unified-popup'
                 }).setHTML(popupContent);
@@ -1658,7 +1658,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         border:2px solid #fff;
       ">
         <img src="${iconUrl}"
-             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="${categoryType}">
+             style="width:18px;height:18px;" alt="${categoryType}">
       </div>
     `;
 }
