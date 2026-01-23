@@ -1656,7 +1656,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         border:2px solid #fff;
       ">
         <img src="${iconUrl}"
-             style="width:18px;height:18px;filter:invert(1) brightness(2);" alt="${categoryType}">
+             style="width:18px;height:18px;" alt="${categoryType}">
       </div>
     `;
 }
