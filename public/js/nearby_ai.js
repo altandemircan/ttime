@@ -1469,7 +1469,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
             color: '#ffffff',
-            iconUrl: 'https://www.svgrepo.com/show/327200/restaurant-sharp.svg',
+            iconUrl: '/img/restaurant_icon.svg',
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
             layerPrefix: 'restaurant'
@@ -1477,7 +1477,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'hotels': {
             apiCategories: 'accommodation',
             color: '#ffffff',
-            iconUrl: 'https://www.svgrepo.com/show/327200/hotel.svg',
+            iconUrl: '/img/accommodation_icon.svg',
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
             layerPrefix: 'hotel'
@@ -1485,7 +1485,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
             color: '#fffffff',
-            iconUrl: 'https://www.svgrepo.com/show/327200/shopping-cart.svg',
+            iconUrl: '/img/market_icon.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
             layerPrefix: 'market'
