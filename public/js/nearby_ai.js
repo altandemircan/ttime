@@ -1773,96 +1773,17 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 }
 
 
-// showNearbyPlacesByCategory fonksiyonu (tam güncel)
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
     const isMapLibre = !!map.addSource;
     
     // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
     clearAllCategoryMarkers(map);
     
-    // +++ BU KATEGORİ İÇİN RADIUS DAIRE EKLE +++
-    const radiusMeters = 1000; // Show more için 1000 metre
-    
-    // Önceki daireyi temizle
-    if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(_) {}
-        window._categoryRadiusCircle = null;
-    }
-    if (window._categoryRadiusCircle3D) {
-        try {
-            const circleId = window._categoryRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(_) {}
-        window._categoryRadiusCircle3D = null;
-    }
-    
-    // Kategoriye göre renk
-    const categoryColors = {
-        'restaurants': '#FF5252', // Kırmızı
-        'hotels': '#2196F3',      // Mavi
-        'markets': '#4CAF50',     // Yeşil
-        'entertainment': '#FF9800' // Turuncu
-    };
-    
-    const circleColor = categoryColors[categoryType] || '#1976d2';
-    
-    // Daire ekle
-    if (isMapLibre) {
-        // 3D MapLibre için
-        const circleId = `category-radius-${categoryType}-${Date.now()}`;
-        const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-        
-        map.addSource(circleId, {
-            type: 'geojson',
-            data: circleGeoJSON
-        });
-        
-        map.addLayer({
-            id: circleId + '-layer',
-            type: 'fill',
-            source: circleId,
-            paint: {
-                'fill-color': circleColor,
-                'fill-opacity': 0.15,
-                'fill-outline-color': circleColor
-            }
-        });
-        
-        map.addLayer({
-            id: circleId + '-stroke',
-            type: 'line',
-            source: circleId,
-            paint: {
-                'line-color': circleColor,
-                'line-width': 2,
-                'line-opacity': 0.4,
-                'line-dasharray': [4, 4]
-            }
-        });
-        
-        window._categoryRadiusCircle3D = circleId;
-        
-    } else {
-        // 2D Leaflet için
-        window._categoryRadiusCircle = L.circle([lat, lng], {
-            radius: radiusMeters,
-            color: circleColor,
-            weight: 2,
-            opacity: 0.4,
-            fillColor: circleColor,
-            fillOpacity: 0.15,
-            dashArray: '8, 8',
-            className: `category-radius-circle ${categoryType}`
-        }).addTo(map);
-    }
-    
     // Kategori konfigürasyonları
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#FF5252', // Kırmızı
+            color: '#FF5252',
             iconUrl: '/img/restaurant_icon.svg',
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
@@ -1870,7 +1791,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'hotels': {
             apiCategories: 'accommodation',
-            color: '#2196F3', // Mavi
+            color: '#2196F3',
             iconUrl: '/img/accommodation_icon.svg',
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
@@ -1878,7 +1799,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#4CAF50', // Yeşil
+            color: '#4CAF50',
             iconUrl: '/img/market_icon.svg',
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
@@ -1886,7 +1807,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
-            color: '#FF9800', // Turuncu
+            color: '#FF9800',
             iconUrl: '/img/touristic_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
@@ -1919,8 +1840,23 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window[marker3DKey] = [];
     }
     
+    // +++ ÖNCEKİ DAIRELERİ TEMİZLE +++
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(_) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(_) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
     // API'den veri çek
-    const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=1000&limit=20`;
+    const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=5000&limit=30`; // Daha geniş radius
     
     try {
         const resp = await fetch(url);
@@ -1928,21 +1864,113 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         if (!data.features || data.features.length === 0) {
             alert(`No ${categoryType} found nearby.`);
-            
-            // Daireyi de sil (çünkü sonuç yok)
-            if (window._categoryRadiusCircle) {
-                try { window._categoryRadiusCircle.remove(); } catch(_) {}
-                window._categoryRadiusCircle = null;
-            }
             return;
         }
+        
+        // +++ EN UZAK MESAFEYİ BUL +++
+        let maxDistance = 0;
+        const placesWithDistance = [];
         
         data.features.forEach((f, idx) => {
             const pLng = f.properties.lon;
             const pLat = f.properties.lat;
+            
+            // Mesafeyi hesapla
+            const distance = haversine(lat, lng, pLat, pLng);
+            placesWithDistance.push({
+                feature: f,
+                distance: distance,
+                index: idx
+            });
+            
+            // En uzak mesafeyi güncelle
+            if (distance > maxDistance) {
+                maxDistance = distance;
+            }
+        });
+        
+        // Sırala (en yakından en uzağa)
+        placesWithDistance.sort((a, b) => a.distance - b.distance);
+        
+        // İlk 20 yeri al
+        const topPlaces = placesWithDistance.slice(0, 20);
+        
+        console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
+        
+        // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
+        if (maxDistance > 0) {
+            const circleColor = config.color;
+            const radiusMeters = Math.ceil(maxDistance); // En uzak item kadar
+            
+            if (isMapLibre) {
+                // 3D MapLibre için
+                const circleId = `category-radius-${categoryType}-${Date.now()}`;
+                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+                
+                map.addSource(circleId, {
+                    type: 'geojson',
+                    data: circleGeoJSON
+                });
+                
+                map.addLayer({
+                    id: circleId + '-layer',
+                    type: 'fill',
+                    source: circleId,
+                    paint: {
+                        'fill-color': circleColor,
+                        'fill-opacity': 0.15,
+                        'fill-outline-color': circleColor
+                    }
+                });
+                
+                map.addLayer({
+                    id: circleId + '-stroke',
+                    type: 'line',
+                    source: circleId,
+                    paint: {
+                        'line-color': circleColor,
+                        'line-width': 2,
+                        'line-opacity': 0.4,
+                        'line-dasharray': [4, 4]
+                    }
+                });
+                
+                window._categoryRadiusCircle3D = circleId;
+                
+            } else {
+                // 2D Leaflet için
+                window._categoryRadiusCircle = L.circle([lat, lng], {
+                    radius: radiusMeters,
+                    color: circleColor,
+                    weight: 2,
+                    opacity: 0.4,
+                    fillColor: circleColor,
+                    fillOpacity: 0.15,
+                    dashArray: '8, 8',
+                    className: `category-radius-circle ${categoryType}`
+                }).addTo(map);
+                
+                // Daireye tooltip ekle (mesafeyi göster)
+                window._categoryRadiusCircle.bindTooltip(
+                    `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
+                    { 
+                        permanent: false, 
+                        direction: 'center',
+                        className: 'radius-tooltip'
+                    }
+                );
+            }
+        }
+        
+        // +++ MARKERLARI EKLE +++
+        topPlaces.forEach((placeData, idx) => {
+            const f = placeData.feature;
+            const distance = placeData.distance;
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
             const imgId = `${config.layerPrefix}-img-${idx}-${Date.now()}`;
             
-            let popupContent = getFastPlacePopupHTML(f, imgId, day, config);
+            let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance);
             
             if (isMapLibre) {
                 // 3D HARİTA (MapLibre)
@@ -1966,10 +1994,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                         source: sourceId,
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 
-                            'line-color': '#4CAF50', // YEŞİL
-                            'line-width': 8,  // KALIN
-                            'line-opacity': 0.9,  // Biraz daha opak
-                            'line-dasharray': [4, 4]  // Kesikleri de biraz büyüt
+                            'line-color': '#4CAF50',
+                            'line-width': 8,
+                            'line-opacity': 0.9,
+                            'line-dasharray': [4, 4]
                         }
                     });
                     window[layer3DKey].push(layerId, sourceId);
@@ -1977,7 +2005,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 
                 // Marker ekle
                 const el = document.createElement('div');
-                el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType);
+                el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance);
                 el.className = 'custom-3d-marker-element';
                 el.style.cursor = 'pointer';
                 el.style.zIndex = '2000';
@@ -2009,17 +2037,17 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 
                 // Çizgi
                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: '#4CAF50', // YEŞİL
-                    weight: 8,  // KALIN
+                    color: '#4CAF50',
+                    weight: 8,
                     opacity: 0.95, 
-                    dashArray: "10,6"  // Kesikleri de biraz büyüt
+                    dashArray: "10,6"
                 }).addTo(map);
                 map[layerKey].push(line);
                 
-                // Marker
+                // Marker (mesafe bilgisi ile)
                 const marker = L.marker([pLat, pLng], {
                     icon: L.divIcon({ 
-                        html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType), 
+                        html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), 
                         className: "", 
                         iconSize: [32,32], 
                         iconAnchor: [16,16] 
@@ -2046,28 +2074,36 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     }
 }
 
-// Yardımcı fonksiyon: Kategoriye göre marker HTML'i (güncellenmiş)
-function getCategoryMarkerHtml(color, iconUrl, categoryType) {
+// Yardımcı fonksiyon: Marker HTML'i (mesafe bilgisi ile)
+function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
+    const distanceText = distance ? 
+        `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); font-size:9px; color:${color}; font-weight:bold; white-space:nowrap;">
+            ${distance < 1000 ? Math.round(distance)+'m' : (distance/1000).toFixed(1)+'km'}
+        </div>` : '';
+    
     return `
-      <div class="custom-marker-outer" style="
-        position:relative;
-        width:32px;height:32px;
-        background:white; /* BEYAZ ARKA PLAN */
-        border-radius:50%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        box-shadow:0 2px 8px rgba(0,0,0,0.2);
-        border:3px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
-      ">
-        <img src="${iconUrl}"
-             style="width:18px;height:18px;" alt="${categoryType}">
+      <div style="position:relative;">
+        <div class="custom-marker-outer" style="
+            position:relative;
+            width:32px;height:32px;
+            background:white;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);
+            border:3px solid ${color};
+        ">
+            <img src="${iconUrl}"
+                 style="width:18px;height:18px;" alt="${categoryType}">
+        </div>
+        ${distanceText}
       </div>
     `;
 }
 
-// Yardımcı fonksiyon: Popup HTML'i
-function getFastPlacePopupHTML(f, imgId, day, config) {
+// Yardımcı fonksiyon: Popup HTML'i (mesafe bilgisi ile)
+function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
@@ -2075,6 +2111,11 @@ function getFastPlacePopupHTML(f, imgId, day, config) {
     
     const safeName = name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
     const safeAddress = address.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    
+    const distanceText = distance ? 
+        `<div style="font-size:11px; color:#666; margin-bottom:4px;">
+            📏 ${distance < 1000 ? Math.round(distance)+' meters' : (distance/1000).toFixed(2)+' km'} away
+        </div>` : '';
     
     return `
       <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 0px;">
@@ -2086,6 +2127,7 @@ function getFastPlacePopupHTML(f, imgId, day, config) {
           <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
             <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
           </div>
+          ${distanceText}
           <div class="point-address" style="display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
