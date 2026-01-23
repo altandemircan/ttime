@@ -5197,7 +5197,7 @@ if (aiInfoSection) {
             pdfBtn.className = 'add-to-calendar-btn'; // Select Dates ile aynı stil
             pdfBtn.textContent = 'Download Offline Plan (PDF)';
             // Görsel ayarlar
-            pdfBtn.style.backgroundColor = '#ff6767'; // renk
+            pdfBtn.style.backgroundColor = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)'; // renk
             pdfBtn.style.color = '#fff';
 
             pdfBtn.onclick = function () {
