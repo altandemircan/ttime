@@ -204,9 +204,8 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker3D = null;
     }
 
-    // 2. Marker HTML
-    const pulseHtml = `
-      <div class="nearby-pulse-marker">
+     const pulseHtml = `
+      <div class="nearby-pulse-root">
         <div class="nearby-pulse-core"></div>
         <div class="nearby-pulse-ring"></div>
         <div class="nearby-pulse-ring2"></div>
@@ -214,12 +213,12 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     `;
 
     // 3. Harita Tipine Göre Ekleme
-    const isMapLibre = !!map.addSource; // MapLibre kontrolü
+    const isMapLibre = !!map.addSource;
 
     if (isMapLibre) {
         // --- 3D MOD (MapLibre) ---
         const el = document.createElement('div');
-        el.className = 'nearby-pulse-icon-wrapper'; // CSS class
+        el.className = 'nearby-pulse-icon-wrapper';
         el.innerHTML = pulseHtml;
         
         window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
@@ -231,10 +230,10 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         const pulseIcon = L.divIcon({
             html: pulseHtml,
             className: 'nearby-pulse-icon-wrapper',
-            iconSize: [18,18],
-            iconAnchor: [9,9]
+            iconSize: [28, 28],  // Yeni boyut
+            iconAnchor: [14, 14]  // Yeni anchor
         });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive:false }).addTo(map);
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 }
 
