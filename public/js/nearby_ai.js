@@ -391,7 +391,7 @@ const pulseIcon = L.divIcon({
     html: pulseHtml,
     className: 'nearby-pulse-icon-wrapper',
     iconSize: [40, 40],
-    iconAnchor: [0, 0]  // CSS'deki translate'e güven
+    iconAnchor: [20, 20]  // Bu DOĞRU zaten
 });
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
