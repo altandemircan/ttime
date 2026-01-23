@@ -191,78 +191,78 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
     
-    // --- RADIUS DAIRE EKLEME ---
-    // Önce varsa eski daireyi temizle
-    if (window._nearbyRadiusCircle) {
-        try { window._nearbyRadiusCircle.remove(); } catch(_) {}
-        window._nearbyRadiusCircle = null;
-    }
-    if (window._nearbyRadiusCircle3D) {
-        try { 
-            const circleId = window._nearbyRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(_) {}
-        window._nearbyRadiusCircle3D = null;
-    }
+//     // --- RADIUS DAIRE EKLEME ---
+//     // Önce varsa eski daireyi temizle
+//     if (window._nearbyRadiusCircle) {
+//         try { window._nearbyRadiusCircle.remove(); } catch(_) {}
+//         window._nearbyRadiusCircle = null;
+//     }
+//     if (window._nearbyRadiusCircle3D) {
+//         try { 
+//             const circleId = window._nearbyRadiusCircle3D;
+//             if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+//             if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+//             if (map.getSource(circleId)) map.removeSource(circleId);
+//         } catch(_) {}
+//         window._nearbyRadiusCircle3D = null;
+//     }
     
-    // 500 metre radius için daire (varsayılan nearby radius)
-    const radiusMeters = 500;
+//     // 500 metre radius için daire (varsayılan nearby radius)
+//     const radiusMeters = 500;
     
-    // Harita tipini kontrol et
-    const isMapLibre = !!map.addSource;
+//     // Harita tipini kontrol et
+//     const isMapLibre = !!map.addSource;
     
-    // 3D MapLibre için
-    if (isMapLibre) {
-        const circleId = 'nearby-radius-circle-3d-' + Date.now();
+//     // 3D MapLibre için
+//     if (isMapLibre) {
+//         const circleId = 'nearby-radius-circle-3d-' + Date.now();
         
-        // Circle source ve layer ekle
-        const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+//         // Circle source ve layer ekle
+//         const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
         
-        map.addSource(circleId, {
-            type: 'geojson',
-            data: circleGeoJSON
-        });
+//         map.addSource(circleId, {
+//             type: 'geojson',
+//             data: circleGeoJSON
+//         });
         
-        map.addLayer({
-    id: circleId + '-layer',
-    type: 'fill',
-    source: circleId,
-    paint: {
-        'fill-color': '#1976d2',
-        'fill-opacity': 0.2,      // ↑ 0.08'den 0.2'ye
-        'fill-outline-color': '#1976d2'
-    }
-});
+//         map.addLayer({
+//     id: circleId + '-layer',
+//     type: 'fill',
+//     source: circleId,
+//     paint: {
+//         'fill-color': '#1976d2',
+//         'fill-opacity': 0.2,      // ↑ 0.08'den 0.2'ye
+//         'fill-outline-color': '#1976d2'
+//     }
+// });
 
         
-     map.addLayer({
-    id: circleId + '-stroke',
-    type: 'line',
-    source: circleId,
-    paint: {
-        'line-color': '#1976d2',
-        'line-width': 2,          // ↑ 1.5'ten 2'ye
-        'line-opacity': 0.6,      // ↑ 0.25'ten 0.6'ya
-        'line-dasharray': [3, 3]
-    }
-});
+//      map.addLayer({
+//     id: circleId + '-stroke',
+//     type: 'line',
+//     source: circleId,
+//     paint: {
+//         'line-color': '#1976d2',
+//         'line-width': 2,          // ↑ 1.5'ten 2'ye
+//         'line-opacity': 0.6,      // ↑ 0.25'ten 0.6'ya
+//         'line-dasharray': [3, 3]
+//     }
+// });
         
-        window._nearbyRadiusCircle3D = circleId;
+//         window._nearbyRadiusCircle3D = circleId;
         
-    } else {
-        // 2D Leaflet için
-        window._nearbyRadiusCircle = L.circle([lat, lng], {
-    radius: radiusMeters,
-    color: '#1976d2',
-    weight: 2,           // ↑ 1.5'ten 2'ye
-    opacity: 0.6,        // ↑ 0.25'ten 0.6'ya
-    fillColor: '#1976d2',
-    fillOpacity: 0.2,    // ↑ 0.08'den 0.2'ye
-    dashArray: '5, 5',
-    className: 'nearby-radius-circle'
-}).addTo(map);
+//     } else {
+//         // 2D Leaflet için
+//         window._nearbyRadiusCircle = L.circle([lat, lng], {
+//     radius: radiusMeters,
+//     color: '#1976d2',
+//     weight: 2,           // ↑ 1.5'ten 2'ye
+//     opacity: 0.6,        // ↑ 0.25'ten 0.6'ya
+//     fillColor: '#1976d2',
+//     fillOpacity: 0.2,    // ↑ 0.08'den 0.2'ye
+//     dashArray: '5, 5',
+//     className: 'nearby-radius-circle'
+// }).addTo(map);
 
     }
     
