@@ -1658,7 +1658,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         align-items:center;
         justify-content:center;
         box-shadow:0 2px 8px rgba(0,0,0,0.2);
-        border:3px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
+        border:2px solid ${color}; /* BORDER RENGİ KATEGORİ RENGİ */
       ">
         <img src="${iconUrl}"
              style="width:18px;height:18px;" alt="${categoryType}">
