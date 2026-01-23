@@ -1493,7 +1493,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'entertainment': {
             apiCategories: 'entertainment,leisure',
             color: '#1976d2',
-            iconUrl: 'https://www.svgrepo.com/show/327200/theater.svg',
+            iconUrl: '/img/entertainment_icon.svg',
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
             layerPrefix: 'entertainment'
