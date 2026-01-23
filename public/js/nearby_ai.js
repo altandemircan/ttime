@@ -175,7 +175,6 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
 };
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 
-// Custom popup sistemi - Hem 2D hem 3D uyumlu
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
@@ -192,6 +191,80 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
     
+    // --- RADIUS DAIRE EKLEME ---
+    // Önce varsa eski daireyi temizle
+    if (window._nearbyRadiusCircle) {
+        try { window._nearbyRadiusCircle.remove(); } catch(_) {}
+        window._nearbyRadiusCircle = null;
+    }
+    if (window._nearbyRadiusCircle3D) {
+        try { 
+            const circleId = window._nearbyRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(_) {}
+        window._nearbyRadiusCircle3D = null;
+    }
+    
+    // 500 metre radius için daire (varsayılan nearby radius)
+    const radiusMeters = 500;
+    
+    // Harita tipini kontrol et
+    const isMapLibre = !!map.addSource;
+    
+    // 3D MapLibre için
+    if (isMapLibre) {
+        const circleId = 'nearby-radius-circle-3d-' + Date.now();
+        
+        // Circle source ve layer ekle
+        const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+        
+        map.addSource(circleId, {
+            type: 'geojson',
+            data: circleGeoJSON
+        });
+        
+        map.addLayer({
+            id: circleId + '-layer',
+            type: 'fill',
+            source: circleId,
+            paint: {
+                'fill-color': '#1976d2',
+                'fill-opacity': 0.08,
+                'fill-outline-color': '#1976d2'
+            }
+        });
+        
+        // Stroke layer (dış çizgi)
+        map.addLayer({
+            id: circleId + '-stroke',
+            type: 'line',
+            source: circleId,
+            paint: {
+                'line-color': '#1976d2',
+                'line-width': 1.5,
+                'line-opacity': 0.25,
+                'line-dasharray': [3, 3]
+            }
+        });
+        
+        window._nearbyRadiusCircle3D = circleId;
+        
+    } else {
+        // 2D Leaflet için
+        window._nearbyRadiusCircle = L.circle([lat, lng], {
+            radius: radiusMeters,
+            color: '#1976d2',
+            weight: 1.5,
+            opacity: 0.25,
+            fillColor: '#1976d2',
+            fillOpacity: 0.08,
+            dashArray: '5, 5',
+            className: 'nearby-radius-circle'
+        }).addTo(map);
+    }
+    
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
     
     // 1. Temizlik
@@ -204,302 +277,361 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker3D = null;
     }
 
-// 2. YENİ VE ÇARPIÇI PULSE MARKER HTML
-const pulseHtml = `
-  <div class="tt-pulse-marker">
-    <!-- Ana dot (daha büyük ve parlaktır) -->
-    <div class="tt-pulse-dot">
-      <div class="tt-pulse-dot-inner"></div>
-    </div>
-    
-    <!-- Hızlı pulsating rings -->
-    <div class="tt-pulse-ring tt-pulse-ring-1"></div>
-    <div class="tt-pulse-ring tt-pulse-ring-2"></div>
-    <div class="tt-pulse-ring tt-pulse-ring-3"></div>
-    
-    <!-- Parlaklık efekti -->
-    <div class="tt-pulse-glow"></div>
-    
-    <!-- İç halka (daha hızlı) -->
-    <div class="tt-pulse-inner-ring"></div>
-  </div>
-`;
+    // 2. YENİ VE ÇARPIÇI PULSE MARKER HTML
+    const pulseHtml = `
+      <div class="tt-pulse-marker">
+        <!-- Ana dot (daha büyük ve parlaktır) -->
+        <div class="tt-pulse-dot">
+          <div class="tt-pulse-dot-inner"></div>
+        </div>
+        
+        <!-- Hızlı pulsating rings -->
+        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
+        
+        <!-- Parlaklık efekti -->
+        <div class="tt-pulse-glow"></div>
+        
+        <!-- İç halka (daha hızlı) -->
+        <div class="tt-pulse-inner-ring"></div>
+      </div>
+    `;
 
-// CSS'i inline ekle
-if (!document.getElementById('tt-pulse-styles')) {
-    const style = document.createElement('style');
-    style.id = 'tt-pulse-styles';
-    style.textContent = `
-        .tt-pulse-marker {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    /* transform: translate(-20px, -20px); BU SATIRI KALDIR! */
-    pointer-events: none;
-    z-index: 1000;
-    filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
-}
-        
-        .tt-pulse-dot {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 20px;
-            height: 20px;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #1976d2, #64b5f6);
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 
-                0 0 15px rgba(25, 118, 210, 0.8),
-                0 0 30px rgba(25, 118, 210, 0.4),
-                inset 0 2px 4px rgba(255, 255, 255, 0.5);
-            z-index: 10;
-            animation: tt-pulse-dot 2s ease-in-out infinite;
-        }
-        
-        .tt-pulse-dot-inner {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            background: white;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .tt-pulse-ring {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            border: 2px solid rgba(25, 118, 210, 0.8);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-        }
-        
-        .tt-pulse-ring-1 {
-            width: 20px;
-            height: 20px;
-            animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-        
-        .tt-pulse-ring-2 {
-            width: 20px;
-            height: 20px;
-            animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
-        }
-        
-        .tt-pulse-ring-3 {
-            width: 20px;
-            height: 20px;
-            animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
-        }
-        
-        .tt-pulse-glow {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 40px;
-            height: 40px;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
-            border-radius: 50%;
-            z-index: 1;
-            animation: tt-pulse-glow 2s ease-in-out infinite;
-        }
-        
-        .tt-pulse-inner-ring {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 30px;
-            height: 30px;
-            border: 1.5px solid rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            animation: tt-pulse-inner 1.5s linear infinite;
-            opacity: 0.7;
-        }
-        
-        @keyframes tt-pulse-dot {
-            0%, 100% { 
-                transform: translate(-50%, -50%) scale(1);
-                box-shadow: 
-                    0 0 15px rgba(25, 118, 210, 0.8),
-                    0 0 30px rgba(25, 118, 210, 0.4);
+    // CSS'i inline ekle (eğer henüz eklenmemişse)
+    if (!document.getElementById('tt-pulse-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tt-pulse-styles';
+        style.textContent = `
+            .tt-pulse-marker {
+                position: relative;
+                width: 40px;
+                height: 40px;
+                pointer-events: none;
+                z-index: 1000;
+                filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
             }
-            50% { 
-                transform: translate(-50%, -50%) scale(1.1);
-                box-shadow: 
-                    0 0 25px rgba(25, 118, 210, 1),
-                    0 0 50px rgba(25, 118, 210, 0.6);
-            }
-        }
-        
-        @keyframes tt-pulse-wave {
-            0% {
+            
+            .tt-pulse-dot {
+                position: absolute;
+                left: 50%;
+                top: 50%;
                 width: 20px;
                 height: 20px;
-                opacity: 0.8;
-                border-width: 2px;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #1976d2, #64b5f6);
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 
+                    0 0 15px rgba(25, 118, 210, 0.8),
+                    0 0 30px rgba(25, 118, 210, 0.4),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+                z-index: 10;
+                animation: tt-pulse-dot 2s ease-in-out infinite;
             }
-            100% {
-                width: 80px;
-                height: 80px;
+            
+            .tt-pulse-dot-inner {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                background: white;
+                border-radius: 50%;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            
+            .tt-pulse-ring {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                border: 2px solid rgba(25, 118, 210, 0.8);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
                 opacity: 0;
-                border-width: 1px;
             }
-        }
-        
-        @keyframes tt-pulse-glow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 0.8; }
-        }
-        
-        @keyframes tt-pulse-inner {
-            0% { 
-                transform: translate(-50%, -50%) rotate(0deg) scale(1);
+            
+            .tt-pulse-ring-1 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            }
+            
+            .tt-pulse-ring-2 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
+            }
+            
+            .tt-pulse-ring-3 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
+            }
+            
+            .tt-pulse-glow {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 40px;
+                height: 40px;
+                transform: translate(-50%, -50%);
+                background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
+                border-radius: 50%;
+                z-index: 1;
+                animation: tt-pulse-glow 2s ease-in-out infinite;
+            }
+            
+            .tt-pulse-inner-ring {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 30px;
+                height: 30px;
+                border: 1.5px solid rgba(255, 255, 255, 0.9);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                animation: tt-pulse-inner 1.5s linear infinite;
                 opacity: 0.7;
             }
-            100% { 
-                transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
-                opacity: 0;
+            
+            @keyframes tt-pulse-dot {
+                0%, 100% { 
+                    transform: translate(-50%, -50%) scale(1);
+                    box-shadow: 
+                        0 0 15px rgba(25, 118, 210, 0.8),
+                        0 0 30px rgba(25, 118, 210, 0.4);
+                }
+                50% { 
+                    transform: translate(-50%, -50%) scale(1.1);
+                    box-shadow: 
+                        0 0 25px rgba(25, 118, 210, 1),
+                        0 0 50px rgba(25, 118, 210, 0.6);
+                }
             }
-        }
-    `;
-    document.head.appendChild(style);
-}
+            
+            @keyframes tt-pulse-wave {
+                0% {
+                    width: 20px;
+                    height: 20px;
+                    opacity: 0.8;
+                    border-width: 2px;
+                }
+                100% {
+                    width: 80px;
+                    height: 80px;
+                    opacity: 0;
+                    border-width: 1px;
+                }
+            }
+            
+            @keyframes tt-pulse-glow {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 0.8; }
+            }
+            
+            @keyframes tt-pulse-inner {
+                0% { 
+                    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                    opacity: 0.7;
+                }
+                100% { 
+                    transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 
     // 3. Harita Tipine Göre Ekleme
-    const isMapLibre = !!map.addSource;
-
     if (isMapLibre) {
         // --- 3D MOD (MapLibre) ---
         const el = document.createElement('div');
-        el.className = 'nearby-pulse-icon-wrapper';
+        el.className = 'tt-pulse-marker';
         el.innerHTML = pulseHtml;
         
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .addTo(map);
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
+            element: el,
+            anchor: 'center'
+        })
+        .setLngLat([lng, lat])
+        .addTo(map);
             
     } else {
         // --- 2D MOD (Leaflet) ---
-const pulseIcon = L.divIcon({
-    html: pulseHtml,
-    className: 'nearby-pulse-icon-wrapper',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20]  // Bu DOĞRU zaten
-});
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'tt-pulse-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 }
 
-// Popup kapatma fonksiyonu
+// Yardımcı fonksiyon: GeoJSON circle oluştur
+function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
+    const coords = [];
+    const earthRadius = 6378137; // metre
+    
+    for (let i = 0; i < points; i++) {
+        const angle = (i * 360) / points;
+        const angleRad = (angle * Math.PI) / 180;
+        
+        const latRad = (lat * Math.PI) / 180;
+        const lngRad = (lng * Math.PI) / 180;
+        
+        const d = radiusMeters / earthRadius;
+        
+        const circleLat = Math.asin(
+            Math.sin(latRad) * Math.cos(d) + 
+            Math.cos(latRad) * Math.sin(d) * Math.cos(angleRad)
+        );
+        
+        const circleLng = lngRad + Math.atan2(
+            Math.sin(angleRad) * Math.sin(d) * Math.cos(latRad),
+            Math.cos(d) - Math.sin(latRad) * Math.sin(circleLat)
+        );
+        
+        coords.push([
+            (circleLng * 180) / Math.PI,
+            (circleLat * 180) / Math.PI
+        ]);
+    }
+    
+    // Kapanış için ilk noktayı tekrar ekle
+    coords.push(coords[0]);
+    
+    return {
+        type: 'Feature',
+        geometry: {
+            type: 'Polygon',
+            coordinates: [coords]
+        },
+        properties: {}
+    };
+}
+
 // Popup kapatma fonksiyonunu güncelle (tüm kategorileri temizleyecek şekilde)
 window.closeNearbyPopup = function() {
-  // 1. Popup DOM Elementini Kaldır
-  const popupElement = document.getElementById('custom-nearby-popup');
-  if (popupElement) {
-    popupElement.remove();
-  }
-  
-  // 2. Global Değişken Temizliği (Leaflet & MapLibre)
-  if (window._nearbyPulseMarker) {
-      try { window._nearbyPulseMarker.remove(); } catch(e) {}
-      window._nearbyPulseMarker = null;
-  }
-  if (window._nearbyPulseMarker3D) {
-      try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-      window._nearbyPulseMarker3D = null;
-  }
-
-  // 3. TÜM KATEGORİLERİN MARKERLARINI TEMİZLE
-  const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
-  
-  categories.forEach(category => {
-    // 3D MapLibre temizliği
-    const marker3DKey = `_${category}3DMarkers`;
-    const layer3DKey = `_${category}3DLayers`;
-    
-    if (window[marker3DKey]) {
-      window[marker3DKey].forEach(m => { try { m.remove(); } catch(e){} });
-      window[marker3DKey] = [];
+    // 1. Popup DOM Elementini Kaldır
+    const popupElement = document.getElementById('custom-nearby-popup');
+    if (popupElement) {
+        popupElement.remove();
     }
     
-    if (window._maplibre3DInstance && window[layer3DKey]) {
-      window[layer3DKey].forEach(id => {
-        if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
-        if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
-      });
-      window[layer3DKey] = [];
+    // 2. Radius daireleri temizle
+    if (window._nearbyRadiusCircle) {
+        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
+        window._nearbyRadiusCircle = null;
     }
-  });
+    
+    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._nearbyRadiusCircle3D;
+            
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._nearbyRadiusCircle3D = null;
+    }
+    
+    // 3. Global Değişken Temizliği (Leaflet & MapLibre)
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
 
-  // 4. LEAFLET KATMAN TARAMASI (Tüm kategoriler için)
-  const mapsToCheck = [];
-  if (window.leafletMaps) mapsToCheck.push(...Object.values(window.leafletMaps));
-  if (window.expandedMaps) mapsToCheck.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
+    // 4. TÜM KATEGORİLERİN MARKERLARINI TEMİZLE
+    const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
+    
+    categories.forEach(category => {
+        // 3D MapLibre temizliği
+        const marker3DKey = `_${category}3DMarkers`;
+        const layer3DKey = `_${category}3DLayers`;
+        
+        if (window[marker3DKey]) {
+            window[marker3DKey].forEach(m => { try { m.remove(); } catch(e){} });
+            window[marker3DKey] = [];
+        }
+        
+        if (window._maplibre3DInstance && window[layer3DKey]) {
+            window[layer3DKey].forEach(id => {
+                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
+                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
+            });
+            window[layer3DKey] = [];
+        }
+    });
 
-  mapsToCheck.forEach(map => {
-      if (map && map.eachLayer) {
-          // Önce kategori katmanlarını temizle
-          const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
-          categoryLayers.forEach(category => {
-              const layerKey = `__${category}Layers`;
-              if (map[layerKey]) {
-                  map[layerKey].forEach(l => {
-                      try { l.remove(); } catch(e) {}
-                  });
-                  map[layerKey] = [];
-              }
-          });
-          
-          // Sonra pulse marker'ları temizle
-          map.eachLayer(layer => {
-              // 'nearby-pulse-icon-wrapper' veya 'custom-loc-icon-leaflet' classına sahip ikonları sil
-              if (layer.options && layer.options.icon && layer.options.icon.options) {
-                  const cls = layer.options.icon.options.className;
-                  if (cls === 'nearby-pulse-icon-wrapper' || cls === 'custom-loc-icon-leaflet') {
-                      try { map.removeLayer(layer); } catch(e) {}
-                  }
-              }
-          });
-      }
-  });
-  
-  // 5. Diğer temizlikler
-  if (window.leafletMaps) {
-      Object.values(window.leafletMaps).forEach(map => {
-          const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
-          categoryLayers.forEach(category => {
-              const layerKey = `__${category}Layers`;
-              if (map[layerKey]) {
-                  map[layerKey].forEach(l => { try { l.remove(); } catch(e){} });
-                  map[layerKey] = [];
-              }
-          });
-      });
-  }
-  
-  if (window.expandedMaps) {
-      Object.values(window.expandedMaps).forEach(obj => {
-          if (obj.expandedMap) {
-              const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
-              categoryLayers.forEach(category => {
-                  const layerKey = `__${category}Layers`;
-                  if (obj.expandedMap[layerKey]) {
-                      obj.expandedMap[layerKey].forEach(l => { try { l.remove(); } catch(e){} });
-                      obj.expandedMap[layerKey] = [];
-                  }
-              });
-          }
-      });
-  }
+    // 5. LEAFLET KATMAN TARAMASI (Tüm kategoriler için)
+    const mapsToCheck = [];
+    if (window.leafletMaps) mapsToCheck.push(...Object.values(window.leafletMaps));
+    if (window.expandedMaps) mapsToCheck.push(...Object.values(window.expandedMaps).map(o => o.expandedMap));
 
-  window._currentNearbyPopupElement = null;
+    mapsToCheck.forEach(map => {
+        if (map && map.eachLayer) {
+            // Önce kategori katmanlarını temizle
+            const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
+            categoryLayers.forEach(category => {
+                const layerKey = `__${category}Layers`;
+                if (map[layerKey]) {
+                    map[layerKey].forEach(l => {
+                        try { l.remove(); } catch(e) {}
+                    });
+                    map[layerKey] = [];
+                }
+            });
+            
+            // Sonra pulse marker'ları temizle
+            map.eachLayer(layer => {
+                if (layer.options && layer.options.icon && layer.options.icon.options) {
+                    const cls = layer.options.icon.options.className;
+                    if (cls === 'tt-pulse-marker' || cls === 'custom-loc-icon-leaflet') {
+                        try { map.removeLayer(layer); } catch(e) {}
+                    }
+                }
+            });
+        }
+    });
+    
+    // 6. Diğer temizlikler
+    if (window.leafletMaps) {
+        Object.values(window.leafletMaps).forEach(map => {
+            const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
+            categoryLayers.forEach(category => {
+                const layerKey = `__${category}Layers`;
+                if (map[layerKey]) {
+                    map[layerKey].forEach(l => { try { l.remove(); } catch(e){} });
+                    map[layerKey] = [];
+                }
+            });
+        });
+    }
+    
+    if (window.expandedMaps) {
+        Object.values(window.expandedMaps).forEach(obj => {
+            if (obj.expandedMap) {
+                const categoryLayers = ['restaurant', 'hotel', 'market', 'entertainment'];
+                categoryLayers.forEach(category => {
+                    const layerKey = `__${category}Layers`;
+                    if (obj.expandedMap[layerKey]) {
+                        obj.expandedMap[layerKey].forEach(l => { try { l.remove(); } catch(e){} });
+                        obj.expandedMap[layerKey] = [];
+                    }
+                });
+            }
+        });
+    }
+
+    window._currentNearbyPopupElement = null;
 };
 // Ayrıca, haritaya tıklandığında tüm kategorileri temizleyen fonksiyon
 function clearAllCategoryMarkers(map) {
