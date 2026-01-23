@@ -1075,22 +1075,22 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
 
             document.querySelectorAll('.show-category-btn').forEach(btn => {
-                btn.onclick = function() {
-                    const category = this.dataset.category;
-                    
-                    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-                    
-                    if (category === 'restaurants') {
-                        showNearbyRestaurants(lat, lng, map, day);
-                    } else if (category === 'hotels') {
-                        showNearbyHotels(lat, lng, map, day);
-                    } else if (category === 'markets') {
-                        showNearbyMarkets(lat, lng, map, day);
-                    } else if (category === 'entertainment') {
-                        showNearbyEntertainment(lat, lng, map, day);
-                    }
-                };
-            });
+    btn.onclick = function() {
+        const category = this.dataset.category;
+        
+        // closeNearbyPopup kaldırıldı! Sidebar kapanmayacak
+
+        if (category === 'restaurants') {
+            showNearbyRestaurants(lat, lng, map, day);
+        } else if (category === 'hotels') {
+            showNearbyHotels(lat, lng, map, day);
+        } else if (category === 'markets') {
+            showNearbyMarkets(lat, lng, map, day);
+        } else if (category === 'entertainment') {
+            showNearbyEntertainment(lat, lng, map, day);
+        }
+    };
+});
 
             // "Search wider area" butonları için event handler
             document.querySelectorAll('.search-wider-btn').forEach(btn => {
