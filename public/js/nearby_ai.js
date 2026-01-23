@@ -226,43 +226,44 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         });
         
         map.addLayer({
-            id: circleId + '-layer',
-            type: 'fill',
-            source: circleId,
-            paint: {
-                'fill-color': '#1976d2',
-                'fill-opacity': 0.08,
-                'fill-outline-color': '#1976d2'
-            }
-        });
+    id: circleId + '-layer',
+    type: 'fill',
+    source: circleId,
+    paint: {
+        'fill-color': '#1976d2',
+        'fill-opacity': 0.2,      // ↑ 0.08'den 0.2'ye
+        'fill-outline-color': '#1976d2'
+    }
+});
+
         
-        // Stroke layer (dış çizgi)
-        map.addLayer({
-            id: circleId + '-stroke',
-            type: 'line',
-            source: circleId,
-            paint: {
-                'line-color': '#1976d2',
-                'line-width': 1.5,
-                'line-opacity': 0.25,
-                'line-dasharray': [3, 3]
-            }
-        });
+     map.addLayer({
+    id: circleId + '-stroke',
+    type: 'line',
+    source: circleId,
+    paint: {
+        'line-color': '#1976d2',
+        'line-width': 2,          // ↑ 1.5'ten 2'ye
+        'line-opacity': 0.6,      // ↑ 0.25'ten 0.6'ya
+        'line-dasharray': [3, 3]
+    }
+});
         
         window._nearbyRadiusCircle3D = circleId;
         
     } else {
         // 2D Leaflet için
         window._nearbyRadiusCircle = L.circle([lat, lng], {
-            radius: radiusMeters,
-            color: '#1976d2',
-            weight: 1.5,
-            opacity: 0.25,
-            fillColor: '#1976d2',
-            fillOpacity: 0.08,
-            dashArray: '5, 5',
-            className: 'nearby-radius-circle'
-        }).addTo(map);
+    radius: radiusMeters,
+    color: '#1976d2',
+    weight: 2,           // ↑ 1.5'ten 2'ye
+    opacity: 0.6,        // ↑ 0.25'ten 0.6'ya
+    fillColor: '#1976d2',
+    fillOpacity: 0.2,    // ↑ 0.08'den 0.2'ye
+    dashArray: '5, 5',
+    className: 'nearby-radius-circle'
+}).addTo(map);
+
     }
     
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
