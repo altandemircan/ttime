@@ -264,7 +264,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
 //     className: 'nearby-radius-circle'
 // }).addTo(map);
 
-    }
+//     }
     
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
     
