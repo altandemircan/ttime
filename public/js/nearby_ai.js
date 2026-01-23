@@ -231,14 +231,14 @@ if (!document.getElementById('tt-pulse-styles')) {
     style.id = 'tt-pulse-styles';
     style.textContent = `
         .tt-pulse-marker {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            transform: translate(-20px, -20px);
-            pointer-events: none;
-            z-index: 1000;
-            filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
-        }
+    position: relative;
+    width: 40px;
+    height: 40px;
+    /* transform: translate(-20px, -20px); BU SATIRI KALDIR! */
+    pointer-events: none;
+    z-index: 1000;
+    filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
+}
         
         .tt-pulse-dot {
             position: absolute;
@@ -387,11 +387,11 @@ if (!document.getElementById('tt-pulse-styles')) {
             
     } else {
         // --- 2D MOD (Leaflet) ---
-       const pulseIcon = L.divIcon({
+const pulseIcon = L.divIcon({
     html: pulseHtml,
     className: 'nearby-pulse-icon-wrapper',
-    iconSize: [40, 40],  // Büyük boyut
-    iconAnchor: [20, 20]  // Merkezden anchor
+    iconSize: [40, 40],
+    iconAnchor: [0, 0]  // CSS'deki translate'e güven
 });
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
