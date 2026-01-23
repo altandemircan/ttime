@@ -1653,7 +1653,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType) {
         align-items:center;
         justify-content:center;
         box-shadow:0 2px 8px #888;
-        border:2px solid #fff;
+        border:2px solid #0bf;
       ">
         <img src="${iconUrl}"
              style="width:18px;height:18px;" alt="${categoryType}">
