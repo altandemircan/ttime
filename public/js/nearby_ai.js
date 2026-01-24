@@ -2528,22 +2528,24 @@ function setupViewSwitcherButton(mapInstance) {
 }
 
 // 3. POPUP AÇMA (OVERRIDE)
-const origShowCustomPopup = window.showCustomPopup;
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    const oldBtn = document.getElementById('nearby-view-switcher-btn');
-    if (oldBtn) oldBtn.remove();
+if (typeof window.showCustomPopup === 'function') {
+    const origShowCustomPopup = window.showCustomPopup;
+    window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+        const oldBtn = document.getElementById('nearby-view-switcher-btn');
+        if (oldBtn) oldBtn.remove();
 
-    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-    
-    if (window.innerWidth < 768) {
-        setTimeout(() => {
-            const mainChat = document.getElementById('main-chat');
-            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                setupViewSwitcherButton(map);
-            }
-        }, 300);
-    }
-};
+        origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+        
+        if (window.innerWidth < 768) {
+            setTimeout(() => {
+                const mainChat = document.getElementById('main-chat');
+                if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                    setupViewSwitcherButton(map);
+                }
+            }, 300);
+        }
+    };
+}
 
 // 4. SAYFA DEĞİŞİKLİĞİ (Back Button / Hash Change)
 window.addEventListener('hashchange', () => {
