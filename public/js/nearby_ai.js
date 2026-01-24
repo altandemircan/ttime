@@ -2423,52 +2423,7 @@ if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
 if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
 
-// 1. TEMİZLİK VE KAPATMA FONKSİYONU
-window.closeNearbyPopup = function() {
-    // Butonu DOM'dan sök
-    const btn = document.getElementById('nearby-view-switcher-btn');
-    if (btn) btn.remove();
 
-    // Popup'ı DOM'dan sök
-    const popup = document.getElementById('custom-nearby-popup');
-    if (popup) popup.remove();
-
-    // Açık sidebarları kapat
-    document.querySelectorAll('.sidebar-overlay').forEach(sidebar => {
-        sidebar.classList.remove('open');
-    });
-
-    // Harita gizlendiyse geri aç
-    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-    if (mapContainer) {
-        mapContainer.style.display = ''; 
-        if (window.map && window.map.invalidateSize) window.map.invalidateSize();
-    }
-
-    // Harita üzerindeki marker temizliği
-    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
-    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
-    if (window._nearbyRadiusCircle) { try { window._nearbyRadiusCircle.remove(); } catch(e) {} window._nearbyRadiusCircle = null; }
-
-    // MapLibre katman temizliği
-    if (window._maplibre3DInstance) {
-        const map = window._maplibre3DInstance;
-        ['_nearbyRadiusCircle3D', '_categoryRadiusCircle3D'].forEach(key => {
-            if (window[key]) {
-                try {
-                    const id = window[key];
-                    if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
-                    if (map.getLayer(id + '-stroke')) map.removeLayer(id + '-stroke');
-                    if (map.getSource(id)) map.removeSource(id);
-                } catch(e) {}
-                window[key] = null;
-            }
-        });
-    }
-
-    window._currentNearbyPopupElement = null;
-    console.log("Nearby Popup ve Butonlar temizlendi.");
-};
 
 // 2. BUTON OLUŞTURUCU (Mantık Basitleştirildi)
 function setupViewSwitcherButton(mapInstance) {
