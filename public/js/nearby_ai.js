@@ -1686,41 +1686,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const locationContext = `${currentCityName}, Turkey`;
     
     // Kategori konfigürasyonları
-    // categoryConfig içinde icon'ları daha net hale getirebilirsiniz:
-const categoryConfig = {
-    'restaurants': { 
-        apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub', 
-        color: '#FF5252', 
-        iconUrl: '/img/restaurant_icon.svg', 
-        layerPrefix: 'restaurant', 
-        icon: '🍽️', 
-        title: 'Restaurants' 
-    },
-    'hotels': { 
-        apiCategories: 'accommodation', 
-        color: '#2196F3', 
-        iconUrl: '/img/accommodation_icon.svg', 
-        layerPrefix: 'hotel', 
-        icon: '🏨', 
-        title: 'Hotels' 
-    },
-    'markets': { 
-        apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall', 
-        color: '#4CAF50', 
-        iconUrl: '/img/market_icon.svg', 
-        layerPrefix: 'market', 
-        icon: '🛒', 
-        title: 'Markets' 
-    },
-    'entertainment': { 
-        apiCategories: 'entertainment,leisure', 
-        color: '#FF9800', 
-        iconUrl: '/img/touristic_icon.svg', 
-        layerPrefix: 'entertainment', 
-        icon: '🎭', 
-        title: 'Entertainment' 
-    }
-};
+    const categoryConfig = {
+        'restaurants': { apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub', color: '#FF5252', iconUrl: '/img/restaurant_icon.svg', layerPrefix: 'restaurant', icon: '🍽️', title: 'Restaurants' },
+        'hotels': { apiCategories: 'accommodation', color: '#2196F3', iconUrl: '/img/accommodation_icon.svg', layerPrefix: 'hotel', icon: '🏨', title: 'Hotels' },
+        'markets': { apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall', color: '#4CAF50', iconUrl: '/img/market_icon.svg', layerPrefix: 'market', icon: '🛒', title: 'Markets' },
+        'entertainment': { apiCategories: 'entertainment,leisure', color: '#FF9800', iconUrl: '/img/touristic_icon.svg', layerPrefix: 'entertainment', icon: '🎭', title: 'Entertainment' }
+    };
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
 
@@ -1778,137 +1749,23 @@ const categoryConfig = {
         `;
     });
     tabsHtml += '</div>';
-   // showNearbyPlacesByCategory fonksiyonunda categorySection bölümünü güncelleyin:
-const categorySection = `
-    <div class="category-section" style="margin-bottom: 16px;">
-        ${tabsHtml}
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px;">
-            <div style="font-weight: 700; font-size: 17px; color: #1a1a1a;" class="category-title">${config.title} Nearby</div>
-            <div style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;" class="category-count">Loading...</div>
-        </div>
-        
-        <!-- KATEGORİ GEÇİŞ BUTONLARI -->
-        <div class="category-switch-buttons" style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
-            ${Object.keys(categoryConfig).map(key => {
-                const tab = categoryConfig[key];
-                const isActive = key === categoryType;
-                return `
-                    <button class="category-switch-btn ${isActive ? 'active' : ''}" 
-                            data-category="${key}"
-                            style="flex-shrink: 0; padding: 8px 12px; border: 1px solid ${isActive ? tab.color : '#e0e0e0'}; 
-                                   border-radius: 20px; background: ${isActive ? tab.color + '15' : 'white'}; 
-                                   color: ${isActive ? tab.color : '#666'}; font-size: 12px; font-weight: 500; 
-                                   cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-                        <span>${tab.icon}</span>
-                        <span>${tab.title}</span>
-                    </button>
-                `;
-            }).join('')}
-        </div>
-        
-        <div class="category-items-container" style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="padding: 20px; text-align: center; color: #666;">
-                <div class="nearby-loading-spinner" style="width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1976d2; border-radius: 50%; margin: 0 auto 10px; animation: spin 1s linear infinite;"></div>
-                Finding ${config.title.toLowerCase()}...
+    
+    const categorySection = `
+        <div class="category-section" style="margin-bottom: 16px;">
+            ${tabsHtml}
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px;">
+                <div style="font-weight: 700; font-size: 17px; color: #1a1a1a;" class="category-title">${config.title} Nearby</div>
+                <div style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;" class="category-count">Loading...</div>
+            </div>
+            <div class="category-items-container" style="display: flex; flex-direction: column; gap: 10px;">
+                 <div style="padding: 20px; text-align: center; color: #666;">
+                    <div class="nearby-loading-spinner" style="width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1976d2; border-radius: 50%; margin: 0 auto 10px; animation: spin 1s linear infinite;"></div>
+                    Finding ${config.title.toLowerCase()}...
+                 </div>
             </div>
         </div>
-    </div>
-`;
-
-// Ayrıca, CSS stilini de ekleyin (zaten varsa eklemeyin):
-if (!document.getElementById('category-switch-styles')) {
-    const style = document.createElement('style');
-    style.id = 'category-switch-styles';
-    style.textContent = `
-        .category-switch-buttons {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            scrollbar-width: none;
-        }
-        .category-switch-buttons::-webkit-scrollbar {
-            display: none;
-        }
-        .category-switch-btn {
-            flex-shrink: 0;
-            padding: 8px 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            background: white;
-            color: #666;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-        .category-switch-btn:hover {
-            background: #f5f5f5;
-            transform: translateY(-1px);
-        }
-        .category-switch-btn.active {
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     `;
-    document.head.appendChild(style);
-}
 
-// Buton tıklama event listener'larını da ekleyin:
-setTimeout(() => {
-    // Kategori geçiş butonları
-    document.querySelectorAll('.category-switch-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const category = this.dataset.category;
-            if (category === window._lastSelectedCategory) return;
-            
-            // Aktif buton stilini güncelle
-            document.querySelectorAll('.category-switch-btn').forEach(b => {
-                const tabConfig = categoryConfig[b.dataset.category];
-                const isActive = b.dataset.category === category;
-                b.style.background = isActive ? tabConfig.color + '15' : 'white';
-                b.style.borderColor = isActive ? tabConfig.color : '#e0e0e0';
-                b.style.color = isActive ? tabConfig.color : '#666';
-                b.classList.toggle('active', isActive);
-            });
-            
-            // Yeni kategoriyi göster
-            showNearbyPlacesByCategory(lat, lng, map, day, category);
-        });
-    });
-    
-    // Tab butonları (modern-tabs için)
-    document.querySelectorAll('.modern-tab-btn').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
-            if (window._lastSelectedCategory === tabId) return;
-            
-            document.querySelectorAll('.modern-tab-btn').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Kategori geçiş butonlarını da güncelle
-            document.querySelectorAll('.category-switch-btn').forEach(b => {
-                const tabConfig = categoryConfig[b.dataset.category];
-                const isActive = b.dataset.category === tabId;
-                b.style.background = isActive ? tabConfig.color + '15' : 'white';
-                b.style.borderColor = isActive ? tabConfig.color : '#e0e0e0';
-                b.style.color = isActive ? tabConfig.color : '#666';
-                b.classList.toggle('active', isActive);
-            });
-            
-            showNearbyPlacesByCategory(lat, lng, map, day, tabId);
-        });
-    });
-}, 250);
     const html = `
         <div>
             <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
@@ -2158,121 +2015,6 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     `;
 }
 
-// setTimeout içindeki event listener'lara bu kodu ekle:
-setTimeout(() => {
-    // 1. KATEGORİ GEÇİŞ BUTONLARI (Yeni eklenen)
-    document.querySelectorAll('.category-switch-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const category = this.dataset.category;
-            if (category === window._lastSelectedCategory) return;
-            
-            console.log('Category switch button clicked:', category);
-            
-            // Aktif buton stilini güncelle
-            document.querySelectorAll('.category-switch-btn').forEach(b => {
-                const tabConfig = categoryConfig[b.dataset.category];
-                const isActive = b.dataset.category === category;
-                b.style.background = isActive ? tabConfig.color + '20' : 'white';
-                b.style.borderColor = isActive ? tabConfig.color : '#e0e0e0';
-                b.style.color = isActive ? tabConfig.color : '#666';
-                b.style.fontWeight = isActive ? '600' : '500';
-                b.style.boxShadow = isActive ? '0 2px 8px ' + tabConfig.color + '40' : '0 1px 3px rgba(0,0,0,0.1)';
-                b.classList.toggle('active', isActive);
-            });
-            
-            // Modern tab butonlarını da güncelle
-            document.querySelectorAll('.modern-tab-btn').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.tab === category);
-            });
-            
-            // Yeni kategoriyi göster
-            showNearbyPlacesByCategory(lat, lng, map, day, category);
-        });
-    });
-    
-    // 2. MODERN TAB BUTONLARI (Zaten var olan)
-    document.querySelectorAll('.modern-tab-btn').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
-            if (window._lastSelectedCategory === tabId) return;
-            
-            document.querySelectorAll('.modern-tab-btn').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Kategori geçiş butonlarını da güncelle
-            document.querySelectorAll('.category-switch-btn').forEach(b => {
-                const tabConfig = categoryConfig[b.dataset.category];
-                const isActive = b.dataset.category === tabId;
-                b.style.background = isActive ? tabConfig.color + '20' : 'white';
-                b.style.borderColor = isActive ? tabConfig.color : '#e0e0e0';
-                b.style.color = isActive ? tabConfig.color : '#666';
-                b.style.fontWeight = isActive ? '600' : '500';
-                b.style.boxShadow = isActive ? '0 2px 8px ' + tabConfig.color + '40' : '0 1px 3px rgba(0,0,0,0.1)';
-                b.classList.toggle('active', isActive);
-            });
-            
-            showNearbyPlacesByCategory(lat, lng, map, day, tabId);
-        });
-    });
-}, 250);
-// CSS stillerini ekle (eğer daha önce eklenmediyse)
-if (!document.getElementById('category-switch-styles')) {
-    const style = document.createElement('style');
-    style.id = 'category-switch-styles';
-    style.textContent = `
-        .category-switch-buttons {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-            scrollbar-width: none;
-        }
-        .category-switch-buttons::-webkit-scrollbar {
-            display: none;
-        }
-        .category-switch-btn {
-            flex-shrink: 0;
-            padding: 8px 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            background: white;
-            color: #666;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-        .category-switch-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .category-switch-btn.active {
-            font-weight: 600;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Mobil uyumluluk */
-        @media (max-width: 480px) {
-            .category-switch-btn {
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-            .category-switch-btn span:first-child {
-                font-size: 12px;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-}
 // Yardımcı fonksiyon: Popup HTML'i (mesafe bilgisi ile)
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
