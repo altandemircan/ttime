@@ -475,21 +475,7 @@ window.closeNearbyPopup = function() {
         window._nearbyRadiusCircle3D = null;
     }
     
-    // 4. KATEGORİ DAİRELERİNİ SİL
-    if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(e) {}
-        window._categoryRadiusCircle = null;
-    }
-    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const map = window._maplibre3DInstance;
-            const circleId = window._categoryRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(e) {}
-        window._categoryRadiusCircle3D = null;
-    }
+
     
     window._currentNearbyPopupElement = null;
 };
