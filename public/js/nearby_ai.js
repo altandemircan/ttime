@@ -2341,34 +2341,33 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     }
     
     // +++ TAB BUTONLARI IÇIN EVENT LISTENER'LAR ===
-    setTimeout(() => {
-        document.querySelectorAll('.category-tab-btn').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const selectedCategory = this.dataset.category;
-                
-                // Eğer zaten aktif kisi kliklenirse işlem yapma
-                if (window._lastSelectedCategory === selectedCategory) return;
-                
-                // Tüm butonları sıfırla
-                document.querySelectorAll('.category-tab-btn').forEach(b => {
-                    b.style.background = '#f5f5f5';
-                    b.style.borderColor = '#ddd';
-                    b.style.color = '#666';
-                    b.style.fontWeight = '500';
+ // Tab butonlarını aktif hale getir
+        setTimeout(() => {
+            document.querySelectorAll('.category-tab-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const selectedCategory = this.dataset.category;
+                    
+                    // Tüm butonları sıfırla
+                    document.querySelectorAll('.category-tab-btn').forEach(b => {
+                        b.style.background = '#f5f5f5';
+                        b.style.borderColor = '#ddd';
+                        b.style.color = '#666';
+                        b.style.fontWeight = '500';
+                    });
+                    
+                    // Aktif butonu vurgula
+                    this.style.background = '#f0f7ff';
+                    this.style.borderColor = '#1976d2';
+                    this.style.color = '#1976d2';
+                    this.style.fontWeight = '600';
+                    
+                    // Yeni kategoriyi yükle
+                    await showNearbyPlacesByCategory(lat, lng, map, day, selectedCategory);
                 });
-                
-                // Aktif butonu vurgula
-                this.style.background = '#f0f7ff';
-                this.style.borderColor = '#1976d2';
-                this.style.color = '#1976d2';
-                this.style.fontWeight = '600';
-                
-                // Yeni kategoriyi yükle
-                await showNearbyPlacesByCategory(lat, lng, map, day, selectedCategory);
             });
-        });
-    }, 100);
+        }, 100);
 }
+
 
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
