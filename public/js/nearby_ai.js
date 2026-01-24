@@ -732,35 +732,32 @@ function showRouteInfoBanner(day) {
 // Add this function to nearby_ai.js to handle the click event
 window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
     try {
-        // 1. Retrieve the place data from the global cache created in showNearbyPlacesPopup
+        // 1. Cache'den veriyi almaya çalış
         const place = window._lastNearbyPlaces && window._lastNearbyPlaces[index];
         
-        if (!place) {
-            console.error("Place not found in cache. Index:", index);
-            return;
+        let name, address, category;
+
+        if (place) {
+            const p = place.properties;
+            name = p.name || p.formatted || "Unknown Place";
+            address = p.formatted || "";
+            category = window._lastSelectedCategory || 'Place';
+        } else {
+            // Eğer cache'de yoksa (sayfa yenilendi vs), DOM'dan çekmeye çalış veya fallback kullan
+            console.warn("Place not found in cache, using basic info.");
+            name = "Selected Location";
+            address = "Near " + lat + ", " + lon;
+            category = window._lastSelectedCategory || 'Place';
         }
 
-        const p = place.properties;
-        const name = p.name || p.formatted || "Unknown Place";
-        const address = p.formatted || "";
-        const category = place.category || 'Place'; // Uses the category logic from generation
-        
-        // 2. Try to get an image (or use placeholder)
+        // 2. Görsel belirleme
         let imageUrl = "img/placeholder.png";
-        
-        // If we have a cached photo list, try to use it (optional optimization)
-        // Otherwise, fetch a new one or use placeholder
-        if (typeof getPexelsImage === "function") {
-            try {
-                // Determine search query for image
-                const city = window.selectedCity || "";
-                imageUrl = await getPexelsImage(`${name} ${category} ${city}`);
-            } catch (e) {
-                console.warn('Image fetch failed, using placeholder');
-            }
+        const imgElement = document.querySelector(`[onclick*="addNearbyPlaceToTripFromPopup(${index}"]`)?.closest('.category-place-item')?.querySelector('img');
+        if (imgElement && imgElement.src) {
+            imageUrl = imgElement.src;
         }
 
-        // 3. Add to Cart using the mainscript.js function
+        // 3. addToCart çağrısı
         if (typeof addToCart === "function") {
             addToCart(
                 name,
@@ -768,33 +765,18 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
                 parseInt(day),
                 category,
                 address,
-                null, // rating
-                null, // user_ratings_total
-                p.opening_hours || "",
-                p.place_id,
+                null, null, "", null,
                 { lat: parseFloat(lat), lng: parseFloat(lon) },
-                p.website || ""
+                ""
             );
             
-            // Visual Feedback (Change button content temporarily)
-            const btn = document.activeElement;
-            if (btn && btn.tagName === 'BUTTON') {
-                const originalText = btn.innerHTML;
-                btn.innerHTML = "✓";
-                btn.style.color = "green";
-                btn.style.borderColor = "green";
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.color = "";
-                    btn.style.borderColor = "";
-                }, 2000);
-            }
+            alert(`${name} added to your trip!`);
         } else {
             console.error("addToCart function is missing!");
         }
 
     } catch (error) {
-        console.error("Error adding nearby place to trip:", error);
+        console.error("Error adding nearby place:", error);
     }
 };
 
