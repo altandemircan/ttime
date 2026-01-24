@@ -1700,13 +1700,133 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 }
 
 
-// Kategoriye göre daire rengini KALDIRIYORUM, hepsi için mavi:
-const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
-
-// Daire ekle (son item'ın mesafesi kadar)
-const radiusMeters = Math.ceil(maxDistance * 1.1); // Son item + %10 margin
-
-if (isMapLibre) {
+async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
+    const isMapLibre = !!map.addSource;
+    
+    // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
+    clearAllCategoryMarkers(map);
+    
+    // Kategori konfigürasyonları
+    const categoryConfig = {
+        'restaurants': {
+            apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
+            color: '#FF5252',
+            iconUrl: '/img/restaurant_icon.svg',
+            buttonText: 'Show Restaurants',
+            placeholderIcon: '/img/restaurant_icon.svg',
+            layerPrefix: 'restaurant'
+        },
+        'hotels': {
+            apiCategories: 'accommodation',
+            color: '#2196F3',
+            iconUrl: '/img/accommodation_icon.svg',
+            buttonText: 'Show Hotels',
+            placeholderIcon: '/img/hotel_icon.svg',
+            layerPrefix: 'hotel'
+        },
+        'markets': {
+            apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
+            color: '#4CAF50',
+            iconUrl: '/img/market_icon.svg',
+            buttonText: 'Show Markets',
+            placeholderIcon: '/img/market_icon.svg',
+            layerPrefix: 'market'
+        },
+        'entertainment': {
+            apiCategories: 'entertainment,leisure',
+            color: '#FF9800',
+            iconUrl: '/img/touristic_icon.svg',
+            buttonText: 'Show Entertainment',
+            placeholderIcon: '/img/entertainment_icon.svg',
+            layerPrefix: 'entertainment'
+        }
+    };
+    
+    const config = categoryConfig[categoryType] || categoryConfig.restaurants;
+    
+    // Temizlik
+    const layerKey = `__${config.layerPrefix}Layers`;
+    const marker3DKey = `_${config.layerPrefix}3DMarkers`;
+    const layer3DKey = `_${config.layerPrefix}3DLayers`;
+    
+    if (map[layerKey]) {
+        map[layerKey].forEach(l => l.remove());
+        map[layerKey] = [];
+    }
+    
+    if (window[layer3DKey]) {
+        window[layer3DKey].forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+            if (map.getSource(id)) map.removeSource(id);
+        });
+        window[layer3DKey] = [];
+    }
+    
+    if (window[marker3DKey]) {
+        window[marker3DKey].forEach(m => m.remove());
+        window[marker3DKey] = [];
+    }
+    
+    // +++ ÖNCEKİ DAIRELERİ TEMİZLE +++
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(_) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(_) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
+    // API'den veri çek
+    const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=5000&limit=30`; // Daha geniş radius
+    
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        
+        if (!data.features || data.features.length === 0) {
+            alert(`No ${categoryType} found nearby.`);
+            return;
+        }
+        
+        // +++ EN UZAK MESAFEYİ BUL +++
+        let maxDistance = 0;
+        const placesWithDistance = [];
+        
+        data.features.forEach((f, idx) => {
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            
+            // Mesafeyi hesapla
+            const distance = haversine(lat, lng, pLat, pLng);
+            placesWithDistance.push({
+                feature: f,
+                distance: distance,
+                index: idx
+            });
+            
+            // En uzak mesafeyi güncelle
+            if (distance > maxDistance) {
+                maxDistance = distance;
+            }
+        });
+        
+        // Sırala (en yakından en uzağa)
+        placesWithDistance.sort((a, b) => a.distance - b.distance);
+        
+        // İlk 20 yeri al
+        const topPlaces = placesWithDistance.slice(0, 20);
+        
+        console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
+        
+        // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
+        if (maxDistance > 0) {
+            if (isMapLibre) {
     // 3D MapLibre için
     const circleId = `category-radius-${categoryType}-${Date.now()}`;
     const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
@@ -1728,51 +1848,144 @@ if (isMapLibre) {
     });
     
     window._categoryRadiusCircle3D = circleId;
-    
-} else {
-    // 2D Leaflet için
-    window._categoryRadiusCircle = L.circle([lat, lng], {
-        radius: radiusMeters,
-        color: circleColor,
-        weight: 0,           // ÇİZGİ YOK
-        opacity: 0,          // ÇİZGİ ŞEFFAF
-        fillColor: circleColor,
-        fillOpacity: 0.06,   // ÇOK HAFİF (otel mavisi gibi)
-        dashArray: null,     // KESİKLİ ÇİZGİ YOK
-        className: `category-radius-circle`
-    }).addTo(map);
-    
-    // DEBUG: Konsola daire bilgisi yaz
-    console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
+                
+            } else {
+               // 2D Leaflet için:
+window._categoryRadiusCircle = L.circle([lat, lng], {
+    radius: radiusMeters,
+    color: circleColor,
+    weight: 1,           // DAHA İNCE (border kalkacak gibi)
+    opacity: 0.3,        // DAHA ŞEFFAF (0.4 → 0.3)
+    fillColor: circleColor,
+    fillOpacity: 0.08,   // DAHA ŞEFFAF (0.15 → 0.08)
+    dashArray: '0',      // KESİKLİ ÇİZGİ YOK
+    className: `category-radius-circle ${categoryType}`
+}).addTo(map);
+                
+                // Daireye tooltip ekle (mesafeyi göster)
+                window._categoryRadiusCircle.bindTooltip(
+                    `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
+                    { 
+                        permanent: false, 
+                        direction: 'center',
+                        className: 'radius-tooltip'
+                    }
+                );
+            }
+        }
+        
+        // +++ MARKERLARI EKLE +++
+        topPlaces.forEach((placeData, idx) => {
+            const f = placeData.feature;
+            const distance = placeData.distance;
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            const imgId = `${config.layerPrefix}-img-${idx}-${Date.now()}`;
+            
+            let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance);
+            
+            if (isMapLibre) {
+                // 3D HARİTA (MapLibre)
+                window[layer3DKey] = window[layer3DKey] || [];
+                window[marker3DKey] = window[marker3DKey] || [];
+                
+                // Çizgi ekle
+                const sourceId = `${config.layerPrefix}-line-src-${idx}`;
+                const layerId = `${config.layerPrefix}-line-layer-${idx}`;
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
+                        }
+                    });
+                    map.addLayer({
+                        id: layerId,
+                        type: 'line',
+                        source: sourceId,
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: { 
+                            'line-color': '#4CAF50',
+                            'line-width': 8,
+                            'line-opacity': 0.9,
+                            'line-dasharray': [4, 4]
+                        }
+                    });
+                    window[layer3DKey].push(layerId, sourceId);
+                }
+                
+                // Marker ekle
+                const el = document.createElement('div');
+                el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance);
+                el.className = 'custom-3d-marker-element';
+                el.style.cursor = 'pointer';
+                el.style.zIndex = '2000';
+                
+                const popup = new maplibregl.Popup({ 
+                    offset: 25, 
+                    maxWidth: '360px',
+                    closeButton: true,
+                    className: 'tt-unified-popup'
+                }).setHTML(popupContent);
+                
+                popup.on('open', () => {
+                    handlePlacePopupImageLoading(f, imgId, categoryType);
+                });
+                
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([pLng, pLat])
+                    .setPopup(popup)
+                    .addTo(map);
+                
+                el.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    marker.togglePopup(); 
+                });
+                window[marker3DKey].push(marker);
+            } else {
+                // 2D HARİTA (Leaflet)
+                map[layerKey] = map[layerKey] || [];
+                
+                // Çizgi
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
+                    color: '#4CAF50',
+                    weight: 8,
+                    opacity: 0.95, 
+                    dashArray: "10,6"
+                }).addTo(map);
+                map[layerKey].push(line);
+                
+                // Marker (mesafe bilgisi ile)
+                const marker = L.marker([pLat, pLng], {
+                    icon: L.divIcon({ 
+                        html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), 
+                        className: "", 
+                        iconSize: [32,32], 
+                        iconAnchor: [16,16] 
+                    })
+                }).addTo(map);
+                map[layerKey].push(marker);
+                
+                marker.bindPopup(popupContent, { maxWidth: 341 });
+                marker.on("popupopen", function() { 
+                    handlePlacePopupImageLoading(f, imgId, categoryType);
+                });
+            }
+        });
+        
+    } catch (err) {
+        console.error(err);
+        alert(`Error fetching ${categoryType}.`);
+        
+        // Hata durumunda daireyi de sil
+        if (window._categoryRadiusCircle) {
+            try { window._categoryRadiusCircle.remove(); } catch(_) {}
+            window._categoryRadiusCircle = null;
+        }
+    }
 }
 
-// Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
-function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
-    const distanceText = distance ? 
-        `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); font-size:9px; color:#1976d2; font-weight:bold; white-space:nowrap; background:white; padding:1px 3px; border-radius:3px; border:1px solid #eee;">
-            ${distance < 1000 ? Math.round(distance)+'m' : (distance/1000).toFixed(1)+'km'}
-        </div>` : '';
-    
-    return `
-      <div style="position:relative;">
-        <div class="custom-marker-outer" style="
-            position:relative;
-            width:32px;height:32px;
-            background:white;
-            border-radius:50%;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            box-shadow:0 2px 8px rgba(0,0,0,0.2);
-            border:3px solid ${color}; /* KATEGORİ RENGİ (sadece border) */
-        ">
-            <img src="${iconUrl}"
-                 style="width:18px;height:18px;" alt="${categoryType}">
-        </div>
-        ${distanceText}
-      </div>
-    `;
-}
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
