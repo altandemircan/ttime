@@ -174,7 +174,63 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
     }
 };
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
-
+window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+    // Önceki popup'ı kapat
+    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+    
+    // Popup container oluştur
+    const popupContainer = document.createElement('div');
+    popupContainer.id = 'custom-nearby-popup';
+    
+    const closeButtonHtml = showCloseButton ? `
+        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
+    ` : '';
+    
+    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
+    document.body.appendChild(popupContainer);
+    window._currentNearbyPopupElement = popupContainer;
+    
+    // Mobil'de overlay buton ekle
+    if (window.innerWidth < 700) {
+        setTimeout(() => {
+            if (!document.getElementById('back-to-map-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.id = 'back-to-map-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 56px;
+                    background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 14px;
+                    backdrop-filter: blur(4px);
+                    border-top: 1px solid rgba(255,255,255,0.2);
+                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                `;
+                overlay.innerHTML = '← Back to Map';
+                overlay.onclick = () => {
+                    const popup = document.getElementById('custom-nearby-popup');
+                    const map = document.querySelector('.leaflet-container, .maplibregl-map');
+                    const backOverlay = document.getElementById('back-to-map-overlay');
+                    
+                    if (popup) popup.style.display = 'none';
+                    if (map) map.style.display = '';
+                    if (backOverlay) backOverlay.remove();
+                };
+                document.body.appendChild(overlay);
+            }
+        }, 100);
+    }
+    
+    // PULSE MARKER... (rest of the code stays same)
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
@@ -2481,60 +2537,3 @@ window.closeNearbyPopup = function() {
     console.log('Nearby popup closed completely');
 };
 
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Önceki popup'ı kapat
-    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-    
-    // Popup container oluştur
-    const popupContainer = document.createElement('div');
-    popupContainer.id = 'custom-nearby-popup';
-    
-    const closeButtonHtml = showCloseButton ? `
-        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
-    ` : '';
-    
-    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
-    document.body.appendChild(popupContainer);
-    window._currentNearbyPopupElement = popupContainer;
-    
-    // Mobil'de overlay buton ekle
-    if (window.innerWidth < 700) {
-        setTimeout(() => {
-            if (!document.getElementById('back-to-map-overlay')) {
-                const overlay = document.createElement('div');
-                overlay.id = 'back-to-map-overlay';
-                overlay.style.cssText = `
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    height: 56px;
-                    background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    color: white;
-                    font-weight: 600;
-                    font-size: 14px;
-                    backdrop-filter: blur(4px);
-                    border-top: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-                `;
-                overlay.innerHTML = '← Back to Map';
-                overlay.onclick = () => {
-                    const popup = document.getElementById('custom-nearby-popup');
-                    const map = document.querySelector('.leaflet-container, .maplibregl-map');
-                    const backOverlay = document.getElementById('back-to-map-overlay');
-                    
-                    if (popup) popup.style.display = 'none';
-                    if (map) map.style.display = '';
-                    if (backOverlay) backOverlay.remove();
-                };
-                document.body.appendChild(overlay);
-            }
-        }, 100);
-    }
-    
-    // PULSE MARKER... (rest of the code stays same)
