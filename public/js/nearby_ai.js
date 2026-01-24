@@ -1802,8 +1802,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                            display: flex; flex-direction: column; align-items: center; gap: 4px;">
                 <div style="font-size: 16px;">${tab.icon}</div>
                 <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
-                 <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
-                    ${count}
+                <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
+                    0
                 </div>
             </button>
         `;
