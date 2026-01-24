@@ -2166,9 +2166,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: { 
                             'line-color': '#4CAF50',
-                            'line-width': 3,
+                            'line-width': 4,
                             'line-opacity': 0.7,
-                            'line-dasharray': [6, 4]
+                            'line-dasharray': [8, 6]
                         }
                     });
                     window[layer3DKey].push(layerId, sourceId);
@@ -2209,9 +2209,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 // Çizgi
                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
                     color: '#4CAF50',
-                    weight: 3,
+                    weight: 4,
                     opacity: 0.7, 
-                    dashArray: "6,4"
+                    dashArray: "8,6"
                 }).addTo(map);
                 map[layerKey].push(line);
                 
