@@ -1319,7 +1319,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         loadClickedPointImage(pointInfo.name);
 
-        // showNearbyPlacesPopup fonksiyonunun sonundaki setTimeout bloğunu bu şekilde güncelle:
+        setTimeout(() => {// showNearbyPlacesPopup fonksiyonunun sonundaki setTimeout bloğunu bu şekilde güncelle:
 
 setTimeout(() => {
     // 1. KATEGORİ SEKMELERİ (Tab Click)
@@ -1400,49 +1400,6 @@ setTimeout(() => {
     });
 
 }, 250);
-
-            document.querySelectorAll('.show-category-btn').forEach(btn => {
-   btn.onclick = function() {
-    const category = this.dataset.category;
-    window._lastSelectedCategory = category; // Show more tıklandığında kaydet
-        
-        // closeNearbyPopup kaldırıldı! Sidebar kapanmayacak
-
-        if (category === 'restaurants') {
-            showNearbyRestaurants(lat, lng, map, day);
-        } else if (category === 'hotels') {
-            showNearbyHotels(lat, lng, map, day);
-        } else if (category === 'markets') {
-            showNearbyMarkets(lat, lng, map, day);
-        } else if (category === 'entertainment') {
-            showNearbyEntertainment(lat, lng, map, day);
-        }
-    };
-});
-
-            // "Search wider area" butonları için event handler
-document.querySelectorAll('.search-wider-btn').forEach(btn => {
-    btn.onclick = function(e) {
-        e.stopPropagation(); // +++ YENİ: EVENT BUBBLING'İ DURDUR +++
-        const category = this.dataset.category;
-        const widerRadius = 5000;
-        
-        // +++ ESKİ KODU KALDIR: closeNearbyPopup çağrısını kaldır +++
-        // if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-        
-        // Daha geniş alanda arama yap
-        if (category === 'restaurants') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
-        } else if (category === 'hotels') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
-        } else if (category === 'markets') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
-        } else if (category === 'entertainment') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
-        }
-    };
-});
-        }, 250);
 
 // Şehir bilgisi ve AI açıklaması
 let currentCityName = "";
