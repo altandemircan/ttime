@@ -688,8 +688,7 @@ const clickHandler = function(e) {
             lng = e.latlng.lng;
         }
         
-        console.log("[Nearby] Map clicked at:", { lat, lng }); 
-        
+        // Pulse marker temizle
         if (window._nearbyPulseMarker) {
             try { window._nearbyPulseMarker.remove(); } catch(e) {}
             window._nearbyPulseMarker = null;
@@ -701,20 +700,12 @@ const clickHandler = function(e) {
         
         clearAllCategoryMarkers(map);
         
-        // +++ DAHA ÖNCEDEN KATEGORİ SEÇİLDİYSE DIREKT MARKER GÖSTER +++
-        if (window._lastSelectedCategory) {
-            console.log(`📍 ${window._lastSelectedCategory} marker'ları gösteriliyor...`);
-            
-            if (typeof showNearbyPlacesByCategory === 'function') {
-                showNearbyPlacesByCategory(lat, lng, map, day, window._lastSelectedCategory);
-            }
-        } else {
-            // İLK TIKLAMA: SIDEBAR AÇ
-            if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-            
-            if (typeof showNearbyPlacesPopup === 'function') {
-                showNearbyPlacesPopup(lat, lng, map, day, radius);
-            }
+        // Sidebar kapat
+        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+        
+        // Sidebar aç
+        if (typeof showNearbyPlacesPopup === 'function') {
+            showNearbyPlacesPopup(lat, lng, map, day, radius);
         }
     }, __nearbySingleDelay);
 };
