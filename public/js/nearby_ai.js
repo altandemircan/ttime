@@ -2170,36 +2170,42 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                     `${(distance / 1000).toFixed(2)} km`;
                 
                 const itemHtml = `
-                    <div class="category-place-item" 
-                         style="display: flex; align-items: center; gap: 12px; padding: 10px; 
-                                background: #f8f9fa; border-radius: 8px; 
-                                border: 1px solid #eee;">
+                    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                                        background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; 
+                                        border: 1px solid #eee;">
                         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
                             <img id="${imgId}" src="img/placeholder.png" 
                                  alt="${name}"
                                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                            <div id="${imgId}-spin" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid #ccc; border-top: 2px solid #1976d2; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
+                                 style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+                                <span style="font-size: 10px; color: white;">✨</span>
+                            </div>
                         </div>
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                                         margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
                                 ${name}
                             </div>
-                            <div style="font-size: 0.8rem; color: #999; margin-bottom: 2px;">
-                                ${distanceText}
-                            </div>
                             <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                                         text-overflow: ellipsis; white-space: nowrap;">
                                 ${address}
                             </div>
                         </div>
-                        <button onclick="window.addPlaceToTripFromPopup('${imgId}', '${name.replace(/'/g, "\\'")}', '${address.replace(/'/g, "\\'")}', ${day}, ${pLat}, ${pLng}, '${config.layerPrefix}')"
-                                style="width: 30px; height: 30px; background: ${config.color}; 
-                                       color: white; border: none; border-radius: 50%; 
-                                       cursor: pointer; font-weight: bold; 
-                                       font-size: 16px; flex-shrink: 0;">
-                            +
-                        </button>
+                        <div style="display: flex; flex-direction: column; align-items: center; 
+                                    gap: 4px; flex-shrink: 0;">
+                            <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                                ${distanceText}
+                            </div>
+                            <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${pLat}, ${pLng})"
+                                    style="width: 30px; height: 30px; background: #fff; 
+                                           border: 1px solid #ddd; border-radius: 50%; 
+                                           cursor: pointer; color: #1976d2; font-weight: bold; 
+                                           font-size: 16px; display: flex; align-items: center; 
+                                           justify-content: center;">
+                                +
+                            </button>
+                        </div>
                     </div>
                 `;
                 
@@ -2369,29 +2375,24 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     // +++ TAB BUTONLARI IÇIN EVENT LISTENER'LAR ===
  // Tab butonlarını aktif hale getir
         setTimeout(() => {
-            document.querySelectorAll('.category-tab-btn').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const selectedCategory = this.dataset.category;
-                    
-                    // Tüm butonları sıfırla
-                    document.querySelectorAll('.category-tab-btn').forEach(b => {
-                        b.style.background = '#f5f5f5';
-                        b.style.borderColor = '#ddd';
-                        b.style.color = '#666';
-                        b.style.fontWeight = '500';
-                    });
-                    
-                    // Aktif butonu vurgula
-                    this.style.background = '#f0f7ff';
-                    this.style.borderColor = '#1976d2';
-                    this.style.color = '#1976d2';
-                    this.style.fontWeight = '600';
-                    
-                    // Yeni kategoriyi yükle
-                    await showNearbyPlacesByCategory(lat, lng, map, day, selectedCategory);
-                });
+        document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            // Eğer zaten aktif ise işlem yapma
+            if (window._lastSelectedCategory === tabId) return;
+            
+            document.querySelectorAll('.category-tab').forEach(t => {
+                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
+                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
+                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
+                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
             });
-        }, 100);
+            
+            // Yeni kategoriyi yükle
+            showNearbyPlacesByCategory(lat, lng, map, day, tabId);
+        });
+    });
 }
 
 
