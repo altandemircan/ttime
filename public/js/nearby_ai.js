@@ -175,7 +175,6 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
 };
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 
-// Toggle button'u tamamen kaldır - onun yerine popup içine close butonu ekle
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
@@ -184,154 +183,14 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
     
-    // Mobil cihaz mı kontrol et
-    const isMobile = window.innerWidth < 700;
+    const closeButtonHtml = showCloseButton ? `
+        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
+    ` : '';
     
-    // Popup stilini dinamik olarak ayarla
-    if (isMobile) {
-        popupContainer.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            z-index: 10000;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            padding-bottom: 0;
-        `;
-    } else {
-        popupContainer.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            z-index: 10000;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 0;
-        `;
-    }
-
-    // Kapatma butonunu ekle (her zaman görünsün)
-    const closeBtn = document.createElement('button');
-    closeBtn.id = 'nearby-popup-close-btn';
-    closeBtn.innerHTML = '✕';
-    closeBtn.style.cssText = `
-        position: ${isMobile ? 'sticky' : 'absolute'};
-        top: ${isMobile ? '0' : '12px'};
-        right: ${isMobile ? '0' : '12px'};
-        width: 40px;
-        height: 40px;
-        background: #ff6b6b;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        font-size: 24px;
-        cursor: pointer;
-        z-index: 10001;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        margin: ${isMobile ? '8px 8px 0 0' : '0'};
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        transition: all 0.2s ease;
-    `;
-    
-    closeBtn.onmouseover = () => {
-        closeBtn.style.background = '#ff5252';
-        closeBtn.style.transform = 'scale(1.1)';
-    };
-    
-    closeBtn.onmouseout = () => {
-        closeBtn.style.background = '#ff6b6b';
-        closeBtn.style.transform = 'scale(1)';
-    };
-    
-    closeBtn.onclick = () => {
-        closeNearbyPopup();
-    };
-
-    // İçerik wrapper'ı
-    const contentWrapper = document.createElement('div');
-    contentWrapper.style.cssText = `
-        flex: 1;
-        overflow-y: auto;
-        padding: ${isMobile ? '12px' : '24px'};
-    `;
-    contentWrapper.innerHTML = content;
-
-    // Mobil'de header ekle
-    if (isMobile) {
-        const header = document.createElement('div');
-        header.style.cssText = `
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-            color: white;
-            padding: 12px 16px;
-            margin: -12px -12px 12px -12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10002;
-        `;
-        
-        const title = document.createElement('div');
-        title.style.cssText = `
-            font-weight: 600;
-            font-size: 16px;
-        `;
-        title.innerHTML = '📍 Nearby Places';
-        
-        const closeButtonAlt = document.createElement('button');
-        closeButtonAlt.innerHTML = '✕';
-        closeButtonAlt.style.cssText = `
-            background: rgba(255,255,255,0.3);
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        `;
-        
-        closeButtonAlt.onmouseover = () => {
-            closeButtonAlt.style.background = 'rgba(255,255,255,0.4)';
-        };
-        
-        closeButtonAlt.onmouseout = () => {
-            closeButtonAlt.style.background = 'rgba(255,255,255,0.3)';
-        };
-        
-        closeButtonAlt.onclick = () => {
-            closeNearbyPopup();
-        };
-        
-        header.appendChild(title);
-        header.appendChild(closeButtonAlt);
-        popupContainer.appendChild(header);
-    } else {
-        popupContainer.appendChild(closeBtn);
-    }
-
-    popupContainer.appendChild(contentWrapper);
+    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
-
+    
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
     
     // 1. Temizlik
@@ -344,16 +203,23 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker3D = null;
     }
 
-    // 2. YENI VE ÇARPICI PULSE MARKER HTML
+    // 2. YENİ VE ÇARPIÇI PULSE MARKER HTML
     const pulseHtml = `
       <div class="tt-pulse-marker">
+        <!-- Ana dot (daha büyük ve parlaktır) -->
         <div class="tt-pulse-dot">
           <div class="tt-pulse-dot-inner"></div>
         </div>
+        
+        <!-- Hızlı pulsating rings -->
         <div class="tt-pulse-ring tt-pulse-ring-1"></div>
         <div class="tt-pulse-ring tt-pulse-ring-2"></div>
         <div class="tt-pulse-ring tt-pulse-ring-3"></div>
+        
+        <!-- Parlaklık efekti -->
         <div class="tt-pulse-glow"></div>
+        
+        <!-- İç halka (daha hızlı) -->
         <div class="tt-pulse-inner-ring"></div>
       </div>
     `;
