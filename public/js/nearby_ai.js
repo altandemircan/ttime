@@ -190,15 +190,6 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
-
-     if (window.innerWidth < 768) {
-        setTimeout(() => {
-            const mainChat = document.getElementById('main-chat');
-            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                setupViewSwitcherButton(map);
-            }
-        }, 300);
-    }
     
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
     
@@ -2535,36 +2526,16 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-// 3. POPUP AÇMA - Mobil buton ekle (SADECE setTimeout ile)
-setTimeout(() => {
-    if (typeof window.showCustomPopup === 'function') {
-        const origShowCustomPopup = window.showCustomPopup;
-        window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-            const oldBtn = document.getElementById('nearby-view-switcher-btn');
-            if (oldBtn) oldBtn.remove();
-
-            origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-            
-            if (window.innerWidth < 768) {
-                setTimeout(() => {
-                    const mainChat = document.getElementById('main-chat');
-                    
-                    if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                        setupViewSwitcherButton(map);
-                    }
-                }, 300);
-            }
-        };
-    }
-}, 100);
+// 3. Orijinal showCustomPopup'ı hiç kurcalama - sadece kendi fonksiyonlarını çalıştır
 
 // 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
     window.closeNearbyPopup();
 });
 
-// 5. HARITA KAPANIŞI
+// 5. HARITA KAPANIŞI + Event Delegation
 document.addEventListener('click', function(e) {
+    // Haritayı kapatan close-expanded-map butonuna tıklandığında
     if (e.target && (e.target.classList.contains('close-expanded-map') || e.target.closest('.close-expanded-map'))) {
         const switcherBtn = document.getElementById('nearby-view-switcher-btn');
         if (switcherBtn) {
