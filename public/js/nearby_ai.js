@@ -1675,26 +1675,72 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
-    window._lastSelectedCategory = categoryType; // Hangi kategori seçildiğini kaydet
+    window._lastSelectedCategory = categoryType;
 
     const isMapLibre = !!map.addSource;
     
-  // +++ CSS KURALINI EKLE (DEFAULT LEAFLET ICON'UNU GIZLE) +++
-if (!document.getElementById('hide-leaflet-default-icon')) {
-    const style = document.createElement('style');
-    style.id = 'hide-leaflet-default-icon';
-    style.textContent = `
-        .custom-category-marker {
-            opacity: 1 !important;
+    // +++ YENİ NOKTA İÇİN AI BİLGİSİ AL +++
+    let pointInfo = { name: "Selected Point", address: "" };
+    try { 
+        pointInfo = await getPlaceInfoFromLatLng(lat, lng); 
+    } catch (e) {
+        console.warn('getPlaceInfoFromLatLng failed:', e.message);
+    }
+    
+    // Reverse geocode için şehir adı al
+    let currentCityName = "";
+    const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
+    try {
+        const reverseResp = await fetch(reverseUrl);
+        const reverseData = await reverseResp.json();
+        
+        if (reverseData.features && reverseData.features[0]) {
+            const props = reverseData.features[0].properties;
+            if (props.country_code === 'tr' || props.country === 'Turkey') {
+                currentCityName = props.county || "";
+            } else {
+                currentCityName = props.city || "";
+            }
         }
-    `;
-    document.head.appendChild(style);
-}
-    // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
+    } catch (e) {
+        console.error('Reverse geocode error:', e);
+    }
+    
+    if (!currentCityName) {
+        currentCityName = window.selectedCity || "";
+    }
+    
+    // AI'ye sor
+    const country = "Turkey";
+    const locationContext = `${currentCityName}, ${country}`;
+    
+    if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
+        window.fetchClickedPointAI(
+            pointInfo.name, 
+            lat, 
+            lng, 
+            locationContext, 
+            {}, 
+            'ai-point-description'
+        );
+    }
+    
+    // +++ SIDEBAR'I AÇTIKTAN SONRA +++
+    // CSS
+    if (!document.getElementById('hide-leaflet-default-icon')) {
+        const style = document.createElement('style');
+        style.id = 'hide-leaflet-default-icon';
+        style.textContent = `
+            .custom-category-marker {
+                opacity: 1 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
     clearAllCategoryMarkers(map);
     
-    // +++ PULSE MARKER'I EKLE (YENİ) +++
-    // Eski pulse marker'ları temizle
+    // Pulse marker temizle
     if (window._nearbyPulseMarker) {
         try { window._nearbyPulseMarker.remove(); } catch(e) {}
         window._nearbyPulseMarker = null;
@@ -1866,7 +1912,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
     
     // Pulse marker'ı haritaya ekle
     if (isMapLibre) {
-        // 3D MapLibre
         const el = document.createElement('div');
         el.className = 'tt-pulse-marker';
         el.innerHTML = pulseHtml;
@@ -1878,7 +1923,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
         .setLngLat([lng, lat])
         .addTo(map);
     } else {
-        // 2D Leaflet
         const pulseIcon = L.divIcon({
             html: pulseHtml,
             className: 'tt-pulse-marker',
@@ -1887,8 +1931,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
         });
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
-    
-    // +++ PULSE MARKER SONU +++
     
     // Kategori konfigürasyonları
     const categoryConfig = {
@@ -1928,7 +1970,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // Temizlik
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
@@ -1951,7 +1992,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
         window[marker3DKey] = [];
     }
     
-    // +++ ÖNCEKİ DAIRELERİ TEMİZLE +++
     if (window._categoryRadiusCircle) {
         try { window._categoryRadiusCircle.remove(); } catch(_) {}
         window._categoryRadiusCircle = null;
@@ -1966,7 +2006,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
         window._categoryRadiusCircle3D = null;
     }
     
-    // API'den veri çek
     const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=5000&limit=30`;
     
     try {
@@ -1978,7 +2017,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
             return;
         }
         
-        // +++ EN UZAK MESAFEYİ BUL +++
         let maxDistance = 0;
         const placesWithDistance = [];
         
@@ -1986,7 +2024,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
             const pLng = f.properties.lon;
             const pLat = f.properties.lat;
             
-            // Mesafeyi hesapla
             const distance = haversine(lat, lng, pLat, pLng);
             placesWithDistance.push({
                 feature: f,
@@ -1994,27 +2031,22 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
                 index: idx
             });
             
-            // En uzak mesafeyi güncelle
             if (distance > maxDistance) {
                 maxDistance = distance;
             }
         });
         
-        // Sırala (en yakından en uzağa)
         placesWithDistance.sort((a, b) => a.distance - b.distance);
         
-        // İlk 20 yeri al
         const topPlaces = placesWithDistance.slice(0, 20);
         
         console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
         
-        // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
         if (maxDistance > 0) {
-            const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
-            const radiusMeters = Math.ceil(maxDistance); // MARGİN YOK! Tam mesafe
+            const circleColor = '#1976d2';
+            const radiusMeters = Math.ceil(maxDistance);
             
             if (isMapLibre) {
-                // 3D MapLibre için
                 const circleId = `category-radius-${categoryType}-${Date.now()}`;
                 const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
                 
@@ -2037,7 +2069,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
                 window._categoryRadiusCircle3D = circleId;
                 
             } else {
-                // 2D Leaflet için
                 window._categoryRadiusCircle = L.circle([lat, lng], {
                     radius: radiusMeters,
                     color: circleColor,
@@ -2053,7 +2084,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
             }
         }
         
-        // +++ MARKERLARI EKLE +++
         topPlaces.forEach((placeData, idx) => {
             const f = placeData.feature;
             const distance = placeData.distance;
@@ -2064,11 +2094,9 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
             let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance);
             
             if (isMapLibre) {
-                // 3D HARİTA (MapLibre)
                 window[layer3DKey] = window[layer3DKey] || [];
                 window[marker3DKey] = window[marker3DKey] || [];
                 
-                // Çizgi ekle
                 const sourceId = `${config.layerPrefix}-line-src-${idx}`;
                 const layerId = `${config.layerPrefix}-line-layer-${idx}`;
                 if (!map.getSource(sourceId)) {
@@ -2094,7 +2122,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
                     window[layer3DKey].push(layerId, sourceId);
                 }
                 
-                // Marker ekle
                 const el = document.createElement('div');
                 el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance);
                 el.className = 'custom-3d-marker-element';
@@ -2123,10 +2150,8 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
                 });
                 window[marker3DKey].push(marker);
             } else {
-                // 2D HARİTA (Leaflet)
                 map[layerKey] = map[layerKey] || [];
                 
-                // Çizgi
                 const line = L.polyline([[lat, lng], [pLat, pLng]], { 
                     color: '#4CAF50',
                     weight: 4,
@@ -2135,7 +2160,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
                 }).addTo(map);
                 map[layerKey].push(line);
                 
-                // Marker (mesafe bilgisi ile)
                 const marker = L.marker([pLat, pLng], {
                     icon: L.divIcon({ 
                         html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), 
@@ -2157,7 +2181,6 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
         console.error(err);
         alert(`Error fetching ${categoryType}.`);
         
-        // Hata durumunda daireyi de sil
         if (window._categoryRadiusCircle) {
             try { window._categoryRadiusCircle.remove(); } catch(_) {}
             window._categoryRadiusCircle = null;
