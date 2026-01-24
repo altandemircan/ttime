@@ -1268,7 +1268,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     });
 
     // 2. "SHOW MORE ON THE MAP" BUTONU (Düzeltilen Kısım)
-    document.querySelectorAll('.category-tab').forEach(tab => {
+     document.querySelectorAll('.category-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             window._lastSelectedCategory = tabId;
@@ -1287,7 +1287,6 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
     });
-
     // 3. "SEARCH WIDER AREA" BUTONU (Buna da ekleme yaptık)
     document.querySelectorAll('.search-wider-btn').forEach(btn => {
         btn.onclick = function(e) {
