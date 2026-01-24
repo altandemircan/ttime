@@ -475,7 +475,21 @@ window.closeNearbyPopup = function() {
         window._nearbyRadiusCircle3D = null;
     }
     
-
+    // 4. KATEGORİ DAİRELERİNİ SİL
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._categoryRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
     
     window._currentNearbyPopupElement = null;
 };
@@ -2558,30 +2572,3 @@ window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) 
 window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'entertainment');
 }; 
-window.updateClickedPointSection = async function(imgId, name, address, lat, lng, city) {
-    const pointNameDisplay = document.getElementById('point-name-display');
-    const pointAddressDisplay = document.querySelector('.point-address');
-    const clickedPointImg = document.getElementById('clicked-point-img');
-    
-    if (pointNameDisplay) pointNameDisplay.textContent = name;
-    if (pointAddressDisplay) pointAddressDisplay.textContent = address;
-    
-    const sourceImg = document.getElementById(imgId);
-    if (sourceImg && clickedPointImg) {
-        clickedPointImg.src = sourceImg.src;
-    }
-    
-    window.fetchClickedPointAI(
-        name,
-        lat,
-        lng,
-        city || window.selectedCity || '',
-        {},
-        'ai-point-description'
-    );
-    
-    const popup = document.getElementById('custom-nearby-popup');
-    if (popup) {
-        popup.scrollTop = 0;
-    }
-};
