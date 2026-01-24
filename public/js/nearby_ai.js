@@ -2651,3 +2651,23 @@ window.addEventListener('hashchange', () => {
         }
     };
 })();
+
+// mainscript.js dosyasının en altına yapıştır
+document.addEventListener('click', function(e) {
+    // Haritayı kapatan close-expanded-map butonuna tıklandığında
+    if (e.target && (e.target.classList.contains('close-expanded-map') || e.target.closest('.close-expanded-map'))) {
+        
+        // Switcher butonunu bul ve imha et
+        const switcherBtn = document.getElementById('nearby-view-switcher-btn');
+        if (switcherBtn) {
+            switcherBtn.style.display = 'none';
+            switcherBtn.remove(); // Kökten siliyoruz ki kalıntı kalmasın
+        }
+        
+        // Varsa açık olan nearby popup listesini de temizle
+        const nearbyPopup = document.getElementById('custom-nearby-popup');
+        if (nearbyPopup) {
+            nearbyPopup.remove();
+        }
+    }
+});
