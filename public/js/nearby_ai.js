@@ -1748,8 +1748,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-    showCustomPopup(lat, lng, map, html, true);
-    window._currentPointInfo = pointInfo;
     
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         window.fetchClickedPointAI(
