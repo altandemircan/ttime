@@ -1867,7 +1867,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
     }
 }
-        }
         
         // +++ MARKERLARI EKLE +++
         topPlaces.forEach((placeData, idx) => {
