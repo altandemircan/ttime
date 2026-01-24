@@ -2263,53 +2263,64 @@ window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true
     }
 
     // --- BUTON YAMASI (Sadece Mobilde) ---
-    if (window.innerWidth < 768) {
-        // Butonu sıfırdan oluştur ve body'ye ekle
-        const btn = document.createElement('button');
-        btn.id = 'nearby-view-switcher-btn';
-        btn.innerHTML = '<span>🗺️</span> <span>Show Map</span>';
+  // ==========================================
+// KESİN ÇÖZÜM: MOBİLDE BUTON VE BEYAZ EKRAN FIX
+// ==========================================
+if (window.innerWidth < 768) {
+    // 1. Butonu sıfırdan oluştur ve body'ye ekle
+    const btn = document.createElement('button');
+    btn.id = 'nearby-view-switcher-btn';
+    btn.innerHTML = '<span>🗺️</span> <span>Show Map</span>'; // Başlangıçta "Haritayı Göster" der
+    
+    // CSS: Kesinlikle en üstte ve görünür
+    btn.style.cssText = `
+        position: fixed !important; bottom: 30px !important; left: 50% !important;
+        transform: translateX(-50%) !important; z-index: 2147483647 !important;
+        padding: 12px 24px; background: #333; color: #fff; border: none;
+        border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    `;
+
+    // Buton Tıklama Olayı
+    btn.onclick = function(e) {
+        e.stopPropagation(); // Haritaya tıklamayı engelle
         
-        // CSS: Kesinlikle en üstte ve görünür
-        btn.style.cssText = `
-            position: fixed !important; bottom: 30px !important; left: 50% !important;
-            transform: translateX(-50%) !important; z-index: 2147483647 !important;
-            padding: 12px 24px; background: #333; color: #fff; border: none;
-            border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;
-        `;
+        const popup = document.getElementById('custom-nearby-popup');
+        const contentDiv = popup ? popup.querySelector('.nearby-popup-content') : null;
+        const mapCont = document.querySelector('.leaflet-container, .maplibregl-map');
 
-        // Buton Tıklama Olayı
-        btn.onclick = function(e) {
-            e.stopPropagation(); // Haritaya tıklamayı engelle
+        if (!contentDiv) return;
+
+        // DURUM KONTROLÜ: Şu an liste açık mı?
+        const isShowingList = contentDiv.style.display !== 'none';
+
+        if (isShowingList) {
+            // LİSTEYİ GİZLE -> HARİTAYI GÖSTER (Beyaz Ekran Sorunu Burada Çözülüyor)
+            contentDiv.style.display = 'none';
+            if (mapCont) mapCont.style.display = 'block';
+            this.innerHTML = '<span>📋</span> <span>Show List</span>';
+            this.style.background = '#1976d2';
             
-            const popup = document.getElementById('custom-nearby-popup');
-            const contentDiv = popup ? popup.querySelector('.nearby-popup-content') : null;
-            const mapCont = document.querySelector('.leaflet-container, .maplibregl-map');
-
-            if (!contentDiv) return;
-
-            // Eğer liste açıksa -> Kapat, Haritayı Aç
-            if (contentDiv.style.display !== 'none') {
-                contentDiv.style.display = 'none';
-                if (mapCont) mapCont.style.display = 'block';
-                this.innerHTML = '<span>📋</span> <span>Show List</span>';
-                this.style.background = '#1976d2';
-                
-                // Haritayı render et (Beyaz ekranı engeller)
-                if (map.invalidateSize) map.invalidateSize();
-                if (map.resize) map.resize();
-            } 
-            // Eğer liste kapalıysa -> Aç, Haritayı Gizle (Opsiyonel)
-            else {
-                contentDiv.style.display = 'block';
-                this.innerHTML = '<span>🗺️</span> <span>Show Map</span>';
-                this.style.background = '#333';
+            // --- KRİTİK BÖLÜM: HARİTAYI RENDER ET ---
+            // Harita gizliyken boyutu 0'dır. Görünür olunca boyutunu hesaplaması gerekir.
+            if (map) {
+                setTimeout(() => {
+                    if (map.invalidateSize) map.invalidateSize(); // Leaflet için
+                    if (map.resize) map.resize(); // MapLibre için
+                }, 50); // DOM'un güncellenmesi için çok kısa bir gecikme
             }
-        };
+            // ----------------------------------------
+        } else {
+            // HARİTAYI GİZLE -> LİSTEYİ GÖSTER
+            contentDiv.style.display = 'block';
+            this.innerHTML = '<span>🗺️</span> <span>Show Map</span>';
+            this.style.background = '#333';
+        }
+    };
 
-        document.body.appendChild(btn);
-    }
-};
+    document.body.appendChild(btn);
+}
+// ==========================================};
 
 // Sayfa değişirse (Geri tuşu vs) temizle
 window.addEventListener('hashchange', window.closeNearbyPopup);
