@@ -584,15 +584,22 @@ function clearAllCategoryMarkers(map) {
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
     // 2D Harita (Leaflet) temizliği
-    categories.forEach(category => {
-        const layerKey = `__${category}Layers`;
-        if (map && map[layerKey]) {
-            map[layerKey].forEach(l => {
-                try { l.remove(); } catch(e) {}
-            });
-            map[layerKey] = [];
-        }
-    });
+categories.forEach(category => {
+    const layerKey = `__${category}Layers`;
+    if (map && map[layerKey]) {
+        map[layerKey].forEach(l => {
+            try {
+                // Önce görünmez yap
+                if (l._icon) {
+                    l._icon.style.visibility = 'hidden';
+                }
+                // Sonra haritadan kaldır
+                map.removeLayer(l);
+            } catch(e) {}
+        });
+        map[layerKey] = [];
+    }
+});
     
     // 3D Harita (MapLibre) temizliği
     if (window._maplibre3DInstance === map) {
