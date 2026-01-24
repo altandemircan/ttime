@@ -620,13 +620,23 @@ const clickHandler = function(e) {
 }
 
 
-// Previous code...
-
-// MOBİL HARİTA / YAKINDAKİLER ARASI GEÇİŞ BUTONU EKLE
+// DÜZELTILMIŞ: MOBİL HARITA / YAKINDAKILER ARASI GEÇİŞ BUTONU
 function addNearbyMapToggleButton() {
-    // Önce varsa eskiyi temizle
-    if (document.getElementById('nearby-map-toggle-btn')) {
-        document.getElementById('nearby-map-toggle-btn').remove();
+    // Eğer popup kapalıysa buton gösterilmemeli
+    const popup = document.getElementById('custom-nearby-popup');
+    if (!popup) {
+        // Varsa eski buton temizle
+        const existingBtn = document.getElementById('nearby-map-toggle-btn');
+        if (existingBtn) {
+            existingBtn.remove();
+        }
+        return;
+    }
+
+    // Eğer varsa eski buton temizle
+    const existingBtn = document.getElementById('nearby-map-toggle-btn');
+    if (existingBtn) {
+        existingBtn.remove();
     }
 
     const btn = document.createElement('button');
@@ -648,13 +658,12 @@ function addNearbyMapToggleButton() {
     btn.style.cursor = 'pointer';
 
     btn.onclick = function () {
-        // Harita ve nearby popup alternately show/hide
         const map = document.querySelector('.leaflet-container, .maplibregl-map');
         const popup = document.getElementById('custom-nearby-popup');
 
         if (!map || !popup) return;
 
-        // Eğer harita görünüyorsa nearby popup'u öne getir, haritayı gizle
+        // Harita ve popup'ı alternate göster/gizle
         if (map.style.display !== 'none') {
             map.style.display = 'none';
             popup.style.display = 'block';
@@ -667,12 +676,26 @@ function addNearbyMapToggleButton() {
     document.body.appendChild(btn);
 }
 
-// Otomatik olarak popup açıldığında butonu ekle
+// closeNearbyPopup fonksiyonuna ekleme yapın (toggle butonunu da temizleyelim)
+// Mevcut closeNearbyPopup içerisinde şu satır zaten var:
+// const toggleBtn = document.getElementById('nearby-map-toggle-btn');
+// if (toggleBtn) {
+//     toggleBtn.remove();
+// }
+// Bu zaten mevcut olmalı, kontrol edin.
+
+// Fonksiyonu override et - popup açıldığında butonu kontrollü şekilde göster
 const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(...args) {
     origShowCustomPopup.apply(this, args);
+    
+    // Sadece mobile'da ve popup açıkken buton göster
     if (window.innerWidth < 700) {
-      addNearbyMapToggleButton();
+        // Popup açıldığını kontrol et
+        const popup = document.getElementById('custom-nearby-popup');
+        if (popup) {
+            addNearbyMapToggleButton();
+        }
     }
 };
 
