@@ -2410,9 +2410,6 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
-// ============================================
-// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
-// ============================================
 
 // Varsa eski zamanlayıcıları temizle
 if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
@@ -2472,7 +2469,7 @@ function setupViewSwitcherButton(mapInstance) {
         bottom: 30px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        z-index: 2147483647 !important;
+        z-index: 9999999 !important;
         padding: 12px 24px !important;
         background: #333 !important;
         color: #fff !important;
@@ -2485,7 +2482,6 @@ function setupViewSwitcherButton(mapInstance) {
         align-items: center !important;
         gap: 8px !important;
         cursor: pointer !important;
-        white-space: nowrap !important;
     `;
     document.body.appendChild(btn);
 
@@ -2507,14 +2503,14 @@ function setupViewSwitcherButton(mapInstance) {
         if (isListVisible) {
             popup.style.display = 'none';
             if (mapContainer) mapContainer.style.display = 'block';
-            btn.innerHTML = contentToList;
-            btn.style.background = '#1976d2';
+            this.innerHTML = contentToList;
+            this.style.background = '#1976d2';
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
         } else {
             popup.style.display = 'block';
-            btn.innerHTML = contentToMap;
-            btn.style.background = '#333';
+            this.innerHTML = contentToMap;
+            this.style.background = '#333';
         }
     };
 
@@ -2548,7 +2544,7 @@ if (typeof window.showCustomPopup === 'function') {
     };
 }
 
-// 4. SAYFA DEĞİŞİKLİĞİ (Back Button / Hash Change)
+// 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
     window.closeNearbyPopup();
 });
