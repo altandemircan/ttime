@@ -190,6 +190,15 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
+
+     if (window.innerWidth < 768) {
+        setTimeout(() => {
+            const mainChat = document.getElementById('main-chat');
+            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                setupViewSwitcherButton(map);
+            }
+        }, 300);
+    }
     
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
     
