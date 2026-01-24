@@ -1788,6 +1788,33 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     const isMapLibre = !!map.addSource;
     
+    // +++ CSS KURALINI EKLE (DEFAULT LEAFLET ICON'UNU GIZLE) +++
+    if (!document.getElementById('hide-leaflet-default-icon')) {
+        const style = document.createElement('style');
+        style.id = 'hide-leaflet-default-icon';
+        style.textContent = `
+            /* Leaflet default marker icon'unu gizle */
+            .leaflet-marker-icon:not([style*="custom"]) {
+                background: transparent !important;
+                background-image: none !important;
+                border: none !important;
+                width: 0 !important;
+                height: 0 !important;
+                opacity: 0 !important;
+            }
+            
+            /* Custom category marker'ları göster */
+            .custom-category-marker {
+                background: transparent !important;
+                border: none !important;
+                width: auto !important;
+                height: auto !important;
+                opacity: 1 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
     // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
     clearAllCategoryMarkers(map);
     
