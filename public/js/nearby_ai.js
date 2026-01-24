@@ -2546,7 +2546,6 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
-
 // Mobil'de harita ve popup arasında geçiş yap
 function toggleNearbyMapPopup() {
     const popup = document.getElementById('custom-nearby-popup');
