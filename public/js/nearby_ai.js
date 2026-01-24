@@ -1768,21 +1768,22 @@ if (!document.getElementById('hide-leaflet-default-icon')) {
     const style = document.createElement('style');
     style.id = 'hide-leaflet-default-icon';
     style.textContent = `
-        /* Sadece custom-category-marker değerleri gizleme - diğerleri göster */
-        .leaflet-marker-icon.custom-category-marker {
-            opacity: 1 !important;
-            width: auto !important;
-            height: auto !important;
-        }
-        
-        /* Default Leaflet icon'ları gizle (className boş olanları) */
-        .leaflet-marker-icon:not(.custom-category-marker):not(.tt-pulse-marker) {
+        /* Sadece Leaflet default icon'ları gizle (boş className, custom değil, pulse değil, rota değil) */
+        .leaflet-marker-icon:not(.custom-category-marker):not(.tt-pulse-marker):not([data-route-marker]) {
             background: transparent !important;
             background-image: none !important;
             border: none !important;
             width: 0 !important;
             height: 0 !important;
             opacity: 0 !important;
+        }
+        
+        /* Custom ve rota markerları göster */
+        .custom-category-marker,
+        [data-route-marker] {
+            opacity: 1 !important;
+            width: auto !important;
+            height: auto !important;
         }
     `;
     document.head.appendChild(style);
