@@ -2192,6 +2192,11 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 }).addTo(map);
             }
         }
+          const countBadge = document.querySelector('.category-count');
+        if (countBadge) {
+            countBadge.textContent = topPlaces.length;
+        }
+        
         topPlaces.forEach((placeData, idx) => {
                 const f = placeData.feature;
                 const distance = placeData.distance;
