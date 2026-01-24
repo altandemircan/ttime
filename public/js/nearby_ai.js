@@ -652,34 +652,24 @@ const clickHandler = function(e) {
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
         
-        // Tüm kategori markerlarını temizle (pulse hariç)
+        // Tüm kategori markerlarını temizle (PULSE HARİÇ!)
         clearAllCategoryMarkers(map);
         
-        // +++ ÖNEMLİ DEĞİŞİKLİK: İKİ SEÇENEK +++
+        // +++ ÖNCE SIDEBAR'ı AÇ +++
+        if (typeof showNearbyPlacesPopup === 'function') {
+            showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+        }
         
-        // 1. Eğer SHIFT tuşuna basılıysa veya özel bir durum varsa, direkt kategori göster
-        const shouldShowDirect = window._lastSelectedCategory && !document.getElementById('custom-nearby-popup');
-        
-        if (shouldShowDirect) {
-            // SADECE PULSE MARKER GÖSTER (sidebar yok)
-            const pulseOnlyContent = '<div style="padding:10px; color:#666; text-align:center;">📍 Searching...</div>';
-            showCustomPopup(e.latlng.lat, e.latlng.lng, map, pulseOnlyContent, false);
+        // +++ SONRA DA KATEGORİ MARKERLARINI GÖSTER +++
+        // 500ms bekle (sidebar yüklensin) sonra marker'ları göster
+        setTimeout(() => {
+            const categoryToShow = window._lastSelectedCategory || 'restaurants';
             
-            // Direkt kategori marker'larını göster
-            const categoryToShow = window._lastSelectedCategory;
             if (typeof showNearbyPlacesByCategory === 'function') {
                 showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, categoryToShow);
             }
-        } else {
-            // NORMAL AKIŞ: Sidebar aç
-            // Varsa açık popup'ı kapat
-            if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-            
-            // Sidebar'ı aç (normal nearby places popup)
-            if (typeof showNearbyPlacesPopup === 'function') {
-                showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
-            }
-        }
+        }, 500);
+        
     }, __nearbySingleDelay);
 };
   // Event'i haritaya bağla
