@@ -477,19 +477,19 @@ window.closeNearbyPopup = function() {
     
     // 4. KATEGORİ DAİRELERİNİ SİL
      // Eski daire'yi sil
-    if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(_) {}
-        window._categoryRadiusCircle = null;
-    }
-    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const circleId = window._categoryRadiusCircle3D;
-            const map3d = window._maplibre3DInstance;
-            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
-            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
-        } catch(_) {}
-        window._categoryRadiusCircle3D = null;
-    }
+    // if (window._categoryRadiusCircle) {
+    //     try { window._categoryRadiusCircle.remove(); } catch(_) {}
+    //     window._categoryRadiusCircle = null;
+    // }
+    // if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+    //     try {
+    //         const circleId = window._categoryRadiusCircle3D;
+    //         const map3d = window._maplibre3DInstance;
+    //         if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+    //         if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+    //     } catch(_) {}
+    //     window._categoryRadiusCircle3D = null;
+    // }
     
     window._currentNearbyPopupElement = null;
 };
