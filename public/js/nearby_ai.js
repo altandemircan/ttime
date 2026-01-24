@@ -1743,6 +1743,45 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     };
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
+
+    // +++ 1. MODERN TAB STİLLERİNİ EKLE (Sadece Tablar için) +++
+    if (!document.getElementById('nearby-tab-styles')) {
+        const style = document.createElement('style');
+        style.id = 'nearby-tab-styles';
+        style.textContent = `
+            .modern-tabs { display: flex; gap: 8px; margin-bottom: 16px; padding-bottom: 4px; overflow-x: auto; scrollbar-width: none; }
+            .modern-tabs::-webkit-scrollbar { display: none; }
+            .modern-tab-btn { 
+                flex: 1; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 6px; 
+                padding: 10px 8px; 
+                border: 1px solid transparent; 
+                border-radius: 12px; 
+                background: #f8f9fa; 
+                color: #6c757d; 
+                cursor: pointer; 
+                transition: all 0.2s ease; 
+                min-width: 65px; 
+            }
+            .modern-tab-btn:hover { 
+                background: #e9ecef; 
+                transform: translateY(-1px); 
+            }
+            .modern-tab-btn.active { 
+                background: #e3f2fd; 
+                color: #1976d2; 
+                border-color: #bbdefb; 
+                font-weight: 600; 
+                box-shadow: 0 2px 4px rgba(25, 118, 210, 0.1); 
+            }
+            .tab-icon { font-size: 18px; line-height: 1; }
+            .tab-label { font-size: 11px; font-weight: 500; }
+        `;
+        document.head.appendChild(style);
+    }
     
     // Tıklanan nokta bölümü
     const addPointSection = `
@@ -1769,25 +1808,18 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
     
-    // Kategori sekmelerini oluştur (DÜZELTİLDİ: Artık data değişkenine bağlı değil)
-    let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
+    // +++ 2. MODERN TAB HTML YAPISI (Tablar Güncellendi) +++
+    let tabsHtml = '<div class="modern-tabs">';
     
     Object.keys(categoryConfig).forEach(key => {
         const tab = categoryConfig[key];
         const isActive = key === categoryType;
         
-        // Bu fonksiyonda sadece seçili kategori çekildiği için diğerlerinin sayısını bilmiyoruz
-        // O yüzden sayı badge'ini gizliyoruz veya placeholder koyuyoruz
-        
         tabsHtml += `
-            <button class="category-tab ${isActive ? 'active' : ''}" 
-                    data-tab="${key}"
-                    style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
-                           border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
-                           cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
-                           display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <div style="font-size: 16px;">${tab.icon}</div>
-                <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
+            <button class="modern-tab-btn ${isActive ? 'active' : ''}" 
+                    data-tab="${key}">
+                <div class="tab-icon">${tab.icon}</div>
+                <div class="tab-label">${tab.title}</div>
             </button>
         `;
     });
@@ -1830,19 +1862,16 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         loadClickedPointImage(pointInfo.name);
     }, 30);
     
-    // TAB LISTENER'LARINI HEMEN KUR
-    document.querySelectorAll('.category-tab').forEach(tab => {
+    // +++ 3. TAB EVENT LISTENER (Güncellendi) +++
+    document.querySelectorAll('.modern-tab-btn').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             
             if (window._lastSelectedCategory === tabId) return;
             
-            document.querySelectorAll('.category-tab').forEach(t => {
-                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
-                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
-                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
-                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
-            });
+            // Görsel olarak anında güncelle
+            document.querySelectorAll('.modern-tab-btn').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
             
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
@@ -2253,7 +2282,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         }
     }
 }
-
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
