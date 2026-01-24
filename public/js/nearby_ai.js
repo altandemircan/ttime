@@ -1655,7 +1655,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 
 // GÜNCELLENMIŞ: showNearbyPlacesByCategory
 // Cache for category data
-// GÜNCELLENMIŞ VE MODERN TASARIMLI: showNearbyPlacesByCategory
+// GÜNCELLENMIŞ (Tablar Modern, Liste Eski/Orijinal): showNearbyPlacesByCategory
 window._categoryCacheData = window._categoryCacheData || {};
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants', radiusOverride = null) {
@@ -1671,11 +1671,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         return;
     }
 
-    // 2. MODERN CSS STİLLERİNİ EKLE (Eğer yoksa)
+    // 2. MODERN TAB CSS STİLLERİNİ EKLE
     if (!document.getElementById('nearby-modern-styles')) {
         const style = document.createElement('style');
         style.id = 'nearby-modern-styles';
         style.textContent = `
+            /* Tab ve Başlık Stilleri (Modern) */
             .modern-tabs { display: flex; gap: 8px; margin-bottom: 16px; padding-bottom: 4px; overflow-x: auto; scrollbar-width: none; }
             .modern-tabs::-webkit-scrollbar { display: none; }
             .modern-tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; border: 1px solid transparent; border-radius: 12px; background: #f8f9fa; color: #6c757d; cursor: pointer; transition: all 0.2s ease; min-width: 65px; }
@@ -1684,12 +1685,13 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             .tab-icon { font-size: 18px; line-height: 1; }
             .tab-label { font-size: 11px; font-weight: 500; }
             
+            /* Empty State (Modern) */
             .empty-state-card { background: #fff; border: 1px dashed #cfd8dc; border-radius: 12px; padding: 24px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; }
             .empty-icon-circle { width: 40px; height: 40px; background: #f5f5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #90a4ae; }
             .empty-text { color: #546e7a; font-size: 13px; font-weight: 500; }
-            
             .modern-action-btn { padding: 8px 16px; border-radius: 50px; background: linear-gradient(135deg, #1976d2, #1565c0); color: white; font-size: 12px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(25, 118, 210, 0.25); transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
             .modern-action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(25, 118, 210, 0.35); background: linear-gradient(135deg, #1e88e5, #1565c0); }
+            
             .category-section { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         `;
         document.head.appendChild(style);
@@ -1699,11 +1701,11 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const isMapLibre = !!map.addSource;
     const cacheKey = `${lat}-${lng}-${categoryType}-${radiusOverride || 'default'}`;
     
-    // +++ YENİ NOKTA İÇİN AI BİLGİSİ AL +++
+    // YENİ NOKTA İÇİN AI BİLGİSİ
     let pointInfo = { name: "Selected Point", address: "" };
     try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
     
-    // Reverse geocode ve Şehir ismi işlemleri
+    // Şehir ismi işlemleri
     let currentCityName = window.selectedCity || "";
     try {
         const reverseResp = await fetch(`/api/geoapify/reverse?lat=${lat}&lon=${lng}`);
@@ -1714,7 +1716,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         }
     } catch (e) {}
     if (!currentCityName) currentCityName = window.selectedCity || "";
-    
     const locationContext = `${currentCityName}, Turkey`;
     
     // Kategori Konfigürasyonu
@@ -1727,7 +1728,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // Tıklanan Nokta HTML (Aynen korundu)
+    // Tıklanan Nokta HTML
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -1798,14 +1799,13 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             if (window._lastSelectedCategory === tabId) return;
-            // Görsel olarak anında aktif yap (UX için)
             document.querySelectorAll('.modern-tab-btn').forEach(t => t.classList.remove('active'));
             this.classList.add('active');
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
     });
     
-    // AI Request ve Marker Temizliği (Eski kodlar)
+    // AI Request & Temizlik
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, {}, 'ai-point-description');
     }
@@ -1813,7 +1813,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
     if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
     
-    // Pulse Marker Ekleme (Aynen korundu)
+    // Pulse Marker
     const pulseHtml = `<div class="tt-pulse-marker"><div class="tt-pulse-dot"><div class="tt-pulse-dot-inner"></div></div><div class="tt-pulse-ring tt-pulse-ring-1"></div><div class="tt-pulse-ring tt-pulse-ring-2"></div><div class="tt-pulse-ring tt-pulse-ring-3"></div><div class="tt-pulse-glow"></div><div class="tt-pulse-inner-ring"></div></div>`;
     if (isMapLibre) {
         const el = document.createElement('div'); el.className = 'tt-pulse-marker'; el.innerHTML = pulseHtml;
@@ -1822,7 +1822,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: L.divIcon({ html: pulseHtml, className: 'tt-pulse-marker', iconSize: [40, 40], iconAnchor: [20, 20] }), interactive: false }).addTo(map);
     }
     
-    // Temizlik
+    // Layer temizliği
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
@@ -1839,12 +1839,11 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const data = await resp.json();
         window._categoryCacheData[cacheKey] = data;
         
-        // --- MODERN EMPTY STATE (Sonuç yoksa) ---
+        // --- MODERN EMPTY STATE ---
         if (!data.features || data.features.length === 0) {
             const container = document.querySelector('.category-items-container');
             const countBadge = document.querySelector('.category-count');
             if (countBadge) countBadge.textContent = "0 Results";
-            
             if (container) {
                 container.innerHTML = `
                     <div class="empty-state-card">
@@ -1882,7 +1881,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
             
-            // Daire Çiz (Radius Circle)
+            // Radius Circle
             if (maxDistance > 0) {
                 const circleColor = '#1976d2';
                 const radiusMeters = Math.ceil(maxDistance);
@@ -1896,43 +1895,74 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 }
             }
             
-            // Liste Elemanlarını Render Et
+            // --- LİSTE ELEMANLARI (ORİJİNAL TASARIM) ---
             topPlaces.forEach((placeData, idx) => {
                 const f = placeData.feature;
                 const distance = placeData.distance;
+                const pLng = f.properties.lon;
+                const pLat = f.properties.lat;
                 const name = f.properties.name || "Unknown";
                 const address = f.properties.formatted || "";
                 const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
-                const distanceText = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
                 
-                // Buradaki tasarım orijinal haliyle bırakıldı (sidebar item'ları), eğer burayı da değiştirmek istersen söyle.
+                const distanceText = distance < 1000 ? 
+                    `${Math.round(distance)} m` : 
+                    `${(distance / 1000).toFixed(2)} km`;
+                
                 const itemHtml = `
-                    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
+                    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                                        background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; 
+                                        border: 1px solid #eee;">
                         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
-                            <img id="${imgId}" src="img/placeholder.png" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${f.properties.lat}, ${f.properties.lon}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
+                            <img id="${imgId}" src="img/placeholder.png" 
+                                 alt="${name}"
+                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
                                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
                                 <span style="font-size: 10px; color: white;">✨</span>
                             </div>
                         </div>
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-                            <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
+                                        margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+                                ${name}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
+                                        text-overflow: ellipsis; white-space: nowrap;">
+                                ${address}
+                            </div>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                            <div style="font-size: 10px; color: #999; white-space: nowrap;">${distanceText}</div>
-                            <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${f.properties.lat}, ${f.properties.lon})" style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">+</button>
+                        <div style="display: flex; flex-direction: column; align-items: center; 
+                                    gap: 4px; flex-shrink: 0;">
+                            <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                                ${distanceText}
+                            </div>
+                            <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${pLat}, ${pLng})"
+                                    style="width: 30px; height: 30px; background: #fff; 
+                                           border: 1px solid #ddd; border-radius: 50%; 
+                                           cursor: pointer; color: #1976d2; font-weight: bold; 
+                                           font-size: 16px; display: flex; align-items: center; 
+                                           justify-content: center;">
+                                +
+                            </button>
                         </div>
                     </div>
                 `;
+                
                 const itemDiv = document.createElement('div');
                 itemDiv.innerHTML = itemHtml;
                 itemsContainer.appendChild(itemDiv.firstElementChild);
-                getImageForPlace(name, config.layerPrefix, window.selectedCity || "").then(src => { const img = document.getElementById(imgId); if (img && src) img.src = src; }).catch(() => {});
+                
+                // Resim Yükle
+                getImageForPlace(name, config.layerPrefix, window.selectedCity || "")
+                    .then(src => {
+                        const img = document.getElementById(imgId);
+                        if (img && src) img.src = src;
+                    }).catch(() => {});
             });
         }
         
-        // Harita Marker'larını Ekle
+        // Harita Marker İşlemleri
         topPlaces.forEach((placeData, idx) => {
             const f = placeData.feature;
             const distance = placeData.distance;
