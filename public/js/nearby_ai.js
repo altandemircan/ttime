@@ -1319,10 +1319,8 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         loadClickedPointImage(pointInfo.name);
 
-        setTimeout(() => {// showNearbyPlacesPopup fonksiyonunun sonundaki setTimeout bloğunu bu şekilde güncelle:
-
-setTimeout(() => {
-    // 1. KATEGORİ SEKMELERİ (Tab Click)
+        setTimeout(() => {
+           // 1. KATEGORİ SEKMELERİ (Tab Click)
     document.querySelectorAll('.category-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
@@ -1398,8 +1396,7 @@ setTimeout(() => {
             }
         };
     });
-
-}, 250);
+        }, 250);
 
 // Şehir bilgisi ve AI açıklaması
 let currentCityName = "";
