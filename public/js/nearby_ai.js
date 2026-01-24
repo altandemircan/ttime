@@ -1405,10 +1405,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 btn.onclick = function() {
     const category = this.dataset.category;
     window._lastSelectedCategory = category; // Show more tıklandığında kaydet
-    
-    // EĞER SON TIKLANAN KOORDİNAT VARSA ONU KULLAN, YOKSA MEVCUT LAT/LNG'Yİ
-    const useLat = lastClickedLat || lat;
-    const useLng = lastClickedLng || lng;
+
     
     console.log(`📍 ${category} için koordinatlar:`, { lat: useLat, lng: useLng });
     
@@ -1426,26 +1423,27 @@ btn.onclick = function() {
 
             // "Search wider area" butonları için event handler
 document.querySelectorAll('.search-wider-btn').forEach(btn => {
-btn.onclick = function(e) {
-    e.stopPropagation();
+// "Show more" butonları (satır ~1200):
+btn.onclick = function() {
     const category = this.dataset.category;
-    window._lastSelectedCategory = category; // Kategoriyi kaydet
+    window._lastSelectedCategory = category; // Show more tıklandığında kaydet
     
-    // SON TIKLANAN KOORDİNATI KULLAN
+    // EĞER SON TIKLANAN KOORDİNAT VARSA ONU KULLAN, YOKSA MEVCUT LAT/LNG'Yİ
     const useLat = lastClickedLat || lat;
     const useLng = lastClickedLng || lng;
-        
-        // Daha geniş alanda arama yap
-        if (category === 'restaurants') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
-        } else if (category === 'hotels') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
-        } else if (category === 'markets') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
-        } else if (category === 'entertainment') {
-            showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
-        }
-    };
+    
+    console.log(`📍 ${category} için koordinatlar:`, { lat: useLat, lng: useLng });
+    
+    if (category === 'restaurants') {
+        showNearbyRestaurants(useLat, useLng, map, day);
+    } else if (category === 'hotels') {
+        showNearbyHotels(useLat, useLng, map, day);
+    } else if (category === 'markets') {
+        showNearbyMarkets(useLat, useLng, map, day);
+    } else if (category === 'entertainment') {
+        showNearbyEntertainment(useLat, useLng, map, day);
+    }
+};
 });
         }, 250);
 
