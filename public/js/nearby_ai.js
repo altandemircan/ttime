@@ -1828,8 +1828,14 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-     showCustomPopup(lat, lng, map, html, true);
-    window._currentPointInfo = pointInfo;
+    showCustomPopup(lat, lng, map, html, true);
+
+window._currentPointInfo = pointInfo;
+
+// Dinamik görseli yükle
+setTimeout(() => {
+    loadClickedPointImage(pointInfo.name);
+}, 30);
     
     // TAB LISTENER'LARINI HEMEN KUR
     document.querySelectorAll('.category-tab').forEach(tab => {
