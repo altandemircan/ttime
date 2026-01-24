@@ -676,12 +676,13 @@ const clickHandler = function(e) {
             window._nearbyPulseMarker3D = null;
         }
         
-        clearAllCategoryMarkers(map);
+        // Sidebar'ı kapat (markerları SILME!)
+        const popupElement = document.getElementById('custom-nearby-popup');
+        if (popupElement) {
+            popupElement.remove();
+        }
         
-        // Sidebar kapat
-        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-        
-        // Sidebar aç
+        // Yeni sidebar aç
         if (typeof showNearbyPlacesPopup === 'function') {
             showNearbyPlacesPopup(lat, lng, map, day, radius);
         }
