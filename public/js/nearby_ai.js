@@ -2579,7 +2579,29 @@ window.addEventListener('hashchange', () => {
  * KESİN ÇÖZÜM PAKETİ - TÜM ÇAKIŞMALARI EZER
  */
 (function() {
+    // 1. Mevcut closeNearbyPopup fonksiyonunu tamamen yeniden yazalım
+    window.closeNearbyPopup = function() {
+        console.log("Zorla kapatma tetiklendi.");
+        
+        // Butonu her ne olursa olsun SİL
+        const btn = document.getElementById('nearby-view-switcher-btn');
+        if (btn) btn.remove();
 
+        // Popup'ı (listeyi) SİL
+        const popup = document.getElementById('custom-nearby-popup');
+        if (popup) popup.remove();
+
+        // Haritayı her zaman GÖSTER (gizli kalmasın)
+        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+        if (mapContainer) mapContainer.style.display = 'block';
+
+        // Sidebarları kapat
+        document.querySelectorAll('.sidebar-overlay').forEach(s => s.classList.remove('open'));
+
+        // Markerları temizle
+        if (window._nearbyPulseMarker) window._nearbyPulseMarker.remove();
+        if (window._nearbyPulseMarker3D) window._nearbyPulseMarker3D.remove();
+    };
 
     // 2. Buton Oluşturma Mantığını Basitleştir
     window.setupViewSwitcherButton = function(mapInstance) {
