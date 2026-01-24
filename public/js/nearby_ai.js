@@ -560,6 +560,150 @@ const clickHandler = function(e) {
 
 
 
+// closeNearbyPopup fonksiyonunu güncelleyelim
+window.closeNearbyPopup = function() {
+    // 0. TOGGLE BUTONUNU HEMENCECİK KALDIR (En başta!)
+    const toggleBtn = document.getElementById('nearby-map-toggle-btn');
+    if (toggleBtn) {
+        console.log('Toggle button removed');
+        toggleBtn.remove();
+    }
+
+    // 1. SADECE POPUP DOM ELEMENTINI KALDIR
+    const popupElement = document.getElementById('custom-nearby-popup');
+    if (popupElement) {
+        popupElement.remove();
+    }
+
+    // 2. HARITA GÖRÜNÜMÜNÜ GERI AL
+    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+    if (mapContainer) {
+        mapContainer.style.display = '';
+    }
+
+    // 3. PULSE MARKER'I SİL
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
+    
+    // 4. RADIUS DAİRELERİNİ SİL
+    if (window._nearbyRadiusCircle) {
+        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
+        window._nearbyRadiusCircle = null;
+    }
+    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._nearbyRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._nearbyRadiusCircle3D = null;
+    }
+    
+    // 5. KATEGORİ DAİRELERİNİ SİL
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            const map3d = window._maplibre3DInstance;
+            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
+    window._currentNearbyPopupElement = null;
+    
+    console.log('Nearby popup closed completely');
+};
+
+// Toggle button fonksiyonunu sadeleştir
+function addNearbyMapToggleButton() {
+    // Eğer popup kapalıysa hiçbirşey yapma
+    const popup = document.getElementById('custom-nearby-popup');
+    if (!popup) {
+        return;
+    }
+
+    // Varsa eski buton temizle
+    let existingBtn = document.getElementById('nearby-map-toggle-btn');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+
+    const btn = document.createElement('button');
+    btn.id = 'nearby-map-toggle-btn';
+    btn.innerHTML = 'Toggle Map / Nearby';
+    btn.style.position = 'fixed';
+    btn.style.bottom = '24px';
+    btn.style.right = '24px';
+    btn.style.zIndex = '9999';
+    btn.style.padding = '12px 20px';
+    btn.style.background = '#1976d2';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '24px';
+    btn.style.boxShadow = '0 4px 18px rgba(25, 118, 210, 0.18)';
+    btn.style.fontWeight = 'bold';
+    btn.style.fontSize = '15px';
+    btn.style.display = 'block';
+    btn.style.cursor = 'pointer';
+
+    btn.onclick = function (e) {
+        e.stopPropagation();
+        const map = document.querySelector('.leaflet-container, .maplibregl-map');
+        const popup = document.getElementById('custom-nearby-popup');
+
+        if (!map || !popup) return;
+
+        // Alternatif göster/gizle
+        if (map.style.display !== 'none') {
+            map.style.display = 'none';
+            popup.style.display = 'block';
+        } else {
+            map.style.display = '';
+            popup.style.display = 'none';
+        }
+    };
+
+    document.body.appendChild(btn);
+    console.log('Toggle button created');
+}
+
+// showCustomPopup override - bu daha güvenli
+const origShowCustomPopup = window.showCustomPopup;
+window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+    // Eski popup varsa temizle
+    if (document.getElementById('nearby-map-toggle-btn')) {
+        document.getElementById('nearby-map-toggle-btn').remove();
+    }
+    
+    // Orijinal fonksiyonu çalıştır
+    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+    
+    // Sadece mobile'da buton göster
+    if (window.innerWidth < 700) {
+        setTimeout(() => {
+            const popup = document.getElementById('custom-nearby-popup');
+            if (popup) {
+                addNearbyMapToggleButton();
+            }
+        }, 100);
+    }
+};
+
+
+
 
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
@@ -2406,146 +2550,3 @@ window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) 
 window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'entertainment');
 }; 
-
-
-
-// ============================================
-// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
-// ============================================
-
-// Varsa eski zamanlayıcıları temizle
-if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
-if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
-if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
-
-// 1. TEMİZLİK VE KAPATMA FONKSİYONU
-window.closeNearbyPopup = function() {
-    const btn = document.getElementById('nearby-view-switcher-btn');
-    if (btn) btn.remove();
-
-    const popup = document.getElementById('custom-nearby-popup');
-    if (popup) popup.remove();
-
-    document.querySelectorAll('.sidebar-overlay').forEach(sidebar => {
-        sidebar.classList.remove('open');
-    });
-
-    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-    if (mapContainer) {
-        mapContainer.style.display = ''; 
-        if (window.map && window.map.invalidateSize) window.map.invalidateSize();
-    }
-
-    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
-    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
-    if (window._nearbyRadiusCircle) { try { window._nearbyRadiusCircle.remove(); } catch(e) {} window._nearbyRadiusCircle = null; }
-
-    if (window._maplibre3DInstance) {
-        const map = window._maplibre3DInstance;
-        ['_nearbyRadiusCircle3D', '_categoryRadiusCircle3D'].forEach(key => {
-            if (window[key]) {
-                try {
-                    const id = window[key];
-                    if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
-                    if (map.getLayer(id + '-stroke')) map.removeLayer(id + '-stroke');
-                    if (map.getSource(id)) map.removeSource(id);
-                } catch(e) {}
-                window[key] = null;
-            }
-        });
-    }
-
-    window._currentNearbyPopupElement = null;
-};
-
-// 2. BUTON OLUŞTURUCU
-function setupViewSwitcherButton(mapInstance) {
-    let oldBtn = document.getElementById('nearby-view-switcher-btn');
-    if (oldBtn) oldBtn.remove();
-
-    const btn = document.createElement('button');
-    btn.id = 'nearby-view-switcher-btn';
-    
-    btn.style.cssText = `
-        position: fixed !important;
-        bottom: 30px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        z-index: 9999999 !important;
-        padding: 12px 24px;
-        background: #333;
-        color: #fff;
-        border: none;
-        border-radius: 50px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        font-weight: 600;
-        font-size: 14px;
-        display: flex !important;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-    `;
-    document.body.appendChild(btn);
-
-    const contentToMap = `<span>🗺️</span> <span>Show Map</span>`;
-    const contentToList = `<span>📋</span> <span>Show List</span>`;
-
-    btn.onclick = function(e) {
-        e.stopPropagation();
-        const popup = document.getElementById('custom-nearby-popup');
-        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-
-        if (!popup) {
-            this.remove();
-            return;
-        }
-
-        const isListVisible = (popup.style.display !== 'none');
-
-        if (isListVisible) {
-            popup.style.display = 'none';
-            if (mapContainer) mapContainer.style.display = 'block';
-            btn.innerHTML = contentToList;
-            btn.style.background = '#1976d2';
-            if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
-            if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
-        } else {
-            popup.style.display = 'block';
-            btn.innerHTML = contentToMap;
-            btn.style.background = '#333';
-        }
-    };
-
-    btn.innerHTML = contentToMap;
-
-    const ghostChecker = setInterval(() => {
-        if (!document.getElementById('custom-nearby-popup')) {
-            btn.remove();
-            clearInterval(ghostChecker);
-        }
-    }, 500);
-}
-
-// 3. Orijinal showCustomPopup'ı hiç kurcalama - sadece kendi fonksiyonlarını çalıştır
-
-// 4. SAYFA DEĞİŞİKLİĞİ
-window.addEventListener('hashchange', () => {
-    window.closeNearbyPopup();
-});
-
-// 5. HARITA KAPANIŞI + Event Delegation
-document.addEventListener('click', function(e) {
-    // Haritayı kapatan close-expanded-map butonuna tıklandığında
-    if (e.target && (e.target.classList.contains('close-expanded-map') || e.target.closest('.close-expanded-map'))) {
-        const switcherBtn = document.getElementById('nearby-view-switcher-btn');
-        if (switcherBtn) {
-            switcherBtn.style.display = 'none';
-            switcherBtn.remove();
-        }
-        
-        const nearbyPopup = document.getElementById('custom-nearby-popup');
-        if (nearbyPopup) {
-            nearbyPopup.remove();
-        }
-    }
-});
