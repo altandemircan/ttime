@@ -981,11 +981,11 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         // Tab başlıkları
         const tabTitles = {
-            restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-            hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
-            markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
-            entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
-        };
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+};
 
         // Buton etiketleri
         const buttonLabels = {
@@ -1784,7 +1784,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const badgeStyle = 'background: #4caf50; color: white;';
         
         // Dinamik olarak kategori sayısını al
-        let count = 0;
+let count = categoryCounts[key] || 0;
         
         tabsHtml += `
             <button class="category-tab ${isActive ? 'active' : ''}" 
@@ -1796,8 +1796,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 <div style="font-size: 16px;">${tab.icon}</div>
                 <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
                 <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
-                    0
-                </div>
+                    ${count}
+</div>
             </button>
         `;
     });
