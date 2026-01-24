@@ -1033,29 +1033,28 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         // Tab HTML'ini oluştur
         let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
-        
-        Object.keys(tabTitles).forEach(key => {
-            const tab = tabTitles[key];
-            const isActive = key === activeTab;
-            const badgeStyle = tab.count > 0 ? 'background: #4caf50; color: white;' : 'background: #ccc; color: #666;';
-            
-            tabsHtml += `
-                <button class="category-tab ${isActive ? 'active' : ''}" 
-                        data-tab="${key}"
-                        style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
-                               border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
-                               cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
-                               display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                    <div style="font-size: 16px;">${tab.icon}</div>
-                    <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
-                    <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
-                        ${tab.count}
-                    </div>
-                </button>
-            `;
-        });
-        
-        tabsHtml += '</div>';
+
+Object.keys(tabTitles).forEach(key => {
+    const tab = tabTitles[key];
+    const isActive = key === activeTab;
+    const badgeStyle = tab.count > 0 ? 'background: #4caf50; color: white;' : 'background: #ccc; color: #666;';
+
+    tabsHtml += `
+        <button class="category-tab ${isActive ? 'active' : ''}" 
+                data-tab="${key}"
+                style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
+                       border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
+                       cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
+                       display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="font-size: 16px;">${tab.icon}</div>
+            <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
+            <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
+                ${tab.count}
+            </div>
+        </button>
+    `;
+});
+tabsHtml += '</div>';
 
         // Fotoğrafları önceden çekmek için promise'lar oluştur
         let photoPromises = {};
