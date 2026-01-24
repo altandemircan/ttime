@@ -1,15 +1,16 @@
+
 let aiAbortController = null;
 let aiDebounceTimeout = null;
-// BUNU DOSYA BAÅžINDA tanÄ±mla (global olmalÄ±)
+// BUNU DOSYA BAŞINDA tanımla (global olmalı)
 let aiActiveRequest = 0;
 
 
-// GÃ¶rsel doÄŸrulama fonksiyonu
+// Görsel doğrulama fonksiyonu
 function getBestCityForAI(pointInfo) {
     if (!pointInfo) return window.selectedCity || '';
     
-    // Ã–ncelik sÄ±rasÄ±:
-    // 1. TÄ±klanan noktanÄ±n city bilgisi
+    // Öncelik sırası:
+    // 1. Tıklanan noktanın city bilgisi
     // 2. county bilgisi
     // 3. locality bilgisi
     // 4. Global selectedCity
@@ -45,7 +46,7 @@ async function isImageValid(url, timeout = 3000) {
     });
 }
 
-// GÃ¶rsel hata yÃ¶netimi
+// Görsel hata yönetimi
 window.handleImageError = async function(imgElement, placeName, index) {
     if (imgElement.dataset.errorHandled === 'true') {
         imgElement.src = PLACEHOLDER_IMG;
@@ -86,7 +87,7 @@ window.handleImageError = async function(imgElement, placeName, index) {
 };
 
 function showMarkerOnExpandedMap(lat, lon, name, day) {
-  // BÃ¼yÃ¼k harita (expand map)
+  // Büyük harita (expand map)
   const expObj = window.expandedMaps && window.expandedMaps[`route-map-day${day}`];
   const bigMap = expObj && expObj.expandedMap;
   if (bigMap) {
@@ -94,7 +95,7 @@ function showMarkerOnExpandedMap(lat, lon, name, day) {
   }
 }
 
-// SeÃ§ilen nokta iÃ§in fotoÄŸraf yÃ¼kleme fonksiyonu
+// Seçilen nokta için fotoğraf yükleme fonksiyonu
 async function loadClickedPointImage(pointName) {
     const img = document.getElementById('clicked-point-img');
     if (!img) return;
@@ -102,7 +103,7 @@ async function loadClickedPointImage(pointName) {
     try {
         let imageUrl = null;
         
-        // Ã–nce Pexels'tan dene
+        // Önce Pexels'tan dene
         if (typeof getPexelsImage === "function") {
             try {
                 imageUrl = await getPexelsImage(pointName + " " + (window.selectedCity || ""));
@@ -130,7 +131,7 @@ async function loadClickedPointImage(pointName) {
             }
         }
         
-        // HiÃ§biri Ã§alÄ±ÅŸmazsa placeholder kalsÄ±n ama opacity'yi dÃ¼zelt
+        // Hiçbiri çalışmazsa placeholder kalsın ama opacity'yi düzelt
         img.style.opacity = "0.6";
         
     } catch (error) {
@@ -139,10 +140,10 @@ async function loadClickedPointImage(pointName) {
     }
 }
 
-// GÃ¼ncellenen tÄ±klanan noktayÄ± sepete ekleme fonksiyonu
+// Güncellenen tıklanan noktayı sepete ekleme fonksiyonu
 window.addClickedPointToCart = async function(lat, lng, day) {
     try {
-        window.currentDay = parseInt(day); // GÃ¼n sabitleme
+        window.currentDay = parseInt(day); // Gün sabitleme
 
 const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };        const placeName = pointInfo.name;
         
@@ -172,13 +173,13 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
         console.error('Error adding point:', error);
     }
 };
-// updateCart() BURADAN SÄ°LÄ°NDÄ°! (addToCart zaten yapÄ±yor)
+// updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
-    // Ã–nceki popup'Ä± kapat
+    // Önceki popup'ı kapat
     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
     
-    // Popup container oluÅŸtur
+    // Popup container oluştur
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
     
@@ -202,28 +203,28 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker3D = null;
     }
 
-    // 2. YENÄ° VE Ã‡ARPIÃ‡I PULSE MARKER HTML
+    // 2. YENİ VE ÇARPIÇI PULSE MARKER HTML
     const pulseHtml = `
       <div class="tt-pulse-marker">
-        <!-- Ana dot (daha bÃ¼yÃ¼k ve parlaktÄ±r) -->
+        <!-- Ana dot (daha büyük ve parlaktır) -->
         <div class="tt-pulse-dot">
           <div class="tt-pulse-dot-inner"></div>
         </div>
         
-        <!-- HÄ±zlÄ± pulsating rings -->
+        <!-- Hızlı pulsating rings -->
         <div class="tt-pulse-ring tt-pulse-ring-1"></div>
         <div class="tt-pulse-ring tt-pulse-ring-2"></div>
         <div class="tt-pulse-ring tt-pulse-ring-3"></div>
         
-        <!-- ParlaklÄ±k efekti -->
+        <!-- Parlaklık efekti -->
         <div class="tt-pulse-glow"></div>
         
-        <!-- Ä°Ã§ halka (daha hÄ±zlÄ±) -->
+        <!-- İç halka (daha hızlı) -->
         <div class="tt-pulse-inner-ring"></div>
       </div>
     `;
 
-    // CSS'i inline ekle (eÄŸer henÃ¼z eklenmemiÅŸse)
+    // CSS'i inline ekle (eğer henüz eklenmemişse)
     if (!document.getElementById('tt-pulse-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-pulse-styles';
@@ -369,7 +370,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         document.head.appendChild(style);
     }
 
-    // 3. Harita Tipine GÃ¶re Ekleme
+    // 3. Harita Tipine Göre Ekleme
     const isMapLibre = !!map.addSource;
 
     if (isMapLibre) {
@@ -397,7 +398,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     }
 }
 
-// YardÄ±mcÄ± fonksiyon: GeoJSON circle oluÅŸtur
+// Yardımcı fonksiyon: GeoJSON circle oluştur
 function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
     const coords = [];
     const earthRadius = 6378137; // metre
@@ -427,7 +428,7 @@ function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
         ]);
     }
     
-    // KapanÄ±ÅŸ iÃ§in ilk noktayÄ± tekrar ekle
+    // Kapanış için ilk noktayı tekrar ekle
     coords.push(coords[0]);
     
     return {
@@ -441,11 +442,11 @@ function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
 }
 
 
-// AyrÄ±ca, haritaya tÄ±klandÄ±ÄŸÄ±nda tÃ¼m kategorileri temizleyen fonksiyon
+// Ayrıca, haritaya tıklandığında tüm kategorileri temizleyen fonksiyon
 function clearAllCategoryMarkers(map) {
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    // SADECE KATEGORÄ° LAYER'LARINI SÄ°L - map.eachLayer() KULLANMA!
+    // SADECE KATEGORİ LAYER'LARINI SİL - map.eachLayer() KULLANMA!
     categories.forEach(category => {
         const layerKey = `__${category}Layers`;
         if (map && map[layerKey] && Array.isArray(map[layerKey])) {
@@ -458,7 +459,7 @@ function clearAllCategoryMarkers(map) {
         }
     });
     
-    // 3D HARITA TEMÄ°ZLÄ°ÄžÄ°
+    // 3D HARITA TEMİZLİĞİ
     const isMapLibre = map && !!map.addSource;
     if (isMapLibre) {
         categories.forEach(category => {
@@ -482,7 +483,7 @@ function clearAllCategoryMarkers(map) {
         });
     }
     
-    // KATEGORÄ° DAÄ°RELERÄ°NÄ° SÄ°L
+    // KATEGORİ DAİRELERİNİ SİL
     if (window._categoryRadiusCircle) {
         try { window._categoryRadiusCircle.remove(); } catch(e) {}
         window._categoryRadiusCircle = null;
@@ -497,10 +498,10 @@ function clearAllCategoryMarkers(map) {
         window._categoryRadiusCircle3D = null;
     }
     
-    // HÄ°Ã‡BÄ°R map.eachLayer() KULLANMA!
+    // HİÇBİR map.eachLayer() KULLANMA!
 }
-
-// attachClickNearbySearch fonksiyonunu gÃ¼ncelle
+// attachClickNearbySearch fonksiyonunu güncelle
+// attachClickNearbySearch fonksiyonunu güncelle
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; 
 
@@ -511,7 +512,7 @@ function attachClickNearbySearch(map, day, options = {}) {
   }
 
   let __nearbySingleTimer = null;
-  const __nearbySingleDelay = 250;
+  const __nearbySingleDelay = 100; // 250'den 100'e düşürüldü
 
 const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
@@ -538,26 +539,21 @@ const clickHandler = function(e) {
             window._nearbyPulseMarker3D = null;
         }
         
-        // EÄŸer kategori seÃ§ilmiÅŸse direkt markerlarÄ± gÃ¶ster
+        // Eğer kategori seçilmişse direkt markerları göster
        showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
     }, __nearbySingleDelay);
 };
-  // Event'i haritaya baÄŸla
+  // Event'i haritaya bağla
   map.on('click', clickHandler);
   
   map.__ttNearbyClickHandler = clickHandler;
   map.__ttNearbyClickBound = true;
 
-  // Zoom veya Ã§ift tÄ±klama sÄ±rasÄ±nda tek tÄ±k iÅŸlemini iptal et
+  // Zoom veya çift tıklama sırasında tek tık işlemini iptal et
   map.on('dblclick', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
   map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
   map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
-
-
-
-
-
 
 
 function showRouteInfoBanner(day) {
@@ -575,33 +571,33 @@ function showRouteInfoBanner(day) {
     expandedContainer.prepend(banner);
   }
   
-  // --- Stil ve Animasyon AyarlarÄ± ---
+  // --- Stil ve Animasyon Ayarları ---
   banner.style.display = 'flex';
   banner.style.cursor = 'pointer';
-  banner.style.transition = 'opacity 1s ease-out'; // GeÃ§iÅŸ sÃ¼resi
+  banner.style.transition = 'opacity 1s ease-out'; // Geçiş süresi
   
-  // BaÅŸlangÄ±Ã§ta gÃ¶rÃ¼nÃ¼r olmasÄ± iÃ§in (browser render'Ä± yakalasÄ±n diye ufak gecikme)
+  // Başlangıçta görünür olması için (browser render'ı yakalasın diye ufak gecikme)
   banner.style.opacity = '0';
   requestAnimationFrame(() => {
       banner.style.opacity = '1';
   });
 
-  // --- ORTAK KAPATMA FONKSÄ°YONU ---
-  // Bu fonksiyon Ã§aÄŸrÄ±ldÄ±ÄŸÄ±nda banner yavaÅŸÃ§a solar ve sonra yok olur.
+  // --- ORTAK KAPATMA FONKSİYONU ---
+  // Bu fonksiyon çağrıldığında banner yavaşça solar ve sonra yok olur.
   const fadeOutBanner = () => {
-      // Zaten kapanÄ±yorsa tekrar iÅŸlem yapma
+      // Zaten kapanıyorsa tekrar işlem yapma
       if (banner.style.opacity === '0') return;
 
-      // 1. OpaklÄ±ÄŸÄ± dÃ¼ÅŸÃ¼r (Fade out baÅŸlar)
+      // 1. Opaklığı düşür (Fade out başlar)
       banner.style.opacity = '0';
 
-      // 2. Animasyon bitince (1 saniye sonra) ekrandan tamamen kaldÄ±r
+      // 2. Animasyon bitince (1 saniye sonra) ekrandan tamamen kaldır
       setTimeout(() => {
           banner.style.display = 'none';
       }, 1000); 
   };
 
-  // --- TIKLAYINCA KAPAT (YavaÅŸÃ§a) ---
+  // --- TIKLAYINCA KAPAT (Yavaşça) ---
   banner.onclick = function() {
     fadeOutBanner();
   };
@@ -615,9 +611,9 @@ function showRouteInfoBanner(day) {
     };
   }
 
-  // --- OTOMATÄ°K KAPANMA (4 saniye sonra yavaÅŸÃ§a) ---
+  // --- OTOMATİK KAPANMA (4 saniye sonra yavaşça) ---
   setTimeout(function() {
-    // EÄŸer kullanÄ±cÄ± henÃ¼z kapatmadÄ±ysa otomatik kapat
+    // Eğer kullanıcı henüz kapatmadıysa otomatik kapat
     if (banner.style.display !== 'none') {
         fadeOutBanner();
     }
@@ -627,7 +623,7 @@ function showRouteInfoBanner(day) {
 
 window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
         try {
-            // 1. Retrieve the place data from the last items cache (kategori altÄ± dahil!)
+            // 1. Retrieve the place data from the last items cache (kategori altı dahil!)
             const place = window._lastNearbyPlaces && window._lastNearbyPlaces[index];
     
             if (!place) {
@@ -642,7 +638,7 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
     
             // 2. Try to get an image (or use placeholder)
             let imageUrl = "img/placeholder.png";
-            // EÄŸer ._lastNearbyPhotos dizisi varsa ve sÄ±rasÄ± denkse onun gÃ¶rselini kullan
+            // Eğer ._lastNearbyPhotos dizisi varsa ve sırası denkse onun görselini kullan
             if (window._lastNearbyPhotos && window._lastNearbyPhotos[index]) {
                 imageUrl = window._lastNearbyPhotos[index];
             } else if (typeof getPexelsImage === "function") {
@@ -650,11 +646,11 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
                     const city = window.selectedCity || "";
                     imageUrl = await getPexelsImage(`${name} ${category} ${city}`);
                 } catch (e) {
-                    // Yedek olarak yukardaki imgUrl kalÄ±r
+                    // Yedek olarak yukardaki imgUrl kalır
                 }
             }
     
-            // 3. EKLE: addToCart ile kategori altÄ± itemi de plana ekle
+            // 3. EKLE: addToCart ile kategori altı itemi de plana ekle
             if (typeof addToCart === "function") {
                 addToCart(
                     name,
@@ -670,11 +666,11 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
                     p.website || ""
                 );
     
-                // GÃ¶rsel feedback (Buton iÃ§eriÄŸi âœ“ olsun)
+                // Görsel feedback (Buton içeriği ✓ olsun)
                 const btn = document.activeElement;
                 if (btn && btn.tagName === 'BUTTON') {
                     const originalText = btn.innerHTML;
-                    btn.innerHTML = "âœ“";
+                    btn.innerHTML = "✓";
                     btn.style.color = "green";
                     btn.style.borderColor = "green";
                     setTimeout(() => {
@@ -700,7 +696,7 @@ function handlePopupImageLoading(f, imgId) {
             if (img && src) {
                 img.src = src;
                 img.classList.remove("hidden-img");
-                // EÄŸer gÃ¶rsel cache'den geldiyse spinnerÄ± hemen kaldÄ±r
+                // Eğer görsel cache'den geldiyse spinnerı hemen kaldır
                 if (img.complete && img.naturalWidth !== 0 && spin) spin.style.display = "none";
             }
             if (img) {
@@ -749,18 +745,18 @@ function getSimplePlaceCategory(f) {
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
 
-    console.log('[DEBUG] TIKLANAN NOKTANIN TAM BÄ°LGÄ°LERÄ°:');
+    console.log('[DEBUG] TIKLANAN NOKTANIN TAM BİLGİLERİ:');
 console.log('Koordinatlar:', { lat, lng });
 
 
 
-    // 1. Ã–nce kesinlikle eskileri temizle
+    // 1. Önce kesinlikle eskileri temizle
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
     }
 
 
-    // ORÄ°JÄ°NAL Ã‡ALIÅžAN KATEGORÄ°LER - daha az kategori, daha gÃ¼venli
+    // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
     const categoryGroups = {
         "restaurants": "catering.restaurant",
         "hotels": "accommodation",
@@ -860,7 +856,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     
    const resp = await fetch(url);
         
-    // HTTP hata kontrolÃ¼
+    // HTTP hata kontrolü
     if (!resp.ok) {
         console.error('API Error:', resp.status, resp.statusText);
         showCustomPopup(lat, lng, map, '<div style="color:red; padding:10px;">API Error: ' + resp.status + ' ' + resp.statusText + '</div>', true);
@@ -869,7 +865,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     
     const data = await resp.json();
 
-        // DEBUG: Gelen datayÄ± konsola yazdÄ±r
+        // DEBUG: Gelen datayı konsola yazdır
         console.log('Geoapify Response:', {
             totalFeatures: data.features?.length || 0,
             features: data.features?.slice(0, 3).map(f => ({
@@ -878,7 +874,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             }))
         });
 
-        // Kategorilere gÃ¶re yerleri grupla
+        // Kategorilere göre yerleri grupla
         let categorizedPlaces = {
             restaurants: [],
             hotels: [],
@@ -899,18 +895,18 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                 .map(f => ({ 
                     ...f, 
                     distance: haversine(lat, lng, f.properties.lat, f.properties.lon),
-                    // BASÄ°T KATEGORÄ° BELÄ°RLEME
+                    // BASİT KATEGORİ BELİRLEME
                     category: getSimplePlaceCategory(f)
                 }))
                 .sort((a, b) => a.distance - b.distance);
 
-            // Her yer iÃ§in benzersiz ID oluÅŸtur
+            // Her yer için benzersiz ID oluştur
             allPlaces.forEach((place, index) => {
                 const placeId = place.properties.place_id || `place-${index}`;
                 placeIdToIndexMap[placeId] = index;
             });
 
-            // Kategorilere ayÄ±r - BASÄ°T YÃ–NTEM
+            // Kategorilere ayır - BASİT YÖNTEM
             allPlaces.forEach(place => {
                 const cat = place.category;
                 if (cat === 'restaurant') categorizedPlaces.restaurants.push(place);
@@ -919,21 +915,21 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                 else if (cat === 'entertainment') categorizedPlaces.entertainment.push(place);
             });
 
-            // DEBUG: Kategori sayÄ±larÄ±
+            // DEBUG: Kategori sayıları
             console.log('Category counts:', Object.keys(categorizedPlaces).map(k => ({[k]: categorizedPlaces[k].length})));
 
-            // Her kategori iÃ§in maksimum 5 yer gÃ¶ster
+            // Her kategori için maksimum 5 yer göster
             Object.keys(categorizedPlaces).forEach(key => {
                 categorizedPlaces[key] = categorizedPlaces[key].slice(0, 10);
             });
         }
 
-        // Tab baÅŸlÄ±klarÄ±
+        // Tab başlıkları
         const tabTitles = {
-    restaurants: { icon: "ðŸ½ï¸", title: "Restaurants", count: categorizedPlaces.restaurants.length },
-    hotels: { icon: "ðŸ¨", title: "Hotels", count: categorizedPlaces.hotels.length },
-    markets: { icon: "ðŸ›’", title: "Markets", count: categorizedPlaces.markets.length },
-    entertainment: { icon: "ðŸŽ­", title: "Entertainment", count: categorizedPlaces.entertainment.length }
+    restaurants: { icon: "🍽️", title: "Restaurants", count: categorizedPlaces.restaurants.length },
+    hotels: { icon: "🏨", title: "Hotels", count: categorizedPlaces.hotels.length },
+    markets: { icon: "🛒", title: "Markets", count: categorizedPlaces.markets.length },
+    entertainment: { icon: "🎭", title: "Entertainment", count: categorizedPlaces.entertainment.length }
 };
 
         // Buton etiketleri
@@ -944,13 +940,13 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     entertainment: { text: "Show more", color: "#1976d2" }
 };
 
-        // TÄ±kalanan nokta bÃ¶lÃ¼mÃ¼
+        // Tıkalanan nokta bölümü
         const addPointSection = `
             <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
                 <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
                     <div class="point-image" style="width: 60px; height: 40px; position: relative; flex-shrink: 0;">
     <img id="clicked-point-img" src="img/placeholder.png" alt="Clicked Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">ðŸ“</div>
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
 </div>
                     <div class="point-info" style="flex: 1; min-width: 0;">
                         <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
@@ -970,7 +966,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             </div>
         `;
 
-        // Aktif tab belirle (en fazla iÃ§eriÄŸe sahip olan)
+        // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
         let maxCount = 0;
         Object.keys(tabTitles).forEach(key => {
@@ -980,7 +976,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             }
         });
 
-        // Tab HTML'ini oluÅŸtur
+        // Tab HTML'ini oluştur
         let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
 
 Object.keys(tabTitles).forEach(key => {
@@ -1005,7 +1001,7 @@ Object.keys(tabTitles).forEach(key => {
 });
 tabsHtml += '</div>';
 
-        // FotoÄŸraflarÄ± Ã¶nceden Ã§ekmek iÃ§in promise'lar oluÅŸtur
+        // Fotoğrafları önceden çekmek için promise'lar oluştur
         let photoPromises = {};
         Object.keys(categorizedPlaces).forEach(key => {
             photoPromises[key] = categorizedPlaces[key].map(async (place) => {
@@ -1022,13 +1018,13 @@ tabsHtml += '</div>';
             });
         });
 
-        // FotoÄŸraflarÄ± Ã§ek
+        // Fotoğrafları çek
         let categorizedPhotos = {};
         for (const key in photoPromises) {
             categorizedPhotos[key] = await Promise.all(photoPromises[key]);
         }
 
-        // Tab iÃ§erikleri iÃ§in container
+        // Tab içerikleri için container
         let tabContentsHtml = '<div class="tab-contents">';
 
         Object.keys(categorizedPlaces).forEach(key => {
@@ -1085,7 +1081,7 @@ tabsHtml += '</div>';
                                      style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
                                 <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${p.lat}, ${p.lon}, '${locationContext}', {}, 'ai-point-description')" 
                                      style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                                    <span style="font-size: 10px; color: white;">âœ¨</span>
+                                    <span style="font-size: 10px; color: white;">✨</span>
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 0;">
@@ -1149,7 +1145,7 @@ tabsHtml += '</div>';
         const html = `
             <div>
                 <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                    ðŸ“ Nearby Places
+                    📍 Nearby Places
                 </div>
                 ${addPointSection}
                 ${tabsHtml}
@@ -1159,7 +1155,7 @@ tabsHtml += '</div>';
 
         showCustomPopup(lat, lng, map, html, true);
 
-        // Global kayÄ±tlar
+        // Global kayıtlar
         window._lastNearbyPlaces = allPlaces;
         window._lastNearbyPhotos = [];
 
@@ -1185,7 +1181,7 @@ tabsHtml += '</div>';
         loadClickedPointImage(pointInfo.name);
 
         setTimeout(() => {
-           // 1. KATEGORÄ° SEKMELERÄ° (Tab Click)
+           // 1. KATEGORİ SEKMELERİ (Tab Click)
     document.querySelectorAll('.category-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
@@ -1203,13 +1199,13 @@ tabsHtml += '</div>';
         });
     });
 
-    // 2. "SHOW MORE ON THE MAP" BUTONU (DÃ¼zeltilen KÄ±sÄ±m)
+    // 2. "SHOW MORE ON THE MAP" BUTONU (Düzeltilen Kısım)
      document.querySelectorAll('.category-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             window._lastSelectedCategory = tabId;
 
-            // Mavi Pulse Marker'Ä± Temizle
+            // Mavi Pulse Marker'ı Temizle
             if (window._nearbyPulseMarker) {
                 try { window._nearbyPulseMarker.remove(); } catch(e) {}
                 window._nearbyPulseMarker = null;
@@ -1219,18 +1215,18 @@ tabsHtml += '</div>';
                 window._nearbyPulseMarker3D = null;
             }
 
-            // Harita marker'larÄ±nÄ± gÃ¶ster
+            // Harita marker'larını göster
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
     });
-    // 3. "SEARCH WIDER AREA" BUTONU (Buna da ekleme yaptÄ±k)
+    // 3. "SEARCH WIDER AREA" BUTONU (Buna da ekleme yaptık)
     document.querySelectorAll('.search-wider-btn').forEach(btn => {
         btn.onclick = function(e) {
             e.stopPropagation();
             const category = this.dataset.category;
             const widerRadius = 5000;
             
-            // --- FÄ°X: Burada da Pulse Marker'Ä± Temizle ---
+            // --- FİX: Burada da Pulse Marker'ı Temizle ---
             if (window._nearbyPulseMarker) {
                 try { window._nearbyPulseMarker.remove(); } catch(e) {}
                 window._nearbyPulseMarker = null;
@@ -1239,7 +1235,7 @@ tabsHtml += '</div>';
                 try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
                 window._nearbyPulseMarker3D = null;
             }
-            // --- FÄ°X SONU ---
+            // --- FİX SONU ---
 
             if (category === 'restaurants') {
                 showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
@@ -1254,11 +1250,11 @@ tabsHtml += '</div>';
     });
         }, 250);
 
-// Åžehir bilgisi ve AI aÃ§Ä±klamasÄ±
+// Şehir bilgisi ve AI açıklaması
 let currentCityName = "";
-let reverseData = null; // DeÄŸiÅŸkeni dÄ±ÅŸarÄ±da tanÄ±mla
+let reverseData = null; // Değişkeni dışarıda tanımla
 
-// 1. Ã–nce reverse geocode yap
+// 1. Önce reverse geocode yap
 const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
 try {
     const reverseResp = await fetch(reverseUrl);
@@ -1273,43 +1269,43 @@ try {
         console.log('- Country:', props.country);
         console.log('- Country Code:', props.country_code);
         
-        // KURAL: TÃ¼rkiye iÃ§in county, diÄŸer Ã¼lkeler iÃ§in city
+        // KURAL: Türkiye için county, diğer ülkeler için city
         if (props.country_code === 'tr' || props.country === 'Turkey') {
-            // TÃœRKÄ°YE: county kullan
+            // TÜRKİYE: county kullan
             currentCityName = props.county || "";
-            console.log('[TÃœRKÄ°YE] County kullanÄ±lÄ±yor:', currentCityName);
+            console.log('[TÜRKİYE] County kullanılıyor:', currentCityName);
         } else {
-            // DÃœNYA: city kullan
+            // DÜNYA: city kullan
             currentCityName = props.city || "";
-            console.log('[DÃœNYA] City kullanÄ±lÄ±yor:', currentCityName);
+            console.log('[DÜNYA] City kullanılıyor:', currentCityName);
         }
     }
 } catch (e) {
     console.error('Reverse geocode error:', e);
 }
 
-// 2. Hala boÅŸsa pointInfo'dan al
+// 2. Hala boşsa pointInfo'dan al
 if (!currentCityName && pointInfo) {
     console.log('pointInfo structure:', pointInfo);
     
-    // address iÃ§inden ÅŸehir Ã§Ä±karmaya Ã§alÄ±ÅŸ
+    // address içinden şehir çıkarmaya çalış
     if (pointInfo.address) {
         const addressParts = pointInfo.address.split(',');
         if (addressParts.length > 1) {
-            // Adresin son parÃ§asÄ±nÄ± al
+            // Adresin son parçasını al
             const lastPart = addressParts[addressParts.length - 1].trim();
-            // SayÄ±larÄ± ve posta kodlarÄ±nÄ± temizle
+            // Sayıları ve posta kodlarını temizle
             currentCityName = lastPart.replace(/\d+/g, '').replace('Turkey', '').trim();
         }
     }
 }
 
-// 3. Hala boÅŸsa global city
+// 3. Hala boşsa global city
 if (!currentCityName) {
     currentCityName = window.selectedCity || "";
 }
 
-// DEBUG: Åžehir adÄ±nÄ± konsola yazdÄ±r
+// DEBUG: Şehir adını konsola yazdır
 console.log('[AI CITY DEBUG] Final city name:', currentCityName, {
     country: reverseData?.features?.[0]?.properties?.country,
     country_code: reverseData?.features?.[0]?.properties?.country_code,
@@ -1317,13 +1313,13 @@ console.log('[AI CITY DEBUG] Final city name:', currentCityName, {
                reverseData?.features?.[0]?.properties?.country === 'Turkey')
 });
         
-// Åžehir bilgisi ve AI aÃ§Ä±klamasÄ± kÄ±smÄ±nÄ± gÃ¼ncelle:
+// Şehir bilgisi ve AI açıklaması kısmını güncelle:
 if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
     const category = pointInfo?.category || pointInfo?.type || "place";
     
     // currentCityName'i kullan
     if (!currentCityName || !currentCityName.trim()) {
-        console.warn('[AI REQUEST] Åžehir adÄ± tespit edilemedi!', { 
+        console.warn('[AI REQUEST] Şehir adı tespit edilemedi!', { 
             lat, 
             lng, 
             pointInfo,
@@ -1333,47 +1329,47 @@ if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         return;
     }
     
-    // AI iÃ§in Ã¼lke bilgisini de ekle
+    // AI için ülke bilgisini de ekle
     const country = reverseData?.features?.[0]?.properties?.country || "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-    // ENHANCED AI FACTS (filtrelenmiÅŸ)
+    // ENHANCED AI FACTS (filtrelenmiş)
     const enhancedFacts = {};
     const props = reverseData?.features?.[0]?.properties;
     
     if (props) {
-        // 1. Kategori/TÃ¼r bilgisi (varsa ve generic deÄŸilse)
+        // 1. Kategori/Tür bilgisi (varsa ve generic değilse)
         if (props.category && props.category !== "amenity" && !props.category.includes("unknown")) {
             enhancedFacts.category = props.category;
         }
         
-        // 2. State/Ä°l bilgisi (varsa ve boÅŸ deÄŸilse)
+        // 2. State/İl bilgisi (varsa ve boş değilse)
         if (props.state && props.state.trim() && props.state !== props.county) {
             enhancedFacts.state = props.state;
         }
         
-        // 3. City bilgisi (varsa, boÅŸ deÄŸilse ve county'den farklÄ±ysa)
+        // 3. City bilgisi (varsa, boş değilse ve county'den farklıysa)
         if (props.city && props.city.trim() && props.city !== props.county) {
             enhancedFacts.city = props.city;
         }
         
-        // 4. PopÃ¼lerlik skoru (varsa ve anlamlÄ± bir deÄŸerse)
+        // 4. Popülerlik skoru (varsa ve anlamlı bir değerse)
         if (props.rank?.popularity && props.rank.popularity > 1) {
             enhancedFacts.popularity_score = Math.round(props.rank.popularity * 10) / 10;
         }
         
-        // 5. Result type (varsa ve generic deÄŸilse)
+        // 5. Result type (varsa ve generic değilse)
         if (props.result_type && props.result_type !== "amenity") {
             enhancedFacts.place_type = props.result_type;
         }
         
-        // 6. Formatted address (kÄ±sa versiyon, 100 karakterden azsa)
+        // 6. Formatted address (kısa versiyon, 100 karakterden azsa)
         if (props.formatted && props.formatted.length < 100) {
             enhancedFacts.address_short = props.formatted;
         }
     }
     
-    // 7. YakÄ±ndaki yerler (varsa ve limitli)
+    // 7. Yakındaki yerler (varsa ve limitli)
     if (allPlaces && allPlaces.length > 0) {
         const nearbyNames = allPlaces
             .slice(0, 3)
@@ -1399,7 +1395,7 @@ if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         lat, 
         lng, 
         locationContext, 
-        enhancedFacts, // FiltrelenmiÅŸ enhanced facts gÃ¶nder
+        enhancedFacts, // Filtrelenmiş enhanced facts gönder
         'ai-point-description'
     );
 }
@@ -1412,13 +1408,13 @@ if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
 
 
 
-// AI aÃ§Ä±klamasÄ± fetch ve yazÄ±m fonksiyonu
+// AI açıklaması fetch ve yazım fonksiyonu
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
 
-    // --- EN GÃœNCEL Ä°STEK KORUMASI / REQUEST GUARD ---
-    aiActiveRequest++; // Yeni her Ã§aÄŸrÄ±da artÄ±r
+    // --- EN GÜNCEL İSTEK KORUMASI / REQUEST GUARD ---
+    aiActiveRequest++; // Yeni her çağrıda artır
     const myRequestId = aiActiveRequest;
 
     const isIconClick = targetDivId.startsWith('ai-icon-');
@@ -1451,7 +1447,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
     targetElement.dataset.loading = 'true';
     targetElement.style.display = 'block';
 
-    // AÅŸamalÄ± loading mesajlarÄ±
+    // Aşamalı loading mesajları
     const loadingPhases = [
         { duration: 5000, text: `Loading AI analysis...` },
         { duration: 5000, text: `Analyzing ${pointName}...` },
@@ -1472,7 +1468,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 
                 ${previousPhases.map((p, idx) => `
                     <div style="font-size: 10px; color: #666; margin-bottom: 4px; opacity: 0.7;">
-                        âœ“ ${p.text}
+                        ✓ ${p.text}
                     </div>
                 `).join('')}
                 
@@ -1484,14 +1480,14 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         `;
     };
 
-    // Ä°lk loading gÃ¶ster
+    // İlk loading göster
     showLoadingPhase(0);
     currentPhase = 0;
 
-    // Sonraki aÅŸamalarÄ± planla
+    // Sonraki aşamaları planla
     for (let i = 1; i < loadingPhases.length; i++) {
         const timer = setTimeout(() => {
-            // EÄŸer bu loading artÄ±k eski ise daha deÄŸiÅŸiklik yapma!
+            // Eğer bu loading artık eski ise daha değişiklik yapma!
             if (myRequestId !== aiActiveRequest) return;
             currentPhase = i;
             showLoadingPhase(i);
@@ -1499,7 +1495,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         loadingTimers.push(timer);
     }
 
-   // API Ã§aÄŸrÄ±sÄ±nÄ± hemen baÅŸlat
+   // API çağrısını hemen başlat
     const triggerFetch = async () => {
         try {
             const cleanedCity = cleanCityContext(city);
@@ -1518,9 +1514,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             });
             console.timeEnd('AI-API-Response');
 
-            // --- YALNIZCA EN GÃœNCEL Ä°STEKTE SONUÃ‡ YAZ ---
+            // --- YALNIZCA EN GÜNCEL İSTEKTE SONUÇ YAZ ---
             if (myRequestId !== aiActiveRequest) {
-                console.log('IGNORED: Eski AI request response (baÅŸka tÄ±klama daha gÃ¼ncel).');
+                console.log('IGNORED: Eski AI request response (başka tıklama daha güncel).');
                 return;
             }
 
@@ -1532,11 +1528,11 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             loadingTimers.forEach(timer => clearTimeout(timer));
             targetElement.dataset.loading = 'false';
 
-            // Ä°Ã§erik
+            // İçerik
             let p1Content = data.p1;
             let p2Content = data.p2;
 
-            // Ã‡ok nadir durumlarda (Server tamamen boÅŸ dÃ¶nerse) son koruma
+            // Çok nadir durumlarda (Server tamamen boş dönerse) son koruma
             if (!p1Content || p1Content.length < 5) {
                 p1Content = `${pointName} is located in ${city || 'the area'}. Explore the surroundings to discover more.`;
             }
@@ -1546,7 +1542,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                     <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
                         <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">âœ¨</div>
+                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
                                 <div>
                                     <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
                                     <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div>
@@ -1555,13 +1551,13 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                         </div>
                         <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
                             <div style="display: flex; align-items: flex-start; gap: 8px;">
-                                <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">ðŸ“</span>
+                                <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
                                 <div style="flex: 1;">${p1Content}</div>
                             </div>
                         </div>
                         ${p2Content ? `
                             <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
-                                <span style="font-size: 12px; color: #ff9800;">ðŸ’¡</span>
+                                <span style="font-size: 12px; color: #ff9800;">💡</span>
                                 <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
                                     <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
                                     ${p2Content}
@@ -1589,19 +1585,19 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             targetElement.dataset.loading = 'false';
             targetElement.innerHTML = `
                 <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
-                    <div style="margin-bottom: 4px;">âš ï¸ Information unavailable</div>
+                    <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
                     <small style="color: #999;">Try clicking another location</small>
                 </div>`;
         }
     };
 
     if (targetDivId === 'ai-point-description' || isIconClick) {
-        aiDebounceTimeout = setTimeout(triggerFetch, 600); // SADECE BÄ°R KERE
+        aiDebounceTimeout = setTimeout(triggerFetch, 600); // SADECE BİR KERE
     }
 }
 
 
-// GÃœNCELLENMIÅž: showNearbyPlacesByCategory
+// GÜNCELLENMIŞ: showNearbyPlacesByCategory
 // Cache for category data
 window._categoryCacheData = window._categoryCacheData || {};
 
@@ -1611,7 +1607,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const isMapLibre = !!map.addSource;
     const cacheKey = `${lat}-${lng}-${categoryType}`;
     
-    // +++ YENÄ° NOKTA Ä°Ã‡Ä°N AI BÄ°LGÄ°SÄ° AL +++
+    // +++ YENİ NOKTA İÇİN AI BİLGİSİ AL +++
     let pointInfo = { name: "Selected Point", address: "" };
     try { 
         pointInfo = await getPlaceInfoFromLatLng(lat, lng); 
@@ -1619,7 +1615,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         console.warn('getPlaceInfoFromLatLng failed:', e.message);
     }
     
-    // Reverse geocode iÃ§in ÅŸehir adÄ± al
+    // Reverse geocode için şehir adı al
     let currentCityName = "";
     const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
     try {
@@ -1642,11 +1638,11 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         currentCityName = window.selectedCity || "";
     }
     
-    // AI iÃ§in Ã¼lke bilgisini de ekle
+    // AI için ülke bilgisini de ekle
     const country = "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-    // Kategori konfigÃ¼rasyonlarÄ±
+    // Kategori konfigürasyonları
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
@@ -1655,7 +1651,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             buttonText: 'Show Restaurants',
             placeholderIcon: '/img/restaurant_icon.svg',
             layerPrefix: 'restaurant',
-            icon: 'ðŸ½ï¸',
+            icon: '🍽️',
             title: 'Restaurants'
         },
         'hotels': {
@@ -1665,7 +1661,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             buttonText: 'Show Hotels',
             placeholderIcon: '/img/hotel_icon.svg',
             layerPrefix: 'hotel',
-            icon: 'ðŸ¨',
+            icon: '🏨',
             title: 'Hotels'
         },
         'markets': {
@@ -1675,7 +1671,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             buttonText: 'Show Markets',
             placeholderIcon: '/img/market_icon.svg',
             layerPrefix: 'market',
-            icon: 'ðŸ›’',
+            icon: '🛒',
             title: 'Markets'
         },
         'entertainment': {
@@ -1685,20 +1681,20 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             buttonText: 'Show Entertainment',
             placeholderIcon: '/img/entertainment_icon.svg',
             layerPrefix: 'entertainment',
-            icon: 'ðŸŽ­',
+            icon: '🎭',
             title: 'Entertainment'
         }
     };
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // TÄ±klanan nokta bÃ¶lÃ¼mÃ¼
+    // Tıklanan nokta bölümü
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
                 <div class="point-image" style="width: 60px; height: 40px; position: relative; flex-shrink: 0;">
                     <img id="clicked-point-img" src="img/placeholder.png" alt="Clicked Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">ðŸ“</div>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
                 </div>
                 <div class="point-info" style="flex: 1; min-width: 0;">
                     <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
@@ -1717,15 +1713,15 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
     
-    // Kategori sekmelerini oluÅŸtur (DÃœZELTÄ°LDÄ°: ArtÄ±k data deÄŸiÅŸkenine baÄŸlÄ± deÄŸil)
+    // Kategori sekmelerini oluştur (DÜZELTİLDİ: Artık data değişkenine bağlı değil)
     let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
     
     Object.keys(categoryConfig).forEach(key => {
         const tab = categoryConfig[key];
         const isActive = key === categoryType;
         
-        // Bu fonksiyonda sadece seÃ§ili kategori Ã§ekildiÄŸi iÃ§in diÄŸerlerinin sayÄ±sÄ±nÄ± bilmiyoruz
-        // O yÃ¼zden sayÄ± badge'ini gizliyoruz veya placeholder koyuyoruz
+        // Bu fonksiyonda sadece seçili kategori çekildiği için diğerlerinin sayısını bilmiyoruz
+        // O yüzden sayı badge'ini gizliyoruz veya placeholder koyuyoruz
         
         tabsHtml += `
             <button class="category-tab ${isActive ? 'active' : ''}" 
@@ -1742,7 +1738,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     tabsHtml += '</div>';
     
-    // Kategori baÅŸlÄ±ÄŸÄ±
+    // Kategori başlığı
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
             ${tabsHtml}
@@ -1762,7 +1758,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const html = `
         <div>
             <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                ðŸ“ Nearby Places
+                📍 Nearby Places
             </div>
             ${addPointSection}
             ${categorySection}
@@ -1773,7 +1769,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     window._currentPointInfo = pointInfo;
 
-    // Dinamik gÃ¶rseli yÃ¼kle
+    // Dinamik görseli yükle
     setTimeout(() => {
         loadClickedPointImage(pointInfo.name);
     }, 30);
@@ -1807,7 +1803,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         );
     }
     
-    // +++ SIDEBAR'I AÃ‡TIKTAN SONRA +++
+    // +++ SIDEBAR'I AÇTIKTAN SONRA +++
     if (!document.getElementById('hide-leaflet-default-icon')) {
         const style = document.createElement('style');
         style.id = 'hide-leaflet-default-icon';
@@ -1845,7 +1841,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
       </div>
     `;
     
-    // CSS'i ekle (eÄŸer yoksa)
+    // CSS'i ekle (eğer yoksa)
     if (!document.getElementById('tt-pulse-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-pulse-styles';
@@ -1875,12 +1871,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 z-index: 10;
                 animation: tt-pulse-dot 2s ease-in-out infinite;
             }
-            /* ... DiÄŸer pulse CSS stilleri zaten mevcut ... */
+            /* ... Diğer pulse CSS stilleri zaten mevcut ... */
         `;
         document.head.appendChild(style);
     }
     
-    // Pulse marker'Ä± haritaya ekle
+    // Pulse marker'ı haritaya ekle
     if (isMapLibre) {
         const el = document.createElement('div');
         el.className = 'tt-pulse-marker';
@@ -1978,18 +1974,18 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         const topPlaces = placesWithDistance.slice(0, 20);
         window._lastNearbyPlaces = topPlaces.map(p => p.feature);
-        // Sidebar kategori count gÃ¼ncellemeleri
+        // Sidebar kategori count güncellemeleri
         const countBadge = document.querySelector('.category-count');
         if (countBadge) {
             countBadge.textContent = topPlaces.length;
         }
         
-        // Sidebar Ã¶ÄŸelerini ekle
+        // Sidebar öğelerini ekle
         const itemsContainer = document.querySelector('.category-items-container');
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
             
-            // Daire Ã§iz
+            // Daire çiz
             if (maxDistance > 0) {
                 const circleColor = '#1976d2';
                 const radiusMeters = Math.ceil(maxDistance);
@@ -2053,7 +2049,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
                             <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
                                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                                <span style="font-size: 10px; color: white;">âœ¨</span>
+                                <span style="font-size: 10px; color: white;">✨</span>
                             </div>
                         </div>
                         <div style="flex: 1; min-width: 0;">
@@ -2087,7 +2083,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 itemDiv.innerHTML = itemHtml;
                 itemsContainer.appendChild(itemDiv.firstElementChild);
                 
-                // Resim yÃ¼kleme
+                // Resim yükleme
                 getImageForPlace(name, config.layerPrefix, window.selectedCity || "")
                     .then(src => {
                         const img = document.getElementById(imgId);
@@ -2099,7 +2095,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             });
         }
         
-        // Harita marker ekleme loop'u (aynÄ± kalabilir)
+        // Harita marker ekleme loop'u (aynı kalabilir)
         topPlaces.forEach((placeData, idx) => {
             const f = placeData.feature;
             const distance = placeData.distance;
@@ -2202,7 +2198,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     }
 }
 
-// Marker HTML'i de gÃ¼ncelleyelim (mesafe yazÄ±sÄ±nÄ± daire renginde yapalÄ±m)
+// Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
         `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); font-size:9px; color:#1976d2; font-weight:bold; white-space:nowrap; background:white; padding:1px 3px; border-radius:3px; border:1px solid #eee;">
@@ -2220,7 +2216,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
             align-items:center;
             justify-content:center;
             box-shadow:0 2px 8px rgba(0,0,0,0.2);
-            border:3px solid ${color}; /* KATEGORÄ° RENGÄ° (sadece border) */
+            border:3px solid ${color}; /* KATEGORİ RENGİ (sadece border) */
         ">
             <img src="${iconUrl}"
                  style="width:18px;height:18px;" alt="${categoryType}">
@@ -2230,7 +2226,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     `;
 }
 
-// YardÄ±mcÄ± fonksiyon: Popup HTML'i (mesafe bilgisi ile)
+// Yardımcı fonksiyon: Popup HTML'i (mesafe bilgisi ile)
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
     const address = f.properties.formatted || "";
@@ -2242,7 +2238,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     
     const distanceText = distance ? 
         `<div style="font-size:11px; color:#666; margin-bottom:4px;">
-            ðŸ“ ${distance < 1000 ? Math.round(distance)+' meters' : (distance/1000).toFixed(2)+' km'} away
+            📏 ${distance < 1000 ? Math.round(distance)+' meters' : (distance/1000).toFixed(2)+' km'} away
         </div>` : '';
     
     return `
@@ -2279,7 +2275,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
 
 
 
-// YardÄ±mcÄ± fonksiyon: Popup aÃ§Ä±ldÄ±ÄŸÄ±nda resim yÃ¼kleme
+// Yardımcı fonksiyon: Popup açıldığında resim yükleme
 function handlePlacePopupImageLoading(f, imgId, categoryType) {
     getImageForPlace(f.properties.name, categoryType, window.selectedCity || "")
         .then(src => {
@@ -2305,7 +2301,7 @@ function handlePlacePopupImageLoading(f, imgId, categoryType) {
         });
 }
 
-// Sepete ekleme fonksiyonu (tÃ¼m kategoriler iÃ§in)
+// Sepete ekleme fonksiyonu (tüm kategoriler için)
 window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, categoryType) {
     window.currentDay = parseInt(day);
     
@@ -2370,7 +2366,7 @@ window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, c
 };
 
 // ============================================
-// ESKÄ° FONKSÄ°YONLARI YENÄ° TEKÄ°L FONKSÄ°YONLARA YÃ–NLENDÄ°R
+// ESKİ FONKSİYONLARI YENİ TEKİL FONKSİYONLARA YÖNLENDİR
 // ============================================
 
 async function showNearbyRestaurants(lat, lng, map, day) {
@@ -2389,7 +2385,7 @@ async function showNearbyEntertainment(lat, lng, map, day) {
     return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', 1000);
 }
 
-// Eski fonksiyonlarÄ± yeni fonksiyona yÃ¶nlendir (geriye dÃ¶nÃ¼k uyumluluk)
+// Eski fonksiyonları yeni fonksiyona yönlendir (geriye dönük uyumluluk)
 window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'restaurant');
 };
@@ -2412,12 +2408,12 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 // NEARBY POPUP MANAGEMENT & VIEW SWITCHER
 // ============================================
 
-// Varsa eski zamanlayÄ±cÄ±larÄ± temizle
+// Varsa eski zamanlayıcıları temizle
 if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
 if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
 
-// 1. TEMÄ°ZLÄ°K VE KAPATMA FONKSÄ°YONU
+// 1. TEMİZLİK VE KAPATMA FONKSİYONU
 window.closeNearbyPopup = function() {
     const btn = document.getElementById('nearby-view-switcher-btn');
     if (btn) btn.remove();
@@ -2457,7 +2453,7 @@ window.closeNearbyPopup = function() {
     window._currentNearbyPopupElement = null;
 };
 
-// 2. BUTON OLUÅžTURUCU
+// 2. BUTON OLUŞTURUCU
 function setupViewSwitcherButton(mapInstance) {
     let oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
@@ -2486,8 +2482,8 @@ function setupViewSwitcherButton(mapInstance) {
     `;
     document.body.appendChild(btn);
 
-    const contentToMap = `<span>ðŸ—ºï¸</span> <span>Show Map</span>`;
-    const contentToList = `<span>ðŸ“‹</span> <span>Show List</span>`;
+    const contentToMap = `<span>🗺️</span> <span>Show Map</span>`;
+    const contentToList = `<span>📋</span> <span>Show List</span>`;
 
     btn.onclick = function(e) {
         e.stopPropagation();
@@ -2527,14 +2523,14 @@ function setupViewSwitcherButton(mapInstance) {
 
 
 
-// 4. SAYFA DEÄžÄ°ÅžÄ°KLÄ°ÄžÄ°
+// 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
     window.closeNearbyPopup();
 });
 
-// 5. HARITA KAPANIÅžI + Event Delegation
+// 5. HARITA KAPANIŞI + Event Delegation
 document.addEventListener('click', function(e) {
-    // HaritayÄ± kapatan close-expanded-map butonuna tÄ±klandÄ±ÄŸÄ±nda
+    // Haritayı kapatan close-expanded-map butonuna tıklandığında
     if (e.target && (e.target.classList.contains('close-expanded-map') || e.target.closest('.close-expanded-map'))) {
         const switcherBtn = document.getElementById('nearby-view-switcher-btn');
         if (switcherBtn) {
