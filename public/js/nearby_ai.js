@@ -1761,8 +1761,202 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     const isMapLibre = !!map.addSource;
     
-    // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
-    clearAllCategoryMarkers(map);
+    // +++ PULSE MARKER'I EKLE (YENİ) +++
+    // Eski pulse marker'ları temizle
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
+    
+    // Yeni pulse marker HTML
+    const pulseHtml = `
+      <div class="tt-pulse-marker">
+        <div class="tt-pulse-dot">
+          <div class="tt-pulse-dot-inner"></div>
+        </div>
+        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
+        <div class="tt-pulse-glow"></div>
+        <div class="tt-pulse-inner-ring"></div>
+      </div>
+    `;
+    
+    // CSS'i ekle (eğer yoksa)
+    if (!document.getElementById('tt-pulse-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tt-pulse-styles';
+        style.textContent = `
+            .tt-pulse-marker {
+                position: relative;
+                width: 40px;
+                height: 40px;
+                pointer-events: none;
+                z-index: 1000;
+                filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
+            }
+            
+            .tt-pulse-dot {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 20px;
+                height: 20px;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #1976d2, #64b5f6);
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 
+                    0 0 15px rgba(25, 118, 210, 0.8),
+                    0 0 30px rgba(25, 118, 210, 0.4),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+                z-index: 10;
+                animation: tt-pulse-dot 2s ease-in-out infinite;
+            }
+            
+            .tt-pulse-dot-inner {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                background: white;
+                border-radius: 50%;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            
+            .tt-pulse-ring {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                border: 2px solid rgba(25, 118, 210, 0.8);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                opacity: 0;
+            }
+            
+            .tt-pulse-ring-1 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            }
+            
+            .tt-pulse-ring-2 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
+            }
+            
+            .tt-pulse-ring-3 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
+            }
+            
+            .tt-pulse-glow {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 40px;
+                height: 40px;
+                transform: translate(-50%, -50%);
+                background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
+                border-radius: 50%;
+                z-index: 1;
+                animation: tt-pulse-glow 2s ease-in-out infinite;
+            }
+            
+            .tt-pulse-inner-ring {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 30px;
+                height: 30px;
+                border: 1.5px solid rgba(255, 255, 255, 0.9);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                animation: tt-pulse-inner 1.5s linear infinite;
+                opacity: 0.7;
+            }
+            
+            @keyframes tt-pulse-dot {
+                0%, 100% { 
+                    transform: translate(-50%, -50%) scale(1);
+                    box-shadow: 
+                        0 0 15px rgba(25, 118, 210, 0.8),
+                        0 0 30px rgba(25, 118, 210, 0.4);
+                }
+                50% { 
+                    transform: translate(-50%, -50%) scale(1.1);
+                    box-shadow: 
+                        0 0 25px rgba(25, 118, 210, 1),
+                        0 0 50px rgba(25, 118, 210, 0.6);
+                }
+            }
+            
+            @keyframes tt-pulse-wave {
+                0% {
+                    width: 20px;
+                    height: 20px;
+                    opacity: 0.8;
+                    border-width: 2px;
+                }
+                100% {
+                    width: 80px;
+                    height: 80px;
+                    opacity: 0;
+                    border-width: 1px;
+                }
+            }
+            
+            @keyframes tt-pulse-glow {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 0.8; }
+            }
+            
+            @keyframes tt-pulse-inner {
+                0% { 
+                    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                    opacity: 0.7;
+                }
+                100% { 
+                    transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Pulse marker'ı haritaya ekle
+    if (isMapLibre) {
+        // 3D MapLibre
+        const el = document.createElement('div');
+        el.className = 'tt-pulse-marker';
+        el.innerHTML = pulseHtml;
+        
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
+            element: el,
+            anchor: 'center'
+        })
+        .setLngLat([lng, lat])
+        .addTo(map);
+    } else {
+        // 2D Leaflet
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'tt-pulse-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
+    }
+    
+    // +++ PULSE MARKER SONU +++
     
     // Kategori konfigürasyonları
     const categoryConfig = {
@@ -1883,60 +2077,58 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
         
         // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
-   if (maxDistance > 0) {
-    const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
-    const radiusMeters = Math.ceil(maxDistance); // MARGİN YOK! Tam mesafe
-    
-    if (isMapLibre) {
-        // 3D MapLibre için
-        const circleId = `category-radius-${categoryType}-${Date.now()}`;
-        const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-        
-        map.addSource(circleId, {
-            type: 'geojson',
-            data: circleGeoJSON
-        });
-        
-        map.addLayer({
-            id: circleId + '-layer',
-            type: 'fill',
-            source: circleId,
-            paint: {
-                'fill-color': circleColor,
-                'fill-opacity': 0.04,      // DAHA ŞEFFAF (0.06 → 0.04)
-                'fill-outline-color': 'transparent'
+        if (maxDistance > 0) {
+            const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
+            const radiusMeters = Math.ceil(maxDistance); // MARGİN YOK! Tam mesafe
+            
+            if (isMapLibre) {
+                // 3D MapLibre için
+                const circleId = `category-radius-${categoryType}-${Date.now()}`;
+                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+                
+                map.addSource(circleId, {
+                    type: 'geojson',
+                    data: circleGeoJSON
+                });
+                
+                map.addLayer({
+                    id: circleId + '-layer',
+                    type: 'fill',
+                    source: circleId,
+                    paint: {
+                        'fill-color': circleColor,
+                        'fill-opacity': 0.04,
+                        'fill-outline-color': 'transparent'
+                    }
+                });
+                
+                window._categoryRadiusCircle3D = circleId;
+                
+            } else {
+                // 2D Leaflet için
+                window._categoryRadiusCircle = L.circle([lat, lng], {
+                    radius: radiusMeters,
+                    color: circleColor,
+                    weight: 0,
+                    opacity: 0,
+                    fillColor: circleColor,
+                    fillOpacity: 0.04,
+                    dashArray: null,
+                    className: `category-radius-circle`
+                }).addTo(map);
+                
+                console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
+                
+                window._categoryRadiusCircle.bindTooltip(
+                    `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
+                    { 
+                        permanent: false, 
+                        direction: 'center',
+                        className: 'radius-tooltip'
+                    }
+                );
             }
-        });
-        
-        window._categoryRadiusCircle3D = circleId;
-        
-    } else {
-        // 2D Leaflet için
-        window._categoryRadiusCircle = L.circle([lat, lng], {
-            radius: radiusMeters,
-            color: circleColor,
-            weight: 0,           // ÇİZGİ YOK
-            opacity: 0,          // ÇİZGİ ŞEFFAF
-            fillColor: circleColor,
-            fillOpacity: 0.04,   // DAHA ŞEFFAF (0.06 → 0.04)
-            dashArray: null,     // KESİKLİ ÇİZGİ YOK
-            className: `category-radius-circle`
-        }).addTo(map);
-        
-        // DEBUG: Konsola daire bilgisi yaz
-        console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
-        
-        // Daireye tooltip ekle (mesafeyi göster)
-        window._categoryRadiusCircle.bindTooltip(
-            `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
-            { 
-                permanent: false, 
-                direction: 'center',
-                className: 'radius-tooltip'
-            }
-        );
-    }
-}
+        }
         
         // +++ MARKERLARI EKLE +++
         topPlaces.forEach((placeData, idx) => {
