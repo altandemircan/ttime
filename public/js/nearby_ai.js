@@ -820,9 +820,7 @@ console.log('Koordinatlar:', { lat, lng });
     if (typeof closeNearbyPopup === 'function') {
         closeNearbyPopup();
     }
-    
-    // 2. Tüm kategori markerlarını temizle
-    clearAllCategoryMarkers(map);
+
 
     // ORİJİNAL ÇALIŞAN KATEGORİLER - daha az kategori, daha güvenli
     const categoryGroups = {
