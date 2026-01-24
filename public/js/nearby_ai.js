@@ -1756,494 +1756,214 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 }
 
 
-async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
-    window._lastSelectedCategory = categoryType; // Hangi kategori seçildiğini kaydet
 
-    const isMapLibre = !!map.addSource;
+
+let aiAbortController = null; let aiDebounceTimeout = null; // BUNU DOSYA BAŞINDA tanımla (global olmalı) let aiActiveRequest = 0; // Görsel doğrulama fonksiyonu function getBestCityForAI(pointInfo) { if (!pointInfo) return window.selectedCity || ''; // Öncelik sırası: // 1. Tıkl
+
+pasted
+
+show more on the map sonrası haritada tıklanan animasyonlu marker görünüyor. ikinci bir yere tıklamada kayboluyor. duzelt.
+
+6:35 AM
+Bu sorunu düzeltmek için, harita üzerinde yeni bir yere tıklandığında pulse marker'ın temizlenmesini sağlamanız gerekir. attachClickNearbySearch fonksiyonunda clearAllCategoryMarkers'dan sonra pulse marker'ları temizleyin.
+
+Pulse Marker Düzeltmesi
+Code 
+Sorunu düzelttim. İkinci bir yere tıklamada pulse marker'ların kaybolması için clickHandler içinde en başa pulse marker temizleme kodunu ekledim:
+
+Değişiklikler:
+
+clearAllCategoryMarkers(map) çağrısından hemen önce _nearbyPulseMarker ve _nearbyPulseMarker3D değişkenlerini kontrol ederek temizledim
+Her tıklamada eski pulse marker'lar kaldırılıyor ve yeni popup açılırken yeni marker oluşturuluyor
+Bu şekilde "Show more on the map" sonrasında başka bir yere tıklandığında eski animasyonlu marker silinecek ve yeni tıklanan konumda yeni bir popup ile işlem devam edecek.
+
+show more on the mao sonrası sinyal markerı hiç görünmyor
+
+6:38 AM
+Sorun şu: "Show more" tıklandığında closeNearbyPopup() çağrılmıyor, bu nedenle eski pulse marker kalmıyor. Ayrıca yeni bir pulse marker da oluşturulmuyor. Bunu düzeltelim:
+
+Show More After Pulse Marker Düzeltmesi
+Code 
+Düzeltmeyi yaptım. "Show more on the map" tıklandığında showNearbyPlacesByCategory fonksiyonunun en başına pulse marker oluşturma kodunu ekledim.
+
+Yapılan değişiklikler:
+
+Fonksiyon başında eski pulse marker'ları temizle
+CSS stillerini ekle (varsa zaten var, yoksa yeni ekle)
+Hem Leaflet (2D) hem MapLibre (3D) haritalar için pulse marker oluştur
+Sonra kategori markerlarını ekle
+Şimdi "Show more" tıklandığında seçilen konumda animasyonlu mavi pulse marker gösterilecek.
+
+tam yaz fonksiyonu
+
+6:39 AM
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 2 
+Tam fonksiyonu yazdım. "Show more on the map" tıklandığında:
+
+Pulse marker oluşturulur - Seçilen konumda animasyonlu mavi sinyal marker'ı görünür
+CSS stilleri eklenir - Eğer daha önce eklenmemişse
+Hem Leaflet hem MapLibre desteği - 2D ve 3D haritada çalışır
+Kategori markerları eklenir - Pulse marker'ın etrafında ilgili kategorinin markerları gösterilir
+Daire çizilir - En uzak place'e kadar olan mesafe dairesini gösterir
+Artık pulse marker her zaman görünecektir.
+
+başka kategori seçip show more on the map e tıklayınca eski çizgiler kalıyor haritada
+
+6:41 AM
+Sorun şu: clearAllCategoryMarkers fonksiyonu çağrılmıyor. showNearbyPlacesByCategory başında tüm kategorileri temizlemeliyiz. Düzeltelim:
+
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 3 
+Düzelttim. Artık showNearbyPlacesByCategory fonksiyonunun başında clearAllCategoryMarkers(map) çağrılıyor. Bu şekilde:
+
+Eski kategori markerları temizlenir
+Eski çizgiler kaldırılır
+Eski daireler silinir
+Sonra yeni kategori için pulse marker ve markerlar eklenir
+Başka kategori seçip "Show more" tıkladığında artık eski çizgiler kalış olmayacak.
+
+başka noktaya tıklayınca marker background kırmızı gibi oluyor son anda bu iyi görünmüyor
+
+6:43 AM
+Bu sorun marker'ın hızlı bir şekilde değişiyor gibi görünmesinden kaynaklanıyor. Marker HTML'ini ve temizleme işlemini optimize edelim:
+
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 4 
+Düzelttim. Marker background'ı kırmızıdan beyaza değiştirmek için:
+
+background:white !important; - Gücü arttırdım (önceki CSS'lerin üstüne yazması için)
+pointer-events: auto; - Marker container'ında ekleme
+pointer-events: none; - İkona ekleme (tıklama sorunlarını engellemek için)
+flex-shrink: 0; - Boyut değişmemesi için
+Artık başka noktaya tıkladığında marker background beyaz kalacak, son anda kırmızı görülmeyecektir.
+
+yeşil çizgiler biraz kalın ve boşluksuz gözüküyor
+
+6:44 AM
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 5 
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 6 
+Düzelttim. Yeşil çizgilerin özelliklerini optimize ettim:
+
+Değişiklikler:
+
+line-width/weight: 8 → 3 (daha ince)
+line-opacity: 0.9 → 0.7 (daha saydamlı)
+line-dasharray: [4, 4] ve "10,6" → [6, 4] ve "6,4" (daha belirgin boşluklar)
+Artık çizgiler daha zarif ve okuyabilir boşluklarla görünecektir.
+
+bir tık kalın yapalım ve aralığı artıralım
+
+6:45 AM
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 7 
+Show More After Pulse Marker Düzeltmesi
+Code ∙ Version 8 
+Tamam, düzelttim:
+
+Değişiklikler:
+
+line-width/weight: 3 → 4 (biraz daha kalın)
+line-dasharray: [6, 4] ve "6,4" → [8, 6] ve "8,6" (aralık artırıldı)
+Artık çizgiler daha kalın ve kesikli kısımları arasında daha geniş boşluk olacak.
+
+başka yere tıklanınca eski markerların kırmızı bg olup kaybolma sorunu devam ediyor
+
+6:46 AM
+Sorun marker'ların kaldırılırken görüntü sorunu yaşaması. clearAllCategoryMarkers fonksiyonunu güçlendelim:
+
+Drafting artifact...
+Code 
+Düzelttim. clearAllCategoryMarkers fonksiyonunu güçlendirdim. Şu değişiklikler yapıldı:
+
+DOM temizliği eklendi - Marker'ları sadece remove() yerine DOM'dan tamamen çıkartıyoruz
+Container kontrolleri - _container ve _element özelliklerini kontrol ederek DOM'dan kaldırıyoruz
+Try-catch güçlendirildi - Her işlem için ayrı ayrı hata kontrolü
+Daire temizliği - Kategori dairelerini de aynı şekilde temizliyoruz
+Artık başka yere tıklandığında eski marker'lar kırmızı background olmadan tamamen silinecektir.
+
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+// Ayrıca, haritaya tıklandığında tüm kategorileri temizleyen fonksiyon
+function clearAllCategoryMarkers(map) {
+    const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
-    clearAllCategoryMarkers(map);
-    
-    // +++ PULSE MARKER'I EKLE (YENİ) +++
-    // Eski pulse marker'ları temizle
-    if (window._nearbyPulseMarker) {
-        try { window._nearbyPulseMarker.remove(); } catch(e) {}
-        window._nearbyPulseMarker = null;
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-        window._nearbyPulseMarker3D = null;
-    }
-    
-    // Yeni pulse marker HTML
-    const pulseHtml = `
-      <div class="tt-pulse-marker">
-        <div class="tt-pulse-dot">
-          <div class="tt-pulse-dot-inner"></div>
-        </div>
-        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
-        <div class="tt-pulse-glow"></div>
-        <div class="tt-pulse-inner-ring"></div>
-      </div>
-    `;
-    
-    // CSS'i ekle (eğer yoksa)
-    if (!document.getElementById('tt-pulse-styles')) {
-        const style = document.createElement('style');
-        style.id = 'tt-pulse-styles';
-        style.textContent = `
-            .tt-pulse-marker {
-                position: relative;
-                width: 40px;
-                height: 40px;
-                pointer-events: none;
-                z-index: 1000;
-                filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
-            }
-            
-            .tt-pulse-dot {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 20px;
-                height: 20px;
-                transform: translate(-50%, -50%);
-                background: linear-gradient(135deg, #1976d2, #64b5f6);
-                border-radius: 50%;
-                border: 3px solid white;
-                box-shadow: 
-                    0 0 15px rgba(25, 118, 210, 0.8),
-                    0 0 30px rgba(25, 118, 210, 0.4),
-                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
-                z-index: 10;
-                animation: tt-pulse-dot 2s ease-in-out infinite;
-            }
-            
-            .tt-pulse-dot-inner {
-                position: absolute;
-                width: 6px;
-                height: 6px;
-                background: white;
-                border-radius: 50%;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-            
-            .tt-pulse-ring {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                border: 2px solid rgba(25, 118, 210, 0.8);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                opacity: 0;
-            }
-            
-            .tt-pulse-ring-1 {
-                width: 20px;
-                height: 20px;
-                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            }
-            
-            .tt-pulse-ring-2 {
-                width: 20px;
-                height: 20px;
-                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
-            }
-            
-            .tt-pulse-ring-3 {
-                width: 20px;
-                height: 20px;
-                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
-            }
-            
-            .tt-pulse-glow {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 40px;
-                height: 40px;
-                transform: translate(-50%, -50%);
-                background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
-                border-radius: 50%;
-                z-index: 1;
-                animation: tt-pulse-glow 2s ease-in-out infinite;
-            }
-            
-            .tt-pulse-inner-ring {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 30px;
-                height: 30px;
-                border: 1.5px solid rgba(255, 255, 255, 0.9);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                animation: tt-pulse-inner 1.5s linear infinite;
-                opacity: 0.7;
-            }
-            
-            @keyframes tt-pulse-dot {
-                0%, 100% { 
-                    transform: translate(-50%, -50%) scale(1);
-                    box-shadow: 
-                        0 0 15px rgba(25, 118, 210, 0.8),
-                        0 0 30px rgba(25, 118, 210, 0.4);
-                }
-                50% { 
-                    transform: translate(-50%, -50%) scale(1.1);
-                    box-shadow: 
-                        0 0 25px rgba(25, 118, 210, 1),
-                        0 0 50px rgba(25, 118, 210, 0.6);
-                }
-            }
-            
-            @keyframes tt-pulse-wave {
-                0% {
-                    width: 20px;
-                    height: 20px;
-                    opacity: 0.8;
-                    border-width: 2px;
-                }
-                100% {
-                    width: 80px;
-                    height: 80px;
-                    opacity: 0;
-                    border-width: 1px;
-                }
-            }
-            
-            @keyframes tt-pulse-glow {
-                0%, 100% { opacity: 0.5; }
-                50% { opacity: 0.8; }
-            }
-            
-            @keyframes tt-pulse-inner {
-                0% { 
-                    transform: translate(-50%, -50%) rotate(0deg) scale(1);
-                    opacity: 0.7;
-                }
-                100% { 
-                    transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    // Pulse marker'ı haritaya ekle
-    if (isMapLibre) {
-        // 3D MapLibre
-        const el = document.createElement('div');
-        el.className = 'tt-pulse-marker';
-        el.innerHTML = pulseHtml;
-        
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
-            element: el,
-            anchor: 'center'
-        })
-        .setLngLat([lng, lat])
-        .addTo(map);
-    } else {
-        // 2D Leaflet
-        const pulseIcon = L.divIcon({
-            html: pulseHtml,
-            className: 'tt-pulse-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
-    }
-    
-    // +++ PULSE MARKER SONU +++
-    
-    // Kategori konfigürasyonları
-    const categoryConfig = {
-        'restaurants': {
-            apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#FF5252',
-            iconUrl: '/img/restaurant_icon.svg',
-            buttonText: 'Show Restaurants',
-            placeholderIcon: '/img/restaurant_icon.svg',
-            layerPrefix: 'restaurant'
-        },
-        'hotels': {
-            apiCategories: 'accommodation',
-            color: '#2196F3',
-            iconUrl: '/img/accommodation_icon.svg',
-            buttonText: 'Show Hotels',
-            placeholderIcon: '/img/hotel_icon.svg',
-            layerPrefix: 'hotel'
-        },
-        'markets': {
-            apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#4CAF50',
-            iconUrl: '/img/market_icon.svg',
-            buttonText: 'Show Markets',
-            placeholderIcon: '/img/market_icon.svg',
-            layerPrefix: 'market'
-        },
-        'entertainment': {
-            apiCategories: 'entertainment,leisure',
-            color: '#FF9800',
-            iconUrl: '/img/touristic_icon.svg',
-            buttonText: 'Show Entertainment',
-            placeholderIcon: '/img/entertainment_icon.svg',
-            layerPrefix: 'entertainment'
+    // 2D Harita (Leaflet) temizliği
+    categories.forEach(category => {
+        const layerKey = `__${category}Layers`;
+        if (map && map[layerKey]) {
+            map[layerKey].forEach(l => {
+                try { 
+                    // Layer'ı DOM'dan hemen kaldır
+                    if (l.remove) l.remove();
+                    if (l._container && l._container.parentNode) {
+                        l._container.parentNode.removeChild(l._container);
+                    }
+                } catch(e) {}
+            });
+            map[layerKey] = [];
         }
-    };
+    });
     
-    const config = categoryConfig[categoryType] || categoryConfig.restaurants;
-    
-    // Temizlik
-    const layerKey = `__${config.layerPrefix}Layers`;
-    const marker3DKey = `_${config.layerPrefix}3DMarkers`;
-    const layer3DKey = `_${config.layerPrefix}3DLayers`;
-    
-    if (map[layerKey]) {
-        map[layerKey].forEach(l => l.remove());
-        map[layerKey] = [];
-    }
-    
-    if (window[layer3DKey]) {
-        window[layer3DKey].forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
+    // 3D Harita (MapLibre) temizliği
+    if (window._maplibre3DInstance === map) {
+        categories.forEach(category => {
+            const marker3DKey = `_${category}3DMarkers`;
+            const layer3DKey = `_${category}3DLayers`;
+            
+            if (window[marker3DKey]) {
+                window[marker3DKey].forEach(m => { 
+                    try { 
+                        if (m.remove) m.remove();
+                        if (m._element && m._element.parentNode) {
+                            m._element.parentNode.removeChild(m._element);
+                        }
+                    } catch(e){}
+                });
+                window[marker3DKey] = [];
+            }
+            
+            if (window[layer3DKey]) {
+                window[layer3DKey].forEach(id => {
+                    try {
+                        if (map.getLayer(id)) map.removeLayer(id);
+                        if (map.getSource(id)) map.removeSource(id);
+                    } catch(e) {}
+                });
+                window[layer3DKey] = [];
+            }
         });
-        window[layer3DKey] = [];
     }
     
-    if (window[marker3DKey]) {
-        window[marker3DKey].forEach(m => m.remove());
-        window[marker3DKey] = [];
-    }
-    
-    // +++ ÖNCEKİ DAIRELERİ TEMİZLE +++
+    // +++ KATEGORİ DAIRELERİNİ DE TEMİZLE +++
     if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(_) {}
+        try { 
+            window._categoryRadiusCircle.remove();
+            if (window._categoryRadiusCircle._container && window._categoryRadiusCircle._container.parentNode) {
+                window._categoryRadiusCircle._container.parentNode.removeChild(window._categoryRadiusCircle._container);
+            }
+        } catch(e) {}
         window._categoryRadiusCircle = null;
     }
-    if (window._categoryRadiusCircle3D) {
+    
+    if (window._categoryRadiusCircle3D && map && map.getSource) {
         try {
             const circleId = window._categoryRadiusCircle3D;
+            
             if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
             if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
             if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(_) {}
+        } catch(e) {}
         window._categoryRadiusCircle3D = null;
     }
-    
-    // API'den veri çek
-    const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=5000&limit=30`;
-    
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
-        
-        if (!data.features || data.features.length === 0) {
-            alert(`No ${categoryType} found nearby.`);
-            return;
-        }
-        
-        // +++ EN UZAK MESAFEYİ BUL +++
-        let maxDistance = 0;
-        const placesWithDistance = [];
-        
-        data.features.forEach((f, idx) => {
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            
-            // Mesafeyi hesapla
-            const distance = haversine(lat, lng, pLat, pLng);
-            placesWithDistance.push({
-                feature: f,
-                distance: distance,
-                index: idx
-            });
-            
-            // En uzak mesafeyi güncelle
-            if (distance > maxDistance) {
-                maxDistance = distance;
-            }
-        });
-        
-        // Sırala (en yakından en uzağa)
-        placesWithDistance.sort((a, b) => a.distance - b.distance);
-        
-        // İlk 20 yeri al
-        const topPlaces = placesWithDistance.slice(0, 20);
-        
-        console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
-        
-        // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
-        if (maxDistance > 0) {
-            const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
-            const radiusMeters = Math.ceil(maxDistance); // MARGİN YOK! Tam mesafe
-            
-            if (isMapLibre) {
-                // 3D MapLibre için
-                const circleId = `category-radius-${categoryType}-${Date.now()}`;
-                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-                
-                map.addSource(circleId, {
-                    type: 'geojson',
-                    data: circleGeoJSON
-                });
-                
-                map.addLayer({
-                    id: circleId + '-layer',
-                    type: 'fill',
-                    source: circleId,
-                    paint: {
-                        'fill-color': circleColor,
-                        'fill-opacity': 0.04,
-                        'fill-outline-color': 'transparent'
-                    }
-                });
-                
-                window._categoryRadiusCircle3D = circleId;
-                
-            } else {
-                // 2D Leaflet için
-                window._categoryRadiusCircle = L.circle([lat, lng], {
-                    radius: radiusMeters,
-                    color: circleColor,
-                    weight: 0,
-                    opacity: 0,
-                    fillColor: circleColor,
-                    fillOpacity: 0.04,
-                    dashArray: null,
-                    className: `category-radius-circle`
-                }).addTo(map);
-                
-                console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
-                
-                window._categoryRadiusCircle.bindTooltip(
-                    `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
-                    { 
-                        permanent: false, 
-                        direction: 'center',
-                        className: 'radius-tooltip'
-                    }
-                );
-            }
-        }
-        
-        // +++ MARKERLARI EKLE +++
-        topPlaces.forEach((placeData, idx) => {
-            const f = placeData.feature;
-            const distance = placeData.distance;
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            const imgId = `${config.layerPrefix}-img-${idx}-${Date.now()}`;
-            
-            let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance);
-            
-            if (isMapLibre) {
-                // 3D HARİTA (MapLibre)
-                window[layer3DKey] = window[layer3DKey] || [];
-                window[marker3DKey] = window[marker3DKey] || [];
-                
-                // Çizgi ekle
-                const sourceId = `${config.layerPrefix}-line-src-${idx}`;
-                const layerId = `${config.layerPrefix}-line-layer-${idx}`;
-                if (!map.getSource(sourceId)) {
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
-                        }
-                    });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 
-                            'line-color': '#4CAF50',
-                            'line-width': 4,
-                            'line-opacity': 0.7,
-                            'line-dasharray': [8, 6]
-                        }
-                    });
-                    window[layer3DKey].push(layerId, sourceId);
-                }
-                
-                // Marker ekle
-                const el = document.createElement('div');
-                el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance);
-                el.className = 'custom-3d-marker-element';
-                el.style.cursor = 'pointer';
-                el.style.zIndex = '2000';
-                
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px',
-                    closeButton: true,
-                    className: 'tt-unified-popup'
-                }).setHTML(popupContent);
-                
-                popup.on('open', () => {
-                    handlePlacePopupImageLoading(f, imgId, categoryType);
-                });
-                
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
-                    .setPopup(popup)
-                    .addTo(map);
-                
-                el.addEventListener('click', (e) => { 
-                    e.stopPropagation(); 
-                    marker.togglePopup(); 
-                });
-                window[marker3DKey].push(marker);
-            } else {
-                // 2D HARİTA (Leaflet)
-                map[layerKey] = map[layerKey] || [];
-                
-                // Çizgi
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: '#4CAF50',
-                    weight: 4,
-                    opacity: 0.7, 
-                    dashArray: "8,6"
-                }).addTo(map);
-                map[layerKey].push(line);
-                
-                // Marker (mesafe bilgisi ile)
-                const marker = L.marker([pLat, pLng], {
-                    icon: L.divIcon({ 
-                        html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), 
-                        className: "", 
-                        iconSize: [32,32], 
-                        iconAnchor: [16,16] 
-                    })
-                }).addTo(map);
-                map[layerKey].push(marker);
-                
-                marker.bindPopup(popupContent, { maxWidth: 341 });
-                marker.on("popupopen", function() { 
-                    handlePlacePopupImageLoading(f, imgId, categoryType);
-                });
-            }
-        });
-        
-    } catch (err) {
-        console.error(err);
-        alert(`Error fetching ${categoryType}.`);
-        
-        // Hata durumunda daireyi de sil
-        if (window._categoryRadiusCircle) {
-            try { window._categoryRadiusCircle.remove(); } catch(_) {}
-            window._categoryRadiusCircle = null;
-        }
-    }
 }
+
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
