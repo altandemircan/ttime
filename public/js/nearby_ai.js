@@ -655,10 +655,6 @@ const clickHandler = function(e) {
         // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
         
-        // +++ ÖNCE PULSE MARKER EKLE (tıklanan yerde) +++
-        const pulseContent = '<div style="padding:10px; color:#666; text-align:center;">📍 Searching...</div>';
-        showCustomPopup(e.latlng.lat, e.latlng.lng, map, pulseContent, false);
-        
         // +++ KONTROL: EĞER DAHA ÖNCE "SHOW MORE" TIKLANDIYSA +++
         if (window._lastSelectedCategory) {
             // SADECE MARKER GÖSTER (sidebar yok)
@@ -668,7 +664,7 @@ const clickHandler = function(e) {
                 showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, window._lastSelectedCategory);
             }
         } else {
-            // İLK TIKLAMA: SIDEBAR AÇ
+            // İLK TIKLAMA: SADECE SIDEBAR AÇ
             // Varsa açık popup'ı kapat
             if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
             
