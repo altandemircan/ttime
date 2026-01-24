@@ -2520,50 +2520,22 @@ function setupViewSwitcherButton(mapInstance) {
 // 3. POPUP OLUŞTURMA (OVERRIDE)
 const originalShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // 1. Önceki tüm kalıntıları temizle (Çakışmayı önlemek için)
-    if (typeof window.closeNearbyPopup === 'function') window.closeNearbyPopup();
+    // Önce eski butonları temizle
     const oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
-    
-    // 2. Ana Popup Kutusu Oluştur
-    const popupContainer = document.createElement('div');
-    popupContainer.id = 'custom-nearby-popup';
-    
-    const closeBtnHtml = showCloseButton ? `
-        <button onclick="window.closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
-    ` : '';
-    
-    popupContainer.innerHTML = `${closeBtnHtml}<div class="nearby-popup-content">${content}</div>`;
-    document.body.appendChild(popupContainer);
-    window._currentNearbyPopupElement = popupContainer;
-    
-    // --- 3. MAVİ HALKA (PULSE MARKER) EKLEME ---
-    const pulseHtml = `
-      <div class="tt-pulse-marker">
-        <div class="tt-pulse-dot"><div class="tt-pulse-dot-inner"></div></div>
-        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
-        <div class="tt-pulse-glow"></div>
-      </div>
-    `;
 
-    // Harita Tipine Göre Pulse Marker'ı Koy
-    if (!!map.addSource) { // MapLibre (3D)
-        const el = document.createElement('div'); el.className = 'tt-pulse-marker'; el.innerHTML = pulseHtml;
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
-    } else { // Leaflet (2D)
-        const pulseIcon = L.divIcon({ html: pulseHtml, className: 'tt-pulse-marker', iconSize: [40, 40], iconAnchor: [20, 20] });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
+    // Orijinal popup'ı oluştur
+    if (typeof originalShowCustomPopup === 'function') {
+        originalShowCustomPopup.apply(this, arguments);
     }
 
-    // --- 4. SHOW MAP / SHOW LIST BUTONUNU EKLE ---
+    // Mobildeysen butonu 300ms sonra ekle
     if (window.innerWidth < 768) {
         setTimeout(() => {
             const mainChat = document.getElementById('main-chat');
-            // SADECE harita büyükse (main-chat gizliyse) butonu göster
             const isMapExpanded = !mainChat || window.getComputedStyle(mainChat).display === 'none';
             
-            if (isMapExpanded && typeof setupViewSwitcherButton === 'function') {
+            if (isMapExpanded) {
                 setupViewSwitcherButton(map);
             }
         }, 300);
