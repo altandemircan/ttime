@@ -532,7 +532,6 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 }
-
 // Yardımcı fonksiyon: GeoJSON circle oluştur
 function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
     const coords = [];
@@ -2548,6 +2547,25 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
+// Mobil'de harita ve popup arasında geçiş yap
+function toggleNearbyMapPopup() {
+    const popup = document.getElementById('custom-nearby-popup');
+    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+    
+    if (!popup || !mapContainer) return;
+    
+    const popupIsVisible = popup.style.display !== 'none';
+    
+    if (popupIsVisible) {
+        // Popup gizle, harita göster
+        popup.style.display = 'none';
+        mapContainer.style.display = '';
+    } else {
+        // Popup göster, harita gizle
+        popup.style.display = 'block';
+        mapContainer.style.display = 'none';
+    }
+}
 
 // closeNearbyPopup - Popup kapanışını temizle
 window.closeNearbyPopup = function() {
@@ -2555,6 +2573,12 @@ window.closeNearbyPopup = function() {
     const popupElement = document.getElementById('custom-nearby-popup');
     if (popupElement) {
         popupElement.remove();
+    }
+    
+    // Overlay kaldır
+    const overlay = document.getElementById('map-to-nearby-overlay');
+    if (overlay) {
+        overlay.remove();
     }
     
     // Harita görünümünü geri getir
