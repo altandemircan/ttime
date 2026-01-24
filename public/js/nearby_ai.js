@@ -1776,13 +1776,13 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     const isMapLibre = !!map.addSource;
     
-    // +++ CSS KURALINI EKLE (DEFAULT LEAFLET ICON'UNU GIZLE) +++
+     // +++ CSS KURALINI EKLE (DEFAULT LEAFLET ICON'UNU GIZLE) +++
     if (!document.getElementById('hide-leaflet-default-icon')) {
         const style = document.createElement('style');
         style.id = 'hide-leaflet-default-icon';
         style.textContent = `
-            /* Leaflet default marker icon'unu gizle */
-            .leaflet-marker-icon:not([style*="custom"]) {
+            /* Leaflet default marker icon'unu gizle - sadece custom olmayan olanları */
+            .leaflet-marker-icon:not(.custom-category-marker):not(.tt-pulse-marker) {
                 background: transparent !important;
                 background-image: none !important;
                 border: none !important;
@@ -1802,7 +1802,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         `;
         document.head.appendChild(style);
     }
-    
     // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
     clearAllCategoryMarkers(map);
     
