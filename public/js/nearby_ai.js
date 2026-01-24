@@ -2288,10 +2288,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
 
     // MOBİL'DE HARITA GİZLE VE POPUP OVERLAY BUTONU EKLE
     if (isMobile) {
-        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-        if (mapContainer) {
-            mapContainer.style.display = 'none';
-        }
+      
         
         // POPUP AÇIKKEN ALT BUTON (Haritaya Dön)
         setTimeout(() => {
