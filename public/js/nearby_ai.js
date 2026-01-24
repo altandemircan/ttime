@@ -1739,42 +1739,16 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-    // SIDEBAR'I BURADA AÇ (topPlaces hazır olduktan sonra)
-        let itemsHtml = '';
-        topPlaces.forEach((placeData, idx) => {
-            const f = placeData.feature;
-            const distance = placeData.distance;
-            const name = f.properties.name || 'Unknown';
-            const distStr = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
-            
-            itemsHtml += `
-                <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: 0.9rem; color: #333; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-                        <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.properties.formatted || ''}</div>
-                    </div>
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 10px; color: #999; white-space: nowrap;">${distStr}</div>
-                        <button onclick="window.addPlaceToTripFromPopup('', '${name}', '${f.properties.formatted || ''}', ${day}, ${f.properties.lat}, ${f.properties.lon}, '${config.layerPrefix}')" style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px;">+</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        const html = `
-            <div>
-                <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                    📍 Nearby Places
-                </div>
-                ${addPointSection}
-                <div style="border-top: 1px solid #e0e0e0; padding-top: 12px; margin-top: 12px;">
-                    <div style="font-weight: 600; margin-bottom: 8px; color: #333;">${categoryType.charAt(0).toUpperCase() + categoryType.slice(1)}</div>
-                    ${itemsHtml}
-                </div>
+    const html = `
+        <div>
+            <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
+                📍 Nearby Places
             </div>
-        `;
+            ${addPointSection}
+        </div>
+    `;
 
-        showCustomPopup(lat, lng, map, html, true);
+    showCustomPopup(lat, lng, map, html, true);
     window._currentPointInfo = pointInfo;
     
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
@@ -2101,39 +2075,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         placesWithDistance.sort((a, b) => a.distance - b.distance);
         
-        let topPlaces = []; // Üstte tanımla
-    
-    try {
-        const resp = await fetch(url);
-        const data = await resp.json();
-        
-        if (!data.features || data.features.length === 0) {
-            alert(`No ${categoryType} found nearby.`);
-            return;
-        }
-        
-        let maxDistance = 0;
-        const placesWithDistance = [];
-        
-        data.features.forEach((f, idx) => {
-            const pLng = f.properties.lon;
-            const pLat = f.properties.lat;
-            
-            const distance = haversine(lat, lng, pLat, pLng);
-            placesWithDistance.push({
-                feature: f,
-                distance: distance,
-                index: idx
-            });
-            
-            if (distance > maxDistance) {
-                maxDistance = distance;
-            }
-        });
-        
-        placesWithDistance.sort((a, b) => a.distance - b.distance);
-        
-        topPlaces = placesWithDistance.slice(0, 20); // Buraya topPlaces = ekle
+        const topPlaces = placesWithDistance.slice(0, 20);
         
         console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
         
@@ -2281,44 +2223,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             window._categoryRadiusCircle = null;
         }
     }
-    
-    // SIDEBAR'I BURADA AÇ (try-catch dışında)
-    let itemsHtml = '';
-    topPlaces.forEach((placeData, idx) => {
-        const f = placeData.feature;
-        const distance = placeData.distance;
-        const name = f.properties.name || 'Unknown';
-        const distStr = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
-        
-        itemsHtml += `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 0.9rem; color: #333; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-                    <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.properties.formatted || ''}</div>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                    <div style="font-size: 10px; color: #999; white-space: nowrap;">${distStr}</div>
-                    <button onclick="window.addPlaceToTripFromPopup('', '${name}', '${f.properties.formatted || ''}', ${day}, ${f.properties.lat}, ${f.properties.lon}, '${config.layerPrefix}')" style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px;">+</button>
-                </div>
-            </div>
-        `;
-    });
-
-    const html = `
-        <div>
-            <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                📍 Nearby Places
-            </div>
-            ${addPointSection}
-            <div style="border-top: 1px solid #e0e0e0; padding-top: 12px; margin-top: 12px;">
-                <div style="font-weight: 600; margin-bottom: 8px; color: #333;">${categoryType.charAt(0).toUpperCase() + categoryType.slice(1)}</div>
-                ${itemsHtml}
-            </div>
-        </div>
-    `;
-
-    showCustomPopup(lat, lng, map, html, true);
-}
 }
 
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
