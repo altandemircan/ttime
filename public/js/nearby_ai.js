@@ -2417,28 +2417,40 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 // 1. EXIT FUNCTION (CLEANUP)
 // Harita üzerindeki X butonuna veya Popup kapatma butonuna basıldığında çalışır.
+// ============================================
+// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
+// ============================================
+
+// 1. EXIT FUNCTION (CLEANUP)
+// Harita üzerindeki X butonuna basıldığında çalışır.
 window.closeNearbyPopup = function() {
-    // 1. Switcher Butonunu Kaldır (EN ÖNEMLİ KISIM)
+    // 1. Switcher Butonunu Kaldır
     const switcherBtn = document.getElementById('nearby-view-switcher-btn');
     if (switcherBtn) {
         switcherBtn.remove();
     }
 
-    // 2. Popup Elementini Kaldır
+    // 2. Popup Elementini Kaldır (Listeyi temizle)
     const popupElement = document.getElementById('custom-nearby-popup');
     if (popupElement) {
         popupElement.remove();
     }
 
-    // 3. Haritayı görünür yap (Eğer liste modunda gizlendiyse)
+    // 3. SIDEBAR'LARI KAPAT (YENİ EKLENDİ)
+    // Eğer nearby results bir sidebar içinde gösteriliyorsa veya detay sidebar'ı açıksa kapatır.
+    const sidebars = document.querySelectorAll('.sidebar-overlay');
+    sidebars.forEach(sidebar => {
+        sidebar.classList.remove('open');
+    });
+
+    // 4. Haritayı görünür yap (Eğer liste modunda gizlendiyse)
     const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
     if (mapContainer) {
         mapContainer.style.display = ''; 
-        // Harita boyutunu güncellemek render sorunlarını çözer
         if (window.map && window.map.invalidateSize) window.map.invalidateSize();
     }
 
-    // 4. Marker ve Şekilleri Temizle
+    // 5. Marker ve Şekilleri Temizle
     if (window._nearbyPulseMarker) {
         try { window._nearbyPulseMarker.remove(); } catch(e) {}
         window._nearbyPulseMarker = null;
@@ -2469,8 +2481,8 @@ window.closeNearbyPopup = function() {
     }
     
     window._currentNearbyPopupElement = null;
-    console.log('Nearby mode closed. Buttons removed.');
-};
+    console.log('Nearby mode closed. Sidebar and buttons removed.');
+};;
 
 // 2. VIEW SWITCHER BUTTON LOGIC
 function setupViewSwitcherButton(mapInstance) {
