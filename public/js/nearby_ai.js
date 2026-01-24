@@ -732,9 +732,9 @@ function showRouteInfoBanner(day) {
 // Add this function to nearby_ai.js to handle the click event
 window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
     try {
-        // 1. Retrieve the place data from the global cache created in showNearbyPlacesPopup
+        // 1. Retrieve the place data from the last items cache (kategori altı dahil!)
         const place = window._lastNearbyPlaces && window._lastNearbyPlaces[index];
-        
+
         if (!place) {
             console.error("Place not found in cache. Index:", index);
             return;
@@ -743,24 +743,23 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
         const p = place.properties;
         const name = p.name || p.formatted || "Unknown Place";
         const address = p.formatted || "";
-        const category = place.category || 'Place'; // Uses the category logic from generation
-        
+        const category = place.category || 'Place';
+
         // 2. Try to get an image (or use placeholder)
         let imageUrl = "img/placeholder.png";
-        
-        // If we have a cached photo list, try to use it (optional optimization)
-        // Otherwise, fetch a new one or use placeholder
-        if (typeof getPexelsImage === "function") {
+        // Eğer ._lastNearbyPhotos dizisi varsa ve sırası denkse onun görselini kullan
+        if (window._lastNearbyPhotos && window._lastNearbyPhotos[index]) {
+            imageUrl = window._lastNearbyPhotos[index];
+        } else if (typeof getPexelsImage === "function") {
             try {
-                // Determine search query for image
                 const city = window.selectedCity || "";
                 imageUrl = await getPexelsImage(`${name} ${category} ${city}`);
             } catch (e) {
-                console.warn('Image fetch failed, using placeholder');
+                // Yedek olarak yukardaki imgUrl kalır
             }
         }
 
-        // 3. Add to Cart using the mainscript.js function
+        // 3. EKLE: addToCart ile kategori altı itemi de plana ekle
         if (typeof addToCart === "function") {
             addToCart(
                 name,
@@ -775,8 +774,8 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
                 { lat: parseFloat(lat), lng: parseFloat(lon) },
                 p.website || ""
             );
-            
-            // Visual Feedback (Change button content temporarily)
+
+            // Görsel feedback (Buton içeriği ✓ olsun)
             const btn = document.activeElement;
             if (btn && btn.tagName === 'BUTTON') {
                 const originalText = btn.innerHTML;
@@ -797,7 +796,6 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
         console.error("Error adding nearby place to trip:", error);
     }
 };
-
 function handlePopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
         .then(src => {
