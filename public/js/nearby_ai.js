@@ -2210,7 +2210,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const marker = L.marker([pLat, pLng], {
                     icon: L.divIcon({ 
                         html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), 
-                        className: "", 
+                        className: "custom-category-marker", 
                         iconSize: [32,32], 
                         iconAnchor: [16,16] 
                     })
