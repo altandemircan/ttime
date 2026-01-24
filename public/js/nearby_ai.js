@@ -1675,10 +1675,14 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 
 
 // GÜNCELLENMIŞ: showNearbyPlacesByCategory
+// Cache for category data
+window._categoryCacheData = window._categoryCacheData || {};
+
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
     window._lastSelectedCategory = categoryType;
 
     const isMapLibre = !!map.addSource;
+    const cacheKey = `${lat}-${lng}-${categoryType}`;
     
     // +++ YENİ NOKTA İÇİN AI BİLGİSİ AL +++
     let pointInfo = { name: "Selected Point", address: "" };
@@ -1786,12 +1790,23 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
     
+    // Kategori sekmelerini oluştur
+    const tabsHtml = `
+        <div class="category-tabs-section" style="margin-bottom: 16px; display: flex; gap: 4px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px; overflow-x: auto;">
+            <button class="category-tab-btn" data-category="restaurants" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f0f7ff; border: 2px solid #1976d2; border-radius: 6px; cursor: pointer; font-weight: 600; color: #1976d2; font-size: 12px; white-space: nowrap;">🍽️ Restaurants</button>
+            <button class="category-tab-btn" data-category="hotels" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; color: #666; font-size: 12px; white-space: nowrap;">🏨 Hotels</button>
+            <button class="category-tab-btn" data-category="markets" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; color: #666; font-size: 12px; white-space: nowrap;">🛒 Markets</button>
+            <button class="category-tab-btn" data-category="entertainment" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; color: #666; font-size: 12px; white-space: nowrap;">🎭 Entertainment</button>
+        </div>
+    `;
+    
     // Kategori başlığı
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
+            ${tabsHtml}
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <div style="font-size: 20px;">${config.icon}</div>
-                <div style="font-weight: 600; font-size: 16px; color: #333;">${config.title}</div>
+                <div style="font-size: 20px;" class="category-icon">${config.icon}</div>
+                <div style="font-weight: 600; font-size: 16px; color: #333;" class="category-title">${config.title}</div>
                 <div style="margin-left: auto; background: #4caf50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;" class="category-count">0</div>
             </div>
             <div class="category-items-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
@@ -2070,6 +2085,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const resp = await fetch(url);
         const data = await resp.json();
         
+        // Cache'e kaydet
+        window._categoryCacheData[cacheKey] = data;
+        
         if (!data.features || data.features.length === 0) {
             const container = document.querySelector('.category-items-container');
             if (container) {
@@ -2321,6 +2339,35 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">Error loading places</div>`;
         }
     }
+    
+    // +++ TAB BUTONLARI IÇIN EVENT LISTENER'LAR ===
+    setTimeout(() => {
+        document.querySelectorAll('.category-tab-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const selectedCategory = this.dataset.category;
+                
+                // Eğer zaten aktif kisi kliklenirse işlem yapma
+                if (window._lastSelectedCategory === selectedCategory) return;
+                
+                // Tüm butonları sıfırla
+                document.querySelectorAll('.category-tab-btn').forEach(b => {
+                    b.style.background = '#f5f5f5';
+                    b.style.borderColor = '#ddd';
+                    b.style.color = '#666';
+                    b.style.fontWeight = '500';
+                });
+                
+                // Aktif butonu vurgula
+                this.style.background = '#f0f7ff';
+                this.style.borderColor = '#1976d2';
+                this.style.color = '#1976d2';
+                this.style.fontWeight = '600';
+                
+                // Yeni kategoriyi yükle
+                await showNearbyPlacesByCategory(lat, lng, map, day, selectedCategory);
+            });
+        });
+    }, 100);
 }
 
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
