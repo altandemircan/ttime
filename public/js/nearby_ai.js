@@ -652,22 +652,36 @@ const clickHandler = function(e) {
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
         
-        // +++ ÖNEMLİ: ÖNCE PULSE MARKER'ı GÖSTER, SONRA TEMİZLE +++
-        // 1. Önce yeni pulse marker göster
-        showCustomPopup(e.latlng.lat, e.latlng.lng, map, '', false); // Sadece pulse için
-        
-        // 2. Tüm kategori markerlarını temizle (ama pulse'ı değil!)
+        // Tüm kategori markerlarını temizle (pulse hariç)
         clearAllCategoryMarkers(map);
         
-        // 3. SON SEÇİLEN KATEGORİYİ VEYA RESTAURANTS'ı GÖSTER
-        const categoryToShow = window._lastSelectedCategory || 'restaurants';
+        // +++ ÖNEMLİ DEĞİŞİKLİK: İKİ SEÇENEK +++
         
-        if (typeof showNearbyPlacesByCategory === 'function') {
-            showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, categoryToShow);
+        // 1. Eğer SHIFT tuşuna basılıysa veya özel bir durum varsa, direkt kategori göster
+        const shouldShowDirect = window._lastSelectedCategory && !document.getElementById('custom-nearby-popup');
+        
+        if (shouldShowDirect) {
+            // SADECE PULSE MARKER GÖSTER (sidebar yok)
+            const pulseOnlyContent = '<div style="padding:10px; color:#666; text-align:center;">📍 Searching...</div>';
+            showCustomPopup(e.latlng.lat, e.latlng.lng, map, pulseOnlyContent, false);
+            
+            // Direkt kategori marker'larını göster
+            const categoryToShow = window._lastSelectedCategory;
+            if (typeof showNearbyPlacesByCategory === 'function') {
+                showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, categoryToShow);
+            }
+        } else {
+            // NORMAL AKIŞ: Sidebar aç
+            // Varsa açık popup'ı kapat
+            if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+            
+            // Sidebar'ı aç (normal nearby places popup)
+            if (typeof showNearbyPlacesPopup === 'function') {
+                showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+            }
         }
     }, __nearbySingleDelay);
 };
-
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
