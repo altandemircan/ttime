@@ -2299,47 +2299,58 @@ function setupViewSwitcherButton(mapInstance) {
 // 3. POPUP OLUŞTURMA (OVERRIDE)
 const originalShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // 1. Önceki tüm kalıntıları temizle (Çakışmayı önlemek için)
-    if (typeof window.closeNearbyPopup === 'function') window.closeNearbyPopup();
-    const oldBtn = document.getElementById('nearby-view-switcher-btn');
-    if (oldBtn) oldBtn.remove();
-    
-    // 2. Ana Popup Kutusu Oluştur
+    // 1. ÖNCEKİ POPUP VE BUTONLARI TEMİZLE (Çakışma Olmasın)
+    if (typeof window.closeNearbyPopup === 'function') {
+        // Butonu sil
+        const oldBtn = document.getElementById('nearby-view-switcher-btn');
+        if (oldBtn) oldBtn.remove();
+        // Popup'ı kapat
+        const oldPopup = document.getElementById('custom-nearby-popup');
+        if (oldPopup) oldPopup.remove();
+    }
+
+    // 2. POPUP CONTAINER OLUŞTUR
     const popupContainer = document.createElement('div');
     popupContainer.id = 'custom-nearby-popup';
     
-    const closeBtnHtml = showCloseButton ? `
-        <button onclick="window.closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
+    const closeButtonHtml = showCloseButton ? `
+        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
     ` : '';
     
-    popupContainer.innerHTML = `${closeBtnHtml}<div class="nearby-popup-content">${content}</div>`;
+    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
     
-    // --- 3. MAVİ HALKA (PULSE MARKER) EKLEME ---
+    // --- 3. SENİN ORİJİNAL PULSE MARKER KODLARIN (DOKUNULMADI) ---
+    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(_) {} window._nearbyPulseMarker = null; }
+    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(_) {} window._nearbyPulseMarker3D = null; }
+
     const pulseHtml = `
       <div class="tt-pulse-marker">
         <div class="tt-pulse-dot"><div class="tt-pulse-dot-inner"></div></div>
         <div class="tt-pulse-ring tt-pulse-ring-1"></div>
         <div class="tt-pulse-ring tt-pulse-ring-2"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
         <div class="tt-pulse-glow"></div>
+        <div class="tt-pulse-inner-ring"></div>
       </div>
     `;
 
-    // Harita Tipine Göre Pulse Marker'ı Koy
-    if (!!map.addSource) { // MapLibre (3D)
+    // Haritaya Pulse Ekle (Senin mantığın)
+    const isMapLibre = !!map.addSource;
+    if (isMapLibre) {
         const el = document.createElement('div'); el.className = 'tt-pulse-marker'; el.innerHTML = pulseHtml;
         window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
-    } else { // Leaflet (2D)
+    } else {
         const pulseIcon = L.divIcon({ html: pulseHtml, className: 'tt-pulse-marker', iconSize: [40, 40], iconAnchor: [20, 20] });
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 
-    // --- 4. SHOW MAP / SHOW LIST BUTONUNU EKLE ---
+    // --- 4. BUTONU EKLE (Sadece Mobilde) ---
     if (window.innerWidth < 768) {
         setTimeout(() => {
             const mainChat = document.getElementById('main-chat');
-            // SADECE harita büyükse (main-chat gizliyse) butonu göster
+            // Harita genişletilmişse butonu oluştur
             const isMapExpanded = !mainChat || window.getComputedStyle(mainChat).display === 'none';
             
             if (isMapExpanded && typeof setupViewSwitcherButton === 'function') {
