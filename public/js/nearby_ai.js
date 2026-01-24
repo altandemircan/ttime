@@ -607,20 +607,28 @@ const clickHandler = function(e) {
 }
 
 
-// MOBİL HARİTA / YAKINDAKİLER ARASI GEÇİŞ BUTONU (EXPANDED MAP açıkken görünür!)
+// MOBİLDE TOGGLE BUTONU SADECE EXPANDED MAP (BÜYÜK HARİTA) AÇIKKEN GÖRÜNÜR
 
 function addNearbyMapToggleButton() {
-    // Öncekini temizle
-    const oldBtn = document.getElementById('nearby-map-toggle-btn');
-    if (oldBtn) oldBtn.remove();
+    // Önce varsa eskiyi temizle
+    const existed = document.getElementById('nearby-map-toggle-btn');
+    if (existed) existed.remove();
 
-    // SADECE MOBİLDE VE SADECE EXPANDED MAP AÇIKKEN GÖRÜNSÜN!
+    // 1) Mobil değilse ekleme
     if (window.innerWidth >= 700) return;
 
-    // Sadece expanded map görünürse ekle (expanded-map-container görünüyorsa)
-    const expandedMap = document.querySelector('.expanded-map-container');
-    if (!expandedMap || expandedMap.style.display === 'none' || expandedMap.offsetParent === null) return;
+    // 2) Expanded map (büyük harita) DOM'da ve görünür mü?
+    // Expanded map genellikle: .expanded-map-container
+    let expandedMap = document.querySelector('.expanded-map-container');
+    if (!expandedMap || expandedMap.style.display === 'none') return;
 
+    // Ekranda birden fazla expanded map container varsa, görünür olanı ararız:
+    const expandedVisible = Array.from(document.querySelectorAll('.expanded-map-container')).find(
+        d => d.style.display !== 'none' && d.offsetParent !== null
+    );
+    if (!expandedVisible) return;
+
+    // 3) BUTONU ekle
     const btn = document.createElement('button');
     btn.id = 'nearby-map-toggle-btn';
     btn.innerHTML = 'Toggle Map / Nearby';
@@ -640,96 +648,66 @@ function addNearbyMapToggleButton() {
     btn.style.cursor = 'pointer';
 
     btn.onclick = function () {
-        // SADECE expanded map açıkken nearby popup açılır!
-        const expandedMap = document.querySelector('.expanded-map-container');
-        if (!expandedMap) return;
-
-        // Kendi harita parentini/gününü bul ve nearby aç
-        // Gün numarasını bul
-        let day = 1;
-        const m = expandedMap.id && expandedMap.id.match(/expanded-map-(\d+)/);
-        if (m) day = Number(m[1]);
-
-        // Merkezi noktayı bul (expandedMap Leaflet ile, MapLibre ile, gerekirse ortalama ile)
-        let lat = 0, lng = 0, mapObj = null;
-        if (window.expandedMaps && window.expandedMaps[`route-map-day${day}`]) {
-            mapObj = window.expandedMaps[`route-map-day${day}`].expandedMap;
-        }
-        if (mapObj && typeof mapObj.getCenter === "function") {
-            const c = mapObj.getCenter();
-            lat = c.lat; lng = c.lng;
+        // Sadece expanded görünürse nearby aç, toggle gibi
+        const customNearby = document.getElementById('custom-nearby-popup');
+        // Eğer nearby popup yoksa veya görünür değilse aç, haritayı gizle
+        if (!customNearby || customNearby.style.display === 'none' || customNearby.style.display === '') {
+            if (customNearby) customNearby.style.display = 'block';
+            if (expandedVisible) expandedVisible.style.display = 'none';
         } else {
-            // fallback: Haritanın DOM'undan data attribute bulmaya çalış
-            const el = document.getElementById(`route-map-day${day}-expanded`) || document.getElementById(`route-map-day${day}`);
-            if (el && el.dataset) {
-                lat = parseFloat(el.dataset.lat || 0);
-                lng = parseFloat(el.dataset.lon || el.dataset.lng || 0);
-            }
+            // Haritayı geri göster, nearby'ı kapat
+            if (expandedVisible) expandedVisible.style.display = '';
+            if (customNearby) customNearby.style.display = 'none';
         }
-
-        // Eğer nearby popup bir daha açılırsa, haritayı gizle, nearby göster!
-        if (typeof showNearbyPlacesPopup === "function") {
-            showNearbyPlacesPopup(lat, lng, mapObj || window.leafletMaps?.[`route-map-day${day}`], day, 2000);
-
-            // Expanded map'i gizleme mobilde (isteğe bağlı, çünkü popup yakın açılırsa akar)
-            setTimeout(() => {
-                expandedMap.style.display = 'none';
-                addNearbyMapToggleButton(); // butonu güncelle/kaldır
-            }, 220);
-        }
+        setTimeout(addNearbyMapToggleButton, 300);
     };
 
     document.body.appendChild(btn);
 }
 
-// EXPANDED MAP açıksa butonu bir kere ekle, kapatınca kaldır
-function updateNearbyMapToggleButton() {
-    // Sadece expanded map açık ve mobildeyse ekle
-    if (window.innerWidth < 700) {
-        const expandedMap = document.querySelector('.expanded-map-container');
-        if (expandedMap && expandedMap.style.display !== 'none' && expandedMap.offsetParent !== null) {
-            addNearbyMapToggleButton();
-            return;
+// --- SADECE expanded map açmanda çalışacak şekilde override ---
+if (!window._origShowCustomPopup) {
+    window._origShowCustomPopup = window.showCustomPopup;
+    window.showCustomPopup = function (...args) {
+        window._origShowCustomPopup.apply(this, args);
+        setTimeout(() => addNearbyMapToggleButton(), 80);
+    }
+}
+// Expanded map açıldığında buton kontrolü
+(function () {
+    const observer = new MutationObserver(() => {
+        addNearbyMapToggleButton();
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.body, { childList: true, subtree: true });
+    });
+})();
+// Expanded harita kapandığında butonu kaldır
+(function () {
+    const removeBtnIfNoExpanded = () => {
+        setTimeout(() => {
+            const btn = document.getElementById('nearby-map-toggle-btn');
+            const expandedVisible = Array.from(document.querySelectorAll('.expanded-map-container')).find(
+                d => d.style.display !== 'none' && d.offsetParent !== null
+            );
+            if (!expandedVisible && btn) btn.remove();
+        }, 111);
+    };
+    // restoreMap==kapat fonksiyonu ise hook'la
+    if (window.restoreMap) {
+        const origRestore = window.restoreMap;
+        window.restoreMap = function (...args) {
+            origRestore.apply(this, args);
+            removeBtnIfNoExpanded();
         }
     }
-    // Diğer her durumda kaldır
-    const btn = document.getElementById('nearby-map-toggle-btn');
-    if (btn) btn.remove();
-}
-// DOM'da değişiklik olunca izleyip hemen güncelle (expand/collapse/detach için)
-const observer = new MutationObserver(updateNearbyMapToggleButton);
-observer.observe(document.body, { subtree: true, childList: true, attributes: true });
+    // Eğer expand harita DOM'dan silinirse veya hash değişirse de kaldır
+    window.addEventListener('hashchange', removeBtnIfNoExpanded);
+    window.addEventListener('popstate', removeBtnIfNoExpanded);
+})();
+// Ekran boyutu değişirse tekrardan kontrol et
+window.addEventListener('resize', addNearbyMapToggleButton);
 
-// Ekran boyutu değişince de kontrol et
-window.addEventListener('resize', updateNearbyMapToggleButton);
-// Popstate/hashchange ile view değişimi olursa da kaldır
-window.addEventListener('hashchange', updateNearbyMapToggleButton);
-window.addEventListener('popstate', updateNearbyMapToggleButton);
-
-// ShowNearbyPlacesPopup açıldığında expanded map'i gösterip butonu kaldır
-if (!window._origShowNearbyPlacesPopup) {
-    window._origShowNearbyPlacesPopup = window.showNearbyPlacesPopup;
-    window.showNearbyPlacesPopup = function(...args) {
-        // Önce haritayı tekrar göster (çünkü nearby'yi açınca harita kapanıyordu)
-        const expandedMap = document.querySelector('.expanded-map-container');
-        if (expandedMap) expandedMap.style.display = '';
-        if (typeof updateNearbyMapToggleButton === 'function') setTimeout(updateNearbyMapToggleButton, 80);
-        // Default popup fonksiyonu
-        return window._origShowNearbyPlacesPopup.apply(this, args);
-    };
-}
-
-// CloseNearbyPopup çağrılınca expanded haritayı aç, butonu tekrar göster
-const origCloseNearbyPopup = window.closeNearbyPopup;
-window.closeNearbyPopup = function(...args) {
-    if (origCloseNearbyPopup) origCloseNearbyPopup.apply(this, args);
-    // Map varsa mobilde sadece expanded map aç kapa VISIBLE yap (popup kapanınca)
-    setTimeout(() => {
-        const expandedMap = document.querySelector('.expanded-map-container');
-        if (expandedMap) expandedMap.style.display = '';
-        updateNearbyMapToggleButton();
-    }, 100);
-};
 
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
