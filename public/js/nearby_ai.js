@@ -1761,6 +1761,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     const isMapLibre = !!map.addSource;
     
+    // +++ ÖNCE TÜM KATEGORİLERİ TEMİZLE +++
+    clearAllCategoryMarkers(map);
+    
     // +++ PULSE MARKER'I EKLE (YENİ) +++
     // Eski pulse marker'ları temizle
     if (window._nearbyPulseMarker) {
