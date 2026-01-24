@@ -698,11 +698,27 @@ if (!window._origShowCustomPopup) {
 const origCloseNearbyPopup = window.closeNearbyPopup;
 window.closeNearbyPopup = function(...args) {
     if (origCloseNearbyPopup) origCloseNearbyPopup.apply(this, args);
+
+    // En yakın .leaflet-container veya .maplibregl-map contextini bul
+    // ve eğer nearby popup ve harita da açık değilse butonu kaldır
     setTimeout(() => {
         const btn = document.getElementById('nearby-map-toggle-btn');
-        if (btn) btn.remove();
-    }, 60);
+        const map = document.querySelector('.leaflet-container') || document.querySelector('.maplibregl-map');
+        const popup = document.getElementById('custom-nearby-popup');
+
+        // Nearby popup kapalıysa ve harita da kapalıysa butonu kaldır
+        if (
+            !popup || popup.style.display === 'none' ||
+            !document.body.contains(popup)
+        ) {
+            // Eğer harita da görünmüyorsa kaldır
+            if (!map || map.style.display === 'none') {
+                if (btn) btn.remove();
+            }
+        }
+    }, 100);
 };
+;
 
 // Harita veya nearby popup dışı başka view'lara geçişte de butonun temizlenmesini garantilemek için (SPA ise)
 window.addEventListener('hashchange', () => {
