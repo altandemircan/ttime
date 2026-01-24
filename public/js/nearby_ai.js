@@ -2550,3 +2550,145 @@ window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) 
 window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'entertainment');
 }; 
+
+
+// ============================================
+// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
+// ============================================
+
+// Varsa eski zamanlayıcıları temizle
+if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
+if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
+if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
+
+// 1. TEMİZLİK VE KAPATMA FONKSİYONU
+window.closeNearbyPopup = function() {
+    const btn = document.getElementById('nearby-view-switcher-btn');
+    if (btn) btn.remove();
+
+    const popup = document.getElementById('custom-nearby-popup');
+    if (popup) popup.remove();
+
+    document.querySelectorAll('.sidebar-overlay').forEach(sidebar => {
+        sidebar.classList.remove('open');
+    });
+
+    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+    if (mapContainer) {
+        mapContainer.style.display = ''; 
+        if (window.map && window.map.invalidateSize) window.map.invalidateSize();
+    }
+
+    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
+    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
+    if (window._nearbyRadiusCircle) { try { window._nearbyRadiusCircle.remove(); } catch(e) {} window._nearbyRadiusCircle = null; }
+
+    if (window._maplibre3DInstance) {
+        const map = window._maplibre3DInstance;
+        ['_nearbyRadiusCircle3D', '_categoryRadiusCircle3D'].forEach(key => {
+            if (window[key]) {
+                try {
+                    const id = window[key];
+                    if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
+                    if (map.getLayer(id + '-stroke')) map.removeLayer(id + '-stroke');
+                    if (map.getSource(id)) map.removeSource(id);
+                } catch(e) {}
+                window[key] = null;
+            }
+        });
+    }
+
+    window._currentNearbyPopupElement = null;
+};
+
+// 2. BUTON OLUŞTURUCU
+function setupViewSwitcherButton(mapInstance) {
+    let oldBtn = document.getElementById('nearby-view-switcher-btn');
+    if (oldBtn) oldBtn.remove();
+
+    const btn = document.createElement('button');
+    btn.id = 'nearby-view-switcher-btn';
+    
+    btn.style.cssText = `
+        position: fixed !important;
+        bottom: 30px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999999 !important;
+        padding: 12px 24px;
+        background: #333;
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        font-weight: 600;
+        font-size: 14px;
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    `;
+    document.body.appendChild(btn);
+
+    const contentToMap = `<span>🗺️</span> <span>Show Map</span>`;
+    const contentToList = `<span>📋</span> <span>Show List</span>`;
+
+    btn.onclick = function(e) {
+        e.stopPropagation();
+        const popup = document.getElementById('custom-nearby-popup');
+        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+
+        if (!popup) {
+            this.remove();
+            return;
+        }
+
+        const isListVisible = (popup.style.display !== 'none');
+
+        if (isListVisible) {
+            popup.style.display = 'none';
+            if (mapContainer) mapContainer.style.display = 'block';
+            btn.innerHTML = contentToList;
+            btn.style.background = '#1976d2';
+            if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
+            if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
+        } else {
+            popup.style.display = 'block';
+            btn.innerHTML = contentToMap;
+            btn.style.background = '#333';
+        }
+    };
+
+    btn.innerHTML = contentToMap;
+
+    const ghostChecker = setInterval(() => {
+        if (!document.getElementById('custom-nearby-popup')) {
+            btn.remove();
+            clearInterval(ghostChecker);
+        }
+    }, 500);
+}
+
+// 3. Orijinal showCustomPopup'ı hiç kurcalama - sadece kendi fonksiyonlarını çalıştır
+
+// 4. SAYFA DEĞİŞİKLİĞİ
+window.addEventListener('hashchange', () => {
+    window.closeNearbyPopup();
+});
+
+// 5. HARITA KAPANIŞI + Event Delegation
+document.addEventListener('click', function(e) {
+    // Haritayı kapatan close-expanded-map butonuna tıklandığında
+    if (e.target && (e.target.classList.contains('close-expanded-map') || e.target.closest('.close-expanded-map'))) {
+        const switcherBtn = document.getElementById('nearby-view-switcher-btn');
+        if (switcherBtn) {
+            switcherBtn.style.display = 'none';
+            switcherBtn.remove();
+        }
+        
+        const nearbyPopup = document.getElementById('custom-nearby-popup');
+        if (nearbyPopup) {
+            nearbyPopup.remove();
+        }
+    }
+});
