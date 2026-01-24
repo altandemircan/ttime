@@ -441,7 +441,7 @@ function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
     };
 }
 
-// Popup kapatma fonksiyonunu güncelle (tüm kategorileri temizleyecek şekilde)
+// Popup kapatma fonksiyonunu güncelle (Toggle butonu temizliği eklendi)
 window.closeNearbyPopup = function() {
     // 1. SADECE POPUP DOM ELEMENTINI KALDIR
     const popupElement = document.getElementById('custom-nearby-popup');
@@ -449,6 +449,20 @@ window.closeNearbyPopup = function() {
         popupElement.remove();
     }
     
+    // --- YENİ EKLENEN KISIM: Toggle Butonunu ve Harita Görünümünü Yönet ---
+    // 1. Toggle butonunu kaldır
+    const toggleBtn = document.getElementById('nearby-map-toggle-btn');
+    if (toggleBtn) {
+        toggleBtn.remove();
+    }
+
+    // 2. Eğer toggle işlemi sırasında harita gizlendiyse, haritayı tekrar görünür yap
+    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+    if (mapContainer) {
+        mapContainer.style.display = '';
+    }
+    // ---------------------------------------------------------------------
+
     // 2. PULSE MARKER'I SİL
     if (window._nearbyPulseMarker) {
         try { window._nearbyPulseMarker.remove(); } catch(e) {}
@@ -476,20 +490,19 @@ window.closeNearbyPopup = function() {
     }
     
     // 4. KATEGORİ DAİRELERİNİ SİL
-     // Eski daire'yi sil
-    // if (window._categoryRadiusCircle) {
-    //     try { window._categoryRadiusCircle.remove(); } catch(_) {}
-    //     window._categoryRadiusCircle = null;
-    // }
-    // if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
-    //     try {
-    //         const circleId = window._categoryRadiusCircle3D;
-    //         const map3d = window._maplibre3DInstance;
-    //         if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
-    //         if (map3d.getSource(circleId)) map3d.removeSource(circleId);
-    //     } catch(_) {}
-    //     window._categoryRadiusCircle3D = null;
-    // }
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            const map3d = window._maplibre3DInstance; // map değişkeni yerine map3d kullandık çakışmayı önlemek için
+            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
     
     window._currentNearbyPopupElement = null;
 };
