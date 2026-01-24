@@ -175,363 +175,6 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
 };
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
 
-// Toggle button'u tamamen kaldır - onun yerine popup içine close butonu ekle
-function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
-    // Önceki popup'ı kapat
-    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-    
-    // Popup container oluştur
-    const popupContainer = document.createElement('div');
-    popupContainer.id = 'custom-nearby-popup';
-    
-    // Mobil cihaz mı kontrol et
-    const isMobile = window.innerWidth < 700;
-    
-    // Popup stilini dinamik olarak ayarla
-    if (isMobile) {
-        popupContainer.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            z-index: 10000;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            padding-bottom: 0;
-            padding-top: 0;
-        `;
-    } else {
-        popupContainer.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            z-index: 10000;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 0;
-        `;
-    }
-
-    // Kapatma butonunu ekle (her zaman görünsün)
-    const closeBtn = document.createElement('button');
-    closeBtn.id = 'nearby-popup-close-btn';
-    closeBtn.innerHTML = '✕';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 40px;
-        height: 40px;
-        background: #ff6b6b;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        font-size: 24px;
-        cursor: pointer;
-        z-index: 10001;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        transition: all 0.2s ease;
-    `;
-    
-    closeBtn.onmouseover = () => {
-        closeBtn.style.background = '#ff5252';
-        closeBtn.style.transform = 'scale(1.1)';
-    };
-    
-    closeBtn.onmouseout = () => {
-        closeBtn.style.background = '#ff6b6b';
-        closeBtn.style.transform = 'scale(1)';
-    };
-    
-    closeBtn.onclick = () => {
-        closeNearbyPopup();
-    };
-
-    // İçerik wrapper'ı
-    const contentWrapper = document.createElement('div');
-    contentWrapper.style.cssText = `
-        flex: 1;
-        overflow-y: auto;
-        padding: ${isMobile ? '12px' : '24px'};
-    `;
-    contentWrapper.innerHTML = content;
-
-    // Mobil'de header ekle
-    if (isMobile) {
-        const header = document.createElement('div');
-        header.style.cssText = `
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-            color: white;
-            padding: 12px 16px;
-            margin: -12px -12px 12px -12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10002;
-        `;
-        
-        const title = document.createElement('div');
-        title.style.cssText = `
-            font-weight: 600;
-            font-size: 16px;
-        `;
-        title.innerHTML = '📍 Nearby Places';
-        
-        const closeButtonAlt = document.createElement('button');
-        closeButtonAlt.innerHTML = '✕';
-        closeButtonAlt.style.cssText = `
-            background: rgba(255,255,255,0.3);
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        `;
-        
-        closeButtonAlt.onmouseover = () => {
-            closeButtonAlt.style.background = 'rgba(255,255,255,0.4)';
-        };
-        
-        closeButtonAlt.onmouseout = () => {
-            closeButtonAlt.style.background = 'rgba(255,255,255,0.3)';
-        };
-        
-        closeButtonAlt.onclick = () => {
-            closeNearbyPopup();
-        };
-        
-        header.appendChild(title);
-        header.appendChild(closeButtonAlt);
-        popupContainer.appendChild(header);
-    } else {
-        // Close button'u container'a relative ekle (absolute'u container'a göre konumlandırır)
-    popupContainer.style.position = 'relative';
-    popupContainer.appendChild(closeBtn);
-    }
-
-    popupContainer.appendChild(contentWrapper);
-    document.body.appendChild(popupContainer);
-    window._currentNearbyPopupElement = popupContainer;
-
-    // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
-    
-    // 1. Temizlik
-    if (window._nearbyPulseMarker) { 
-        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
-        window._nearbyPulseMarker = null; 
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
-        window._nearbyPulseMarker3D = null;
-    }
-
-    // 2. YENI VE ÇARPICI PULSE MARKER HTML
-    const pulseHtml = `
-      <div class="tt-pulse-marker">
-        <div class="tt-pulse-dot">
-          <div class="tt-pulse-dot-inner"></div>
-        </div>
-        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
-        <div class="tt-pulse-glow"></div>
-        <div class="tt-pulse-inner-ring"></div>
-      </div>
-    `;
-
-    // CSS'i inline ekle (eğer henüz eklenmemişse)
-    if (!document.getElementById('tt-pulse-styles')) {
-        const style = document.createElement('style');
-        style.id = 'tt-pulse-styles';
-        style.textContent = `
-            .tt-pulse-marker {
-                position: relative;
-                width: 40px;
-                height: 40px;
-                pointer-events: none;
-                z-index: 1000;
-                filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
-            }
-            
-            .tt-pulse-dot {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 20px;
-                height: 20px;
-                transform: translate(-50%, -50%);
-                background: linear-gradient(135deg, #1976d2, #64b5f6);
-                border-radius: 50%;
-                border: 3px solid white;
-                box-shadow: 
-                    0 0 15px rgba(25, 118, 210, 0.8),
-                    0 0 30px rgba(25, 118, 210, 0.4),
-                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
-                z-index: 10;
-                animation: tt-pulse-dot 2s ease-in-out infinite;
-            }
-            
-            .tt-pulse-dot-inner {
-                position: absolute;
-                width: 6px;
-                height: 6px;
-                background: white;
-                border-radius: 50%;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-            
-            .tt-pulse-ring {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                border: 2px solid rgba(25, 118, 210, 0.8);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                opacity: 0;
-            }
-            
-            .tt-pulse-ring-1 {
-                width: 20px;
-                height: 20px;
-                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            }
-            
-            .tt-pulse-ring-2 {
-                width: 20px;
-                height: 20px;
-                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
-            }
-            
-            .tt-pulse-ring-3 {
-                width: 20px;
-                height: 20px;
-                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
-            }
-            
-            .tt-pulse-glow {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 40px;
-                height: 40px;
-                transform: translate(-50%, -50%);
-                background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
-                border-radius: 50%;
-                z-index: 1;
-                animation: tt-pulse-glow 2s ease-in-out infinite;
-            }
-            
-            .tt-pulse-inner-ring {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 30px;
-                height: 30px;
-                border: 1.5px solid rgba(255, 255, 255, 0.9);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                animation: tt-pulse-inner 1.5s linear infinite;
-                opacity: 0.7;
-            }
-            
-            @keyframes tt-pulse-dot {
-                0%, 100% { 
-                    transform: translate(-50%, -50%) scale(1);
-                    box-shadow: 
-                        0 0 15px rgba(25, 118, 210, 0.8),
-                        0 0 30px rgba(25, 118, 210, 0.4);
-                }
-                50% { 
-                    transform: translate(-50%, -50%) scale(1.1);
-                    box-shadow: 
-                        0 0 25px rgba(25, 118, 210, 1),
-                        0 0 50px rgba(25, 118, 210, 0.6);
-                }
-            }
-            
-            @keyframes tt-pulse-wave {
-                0% {
-                    width: 20px;
-                    height: 20px;
-                    opacity: 0.8;
-                    border-width: 2px;
-                }
-                100% {
-                    width: 80px;
-                    height: 80px;
-                    opacity: 0;
-                    border-width: 1px;
-                }
-            }
-            
-            @keyframes tt-pulse-glow {
-                0%, 100% { opacity: 0.5; }
-                50% { opacity: 0.8; }
-            }
-            
-            @keyframes tt-pulse-inner {
-                0% { 
-                    transform: translate(-50%, -50%) rotate(0deg) scale(1);
-                    opacity: 0.7;
-                }
-                100% { 
-                    transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // 3. Harita Tipine Göre Ekleme
-    const isMapLibre = !!map.addSource;
-
-    if (isMapLibre) {
-        // --- 3D MOD (MapLibre) ---
-        const el = document.createElement('div');
-        el.className = 'tt-pulse-marker';
-        el.innerHTML = pulseHtml;
-        
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
-            element: el,
-            anchor: 'center'
-        })
-        .setLngLat([lng, lat])
-        .addTo(map);
-            
-    } else {
-        // --- 2D MOD (Leaflet) ---
-        const pulseIcon = L.divIcon({
-            html: pulseHtml,
-            className: 'tt-pulse-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
-    }
-}
 // Yardımcı fonksiyon: GeoJSON circle oluştur
 function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
     const coords = [];
@@ -2543,8 +2186,479 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
+// MOBİL POPUP VE HARITA GEÇİŞİ
+function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
+    // Önceki popup'ı kapat
+    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+    
+    // Popup container oluştur
+    const popupContainer = document.createElement('div');
+    popupContainer.id = 'custom-nearby-popup';
+    
+    // Mobil cihaz mı kontrol et
+    const isMobile = window.innerWidth < 700;
+    
+    // Popup stilini dinamik olarak ayarla
+    if (isMobile) {
+        popupContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 10000;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 0;
+            padding-top: 0;
+        `;
+    } else {
+        popupContainer.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            z-index: 10000;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 0;
+        `;
+    }
 
+    // Kapatma butonunu ekle (her zaman görünsün)
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'nearby-popup-close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        transition: all 0.2s ease;
+    `;
+    
+    closeBtn.onmouseover = () => {
+        closeBtn.style.background = '#ff5252';
+        closeBtn.style.transform = 'scale(1.1)';
+    };
+    
+    closeBtn.onmouseout = () => {
+        closeBtn.style.background = '#ff6b6b';
+        closeBtn.style.transform = 'scale(1)';
+    };
+    
+    closeBtn.onclick = () => {
+        closeNearbyPopup();
+    };
 
+    // İçerik wrapper'ı
+    const contentWrapper = document.createElement('div');
+    contentWrapper.style.cssText = `
+        flex: 1;
+        overflow-y: auto;
+        padding: ${isMobile ? '12px' : '24px'};
+    `;
+    contentWrapper.innerHTML = content;
+
+    // Container'a relative ekle (absolute positioning için)
+    popupContainer.style.position = 'relative';
+    popupContainer.appendChild(closeBtn);
+    popupContainer.appendChild(contentWrapper);
+    document.body.appendChild(popupContainer);
+    window._currentNearbyPopupElement = popupContainer;
+
+    // MOBİL'DE HARITA GİZLE
+    if (isMobile) {
+        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+        if (mapContainer) {
+            mapContainer.style.display = 'none';
+        }
+        
+        // MOBİL OVERLAY BUTONU EKLE (Harita Göster)
+        setTimeout(() => {
+            if (!document.getElementById('popup-to-map-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.id = 'popup-to-map-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 56px;
+                    background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 14px;
+                    backdrop-filter: blur(4px);
+                    border-top: 1px solid rgba(255,255,255,0.2);
+                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                `;
+                overlay.innerHTML = '🗺️ View Map';
+                overlay.onclick = () => {
+                    // Popup gizle, harita göster
+                    const popup = document.getElementById('custom-nearby-popup');
+                    const map = document.querySelector('.leaflet-container, .maplibregl-map');
+                    const mapOverlay = document.getElementById('popup-to-map-overlay');
+                    const listOverlay = document.getElementById('map-to-list-overlay');
+                    
+                    if (popup) popup.style.display = 'none';
+                    if (map) map.style.display = '';
+                    if (mapOverlay) mapOverlay.remove();
+                    
+                    // Harita overlay'i ekle
+                    if (!listOverlay) {
+                        setTimeout(() => {
+                            const overlay2 = document.createElement('div');
+                            overlay2.id = 'map-to-list-overlay';
+                            overlay2.style.cssText = `
+                                position: fixed;
+                                bottom: 0;
+                                left: 0;
+                                right: 0;
+                                height: 56px;
+                                background: linear-gradient(to top, rgba(136, 74, 243, 0.95), rgba(136, 74, 243, 0.8));
+                                z-index: 9999;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                color: white;
+                                font-weight: 600;
+                                font-size: 14px;
+                                backdrop-filter: blur(4px);
+                                border-top: 1px solid rgba(255,255,255,0.2);
+                                box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                            `;
+                            overlay2.innerHTML = '📋 View List';
+                            overlay2.onclick = () => {
+                                // Harita gizle, popup göster
+                                const popup = document.getElementById('custom-nearby-popup');
+                                const map = document.querySelector('.leaflet-container, .maplibregl-map');
+                                const listOverlay = document.getElementById('map-to-list-overlay');
+                                
+                                if (popup) popup.style.display = '';
+                                if (map) map.style.display = 'none';
+                                if (listOverlay) listOverlay.remove();
+                                
+                                // Popup overlay'i geri ekle
+                                if (!document.getElementById('popup-to-map-overlay')) {
+                                    const overlay3 = document.createElement('div');
+                                    overlay3.id = 'popup-to-map-overlay';
+                                    overlay3.style.cssText = `
+                                        position: fixed;
+                                        bottom: 0;
+                                        left: 0;
+                                        right: 0;
+                                        height: 56px;
+                                        background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
+                                        z-index: 9999;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        cursor: pointer;
+                                        color: white;
+                                        font-weight: 600;
+                                        font-size: 14px;
+                                        backdrop-filter: blur(4px);
+                                        border-top: 1px solid rgba(255,255,255,0.2);
+                                        box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                                    `;
+                                    overlay3.innerHTML = '🗺️ View Map';
+                                    overlay3.onclick = arguments.callee;
+                                    document.body.appendChild(overlay3);
+                                }
+                            };
+                            document.body.appendChild(overlay2);
+                        }, 100);
+                    }
+                };
+                document.body.appendChild(overlay);
+            }
+        }, 100);
+    }
+
+    // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
+    
+    // 1. Temizlik
+    if (window._nearbyPulseMarker) { 
+        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
+        window._nearbyPulseMarker = null; 
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
+        window._nearbyPulseMarker3D = null;
+    }
+
+    // 2. PULSE MARKER HTML
+    const pulseHtml = `
+      <div class="tt-pulse-marker">
+        <div class="tt-pulse-dot">
+          <div class="tt-pulse-dot-inner"></div>
+        </div>
+        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
+        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
+        <div class="tt-pulse-glow"></div>
+        <div class="tt-pulse-inner-ring"></div>
+      </div>
+    `;
+
+    // CSS'i inline ekle (eğer henüz eklenmemişse)
+    if (!document.getElementById('tt-pulse-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tt-pulse-styles';
+        style.textContent = `
+            .tt-pulse-marker {
+                position: relative;
+                width: 40px;
+                height: 40px;
+                pointer-events: none;
+                z-index: 1000;
+                filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
+            }
+            
+            .tt-pulse-dot {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 20px;
+                height: 20px;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #1976d2, #64b5f6);
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 
+                    0 0 15px rgba(25, 118, 210, 0.8),
+                    0 0 30px rgba(25, 118, 210, 0.4),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+                z-index: 10;
+                animation: tt-pulse-dot 2s ease-in-out infinite;
+            }
+            
+            .tt-pulse-dot-inner {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                background: white;
+                border-radius: 50%;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            
+            .tt-pulse-ring {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                border: 2px solid rgba(25, 118, 210, 0.8);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                opacity: 0;
+            }
+            
+            .tt-pulse-ring-1 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            }
+            
+            .tt-pulse-ring-2 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s;
+            }
+            
+            .tt-pulse-ring-3 {
+                width: 20px;
+                height: 20px;
+                animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
+            }
+            
+            .tt-pulse-glow {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 40px;
+                height: 40px;
+                transform: translate(-50%, -50%);
+                background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%);
+                border-radius: 50%;
+                z-index: 1;
+                animation: tt-pulse-glow 2s ease-in-out infinite;
+            }
+            
+            .tt-pulse-inner-ring {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 30px;
+                height: 30px;
+                border: 1.5px solid rgba(255, 255, 255, 0.9);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                animation: tt-pulse-inner 1.5s linear infinite;
+                opacity: 0.7;
+            }
+            
+            @keyframes tt-pulse-dot {
+                0%, 100% { 
+                    transform: translate(-50%, -50%) scale(1);
+                    box-shadow: 
+                        0 0 15px rgba(25, 118, 210, 0.8),
+                        0 0 30px rgba(25, 118, 210, 0.4);
+                }
+                50% { 
+                    transform: translate(-50%, -50%) scale(1.1);
+                    box-shadow: 
+                        0 0 25px rgba(25, 118, 210, 1),
+                        0 0 50px rgba(25, 118, 210, 0.6);
+                }
+            }
+            
+            @keyframes tt-pulse-wave {
+                0% {
+                    width: 20px;
+                    height: 20px;
+                    opacity: 0.8;
+                    border-width: 2px;
+                }
+                100% {
+                    width: 80px;
+                    height: 80px;
+                    opacity: 0;
+                    border-width: 1px;
+                }
+            }
+            
+            @keyframes tt-pulse-glow {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 0.8; }
+            }
+            
+            @keyframes tt-pulse-inner {
+                0% { 
+                    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                    opacity: 0.7;
+                }
+                100% { 
+                    transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 3. Harita Tipine Göre Ekleme
+    const isMapLibre = !!map.addSource;
+
+    if (isMapLibre) {
+        // --- 3D MOD (MapLibre) ---
+        const el = document.createElement('div');
+        el.className = 'tt-pulse-marker';
+        el.innerHTML = pulseHtml;
+        
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
+            element: el,
+            anchor: 'center'
+        })
+        .setLngLat([lng, lat])
+        .addTo(map);
+            
+    } else {
+        // --- 2D MOD (Leaflet) ---
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'tt-pulse-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
+    }
+}
+
+// closeNearbyPopup
+window.closeNearbyPopup = function() {
+    const popupElement = document.getElementById('custom-nearby-popup');
+    if (popupElement) {
+        popupElement.remove();
+    }
+    
+    const overlay1 = document.getElementById('popup-to-map-overlay');
+    if (overlay1) overlay1.remove();
+    
+    const overlay2 = document.getElementById('map-to-list-overlay');
+    if (overlay2) overlay2.remove();
+    
+    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+    if (mapContainer) {
+        mapContainer.style.display = '';
+    }
+
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
+    
+    if (window._nearbyRadiusCircle) {
+        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
+        window._nearbyRadiusCircle = null;
+    }
+    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._nearbyRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._nearbyRadiusCircle3D = null;
+    }
+    
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            const map3d = window._maplibre3DInstance;
+            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
+    window._currentNearbyPopupElement = null;
+};
 
 // Mobil'de harita ve popup arasında geçiş yap
 function toggleNearbyMapPopup() {
@@ -2566,66 +2680,3 @@ function toggleNearbyMapPopup() {
     }
 }
 
-// closeNearbyPopup - Popup kapanışını temizle
-window.closeNearbyPopup = function() {
-    // Popup kaldır
-    const popupElement = document.getElementById('custom-nearby-popup');
-    if (popupElement) {
-        popupElement.remove();
-    }
-    
-    // Overlay kaldır
-    const overlay = document.getElementById('map-to-nearby-overlay');
-    if (overlay) {
-        overlay.remove();
-    }
-    
-    // Harita görünümünü geri getir
-    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-    if (mapContainer) {
-        mapContainer.style.display = '';
-    }
-
-    // Pulse marker'ı sil
-    if (window._nearbyPulseMarker) {
-        try { window._nearbyPulseMarker.remove(); } catch(e) {}
-        window._nearbyPulseMarker = null;
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-        window._nearbyPulseMarker3D = null;
-    }
-    
-    // Radius daireleri sil
-    if (window._nearbyRadiusCircle) {
-        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
-        window._nearbyRadiusCircle = null;
-    }
-    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const map = window._maplibre3DInstance;
-            const circleId = window._nearbyRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(e) {}
-        window._nearbyRadiusCircle3D = null;
-    }
-    
-    // Kategori daireleri sil
-    if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(e) {}
-        window._categoryRadiusCircle = null;
-    }
-    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const circleId = window._categoryRadiusCircle3D;
-            const map3d = window._maplibre3DInstance;
-            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
-            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
-        } catch(e) {}
-        window._categoryRadiusCircle3D = null;
-    }
-    
-    window._currentNearbyPopupElement = null;
-};
