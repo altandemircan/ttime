@@ -500,7 +500,7 @@ function clearAllCategoryMarkers(map) {
     
     // HİÇBİR map.eachLayer() KULLANMA!
 }
-// attachClickNearbySearch fonksiyonunu güncelle
+
 // attachClickNearbySearch fonksiyonunu güncelle
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; 
@@ -512,7 +512,7 @@ function attachClickNearbySearch(map, day, options = {}) {
   }
 
   let __nearbySingleTimer = null;
-  const __nearbySingleDelay = 100; // 250'den 100'e düşürüldü
+  const __nearbySingleDelay = 250;
 
 const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
@@ -554,6 +554,11 @@ const clickHandler = function(e) {
   map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
   map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
+
+
+
+
+
 
 
 function showRouteInfoBanner(day) {
@@ -2521,7 +2526,7 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-
+// 3. Orijinal showCustomPopup'ı hiç kurcalama - sadece kendi fonksiyonlarını çalıştır
 
 // 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
