@@ -2101,7 +2101,39 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         placesWithDistance.sort((a, b) => a.distance - b.distance);
         
-        const topPlaces = placesWithDistance.slice(0, 20);
+        let topPlaces = []; // Üstte tanımla
+    
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        
+        if (!data.features || data.features.length === 0) {
+            alert(`No ${categoryType} found nearby.`);
+            return;
+        }
+        
+        let maxDistance = 0;
+        const placesWithDistance = [];
+        
+        data.features.forEach((f, idx) => {
+            const pLng = f.properties.lon;
+            const pLat = f.properties.lat;
+            
+            const distance = haversine(lat, lng, pLat, pLng);
+            placesWithDistance.push({
+                feature: f,
+                distance: distance,
+                index: idx
+            });
+            
+            if (distance > maxDistance) {
+                maxDistance = distance;
+            }
+        });
+        
+        placesWithDistance.sort((a, b) => a.distance - b.distance);
+        
+        topPlaces = placesWithDistance.slice(0, 20); // Buraya topPlaces = ekle
         
         console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
         
