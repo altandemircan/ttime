@@ -1674,6 +1674,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 }
 
 
+// GÜNCELLENMIŞ: showNearbyPlacesByCategory
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants') {
     window._lastSelectedCategory = categoryType;
 
@@ -1714,7 +1715,53 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const country = "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-   // Sidebar aç
+    // Kategori konfigürasyonları
+    const categoryConfig = {
+        'restaurants': {
+            apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
+            color: '#FF5252',
+            iconUrl: '/img/restaurant_icon.svg',
+            buttonText: 'Show Restaurants',
+            placeholderIcon: '/img/restaurant_icon.svg',
+            layerPrefix: 'restaurant',
+            icon: '🍽️',
+            title: 'Restaurants'
+        },
+        'hotels': {
+            apiCategories: 'accommodation',
+            color: '#2196F3',
+            iconUrl: '/img/accommodation_icon.svg',
+            buttonText: 'Show Hotels',
+            placeholderIcon: '/img/hotel_icon.svg',
+            layerPrefix: 'hotel',
+            icon: '🏨',
+            title: 'Hotels'
+        },
+        'markets': {
+            apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
+            color: '#4CAF50',
+            iconUrl: '/img/market_icon.svg',
+            buttonText: 'Show Markets',
+            placeholderIcon: '/img/market_icon.svg',
+            layerPrefix: 'market',
+            icon: '🛒',
+            title: 'Markets'
+        },
+        'entertainment': {
+            apiCategories: 'entertainment,leisure',
+            color: '#FF9800',
+            iconUrl: '/img/touristic_icon.svg',
+            buttonText: 'Show Entertainment',
+            placeholderIcon: '/img/entertainment_icon.svg',
+            layerPrefix: 'entertainment',
+            icon: '🎭',
+            title: 'Entertainment'
+        }
+    };
+    
+    const config = categoryConfig[categoryType] || categoryConfig.restaurants;
+    
+    // Tıklanan nokta bölümü
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -1738,6 +1785,18 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             </div>
         </div>
     `;
+    
+    // Kategori başlığı
+    const categorySection = `
+        <div class="category-section" style="margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <div style="font-size: 20px;">${config.icon}</div>
+                <div style="font-weight: 600; font-size: 16px; color: #333;">${config.title}</div>
+                <div style="margin-left: auto; background: #4caf50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;" class="category-count">0</div>
+            </div>
+            <div class="category-items-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+    `;
 
     const html = `
         <div>
@@ -1745,6 +1804,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 📍 Nearby Places
             </div>
             ${addPointSection}
+            ${categorySection}
         </div>
     `;
 
@@ -1763,7 +1823,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     }
     
     // +++ SIDEBAR'I AÇTIKTAN SONRA +++
-    // CSS
     if (!document.getElementById('hide-leaflet-default-icon')) {
         const style = document.createElement('style');
         style.id = 'hide-leaflet-default-icon';
@@ -1969,44 +2028,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
     
-    // Kategori konfigürasyonları
-    const categoryConfig = {
-        'restaurants': {
-            apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
-            color: '#FF5252',
-            iconUrl: '/img/restaurant_icon.svg',
-            buttonText: 'Show Restaurants',
-            placeholderIcon: '/img/restaurant_icon.svg',
-            layerPrefix: 'restaurant'
-        },
-        'hotels': {
-            apiCategories: 'accommodation',
-            color: '#2196F3',
-            iconUrl: '/img/accommodation_icon.svg',
-            buttonText: 'Show Hotels',
-            placeholderIcon: '/img/hotel_icon.svg',
-            layerPrefix: 'hotel'
-        },
-        'markets': {
-            apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
-            color: '#4CAF50',
-            iconUrl: '/img/market_icon.svg',
-            buttonText: 'Show Markets',
-            placeholderIcon: '/img/market_icon.svg',
-            layerPrefix: 'market'
-        },
-        'entertainment': {
-            apiCategories: 'entertainment,leisure',
-            color: '#FF9800',
-            iconUrl: '/img/touristic_icon.svg',
-            buttonText: 'Show Entertainment',
-            placeholderIcon: '/img/entertainment_icon.svg',
-            layerPrefix: 'entertainment'
-        }
-    };
-    
-    const config = categoryConfig[categoryType] || categoryConfig.restaurants;
-    
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
@@ -2050,7 +2071,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const data = await resp.json();
         
         if (!data.features || data.features.length === 0) {
-            alert(`No ${categoryType} found nearby.`);
+            const container = document.querySelector('.category-items-container');
+            if (container) {
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">No ${config.title.toLowerCase()} found nearby</div>`;
+            }
             return;
         }
         
@@ -2077,7 +2101,84 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         const topPlaces = placesWithDistance.slice(0, 20);
         
-        console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
+        // Sidebar kategori count güncellemeleri
+        const countBadge = document.querySelector('.category-count');
+        if (countBadge) {
+            countBadge.textContent = topPlaces.length;
+        }
+        
+        // Sidebar öğelerini ekle
+        const itemsContainer = document.querySelector('.category-items-container');
+        if (itemsContainer) {
+            itemsContainer.innerHTML = '';
+            
+            topPlaces.forEach((placeData, idx) => {
+                const f = placeData.feature;
+                const distance = placeData.distance;
+                const pLng = f.properties.lon;
+                const pLat = f.properties.lat;
+                const name = f.properties.name || "Unknown";
+                const address = f.properties.formatted || "";
+                const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
+                
+                const distanceText = distance < 1000 ? 
+                    `${Math.round(distance)} m` : 
+                    `${(distance / 1000).toFixed(2)} km`;
+                
+                const itemHtml = `
+                    <div class="category-place-item" 
+                         style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                                background: #f8f9fa; border-radius: 8px; 
+                                border: 1px solid #eee;">
+                        <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
+                            <img id="${imgId}" src="img/placeholder.png" 
+                                 alt="${name}"
+                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                            <div id="${imgId}-spin" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid #ccc; border-top: 2px solid #1976d2; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
+                                        margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+                                ${name}
+                            </div>
+                            <div style="font-size: 0.8rem; color: #999; margin-bottom: 2px;">
+                                ${distanceText}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
+                                        text-overflow: ellipsis; white-space: nowrap;">
+                                ${address}
+                            </div>
+                        </div>
+                        <button onclick="window.addPlaceToTripFromPopup('${imgId}', '${name.replace(/'/g, "\\'")}', '${address.replace(/'/g, "\\'")}', ${day}, ${pLat}, ${pLng}, '${config.layerPrefix}')"
+                                style="width: 30px; height: 30px; background: ${config.color}; 
+                                       color: white; border: none; border-radius: 50%; 
+                                       cursor: pointer; font-weight: bold; 
+                                       font-size: 16px; flex-shrink: 0;">
+                            +
+                        </button>
+                    </div>
+                `;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.innerHTML = itemHtml;
+                itemsContainer.appendChild(itemDiv.firstElementChild);
+                
+                // Resim yükleme
+                getImageForPlace(name, config.layerPrefix, window.selectedCity || "")
+                    .then(src => {
+                        const img = document.getElementById(imgId);
+                        const spin = document.getElementById(imgId + "-spin");
+                        if (img && src) {
+                            img.src = src;
+                            if (spin) spin.style.display = "none";
+                        }
+                    })
+                    .catch(() => {
+                        const spin = document.getElementById(imgId + "-spin");
+                        if (spin) spin.style.display = "none";
+                    });
+            });
+        }
         
         if (maxDistance > 0) {
             const circleColor = '#1976d2';
@@ -2116,11 +2217,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                     dashArray: null,
                     className: `category-radius-circle`
                 }).addTo(map);
-                
-                console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
             }
         }
         
+        // Harita üzerinde marker'lar ekle
         topPlaces.forEach((placeData, idx) => {
             const f = placeData.feature;
             const distance = placeData.distance;
@@ -2216,11 +2316,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
     } catch (err) {
         console.error(err);
-        alert(`Error fetching ${categoryType}.`);
-        
-        if (window._categoryRadiusCircle) {
-            try { window._categoryRadiusCircle.remove(); } catch(_) {}
-            window._categoryRadiusCircle = null;
+        const container = document.querySelector('.category-items-container');
+        if (container) {
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">Error loading places</div>`;
         }
     }
 }
