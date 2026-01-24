@@ -476,18 +476,18 @@ window.closeNearbyPopup = function() {
     }
     
     // 4. KATEGORİ DAİRELERİNİ SİL
+     // Eski daire'yi sil
     if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        try { window._categoryRadiusCircle.remove(); } catch(_) {}
         window._categoryRadiusCircle = null;
     }
     if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
         try {
-            const map = window._maplibre3DInstance;
             const circleId = window._categoryRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(e) {}
+            const map3d = window._maplibre3DInstance;
+            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+        } catch(_) {}
         window._categoryRadiusCircle3D = null;
     }
     
