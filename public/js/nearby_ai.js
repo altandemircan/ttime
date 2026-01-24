@@ -1666,12 +1666,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     }
     if (!map) { console.error("HATA: Harita bulunamadı"); return; }
 
-    // 2. CSS STİLLERİ (Tablar + Mobil Toggle Butonu İçin)
+    // 2. CSS STİLLERİ (Tablar + Mobil Toggle Fix)
     if (!document.getElementById('nearby-styles-fix')) {
         const style = document.createElement('style');
         style.id = 'nearby-styles-fix';
         style.textContent = `
-            /* MODERN TABLAR (Senin Beğendiğin) */
+            /* MODERN TABLAR */
             .modern-tabs { display: flex; gap: 8px; margin-bottom: 20px; padding-bottom: 4px; overflow-x: auto; scrollbar-width: none; }
             .modern-tabs::-webkit-scrollbar { display: none; }
             .modern-tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; border: 1px solid transparent; border-radius: 12px; background: #f8f9fa; color: #6c757d; cursor: pointer; transition: all 0.2s ease; min-width: 65px; }
@@ -1680,58 +1680,82 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             .tab-icon { font-size: 18px; line-height: 1; }
             .tab-label { font-size: 11px; font-weight: 500; }
             
-            /* SADECE MOBİL İÇİN TOGGLE BUTONU */
+            /* SADECE MOBİL İÇİN TOGGLE BUTONU VE GÖRÜNÜMÜ */
             .mobile-map-list-toggle { display: none; }
             
             @media (max-width: 768px) {
-                /* Popup'ı mobilde tam ekran gibi davranmaya zorla */
+                /* Popup içeriğini ekranı kaplayacak şekilde ayarla */
                 .leaflet-popup-content, .maplibregl-popup-content {
-                    width: 100% !important; margin: 0 !important;
+                    width: 100% !important; 
+                    margin: 0 !important;
+                    /* Geçiş animasyonu için */
+                    transition: background-color 0.3s ease;
                 }
-                
-                /* Yüzen Buton Tasarımı */
+
+                /* Buton Tasarımı */
                 .mobile-map-list-toggle {
                     display: flex;
-                    position: fixed;
-                    bottom: 24px;
+                    position: fixed; /* Fixed yaparak popup'tan bağımsız konumluyoruz */
+                    bottom: 30px;
                     left: 50%;
                     transform: translateX(-50%);
-                    z-index: 99999;
+                    z-index: 99999; /* En üstte */
                     background: #1976d2;
                     color: white;
-                    padding: 10px 24px;
-                    border-radius: 30px;
+                    padding: 12px 24px;
+                    border-radius: 50px;
                     font-weight: 600;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
                     border: none;
                     cursor: pointer;
                     align-items: center;
                     gap: 8px;
-                    transition: transform 0.2s;
+                    font-size: 14px;
+                    pointer-events: auto; /* Tıklanabilir */
                 }
                 .mobile-map-list-toggle:active { transform: translateX(-50%) scale(0.95); }
 
-                /* Harita Modundayken Popup İçeriğini Gizle (Header hariç değil, komple) */
-                .nearby-map-view-active .nearby-content-wrapper {
-                    display: none;
-                }
+                /* --- HARİTA MODU AKTİFKEN --- */
                 
-                /* Harita modunda popup container'ı şeffaf yap ki harita görünsün */
-                .nearby-map-view-active.leaflet-popup-content-wrapper, 
-                .nearby-map-view-active.maplibregl-popup-content {
+                /* 1. Popup'ın beyaz arka planını ve gölgesini kaldır (Şeffaf yap) */
+                .nearby-map-view-active.leaflet-popup-content-wrapper,
+                .nearby-map-view-active.maplibregl-popup-content,
+                .nearby-map-view-active .leaflet-popup-content,
+                .nearby-map-view-active .maplibregl-popup-content {
                     background: transparent !important;
                     box-shadow: none !important;
+                    border: none !important;
                 }
-                .nearby-map-view-active .leaflet-popup-tip { display: none; }
+
+                /* 2. Popup'ın ucunu (tip) gizle */
+                .nearby-map-view-active .leaflet-popup-tip-container,
+                .nearby-map-view-active .maplibregl-popup-tip {
+                    display: none !important;
+                }
+
+                /* 3. İçerik kutusunu (listeyi) gizle */
+                .nearby-map-view-active .nearby-content-wrapper {
+                    display: none !important;
+                }
+
+                /* 4. Butonun hala görünür olduğundan emin ol */
+                .nearby-map-view-active #mobile-toggle-btn {
+                    display: flex !important;
+                }
+                
+                /* Map Mode'da popup arkaya tıklamaya izin versin, ama buton tıklanabilsin */
+                .nearby-map-view-active {
+                    pointer-events: none !important;
+                }
+                .nearby-map-view-active #mobile-toggle-btn {
+                    pointer-events: auto !important;
+                }
             }
         `;
         document.head.appendChild(style);
     }
 
-    const isMapLibre = !!map.addSource;
-    const cacheKey = `${lat}-${lng}-${categoryType}`;
-    
-    // AI Bilgisi ve Şehir
+    // AI ve Lokasyon Verileri
     let pointInfo = { name: "Selected Point", address: "" };
     try { pointInfo = await getPlaceInfoFromLatLng(lat, lng); } catch (e) {}
     
@@ -1807,9 +1831,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-    // ANA HTML YAPISI (Wrapper eklendi ve Button Eklendi)
+    // ANA HTML (Wrapper ve Buton)
+    // ÖNEMLİ: mobile-toggle-btn id'si ile butona erişeceğiz
     const html = `
-        <div id="nearby-wrapper">
+        <div id="nearby-wrapper" style="position: relative;">
             <div class="nearby-content-wrapper">
                 <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
                     📍 Nearby Places
@@ -1818,7 +1843,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 ${categorySection}
             </div>
             
-            <button id="mobile-toggle-btn" class="mobile-map-list-toggle" onclick="window.toggleNearbyMapMode()">
+            <button id="mobile-toggle-btn" class="mobile-map-list-toggle" onclick="window.toggleNearbyMapMode(this)">
                 🗺️ Show Map
             </button>
         </div>
@@ -1826,28 +1851,43 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     showCustomPopup(lat, lng, map, html, true);
     
-    // MOBİL İÇİN MAP MODU FONKSİYONU
-    window.toggleNearbyMapMode = function() {
-        const wrapper = document.querySelector('.leaflet-popup-content-wrapper') || document.querySelector('.maplibregl-popup-content');
-        const btn = document.getElementById('mobile-toggle-btn');
-        const content = document.querySelector('.nearby-content-wrapper');
-        
-        if (!wrapper || !btn) return;
-        
-        if (wrapper.classList.contains('nearby-map-view-active')) {
-            // LİSTE MODUNA DÖN
-            wrapper.classList.remove('nearby-map-view-active');
+    // YENİDEN YAZILMIŞ SAĞLAM TOGGLE FONKSİYONU
+    window.toggleNearbyMapMode = function(btnElement) {
+        // Butonu bul (parametre gelmezse document'tan bul)
+        const btn = btnElement || document.getElementById('mobile-toggle-btn');
+        if (!btn) return;
+
+        // Popup'ın ana kapsayıcısını bul (Library bağımsız)
+        // closest() ile yukarı tırmanarak doğru wrapper'ı buluruz.
+        const popupWrapper = btn.closest('.leaflet-popup-content-wrapper') || 
+                             btn.closest('.maplibregl-popup-content') ||
+                             btn.closest('.leaflet-popup') ||
+                             btn.closest('.maplibregl-popup');
+                             
+        if (!popupWrapper) {
+            console.error("Popup wrapper bulunamadı");
+            return;
+        }
+
+        // Class'ı toggle et
+        if (popupWrapper.classList.contains('nearby-map-view-active')) {
+            // LİSTE MODUNA GEÇ
+            popupWrapper.classList.remove('nearby-map-view-active');
             btn.innerHTML = '🗺️ Show Map';
         } else {
             // HARİTA MODUNA GEÇ
-            wrapper.classList.add('nearby-map-view-active');
+            popupWrapper.classList.add('nearby-map-view-active');
             btn.innerHTML = '📄 Show List';
         }
     };
 
-    // Mobilde varsayılan olarak Harita modunda başlatmak istersen bu satırı aç:
+    // Mobilde varsayılan olarak Harita modunda başlat (İsteğe bağlı)
     if (window.innerWidth <= 768) { 
-        setTimeout(() => window.toggleNearbyMapMode(), 100); 
+        // Popup DOM'a yerleşsin diye azıcık bekle
+        setTimeout(() => {
+            const btn = document.getElementById('mobile-toggle-btn');
+            if(btn) window.toggleNearbyMapMode(btn); 
+        }, 150); 
     }
 
     window._currentPointInfo = pointInfo;
