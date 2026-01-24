@@ -2427,19 +2427,27 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 // 1. ZOMBİ BUTON AVCISI (WATCHDOG)
 // Bu interval sürekli çalışır ve Popup yoksa butonu affetmez, siler.
 // Anasayfaya dönmen, sekmeyi değiştirmen fark etmez.
+// ============================================
+// NEARBY POPUP MANAGEMENT & GHOST BUSTER (FİNAL DÜZELTME)
+// ============================================
+
+// 1. ZOMBİ BUTON AVCISI (WATCHDOG) - DÜZELTİLDİ
+// Artık popup gizli olsa bile (Show Map modunda) butonu silmez.
+// Sadece popup tamamen yok olduğunda siler.
 if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 
 window._nearbyWatchdog = setInterval(() => {
     const popup = document.getElementById('custom-nearby-popup');
     const btn = document.getElementById('nearby-view-switcher-btn');
-    const isPopupVisible = popup && (popup.style.display !== 'none');
 
-    // KURAL: Eğer popup yoksa VEYA gizliyse -> Butonu yok et.
-    if (!isPopupVisible && btn) {
-        console.log('Watchdog: Sahipsiz buton tespit edildi ve silindi.');
+    // HATA BURADAYDI: isPopupVisible kontrolü yapıyorduk.
+    // DÜZELTME: Sadece 'popup' değişkeni null mı diye bakıyoruz.
+    // Eğer popup DOM'da varsa (gizli olsa bile) butona dokunma.
+    if (!popup && btn) {
+        console.log('Watchdog: Popup yok olmuş, buton temizleniyor.');
         btn.remove();
     }
-}, 500); // Yarım saniyede bir kontrol et.
+}, 500);
 
 // 2. TEMİZLİK FONKSİYONU
 window.closeNearbyPopup = function() {
@@ -2525,20 +2533,27 @@ function setupViewSwitcherButton(mapInstance) {
         const popup = document.getElementById('custom-nearby-popup');
         const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
 
-        // Tıklama anında popup yoksa butonu sil ve çık
+        // Tıklama anında popup DOM'dan silinmişse butonu da sil ve çık
         if (!popup) { btn.remove(); return; }
 
-        if (popup.style.display !== 'none') {
-            popup.style.display = 'none'; // Listeyi gizle
-            if (mapContainer) mapContainer.style.display = ''; // Haritayı aç
+        const isListVisible = popup.style.display !== 'none';
+
+        if (isListVisible) {
+            // LİSTEYİ GİZLE -> HARİTAYI GÖSTER
+            popup.style.display = 'none'; // Sadece gizliyoruz, silmiyoruz!
+            if (mapContainer) mapContainer.style.display = ''; 
+            
             btn.innerHTML = contentToList;
             btn.style.background = '#1976d2';
+            
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
         } else {
-            popup.style.display = 'block'; // Listeyi aç
-            // Haritayı gizlemek istersen burayı aç:
+            // HARİTAYI GİZLE -> LİSTEYİ GÖSTER
+            popup.style.display = 'block'; 
+            // Haritayı mobilde gizlemek istersen burayı aç:
             // if (mapContainer && window.innerWidth < 768) mapContainer.style.display = 'none'; 
+            
             btn.innerHTML = contentToMap;
             btn.style.background = '#333';
         }
@@ -2560,7 +2575,6 @@ window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true
         setTimeout(() => {
             // ExpandedMap kontrolü
             const isExpanded = window.expandedMaps && Object.keys(window.expandedMaps).length > 0;
-            // Popup kontrolü
             const popup = document.getElementById('custom-nearby-popup');
 
             if (isExpanded && popup) {
@@ -2570,10 +2584,10 @@ window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true
     }
 };
 
-// 5. SAYFA DEĞİŞİKLİKLERİNİ DİNLE (HASH CHANGE & POPSTATE)
-// Anasayfaya dönüldüğünde tetiklenir
+// 5. SAYFA DEĞİŞİKLİKLERİNİ DİNLE (HASH CHANGE)
+// Anasayfaya dönüldüğünde tetiklenir ve temizlik yapar
 window.addEventListener('hashchange', () => {
-    // Hash değiştiyse (örn: #about -> #home) popup'ı ve butonu temizle
+    // Hash değiştiyse ve buton varsa temizle
     if (document.getElementById('nearby-view-switcher-btn')) {
         closeNearbyPopup();
     }
