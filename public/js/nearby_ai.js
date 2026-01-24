@@ -583,11 +583,10 @@ window.closeNearbyPopup = function() {
 function clearAllCategoryMarkers(map) {
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    // SADECE KATEGORİ MARKERLARI SİL
+    // SADECE KATEGORİ LAYER'LARINI SİL - DİĞER HERŞEYİ BIRAK
     categories.forEach(category => {
         const layerKey = `__${category}Layers`;
         if (map && map[layerKey] && Array.isArray(map[layerKey])) {
-            // SADECE BU ARRAY'DEKİ LAYER'LARI SİL
             map[layerKey].forEach(l => {
                 try {
                     map.removeLayer(l);
@@ -597,24 +596,19 @@ function clearAllCategoryMarkers(map) {
         }
     });
     
-    // 3D Harita (MapLibre) temizliği
+    // 3D HARITA TEMİZLİĞİ
     const isMapLibre = map && !!map.addSource;
-    
     if (isMapLibre) {
         categories.forEach(category => {
             const marker3DKey = `_${category}3DMarkers`;
             const layer3DKey = `_${category}3DLayers`;
             
-            if (window[marker3DKey] && Array.isArray(window[marker3DKey])) {
-                window[marker3DKey].forEach(m => { 
-                    try { 
-                        if (m && m.remove) m.remove();
-                    } catch(e) {}
-                });
+            if (window[marker3DKey]) {
+                window[marker3DKey].forEach(m => { try { m.remove(); } catch(e){} });
                 window[marker3DKey] = [];
             }
             
-            if (window[layer3DKey] && Array.isArray(window[layer3DKey])) {
+            if (window[layer3DKey]) {
                 window[layer3DKey].forEach(id => {
                     try {
                         if (map.getLayer(id)) map.removeLayer(id);
@@ -626,12 +620,11 @@ function clearAllCategoryMarkers(map) {
         });
     }
     
-    // KATEGORİ DAIRELERİNİ SİL
+    // KATEGORİ DAİRELERİNİ SİL
     if (window._categoryRadiusCircle) {
         try { window._categoryRadiusCircle.remove(); } catch(e) {}
         window._categoryRadiusCircle = null;
     }
-    
     if (window._categoryRadiusCircle3D && map && map.getSource) {
         try {
             const circleId = window._categoryRadiusCircle3D;
