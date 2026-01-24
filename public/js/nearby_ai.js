@@ -174,63 +174,54 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
     }
 };
 // updateCart() BURADAN SİLİNDİ! (addToCart zaten yapıyor)
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Önceki popup'ı kapat
-    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+// PULSE MARKER... (rest of the code stays same)
     
-    // Popup container oluştur
-    const popupContainer = document.createElement('div');
-    popupContainer.id = 'custom-nearby-popup';
-    
-    const closeButtonHtml = showCloseButton ? `
-        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
-    ` : '';
-    
-    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
-    document.body.appendChild(popupContainer);
-    window._currentNearbyPopupElement = popupContainer;
-    
-    // Mobil'de overlay buton ekle
-    if (window.innerWidth < 700) {
-        setTimeout(() => {
-            if (!document.getElementById('back-to-map-overlay')) {
-                const overlay = document.createElement('div');
-                overlay.id = 'back-to-map-overlay';
-                overlay.style.cssText = `
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    height: 56px;
-                    background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    color: white;
-                    font-weight: 600;
-                    font-size: 14px;
-                    backdrop-filter: blur(4px);
-                    border-top: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-                `;
-                overlay.innerHTML = '← Back to Map';
-                overlay.onclick = () => {
-                    const popup = document.getElementById('custom-nearby-popup');
-                    const map = document.querySelector('.leaflet-container, .maplibregl-map');
-                    const backOverlay = document.getElementById('back-to-map-overlay');
-                    
-                    if (popup) popup.style.display = 'none';
-                    if (map) map.style.display = '';
-                    if (backOverlay) backOverlay.remove();
-                };
-                document.body.appendChild(overlay);
-            }
-        }, 100);
+    // 1. Temizlik
+    if (window._nearbyPulseMarker) { 
+        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
+        window._nearbyPulseMarker = null; 
     }
-    
-    // PULSE MARKER... (rest of the code stays same)
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
+        window._nearbyPulseMarker3D = null;
+    }
+
+    // 2. YENİ VE ÇARPIÇI PULSE MARKER HTML
+    const pulseHtml = `...`;
+
+    // CSS'i inline ekle (eğer henüz eklenmemişse)
+    if (!document.getElementById('tt-pulse-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tt-pulse-styles';
+        style.textContent = `...`;
+        document.head.appendChild(style);
+    }
+
+    // 3. Harita Tipine Göre Ekleme
+    const isMapLibre = !!map.addSource;
+
+    if (isMapLibre) {
+        const el = document.createElement('div');
+        el.className = 'tt-pulse-marker';
+        el.innerHTML = pulseHtml;
+        
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
+            element: el,
+            anchor: 'center'
+        })
+        .setLngLat([lng, lat])
+        .addTo(map);
+            
+    } else {
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'tt-pulse-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
+    }
+}
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
