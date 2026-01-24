@@ -583,7 +583,7 @@ window.closeNearbyPopup = function() {
 function clearAllCategoryMarkers(map) {
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    // SADECE KATEGORİ LAYER'LARINI SİL - DİĞER HERŞEYİ BIRAK
+    // SADECE KATEGORİ LAYER'LARINI SİL - map.eachLayer() KULLANMA!
     categories.forEach(category => {
         const layerKey = `__${category}Layers`;
         if (map && map[layerKey] && Array.isArray(map[layerKey])) {
@@ -634,6 +634,8 @@ function clearAllCategoryMarkers(map) {
         } catch(e) {}
         window._categoryRadiusCircle3D = null;
     }
+    
+    // HİÇBİR map.eachLayer() KULLANMA!
 }
 
 // attachClickNearbySearch fonksiyonunu güncelle
