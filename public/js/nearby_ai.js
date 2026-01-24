@@ -1714,69 +1714,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const country = "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-   // Sidebar aç
-    const addPointSection = `
-        <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
-            <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                <div class="point-image" style="width: 48px; height: 48px; position: relative; flex-shrink: 0;">
-                    <img id="clicked-point-img" src="img/placeholder.png" alt="Clicked Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
-                </div>
-                <div class="point-info" style="flex: 1; min-width: 0;">
-                    <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <span id="point-name-display" style="font-weight: 600; font-size: 15px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
-                    </div>
-                    <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
-                        ${pointInfo.address || 'Selected location'}
-                    </div>
-                </div>
-                <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                    <div style="font-size: 11px; color: #999;">Clicked</div>
-                    <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
-                </div>
-                <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
-            </div>
-        </div>
-    `;
-
-    // Kategori itemlarını listele
-    let itemsHtml = '';
-    topPlaces.forEach((placeData, idx) => {
-        const f = placeData.feature;
-        const distance = placeData.distance;
-        const name = f.properties.name || 'Unknown';
-        const distStr = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
-        
-        itemsHtml += `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 0.9rem; color: #333; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-                    <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.properties.formatted || ''}</div>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                    <div style="font-size: 10px; color: #999; white-space: nowrap;">${distStr}</div>
-                    <button onclick="window.addPlaceToTripFromPopup('', '${name}', '${f.properties.formatted || ''}', ${day}, ${f.properties.lat}, ${f.properties.lon}, '${config.layerPrefix}')" style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px;">+</button>
-                </div>
-            </div>
-        `;
-    });
-
-    const html = `
-        <div>
-            <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                📍 Nearby Places
-            </div>
-            ${addPointSection}
-            <div style="border-top: 1px solid #e0e0e0; padding-top: 12px; margin-top: 12px;">
-                <div style="font-weight: 600; margin-bottom: 8px; color: #333;">${categoryType.charAt(0).toUpperCase() + categoryType.slice(1)}</div>
-                ${itemsHtml}
-            </div>
-        </div>
-    `;
-
-    showCustomPopup(lat, lng, map, html, true);
-    window._currentPointInfo = pointInfo;
-    
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         window.fetchClickedPointAI(
             pointInfo.name, 
