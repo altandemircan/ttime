@@ -655,22 +655,23 @@ const clickHandler = function(e) {
         // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
         
-        // Varsa açık popup'ı kapat
-        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-        
-        // +++ ÖNCE SIDEBAR AÇILSIN, SONRA MARKER GÖSTERİLSİN +++
-        if (typeof showNearbyPlacesPopup === 'function') {
-            // Sidebar'ı aç ama callback ile marker'ları sonra göster
-            showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+        // +++ KONTROL: EĞER DAHA ÖNCE "SHOW MORE" TIKLANDIYSA +++
+        if (window._lastSelectedCategory) {
+            // SADECE MARKER GÖSTER (sidebar yok)
+            console.log(`📍 ${window._lastSelectedCategory} marker'ları gösteriliyor...`);
             
-            // Sidebar tamamen yüklendikten sonra marker'ları göster
-            setTimeout(() => {
-                const categoryToShow = window._lastSelectedCategory || 'restaurants';
-                
-                if (typeof showNearbyPlacesByCategory === 'function') {
-                    showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, categoryToShow);
-                }
-            }, 800); // Daha uzun bekle (sidebar tam yüklensin)
+            if (typeof showNearbyPlacesByCategory === 'function') {
+                showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, window._lastSelectedCategory);
+            }
+        } else {
+            // İLK TIKLAMA: SADECE SIDEBAR AÇ
+            // Varsa açık popup'ı kapat
+            if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+            
+            // Yeni sidebar'ı aç
+            if (typeof showNearbyPlacesPopup === 'function') {
+                showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+            }
         }
     }, __nearbySingleDelay);
 };
