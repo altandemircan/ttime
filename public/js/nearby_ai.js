@@ -2082,19 +2082,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window[marker3DKey] = [];
     }
     
-    if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(_) {}
-        window._categoryRadiusCircle = null;
-    }
-    if (window._categoryRadiusCircle3D) {
-        try {
-            const circleId = window._categoryRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(_) {}
-        window._categoryRadiusCircle3D = null;
-    }
+    // if (window._categoryRadiusCircle) {
+    //     try { window._categoryRadiusCircle.remove(); } catch(_) {}
+    //     window._categoryRadiusCircle = null;
+    // }
+    // if (window._categoryRadiusCircle3D) {
+    //     try {
+    //         const circleId = window._categoryRadiusCircle3D;
+    //         if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+    //         if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+    //         if (map.getSource(circleId)) map.removeSource(circleId);
+    //     } catch(_) {}
+    //     window._categoryRadiusCircle3D = null;
+    // }
     
     const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=5000&limit=30`;
     
