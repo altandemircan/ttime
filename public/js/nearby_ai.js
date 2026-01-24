@@ -2121,15 +2121,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 }).addTo(map);
                 
                 console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
-                
-                window._categoryRadiusCircle.bindTooltip(
-                    `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
-                    { 
-                        permanent: false, 
-                        direction: 'center',
-                        className: 'radius-tooltip'
-                    }
-                );
             }
         }
         
