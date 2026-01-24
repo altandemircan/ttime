@@ -1779,9 +1779,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'entertainment': { icon: "🎭", title: "Entertainment" }
     };
     
-    // API'den gelen veriyi kullanarak sayıları bul
-    let restaurantCount = 0, hotelCount = 0, marketCount = 0, entertainmentCount = 0;
-    
     Object.keys(tabConfigs).forEach(key => {
         const tab = tabConfigs[key];
         const isActive = key === categoryType;
@@ -1789,9 +1786,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         // Dinamik olarak kategori sayısını al
         let count = 0;
-        if (key === categoryType && data && data.features) {
-            count = data.features.length;
-        }
         
         tabsHtml += `
             <button class="category-tab ${isActive ? 'active' : ''}" 
