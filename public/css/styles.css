@@ -5181,6 +5181,257 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 
+
+
+/* Nearby Places Popup Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+ 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Custom Nearby Popup Styling */
+#custom-nearby-popup {
+     scrollbar-width: thin;
+    scrollbar-color: #8a4af3 #f1f1f1;
+    position: fixed;
+    top: 60px;
+    width: 415px;
+    right: 0;
+    height: 100%;   
+    z-index: 1008;
+   background: transparent !important;
+    overflow-y: auto;
+    /* max-height: calc(100vh - 100px); */
+    /*padding-top: 20px;*/
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    transition: 0.3s ease
+}
+.nearby-popup-content {
+    background: #fff;
+    pointer-events: auto; /* İçeriğe tıklayabilelim */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+/* Scrollbar styling */
+#custom-nearby-popup ::-webkit-scrollbar {
+    width: 6px;
+}
+
+#custom-nearby-popup ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#custom-nearby-popup ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#custom-nearby-popup ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Close button styling */
+.nearby-popup-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f44336;
+    color: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    box-shadow: 0 2px 8px rgba(244,67,54,0.3);
+    transition: all 0.2s;
+}
+
+.nearby-popup-close-btn:hover {
+    background: #d32f2f;
+    transform: scale(1.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    #custom-nearby-popup {
+        top: 0px !important;
+        right: 0px !important;
+        left: 0px !important;
+        bottom: 0px !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+}
+
+/* Loading spinner */
+.nearby-loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #1976d2;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Place list styling */
+.nearby-places-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.nearby-place-item {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    min-height: 50px;
+}
+
+.nearby-place-image {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.nearby-place-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 1px 4px #ccc;
+}
+
+.nearby-place-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nearby-place-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 2px;
+    word-wrap: break-word;
+}
+
+.nearby-place-address {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.2;
+}
+
+.nearby-place-actions {
+    margin-left: 8px;
+    text-align: center;
+    min-width: 70px;
+}
+
+.nearby-place-distance {
+    font-size: 12px;
+    color: #1976d2;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.nearby-place-add-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.nearby-place-add-btn:hover {
+    background: #1565c0;
+}
+
+.nearby-popup-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 15px;
+   
+    color: #1976d2;
+    border-bottom: 2px solid #e3f2fd;
+    padding-bottom: 10px;
+}
+
+.nearby-popup-content {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(100vh - 80px);
+}
+
+.nearby-no-results {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
+.nearby-error-message {
+    text-align: center;
+    color: #d32f2f;
+    padding: 20px;
+}
+
+.nearby-loading-message {
+    text-align: center;
+    padding: 20px;
+}
+
+.nearby-loading-text {
+    margin-top: 10px;
+    display: block;
+}
+
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
 .use-my-location-btn {
     position: absolute;
     top: 100px;
