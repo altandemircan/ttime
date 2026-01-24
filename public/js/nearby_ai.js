@@ -673,13 +673,23 @@ function attachClickNearbySearch(map, day, options = {}) {
   let __nearbySingleTimer = null;
   const __nearbySingleDelay = 250;
 
-  const clickHandler = function(e) {
+const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
-        console.log("[Nearby] Map clicked at:", e.latlng); 
+        const isMapLibre = !!map.addSource;
+        let lat, lng;
         
-        // +++ PULSE MARKERLARI HEMEN TEMİZLE +++
+        if (isMapLibre) {
+            lat = e.lngLat.lat;
+            lng = e.lngLat.lng;
+        } else {
+            lat = e.latlng.lat;
+            lng = e.latlng.lng;
+        }
+        
+        console.log("[Nearby] Map clicked at:", { lat, lng }); 
+        
         if (window._nearbyPulseMarker) {
             try { window._nearbyPulseMarker.remove(); } catch(e) {}
             window._nearbyPulseMarker = null;
@@ -689,30 +699,26 @@ function attachClickNearbySearch(map, day, options = {}) {
             window._nearbyPulseMarker3D = null;
         }
         
-        // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
         
-        // +++ KONTROL: EĞER DAHA ÖNCE "SHOW MORE" TIKLANDIYSA +++
+        // +++ DAHA ÖNCEDEN KATEGORİ SEÇİLDİYSE DIREKT MARKER GÖSTER +++
         if (window._lastSelectedCategory) {
-            // SADECE MARKER GÖSTER (sidebar yok)
             console.log(`📍 ${window._lastSelectedCategory} marker'ları gösteriliyor...`);
             
             if (typeof showNearbyPlacesByCategory === 'function') {
-                showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, window._lastSelectedCategory);
+                showNearbyPlacesByCategory(lat, lng, map, day, window._lastSelectedCategory);
             }
         } else {
-            // İLK TIKLAMA: SADECE SIDEBAR AÇ
-            // Varsa açık popup'ı kapat
+            // İLK TIKLAMA: SIDEBAR AÇ
             if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
             
-            // Yeni sidebar'ı aç
             if (typeof showNearbyPlacesPopup === 'function') {
-                showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
+                showNearbyPlacesPopup(lat, lng, map, day, radius);
             }
         }
     }, __nearbySingleDelay);
-  };
-  
+};
+
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
