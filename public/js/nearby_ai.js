@@ -652,13 +652,14 @@ const clickHandler = function(e) {
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
         
-        // Tüm kategori markerlarını temizle
+        // +++ ÖNEMLİ: ÖNCE PULSE MARKER'ı GÖSTER, SONRA TEMİZLE +++
+        // 1. Önce yeni pulse marker göster
+        showCustomPopup(e.latlng.lat, e.latlng.lng, map, '', false); // Sadece pulse için
+        
+        // 2. Tüm kategori markerlarını temizle (ama pulse'ı değil!)
         clearAllCategoryMarkers(map);
         
-        // Varsa açık popup'ı kapat
-        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-        
-        // SON SEÇİLEN KATEGORİYİ VEYA RESTAURANTS'ı GÖSTER
+        // 3. SON SEÇİLEN KATEGORİYİ VEYA RESTAURANTS'ı GÖSTER
         const categoryToShow = window._lastSelectedCategory || 'restaurants';
         
         if (typeof showNearbyPlacesByCategory === 'function') {
