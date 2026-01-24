@@ -607,34 +607,19 @@ const clickHandler = function(e) {
 }
 
 
-// Previous code...
+// MOBİL HARİTA / YAKINDAKİLER ARASI GEÇİŞ BUTONU (EXPANDED MAP açıkken görünür!)
 
-// MOBİL HARİTA / YAKINDAKİLER ARASI GEÇİŞ BUTONU EKLE
-// MOBİL HARİTA / YAKINDAKİLER ARASI GEÇİŞ BUTONU 
 function addNearbyMapToggleButton() {
-    // Önce varsa eskiyi temizle
-    if (document.getElementById('nearby-map-toggle-btn')) {
-        document.getElementById('nearby-map-toggle-btn').remove();
-    }
+    // Öncekini temizle
+    const oldBtn = document.getElementById('nearby-map-toggle-btn');
+    if (oldBtn) oldBtn.remove();
 
-    // Sadece harita VEYA nearby popup açıkken ekle!
-    const map = document.querySelector('.leaflet-container') || document.querySelector('.maplibregl-map');
-    const popup = document.getElementById('custom-nearby-popup');
+    // SADECE MOBİLDE VE SADECE EXPANDED MAP AÇIKKEN GÖRÜNSÜN!
+    if (window.innerWidth >= 700) return;
 
-    // Mobilde, harita ya da popup görünmüyorsa butonu ekleme
-    if (
-        window.innerWidth >= 700 ||
-        (!map && !popup) ||
-        (
-            (!map || map.style.display === 'none') &&
-            (!popup || popup.style.display === 'none')
-        )
-    ) {
-        // Butonu mevcutsa kaldır
-        const existed = document.getElementById('nearby-map-toggle-btn');
-        if (existed) existed.remove();
-        return;
-    }
+    // Sadece expanded map görünürse ekle (expanded-map-container görünüyorsa)
+    const expandedMap = document.querySelector('.expanded-map-container');
+    if (!expandedMap || expandedMap.style.display === 'none' || expandedMap.offsetParent === null) return;
 
     const btn = document.createElement('button');
     btn.id = 'nearby-map-toggle-btn';
@@ -655,84 +640,97 @@ function addNearbyMapToggleButton() {
     btn.style.cursor = 'pointer';
 
     btn.onclick = function () {
-        // Hem leaflet hem maplibre için harita bulmaya çalış
-        const map = document.querySelector('.leaflet-container') || document.querySelector('.maplibregl-map');
-        const popup = document.getElementById('custom-nearby-popup');
-        if (!map || !popup) return;
-        if (window.innerWidth < 700) {
-            // Harita açık nearby kapalıysa nearby aç
-            if (map.style.display !== 'none' && (popup.style.display === 'none' || popup.style.display === '')) {
-                map.style.display = 'none';
-                popup.style.display = 'block';
-            }
-            // Nearby açık harita kapalıysa harita aç nearby gizle
-            else {
-                map.style.display = '';
-                popup.style.display = 'none';
+        // SADECE expanded map açıkken nearby popup açılır!
+        const expandedMap = document.querySelector('.expanded-map-container');
+        if (!expandedMap) return;
+
+        // Kendi harita parentini/gününü bul ve nearby aç
+        // Gün numarasını bul
+        let day = 1;
+        const m = expandedMap.id && expandedMap.id.match(/expanded-map-(\d+)/);
+        if (m) day = Number(m[1]);
+
+        // Merkezi noktayı bul (expandedMap Leaflet ile, MapLibre ile, gerekirse ortalama ile)
+        let lat = 0, lng = 0, mapObj = null;
+        if (window.expandedMaps && window.expandedMaps[`route-map-day${day}`]) {
+            mapObj = window.expandedMaps[`route-map-day${day}`].expandedMap;
+        }
+        if (mapObj && typeof mapObj.getCenter === "function") {
+            const c = mapObj.getCenter();
+            lat = c.lat; lng = c.lng;
+        } else {
+            // fallback: Haritanın DOM'undan data attribute bulmaya çalış
+            const el = document.getElementById(`route-map-day${day}-expanded`) || document.getElementById(`route-map-day${day}`);
+            if (el && el.dataset) {
+                lat = parseFloat(el.dataset.lat || 0);
+                lng = parseFloat(el.dataset.lon || el.dataset.lng || 0);
             }
         }
-        // Duruma göre toggle sonrası butonun görünürlüğünü tekrar kontrol et
-        setTimeout(addNearbyMapToggleButton, 350);
+
+        // Eğer nearby popup bir daha açılırsa, haritayı gizle, nearby göster!
+        if (typeof showNearbyPlacesPopup === "function") {
+            showNearbyPlacesPopup(lat, lng, mapObj || window.leafletMaps?.[`route-map-day${day}`], day, 2000);
+
+            // Expanded map'i gizleme mobilde (isteğe bağlı, çünkü popup yakın açılırsa akar)
+            setTimeout(() => {
+                expandedMap.style.display = 'none';
+                addNearbyMapToggleButton(); // butonu güncelle/kaldır
+            }, 220);
+        }
     };
 
     document.body.appendChild(btn);
 }
 
-// Toggle butonu ONLY uygun durumda oto-çalışacak şekilde showCustomPopup'ı override et
-if (!window._origShowCustomPopup) {
-    window._origShowCustomPopup = window.showCustomPopup;
-    window.showCustomPopup = function(...args) {
-        window._origShowCustomPopup.apply(this, args);
-        setTimeout(() => addNearbyMapToggleButton(), 80);
-        if (window.innerWidth < 700) {
-            // İlk açılışta nearby visible olsun
-            const popup = document.getElementById('custom-nearby-popup');
-            if (popup) popup.style.display = 'block';
-            const map = document.querySelector('.leaflet-container') || document.querySelector('.maplibregl-map');
-            if (map) map.style.display = 'none';
+// EXPANDED MAP açıksa butonu bir kere ekle, kapatınca kaldır
+function updateNearbyMapToggleButton() {
+    // Sadece expanded map açık ve mobildeyse ekle
+    if (window.innerWidth < 700) {
+        const expandedMap = document.querySelector('.expanded-map-container');
+        if (expandedMap && expandedMap.style.display !== 'none' && expandedMap.offsetParent !== null) {
+            addNearbyMapToggleButton();
+            return;
         }
+    }
+    // Diğer her durumda kaldır
+    const btn = document.getElementById('nearby-map-toggle-btn');
+    if (btn) btn.remove();
+}
+// DOM'da değişiklik olunca izleyip hemen güncelle (expand/collapse/detach için)
+const observer = new MutationObserver(updateNearbyMapToggleButton);
+observer.observe(document.body, { subtree: true, childList: true, attributes: true });
+
+// Ekran boyutu değişince de kontrol et
+window.addEventListener('resize', updateNearbyMapToggleButton);
+// Popstate/hashchange ile view değişimi olursa da kaldır
+window.addEventListener('hashchange', updateNearbyMapToggleButton);
+window.addEventListener('popstate', updateNearbyMapToggleButton);
+
+// ShowNearbyPlacesPopup açıldığında expanded map'i gösterip butonu kaldır
+if (!window._origShowNearbyPlacesPopup) {
+    window._origShowNearbyPlacesPopup = window.showNearbyPlacesPopup;
+    window.showNearbyPlacesPopup = function(...args) {
+        // Önce haritayı tekrar göster (çünkü nearby'yi açınca harita kapanıyordu)
+        const expandedMap = document.querySelector('.expanded-map-container');
+        if (expandedMap) expandedMap.style.display = '';
+        if (typeof updateNearbyMapToggleButton === 'function') setTimeout(updateNearbyMapToggleButton, 80);
+        // Default popup fonksiyonu
+        return window._origShowNearbyPlacesPopup.apply(this, args);
     };
 }
 
-// Popup her kapandığında toggle butonunu da kaldır
+// CloseNearbyPopup çağrılınca expanded haritayı aç, butonu tekrar göster
 const origCloseNearbyPopup = window.closeNearbyPopup;
 window.closeNearbyPopup = function(...args) {
     if (origCloseNearbyPopup) origCloseNearbyPopup.apply(this, args);
-
-    // En yakın .leaflet-container veya .maplibregl-map contextini bul
-    // ve eğer nearby popup ve harita da açık değilse butonu kaldır
+    // Map varsa mobilde sadece expanded map aç kapa VISIBLE yap (popup kapanınca)
     setTimeout(() => {
-        const btn = document.getElementById('nearby-map-toggle-btn');
-        const map = document.querySelector('.leaflet-container') || document.querySelector('.maplibregl-map');
-        const popup = document.getElementById('custom-nearby-popup');
-
-        // Nearby popup kapalıysa ve harita da kapalıysa butonu kaldır
-        if (
-            !popup || popup.style.display === 'none' ||
-            !document.body.contains(popup)
-        ) {
-            // Eğer harita da görünmüyorsa kaldır
-            if (!map || map.style.display === 'none') {
-                if (btn) btn.remove();
-            }
-        }
+        const expandedMap = document.querySelector('.expanded-map-container');
+        if (expandedMap) expandedMap.style.display = '';
+        updateNearbyMapToggleButton();
     }, 100);
 };
-;
 
-// Harita veya nearby popup dışı başka view'lara geçişte de butonun temizlenmesini garantilemek için (SPA ise)
-window.addEventListener('hashchange', () => {
-    const btn = document.getElementById('nearby-map-toggle-btn');
-    if (btn) btn.remove();
-});
-window.addEventListener('popstate', () => {
-    const btn = document.getElementById('nearby-map-toggle-btn');
-    if (btn) btn.remove();
-});
-
-// Ayrıca ekran boyutu değişirse veya sayfa scroll/uianimation olursa tekrar kontrol et
-window.addEventListener('resize', addNearbyMapToggleButton);
-document.addEventListener('visibilitychange', addNearbyMapToggleButton);
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
   if (!expandedContainer) return;
