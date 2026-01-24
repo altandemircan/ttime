@@ -498,24 +498,32 @@ window.closeNearbyPopup = function() {
     // 5. TÜM KATEGORİLERİN MARKERLARINI TEMİZLE
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    categories.forEach(category => {
-        // 3D MapLibre temizliği
-        const marker3DKey = `_${category}3DMarkers`;
-        const layer3DKey = `_${category}3DLayers`;
-        
-        if (window[marker3DKey]) {
-            window[marker3DKey].forEach(m => { try { m.remove(); } catch(e){} });
-            window[marker3DKey] = [];
-        }
-        
-        if (window._maplibre3DInstance && window[layer3DKey]) {
-            window[layer3DKey].forEach(id => {
-                if (window._maplibre3DInstance.getLayer(id)) window._maplibre3DInstance.removeLayer(id);
-                if (window._maplibre3DInstance.getSource(id)) window._maplibre3DInstance.removeSource(id);
-            });
-            window[layer3DKey] = [];
-        }
-    });
+    // 2D Harita (Leaflet) temizliği
+categories.forEach(category => {
+    const layerKey = `__${category}Layers`;
+    if (map && map[layerKey]) {
+        map[layerKey].forEach(l => {
+            try {
+                // Önce DOM'dan gizle (kırmızı görünmesin)
+                if (l._icon) {
+                    l._icon.style.display = 'none';
+                    l._icon.style.visibility = 'hidden';
+                    l._icon.style.opacity = '0';
+                }
+                if (l._container) {
+                    l._container.style.display = 'none';
+                }
+                // Sonra haritadan kaldır
+                setTimeout(() => {
+                    try {
+                        map.removeLayer(l);
+                    } catch(e) {}
+                }, 10);
+            } catch(e) {}
+        });
+        map[layerKey] = [];
+    }
+});
 
     // 6. LEAFLET KATMAN TARAMASI (Tüm kategoriler için)
     const mapsToCheck = [];
