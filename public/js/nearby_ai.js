@@ -2186,7 +2186,6 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
-// MOBİL POPUP VE HARITA GEÇİŞİ
 function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     // Önceki popup'ı kapat
     if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
@@ -2279,127 +2278,70 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     `;
     contentWrapper.innerHTML = content;
 
-    // Container'a relative ekle (absolute positioning için)
+    // Mobil'de header ekle
+    if (isMobile) {
+        const header = document.createElement('div');
+        header.style.cssText = `
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            color: white;
+            padding: 12px 16px;
+            margin: -12px -12px 12px -12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10002;
+        `;
+        
+        const title = document.createElement('div');
+        title.style.cssText = `
+            font-weight: 600;
+            font-size: 16px;
+        `;
+        title.innerHTML = '📍 Nearby Places';
+        
+        const closeButtonAlt = document.createElement('button');
+        closeButtonAlt.innerHTML = '✕';
+        closeButtonAlt.style.cssText = `
+            background: rgba(255,255,255,0.3);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        `;
+        
+        closeButtonAlt.onmouseover = () => {
+            closeButtonAlt.style.background = 'rgba(255,255,255,0.4)';
+        };
+        
+        closeButtonAlt.onmouseout = () => {
+            closeButtonAlt.style.background = 'rgba(255,255,255,0.3)';
+        };
+        
+        closeButtonAlt.onclick = () => {
+            closeNearbyPopup();
+        };
+        
+        header.appendChild(title);
+        header.appendChild(closeButtonAlt);
+        popupContainer.appendChild(header);
+    } else {
+        // Close button'u container'a relative ekle (absolute'u container'a göre konumlandırır)
     popupContainer.style.position = 'relative';
     popupContainer.appendChild(closeBtn);
+    }
+
     popupContainer.appendChild(contentWrapper);
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
-
-    // MOBİL'DE HARITA GİZLE
-    if (isMobile) {
-        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-        if (mapContainer) {
-            mapContainer.style.display = 'none';
-        }
-        
-        // MOBİL OVERLAY BUTONU EKLE (Harita Göster)
-        setTimeout(() => {
-            if (!document.getElementById('popup-to-map-overlay')) {
-                const overlay = document.createElement('div');
-                overlay.id = 'popup-to-map-overlay';
-                overlay.style.cssText = `
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    height: 56px;
-                    background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    color: white;
-                    font-weight: 600;
-                    font-size: 14px;
-                    backdrop-filter: blur(4px);
-                    border-top: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-                `;
-                overlay.innerHTML = '🗺️ View Map';
-                overlay.onclick = () => {
-                    // Popup gizle, harita göster
-                    const popup = document.getElementById('custom-nearby-popup');
-                    const map = document.querySelector('.leaflet-container, .maplibregl-map');
-                    const mapOverlay = document.getElementById('popup-to-map-overlay');
-                    const listOverlay = document.getElementById('map-to-list-overlay');
-                    
-                    if (popup) popup.style.display = 'none';
-                    if (map) map.style.display = '';
-                    if (mapOverlay) mapOverlay.remove();
-                    
-                    // Harita overlay'i ekle
-                    if (!listOverlay) {
-                        setTimeout(() => {
-                            const overlay2 = document.createElement('div');
-                            overlay2.id = 'map-to-list-overlay';
-                            overlay2.style.cssText = `
-                                position: fixed;
-                                bottom: 0;
-                                left: 0;
-                                right: 0;
-                                height: 56px;
-                                background: linear-gradient(to top, rgba(136, 74, 243, 0.95), rgba(136, 74, 243, 0.8));
-                                z-index: 9999;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                cursor: pointer;
-                                color: white;
-                                font-weight: 600;
-                                font-size: 14px;
-                                backdrop-filter: blur(4px);
-                                border-top: 1px solid rgba(255,255,255,0.2);
-                                box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-                            `;
-                            overlay2.innerHTML = '📋 View List';
-                            overlay2.onclick = () => {
-                                // Harita gizle, popup göster
-                                const popup = document.getElementById('custom-nearby-popup');
-                                const map = document.querySelector('.leaflet-container, .maplibregl-map');
-                                const listOverlay = document.getElementById('map-to-list-overlay');
-                                
-                                if (popup) popup.style.display = '';
-                                if (map) map.style.display = 'none';
-                                if (listOverlay) listOverlay.remove();
-                                
-                                // Popup overlay'i geri ekle
-                                if (!document.getElementById('popup-to-map-overlay')) {
-                                    const overlay3 = document.createElement('div');
-                                    overlay3.id = 'popup-to-map-overlay';
-                                    overlay3.style.cssText = `
-                                        position: fixed;
-                                        bottom: 0;
-                                        left: 0;
-                                        right: 0;
-                                        height: 56px;
-                                        background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
-                                        z-index: 9999;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        cursor: pointer;
-                                        color: white;
-                                        font-weight: 600;
-                                        font-size: 14px;
-                                        backdrop-filter: blur(4px);
-                                        border-top: 1px solid rgba(255,255,255,0.2);
-                                        box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-                                    `;
-                                    overlay3.innerHTML = '🗺️ View Map';
-                                    overlay3.onclick = arguments.callee;
-                                    document.body.appendChild(overlay3);
-                                }
-                            };
-                            document.body.appendChild(overlay2);
-                        }, 100);
-                    }
-                };
-                document.body.appendChild(overlay);
-            }
-        }, 100);
-    }
 
     // --- PULSE MARKER EKLEME (Hem Leaflet hem MapLibre uyumlu) ---
     
@@ -2413,7 +2355,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker3D = null;
     }
 
-    // 2. PULSE MARKER HTML
+    // 2. YENI VE ÇARPICI PULSE MARKER HTML
     const pulseHtml = `
       <div class="tt-pulse-marker">
         <div class="tt-pulse-dot">
@@ -2600,65 +2542,6 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 }
-
-// closeNearbyPopup
-window.closeNearbyPopup = function() {
-    const popupElement = document.getElementById('custom-nearby-popup');
-    if (popupElement) {
-        popupElement.remove();
-    }
-    
-    const overlay1 = document.getElementById('popup-to-map-overlay');
-    if (overlay1) overlay1.remove();
-    
-    const overlay2 = document.getElementById('map-to-list-overlay');
-    if (overlay2) overlay2.remove();
-    
-    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
-    if (mapContainer) {
-        mapContainer.style.display = '';
-    }
-
-    if (window._nearbyPulseMarker) {
-        try { window._nearbyPulseMarker.remove(); } catch(e) {}
-        window._nearbyPulseMarker = null;
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-        window._nearbyPulseMarker3D = null;
-    }
-    
-    if (window._nearbyRadiusCircle) {
-        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
-        window._nearbyRadiusCircle = null;
-    }
-    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const map = window._maplibre3DInstance;
-            const circleId = window._nearbyRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(e) {}
-        window._nearbyRadiusCircle3D = null;
-    }
-    
-    if (window._categoryRadiusCircle) {
-        try { window._categoryRadiusCircle.remove(); } catch(e) {}
-        window._categoryRadiusCircle = null;
-    }
-    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const circleId = window._categoryRadiusCircle3D;
-            const map3d = window._maplibre3DInstance;
-            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
-            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
-        } catch(e) {}
-        window._categoryRadiusCircle3D = null;
-    }
-    
-    window._currentNearbyPopupElement = null;
-};
 
 // Mobil'de harita ve popup arasında geçiş yap
 function toggleNearbyMapPopup() {
