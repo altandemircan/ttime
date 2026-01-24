@@ -1791,14 +1791,40 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     `;
     
     // Kategori sekmelerini oluştur
-    const tabsHtml = `
-        <div class="category-tabs-section" style="margin-bottom: 16px; display: flex; gap: 4px; border-bottom: 1px solid #e0e0e0; padding-bottom: 12px; overflow-x: auto;">
-            <button class="category-tab-btn" data-category="restaurants" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f0f7ff; border: 2px solid #1976d2; border-radius: 6px; cursor: pointer; font-weight: 600; color: #1976d2; font-size: 12px; white-space: nowrap;">🍽️ Restaurants</button>
-            <button class="category-tab-btn" data-category="hotels" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; color: #666; font-size: 12px; white-space: nowrap;">🏨 Hotels</button>
-            <button class="category-tab-btn" data-category="markets" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; color: #666; font-size: 12px; white-space: nowrap;">🛒 Markets</button>
-            <button class="category-tab-btn" data-category="entertainment" style="flex: 1; min-width: 80px; padding: 8px 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; color: #666; font-size: 12px; white-space: nowrap;">🎭 Entertainment</button>
-        </div>
-    `;
+   let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
+    
+    const tabConfigs = {
+        'restaurants': { icon: "🍽️", title: "Restaurants" },
+        'hotels': { icon: "🏨", title: "Hotels" },
+        'markets': { icon: "🛒", title: "Markets" },
+        'entertainment': { icon: "🎭", title: "Entertainment" }
+    };
+    
+    Object.keys(tabConfigs).forEach(key => {
+        const tab = tabConfigs[key];
+        const isActive = key === categoryType;
+        const badgeStyle = 'background: #4caf50; color: white;';
+        
+        // Dinamik olarak kategori sayısını al
+        let count = 0;
+        
+        tabsHtml += `
+            <button class="category-tab ${isActive ? 'active' : ''}" 
+                    data-tab="${key}"
+                    style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
+                           border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
+                           cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
+                           display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <div style="font-size: 16px;">${tab.icon}</div>
+                <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
+                <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
+                    0
+                </div>
+            </button>
+        `;
+    });
+    
+    tabsHtml += '</div>';
     
     // Kategori başlığı
     const categorySection = `
