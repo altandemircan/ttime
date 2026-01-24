@@ -2414,31 +2414,30 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
-// closeNearbyPopup fonksiyonunu güncelleyelim
+// ============================================
+// NEARBY POPUP YÖNETİMİ VE VIEW SWITCHER
+// ============================================
+
+// 1. TAMAMEN KAPATMA (ÇIKIŞ) FONKSİYONU
+// Bu fonksiyon "X" butonuna basıldığında çalışır. Her şeyi yok eder.
 window.closeNearbyPopup = function() {
-    // 0. VIEW SWITCHER BUTONUNU KALDIR
+    // 1. Switcher Butonunu Sil (Çünkü moddan çıkıyoruz)
     const switcherBtn = document.getElementById('nearby-view-switcher-btn');
-    if (switcherBtn) {
-        switcherBtn.remove();
-    }
+    if (switcherBtn) switcherBtn.remove();
 
-    // Eski toggle butonu kalıntısı varsa onu da sil
-    const oldBtn = document.getElementById('nearby-map-toggle-btn');
-    if (oldBtn) oldBtn.remove();
-
-    // 1. SADECE POPUP DOM ELEMENTINI KALDIR
+    // 2. Popup Elementini Sil
     const popupElement = document.getElementById('custom-nearby-popup');
     if (popupElement) {
         popupElement.remove();
     }
 
-    // 2. HARITA GÖRÜNÜMÜNÜ GERI AL (Eğer gizlendiyse)
+    // 3. Harita Görünümünü Sıfırla (Eğer gizlendiyse geri aç)
     const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
     if (mapContainer) {
-        mapContainer.style.display = ''; // Görünürlüğü resetle
+        mapContainer.style.display = ''; 
     }
 
-    // 3. PULSE MARKER'I SİL
+    // 4. Markerları ve Çizimleri Temizle
     if (window._nearbyPulseMarker) {
         try { window._nearbyPulseMarker.remove(); } catch(e) {}
         window._nearbyPulseMarker = null;
@@ -2448,151 +2447,133 @@ window.closeNearbyPopup = function() {
         window._nearbyPulseMarker3D = null;
     }
     
-    // 4. RADIUS DAİRELERİNİ SİL
+    // Radius Daireleri Temizliği
     if (window._nearbyRadiusCircle) {
         try { window._nearbyRadiusCircle.remove(); } catch(e) {}
         window._nearbyRadiusCircle = null;
     }
-    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const map = window._maplibre3DInstance;
-            const circleId = window._nearbyRadiusCircle3D;
-            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
-            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
-            if (map.getSource(circleId)) map.removeSource(circleId);
-        } catch(e) {}
-        window._nearbyRadiusCircle3D = null;
-    }
-    
-    // 5. KATEGORİ DAİRELERİNİ SİL
     if (window._categoryRadiusCircle) {
         try { window._categoryRadiusCircle.remove(); } catch(e) {}
         window._categoryRadiusCircle = null;
     }
-    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
-        try {
-            const circleId = window._categoryRadiusCircle3D;
-            const map3d = window._maplibre3DInstance;
-            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
-            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
-        } catch(e) {}
-        window._categoryRadiusCircle3D = null;
+    
+    // 3D Radius Temizliği
+    if (window._maplibre3DInstance) {
+        const map = window._maplibre3DInstance;
+        ['_nearbyRadiusCircle3D', '_categoryRadiusCircle3D'].forEach(key => {
+            if (window[key]) {
+                try {
+                    const id = window[key];
+                    if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
+                    if (map.getLayer(id + '-stroke')) map.removeLayer(id + '-stroke');
+                    if (map.getSource(id)) map.removeSource(id);
+                } catch(e) {}
+                window[key] = null;
+            }
+        });
     }
     
     window._currentNearbyPopupElement = null;
-    
-    console.log('Nearby popup closed completely');
+    console.log('Nearby mode closed completely.');
 };
 
-// YENİ: Map ve Liste arasında geçiş yapan akıllı buton
+// 2. VIEW SWITCHER BUTONU (Harita <-> Liste Geçişi)
 function setupViewSwitcherButton(mapInstance) {
-    // Varsa eskisini sil
-    const existingBtn = document.getElementById('nearby-view-switcher-btn');
-    if (existingBtn) existingBtn.remove();
-
-    const btn = document.createElement('button');
-    btn.id = 'nearby-view-switcher-btn';
+    // Eğer buton zaten varsa tekrar oluşturma, sadece referans al
+    let btn = document.getElementById('nearby-view-switcher-btn');
     
-    // Başlangıç stili (Liste açık, Harita'ya git butonu göster)
-    const buttonStyles = `
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999;
-        padding: 10px 24px;
-        background: #333;
-        color: #fff;
-        border: none;
-        border-radius: 50px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        font-weight: 600;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    `;
-    
-    btn.style.cssText = buttonStyles;
-    
-    // İkonlar ve Metinler
-    const contentMap = `
-        <span style="font-size: 16px;">🗺️</span>
-        <span>Show Map</span>
-    `;
-    
-    const contentList = `
-        <span style="font-size: 16px;">📋</span>
-        <span>Show List</span>
-    `;
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'nearby-view-switcher-btn';
+        
+        // Stil Tanımları
+        btn.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            padding: 10px 24px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        document.body.appendChild(btn);
+    }
 
-    // Varsayılan: Liste açık, buton "Show Map" diyor
-    btn.innerHTML = contentMap;
+    // İçerik Şablonları
+    const contentToMap = `<span>🗺️</span> <span>Show Map</span>`;
+    const contentToList = `<span>📋</span> <span>Show List</span>`;
 
-    let isMapVisible = false; // Şu an liste mi görüyoruz, harita mı?
-
+    // Butonun Tıklama Mantığı
     btn.onclick = function(e) {
         e.stopPropagation();
         
         const popup = document.getElementById('custom-nearby-popup');
-        // Map container'ı bul (genelde body'nin arkasındadır ama display none yapılırsa geri getirmek gerek)
         const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
 
         if (!popup) return;
 
-        if (!isMapVisible) {
-            // ---> HARİTAYA GEÇ
+        // Şu an Liste GÖRÜNÜR durumdaysa -> Haritaya geç
+        if (popup.style.display !== 'none') {
             popup.style.display = 'none'; // Listeyi gizle
             if (mapContainer) mapContainer.style.display = ''; // Haritayı göster
             
-            btn.innerHTML = contentList; // Butonu "Listeyi Göster" yap
-            btn.style.background = '#1976d2'; // Renk değişimi (isteğe bağlı)
+            // Butonu güncelle
+            btn.innerHTML = contentToList;
+            btn.style.background = '#1976d2'; // Harita modunda mavi olsun
             
-            // Eğer harita resize gerektiriyorsa (Leaflet bazen bozulabilir)
-            if (mapInstance && mapInstance.invalidateSize) {
-                setTimeout(() => mapInstance.invalidateSize(), 100);
-            }
-            if (mapInstance && mapInstance.resize) { // MapLibre
-                setTimeout(() => mapInstance.resize(), 100);
-            }
-            
-            isMapVisible = true;
+            // Harita resize tetikle (render hatası olmasın diye)
+            if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 100);
+            if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 100);
+
         } else {
-            // ---> LİSTEYE GEÇ
-            popup.style.display = 'block'; // Listeyi göster
-            // Haritayı tamamen gizlemeye gerek yok, liste üstüne biniyor zaten
-            // ama mobilde performans için gizlenebilir, şimdilik sadece popup açıyoruz.
+            // Şu an Harita GÖRÜNÜR durumdaysa -> Listeye geç
+            popup.style.display = 'block'; // Listeyi aç
             
-            btn.innerHTML = contentMap; // Butonu "Haritayı Göster" yap
-            btn.style.background = '#333'; // Orijinal renk
-            
-            isMapVisible = false;
+            // Butonu güncelle
+            btn.innerHTML = contentToMap;
+            btn.style.background = '#333'; // Liste modunda koyu olsun
         }
     };
 
-    document.body.appendChild(btn);
+    // Fonksiyon her çağrıldığında (popup açıldığında), butonu varsayılan "Show Map" haline getir
+    // Çünkü popup yeni açıldıysa, liste görünüyordur.
+    const popup = document.getElementById('custom-nearby-popup');
+    if (popup && popup.style.display !== 'none') {
+        btn.innerHTML = contentToMap;
+        btn.style.background = '#333';
+    }
 }
 
-// showCustomPopup override - SADECE BURADA buton ekleniyor
+// 3. SHOW CUSTOM POPUP OVERRIDE
+// Popup her açıldığında butonu kontrol eder ve ekler
 const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // 1. Önceki butonları temizle
-    const oldSwitcher = document.getElementById('nearby-view-switcher-btn');
-    if (oldSwitcher) oldSwitcher.remove();
-    
-    // 2. Orijinal popup'ı oluştur
+    // 1. Orijinal Popup'ı oluştur (DOM'a ekler)
     origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
     
-    // 3. Sadece Mobile/Dar ekranlarda Switcher Butonunu ekle
+    // 2. Mobil/Tablet ise Switcher Butonunu yönet
     if (window.innerWidth < 768) {
-        // Biraz gecikmeli ekle ki DOM otursun
         setTimeout(() => {
+            // Popup'ın gerçekten oluştuğundan emin ol
             const popup = document.getElementById('custom-nearby-popup');
             if (popup) {
                 setupViewSwitcherButton(map);
             }
-        }, 150);
+        }, 100);
+    } else {
+        // Masaüstü ise butonu kaldır (gerek yoksa)
+        const btn = document.getElementById('nearby-view-switcher-btn');
+        if (btn) btn.remove();
     }
 };
