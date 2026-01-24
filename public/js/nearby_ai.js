@@ -614,6 +614,23 @@ function clearAllCategoryMarkers(map) {
             }
         });
     }
+    
+    // +++ YENİ: KATEGORİ DAIRELERİNİ DE TEMİZLE +++
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    
+    if (window._categoryRadiusCircle3D && map && map.getSource) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
 }
 
 // attachClickNearbySearch fonksiyonunu da güncelleyelim
@@ -1825,46 +1842,58 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         console.log(`${categoryType} - En uzak mesafe: ${maxDistance.toFixed(0)}m, Toplam: ${placesWithDistance.length}`);
         
         // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
-        if (maxDistance > 0) {
+   if (maxDistance > 0) {
     const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
     const radiusMeters = Math.ceil(maxDistance); // MARGİN YOK! Tam mesafe
     
     if (isMapLibre) {
-                // 3D MapLibre için
-                const circleId = `category-radius-${categoryType}-${Date.now()}`;
-                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-                
-                map.addSource(circleId, {
-                    type: 'geojson',
-                    data: circleGeoJSON
-                });
-                
-                map.addLayer({
-                    id: circleId + '-layer',
-                    type: 'fill',
-                    source: circleId,
-                    paint: {
-                        'fill-color': circleColor,
-                        'fill-opacity': 0.06,
-                        'fill-outline-color': 'transparent'
-                    }
-                });
-                
-                window._categoryRadiusCircle3D = circleId;
-                
-            } } else {
+        // 3D MapLibre için
+        const circleId = `category-radius-${categoryType}-${Date.now()}`;
+        const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+        
+        map.addSource(circleId, {
+            type: 'geojson',
+            data: circleGeoJSON
+        });
+        
+        map.addLayer({
+            id: circleId + '-layer',
+            type: 'fill',
+            source: circleId,
+            paint: {
+                'fill-color': circleColor,
+                'fill-opacity': 0.04,      // DAHA ŞEFFAF (0.06 → 0.04)
+                'fill-outline-color': 'transparent'
+            }
+        });
+        
+        window._categoryRadiusCircle3D = circleId;
+        
+    } else {
+        // 2D Leaflet için
         window._categoryRadiusCircle = L.circle([lat, lng], {
             radius: radiusMeters,
             color: circleColor,
-            weight: 0,
-            opacity: 0,
+            weight: 0,           // ÇİZGİ YOK
+            opacity: 0,          // ÇİZGİ ŞEFFAF
             fillColor: circleColor,
-            fillOpacity: 0.04,   // DAHA DA ŞEFFAF (0.06 → 0.04)
-            dashArray: null,
+            fillOpacity: 0.04,   // DAHA ŞEFFAF (0.06 → 0.04)
+            dashArray: null,     // KESİKLİ ÇİZGİ YOK
             className: `category-radius-circle`
         }).addTo(map);
         
+        // DEBUG: Konsola daire bilgisi yaz
         console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
+        
+        // Daireye tooltip ekle (mesafeyi göster)
+        window._categoryRadiusCircle.bindTooltip(
+            `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
+            { 
+                permanent: false, 
+                direction: 'center',
+                className: 'radius-tooltip'
+            }
+        );
     }
 }
         
