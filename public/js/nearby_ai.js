@@ -564,7 +564,8 @@ function attachClickNearbySearch(map, day, options = {}) {
 
   let __nearbySingleTimer = null;
   const __nearbySingleDelay = 250;
-const clickHandler = async function(e) {
+
+const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
@@ -579,48 +580,18 @@ const clickHandler = async function(e) {
             lng = e.latlng.lng;
         }
         
-        // 1. Önce eski butonu temizle
-        const oldBtn = document.getElementById('map-toggle-btn');
-        if (oldBtn) oldBtn.remove();
+        // Pulse marker temizle
+        if (window._nearbyPulseMarker) {
+            try { window._nearbyPulseMarker.remove(); } catch(e) {}
+            window._nearbyPulseMarker = null;
+        }
+        if (window._nearbyPulseMarker3D) {
+            try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+            window._nearbyPulseMarker3D = null;
+        }
         
-        // 2. Yeni butonu oluştur
-        const btn = document.createElement('button');
-        btn.id = 'map-toggle-btn';
-        btn.innerHTML = '🔍 Show Nearby Places';
-        btn.style.cssText = `
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1976d2;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            font-family: Arial, sans-serif;
-        `;
-        
-        // 3. Butona tıklayınca popup'ı aç
-        btn.onclick = () => {
-            btn.remove();
-            showNearbyPlacesPopup(lat, lng, map, day);
-        };
-        
-        // 4. Haritaya ekle
-        map.getContainer().appendChild(btn);
-        
-        // 5. 5 saniye sonra butonu kaldır
-        setTimeout(() => {
-            if (btn.parentNode) {
-                btn.remove();
-            }
-        }, 5000);
-        
+        // Eğer kategori seçilmişse direkt markerları göster
+       showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
     }, __nearbySingleDelay);
 };
   // Event'i haritaya bağla
