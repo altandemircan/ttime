@@ -1779,6 +1779,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         'entertainment': { icon: "🎭", title: "Entertainment" }
     };
     
+    // API'den gelen veriyi kullanarak sayıları bul
+    let restaurantCount = 0, hotelCount = 0, marketCount = 0, entertainmentCount = 0;
+    
     Object.keys(tabConfigs).forEach(key => {
         const tab = tabConfigs[key];
         const isActive = key === categoryType;
@@ -1786,6 +1789,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         // Dinamik olarak kategori sayısını al
         let count = 0;
+        if (key === categoryType && data && data.features) {
+            count = data.features.length;
+        }
         
         tabsHtml += `
             <button class="category-tab ${isActive ? 'active' : ''}" 
@@ -1796,8 +1802,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                            display: flex; flex-direction: column; align-items: center; gap: 4px;">
                 <div style="font-size: 16px;">${tab.icon}</div>
                 <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
-                <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
-                    0
+                 <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
+                    ${count}
                 </div>
             </button>
         `;
@@ -1806,14 +1812,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     tabsHtml += '</div>';
     
     // Kategori başlığı
-    const categorySection = `
+     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
             ${tabsHtml}
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <div style="font-size: 20px;" class="category-icon">${config.icon}</div>
-                <div style="font-weight: 600; font-size: 16px; color: #333;" class="category-title">${config.title}</div>
-                <div style="margin-left: auto; background: #4caf50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;" class="category-count">0</div>
-            </div>
             <div class="category-items-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
     `;
