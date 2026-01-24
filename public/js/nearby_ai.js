@@ -646,16 +646,25 @@ function attachClickNearbySearch(map, day, options = {}) {
   let __nearbySingleTimer = null;
   const __nearbySingleDelay = 250;
 
+// Global değişkenler (dosya başına ekle veya mevcutlara ekle):
+let lastClickedLat = null;
+let lastClickedLng = null;
+
+// Tıklama handler'ında KAYDET:
 const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
         
+        // SON TIKLANAN KOORDİNATLARI KAYDET
+        lastClickedLat = e.latlng.lat;
+        lastClickedLng = e.latlng.lng;
+        
         // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
         
-        // +++ PULSE MARKER GÖSTER (tıklanan yerde) +++
+        // +++ PULSE MARKER GÖSTER +++
         showPulseMarkerOnly(e.latlng.lat, e.latlng.lng, map);
         
         // +++ KONTROL: EĞER DAHA ÖNCE "SHOW MORE" TIKLANDIYSA +++
@@ -668,16 +677,17 @@ const clickHandler = function(e) {
             }
         } else {
             // İLK TIKLAMA: SIDEBAR AÇ
-            // Varsa açık popup'ı kapat
             if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
             
-            // Yeni sidebar'ı aç
             if (typeof showNearbyPlacesPopup === 'function') {
                 showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
             }
         }
     }, __nearbySingleDelay);
 };
+
+
+
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
@@ -1373,8 +1383,9 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         setTimeout(() => {
             document.querySelectorAll('.category-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.dataset.tab;
+               tab.addEventListener('click', function() {
+    const tabId = this.dataset.tab;
+    window._lastSelectedCategory = tabId; // Kategori değişince de kay
                     
                     document.querySelectorAll('.category-tab').forEach(t => {
                         t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
@@ -1390,33 +1401,39 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
 
             document.querySelectorAll('.show-category-btn').forEach(btn => {
-   btn.onclick = function() {
+ // "Show more" butonları (satır ~1200):
+btn.onclick = function() {
     const category = this.dataset.category;
     window._lastSelectedCategory = category; // Show more tıklandığında kaydet
-        
-        // closeNearbyPopup kaldırıldı! Sidebar kapanmayacak
-
-        if (category === 'restaurants') {
-            showNearbyRestaurants(lat, lng, map, day);
-        } else if (category === 'hotels') {
-            showNearbyHotels(lat, lng, map, day);
-        } else if (category === 'markets') {
-            showNearbyMarkets(lat, lng, map, day);
-        } else if (category === 'entertainment') {
-            showNearbyEntertainment(lat, lng, map, day);
-        }
-    };
+    
+    // EĞER SON TIKLANAN KOORDİNAT VARSA ONU KULLAN, YOKSA MEVCUT LAT/LNG'Yİ
+    const useLat = lastClickedLat || lat;
+    const useLng = lastClickedLng || lng;
+    
+    console.log(`📍 ${category} için koordinatlar:`, { lat: useLat, lng: useLng });
+    
+    if (category === 'restaurants') {
+        showNearbyRestaurants(useLat, useLng, map, day);
+    } else if (category === 'hotels') {
+        showNearbyHotels(useLat, useLng, map, day);
+    } else if (category === 'markets') {
+        showNearbyMarkets(useLat, useLng, map, day);
+    } else if (category === 'entertainment') {
+        showNearbyEntertainment(useLat, useLng, map, day);
+    }
+};
 });
 
             // "Search wider area" butonları için event handler
 document.querySelectorAll('.search-wider-btn').forEach(btn => {
-    btn.onclick = function(e) {
-        e.stopPropagation(); // +++ YENİ: EVENT BUBBLING'İ DURDUR +++
-        const category = this.dataset.category;
-        const widerRadius = 5000;
-        
-        // +++ ESKİ KODU KALDIR: closeNearbyPopup çağrısını kaldır +++
-        // if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+btn.onclick = function(e) {
+    e.stopPropagation();
+    const category = this.dataset.category;
+    window._lastSelectedCategory = category; // Kategoriyi kaydet
+    
+    // SON TIKLANAN KOORDİNATI KULLAN
+    const useLat = lastClickedLat || lat;
+    const useLng = lastClickedLng || lng;
         
         // Daha geniş alanda arama yap
         if (category === 'restaurants') {
