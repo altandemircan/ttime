@@ -1771,36 +1771,15 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     // Kategori sekmelerini oluştur
    let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
     
-    const tabConfigs = {
-        'restaurants': { icon: "🍽️", title: "Restaurants" },
-        'hotels': { icon: "🏨", title: "Hotels" },
-        'markets': { icon: "🛒", title: "Markets" },
-        'entertainment': { icon: "🎭", title: "Entertainment" }
-    };
-    
-    Object.keys(tabConfigs).forEach(key => {
-        const tab = tabConfigs[key];
-        const isActive = key === categoryType;
-        const badgeStyle = 'background: #4caf50; color: white;';
-        
-        // Dinamik olarak kategori sayısını al
-let count = categoryCounts[key] || 0;
-        
-        tabsHtml += `
-            <button class="category-tab ${isActive ? 'active' : ''}" 
-                    data-tab="${key}"
-                    style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
-                           border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
-                           cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
-                           display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <div style="font-size: 16px;">${tab.icon}</div>
-                <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
-                <div style="font-size: 10px; padding: 1px 6px; border-radius: 10px; ${badgeStyle}">
-                    ${count}
-</div>
-            </button>
-        `;
+  // API'dan veri geldikten hemen sonra (örn: data.features.forEach() ile item'ları gezerken):
+const categoryCounts = { restaurants: 0, hotels: 0, markets: 0, entertainment: 0 };
+
+if (data.features && data.features.length > 0) {
+    data.features.forEach(f => {
+        const cat = getSimplePlaceCategory(f);
+        if (categoryCounts[cat] !== undefined) categoryCounts[cat]++;
     });
+}
     
     tabsHtml += '</div>';
     
