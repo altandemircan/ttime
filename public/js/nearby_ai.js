@@ -2577,6 +2577,4 @@ window.addEventListener('hashchange', () => {
     if (document.getElementById('nearby-view-switcher-btn')) {
         closeNearbyPopup();
     }
-});0);
-    }
-};
+});
