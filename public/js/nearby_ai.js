@@ -532,6 +532,7 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 }
+
 // Yardımcı fonksiyon: GeoJSON circle oluştur
 function createCircleGeoJSON(lat, lng, radiusMeters, points = 64) {
     const coords = [];
