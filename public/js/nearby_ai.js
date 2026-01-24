@@ -646,26 +646,18 @@ function attachClickNearbySearch(map, day, options = {}) {
   let __nearbySingleTimer = null;
   const __nearbySingleDelay = 250;
 
-// Global değişkenler (dosya başına ekle veya mevcutlara ekle):
-let lastClickedLat = null;
-let lastClickedLng = null;
-
-// Tıklama handler'ında KAYDET:
 const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
         
-        // SON TIKLANAN KOORDİNATLARI KAYDET
-        lastClickedLat = e.latlng.lat;
-        lastClickedLng = e.latlng.lng;
-        
         // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
         
-        // +++ PULSE MARKER GÖSTER +++
-        showPulseMarkerOnly(e.latlng.lat, e.latlng.lng, map);
+        // +++ ÖNCE PULSE MARKER EKLE (tıklanan yerde) +++
+        const pulseContent = '<div style="padding:10px; color:#666; text-align:center;">📍 Searching...</div>';
+        showCustomPopup(e.latlng.lat, e.latlng.lng, map, pulseContent, false);
         
         // +++ KONTROL: EĞER DAHA ÖNCE "SHOW MORE" TIKLANDIYSA +++
         if (window._lastSelectedCategory) {
@@ -677,17 +669,16 @@ const clickHandler = function(e) {
             }
         } else {
             // İLK TIKLAMA: SIDEBAR AÇ
+            // Varsa açık popup'ı kapat
             if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
             
+            // Yeni sidebar'ı aç
             if (typeof showNearbyPlacesPopup === 'function') {
                 showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
             }
         }
     }, __nearbySingleDelay);
 };
-
-
-
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
