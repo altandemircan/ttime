@@ -1658,9 +1658,22 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 window._categoryCacheData = window._categoryCacheData || {};
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants', radiusOverride = null) {
+    // --- FIX BAŞLANGIÇ: Harita objesini garantiye al ---
+    if (map) {
+        window._currentMap = map; // Haritayı hafızaya al
+    } else if (window._currentMap) {
+        map = window._currentMap; // Butondan map gelmezse hafızadan çek
+    }
+
+    if (!map) {
+        console.error("HATA: Harita bulunamadı (showNearbyPlacesByCategory)");
+        return;
+    }
+    // --- FIX BİTİŞ ---
+
     window._lastSelectedCategory = categoryType;
 
-    const isMapLibre = !!map.addSource;
+    const isMapLibre = !!map.addSource; // Artık map kesin var, hata vermez
     const cacheKey = `${lat}-${lng}-${categoryType}`;
     
     // +++ YENİ NOKTA İÇİN AI BİLGİSİ AL +++
