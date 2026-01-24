@@ -2409,7 +2409,6 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
-
 // ============================================
 // NEARBY POPUP MANAGEMENT & VIEW SWITCHER (FINAL FIX)
 // ============================================
@@ -2542,31 +2541,35 @@ function setupViewSwitcherButton(mapInstance) {
 }
 
 // 3. POPUP AÇMA (OVERRIDE - SADE VE TEMİZ)
-const origShowCustomPopup = window.showCustomPopup;
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Önceki butonu temizle (çift olmasın)
-    const oldBtn = document.getElementById('nearby-view-switcher-btn');
-    if (oldBtn) oldBtn.remove();
+setTimeout(() => {
+    const origShowCustomPopup = window.showCustomPopup;
+    if (typeof origShowCustomPopup === 'function') {
+        window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+            // Önceki butonu temizle (çift olmasın)
+            const oldBtn = document.getElementById('nearby-view-switcher-btn');
+            if (oldBtn) oldBtn.remove();
 
-    // Orijinal popup'ı oluştur
-    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-    
-    // SADECE MOBİL KONTROLÜ (768px altı)
-    if (window.innerWidth < 768) {
-        // Çok kısa bir gecikme (Popup DOM'a girsin diye)
-        setTimeout(() => {
-            // Hiçbir şart koşmuyoruz. Popup çağrıldıysa butonu basıyoruz.
-            // Sadece main-chat gizli mi diye basit bir kontrol yapabiliriz, 
-            // ama butonun görünmemesinden iyidir.
-            const mainChat = document.getElementById('main-chat');
+            // Orijinal popup'ı oluştur
+            origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
             
-            // Eğer anasayfada değilsek (main-chat gizliyse) butonu koy
-            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                 setupViewSwitcherButton(map);
+            // SADECE MOBİL KONTROLÜ (768px altı)
+            if (window.innerWidth < 768) {
+                // Çok kısa bir gecikme (Popup DOM'a girsin diye)
+                setTimeout(() => {
+                    // Hiçbir şart koşmuyoruz. Popup çağrıldıysa butonu basıyoruz.
+                    // Sadece main-chat gizli mi diye basit bir kontrol yapabiliriz, 
+                    // ama butonun görünmemesinden iyidir.
+                    const mainChat = document.getElementById('main-chat');
+                    
+                    // Eğer anasayfada değilsek (main-chat gizliyse) butonu koy
+                    if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                         setupViewSwitcherButton(map);
+                    }
+                }, 300);
             }
-        }, 300);
+        };
     }
-};
+}, 100);
 
 // 4. SAYFA DEĞİŞİKLİĞİ (Back Button / Hash Change)
 window.addEventListener('hashchange', () => {
