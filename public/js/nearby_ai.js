@@ -2526,38 +2526,28 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-// 3. POPUP AÇMA (OVERRIDE) - SADECE MOBİL İÇİN
-if (typeof window.showCustomPopup === 'function') {
-    console.log('[NEARBY] showCustomPopup fonksiyonu bulundu, override ediliyor...');
-    const origShowCustomPopup = window.showCustomPopup;
-    window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-        console.log('[NEARBY] showCustomPopup çağrıldı:', { lat, lng, showCloseButton });
-        const oldBtn = document.getElementById('nearby-view-switcher-btn');
-        if (oldBtn) oldBtn.remove();
+// 3. POPUP AÇMA - Mobil buton ekle (SADECE setTimeout ile)
+setTimeout(() => {
+    if (typeof window.showCustomPopup === 'function') {
+        const origShowCustomPopup = window.showCustomPopup;
+        window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+            const oldBtn = document.getElementById('nearby-view-switcher-btn');
+            if (oldBtn) oldBtn.remove();
 
-        origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-        console.log('[NEARBY] Orijinal popup oluşturuldu');
-        
-        if (window.innerWidth < 768) {
-            console.log('[NEARBY] Mobil ekran tespit edildi (< 768px)');
-            setTimeout(() => {
-                const mainChat = document.getElementById('main-chat');
-                console.log('[NEARBY] main-chat durumu:', mainChat?.style.display);
-                
-                if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                    console.log('[NEARBY] Buton oluşturuluyor...');
-                    setupViewSwitcherButton(map);
-                } else {
-                    console.log('[NEARBY] main-chat gizli değil, buton oluşturulmadı');
-                }
-            }, 300);
-        } else {
-            console.log('[NEARBY] Desktop ekran, buton oluşturulmadı');
-        }
-    };
-} else {
-    console.warn('[NEARBY] showCustomPopup fonksiyonu bulunamadı!');
-}
+            origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+            
+            if (window.innerWidth < 768) {
+                setTimeout(() => {
+                    const mainChat = document.getElementById('main-chat');
+                    
+                    if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                        setupViewSwitcherButton(map);
+                    }
+                }, 300);
+            }
+        };
+    }
+}, 100);
 
 // 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
