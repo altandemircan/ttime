@@ -1852,7 +1852,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 
                 window._categoryRadiusCircle3D = circleId;
                 
-             } else {
+            } } else {
         window._categoryRadiusCircle = L.circle([lat, lng], {
             radius: radiusMeters,
             color: circleColor,
@@ -1866,7 +1866,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
     }
-    }
+}
         }
         
         // +++ MARKERLARI EKLE +++
