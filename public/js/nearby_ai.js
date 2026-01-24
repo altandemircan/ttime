@@ -1750,11 +1750,9 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     });
     tabsHtml += '</div>';
     
-    // +++ GÜNCELLENEN BAŞLIK (RESULT) KISMI +++
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
             ${tabsHtml}
-            
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px;">
                 <div style="font-weight: 700; font-size: 17px; color: #1a1a1a;" class="category-title">${config.title} Nearby</div>
                 <div style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;" class="category-count">Loading...</div>
@@ -1912,12 +1910,16 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
                 const distanceText = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
                 
-                // ORİJİNAL LİSTE TASARIMI
+                // İsimleri güvenli hale getir (Tek tırnak sorunu olmasın diye)
+                const safeName = name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const safeAddress = address.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+                // ORİJİNAL LİSTE TASARIMI (Onclick DÜZELTİLDİ)
                 const itemHtml = `
                     <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
                         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
-                            <img id="${imgId}" src="img/placeholder.png" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
+                            <img id="${imgId}" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
                                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
                                 <span style="font-size: 10px; color: white;">✨</span>
                             </div>
@@ -1928,7 +1930,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
                             <div style="font-size: 10px; color: #999; white-space: nowrap;">${distanceText}</div>
-                            <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${pLat}, ${pLng})" style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">+</button>
+                            <button onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${pLat}, ${pLng}, '${config.layerPrefix}')" 
+                                    style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">+</button>
                         </div>
                     </div>
                 `;
