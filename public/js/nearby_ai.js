@@ -2062,7 +2062,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         placesWithDistance.sort((a, b) => a.distance - b.distance);
         
         const topPlaces = placesWithDistance.slice(0, 20);
-        
+        window._lastNearbyPlaces = topPlaces.map(p => p.feature);
         // Sidebar kategori count güncellemeleri
         const countBadge = document.querySelector('.category-count');
         if (countBadge) {
