@@ -1810,7 +1810,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         <div class="category-section" style="margin-bottom: 16px;">
             ${tabsHtml}
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <div style="font-size: 20px;" class="category-icon">${config.icon}</div>
+             
                 <div style="font-weight: 600; font-size: 16px; color: #333;" class="category-title">${config.title}</div>
                 <div style="margin-left: auto; background: #4caf50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;" class="category-count">0</div>
             </div>
