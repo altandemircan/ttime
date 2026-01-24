@@ -583,32 +583,23 @@ window.closeNearbyPopup = function() {
 function clearAllCategoryMarkers(map) {
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    // 2D Harita (Leaflet) temizliği
-categories.forEach(category => {
-    const layerKey = `__${category}Layers`;
-    if (map && map[layerKey]) {
-        map[layerKey].forEach(l => {
-            try {
-                // Önce DOM'dan gizle (kırmızı görünmesin)
-                if (l._icon) {
-                    l._icon.style.display = 'none';
-                    l._icon.style.visibility = 'hidden';
-                    l._icon.style.opacity = '0';
-                }
-                if (l._container) {
-                    l._container.style.display = 'none';
-                }
-                // Sonra haritadan kaldır
-                setTimeout(() => {
-                    try {
-                        map.removeLayer(l);
-                    } catch(e) {}
-                }, 10);
-            } catch(e) {}
-        });
-        map[layerKey] = [];
-    }
-});
+    // SADECE KATEGORİ MARKERLARI SİL
+    categories.forEach(category => {
+        const layerKey = `__${category}Layers`;
+        if (map && map[layerKey] && Array.isArray(map[layerKey])) {
+            map[layerKey].forEach(l => {
+                try {
+                    if (l._icon) {
+                        l._icon.style.display = 'none';
+                        l._icon.style.visibility = 'hidden';
+                        l._icon.style.opacity = '0';
+                    }
+                    map.removeLayer(l);
+                } catch(e) {}
+            });
+            map[layerKey] = [];
+        }
+    });
     
     // 3D Harita (MapLibre) temizliği
     const isMapLibre = map && !!map.addSource;
@@ -630,12 +621,8 @@ categories.forEach(category => {
             if (window[layer3DKey] && Array.isArray(window[layer3DKey])) {
                 window[layer3DKey].forEach(id => {
                     try {
-                        if (map.getLayer(id)) {
-                            map.removeLayer(id);
-                        }
-                        if (map.getSource(id)) {
-                            map.removeSource(id);
-                        }
+                        if (map.getLayer(id)) map.removeLayer(id);
+                        if (map.getSource(id)) map.removeSource(id);
                     } catch(e) {}
                 });
                 window[layer3DKey] = [];
@@ -643,7 +630,7 @@ categories.forEach(category => {
         });
     }
     
-    // KATEGORİ DAIRELERİNİ SİL (pulse marker'ı değil!)
+    // KATEGORİ DAIRELERİNİ SİL
     if (window._categoryRadiusCircle) {
         try { window._categoryRadiusCircle.remove(); } catch(e) {}
         window._categoryRadiusCircle = null;
@@ -658,8 +645,6 @@ categories.forEach(category => {
         } catch(e) {}
         window._categoryRadiusCircle3D = null;
     }
-    
-    // PULSE MARKER'I SİLME! Sadece kategori markerları sil
 }
 
 // attachClickNearbySearch fonksiyonunu güncelle
