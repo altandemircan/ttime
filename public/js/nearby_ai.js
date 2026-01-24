@@ -1826,45 +1826,45 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
         if (maxDistance > 0) {
-            const circleColor = config.color;
-            const radiusMeters = Math.ceil(maxDistance); // En uzak item kadar
-            
             if (isMapLibre) {
-                // 3D MapLibre için
-                const circleId = `category-radius-${categoryType}-${Date.now()}`;
-                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+    // 3D MapLibre için
+    const circleId = `category-radius-${categoryType}-${Date.now()}`;
+    const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+    
+    map.addSource(circleId, {
+        type: 'geojson',
+        data: circleGeoJSON
+    });
+    
+    map.addLayer({
+        id: circleId + '-layer',
+        type: 'fill',
+        source: circleId,
+        paint: {
+            'fill-color': circleColor,
+            'fill-opacity': 0.06,      // ÇOK HAFİF (otel mavisi gibi)
+            'fill-outline-color': 'transparent'  // BORDER YOK
+        }
+    });
+    
+    window._categoryRadiusCircle3D = circleId;
                 
-                map.addSource(circleId, {
-                    type: 'geojson',
-                    data: circleGeoJSON
-                });
-                
-              // 3D MapLibre için:
-map.addLayer({
-    id: circleId + '-layer',
-    type: 'fill',
-    source: circleId,
-    paint: {
-        'fill-color': circleColor,
-        'fill-opacity': 0.08,      // DAHA ŞEFFAF (0.15 → 0.08)
-        'fill-outline-color': 'transparent'  // BORDER YOK
-    }
-});
-                
-                window._categoryRadiusCircle3D = circleId;
-                
-            } else {
-               // 2D Leaflet için:
-window._categoryRadiusCircle = L.circle([lat, lng], {
-    radius: radiusMeters,
-    color: circleColor,
-    weight: 1,           // DAHA İNCE (border kalkacak gibi)
-    opacity: 0.3,        // DAHA ŞEFFAF (0.4 → 0.3)
-    fillColor: circleColor,
-    fillOpacity: 0.08,   // DAHA ŞEFFAF (0.15 → 0.08)
-    dashArray: '0',      // KESİKLİ ÇİZGİ YOK
-    className: `category-radius-circle ${categoryType}`
-}).addTo(map);
+           } else {
+    // 2D Leaflet için
+    window._categoryRadiusCircle = L.circle([lat, lng], {
+        radius: radiusMeters,
+        color: circleColor,
+        weight: 0,           // ÇİZGİ YOK
+        opacity: 0,          // ÇİZGİ ŞEFFAF
+        fillColor: circleColor,
+        fillOpacity: 0.06,   // ÇOK HAFİF (otel mavisi gibi)
+        dashArray: null,     // KESİKLİ ÇİZGİ YOK
+        className: `category-radius-circle`
+    }).addTo(map);
+
+       // DEBUG: Konsola daire bilgisi yaz
+    console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
+}
                 
                 // Daireye tooltip ekle (mesafeyi göster)
                 window._categoryRadiusCircle.bindTooltip(
@@ -1990,10 +1990,10 @@ window._categoryRadiusCircle = L.circle([lat, lng], {
     }
 }
 
-// Yardımcı fonksiyon: Marker HTML'i (mesafe bilgisi ile)
+// Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
-        `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); font-size:9px; color:${color}; font-weight:bold; white-space:nowrap;">
+        `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); font-size:9px; color:#1976d2; font-weight:bold; white-space:nowrap; background:white; padding:1px 3px; border-radius:3px; border:1px solid #eee;">
             ${distance < 1000 ? Math.round(distance)+'m' : (distance/1000).toFixed(1)+'km'}
         </div>` : '';
     
@@ -2008,7 +2008,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
             align-items:center;
             justify-content:center;
             box-shadow:0 2px 8px rgba(0,0,0,0.2);
-            border:3px solid ${color};
+            border:3px solid ${color}; /* KATEGORİ RENGİ (sadece border) */
         ">
             <img src="${iconUrl}"
                  style="width:18px;height:18px;" alt="${categoryType}">
