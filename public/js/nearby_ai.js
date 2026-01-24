@@ -590,13 +590,14 @@ const clickHandler = function(e) {
             window._nearbyPulseMarker3D = null;
         }
         
-        // Sidebar'ı kapat (markerları SILME!)
+        // clearAllCategoryMarkers(map); <-- BU SATIRI SİL
+        
+        // Sidebar kapat ve aç
         const popupElement = document.getElementById('custom-nearby-popup');
         if (popupElement) {
             popupElement.remove();
         }
         
-        // Yeni sidebar aç
         if (typeof showNearbyPlacesPopup === 'function') {
             showNearbyPlacesPopup(lat, lng, map, day, radius);
         }
