@@ -554,62 +554,152 @@ function clearAllCategoryMarkers(map) {
 
 // attachClickNearbySearch fonksiyonunu güncelle
 function attachClickNearbySearch(map, day, options = {}) {
-  const radius = options.radius || 500; 
+    const radius = options.radius || 500;
 
-  // Eski listener varsa temizle
-  if (map.__ttNearbyClickBound) {
-      map.off('click', map.__ttNearbyClickHandler);
-      map.__ttNearbyClickBound = false;
-  }
+    // Eski listener varsa temizle
+    if (map.__ttNearbyClickBound) {
+        map.off('click', map.__ttNearbyClickHandler);
+        map.__ttNearbyClickBound = false;
+    }
 
-  let __nearbySingleTimer = null;
-  const __nearbySingleDelay = 250;
+    let __nearbySingleTimer = null;
+    const __nearbySingleDelay = 250;
 
-const clickHandler = function(e) {
-    if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
-    
-    __nearbySingleTimer = setTimeout(async () => {
-        const isMapLibre = !!map.addSource;
-        let lat, lng;
+    const clickHandler = async function(e) {
+        if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
         
-        if (isMapLibre) {
-            lat = e.lngLat.lat;
-            lng = e.lngLat.lng;
-        } else {
-            lat = e.latlng.lat;
-            lng = e.latlng.lng;
-        }
-        
-        // Pulse marker temizle
-        if (window._nearbyPulseMarker) {
-            try { window._nearbyPulseMarker.remove(); } catch(e) {}
-            window._nearbyPulseMarker = null;
-        }
-        if (window._nearbyPulseMarker3D) {
-            try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-            window._nearbyPulseMarker3D = null;
-        }
-        
-        // Eğer kategori seçilmişse direkt markerları göster
-       showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
-    }, __nearbySingleDelay);
-};
-  // Event'i haritaya bağla
-  map.on('click', clickHandler);
-  
-  map.__ttNearbyClickHandler = clickHandler;
-  map.__ttNearbyClickBound = true;
+        __nearbySingleTimer = setTimeout(async () => {
+            const isMapLibre = !!map.addSource;
+            let lat, lng;
+            
+            if (isMapLibre) {
+                lat = e.lngLat.lat;
+                lng = e.lngLat.lng;
+            } else {
+                lat = e.latlng.lat;
+                lng = e.latlng.lng;
+            }
+            
+            // 1. Önce sadece haritada göster (popup açma)
+            await showCategoryMarkersOnly(lat, lng, map, day, 'restaurants');
+            
+            // 2. Üste basit bir buton koy
+            showToggleButton(lat, lng, map, day);
+            
+        }, __nearbySingleDelay);
+    };
 
-  // Zoom veya çift tıklama sırasında tek tık işlemini iptal et
-  map.on('dblclick', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
-  map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
-  map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
+    map.on('click', clickHandler);
+    map.__ttNearbyClickHandler = clickHandler;
+    map.__ttNearbyClickBound = true;
+
+    map.on('dblclick', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
+    map.on('zoomstart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
+    map.on('movestart', () => { if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer); });
 }
 
 
-
-
-
+function showToggleButton(lat, lng, map, day) {
+    // Önceki butonu temizle
+    const oldBtn = document.getElementById('toggle-nearby-btn');
+    if (oldBtn) oldBtn.remove();
+    
+    // Yeni buton oluştur
+    const btn = document.createElement('button');
+    btn.id = 'toggle-nearby-btn';
+    btn.innerHTML = '📋 Show Nearby Details';
+    btn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.2s;
+    `;
+    
+    btn.onmouseenter = () => {
+        btn.style.background = '#1565c0';
+        btn.style.transform = 'translateX(-50%) scale(1.05)';
+    };
+    
+    btn.onmouseleave = () => {
+        btn.style.background = '#1976d2';
+        btn.style.transform = 'translateX(-50%) scale(1)';
+    };
+    
+    btn.onclick = () => {
+        // Butonu kaldır
+        btn.remove();
+        // Marker'ları temizle
+        clearAllCategoryMarkers(map);
+        // Popup'ı aç
+        showNearbyPlacesPopup(lat, lng, map, day);
+    };
+    
+    // Harita container'ına ekle
+    const mapContainer = map.getContainer();
+    mapContainer.appendChild(btn);
+    
+    // 5 saniye sonra otomatik kapanma
+    setTimeout(() => {
+        if (btn.parentNode) {
+            btn.remove();
+            clearAllCategoryMarkers(map);
+        }
+    }, 5000);
+}
+async function showCategoryMarkersOnly(lat, lng, map, day, categoryType = 'restaurants') {
+    // Önce temizle
+    clearAllCategoryMarkers(map);
+    
+    // Pulse marker ekle
+    const pulseHtml = `<div class="tt-pulse-marker"><div class="tt-pulse-dot"></div></div>`;
+    const isMapLibre = !!map.addSource;
+    
+    if (isMapLibre) {
+        const el = document.createElement('div');
+        el.className = 'tt-pulse-marker';
+        el.innerHTML = pulseHtml;
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([lng, lat])
+            .addTo(map);
+    } else {
+        const pulseIcon = L.divIcon({
+            html: pulseHtml,
+            className: 'tt-pulse-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
+    }
+    
+    // Haritayı zoom yap
+    if (isMapLibre) {
+        map.flyTo({ center: [lng, lat], zoom: 15 });
+    } else {
+        map.flyTo([lat, lng], 15);
+    }
+}
+function clearAllCategoryMarkers(map) {
+    // Sadece pulse marker'ı temizle
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
+}
 function showRouteInfoBanner(day) {
   const expandedContainer = document.getElementById(`expanded-map-${day}`);
   if (!expandedContainer) return;
