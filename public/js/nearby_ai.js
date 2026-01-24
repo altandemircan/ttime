@@ -1653,12 +1653,13 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 }
 
 
-// GÜNCELLENMIŞ: showNearbyPlacesByCategory
-// Cache for category data
 window._categoryCacheData = window._categoryCacheData || {};
 
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants', radiusOverride = null) {
     window._lastSelectedCategory = categoryType;
+
+    // Mobil kontrolü
+    const isMobile = window.innerWidth <= 768;
 
     const isMapLibre = !!map.addSource;
     const cacheKey = `${lat}-${lng}-${categoryType}`;
@@ -1695,11 +1696,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
 
-    // +++ CSS STİLLERİ (Tablar için) +++
+    // +++ CSS STİLLERİ (Hem Modern Tablar Hem Mobil Layout İçin) +++
     if (!document.getElementById('nearby-tab-styles')) {
         const style = document.createElement('style');
         style.id = 'nearby-tab-styles';
         style.textContent = `
+            /* MODERN TABLAR (DESKTOP & GENEL) */
             .modern-tabs { display: flex; gap: 8px; margin-bottom: 20px; padding-bottom: 4px; overflow-x: auto; scrollbar-width: none; }
             .modern-tabs::-webkit-scrollbar { display: none; }
             .modern-tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; border: 1px solid transparent; border-radius: 12px; background: #f8f9fa; color: #6c757d; cursor: pointer; transition: all 0.2s ease; min-width: 65px; }
@@ -1707,6 +1709,107 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             .modern-tab-btn.active { background: #e3f2fd; color: #1976d2; border-color: #bbdefb; font-weight: 600; box-shadow: 0 2px 4px rgba(25, 118, 210, 0.1); }
             .tab-icon { font-size: 18px; line-height: 1; }
             .tab-label { font-size: 11px; font-weight: 500; }
+            
+            /* MOBİL GÖRÜNÜM İÇİN ÖZEL STİLLER */
+            @media (max-width: 768px) {
+                /* Popup'ı tam ekran yap veya overlay gibi davran */
+                .leaflet-popup-content-wrapper, .maplibregl-popup-content {
+                    padding: 0 !important;
+                    border-radius: 12px !important;
+                    overflow: hidden;
+                }
+                .leaflet-popup-content, .maplibregl-popup-content {
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                    margin: 0 !important;
+                }
+                
+                /* Genel Mobil Konteyner */
+                .mobile-nearby-container {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    max-height: 80vh; /* Ekranın %80'i */
+                    background: #fff;
+                    transition: all 0.3s ease;
+                }
+
+                /* HARİTA MODU (Map View) - İçerik Gizli */
+                .mobile-nearby-container.map-mode {
+                    background: transparent;
+                    pointer-events: none; /* Arkadaki haritaya tıklanabilsin */
+                }
+                
+                /* Tablar Harita Modunda Üste Sabitlenir */
+                .mobile-nearby-container.map-mode .modern-tabs {
+                    position: fixed;
+                    top: 100px; /* Header yüksekliğine göre ayarlanabilir */
+                    left: 10px;
+                    right: 10px;
+                    z-index: 9999;
+                    background: rgba(255, 255, 255, 0.95);
+                    padding: 10px;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                    pointer-events: auto;
+                }
+
+                /* Harita Modunda İçerik Gizlenir */
+                .mobile-nearby-container.map-mode .content-scroll-area {
+                    display: none;
+                }
+
+                /* Toggle Butonları */
+                .mobile-toggle-btn {
+                    display: none; /* Desktopta gizli */
+                }
+            }
+
+            /* Sadece Mobilde Görünen Buton Stili */
+            @media (max-width: 768px) {
+                .mobile-toggle-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    width: 100%;
+                    padding: 14px;
+                    font-weight: 600;
+                    font-size: 14px;
+                    border: none;
+                    cursor: pointer;
+                    z-index: 10000;
+                    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                }
+                
+                /* Liste Açıkken Haritaya Dön Butonu */
+                .btn-show-map {
+                    background: #f8f9fa;
+                    color: #333;
+                    border-top: 1px solid #eee;
+                }
+
+                /* Harita Modundayken Listeyi Aç Butonu (Floating) */
+                .btn-show-list-floating {
+                    position: fixed;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: auto;
+                    min-width: 160px;
+                    background: #1976d2;
+                    color: white;
+                    border-radius: 30px;
+                    box-shadow: 0 4px 20px rgba(25, 118, 210, 0.4);
+                    pointer-events: auto;
+                    animation: slideUp 0.3s ease-out;
+                }
+                
+                @keyframes slideUp {
+                    from { transform: translate(-50%, 20px); opacity: 0; }
+                    to { transform: translate(-50%, 0); opacity: 1; }
+                }
+            }
         `;
         document.head.appendChild(style);
     }
@@ -1752,7 +1855,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
-            ${tabsHtml}
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px;">
                 <div style="font-weight: 700; font-size: 17px; color: #1a1a1a;" class="category-title">${config.title} Nearby</div>
                 <div style="background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;" class="category-count">Loading...</div>
@@ -1766,15 +1868,44 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
+    // MOBİL İÇİN YAPILANDIRILMIŞ HTML
+    // Tabs'ı en üste alıyoruz ki "map-mode" da position:fixed olabilsin
+    // İçerikleri "content-scroll-area" içine alıyoruz ki map modunda gizleyebilelim
     const html = `
-        <div>
-            <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
-                📍 Nearby Places
+        <div id="nearby-mobile-wrapper" class="mobile-nearby-container map-mode"> <div class="tabs-wrapper" style="padding: 16px 16px 0 16px;">
+                ${tabsHtml}
             </div>
-            ${addPointSection}
-            ${categorySection}
+
+            <div class="content-scroll-area" style="flex: 1; overflow-y: auto; padding: 0 16px 16px 16px;">
+                <div class="nearby-popup-title" style="font-weight: bold; margin-bottom: 12px; font-size: 16px;">
+                    📍 Nearby Places
+                </div>
+                ${addPointSection}
+                ${categorySection}
+                
+                <button class="mobile-toggle-btn btn-show-map" onclick="window.toggleMobileNearbyView('map')">
+                    🗺️ Show Map
+                </button>
+            </div>
+
+            <button id="floating-list-btn" class="mobile-toggle-btn btn-show-list-floating" onclick="window.toggleMobileNearbyView('list')">
+                📄 Show List & AI
+            </button>
         </div>
     `;
+
+    // Desktop ise direkt map-mode class'ını kaldır
+    if (!isMobile) {
+        // Desktopta container divi normal davranmalı
+        setTimeout(() => {
+            const wrapper = document.getElementById('nearby-mobile-wrapper');
+            if(wrapper) {
+                wrapper.classList.remove('map-mode');
+                wrapper.classList.remove('mobile-nearby-container'); // Desktop classlarını temizle
+                document.getElementById('floating-list-btn').style.display = 'none';
+            }
+        }, 50);
+    }
 
     showCustomPopup(lat, lng, map, html, true);
 
@@ -1788,9 +1919,27 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             if (window._lastSelectedCategory === tabId) return;
             document.querySelectorAll('.modern-tab-btn').forEach(t => t.classList.remove('active'));
             this.classList.add('active');
+            
+            // Eğer mobildeyse ve harita modundaysa, kategori değişince listeyi açmaya gerek yok,
+            // sadece haritadaki markerları güncelle. Kullanıcı zaten haritada görmek istiyor.
+            
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
     });
+    
+    // MOBİL TOGGLE FONKSİYONU
+    window.toggleMobileNearbyView = function(mode) {
+        const wrapper = document.getElementById('nearby-mobile-wrapper');
+        const floatBtn = document.getElementById('floating-list-btn');
+        
+        if (mode === 'map') {
+            wrapper.classList.add('map-mode');
+            floatBtn.style.display = 'flex';
+        } else {
+            wrapper.classList.remove('map-mode');
+            floatBtn.style.display = 'none';
+        }
+    };
     
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, {}, 'ai-point-description');
@@ -1806,11 +1955,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     clearAllCategoryMarkers(map);
     
-    // Pulse Marker Temizlik
+    // Pulse Marker Temizlik & Ekleme
     if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
     if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
     
-    // Pulse Marker Ekle
     const pulseHtml = `<div class="tt-pulse-marker"><div class="tt-pulse-dot"><div class="tt-pulse-dot-inner"></div></div><div class="tt-pulse-ring tt-pulse-ring-1"></div><div class="tt-pulse-ring tt-pulse-ring-2"></div><div class="tt-pulse-ring tt-pulse-ring-3"></div><div class="tt-pulse-glow"></div><div class="tt-pulse-inner-ring"></div></div>`;
     if (!document.getElementById('tt-pulse-styles')) {
         const style = document.createElement('style'); style.id = 'tt-pulse-styles';
@@ -1909,12 +2057,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const address = f.properties.formatted || "";
                 const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
                 const distanceText = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
-                
-                // İsimleri güvenli hale getir (Tek tırnak sorunu olmasın diye)
                 const safeName = name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 const safeAddress = address.replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
-                // ORİJİNAL LİSTE TASARIMI (Onclick DÜZELTİLDİ)
+                // ORİJİNAL LİSTE TASARIMI
                 const itemHtml = `
                     <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
                         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
