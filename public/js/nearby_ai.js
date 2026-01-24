@@ -2286,11 +2286,14 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
     document.body.appendChild(popupContainer);
     window._currentNearbyPopupElement = popupContainer;
 
-    // MOBİL'DE HARITA GİZLE VE POPUP OVERLAY BUTONU EKLE
+    // MOBİL'DE HARITA GİZLE
     if (isMobile) {
-      
+        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+        if (mapContainer) {
+            mapContainer.style.display = 'none';
+        }
         
-        // POPUP AÇIKKEN ALT BUTON (Haritaya Dön)
+        // MOBİL OVERLAY BUTONU EKLE (Harita Göster)
         setTimeout(() => {
             if (!document.getElementById('popup-to-map-overlay')) {
                 const overlay = document.createElement('div');
@@ -2314,16 +2317,84 @@ function showCustomPopup(lat, lng, map, content, showCloseButton = true) {
                     border-top: 1px solid rgba(255,255,255,0.2);
                     box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
                 `;
-                overlay.innerHTML = '← Back to Map';
+                overlay.innerHTML = '🗺️ View Map';
                 overlay.onclick = () => {
                     // Popup gizle, harita göster
                     const popup = document.getElementById('custom-nearby-popup');
                     const map = document.querySelector('.leaflet-container, .maplibregl-map');
-                    const popupOverlay = document.getElementById('popup-to-map-overlay');
+                    const mapOverlay = document.getElementById('popup-to-map-overlay');
+                    const listOverlay = document.getElementById('map-to-list-overlay');
                     
                     if (popup) popup.style.display = 'none';
                     if (map) map.style.display = '';
-                    if (popupOverlay) popupOverlay.remove();
+                    if (mapOverlay) mapOverlay.remove();
+                    
+                    // Harita overlay'i ekle
+                    if (!listOverlay) {
+                        setTimeout(() => {
+                            const overlay2 = document.createElement('div');
+                            overlay2.id = 'map-to-list-overlay';
+                            overlay2.style.cssText = `
+                                position: fixed;
+                                bottom: 0;
+                                left: 0;
+                                right: 0;
+                                height: 56px;
+                                background: linear-gradient(to top, rgba(136, 74, 243, 0.95), rgba(136, 74, 243, 0.8));
+                                z-index: 9999;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                color: white;
+                                font-weight: 600;
+                                font-size: 14px;
+                                backdrop-filter: blur(4px);
+                                border-top: 1px solid rgba(255,255,255,0.2);
+                                box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                            `;
+                            overlay2.innerHTML = '📋 View List';
+                            overlay2.onclick = () => {
+                                // Harita gizle, popup göster
+                                const popup = document.getElementById('custom-nearby-popup');
+                                const map = document.querySelector('.leaflet-container, .maplibregl-map');
+                                const listOverlay = document.getElementById('map-to-list-overlay');
+                                
+                                if (popup) popup.style.display = '';
+                                if (map) map.style.display = 'none';
+                                if (listOverlay) listOverlay.remove();
+                                
+                                // Popup overlay'i geri ekle
+                                if (!document.getElementById('popup-to-map-overlay')) {
+                                    const overlay3 = document.createElement('div');
+                                    overlay3.id = 'popup-to-map-overlay';
+                                    overlay3.style.cssText = `
+                                        position: fixed;
+                                        bottom: 0;
+                                        left: 0;
+                                        right: 0;
+                                        height: 56px;
+                                        background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
+                                        z-index: 9999;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        cursor: pointer;
+                                        color: white;
+                                        font-weight: 600;
+                                        font-size: 14px;
+                                        backdrop-filter: blur(4px);
+                                        border-top: 1px solid rgba(255,255,255,0.2);
+                                        box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                                    `;
+                                    overlay3.innerHTML = '🗺️ View Map';
+                                    overlay3.onclick = arguments.callee;
+                                    document.body.appendChild(overlay3);
+                                }
+                            };
+                            document.body.appendChild(overlay2);
+                        }, 100);
+                    }
                 };
                 document.body.appendChild(overlay);
             }
@@ -2537,8 +2608,11 @@ window.closeNearbyPopup = function() {
         popupElement.remove();
     }
     
-    const overlay = document.getElementById('popup-to-map-overlay');
-    if (overlay) overlay.remove();
+    const overlay1 = document.getElementById('popup-to-map-overlay');
+    if (overlay1) overlay1.remove();
+    
+    const overlay2 = document.getElementById('map-to-list-overlay');
+    if (overlay2) overlay2.remove();
     
     const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
     if (mapContainer) {
@@ -2585,6 +2659,7 @@ window.closeNearbyPopup = function() {
     
     window._currentNearbyPopupElement = null;
 };
+
 // Mobil'de harita ve popup arasında geçiş yap
 function toggleNearbyMapPopup() {
     const popup = document.getElementById('custom-nearby-popup');
@@ -2605,3 +2680,66 @@ function toggleNearbyMapPopup() {
     }
 }
 
+// closeNearbyPopup - Popup kapanışını temizle
+window.closeNearbyPopup = function() {
+    // Popup kaldır
+    const popupElement = document.getElementById('custom-nearby-popup');
+    if (popupElement) {
+        popupElement.remove();
+    }
+    
+    // Overlay kaldır
+    const overlay = document.getElementById('map-to-nearby-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    
+    // Harita görünümünü geri getir
+    const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+    if (mapContainer) {
+        mapContainer.style.display = '';
+    }
+
+    // Pulse marker'ı sil
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
+    }
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
+    
+    // Radius daireleri sil
+    if (window._nearbyRadiusCircle) {
+        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
+        window._nearbyRadiusCircle = null;
+    }
+    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._nearbyRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._nearbyRadiusCircle3D = null;
+    }
+    
+    // Kategori daireleri sil
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            const map3d = window._maplibre3DInstance;
+            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
+    window._currentNearbyPopupElement = null;
+};
