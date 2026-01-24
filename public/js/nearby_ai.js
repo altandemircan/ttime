@@ -583,23 +583,43 @@ window.closeNearbyPopup = function() {
 function clearAllCategoryMarkers(map) {
     const categories = ['restaurant', 'hotel', 'market', 'entertainment'];
     
-    // 2D Harita (Leaflet) temizliği
-categories.forEach(category => {
-    const layerKey = `__${category}Layers`;
-    if (map && map[layerKey]) {
-        map[layerKey].forEach(l => {
-            try {
-                // Önce görünmez yap
-                if (l._icon) {
-                    l._icon.style.visibility = 'hidden';
+    // 2D Harita (Leaflet) temizliği - TÜMÜNÜ SİL
+    categories.forEach(category => {
+        const layerKey = `__${category}Layers`;
+        if (map && map[layerKey]) {
+            map[layerKey].forEach(l => {
+                try {
+                    if (l._icon) {
+                        l._icon.style.visibility = 'hidden';
+                    }
+                    map.removeLayer(l);
+                } catch(e) {}
+            });
+            map[layerKey] = [];
+        }
+    });
+    
+    // +++ YENİ: HARİTA ÜZERİNDEKİ TÜM CUSTOM MARKER'LARI SİL +++
+    if (map && map.eachLayer) {
+        const markersToRemove = [];
+        map.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                if (layer.options.icon && layer.options.icon.options) {
+                    const cls = layer.options.icon.options.className;
+                    if (cls && cls.includes('custom')) {
+                        markersToRemove.push(layer);
+                    }
                 }
-                // Sonra haritadan kaldır
-                map.removeLayer(l);
+            }
+        });
+        markersToRemove.forEach(m => {
+            try {
+                if (m._icon) m._icon.style.visibility = 'hidden';
+                map.removeLayer(m);
             } catch(e) {}
         });
-        map[layerKey] = [];
     }
-});
+    
     
     // 3D Harita (MapLibre) temizliği
     if (window._maplibre3DInstance === map) {
