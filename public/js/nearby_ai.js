@@ -2147,7 +2147,45 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
             
-            topPlaces.forEach((placeData, idx) => {
+            // DÜZENLEMESİ GEREKİYOR - İlk tıklamada da daire çiz
+        if (maxDistance > 0) {
+            const circleColor = '#1976d2';
+            const radiusMeters = Math.ceil(maxDistance);
+            
+            if (isMapLibre) {
+                const circleId = `initial-radius-${Date.now()}`;
+                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+                
+                map.addSource(circleId, {
+                    type: 'geojson',
+                    data: circleGeoJSON
+                });
+                
+                map.addLayer({
+                    id: circleId + '-layer',
+                    type: 'fill',
+                    source: circleId,
+                    paint: {
+                        'fill-color': circleColor,
+                        'fill-opacity': 0.04,
+                        'fill-outline-color': 'transparent'
+                    }
+                });
+                
+            } else {
+                window._categoryRadiusCircle = L.circle([lat, lng], {
+                    radius: radiusMeters,
+                    color: circleColor,
+                    weight: 0,
+                    opacity: 0,
+                    fillColor: circleColor,
+                    fillOpacity: 0.04,
+                    dashArray: null,
+                    className: `category-radius-circle`
+                }).addTo(map);
+            }
+        }
+        topPlaces.forEach((placeData, idx) => {
                 const f = placeData.feature;
                 const distance = placeData.distance;
                 const pLng = f.properties.lon;
