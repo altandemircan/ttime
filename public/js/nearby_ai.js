@@ -1319,23 +1319,87 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         loadClickedPointImage(pointInfo.name);
 
-        setTimeout(() => {
-            document.querySelectorAll('.category-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.dataset.tab;
-                    
-                    document.querySelectorAll('.category-tab').forEach(t => {
-                        t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
-                        t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
-                        t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
-                        t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
-                    });
-                    
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
-                    });
-                });
+        // showNearbyPlacesPopup fonksiyonunun sonundaki setTimeout bloğunu bu şekilde güncelle:
+
+setTimeout(() => {
+    // 1. KATEGORİ SEKMELERİ (Tab Click)
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            document.querySelectorAll('.category-tab').forEach(t => {
+                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
+                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
+                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
+                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
             });
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
+            });
+        });
+    });
+
+    // 2. "SHOW MORE ON THE MAP" BUTONU (Düzeltilen Kısım)
+    document.querySelectorAll('.show-category-btn').forEach(btn => {
+        btn.onclick = function() {
+            const category = this.dataset.category;
+            window._lastSelectedCategory = category;
+
+            // --- FİX BAŞLANGIÇ: Mavi Pulse Marker'ı Temizle ---
+            if (window._nearbyPulseMarker) {
+                try { window._nearbyPulseMarker.remove(); } catch(e) {}
+                window._nearbyPulseMarker = null;
+            }
+            if (window._nearbyPulseMarker3D) {
+                try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+                window._nearbyPulseMarker3D = null;
+            }
+            // --- FİX BİTİŞ ---
+
+            if (category === 'restaurants') {
+                showNearbyRestaurants(lat, lng, map, day);
+            } else if (category === 'hotels') {
+                showNearbyHotels(lat, lng, map, day);
+            } else if (category === 'markets') {
+                showNearbyMarkets(lat, lng, map, day);
+            } else if (category === 'entertainment') {
+                showNearbyEntertainment(lat, lng, map, day);
+            }
+        };
+    });
+
+    // 3. "SEARCH WIDER AREA" BUTONU (Buna da ekleme yaptık)
+    document.querySelectorAll('.search-wider-btn').forEach(btn => {
+        btn.onclick = function(e) {
+            e.stopPropagation();
+            const category = this.dataset.category;
+            const widerRadius = 5000;
+            
+            // --- FİX: Burada da Pulse Marker'ı Temizle ---
+            if (window._nearbyPulseMarker) {
+                try { window._nearbyPulseMarker.remove(); } catch(e) {}
+                window._nearbyPulseMarker = null;
+            }
+            if (window._nearbyPulseMarker3D) {
+                try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+                window._nearbyPulseMarker3D = null;
+            }
+            // --- FİX SONU ---
+
+            if (category === 'restaurants') {
+                showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
+            } else if (category === 'hotels') {
+                showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
+            } else if (category === 'markets') {
+                showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
+            } else if (category === 'entertainment') {
+                showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
+            }
+        };
+    });
+
+}, 250);
 
             document.querySelectorAll('.show-category-btn').forEach(btn => {
    btn.onclick = function() {
