@@ -2410,37 +2410,47 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
+
 // ============================================
-// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
+// NEARBY POPUP MANAGEMENT & VIEW SWITCHER (FINAL FIX)
+// ============================================
+// ============================================
+// NEARBY POPUP MANAGEMENT & VIEW SWITCHER (SAF VERSİYON)
 // ============================================
 
-// Varsa eski zamanlayıcıları temizle
+// Varsa eski zamanlayıcıları temizle (Eski kodlardan kalanlar)
 if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
 if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
 
 // 1. TEMİZLİK VE KAPATMA FONKSİYONU
 window.closeNearbyPopup = function() {
+    // Butonu DOM'dan sök
     const btn = document.getElementById('nearby-view-switcher-btn');
     if (btn) btn.remove();
 
+    // Popup'ı DOM'dan sök
     const popup = document.getElementById('custom-nearby-popup');
     if (popup) popup.remove();
 
+    // Açık sidebarları kapat
     document.querySelectorAll('.sidebar-overlay').forEach(sidebar => {
         sidebar.classList.remove('open');
     });
 
+    // Harita gizlendiyse geri aç
     const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
     if (mapContainer) {
         mapContainer.style.display = ''; 
         if (window.map && window.map.invalidateSize) window.map.invalidateSize();
     }
 
+    // Harita üzerindeki marker temizliği
     if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
     if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
     if (window._nearbyRadiusCircle) { try { window._nearbyRadiusCircle.remove(); } catch(e) {} window._nearbyRadiusCircle = null; }
 
+    // MapLibre katman temizliği
     if (window._maplibre3DInstance) {
         const map = window._maplibre3DInstance;
         ['_nearbyRadiusCircle3D', '_categoryRadiusCircle3D'].forEach(key => {
@@ -2457,10 +2467,12 @@ window.closeNearbyPopup = function() {
     }
 
     window._currentNearbyPopupElement = null;
+    console.log("Nearby Popup ve Butonlar temizlendi.");
 };
 
-// 2. BUTON OLUŞTURUCU
+// 2. BUTON OLUŞTURUCU (Mantık Basitleştirildi)
 function setupViewSwitcherButton(mapInstance) {
+    // 1. Varsa eskiyi temizle
     let oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
 
@@ -2496,6 +2508,7 @@ function setupViewSwitcherButton(mapInstance) {
         const popup = document.getElementById('custom-nearby-popup');
         const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
 
+        // EĞER POPUP SİLİNMİŞSE BUTONU DA SİL (Kritik kontrol)
         if (!popup) {
             this.remove();
             return;
@@ -2519,6 +2532,9 @@ function setupViewSwitcherButton(mapInstance) {
 
     btn.innerHTML = contentToMap;
 
+    // --- EKSTRA GÜVENLİK ---
+    // Eğer biri popup'ı (X'e basarak) silerse, butonu da beraberinde götürmesi için 
+    // bir MutationObserver veya basit bir kontrol ekliyoruz:
     const ghostChecker = setInterval(() => {
         if (!document.getElementById('custom-nearby-popup')) {
             btn.remove();
@@ -2527,40 +2543,128 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-// 3. POPUP AÇMA (OVERRIDE)
-if (typeof window.showCustomPopup === 'function') {
-    const origShowCustomPopup = window.showCustomPopup;
-    window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-        const oldBtn = document.getElementById('nearby-view-switcher-btn');
-        if (oldBtn) oldBtn.remove();
+// 3. POPUP AÇMA (OVERRIDE - SADE VE TEMİZ)
+const origShowCustomPopup = window.showCustomPopup;
+window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+    // Önceki butonu temizle (çift olmasın)
+    const oldBtn = document.getElementById('nearby-view-switcher-btn');
+    if (oldBtn) oldBtn.remove();
 
-        origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-        
-        if (window.innerWidth < 768) {
-            setTimeout(() => {
-                const mainChat = document.getElementById('main-chat');
-                if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                    setupViewSwitcherButton(map);
-                }
-            }, 300);
-        }
-    };
-}
+    // Orijinal popup'ı oluştur
+    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+    
+    // SADECE MOBİL KONTROLÜ (768px altı)
+    if (window.innerWidth < 768) {
+        // Çok kısa bir gecikme (Popup DOM'a girsin diye)
+        setTimeout(() => {
+            // Hiçbir şart koşmuyoruz. Popup çağrıldıysa butonu basıyoruz.
+            // Sadece main-chat gizli mi diye basit bir kontrol yapabiliriz, 
+            // ama butonun görünmemesinden iyidir.
+            const mainChat = document.getElementById('main-chat');
+            
+            // Eğer anasayfada değilsek (main-chat gizliyse) butonu koy
+            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                 setupViewSwitcherButton(map);
+            }
+        }, 300);
+    }
+};
 
 // 4. SAYFA DEĞİŞİKLİĞİ (Back Button / Hash Change)
 window.addEventListener('hashchange', () => {
+    // Sayfa değiştiğinde temizle
     window.closeNearbyPopup();
 });
+/**
+ * KESİN ÇÖZÜM PAKETİ - TÜM ÇAKIŞMALARI EZER
+ */
+(function() {
+    // 1. Mevcut closeNearbyPopup fonksiyonunu tamamen yeniden yazalım
+    window.closeNearbyPopup = function() {
+        console.log("Zorla kapatma tetiklendi.");
+        
+        // Butonu her ne olursa olsun SİL
+        const btn = document.getElementById('nearby-view-switcher-btn');
+        if (btn) btn.remove();
 
-// 5. HARITA KAPANIŞI
+        // Popup'ı (listeyi) SİL
+        const popup = document.getElementById('custom-nearby-popup');
+        if (popup) popup.remove();
+
+        // Haritayı her zaman GÖSTER (gizli kalmasın)
+        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+        if (mapContainer) mapContainer.style.display = 'block';
+
+        // Sidebarları kapat
+        document.querySelectorAll('.sidebar-overlay').forEach(s => s.classList.remove('open'));
+
+        // Markerları temizle
+        if (window._nearbyPulseMarker) window._nearbyPulseMarker.remove();
+        if (window._nearbyPulseMarker3D) window._nearbyPulseMarker3D.remove();
+    };
+
+    // 2. Buton Oluşturma Mantığını Basitleştir
+    window.setupViewSwitcherButton = function(mapInstance) {
+        if (document.getElementById('nearby-view-switcher-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.id = 'nearby-view-switcher-btn';
+        btn.innerHTML = '<span>🗺️</span> <span>Show Map</span>';
+        btn.style.cssText = "position:fixed !important; bottom:30px !important; left:50% !important; transform:translateX(-50%) !important; z-index:2147483647 !important; padding:12px 24px !important; background:#333 !important; color:#fff !important; border:none !important; border-radius:50px !important; box-shadow:0 4px 15px rgba(0,0,0,0.5) !important; font-weight:bold !important; display:flex !important; align-items:center !important; gap:8px !important; cursor:pointer !important;";
+        
+        btn.onclick = function(e) {
+            e.stopPropagation();
+            const popup = document.getElementById('custom-nearby-popup');
+            const mapCont = document.querySelector('.leaflet-container, .maplibregl-map');
+            
+            if (!popup) { this.remove(); return; }
+
+            if (popup.style.display !== 'none') {
+                popup.style.display = 'none';
+                if (mapCont) mapCont.style.display = 'block';
+                this.innerHTML = '<span>📋</span> <span>Show List</span>';
+                this.style.background = '#1976d2';
+            } else {
+                popup.style.display = 'block';
+                this.innerHTML = '<span>🗺️</span> <span>Show Map</span>';
+                this.style.background = '#333';
+            }
+            if (mapInstance && mapInstance.invalidateSize) mapInstance.invalidateSize();
+        };
+
+        document.body.appendChild(btn);
+    };
+
+    // 3. Popup açıldığında butonu tetikle (Override)
+    const oldShow = window.showCustomPopup;
+    window.showCustomPopup = function(lat, lng, map, content, showClose = true) {
+        // Önce temizle
+        const oldBtn = document.getElementById('nearby-view-switcher-btn');
+        if (oldBtn) oldBtn.remove();
+
+        // Orijinal popup'ı aç
+        if (typeof oldShow === 'function') oldShow.apply(this, arguments);
+
+        // Mobildeyse butonu 500ms sonra (DOM oturduğunda) zorla bas
+        if (window.innerWidth < 768) {
+            setTimeout(() => window.setupViewSwitcherButton(map), 500);
+        }
+    };
+})();
+
+// mainscript.js dosyasının en altına yapıştır
 document.addEventListener('click', function(e) {
+    // Haritayı kapatan close-expanded-map butonuna tıklandığında
     if (e.target && (e.target.classList.contains('close-expanded-map') || e.target.closest('.close-expanded-map'))) {
+        
+        // Switcher butonunu bul ve imha et
         const switcherBtn = document.getElementById('nearby-view-switcher-btn');
         if (switcherBtn) {
             switcherBtn.style.display = 'none';
-            switcherBtn.remove();
+            switcherBtn.remove(); // Kökten siliyoruz ki kalıntı kalmasın
         }
         
+        // Varsa açık olan nearby popup listesini de temizle
         const nearbyPopup = document.getElementById('custom-nearby-popup');
         if (nearbyPopup) {
             nearbyPopup.remove();
