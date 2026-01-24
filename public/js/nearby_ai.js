@@ -1828,8 +1828,26 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-    showCustomPopup(lat, lng, map, html, true);
+     showCustomPopup(lat, lng, map, html, true);
     window._currentPointInfo = pointInfo;
+    
+    // TAB LISTENER'LARINI HEMEN KUR
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            if (window._lastSelectedCategory === tabId) return;
+            
+            document.querySelectorAll('.category-tab').forEach(t => {
+                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
+                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
+                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
+                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
+            });
+            
+            showNearbyPlacesByCategory(lat, lng, map, day, tabId);
+        });
+    });
     
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
         window.fetchClickedPointAI(
@@ -2389,28 +2407,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         }
     }
     
-    // +++ TAB BUTONLARI IÇIN EVENT LISTENER'LAR ===
- // Tab butonlarını aktif hale getir
-        setTimeout(() => {
-        document.querySelectorAll('.category-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
-            
-            // Eğer zaten aktif ise işlem yapma
-            if (window._lastSelectedCategory === tabId) return;
-            
-            document.querySelectorAll('.category-tab').forEach(t => {
-                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
-                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
-                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
-                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
-            });
-            
-            // Yeni kategoriyi yükle
-         showNearbyPlacesByCategory(lat, lng, map, day, tabId);
-        });
-    });
-        }, 100);
+ 
     }
 
 
