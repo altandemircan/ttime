@@ -2390,10 +2390,11 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             });
             
             // Yeni kategoriyi yükle
-            showNearbyPlacesByCategory(lat, lng, map, day, tabId);
+         showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
     });
-}
+        }, 100);
+    }
 
 
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
