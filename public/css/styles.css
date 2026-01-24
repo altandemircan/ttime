@@ -5182,6 +5182,8 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 
+
+
 /* Nearby Places Popup Animations */
 @keyframes slideIn {
     from {
@@ -5392,7 +5394,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .nearby-popup-content {
     padding: 20px;
     overflow-y: auto;
-    max-height: calc(100vh);
+    max-height: calc(100vh - 80px);
 }
 
 .nearby-no-results {
