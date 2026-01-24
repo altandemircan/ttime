@@ -2481,77 +2481,60 @@ window.closeNearbyPopup = function() {
     console.log('Nearby popup closed completely');
 };
 
-// Toggle button fonksiyonunu sadeleştir
-function addNearbyMapToggleButton() {
-    // Eğer popup kapalıysa hiçbirşey yapma
-    const popup = document.getElementById('custom-nearby-popup');
-    if (!popup) {
-        return;
-    }
-
-    // Varsa eski buton temizle
-    let existingBtn = document.getElementById('nearby-map-toggle-btn');
-    if (existingBtn) {
-        existingBtn.remove();
-    }
-
-    const btn = document.createElement('button');
-    btn.id = 'nearby-map-toggle-btn';
-    btn.innerHTML = 'Toggle Map / Nearby';
-    btn.style.position = 'fixed';
-    btn.style.bottom = '24px';
-    btn.style.right = '24px';
-    btn.style.zIndex = '9999';
-    btn.style.padding = '12px 20px';
-    btn.style.background = '#1976d2';
-    btn.style.color = '#fff';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '24px';
-    btn.style.boxShadow = '0 4px 18px rgba(25, 118, 210, 0.18)';
-    btn.style.fontWeight = 'bold';
-    btn.style.fontSize = '15px';
-    btn.style.display = 'block';
-    btn.style.cursor = 'pointer';
-
-    btn.onclick = function (e) {
-        e.stopPropagation();
-        const map = document.querySelector('.leaflet-container, .maplibregl-map');
-        const popup = document.getElementById('custom-nearby-popup');
-
-        if (!map || !popup) return;
-
-        // Alternatif göster/gizle
-        if (map.style.display !== 'none') {
-            map.style.display = 'none';
-            popup.style.display = 'block';
-        } else {
-            map.style.display = '';
-            popup.style.display = 'none';
-        }
-    };
-
-    document.body.appendChild(btn);
-    console.log('Toggle button created');
-}
-
-// showCustomPopup override - bu daha güvenli
-const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Eski popup varsa temizle
-    if (document.getElementById('nearby-map-toggle-btn')) {
-        document.getElementById('nearby-map-toggle-btn').remove();
-    }
+    // Önceki popup'ı kapat
+    if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
     
-    // Orijinal fonksiyonu çalıştır
-    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+    // Popup container oluştur
+    const popupContainer = document.createElement('div');
+    popupContainer.id = 'custom-nearby-popup';
     
-    // Sadece mobile'da buton göster
+    const closeButtonHtml = showCloseButton ? `
+        <button onclick="closeNearbyPopup()" class="sidebar-toggle" title="Close"><img src="/img/close-icon.svg" alt="Close"></button>
+    ` : '';
+    
+    popupContainer.innerHTML = `${closeButtonHtml}<div class="nearby-popup-content">${content}</div>`;
+    document.body.appendChild(popupContainer);
+    window._currentNearbyPopupElement = popupContainer;
+    
+    // Mobil'de overlay buton ekle
     if (window.innerWidth < 700) {
         setTimeout(() => {
-            const popup = document.getElementById('custom-nearby-popup');
-            if (popup) {
-                addNearbyMapToggleButton();
+            if (!document.getElementById('back-to-map-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.id = 'back-to-map-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 56px;
+                    background: linear-gradient(to top, rgba(25, 118, 210, 0.95), rgba(25, 118, 210, 0.8));
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 14px;
+                    backdrop-filter: blur(4px);
+                    border-top: 1px solid rgba(255,255,255,0.2);
+                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                `;
+                overlay.innerHTML = '← Back to Map';
+                overlay.onclick = () => {
+                    const popup = document.getElementById('custom-nearby-popup');
+                    const map = document.querySelector('.leaflet-container, .maplibregl-map');
+                    const backOverlay = document.getElementById('back-to-map-overlay');
+                    
+                    if (popup) popup.style.display = 'none';
+                    if (map) map.style.display = '';
+                    if (backOverlay) backOverlay.remove();
+                };
+                document.body.appendChild(overlay);
             }
         }, 100);
     }
-};
+    
+    // PULSE MARKER... (rest of the code stays same)
