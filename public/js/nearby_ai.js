@@ -587,13 +587,9 @@ function clearAllCategoryMarkers(map) {
     categories.forEach(category => {
         const layerKey = `__${category}Layers`;
         if (map && map[layerKey] && Array.isArray(map[layerKey])) {
+            // SADECE BU ARRAY'DEKİ LAYER'LARI SİL
             map[layerKey].forEach(l => {
                 try {
-                    if (l._icon) {
-                        l._icon.style.display = 'none';
-                        l._icon.style.visibility = 'hidden';
-                        l._icon.style.opacity = '0';
-                    }
                     map.removeLayer(l);
                 } catch(e) {}
             });
