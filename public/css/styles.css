@@ -5182,6 +5182,10 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 
 
+
+#nearby-view-switcher-btn {
+    display: none !important; /* Başlangıçta tamamen gizli */
+}
 /* Nearby Places Popup Animations */
 @keyframes slideIn {
     from {
