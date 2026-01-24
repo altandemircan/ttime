@@ -1826,10 +1826,10 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         
         // +++ DAIRE ÇİZ (EN UZAK ITEM KADAR) +++
         if (maxDistance > 0) {
-            const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
-            const radiusMeters = Math.ceil(maxDistance * 1.05); // Son item + %5 margin (daha az büyük)
-            
-            if (isMapLibre) {
+    const circleColor = '#1976d2'; // Tüm kategoriler için aynı mavi
+    const radiusMeters = Math.ceil(maxDistance); // MARGİN YOK! Tam mesafe
+    
+    if (isMapLibre) {
                 // 3D MapLibre için
                 const circleId = `category-radius-${categoryType}-${Date.now()}`;
                 const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
@@ -1852,32 +1852,21 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 
                 window._categoryRadiusCircle3D = circleId;
                 
-            } else {
-                // 2D Leaflet için
-                window._categoryRadiusCircle = L.circle([lat, lng], {
-                    radius: radiusMeters,
-                    color: circleColor,
-                    weight: 0,           // ÇİZGİ YOK
-                    opacity: 0,          // ÇİZGİ ŞEFFAF
-                    fillColor: circleColor,
-                    fillOpacity: 0.06,   // ÇOK HAFİF (otel mavisi gibi)
-                    dashArray: null,     // KESİKLİ ÇİZGİ YOK
-                    className: `category-radius-circle`
-                }).addTo(map);
-                
-                // DEBUG: Konsola daire bilgisi yaz
-                console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
-                
-                // Daireye tooltip ekle (mesafeyi göster)
-                window._categoryRadiusCircle.bindTooltip(
-                    `${categoryType}: ${topPlaces.length} places within ${radiusMeters.toFixed(0)}m`,
-                    { 
-                        permanent: false, 
-                        direction: 'center',
-                        className: 'radius-tooltip'
-                    }
-                );
-            }
+             } else {
+        window._categoryRadiusCircle = L.circle([lat, lng], {
+            radius: radiusMeters,
+            color: circleColor,
+            weight: 0,
+            opacity: 0,
+            fillColor: circleColor,
+            fillOpacity: 0.04,   // DAHA DA ŞEFFAF (0.06 → 0.04)
+            dashArray: null,
+            className: `category-radius-circle`
+        }).addTo(map);
+        
+        console.log(`🌀 ${categoryType} daire: ${topPlaces.length} item, en uzak: ${maxDistance.toFixed(0)}m, daire: ${radiusMeters.toFixed(0)}m`);
+    }
+    }
         }
         
         // +++ MARKERLARI EKLE +++
