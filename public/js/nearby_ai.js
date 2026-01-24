@@ -607,7 +607,61 @@ const clickHandler = function(e) {
 }
 
 
+// Previous code...
 
+// MOBİL HARİTA / YAKINDAKİLER ARASI GEÇİŞ BUTONU EKLE
+function addNearbyMapToggleButton() {
+    // Önce varsa eskiyi temizle
+    if (document.getElementById('nearby-map-toggle-btn')) {
+        document.getElementById('nearby-map-toggle-btn').remove();
+    }
+
+    const btn = document.createElement('button');
+    btn.id = 'nearby-map-toggle-btn';
+    btn.innerHTML = 'Toggle Map / Nearby';
+    btn.style.position = 'fixed';
+    btn.style.bottom = '24px';
+    btn.style.right = '24px';
+    btn.style.zIndex = '9999';
+    btn.style.padding = '12px 20px';
+    btn.style.background = '#1976d2';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '24px';
+    btn.style.boxShadow = '0 4px 18px rgba(25, 118, 210, 0.18)';
+    btn.style.fontWeight = 'bold';
+    btn.style.fontSize = '15px';
+    btn.style.display = 'block';
+    btn.style.cursor = 'pointer';
+
+    btn.onclick = function () {
+        // Harita ve nearby popup alternately show/hide
+        const map = document.querySelector('.leaflet-container, .maplibregl-map');
+        const popup = document.getElementById('custom-nearby-popup');
+
+        if (!map || !popup) return;
+
+        // Eğer harita görünüyorsa nearby popup'u öne getir, haritayı gizle
+        if (map.style.display !== 'none') {
+            map.style.display = 'none';
+            popup.style.display = 'block';
+        } else {
+            map.style.display = '';
+            popup.style.display = 'none';
+        }
+    };
+
+    document.body.appendChild(btn);
+}
+
+// Otomatik olarak popup açıldığında butonu ekle
+const origShowCustomPopup = window.showCustomPopup;
+window.showCustomPopup = function(...args) {
+    origShowCustomPopup.apply(this, args);
+    if (window.innerWidth < 700) {
+      addNearbyMapToggleButton();
+    }
+};
 
 
 function showRouteInfoBanner(day) {
