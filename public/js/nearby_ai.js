@@ -2539,25 +2539,34 @@ function setupViewSwitcherButton(mapInstance) {
 }
 
 // 3. OVERRIDE POPUP CREATION
+// 3. OVERRIDE POPUP CREATION TO INJECT BUTTON
 const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Önceki butonu temizle
+    // 1. Önceki butonu temizle (her ihtimale karşı)
     const oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
 
-    // Orijinal popup'ı oluştur
+    // 2. Orijinal popup'ı oluştur
     origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
     
-    // KRİTİK KONTROL: Sadece harita genişletilmişse (expand mode) butonu göster
-    // Burada 'main-chat' veya yan panelin gizli olup olmadığını kontrol ediyoruz
-    const mainChat = document.getElementById('main-chat');
-    const isMapExpanded = mainChat && mainChat.style.display === 'none';
-
-    if (isMapExpanded && window.innerWidth < 768) {
+    // 3. MOBİL KONTROLÜ VE EXPAND KONTROLÜ
+    // Sadece ekran genişliği 768px'den küçükse (Mobil) işlem yap
+    if (window.innerWidth < 768) {
+        
+        // Popup DOM'a yerleşene kadar çok kısa bekle
         setTimeout(() => {
-            const popup = document.getElementById('custom-nearby-popup');
-            if (popup) {
-                setupViewSwitcherButton(map);
+            const mainChat = document.getElementById('main-chat');
+            
+            // Haritanın genişletilmiş (Expand) modunda olup olmadığını kontrol et.
+            // main-chat gizliyse harita expanded demektir.
+            const isMapExpanded = mainChat && window.getComputedStyle(mainChat).display === 'none';
+
+            if (isMapExpanded) {
+                const popup = document.getElementById('custom-nearby-popup');
+                // Eğer popup başarılı şekilde oluştuysa butonu ekle
+                if (popup) {
+                    setupViewSwitcherButton(map);
+                }
             }
         }, 200);
     }
