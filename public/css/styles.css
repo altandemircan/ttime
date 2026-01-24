@@ -5213,36 +5213,23 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 
 /* Custom Nearby Popup Styling */
 #custom-nearby-popup {
-    scrollbar-width: thin;
+     scrollbar-width: thin;
     scrollbar-color: #8a4af3 #f1f1f1;
     position: fixed;
     top: 60px;
     width: 415px;
     right: 0;
-    height: 100%;    
+    height: 100%;   
     z-index: 1008;
-    
-    /* background: #fff;  <--- BU SATIRI SİLİP AŞAĞIDAKİLERİ YAZIYORUZ */
-    background: transparent; /* Arka plan şeffaf olsun */
-    pointer-events: none;    /* Tıklamalar haritaya geçsin */
-    
+    background: #fff;
+    overflow-y: auto;
+    /* max-height: calc(100vh - 100px); */
+    /*padding-top: 20px;*/
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    transition: 0.3s ease;
-}
-
-/* YENİ EKLENECEK KISIM: İçerik Kutusunun Stili */
-.nearby-popup-content {
-    background: #fff;       /* Beyaz rengi buraya taşıdık */
-    pointer-events: auto;   /* İçeriğe tıklanabilsin */
-    width: 100%;
-    height: 100%;           /* Kutuyu doldursun */
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    transition: 0.3s ease
 }
 
 /* Scrollbar styling */
