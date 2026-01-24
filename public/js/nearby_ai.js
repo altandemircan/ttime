@@ -940,7 +940,8 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         let allPlaces = [];
         let placeIdToIndexMap = {};
-        
+        const categoryCounts = { restaurants: 0, hotels: 0, markets: 0, entertainment: 0 };
+
         if (data.features && data.features.length > 0) {
             allPlaces = data.features
                 .filter(f => {
