@@ -5221,7 +5221,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     right: 0;
     height: 100%;   
     z-index: 1008;
-   background: transparent !important;
+    background: #fff;
     overflow-y: auto;
     /* max-height: calc(100vh - 100px); */
     /*padding-top: 20px;*/
@@ -5231,14 +5231,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     flex-wrap: nowrap;
     transition: 0.3s ease
 }
-.nearby-popup-content {
-    background: #fff;
-    pointer-events: auto; /* İçeriğe tıklayabilelim */
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
+
 /* Scrollbar styling */
 #custom-nearby-popup ::-webkit-scrollbar {
     width: 6px;
@@ -5424,7 +5417,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     margin-top: 10px;
     display: block;
 }
-
 
 @keyframes pulse {
     0% { transform: scale(1); opacity: 1; }
