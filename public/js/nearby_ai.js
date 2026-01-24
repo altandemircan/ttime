@@ -1383,9 +1383,8 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
         setTimeout(() => {
             document.querySelectorAll('.category-tab').forEach(tab => {
-               tab.addEventListener('click', function() {
-    const tabId = this.dataset.tab;
-    window._lastSelectedCategory = tabId; // Kategori değişince de kay
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
                     
                     document.querySelectorAll('.category-tab').forEach(t => {
                         t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
@@ -1401,49 +1400,45 @@ showCustomPopup(lat, lng, map, loadingContent, false);
             });
 
             document.querySelectorAll('.show-category-btn').forEach(btn => {
- // "Show more" butonları (satır ~1200):
-btn.onclick = function() {
+   btn.onclick = function() {
     const category = this.dataset.category;
     window._lastSelectedCategory = category; // Show more tıklandığında kaydet
+        
+        // closeNearbyPopup kaldırıldı! Sidebar kapanmayacak
 
-    
-    console.log(`📍 ${category} için koordinatlar:`, { lat: useLat, lng: useLng });
-    
-    if (category === 'restaurants') {
-        showNearbyRestaurants(useLat, useLng, map, day);
-    } else if (category === 'hotels') {
-        showNearbyHotels(useLat, useLng, map, day);
-    } else if (category === 'markets') {
-        showNearbyMarkets(useLat, useLng, map, day);
-    } else if (category === 'entertainment') {
-        showNearbyEntertainment(useLat, useLng, map, day);
-    }
-};
+        if (category === 'restaurants') {
+            showNearbyRestaurants(lat, lng, map, day);
+        } else if (category === 'hotels') {
+            showNearbyHotels(lat, lng, map, day);
+        } else if (category === 'markets') {
+            showNearbyMarkets(lat, lng, map, day);
+        } else if (category === 'entertainment') {
+            showNearbyEntertainment(lat, lng, map, day);
+        }
+    };
 });
 
             // "Search wider area" butonları için event handler
 document.querySelectorAll('.search-wider-btn').forEach(btn => {
-// "Show more" butonları (satır ~1200):
-btn.onclick = function() {
-    const category = this.dataset.category;
-    window._lastSelectedCategory = category; // Show more tıklandığında kaydet
-    
-    // EĞER SON TIKLANAN KOORDİNAT VARSA ONU KULLAN, YOKSA MEVCUT LAT/LNG'Yİ
-    const useLat = lastClickedLat || lat;
-    const useLng = lastClickedLng || lng;
-    
-    console.log(`📍 ${category} için koordinatlar:`, { lat: useLat, lng: useLng });
-    
-    if (category === 'restaurants') {
-        showNearbyRestaurants(useLat, useLng, map, day);
-    } else if (category === 'hotels') {
-        showNearbyHotels(useLat, useLng, map, day);
-    } else if (category === 'markets') {
-        showNearbyMarkets(useLat, useLng, map, day);
-    } else if (category === 'entertainment') {
-        showNearbyEntertainment(useLat, useLng, map, day);
-    }
-};
+    btn.onclick = function(e) {
+        e.stopPropagation(); // +++ YENİ: EVENT BUBBLING'İ DURDUR +++
+        const category = this.dataset.category;
+        const widerRadius = 5000;
+        
+        // +++ ESKİ KODU KALDIR: closeNearbyPopup çağrısını kaldır +++
+        // if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+        
+        // Daha geniş alanda arama yap
+        if (category === 'restaurants') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', widerRadius);
+        } else if (category === 'hotels') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', widerRadius);
+        } else if (category === 'markets') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'markets', widerRadius);
+        } else if (category === 'entertainment') {
+            showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', widerRadius);
+        }
+    };
 });
         }, 250);
 
