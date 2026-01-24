@@ -729,53 +729,72 @@ function showRouteInfoBanner(day) {
 }
 
 
-// Add this function to nearby_ai.js to handle the click event
 window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
-    try {
-        // 1. Güncel kategorideki veriyi cache'den al
-        const place = window._lastNearbyPlaces && window._lastNearbyPlaces[index];
-        
-        let name, address, category;
-
-        if (place && place.properties) {
+        try {
+            // 1. Retrieve the place data from the last items cache (kategori altı dahil!)
+            const place = window._lastNearbyPlaces && window._lastNearbyPlaces[index];
+    
+            if (!place) {
+                console.error("Place not found in cache. Index:", index);
+                return;
+            }
+    
             const p = place.properties;
-            name = p.name || p.formatted || "Unknown Place";
-            address = p.formatted || "";
-            category = window._lastSelectedCategory || 'Place';
-        } else {
-            // Eğer cache'de yoksa, butonun üstündeki text'lerden çekmeye çalış (Son Çare)
-            const btn = document.activeElement;
-            const itemContainer = btn ? btn.closest('.category-place-item') : null;
-            name = itemContainer ? itemContainer.querySelector('div[style*="font-weight: 600"]').innerText : "Selected Location";
-            address = itemContainer ? itemContainer.querySelector('div[style*="color: #777"]').innerText : "";
-            category = window._lastSelectedCategory || 'Place';
+            const name = p.name || p.formatted || "Unknown Place";
+            const address = p.formatted || "";
+            const category = place.category || 'Place';
+    
+            // 2. Try to get an image (or use placeholder)
+            let imageUrl = "img/placeholder.png";
+            // Eğer ._lastNearbyPhotos dizisi varsa ve sırası denkse onun görselini kullan
+            if (window._lastNearbyPhotos && window._lastNearbyPhotos[index]) {
+                imageUrl = window._lastNearbyPhotos[index];
+            } else if (typeof getPexelsImage === "function") {
+                try {
+                    const city = window.selectedCity || "";
+                    imageUrl = await getPexelsImage(`${name} ${category} ${city}`);
+                } catch (e) {
+                    // Yedek olarak yukardaki imgUrl kalır
+                }
+            }
+    
+            // 3. EKLE: addToCart ile kategori altı itemi de plana ekle
+            if (typeof addToCart === "function") {
+                addToCart(
+                    name,
+                    imageUrl,
+                    parseInt(day),
+                    category,
+                    address,
+                    null, // rating
+                    null, // user_ratings_total
+                    p.opening_hours || "",
+                    p.place_id,
+                    { lat: parseFloat(lat), lng: parseFloat(lon) },
+                    p.website || ""
+                );
+    
+                // Görsel feedback (Buton içeriği ✓ olsun)
+                const btn = document.activeElement;
+                if (btn && btn.tagName === 'BUTTON') {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = "✓";
+                    btn.style.color = "green";
+                    btn.style.borderColor = "green";
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.color = "";
+                        btn.style.borderColor = "";
+                    }, 2000);
+                }
+            } else {
+                console.error("addToCart function is missing!");
+            }
+    
+        } catch (error) {
+            console.error("Error adding nearby place to trip:", error);
         }
-
-        // 2. Görseli o anki karttan al
-        let imageUrl = "img/placeholder.png";
-        const imgInCard = document.querySelector(`img[alt="${name.replace(/'/g, "\\'")}"]`);
-        if (imgInCard) imageUrl = imgInCard.src;
-
-        // 3. Ana script'teki addToCart'ı çağır
-        if (typeof addToCart === "function") {
-            addToCart(
-                name,
-                imageUrl,
-                parseInt(day),
-                category,
-                address,
-                null, null, "", null,
-                { lat: parseFloat(lat), lng: parseFloat(lon) },
-                ""
-            );
-            
-            // Kullanıcıya geri bildirim ver
-            alert(`${name} planınıza eklendi!`);
-        }
-    } catch (error) {
-        console.error("Ekleme hatası:", error);
-    }
-};;
+    };
 
 function handlePopupImageLoading(f, imgId) {
     getImageForPlace(f.properties.name, "restaurant", window.selectedCity || "")
