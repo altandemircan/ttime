@@ -2409,6 +2409,9 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
+// ============================================
+// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
+// ============================================
 
 // Varsa eski zamanlayıcıları temizle
 if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
@@ -2523,24 +2526,26 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-// 3. POPUP AÇMA (OVERRIDE)
-const origShowCustomPopup = window.showCustomPopup;
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    const oldBtn = document.getElementById('nearby-view-switcher-btn');
-    if (oldBtn) oldBtn.remove();
+// 3. POPUP AÇMA (OVERRIDE) - SADECE MOBİL İÇİN
+if (typeof window.showCustomPopup === 'function') {
+    const origShowCustomPopup = window.showCustomPopup;
+    window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+        const oldBtn = document.getElementById('nearby-view-switcher-btn');
+        if (oldBtn) oldBtn.remove();
 
-    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-    
-    if (window.innerWidth < 768) {
-        setTimeout(() => {
-            const mainChat = document.getElementById('main-chat');
-            
-            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                setupViewSwitcherButton(map);
-            }
-        }, 300);
-    }
-};
+        origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+        
+        if (window.innerWidth < 768) {
+            setTimeout(() => {
+                const mainChat = document.getElementById('main-chat');
+                
+                if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                    setupViewSwitcherButton(map);
+                }
+            }, 300);
+        }
+    };
+}
 
 // 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
