@@ -652,24 +652,26 @@ const clickHandler = function(e) {
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
         
-        // Tüm kategori markerlarını temizle (PULSE HARİÇ!)
+        // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
         
-        // +++ ÖNCE SIDEBAR'ı AÇ +++
+        // Varsa açık popup'ı kapat
+        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
+        
+        // +++ ÖNCE SIDEBAR AÇILSIN, SONRA MARKER GÖSTERİLSİN +++
         if (typeof showNearbyPlacesPopup === 'function') {
+            // Sidebar'ı aç ama callback ile marker'ları sonra göster
             showNearbyPlacesPopup(e.latlng.lat, e.latlng.lng, map, day, radius);
-        }
-        
-        // +++ SONRA DA KATEGORİ MARKERLARINI GÖSTER +++
-        // 500ms bekle (sidebar yüklensin) sonra marker'ları göster
-        setTimeout(() => {
-            const categoryToShow = window._lastSelectedCategory || 'restaurants';
             
-            if (typeof showNearbyPlacesByCategory === 'function') {
-                showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, categoryToShow);
-            }
-        }, 500);
-        
+            // Sidebar tamamen yüklendikten sonra marker'ları göster
+            setTimeout(() => {
+                const categoryToShow = window._lastSelectedCategory || 'restaurants';
+                
+                if (typeof showNearbyPlacesByCategory === 'function') {
+                    showNearbyPlacesByCategory(e.latlng.lat, e.latlng.lng, map, day, categoryToShow);
+                }
+            }, 800); // Daha uzun bekle (sidebar tam yüklensin)
+        }
     }, __nearbySingleDelay);
 };
   // Event'i haritaya bağla
