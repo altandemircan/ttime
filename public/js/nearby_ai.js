@@ -2472,20 +2472,20 @@ window.closeNearbyPopup = function() {
 
 // 2. BUTON OLUŞTURUCU (Mantık Basitleştirildi)
 function setupViewSwitcherButton(mapInstance) {
-    // Buton zaten varsa ikincisini yaratma
-    if (document.getElementById('nearby-view-switcher-btn')) return;
+    // 1. Varsa eskiyi temizle
+    let oldBtn = document.getElementById('nearby-view-switcher-btn');
+    if (oldBtn) oldBtn.remove();
 
     const btn = document.createElement('button');
     btn.id = 'nearby-view-switcher-btn';
     
-    // CSS: Z-index en tepeye, fix pozisyon
     btn.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2147483647; /* Mümkün olan en yüksek sayı */
-        padding: 10px 24px;
+        position: fixed !important;
+        bottom: 30px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999999 !important;
+        padding: 12px 24px;
         background: #333;
         color: #fff;
         border: none;
@@ -2497,49 +2497,50 @@ function setupViewSwitcherButton(mapInstance) {
         align-items: center;
         gap: 8px;
         cursor: pointer;
-        pointer-events: auto; /* Tıklamayı garantiye al */
     `;
-    
     document.body.appendChild(btn);
 
     const contentToMap = `<span>🗺️</span> <span>Show Map</span>`;
     const contentToList = `<span>📋</span> <span>Show List</span>`;
 
     btn.onclick = function(e) {
-        e.preventDefault();
         e.stopPropagation();
-        
         const popup = document.getElementById('custom-nearby-popup');
         const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
 
-        // Eğer popup silinmişse butonu da sil ve çık
-        if (!popup) { btn.remove(); return; }
+        // EĞER POPUP SİLİNMİŞSE BUTONU DA SİL (Kritik kontrol)
+        if (!popup) {
+            this.remove();
+            return;
+        }
 
-        // Görünürlük kontrolü
         const isListVisible = (popup.style.display !== 'none');
 
         if (isListVisible) {
-            // LİSTEYİ GİZLE -> HARİTAYI GÖSTER
-            popup.style.display = 'none'; 
-            if (mapContainer) mapContainer.style.display = 'block'; // Block yap, boş değil
-            
+            popup.style.display = 'none';
+            if (mapContainer) mapContainer.style.display = 'block';
             btn.innerHTML = contentToList;
             btn.style.background = '#1976d2';
-            
-            // Harita boyutunu düzelt (render hatası olmasın)
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
         } else {
-            // HARİTAYI GİZLE -> LİSTEYİ GÖSTER
-            popup.style.display = 'block'; 
+            popup.style.display = 'block';
             btn.innerHTML = contentToMap;
             btn.style.background = '#333';
         }
     };
 
-    // İlk açılış: Buton "Show Map" der (çünkü liste açıktır)
     btn.innerHTML = contentToMap;
-    console.log("Switcher Butonu DOM'a eklendi.");
+
+    // --- EKSTRA GÜVENLİK ---
+    // Eğer biri popup'ı (X'e basarak) silerse, butonu da beraberinde götürmesi için 
+    // bir MutationObserver veya basit bir kontrol ekliyoruz:
+    const ghostChecker = setInterval(() => {
+        if (!document.getElementById('custom-nearby-popup')) {
+            btn.remove();
+            clearInterval(ghostChecker);
+        }
+    }, 500);
 }
 
 // 3. POPUP AÇMA (OVERRIDE - SADE VE TEMİZ)
