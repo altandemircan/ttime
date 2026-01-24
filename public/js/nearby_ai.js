@@ -759,56 +759,7 @@ function showRouteInfoBanner(day) {
   }, 4000);
 }
 
-// Yeni yardımcı fonksiyon: Sadece pulse marker göster
-function showPulseMarkerOnly(lat, lng, map) {
-    // Önceki pulse'ı temizle
-    if (window._nearbyPulseMarker) { 
-        try { window._nearbyPulseMarker.remove(); } catch(_) {} 
-        window._nearbyPulseMarker = null; 
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(_) {}
-        window._nearbyPulseMarker3D = null;
-    }
-    
-    // Pulse marker HTML
-    const pulseHtml = `
-      <div class="tt-pulse-marker">
-        <div class="tt-pulse-dot">
-          <div class="tt-pulse-dot-inner"></div>
-        </div>
-        <div class="tt-pulse-ring tt-pulse-ring-1"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-2"></div>
-        <div class="tt-pulse-ring tt-pulse-ring-3"></div>
-        <div class="tt-pulse-glow"></div>
-        <div class="tt-pulse-inner-ring"></div>
-      </div>
-    `;
-    
-    // Pulse marker ekle
-    const isMapLibre = !!map.addSource;
-    
-    if (isMapLibre) {
-        const el = document.createElement('div');
-        el.className = 'tt-pulse-marker';
-        el.innerHTML = pulseHtml;
-        
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
-            element: el,
-            anchor: 'center'
-        })
-        .setLngLat([lng, lat])
-        .addTo(map);
-    } else {
-        const pulseIcon = L.divIcon({
-            html: pulseHtml,
-            className: 'tt-pulse-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-        window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
-    }
-}
+
 // Add this function to nearby_ai.js to handle the click event
 window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
     try {
