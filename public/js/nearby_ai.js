@@ -2172,7 +2172,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     
     return `
       <div style="position:relative;">
-        <div class="custom-marker-outer" style="
+        <div style="
             position:relative;
             width:32px;height:32px;
             background:white;
