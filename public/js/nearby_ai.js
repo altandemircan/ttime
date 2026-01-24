@@ -1268,12 +1268,12 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     });
 
     // 2. "SHOW MORE ON THE MAP" BUTONU (Düzeltilen Kısım)
-    document.querySelectorAll('.show-category-btn').forEach(btn => {
-        btn.onclick = function() {
-            const category = this.dataset.category;
-            window._lastSelectedCategory = category;
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            window._lastSelectedCategory = tabId;
 
-            // --- FİX BAŞLANGIÇ: Mavi Pulse Marker'ı Temizle ---
+            // Mavi Pulse Marker'ı Temizle
             if (window._nearbyPulseMarker) {
                 try { window._nearbyPulseMarker.remove(); } catch(e) {}
                 window._nearbyPulseMarker = null;
@@ -1282,18 +1282,10 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                 try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
                 window._nearbyPulseMarker3D = null;
             }
-            // --- FİX BİTİŞ ---
 
-            if (category === 'restaurants') {
-                showNearbyRestaurants(lat, lng, map, day);
-            } else if (category === 'hotels') {
-                showNearbyHotels(lat, lng, map, day);
-            } else if (category === 'markets') {
-                showNearbyMarkets(lat, lng, map, day);
-            } else if (category === 'entertainment') {
-                showNearbyEntertainment(lat, lng, map, day);
-            }
-        };
+            // Harita marker'larını göster
+            showNearbyPlacesByCategory(lat, lng, map, day, tabId);
+        });
     });
 
     // 3. "SEARCH WIDER AREA" BUTONU (Buna da ekleme yaptık)
