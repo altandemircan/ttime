@@ -2410,6 +2410,9 @@ window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat
 
 
 
+// ============================================
+// NEARBY POPUP MANAGEMENT & VIEW SWITCHER
+// ============================================
 
 // Varsa eski zamanlayıcıları temizle
 if (window._nearbyCleanerInterval) clearInterval(window._nearbyCleanerInterval);
@@ -2470,18 +2473,18 @@ function setupViewSwitcherButton(mapInstance) {
         left: 50% !important;
         transform: translateX(-50%) !important;
         z-index: 9999999 !important;
-        padding: 12px 24px !important;
-        background: #333 !important;
-        color: #fff !important;
-        border: none !important;
-        border-radius: 50px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
-        font-weight: 600 !important;
-        font-size: 14px !important;
+        padding: 12px 24px;
+        background: #333;
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        font-weight: 600;
+        font-size: 14px;
         display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        cursor: pointer !important;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
     `;
     document.body.appendChild(btn);
 
@@ -2503,14 +2506,14 @@ function setupViewSwitcherButton(mapInstance) {
         if (isListVisible) {
             popup.style.display = 'none';
             if (mapContainer) mapContainer.style.display = 'block';
-            this.innerHTML = contentToList;
-            this.style.background = '#1976d2';
+            btn.innerHTML = contentToList;
+            btn.style.background = '#1976d2';
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
         } else {
             popup.style.display = 'block';
-            this.innerHTML = contentToMap;
-            this.style.background = '#333';
+            btn.innerHTML = contentToMap;
+            btn.style.background = '#333';
         }
     };
 
@@ -2524,25 +2527,24 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-// 3. POPUP AÇMA (OVERRIDE)
-if (typeof window.showCustomPopup === 'function') {
-    const origShowCustomPopup = window.showCustomPopup;
-    window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-        const oldBtn = document.getElementById('nearby-view-switcher-btn');
-        if (oldBtn) oldBtn.remove();
+// 3. POPUP AÇMA (OVERRIDE - SADE VE TEMİZ)
+const origShowCustomPopup = window.showCustomPopup;
+window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+    const oldBtn = document.getElementById('nearby-view-switcher-btn');
+    if (oldBtn) oldBtn.remove();
 
-        origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-        
-        if (window.innerWidth < 768) {
-            setTimeout(() => {
-                const mainChat = document.getElementById('main-chat');
-                if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
-                    setupViewSwitcherButton(map);
-                }
-            }, 300);
-        }
-    };
-}
+    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+    
+    if (window.innerWidth < 768) {
+        setTimeout(() => {
+            const mainChat = document.getElementById('main-chat');
+            
+            if (mainChat && window.getComputedStyle(mainChat).display === 'none') {
+                setupViewSwitcherButton(map);
+            }
+        }, 300);
+    }
+};
 
 // 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
