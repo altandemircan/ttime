@@ -2135,7 +2135,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             <img id="${imgId}" src="img/placeholder.png" 
                                  alt="${name}"
                                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                            <div onclick="event.stopPropagation(); window.updateClickedPointSection('${imgId}', '${name.replace(/'/g, "\\'")}', '${address.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}');" 
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
                                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
                                 <span style="font-size: 10px; color: white;">✨</span>
                             </div>
