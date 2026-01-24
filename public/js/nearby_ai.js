@@ -633,7 +633,7 @@ function clearAllCategoryMarkers(map) {
     }
 }
 
-// attachClickNearbySearch fonksiyonunu da güncelleyelim
+// attachClickNearbySearch fonksiyonunu güncelle
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; 
 
@@ -646,11 +646,21 @@ function attachClickNearbySearch(map, day, options = {}) {
   let __nearbySingleTimer = null;
   const __nearbySingleDelay = 250;
 
-const clickHandler = function(e) {
+  const clickHandler = function(e) {
     if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
     
     __nearbySingleTimer = setTimeout(async () => {
         console.log("[Nearby] Map clicked at:", e.latlng); 
+        
+        // +++ PULSE MARKERLARI HEMEN TEMİZLE +++
+        if (window._nearbyPulseMarker) {
+            try { window._nearbyPulseMarker.remove(); } catch(e) {}
+            window._nearbyPulseMarker = null;
+        }
+        if (window._nearbyPulseMarker3D) {
+            try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+            window._nearbyPulseMarker3D = null;
+        }
         
         // Tüm kategori markerlarını temizle
         clearAllCategoryMarkers(map);
@@ -674,7 +684,8 @@ const clickHandler = function(e) {
             }
         }
     }, __nearbySingleDelay);
-};
+  };
+  
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
@@ -1340,26 +1351,32 @@ showCustomPopup(lat, lng, map, loadingContent, false);
 
     // 2. "SHOW MORE ON THE MAP" BUTONU (Düzeltilen Kısım)
     document.querySelectorAll('.show-category-btn').forEach(btn => {
-                btn.onclick = function() {
-                    const category = this.dataset.category;
-                    window._lastSelectedCategory = category;
-                    
-                    // --- SADECE BU SATIRLARI EKLE (Mavi Marker Temizliği) ---
-                    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
-                    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
-                    // -------------------------------------------------------
+        btn.onclick = function() {
+            const category = this.dataset.category;
+            window._lastSelectedCategory = category;
 
-                    if (category === 'restaurants') {
-                        showNearbyRestaurants(lat, lng, map, day);
-                    } else if (category === 'hotels') {
-                        showNearbyHotels(lat, lng, map, day);
-                    } else if (category === 'markets') {
-                        showNearbyMarkets(lat, lng, map, day);
-                    } else if (category === 'entertainment') {
-                        showNearbyEntertainment(lat, lng, map, day);
-                    }
-                };
-            });
+            // --- FİX BAŞLANGIÇ: Mavi Pulse Marker'ı Temizle ---
+            if (window._nearbyPulseMarker) {
+                try { window._nearbyPulseMarker.remove(); } catch(e) {}
+                window._nearbyPulseMarker = null;
+            }
+            if (window._nearbyPulseMarker3D) {
+                try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+                window._nearbyPulseMarker3D = null;
+            }
+            // --- FİX BİTİŞ ---
+
+            if (category === 'restaurants') {
+                showNearbyRestaurants(lat, lng, map, day);
+            } else if (category === 'hotels') {
+                showNearbyHotels(lat, lng, map, day);
+            } else if (category === 'markets') {
+                showNearbyMarkets(lat, lng, map, day);
+            } else if (category === 'entertainment') {
+                showNearbyEntertainment(lat, lng, map, day);
+            }
+        };
+    });
 
     // 3. "SEARCH WIDER AREA" BUTONU (Buna da ekleme yaptık)
     document.querySelectorAll('.search-wider-btn').forEach(btn => {
