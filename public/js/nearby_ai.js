@@ -591,19 +591,7 @@ const clickHandler = function(e) {
         }
         
         // Eğer kategori seçilmişse direkt markerları göster
-        if (window._lastSelectedCategory) {
-            showNearbyPlacesByCategory(lat, lng, map, day, window._lastSelectedCategory);
-        } else {
-            // İlk tıklama: sidebar aç
-            const popupElement = document.getElementById('custom-nearby-popup');
-            if (popupElement) {
-                popupElement.remove();
-            }
-            
-            if (typeof showNearbyPlacesPopup === 'function') {
-                showNearbyPlacesPopup(lat, lng, map, day, radius);
-            }
-        }
+       showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
     }, __nearbySingleDelay);
 };
   // Event'i haritaya bağla
