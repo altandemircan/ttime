@@ -2244,7 +2244,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         }
     }
 }
-
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
