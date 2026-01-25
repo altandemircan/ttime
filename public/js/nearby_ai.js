@@ -502,6 +502,8 @@ function clearAllCategoryMarkers(map) {
 }
 // attachClickNearbySearch fonksiyonunu güncelle
 // attachClickNearbySearch fonksiyonunu güncelle
+// attachClickNearbySearch fonksiyonunda:
+
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; 
 
@@ -512,37 +514,38 @@ function attachClickNearbySearch(map, day, options = {}) {
   }
 
   let __nearbySingleTimer = null;
-  const __nearbySingleDelay = 100; // 250'den 100'e düşürüldü
+  const __nearbySingleDelay = 250; // ✅ 100 yerine 250 yapın
 
-const clickHandler = function(e) {
-    if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
-    
-    __nearbySingleTimer = setTimeout(async () => {
-        const isMapLibre = !!map.addSource;
-        let lat, lng;
-        
-        if (isMapLibre) {
-            lat = e.lngLat.lat;
-            lng = e.lngLat.lng;
-        } else {
-            lat = e.latlng.lat;
-            lng = e.latlng.lng;
-        }
-        
-        // Pulse marker temizle
-        if (window._nearbyPulseMarker) {
-            try { window._nearbyPulseMarker.remove(); } catch(e) {}
-            window._nearbyPulseMarker = null;
-        }
-        if (window._nearbyPulseMarker3D) {
-            try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-            window._nearbyPulseMarker3D = null;
-        }
-        
-        // Eğer kategori seçilmişse direkt markerları göster
-       showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
-    }, __nearbySingleDelay);
-};
+  const clickHandler = function(e) {
+      if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
+      
+      __nearbySingleTimer = setTimeout(async () => {
+          const isMapLibre = !!map.addSource;
+          let lat, lng;
+          
+          if (isMapLibre) {
+              lat = e.lngLat.lat;
+              lng = e.lngLat.lng;
+          } else {
+              lat = e.latlng.lat;
+              lng = e.latlng.lng;
+          }
+          
+          // Pulse marker temizle
+          if (window._nearbyPulseMarker) {
+              try { window._nearbyPulseMarker.remove(); } catch(e) {}
+              window._nearbyPulseMarker = null;
+          }
+          if (window._nearbyPulseMarker3D) {
+              try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+              window._nearbyPulseMarker3D = null;
+          }
+          
+          // Kategorileri gösteri
+          showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
+      }, __nearbySingleDelay);
+  };
+
   // Event'i haritaya bağla
   map.on('click', clickHandler);
   
