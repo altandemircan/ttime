@@ -6130,6 +6130,15 @@ mapElement.addEventListener('touchstart', (e) => {
     closeButton: false,       // Daha temiz görünüm için opsiyonel
     offset: L.point(0, -10)   // Popup'ı marker'ın biraz üzerine taşır
 });
+
+       // --- YENİ EKLENEN KISIM: ORTALAMA ---
+        marker.on('click', function() {
+            map.flyTo([points[0].lat, points[0].lng], 14, {
+                animate: true,
+                duration: 0.5
+            });
+        });
+        
     } else if (points.length >= 1) {
         const isFlyMode = !areAllPointsInTurkey(points);
 
