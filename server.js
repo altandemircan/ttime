@@ -1,7 +1,10 @@
-const fs = require('fs'); // 1. BURAYA AL (Global)
+const fs = require('fs'); 
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
+
+// [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
+const BUILD_ID = Date.now().toString();
 
 try {
     // Burada fs'i tekrar tanımlama, yukarıdakini kullan
@@ -334,7 +337,9 @@ app.get('/test-root', (req, res) => {
 });
 
 // 6. Statik dosyalar
-app.use(express.static(path.join(__dirname, 'public')));
+// index: false diyerek index.html'in otomatik sunulmasını engelliyoruz.
+// Böylece aşağıda kendi işlediğimiz versiyonlu HTML'i gönderebiliriz.
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
 app.use('/api', (req, res) => {
@@ -343,7 +348,21 @@ app.use('/api', (req, res) => {
 
 // 8. SPA fallback (en sona)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Dosyayı diskten oku
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  
+  fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+    if (err) {
+      console.error('Error reading index.html:', err);
+      return res.status(500).send('Error loading page');
+    }
+
+    // HTML içindeki __BUILD__ placeholder'ını sunucu başlangıç zamanıyla değiştir
+    const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
+    
+    // İşlenmiş HTML'i gönder
+    res.send(versionedHtml);
+  });
 });
 
 // 9. Global error handler
