@@ -2226,11 +2226,42 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const distanceText = distance ? 
         `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
     
+    // CSS'i bir kere ekle
+    if (!document.getElementById('popup-override-styles')) {
+        const style = document.createElement('style');
+        style.id = 'popup-override-styles';
+        style.textContent = `
+            .leaflet-popup-content-wrapper {
+                background: transparent !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .leaflet-popup-content {
+                margin: 0 !important;
+                width: auto !important;
+            }
+            .leaflet-popup-tip-container,
+            .leaflet-popup-close-button {
+                display: none !important;
+            }
+            .maplibregl-popup-content {
+                background: transparent !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .maplibregl-popup-tip,
+            .maplibregl-popup-close-button {
+                display: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
     return `
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
                                         background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
-                                        border: 1px solid #eee;">
-        <button onclick="this.closest('.leaflet-popup').style.display='none'" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: white; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #666; z-index: 10; padding: 0; line-height: 1;">×</button>
+                                        border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);">
+        <button onclick="this.closest('.leaflet-popup').style.display='none'; this.closest('.maplibregl-popup').remove();" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: white; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #666; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
           <img id="${imgId}" class="" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
@@ -2261,7 +2292,6 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
       </div>
     `;
 }
-
 // Yardımcı fonksiyon: Popup açıldığında resim yükleme
 function handlePlacePopupImageLoading(f, imgId, categoryType) {
     getImageForPlace(f.properties.name, categoryType, window.selectedCity || "")
