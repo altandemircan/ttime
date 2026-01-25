@@ -809,12 +809,12 @@ container._elevationDataFull = { smooth: smooth.slice(), min, max };
 container.dataset.elevLoadedKey = routeKey;
 
 // HEMEN ÇİZİM YAP
-if (typeof container._redrawElevation === 'function') {
-  console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
-  container._redrawElevation(container._elevationData);
-} else {
-  console.error("❌ _redrawElevation fonksiyonu YOK!");
+// HATA OLMAMASI İÇİN: Her durumda fonksiyonu bir dummy ile başlat:
+if (typeof container._redrawElevation !== 'function') {
+  container._redrawElevation = function() {};
 }
+console.log("🎯 _redrawElevation fonksiyonu çağırılıyor...");
+container._redrawElevation(container._elevationData);
 
      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
