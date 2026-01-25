@@ -2489,7 +2489,6 @@ window.closeNearbyPopup = function() {
 // ============================================
 // NEARBY POPUP VIEW SWITCHER BUTTON (MOBILE ONLY)
 // ============================================
-
 function setupViewSwitcherButton(mapInstance) {
     // ✅ Sadece mobile'da göster (768px altında)
     if (window.innerWidth > 768) {
@@ -2599,39 +2598,22 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Sayfa yüklendiğinde ve resize olduğunda kontrol et
-const addMobileOnlyStyle = () => {
-    if (!document.getElementById('nearby-mobile-only-style')) {
-        const style = document.createElement('style');
-        style.id = 'nearby-mobile-only-style';
-        style.textContent = `
+// ============================================
+// CSS: Mobile Only Button
+// ============================================
+if (!document.getElementById('nearby-mobile-only-style')) {
+    const style = document.createElement('style');
+    style.id = 'nearby-mobile-only-style';
+    style.textContent = `
+        #nearby-view-switcher-btn {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
             #nearby-view-switcher-btn {
-                display: none !important;
+                display: flex !important;
             }
-            
-            @media (max-width: 768px) {
-                #nearby-view-switcher-btn {
-                    display: flex !important;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-};
-
-// Hemen çalıştır
-addMobileOnlyStyle();
-
-// Sayfada değişiklik olduğunda da kontrol et
-document.addEventListener('DOMContentLoaded', addMobileOnlyStyle);
-
-// ============================================
-// Window resize dinle ve buton oluşturmayı kontrol et
-// ============================================
-window.addEventListener('resize', () => {
-    // Desktop'ta buton varsa sil
-    if (window.innerWidth > 768) {
-        const btn = document.getElementById('nearby-view-switcher-btn');
-        if (btn) btn.remove();
-    }
-});
+        }
+    `;
+    document.head.appendChild(style);
+}
