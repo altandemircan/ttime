@@ -378,7 +378,11 @@ app.use('/api', (req, res) => {
 
 // 8. SPA fallback (en sona)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const filepath = path.join(__dirname, 'public', 'index.html');
+  let html = fs.readFileSync(filepath, 'utf8');
+  html = html.replace(/__BUILD__/g, BUILD_VERSION);
+  res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.send(html);
 });
 
 // 9. Global error handler
