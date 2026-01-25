@@ -773,8 +773,7 @@ if (bestIndex < ed.smooth.length) {
 
   
       
-const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
-      const min = Math.min(...smooth);
+const smooth = movingAverage(elevations, 7);      const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
 
       // --- DÜZELTME: Önce fonksiyonu tanımla ---
