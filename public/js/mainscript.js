@@ -7307,7 +7307,7 @@ locBtn.onclick = function() {
             expandedMapInstance._tileTimeout = null;
         }
 
-        console.log(`[ExpandedMap] Style: ${styleKey}`);
+      
 
         // --- 1. FALLBACK (CARTO) VE 3D GİZLEME ---
         const loadCartoFallback = () => {
