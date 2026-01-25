@@ -2417,45 +2417,73 @@ if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
 
 // 1. TEMİZLİK VE KAPATMA FONKSİYONU
+// GÜNCEL DOSYADA bu fonksiyonu TAMAMEN DEĞİŞTİRİN:
+
 window.closeNearbyPopup = function() {
-    const btn = document.getElementById('nearby-view-switcher-btn');
-    if (btn) btn.remove();
+    // 0. TOGGLE BUTONUNU HEMENCECIK KALDIR (En başta!)
+    const toggleBtn = document.getElementById('nearby-map-toggle-btn');
+    if (toggleBtn) {
+        console.log('Toggle button removed');
+        toggleBtn.remove();
+    }
 
-    const popup = document.getElementById('custom-nearby-popup');
-    if (popup) popup.remove();
+    // 1. SADECE POPUP DOM ELEMENTINI KALDIR
+    const popupElement = document.getElementById('custom-nearby-popup');
+    if (popupElement) {
+        popupElement.remove();
+    }
 
-    document.querySelectorAll('.sidebar-overlay').forEach(sidebar => {
-        sidebar.classList.remove('open');
-    });
-
+    // 2. HARITA GÖRÜNÜMÜNÜ GERI AL
     const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
     if (mapContainer) {
-        mapContainer.style.display = ''; 
-        if (window.map && window.map.invalidateSize) window.map.invalidateSize();
+        mapContainer.style.display = '';
     }
 
-    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
-    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
-    if (window._nearbyRadiusCircle) { try { window._nearbyRadiusCircle.remove(); } catch(e) {} window._nearbyRadiusCircle = null; }
-
-    if (window._maplibre3DInstance) {
-        const map = window._maplibre3DInstance;
-        ['_nearbyRadiusCircle3D', '_categoryRadiusCircle3D'].forEach(key => {
-            if (window[key]) {
-                try {
-                    const id = window[key];
-                    if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
-                    if (map.getLayer(id + '-stroke')) map.removeLayer(id + '-stroke');
-                    if (map.getSource(id)) map.removeSource(id);
-                } catch(e) {}
-                window[key] = null;
-            }
-        });
+    // 3. PULSE MARKER'I SİL
+    if (window._nearbyPulseMarker) {
+        try { window._nearbyPulseMarker.remove(); } catch(e) {}
+        window._nearbyPulseMarker = null;
     }
-
+    if (window._nearbyPulseMarker3D) {
+        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
+        window._nearbyPulseMarker3D = null;
+    }
+    
+    // 4. RADIUS DAİRELERİNİ SİL
+    if (window._nearbyRadiusCircle) {
+        try { window._nearbyRadiusCircle.remove(); } catch(e) {}
+        window._nearbyRadiusCircle = null;
+    }
+    if (window._nearbyRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const map = window._maplibre3DInstance;
+            const circleId = window._nearbyRadiusCircle3D;
+            if (map.getLayer(circleId + '-layer')) map.removeLayer(circleId + '-layer');
+            if (map.getLayer(circleId + '-stroke')) map.removeLayer(circleId + '-stroke');
+            if (map.getSource(circleId)) map.removeSource(circleId);
+        } catch(e) {}
+        window._nearbyRadiusCircle3D = null;
+    }
+    
+    // 5. KATEGORİ DAİRELERİNİ SİL
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+    if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
+        try {
+            const circleId = window._categoryRadiusCircle3D;
+            const map3d = window._maplibre3DInstance;
+            if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getSource(circleId)) map3d.removeSource(circleId);
+        } catch(e) {}
+        window._categoryRadiusCircle3D = null;
+    }
+    
     window._currentNearbyPopupElement = null;
+    
+    console.log('Nearby popup closed completely');
 };
-
 // 2. BUTON OLUŞTURUCU
 function setupViewSwitcherButton(mapInstance) {
     let oldBtn = document.getElementById('nearby-view-switcher-btn');
