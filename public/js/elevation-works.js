@@ -387,6 +387,8 @@ if (Array.isArray(markers)) {
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
+    container._redrawElevation = container._redrawElevation || function() {};
+
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
