@@ -7670,10 +7670,10 @@ display: block !important;
 }
 
 /* Hover Efekti */
-/*.main-btn:hover {
+.main-btn:hover {
     transform: translateY(-1px); 
     z-index: 1001; /* Hover olunca daha da üste çıksın */
-}*/
+}
 
 /* Mor Buton (About Triptime) */
 .btn-purple {
