@@ -783,11 +783,11 @@ if (bestIndex < ed.smooth.length) {
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
       
-      console.log("[ELEV SMOOTH]", {
-        min: Math.round(min),
-        max: Math.round(max),
-        range: Math.round(max - min)
-      });
+      // console.log("[ELEV SMOOTH]", {
+      //   min: Math.round(min),
+      //   max: Math.round(max),
+      //   range: Math.round(max - min)
+      // });
 
 // DEBUG: Elevation data kontrolü
 // console.log("🎯 ELEVATION DATA HAZIR:", {
