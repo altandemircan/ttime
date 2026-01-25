@@ -5874,7 +5874,7 @@ function addNumberedMarkers(map, points) {
     if (!map || !points || !Array.isArray(points)) return;
 
     // Hatalı koordinatları filtrele
-    points = points.filter(item => item && isFinite(item.lat) && isFinite(item.lng));
+    points = points.filter(item => isFinite(item.lat) && isFinite(item.lng));
 
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`;
@@ -5894,7 +5894,7 @@ function addNumberedMarkers(map, points) {
         
         const icon = L.divIcon({
             html: markerHtml,
-            className: "", // Default leaflet stilini ezmek için boş sınıf
+            className: "",
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });
@@ -5902,16 +5902,15 @@ function addNumberedMarkers(map, points) {
         const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
         marker.bindPopup(`<b>${label}</b>`);
 
-        // --- İŞTE EKSİK OLAN TIKLAMA OLAYI ---
-        // Marker elementine (divIcon içindeki HTML) tıklamayı yakalamak için:
+        // --- BURASI EKSİKTİ, EKLENDİ ---
         marker.on('click', function() {
-            console.log("Marker clicked:", idx + 1);
-            map.flyTo([item.lat, item.lng], 14, { // Zoom seviyesini 14 yapıyoruz
+            map.flyTo([item.lat, item.lng], 14, {
                 animate: true,
                 duration: 0.5
             });
             marker.openPopup();
         });
+        // -------------------------------
     });
 }
 
