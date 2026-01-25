@@ -2212,6 +2212,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
+// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
@@ -2260,7 +2261,6 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
       </div>
     `;
 }
-
 
 // Yardımcı fonksiyon: Popup açıldığında resim yükleme
 function handlePlacePopupImageLoading(f, imgId, categoryType) {
