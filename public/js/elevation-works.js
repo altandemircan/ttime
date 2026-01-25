@@ -182,7 +182,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     // --- GENİŞLİK DOĞRULAMA ---
     // Eğer genişlik bariz hatalıysa (200px varsayılan veya 0 ise) tekrar dene
     if ((actualWidth <= 200 || Math.abs(actualWidth - widthPx) > 5) && retryCount < 10) {
-        // console.warn(`[ScaleBar] Genişlik uyumsuz! Bekleniyor... (Actual: ${actualWidth}, Param: ${widthPx})`);
+        console.warn(`[ScaleBar] Genişlik uyumsuz! Bekleniyor... (Actual: ${actualWidth}, Param: ${widthPx})`);
         setTimeout(() => {
             createScaleElements(track, track.offsetWidth, spanKm, startKmDom, markers, customElevData, retryCount + 1);
         }, 200);
@@ -208,7 +208,7 @@ if ((!spanKm || spanKm < 0.01) && !customElevData) {
     // HİÇBİRİ İŞE YARAMAZSA, SABİT DEĞER
     if (!spanKm || spanKm < 0.01) {
         spanKm = 10; // Minimum 10 km
-        // console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
+        console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
     }
 }
    
@@ -387,8 +387,6 @@ if (Array.isArray(markers)) {
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-    container._redrawElevation = container._redrawElevation || function() {};
-
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
@@ -419,15 +417,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
     let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
     // DEBUG: Koordinat kontrolü ekle
-    // console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
+    console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
 
     // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
     if (!coords || coords.length < 2) {
-      // console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
+      console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
       const markersList = window.cart?.filter(m => m.day === day) || [];
       if (markersList.length >= 2) {
         coords = markersList.map(m => [m.location.lng, m.location.lat]);
-        // console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+        console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
       }
     }
 
@@ -779,44 +777,44 @@ if (bestIndex < ed.smooth.length) {
       track.addEventListener('touchmove', onMoveTooltip);
 
        // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
-      // console.log("[ELEV RAW]", {
-      //   totalPoints: elevations.length,
-      //   min: Math.min(...elevations.filter(e => e != null)),
-      //   max: Math.max(...elevations.filter(e => e != null)),
-      //   first5: elevations.slice(0, 5)
-      // });
+      console.log("[ELEV RAW]", {
+        totalPoints: elevations.length,
+        min: Math.min(...elevations.filter(e => e != null)),
+        max: Math.max(...elevations.filter(e => e != null)),
+        first5: elevations.slice(0, 5)
+      });
       
       const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
       
-//       console.log("[ELEV SMOOTH]", {
-//         min: Math.round(min),
-//         max: Math.round(max),
-//         range: Math.round(max - min)
-//       });
+      console.log("[ELEV SMOOTH]", {
+        min: Math.round(min),
+        max: Math.round(max),
+        range: Math.round(max - min)
+      });
 
-// // DEBUG: Elevation data kontrolü
-// console.log("🎯 ELEVATION DATA HAZIR:", {
-//   containerId: container.id,
-//   routeKey: routeKey,
-//   smoothLength: smooth.length,
-//   min: Math.round(min),
-//   max: Math.round(max),
-//   first5: smooth.slice(0, 5).map(v => Math.round(v))
-// });
+// DEBUG: Elevation data kontrolü
+console.log("🎯 ELEVATION DATA HAZIR:", {
+  containerId: container.id,
+  routeKey: routeKey,
+  smoothLength: smooth.length,
+  min: Math.round(min),
+  max: Math.round(max),
+  first5: smooth.slice(0, 5).map(v => Math.round(v))
+});
 
 container._elevationData = { smooth, min, max };
 container._elevationDataFull = { smooth: smooth.slice(), min, max };
 container.dataset.elevLoadedKey = routeKey;
 
 // HEMEN ÇİZİM YAP
-// HATA OLMAMASI İÇİN: Her durumda fonksiyonu bir dummy ile başlat:
-if (typeof container._redrawElevation !== 'function') {
-  container._redrawElevation = function() {};
+if (typeof container._redrawElevation === 'function') {
+  console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
+  container._redrawElevation(container._elevationData);
+} else {
+  console.error("❌ _redrawElevation fonksiyonu YOK!");
 }
-// console.log("🎯 _redrawElevation fonksiyonu çağırılıyor...");
-container._redrawElevation(container._elevationData);
 
      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
