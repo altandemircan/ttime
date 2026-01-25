@@ -2207,7 +2207,6 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     `;
 }
 
-// Yardımcı fonksiyon: Popup HTML'i (mesafe bilgisi ile)
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
