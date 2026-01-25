@@ -346,7 +346,7 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });
 });
 
-// 8. SPA fallback (en sona)
+// 8. SPA fallback (index.html servisi)
 app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, 'public', 'index.html');
   
@@ -356,19 +356,24 @@ app.get('*', (req, res) => {
       return res.status(500).send('Error loading page');
     }
 
+    // 1. Versiyonu Bas
     const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
     
-    // [YENİ] Tarayıcıya "Bu dosyayı asla önbelleğe alma" diyoruz.
-    // Böylece her sayfa yenilemede sunucuya gelip yeni versiyon numarasını alacak.
+    // 2. Browser Önbelleğini ÖLDÜREN Headerlar (Kesin Çözüm)
+    // Cache-Control: Asla saklama, her seferinde sunucuya sor.
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
+    
+    // 3. ETag ve Last-Modified Başlıklarını SİL
+    // Bu çok kritiktir. Bunu silmezsek browser "Dosya değişti mi?" diye sorar (304), 
+    // biz "Sorma, direkt indir" (200) diyoruz.
+    res.removeHeader('ETag');
+    res.removeHeader('Last-Modified');
 
     res.send(versionedHtml);
   });
 });
-
 // 9. Global error handler
 app.use((err, req, res, next) => {
   console.error('[GLOBAL ERROR]', err);
