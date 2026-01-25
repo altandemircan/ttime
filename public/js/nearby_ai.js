@@ -2508,7 +2508,7 @@ function setupViewSwitcherButton(mapInstance) {
         transform: translateX(-50%) !important;
         z-index: 9999999 !important;
         padding: 12px 24px;
-        background: #333;
+        background: #ff9900;
         color: #fff;
         border: none;
         border-radius: 50px;
