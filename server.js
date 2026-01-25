@@ -336,6 +336,17 @@ app.get('/test-root', (req, res) => {
   res.json({ message: 'Root test OK' });
 });
 
+// 🔥 CSS / JS cache ÖLDÜR (normal refresh yeterli olsun)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/css/') || req.path.startsWith('/js/')) {
+    res.setHeader('Cache-Control', 'no-store, must-revalidate');
+    res.removeHeader('ETag');
+    res.removeHeader('Last-Modified');
+  }
+  next();
+});
+
+
 // 6. Statik dosyalar
 // index: false diyerek index.html'in otomatik sunulmasını engelliyoruz.
 // Böylece aşağıda kendi işlediğimiz versiyonlu HTML'i gönderebiliriz.
