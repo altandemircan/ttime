@@ -7662,38 +7662,3 @@ display: block !important;
     user-select: none;           /* Metin seçimini engelle */
 }
 
-/* Butonun içindeki İKON ve YAZI tıklamayı engellemesin */
-.main-btn svg, 
-.main-btn img,
-.main-btn span {
-    pointer-events: none; /* Tıklama bu ikonları delip geçsin, direkt linke (a) ulaşsın */
-}
-
-/* Hover Efekti */
-.main-btn:hover {
-    transform: translateY(-1px); 
-    z-index: 1001; /* Hover olunca daha da üste çıksın */
-}
-
-/* Mor Buton (About Triptime) */
-.btn-purple {
-    background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%); /* Hafif gradyan */
-    
-}
-.btn-purple:hover {
-    box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3); /* Hover'da gölge artar */
-     background: linear-gradient(135deg, #a475f1 0%, #8b60ca 100%);
-}
-
-/* Mavi Buton (Mira AI Chat) */
-.btn-blue {
-        background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
-   
-}
-.btn-blue:hover {
-    box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
-    background: linear-gradient(135deg, #1996d6 0%, #2dd4d0 100%);
-}
-.main-icon {
-    gap: 15px; display: flex; flex-direction: row; align-items: center; justify-content: center; opacity: 0.9;
-}
