@@ -2420,8 +2420,6 @@ if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
 
 // 1. TEMİZLİK VE KAPATMA FONKSİYONU
-// GÜNCEL DOSYADA bu fonksiyonu TAMAMEN DEĞİŞTİRİN:
-
 window.closeNearbyPopup = function() {
     // 0. TOGGLE BUTONUNU HEMENCECIK KALDIR (En başta!)
     const toggleBtn = document.getElementById('nearby-map-toggle-btn');
@@ -2564,7 +2562,7 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
-// showCustomPopup içinde bu fonksiyonu çağır
+// ✅ SADECE BİR KERE tanımla - duplicate kaldırıldı
 const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
     // Orijinal fonksiyonu çalıştır
@@ -2578,22 +2576,6 @@ window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true
         }
     }, 100);
 };
-// showCustomPopup içinde bu fonksiyonu çağır
-const origShowCustomPopup = window.showCustomPopup;
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Orijinal fonksiyonu çalıştır
-    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-    
-    // View switcher butonunu ekle
-    setTimeout(() => {
-        const popup = document.getElementById('custom-nearby-popup');
-        if (popup) {
-            setupViewSwitcherButton(map);
-        }
-    }, 100);
-};
-
-
 
 // 4. SAYFA DEĞİŞİKLİĞİ
 window.addEventListener('hashchange', () => {
@@ -2616,6 +2598,3 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-
-
-// showCustomPopup override - bu daha güvenli
