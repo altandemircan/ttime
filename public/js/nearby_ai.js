@@ -2598,3 +2598,29 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// Sayfa yüklendiğinde ve resize olduğunda kontrol et
+const addMobileOnlyStyle = () => {
+    if (!document.getElementById('nearby-mobile-only-style')) {
+        const style = document.createElement('style');
+        style.id = 'nearby-mobile-only-style';
+        style.textContent = `
+            #nearby-view-switcher-btn {
+                display: none !important;
+            }
+            
+            @media (max-width: 768px) {
+                #nearby-view-switcher-btn {
+                    display: flex !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+};
+
+// Hemen çalıştır
+addMobileOnlyStyle();
+
+// Sayfada değişiklik olduğunda da kontrol et
+document.addEventListener('DOMContentLoaded', addMobileOnlyStyle);
