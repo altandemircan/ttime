@@ -2257,7 +2257,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
                 display: none !important;
             }
         `;
-        document.head.appendChild(style); 
+        document.head.appendChild(style);
     }
     
     return `
