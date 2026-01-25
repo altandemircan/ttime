@@ -2213,6 +2213,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
+// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
@@ -2220,7 +2221,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const lat = f.properties.lat;
     const lon = f.properties.lon;
     
-    const safeName = name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    const safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
     const safeAddress = address.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
     
     const distanceText = distance ? 
@@ -2261,21 +2262,28 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
                                         background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
                                         border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);">
-        <button onclick="this.closest('.leaflet-popup').style.display='none'; this.closest('.maplibregl-popup').remove();" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: white; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #666; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
+        <button onclick="this.closest('.leaflet-popup').style.display='none'; var mp = this.closest('.maplibregl-popup'); if(mp) mp.remove();" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: white; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #666; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
+        
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
           <img id="${imgId}" class="" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
+          
+          <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${lat}, ${lon}, '${window.selectedCity || ''}', {}, 'ai-point-description')" style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+            <span style="font-size: 10px; color: white;">✨</span>
+          </div>
         </div>
+        
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                         margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-            ${safeName}
+            ${name}
           </div>
           <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                         text-overflow: ellipsis; white-space: nowrap;">
             ${safeAddress}
           </div>
         </div>
+        
         <div style="display: flex; flex-direction: column; align-items: center; 
                     gap: 4px; flex-shrink: 0;">
           <div style="font-size: 10px; color: #999; white-space: nowrap;">
