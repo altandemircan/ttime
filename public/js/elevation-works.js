@@ -4,7 +4,6 @@ window.__scaleBarDragSelDiv = null;
 
 
 
-
 function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
