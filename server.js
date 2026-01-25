@@ -348,7 +348,6 @@ app.use('/api', (req, res) => {
 
 // 8. SPA fallback (en sona)
 app.get('*', (req, res) => {
-  // Dosyayı diskten oku
   const indexPath = path.join(__dirname, 'public', 'index.html');
   
   fs.readFile(indexPath, 'utf8', (err, htmlData) => {
@@ -357,10 +356,15 @@ app.get('*', (req, res) => {
       return res.status(500).send('Error loading page');
     }
 
-    // HTML içindeki __BUILD__ placeholder'ını sunucu başlangıç zamanıyla değiştir
     const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
     
-    // İşlenmiş HTML'i gönder
+    // [YENİ] Tarayıcıya "Bu dosyayı asla önbelleğe alma" diyoruz.
+    // Böylece her sayfa yenilemede sunucuya gelip yeni versiyon numarasını alacak.
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+
     res.send(versionedHtml);
   });
 });
