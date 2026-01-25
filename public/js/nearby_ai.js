@@ -2500,7 +2500,7 @@ function setupViewSwitcherButton(mapInstance) {
     `;
     document.body.appendChild(btn);
 
-    const contentToMap = `<span>🗺️</span> <span>Show X Map</span>`;
+    const contentToMap = `<span>🗺️</span> <span>Show 1 Map</span>`;
     const contentToList = `<span>📋</span> <span>Show List</span>`;
 
     btn.onclick = function(e) {
