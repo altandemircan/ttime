@@ -7473,6 +7473,7 @@ locBtn.onclick = function() {
 
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
+
     const containerId = `route-map-day${day}`;
 
     // === 3D KONTROLÜ ===
@@ -7496,7 +7497,6 @@ function updateExpandedMap(expandedMap, day) {
                 renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
                 const track = scaleBarDiv.querySelector('.scale-bar-track');
                 if (track && typeof createScaleElements === 'function') {
-                    // Genişlik hesaplaması için kısa gecikme
                     setTimeout(() => {
                         const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
                         createScaleElements(track, width, totalKm, 0, markerPositions);
@@ -7595,14 +7595,14 @@ function updateExpandedMap(expandedMap, day) {
         
         const marker = L.marker([item.lat, item.lng], { icon }).addTo(expandedMap);
         
-        // [ÖNEMLİ 1] autoPan: false yaparak Leaflet'in varsayılan kaydırmasını kapatıyoruz
+        // [DÜZELTME 1] autoPan: false yaparak Leaflet'in varsayılan kaydırmasını kapatıyoruz
         marker.bindPopup(`<b>${item.name || "Point"}</b>`, { autoPan: false });
         
-        // [ÖNEMLİ 2] Kendi ortalama mantığımızı ekliyoruz
+        // [DÜZELTME 2] Tıklayınca tam ortaya gelmesi için flyTo ekliyoruz
         marker.on('click', function() {
             expandedMap.flyTo([item.lat, item.lng], expandedMap.getZoom(), {
                 animate: true,
-                duration: 0.5 // Animasyon süresi
+                duration: 0.5 
             });
             marker.openPopup();
         });
@@ -7610,7 +7610,7 @@ function updateExpandedMap(expandedMap, day) {
         bounds.extend(marker.getLatLng());
     });
 
-    // --- HARİTA ODAKLANMASI ---
+    // --- İLK AÇILIŞ ODAKLANMASI ---
     try {
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
