@@ -5,6 +5,23 @@ let aiDebounceTimeout = null;
 let aiActiveRequest = 0;
 
 
+// Görsel doğrulama fonksiyonu
+function getBestCityForAI(pointInfo) {
+    if (!pointInfo) return window.selectedCity || '';
+    
+    // Öncelik sırası:
+    // 1. Tıklanan noktanın city bilgisi
+    // 2. county bilgisi
+    // 3. locality bilgisi
+    // 4. Global selectedCity
+    
+    return pointInfo.city || 
+           pointInfo.county || 
+           pointInfo.locality || 
+           window.selectedCity || 
+           '';
+}
+
 async function isImageValid(url, timeout = 3000) {
     if (!url || url === PLACEHOLDER_IMG) return false;
     
@@ -1474,6 +1491,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
         try {
             const cleanedCity = cleanCityContext(city);
 
+            console.time('AI-API-Response');
             const response = await fetch('/clicked-ai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1493,8 +1511,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 return;
             }
 
+            console.log('API Response status:', response.status);
             const data = await response.json();
- 
+            console.log('API Data received:', data);
 
             // Loading temizle
             loadingTimers.forEach(timer => clearTimeout(timer));
@@ -1539,7 +1558,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 </div>`;
 
             console.log('targetElement after update:', targetElement);
-  
+            console.log('Update complete!');
         } catch (e) {
             loadingTimers.forEach(timer => clearTimeout(timer));
 
