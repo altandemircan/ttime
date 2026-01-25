@@ -8850,12 +8850,12 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
     let currentName = p.name || '';
 
     const markerHtml = `
-      <div class="custom-marker-outer red" data-idx="${idx}" style="position:relative;">
+      <div class="custom-marker-outer red" data-idx="${idx}" style="position:relative; cursor: pointer;">
         <span class="custom-marker-label">${idx + 1}</span>
       </div>
       <div class="custom-marker-place-name" id="marker-name-${idx}" style="opacity:0;position:relative;">
         ${currentName}
-        <button class="marker-remove-x-btn" data-marker-idx="${idx}" style="...">&times;</button>
+        <button class="marker-remove-x-btn" data-marker-idx="${idx}" style="display:none;">&times;</button>
       </div>
     `;
     const icon = L.divIcon({
@@ -8864,11 +8864,13 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       iconSize: [32, 48],
       iconAnchor: [16, 16]
     });
+    
     const marker = L.marker([p.lat, p.lng], {
       draggable: false,
       icon
     }).addTo(expandedMap);
 
+    // [DÜZELTME 1] autoPan: false
     marker.bindPopup(`
       <div style="min-width:120px;">
         <b>${p.name || "Point"}</b><br>
@@ -8876,27 +8878,24 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       </div>
     `, {
       autoClose: false,
-      closeButton: true
+      closeButton: true,
+      autoPan: false // Popup açılınca harita kaymasın
     });
 
-    // --- [FIX 1] POPUP İÇİNDEKİ SİLME BUTONU ---
+    // --- POPUP İÇİNDEKİ SİLME BUTONU ---
     marker.on('popupopen', function(e) {
       setTimeout(() => {
         const btn = document.querySelector('.remove-marker-btn[data-day="' + day + '"][data-idx="' + idx + '"]');
         if (btn) {
-          btn.onclick = async function() { // ASYNC yapıldı
+          btn.onclick = async function() { 
             let n = 0;
             for (let i = 0; i < window.cart.length; i++) {
               const it = window.cart[i];
               if (it.day == day && it.location && !isNaN(it.location.lat) && !isNaN(it.location.lng)) {
                 if (n === idx) {
                   window.cart.splice(i, 1);
-                  
-                  // BEKLEME (AWAIT) EKLENDİ
-                  // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
                   if (typeof updateCart === "function") await updateCart();
                   if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-
                   marker.closePopup();
                   break;
                 }
@@ -8908,19 +8907,16 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       }, 10);
     });
 
-    // --- [FIX 2] MARKER ÜZERİNDEKİ "X" BUTONU ---
+    // --- MARKER ÜZERİNDEKİ "X" BUTONU ---
     marker.once('add', () => {
       const nameBox = marker.getElement()?.querySelector('.custom-marker-place-name');
       const xBtn = nameBox?.querySelector('.marker-remove-x-btn');
       if (xBtn) {
-        xBtn.onclick = async (e) => { // ASYNC yapıldı
+        xBtn.onclick = async (e) => { 
           e.stopPropagation();
           const cartIdx = findCartIndexByDayPosition(day, idx);
           if (cartIdx > -1) {
             window.cart.splice(cartIdx, 1);
-            
-            // BEKLEME (AWAIT) EKLENDİ
-            // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
             if (typeof updateCart === "function") await updateCart();
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
           }
@@ -8928,43 +8924,47 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       }
     });
 
+    // --- [KRİTİK DÜZELTME 2] TIKLAMA OLAYI VE ORTALAMA (FLYTO) ---
     marker.on('click', (e) => {
-      if (e.originalEvent) e.originalEvent.stopPropagation();
-      const outer = marker.getElement()?.querySelector('.custom-marker-outer');
-      const wasActive = outer && outer.classList.contains('green');
-      disableAllMarkerDragging(expandedMap);
-      clearAllMarkersUI();
+        // Olayın haritaya yayılmasını engelle (yoksa harita tıklaması algılanıp seçim kalkabilir)
+        if (e.originalEvent) e.originalEvent.stopPropagation();
 
-      if (!wasActive) {
-        if (marker.dragging && marker.dragging.enable) marker.dragging.enable();
-        activateMarkerUI(marker);
-        showDragArrows(marker);
-        showTransientDragHint(marker, expandedMap, 'Drag to reposition');
-        marker.openPopup();
-        const box = marker.getElement()?.querySelector('.custom-marker-place-name');
-        if (box) {
-          box.style.opacity = 0;
-          box.classList.remove('name-bubble-animate');
-          const xBtn = box.querySelector('.marker-remove-x-btn');
-          if (xBtn) xBtn.style.display = 'none';
+        // 1. Haritayı marker'a ortala (flyTo)
+        expandedMap.flyTo([p.lat, p.lng], expandedMap.getZoom(), {
+            animate: true,
+            duration: 0.5
+        });
+
+        // 2. Marker UI ve Drag işlemleri
+        const outer = marker.getElement()?.querySelector('.custom-marker-outer');
+        const wasActive = outer && outer.classList.contains('green');
+        
+        disableAllMarkerDragging(expandedMap);
+        clearAllMarkersUI();
+
+        if (!wasActive) {
+            if (marker.dragging && marker.dragging.enable) marker.dragging.enable();
+            activateMarkerUI(marker);
+            showDragArrows(marker);
+            // showTransientDragHint(marker, expandedMap, 'Drag to reposition'); // İsteğe bağlı
+            marker.openPopup();
+            
+            const box = marker.getElement()?.querySelector('.custom-marker-place-name');
+            if (box) {
+                box.style.opacity = 0;
+                box.classList.remove('name-bubble-animate');
+                const xBtn = box.querySelector('.marker-remove-x-btn');
+                if (xBtn) xBtn.style.display = 'none';
+            }
+            if ('vibrate' in navigator) navigator.vibrate(15);
+        } else {
+            marker.closePopup();
         }
-        if ('vibrate' in navigator) navigator.vibrate(15);
-      } else {
-        marker.closePopup();
-      }
     });
 
     marker.on('dragstart', () => {
       window.__tt_markerDragActive = true;
       hideDragArrows(marker);
-      if (marker._hintTimer) {
-        clearTimeout(marker._hintTimer);
-        marker._hintTimer = null;
-      }
-      if (marker._hintTempPopup && expandedMap.hasLayer(marker._hintTempPopup)) {
-        expandedMap.removeLayer(marker._hintTempPopup);
-        marker._hintTempPopup = null;
-      }
       const box = marker.getElement()?.querySelector('.custom-marker-place-name');
       if (box) {
         box.style.opacity = 0;
@@ -8972,7 +8972,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
       }
     });
 
-    // --- [FIX 3] SÜRÜKLE BIRAK (DRAGEND) ZATEN DÜZELTİLMİŞTİ ---
     marker.on('dragend', async (e) => {
       const dropped = e.target.getLatLng();
       let finalLatLng = dropped;
@@ -9011,8 +9010,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
         } catch (_) {}
       }
 
-      // BEKLEME (AWAIT)
-      // if (typeof renderRouteForDay === "function") await renderRouteForDay(day);
       if (typeof updateCart === "function") updateCart();
       
       if (marker.dragging && marker.dragging.disable) marker.dragging.disable();
@@ -9021,7 +9018,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
 
       L.popup().setLatLng(finalLatLng).setContent('Location updated').addTo(expandedMap);
 
-      // Grafik Güncelleme (Safe)
       const containerId = `expanded-route-scale-bar-day${day}`;
       const scaleBarDiv = document.getElementById(containerId);
       const routeContainerId = `route-map-day${day}`;
@@ -9054,9 +9050,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
   if (scaleBarDiv) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
-    
-    // SİLİNDİ: window.showScaleBarLoading?.(scaleBarDiv, 'Loading elevation…');
-    // Artık 'New' placeholder devreye girecek.
   }
 }
 
