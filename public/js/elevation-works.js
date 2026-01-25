@@ -182,7 +182,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     // --- GENİŞLİK DOĞRULAMA ---
     // Eğer genişlik bariz hatalıysa (200px varsayılan veya 0 ise) tekrar dene
     if ((actualWidth <= 200 || Math.abs(actualWidth - widthPx) > 5) && retryCount < 10) {
-        console.warn(`[ScaleBar] Genişlik uyumsuz! Bekleniyor... (Actual: ${actualWidth}, Param: ${widthPx})`);
+        // console.warn(`[ScaleBar] Genişlik uyumsuz! Bekleniyor... (Actual: ${actualWidth}, Param: ${widthPx})`);
         setTimeout(() => {
             createScaleElements(track, track.offsetWidth, spanKm, startKmDom, markers, customElevData, retryCount + 1);
         }, 200);
@@ -208,7 +208,7 @@ if ((!spanKm || spanKm < 0.01) && !customElevData) {
     // HİÇBİRİ İŞE YARAMAZSA, SABİT DEĞER
     if (!spanKm || spanKm < 0.01) {
         spanKm = 10; // Minimum 10 km
-        console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
+        // console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
     }
 }
    
@@ -419,15 +419,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
     let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
     // DEBUG: Koordinat kontrolü ekle
-    console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
+    // console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
 
     // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
     if (!coords || coords.length < 2) {
-      console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
+      // console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
       const markersList = window.cart?.filter(m => m.day === day) || [];
       if (markersList.length >= 2) {
         coords = markersList.map(m => [m.location.lng, m.location.lat]);
-        console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+        // console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
       }
     }
 
