@@ -779,32 +779,32 @@ if (bestIndex < ed.smooth.length) {
       track.addEventListener('touchmove', onMoveTooltip);
 
        // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
-      console.log("[ELEV RAW]", {
-        totalPoints: elevations.length,
-        min: Math.min(...elevations.filter(e => e != null)),
-        max: Math.max(...elevations.filter(e => e != null)),
-        first5: elevations.slice(0, 5)
-      });
+      // console.log("[ELEV RAW]", {
+      //   totalPoints: elevations.length,
+      //   min: Math.min(...elevations.filter(e => e != null)),
+      //   max: Math.max(...elevations.filter(e => e != null)),
+      //   first5: elevations.slice(0, 5)
+      // });
       
       const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
       
-      console.log("[ELEV SMOOTH]", {
-        min: Math.round(min),
-        max: Math.round(max),
-        range: Math.round(max - min)
-      });
+//       console.log("[ELEV SMOOTH]", {
+//         min: Math.round(min),
+//         max: Math.round(max),
+//         range: Math.round(max - min)
+//       });
 
-// DEBUG: Elevation data kontrolü
-console.log("🎯 ELEVATION DATA HAZIR:", {
-  containerId: container.id,
-  routeKey: routeKey,
-  smoothLength: smooth.length,
-  min: Math.round(min),
-  max: Math.round(max),
-  first5: smooth.slice(0, 5).map(v => Math.round(v))
-});
+// // DEBUG: Elevation data kontrolü
+// console.log("🎯 ELEVATION DATA HAZIR:", {
+//   containerId: container.id,
+//   routeKey: routeKey,
+//   smoothLength: smooth.length,
+//   min: Math.round(min),
+//   max: Math.round(max),
+//   first5: smooth.slice(0, 5).map(v => Math.round(v))
+// });
 
 container._elevationData = { smooth, min, max };
 container._elevationDataFull = { smooth: smooth.slice(), min, max };
@@ -815,7 +815,7 @@ container.dataset.elevLoadedKey = routeKey;
 if (typeof container._redrawElevation !== 'function') {
   container._redrawElevation = function() {};
 }
-console.log("🎯 _redrawElevation fonksiyonu çağırılıyor...");
+// console.log("🎯 _redrawElevation fonksiyonu çağırılıyor...");
 container._redrawElevation(container._elevationData);
 
      container._redrawElevation = function(elevationData) {
