@@ -8691,7 +8691,7 @@ try {
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
     
 
-    console.log(`=== RENDER END for day ${day} ===`);
+    // console.log(`=== RENDER END for day ${day} ===`);
 
 }
 
