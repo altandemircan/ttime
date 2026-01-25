@@ -7852,7 +7852,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
     // Eğer 0 veya 1 nokta varsa mesafe oluşmaz, işlem yapma.
     if (dayItems.length <= 1) return false;
 
-    console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
+    // console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
 
     let totalKm = 0;
     let splitIdx = -1;
