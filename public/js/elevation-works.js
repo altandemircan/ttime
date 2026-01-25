@@ -771,56 +771,22 @@ if (bestIndex < ed.smooth.length) {
       track.addEventListener('mousemove', onMoveTooltip);
       track.addEventListener('touchmove', onMoveTooltip);
 
-       // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
-      // console.log("[ELEV RAW]", {
-      //   totalPoints: elevations.length,
-      //   min: Math.min(...elevations.filter(e => e != null)),
-      //   max: Math.max(...elevations.filter(e => e != null)),
-      //   first5: elevations.slice(0, 5)
-      // });
+  
       
-      const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
+const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
       const max = Math.max(...smooth, min + 1);
-      
-      // console.log("[ELEV SMOOTH]", {
-      //   min: Math.round(min),
-      //   max: Math.round(max),
-      //   range: Math.round(max - min)
-      // });
 
-// DEBUG: Elevation data kontrolü
-// console.log("🎯 ELEVATION DATA HAZIR:", {
-//   containerId: container.id,
-//   routeKey: routeKey,
-//   smoothLength: smooth.length,
-//   min: Math.round(min),
-//   max: Math.round(max),
-//   first5: smooth.slice(0, 5).map(v => Math.round(v))
-// });
-
-container._elevationData = { smooth, min, max };
-container._elevationDataFull = { smooth: smooth.slice(), min, max };
-container.dataset.elevLoadedKey = routeKey;
-
-// HEMEN ÇİZİM YAP
-if (typeof container._redrawElevation === 'function') {
-  console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
-  container._redrawElevation(container._elevationData);
-} else {
-  console.error("❌ _redrawElevation fonksiyonu YOK!");
-}
-
-     container._redrawElevation = function(elevationData) {
+      // --- DÜZELTME: Önce fonksiyonu tanımla ---
+      container._redrawElevation = function(elevationData) {
         if (!elevationData) return;
         const { smooth, min, max } = elevationData;
         const s = container._elevSamples || [];
         const startKmDom = Number(container._elevStartKm || 0);
         const spanKm = Number(container._elevKmSpan || totalKm) || 1;
 
-       
         let vizMin, vizMax;
-        const eSpan = max - min;  // ← ADD THIS LINE
+        const eSpan = max - min;
         if (eSpan > 0) {
           vizMin = min - eSpan * 0.05; 
           vizMax = max + eSpan * 0.10; 
@@ -832,18 +798,6 @@ if (typeof container._redrawElevation === 'function') {
 
         const X = kmRel => (kmRel / spanKm) * width;
         const Y = e => (isNaN(e) || vizMin === vizMax) ? (SVG_H / 2) : ((SVG_H - 1) - ((e - vizMin) / (vizMax - vizMin)) * (SVG_H - 2));
-
-//         console.log("[Y_CALC]", {
-//   vizMin: Math.round(vizMin),
-//   vizMax: Math.round(vizMax),
-//   SVG_H: SVG_H,
-//   sample_Y_values: [
-//     Y(vizMin),
-//     Y(vizMin + 500),
-//     Y(vizMin + 1000),
-//     Y(vizMax)
-//   ]
-// });
 
         while (gridG.firstChild) gridG.removeChild(gridG.firstChild);
         while (segG.firstChild) segG.removeChild(segG.firstChild);
@@ -913,6 +867,19 @@ if (typeof container._redrawElevation === 'function') {
             createScaleElements(track, width, spanKm, startKmDom, markers, customElevData);
         });
       };
+
+      // --- DÜZELTME: Veri ataması ve çağrım BURADA yapılacak ---
+      container._elevationData = { smooth, min, max };
+      container._elevationDataFull = { smooth: smooth.slice(), min, max };
+      container.dataset.elevLoadedKey = routeKey;
+
+      // HEMEN ÇİZİM YAP (Fonksiyon artık tanımlı olduğu için çalışır)
+      if (typeof container._redrawElevation === 'function') {
+        console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
+        container._redrawElevation(container._elevationData);
+      } else {
+        console.error("❌ _redrawElevation fonksiyonu YOK! (Bu hata artık çıkmamalı)");
+      }
 
       function handleResize() {
         if (!container._elevationData) return;
