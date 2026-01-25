@@ -7475,14 +7475,14 @@ scrollbar-width: thin;
 
 @media (max-width:768px) {
     #tt-welcome h1 {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
     }
     .cw {
         margin-top: -50px !important;
         gap: 20px;
     }
     #tt-welcome p {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
     #tt-welcome img {
         width: 100px;
