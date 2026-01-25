@@ -4502,7 +4502,7 @@ if (aiInfoSection) {
     // ÖNCE route'ları HAZIRLA!
     for (const d of days) {
         await renderRouteForDay(d);
-        console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+        // console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
     }
     console.log("updateCart başlatıldı");
     document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
