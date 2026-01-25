@@ -772,12 +772,12 @@ if (bestIndex < ed.smooth.length) {
       track.addEventListener('touchmove', onMoveTooltip);
 
        // ARTIK KESÄ°N GEÃ‡ERLÄ°DÄ°R
-      console.log("[ELEV RAW]", {
-        totalPoints: elevations.length,
-        min: Math.min(...elevations.filter(e => e != null)),
-        max: Math.max(...elevations.filter(e => e != null)),
-        first5: elevations.slice(0, 5)
-      });
+      // console.log("[ELEV RAW]", {
+      //   totalPoints: elevations.length,
+      //   min: Math.min(...elevations.filter(e => e != null)),
+      //   max: Math.max(...elevations.filter(e => e != null)),
+      //   first5: elevations.slice(0, 5)
+      // });
       
       const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       const min = Math.min(...smooth);
@@ -790,14 +790,14 @@ if (bestIndex < ed.smooth.length) {
       });
 
 // DEBUG: Elevation data kontrolü
-console.log("🎯 ELEVATION DATA HAZIR:", {
-  containerId: container.id,
-  routeKey: routeKey,
-  smoothLength: smooth.length,
-  min: Math.round(min),
-  max: Math.round(max),
-  first5: smooth.slice(0, 5).map(v => Math.round(v))
-});
+// console.log("🎯 ELEVATION DATA HAZIR:", {
+//   containerId: container.id,
+//   routeKey: routeKey,
+//   smoothLength: smooth.length,
+//   min: Math.round(min),
+//   max: Math.round(max),
+//   first5: smooth.slice(0, 5).map(v => Math.round(v))
+// });
 
 container._elevationData = { smooth, min, max };
 container._elevationDataFull = { smooth: smooth.slice(), min, max };
