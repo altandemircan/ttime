@@ -5992,26 +5992,29 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     // 5. HARİTA BAŞLATMA
     const map = L.map(containerId, {
-        scrollWheelZoom: false,
-        dragging: false,
-        touchZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        zoomControl: false,
+        scrollWheelZoom: false, // Kapalı
+        dragging: false,        // Kapalı
+        touchZoom: false,       // Kapalı
+        doubleClickZoom: false, // Kapalı
+        boxZoom: false,         // Kapalı
+        zoomControl: false,     // Butonları kaldır
         fadeAnimation: true,
         zoomAnimation: true,
         markerZoomAnimation: true,
         inertia: false,
         zoomSnap: 0,                
         zoomDelta: 0.1,
-        attributionControl: false
+        attributionControl: false // Alt logoyu gizle
     });
 
+    // Mobilde harita üzerinden sayfanın kaymasını sağlar
     map.dragging.disable();
-    if (map.tap) map.tap.disable();
+    if (map.tap) map.tap.disable(); // iOS ve bazı Android cihazlar için kritik
 
+    // Harita katmanlarının dokunmatik olayları yakalamasını engelle
     const mapElement = document.getElementById(containerId);
     mapElement.addEventListener('touchstart', (e) => {
+        // Eğer tıklanan şey bir marker değilse, olayı yukarı (sayfaya) sal
         if (!e.target.closest('.leaflet-marker-icon')) {
             return true; 
         }
@@ -6025,15 +6028,23 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     // --- TILE LAYER YÖNETİMİ ---
     let layerSuccess = false;
 
+    // Fallback Fonksiyonu: OpenFreeMap'i öldürür, CartoDB'yi açar
     const loadCartoDB = () => {
+        // Eğer başarılı işaretlendiyse asla Carto'ya geçme
         if (layerSuccess) return;
+
+        // Varsa MapLibre katmanını temizle
         if (map._maplibreLayer) {
             try { map.removeLayer(map._maplibreLayer); } catch(e){}
             map._maplibreLayer = null;
         }
+
+        // CartoDB Ekle (Resim tabanlı)
         try {
+            // Zaten ekliyse tekrar ekleme
             let hasCarto = false;
             map.eachLayer(l => { if (l._url && l._url.includes('cartocdn')) hasCarto = true; });
+            
             if (!hasCarto) {
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                     attribution: '&copy; CARTO',
@@ -6044,17 +6055,20 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         } catch (err) {}
     };
 
+    // OpenFreeMap Başlatma
     if (typeof L.maplibreGL === 'function') {
         try {
             const glLayer = L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/bright',
                 attribution: '&copy; OpenFreeMap',
+                // [KRİTİK DÜZELTME] Alt zeminin kaymasını engelleyen satır:
                 interactive: false 
             });
 
             glLayer.addTo(map);
             map._maplibreLayer = glLayer;
 
+            // Başarı fonksiyonu: Çağrıldığı an CartoDB ihtimalini yok eder
             const markAlive = () => {
                 if (layerSuccess) return;
                 layerSuccess = true;
@@ -6064,26 +6078,38 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 }
             };
 
+            // Layer hazır olduğunda map instance'ını al ve dinle
             glLayer.on('ready', () => {
                 const glMap = glLayer.getMaplibreMap();
                 if (glMap) {
+                    // Harita zaten yüklüyse (cache vb.) direkt işaretle
                     if (glMap.loaded()) markAlive();
+
+                    // Veri akışını dinle
                     glMap.on('load', markAlive);
-                    glMap.on('data', markAlive);
-                    glMap.on('tileload', markAlive);
-                    glMap.on('styledata', markAlive);
+                    glMap.on('data', markAlive);      // Herhangi bir veri geldiğinde
+                    glMap.on('tileload', markAlive);  // Tile yüklendiğinde
+                    glMap.on('styledata', markAlive); // Stil yüklendiğinde
                 }
             });
 
+            // --- ZAMAN AŞIMI KONTROLÜ (4 Saniye) ---
             map._fallbackTimer = setTimeout(() => {
+                // Süre doldu. Ama harita gerçekten başarısız mı?
                 const glMap = glLayer.getMaplibreMap();
+                
+                // KONTROL: MapLibre objesi var mı ve 'loaded' durumda mı?
+                // VEYA: Canvas dolu mu (pixel var mı)?
                 const canvas = map.getContainer().querySelector('canvas');
                 const visuallyLoaded = canvas && canvas.width > 0 && canvas.height > 0;
                 const internalLoaded = glMap && glMap.loaded();
 
                 if (internalLoaded || visuallyLoaded) {
+                    // Harita aslında çalışıyor, kod sinyali kaçırmış.
+                    // CartoDB'ye geçme, OpenFreeMap'te kal.
                     markAlive();
                 } else {
+                    // Gerçekten yüklenmemiş.
                     console.warn(`[SmallMap] OpenFreeMap failed to load (4s). Fallback to CartoDB.`);
                     loadCartoDB();
                 }
@@ -6094,6 +6120,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             loadCartoDB();
         }
     } else {
+        // Kütüphane yoksa direkt CartoDB
         loadCartoDB();
     }
     let bounds = L.latLngBounds();
@@ -6105,8 +6132,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         routeCoords = geojson.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
     }
 
-    // --- SENARYO 1: TEK NOKTA VARSA ---
     if (points.length === 1) {
+        // --- SENARYO 1: TEK NOKTA VARSA ---
         const marker = L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
                 html: `<div style="cursor:pointer;background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
@@ -6117,12 +6144,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         }).addTo(map);
         
         marker.bindPopup(points[0].name || "Point", {
-            autoPan: false,
-            closeButton: false,
-            offset: L.point(0, -10)
+            autoPan: false,           // Haritanın kaymasını engeller
+            closeButton: false,       // Daha temiz görünüm için opsiyonel
+            offset: L.point(0, -10)   // Popup'ı marker'ın biraz üzerine taşır
         });
 
-        // --- ÇALIŞAN KOD BURAYA DA EKLENDİ ---
+        // +++ [FIX] TEK NOKTA TIKLAMA OLAYI +++
         marker.on('click', function() {
             map.flyTo([points[0].lat, points[0].lng], 14, {
                 animate: true,
@@ -6130,10 +6157,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             });
             marker.openPopup();
         });
-        // ------------------------------------
         
-    // --- SENARYO 2: BİRDEN FAZLA NOKTA VARSA ---
     } else if (points.length >= 1) {
+        // --- SENARYO 2: BİRDEN FAZLA NOKTA VARSA ---
         const isFlyMode = !areAllPointsInTurkey(points);
 
         if (isFlyMode) {
@@ -6171,6 +6197,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                     let minDist = Infinity;
                     let closestPoint = null;
                     
+                    // 1. Önce rota noktaları arasında en yakını bul
                     for (const rc of routeCoords) {
                         const [lat, lng] = rc;
                         const d = haversine(lat, lng, mp.lat, mp.lng);
@@ -6180,6 +6207,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                         }
                     }
                     
+                    // 2. Segmentler üzerinde daha iyi bir nokta ara (opsiyonel ama daha doğru)
                     let betterPoint = null;
                     for (let i = 0; i < routeCoords.length - 1; i++) {
                         const [lat1, lng1] = routeCoords[i];
@@ -6197,20 +6225,40 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                             betterPoint = closestOnSegment;
                         }
                     }
-                    if (betterPoint) closestPoint = betterPoint;
+                    
+                    // Daha iyi bir nokta bulunduysa onu kullan
+                    if (betterPoint) {
+                        closestPoint = betterPoint;
+                    }
                     
                     if (closestPoint) {
                         L.polyline(
-                            [[mp.lat, mp.lng], [closestPoint.lat, closestPoint.lng]],
-                            { color: '#d32f2f', weight: 3, opacity: 0.7, dashArray: '5, 8', pane: 'customRoutePane' }
+                            [
+                                [mp.lat, mp.lng],
+                                [closestPoint.lat, closestPoint.lng]
+                            ],
+                            {
+                                color: '#d32f2f',
+                                weight: 3,
+                                opacity: 0.7,
+                                dashArray: '5, 8',
+                                pane: 'customRoutePane'
+                            }
                         ).addTo(map).bindTooltip(
                             `${mp.name || 'Missing point'}: ${Math.round(minDist)}m from route`,
                             { permanent: false, direction: 'top' }
                         );
                         
+                        // Eksik noktayı da işaretleyelim (kırmızı daire)
                         L.circleMarker([mp.lat, mp.lng], {
-                            radius: 6, color: '#d32f2f', fillColor: '#d32f2f', fillOpacity: 0.7, weight: 2
-                        }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`, { autoPan: false });
+                            radius: 6,
+                            color: '#d32f2f',
+                            fillColor: '#d32f2f',
+                            fillOpacity: 0.7,
+                            weight: 2
+                        }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`, {
+                            autoPan: false
+                        });
                     }
                 });
             }
@@ -6227,7 +6275,8 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
             bounds.extend(fallbackPoly.getBounds());
         }
 
-        // Çoklu nokta markerlarını ekleyen fonksiyonu çağır
+        // Markerları ekle
+        // (Eğer addNumberedMarkers fonksiyonun da güncelse, buradaki markerlar da tıklayınca ortalanır)
         addNumberedMarkers(map, points);
 
         if (!bounds.isValid() && points.length > 0) {
@@ -6247,10 +6296,12 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         if (!map || !sidebarContainer) return;
         if (sidebarContainer.offsetParent === null) return;
         try {
+            // [FIX] Mobil cihazlarda marker kaymasını önlemek için boyutları yenile
             map.invalidateSize(); 
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
+                // [FIX] Mobilde markerların köşeye yapışmaması için padding'i artırdık
                 const isMobile = window.innerWidth <= 768;
                 map.fitBounds(bounds, { padding: isMobile ? [40, 40] : [20, 20], animate: false });
             }
@@ -6264,7 +6315,7 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
     
-    // Popup kapandığında haritayı ilk haline geri döndür
+    // Popup kapandığında haritayı ilk haline (rota odaklı) geri döndür
     map.on('popupclose', function() {
         if (map._originalBounds) {
             map.fitBounds(map._originalBounds, { 
