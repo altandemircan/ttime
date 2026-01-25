@@ -7478,7 +7478,6 @@ function updateExpandedMap(expandedMap, day) {
                 
                 const track = scaleBarDiv.querySelector('.scale-bar-track');
                 if (track) {
-                    // Genişliği almak için bir mikro gecikme veya kontrol ekliyoruz
                     const renderScale = () => {
                         const rect = track.getBoundingClientRect();
                         if (rect.width === 0) {
