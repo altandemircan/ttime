@@ -5873,12 +5873,11 @@ function addCoordinatesToContent() {
 function addNumberedMarkers(map, points) {
     if (!map || !points || !Array.isArray(points)) return;
 
-    // Bu satırı EKLE!
-    points = points.filter(item => isFinite(item.lat) && isFinite(item.lng));
+    // Hatalı koordinatları filtrele
+    points = points.filter(item => item && isFinite(item.lat) && isFinite(item.lng));
 
     points.forEach((item, idx) => {
         const label = `${idx + 1}. ${item.name || "Point"}`;
-
 
         const markerHtml = `
             <div style="
@@ -5890,15 +5889,29 @@ function addNumberedMarkers(map, points) {
                 font-weight:bold;font-size:16px;
                 border:2px solid #fff;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                cursor: pointer;
             ">${idx + 1}</div>`;
+        
         const icon = L.divIcon({
             html: markerHtml,
-            className: "",
+            className: "", // Default leaflet stilini ezmek için boş sınıf
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });
-        L.marker([item.lat, item.lng], { icon }).addTo(map)
-            .bindPopup(`<b>${label}</b>`);
+
+        const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
+        marker.bindPopup(`<b>${label}</b>`);
+
+        // --- İŞTE EKSİK OLAN TIKLAMA OLAYI ---
+        // Marker elementine (divIcon içindeki HTML) tıklamayı yakalamak için:
+        marker.on('click', function() {
+            console.log("Marker clicked:", idx + 1);
+            map.flyTo([item.lat, item.lng], 14, { // Zoom seviyesini 14 yapıyoruz
+                animate: true,
+                duration: 0.5
+            });
+            marker.openPopup();
+        });
     });
 }
 
@@ -5987,30 +6000,30 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
         zoomAnimation: true,
         markerZoomAnimation: true,
         inertia: false,
-        zoomSnap: 0,               
+        zoomSnap: 0,                
         zoomDelta: 0.1,
         attributionControl: false // Alt logoyu gizle
     });
 
     // Mobilde harita üzerinden sayfanın kaymasını sağlar
-map.dragging.disable();
-if (map.tap) map.tap.disable(); // iOS ve bazı Android cihazlar için kritik
+    map.dragging.disable();
+    if (map.tap) map.tap.disable(); // iOS ve bazı Android cihazlar için kritik
 
-// Harita katmanlarının dokunmatik olayları yakalamasını engelle
-const mapElement = document.getElementById(containerId);
-mapElement.addEventListener('touchstart', (e) => {
-    // Eğer tıklanan şey bir marker değilse, olayı yukarı (sayfaya) sal
-    if (!e.target.closest('.leaflet-marker-icon')) {
-        return true; 
-    }
-}, { passive: true });
+    // Harita katmanlarının dokunmatik olayları yakalamasını engelle
+    const mapElement = document.getElementById(containerId);
+    mapElement.addEventListener('touchstart', (e) => {
+        // Eğer tıklanan şey bir marker değilse, olayı yukarı (sayfaya) sal
+        if (!e.target.closest('.leaflet-marker-icon')) {
+            return true; 
+        }
+    }, { passive: true });
 
     try {
         map.createPane('customRoutePane');
         map.getPane('customRoutePane').style.zIndex = 450;
     } catch (e) {}
 
-  // --- TILE LAYER YÖNETİMİ (FİNAL DÜZELTME) ---
+    // --- TILE LAYER YÖNETİMİ (FİNAL DÜZELTME) ---
     let layerSuccess = false;
 
     // Fallback Fonksiyonu: OpenFreeMap'i öldürür, CartoDB'yi açar
@@ -6118,25 +6131,28 @@ mapElement.addEventListener('touchstart', (e) => {
     }
 
     if (points.length === 1) {
-        L.marker([points[0].lat, points[0].lng], {
+        const marker = L.marker([points[0].lat, points[0].lng], {
             icon: L.divIcon({
-                html: `<div style="background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
+                html: `<div style="cursor:pointer;background:#d32f2f;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.2);">1</div>`,
                 className: "",
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             })
-       }).addTo(map).bindPopup(points[0].name || "Point", {
-    autoPan: false,           // Haritanın kaymasını engeller
-    closeButton: false,       // Daha temiz görünüm için opsiyonel
-    offset: L.point(0, -10)   // Popup'ı marker'ın biraz üzerine taşır
-});
+        }).addTo(map);
+        
+        marker.bindPopup(points[0].name || "Point", {
+            autoPan: false,           // Haritanın kaymasını engeller
+            closeButton: false,       // Daha temiz görünüm için opsiyonel
+            offset: L.point(0, -10)   // Popup'ı marker'ın biraz üzerine taşır
+        });
 
-       // --- YENİ EKLENEN KISIM: ORTALAMA ---
+        // --- YENİ EKLENEN KISIM: ORTALAMA ---
         marker.on('click', function() {
             map.flyTo([points[0].lat, points[0].lng], 14, {
                 animate: true,
                 duration: 0.5
             });
+            marker.openPopup();
         });
         
     } else if (points.length >= 1) {
@@ -6172,79 +6188,76 @@ mapElement.addEventListener('touchstart', (e) => {
             bounds.extend(routePoly.getBounds());
 
             // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
-           // --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
-// --- MISSING POINTS (Kırmızı/Gri Kesik Çizgi) ---
-if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
-    missingPoints.forEach((mp) => {
-        let minDist = Infinity;
-        let closestPoint = null;
-        
-        // 1. Önce rota noktaları arasında en yakını bul
-        for (const rc of routeCoords) {
-            const [lat, lng] = rc;
-            const d = haversine(lat, lng, mp.lat, mp.lng);
-            if (d < minDist) {
-                minDist = d;
-                closestPoint = { lat, lng };
+            if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
+                missingPoints.forEach((mp) => {
+                    let minDist = Infinity;
+                    let closestPoint = null;
+                    
+                    // 1. Önce rota noktaları arasında en yakını bul
+                    for (const rc of routeCoords) {
+                        const [lat, lng] = rc;
+                        const d = haversine(lat, lng, mp.lat, mp.lng);
+                        if (d < minDist) {
+                            minDist = d;
+                            closestPoint = { lat, lng };
+                        }
+                    }
+                    
+                    // 2. Segmentler üzerinde daha iyi bir nokta ara (opsiyonel ama daha doğru)
+                    let betterPoint = null;
+                    for (let i = 0; i < routeCoords.length - 1; i++) {
+                        const [lat1, lng1] = routeCoords[i];
+                        const [lat2, lng2] = routeCoords[i + 1];
+                        
+                        const closestOnSegment = findClosestPointOnSegment(
+                            mp.lat, mp.lng,
+                            lat1, lng1,
+                            lat2, lng2
+                        );
+                        
+                        const d = haversine(mp.lat, mp.lng, closestOnSegment.lat, closestOnSegment.lng);
+                        if (d < minDist) {
+                            minDist = d;
+                            betterPoint = closestOnSegment;
+                        }
+                    }
+                    
+                    // Daha iyi bir nokta bulunduysa onu kullan
+                    if (betterPoint) {
+                        closestPoint = betterPoint;
+                    }
+                    
+                    if (closestPoint) {
+                        L.polyline(
+                            [
+                                [mp.lat, mp.lng],
+                                [closestPoint.lat, closestPoint.lng]
+                            ],
+                            {
+                                color: '#d32f2f',
+                                weight: 3,
+                                opacity: 0.7,
+                                dashArray: '5, 8',
+                                pane: 'customRoutePane'
+                            }
+                        ).addTo(map).bindTooltip(
+                            `${mp.name || 'Missing point'}: ${Math.round(minDist)}m from route`,
+                            { permanent: false, direction: 'top' }
+                        );
+                        
+                        // Eksik noktayı da işaretleyelim (kırmızı daire)
+                        L.circleMarker([mp.lat, mp.lng], {
+                            radius: 6,
+                            color: '#d32f2f',
+                            fillColor: '#d32f2f',
+                            fillOpacity: 0.7,
+                            weight: 2
+                        }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`, {
+                            autoPan: false
+                        });
+                    }
+                });
             }
-        }
-        
-        // 2. Segmentler üzerinde daha iyi bir nokta ara (opsiyonel ama daha doğru)
-        // Eğer rota uzunsa bu kısmı ekleyebilirsiniz
-        let betterPoint = null;
-        for (let i = 0; i < routeCoords.length - 1; i++) {
-            const [lat1, lng1] = routeCoords[i];
-            const [lat2, lng2] = routeCoords[i + 1];
-            
-            const closestOnSegment = findClosestPointOnSegment(
-                mp.lat, mp.lng,
-                lat1, lng1,
-                lat2, lng2
-            );
-            
-            const d = haversine(mp.lat, mp.lng, closestOnSegment.lat, closestOnSegment.lng);
-            if (d < minDist) {
-                minDist = d;
-                betterPoint = closestOnSegment;
-            }
-        }
-        
-        // Daha iyi bir nokta bulunduysa onu kullan
-        if (betterPoint) {
-            closestPoint = betterPoint;
-        }
-        
-        if (closestPoint) {
-            L.polyline(
-                [
-                    [mp.lat, mp.lng],
-                    [closestPoint.lat, closestPoint.lng]
-                ],
-                {
-                    color: '#d32f2f',
-                    weight: 3,
-                    opacity: 0.7,
-                    dashArray: '5, 8',
-                    pane: 'customRoutePane'
-                }
-            ).addTo(map).bindTooltip(
-                `${mp.name || 'Missing point'}: ${Math.round(minDist)}m from route`,
-                { permanent: false, direction: 'top' }
-            );
-            
-            // Eksik noktayı da işaretleyelim (kırmızı daire)
-            L.circleMarker([mp.lat, mp.lng], {
-                radius: 6,
-                color: '#d32f2f',
-                fillColor: '#d32f2f',
-                fillOpacity: 0.7,
-                weight: 2
-            }).addTo(map).bindPopup(`<b>${mp.name || 'Missing point'}</b><br>Not included in route`, {
-    autoPan: false
-});
-        }
-    });
-}
 
         } else {
             const fallbackCoords = points.map(p => [p.lat, p.lng]);
@@ -6268,12 +6281,9 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     }
 
     wrapRouteControls(day);
-    // map.zoomControl artık undefined olduğu için setPosition satırı silindi
     map._originalBounds = (bounds && bounds.isValid()) ? bounds : null;
 
     window.leafletMaps[containerId] = map;
-
-
 
     // --- GÜVENLİ ODAKLAMA ---
     const refitMap = () => {
@@ -6298,6 +6308,7 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
     const ro = new ResizeObserver(() => { requestAnimationFrame(refitMap); });
     ro.observe(sidebarContainer);
     sidebarContainer._resizeObserver = ro;
+    
     // Popup kapandığında haritayı ilk haline (rota odaklı) geri döndür
     map.on('popupclose', function() {
         if (map._originalBounds) {
@@ -6317,7 +6328,6 @@ if (missingPoints && missingPoints.length > 0 && routeCoords.length > 1) {
             setTimeout(() => { refresh3DMapData(day); }, 150);
         }
     }
-
 }
 // Harita durumlarını yönetmek için global değişken
 window.mapStates = {};
