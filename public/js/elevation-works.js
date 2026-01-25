@@ -148,7 +148,7 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     const container = track.closest('.route-scale-bar');
     if (container) {
       widthPx = container.offsetWidth || 400;
-      console.log("📏 Container genişliği kullanılıyor:", widthPx, "px");
+      // console.log("📏 Container genişliği kullanılıyor:", widthPx, "px");
     }
   } else {
     widthPx = actualWidth;
@@ -207,7 +207,7 @@ if ((!spanKm || spanKm < 0.01) && !customElevData) {
     // HİÇBİRİ İŞE YARAMAZSA, SABİT DEĞER
     if (!spanKm || spanKm < 0.01) {
         spanKm = 10; // Minimum 10 km
-        console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
+        // console.log("⚠️ SpanKm 0, sabit 10km kullanılıyor");
     }
 }
    
@@ -416,15 +416,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
     let coords = gjKey && gjKey.features && gjKey.features[0]?.geometry?.coordinates;
 
     // DEBUG: Koordinat kontrolü ekle
-    console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
+    // console.log("🔍 SCALEBAR DEBUG: Day", day, "Coords length:", coords?.length, "TotalKm:", totalKm);
 
     // EĞER KOORDİNAT YOKSA, MARKERLARDAN OLUŞTUR
     if (!coords || coords.length < 2) {
-      console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
+      // console.log("⚠️ Koordinat yok, markerlardan oluşturuluyor...");
       const markersList = window.cart?.filter(m => m.day === day) || [];
       if (markersList.length >= 2) {
         coords = markersList.map(m => [m.location.lng, m.location.lat]);
-        console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
+        // console.log("✅ Marker koordinatları oluşturuldu:", coords.length);
       }
     }
 
@@ -680,7 +680,7 @@ try {
       svgElem.setAttribute('width', '100%');
       svgElem.setAttribute('height', SVG_H);
       track.appendChild(svgElem);
-      console.log("[SCALEBAR][SVG]", {svgElem, width, height: SVG_H, track});
+      // console.log("[SCALEBAR][SVG]", {svgElem, width, height: SVG_H, track});
 
       const gridG = document.createElementNS(svgNS, 'g');
       gridG.setAttribute('class', 'tt-elev-grid');
