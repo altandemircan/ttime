@@ -2230,6 +2230,8 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 }
 
 // Yardımcı fonksiyon: Popup HTML'i (mesafe bilgisi ile)
+// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
+
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
     const address = f.properties.formatted || "";
@@ -2240,35 +2242,36 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const safeAddress = address.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
     
     const distanceText = distance ? 
-        `<div style="font-size:11px; color:#666; margin-bottom:4px;">
-            📏 ${distance < 1000 ? Math.round(distance)+' meters' : (distance/1000).toFixed(2)+' km'} away
-        </div>` : '';
+        `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
     
     return `
-      <div class="point-item" style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 0px;">
-        <div class="point-image" style="width: 60px; height: 40px; position: relative; flex-shrink: 0;">
-          <img id="${imgId}" class="hidden-img" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-          <div class="img-loading-spinner" id="${imgId}-spin"></div>
+      <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; 
+                                        background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
+                                        border: 1px solid #eee;">
+        <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
+          <img id="${imgId}" class="" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+          <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
         </div>
-        <div class="point-info" style="flex: 1; min-width: 0;">
-          <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-            <span style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
+                        margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+            ${safeName}
           </div>
-          ${distanceText}
-          <div class="point-address" style="display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            font-size: 11px;
-            color: #666;
-            line-height: 1.2;
-            font-weight: 400;
-            text-align: left;">${safeAddress}</div>
+          <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
+                        text-overflow: ellipsis; white-space: nowrap;">
+            ${safeAddress}
+          </div>
         </div>
-        <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-          <button class="add-point-to-cart-btn"
-            onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon}, '${config.layerPrefix}')"
-            style="width: 32px; height: 32px; background: #9159ed; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        <div style="display: flex; flex-direction: column; align-items: center; 
+                    gap: 4px; flex-shrink: 0;">
+          <div style="font-size: 10px; color: #999; white-space: nowrap;">
+            ${distanceText}
+          </div>
+          <button class="add-point-to-cart-btn" onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon}, '${config.layerPrefix}')" style="width: 30px; height: 30px; background: #fff; 
+                                           border: 1px solid #ddd; border-radius: 50%; 
+                                           cursor: pointer; color: #1976d2; font-weight: bold; 
+                                           font-size: 16px; display: flex; align-items: center; 
+                                           justify-content: center;">
             +
           </button>
         </div>
