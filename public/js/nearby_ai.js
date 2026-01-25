@@ -2259,7 +2259,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
         `;
         document.head.appendChild(style);
     }
-    
+     
     return `
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
                                         background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
