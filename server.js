@@ -376,6 +376,27 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });
 });
 
+app.get('*', (req, res) => {
+  try {
+    const filepath = path.join(__dirname, 'public', 'index.html');
+    console.log('[DEBUG] Reading file:', filepath);
+    console.log('[DEBUG] File exists:', fs.existsSync(filepath));
+    
+    let html = fs.readFileSync(filepath, 'utf8');
+    console.log('[DEBUG] HTML length before replace:', html.length);
+    
+    html = html.replace(/__BUILD__/g, BUILD_VERSION);
+    console.log('[DEBUG] HTML length after replace:', html.length);
+    console.log('[DEBUG] BUILD_VERSION used:', BUILD_VERSION);
+    
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    res.send(html);
+  } catch (err) {
+    console.error('[ERROR] SPA fallback error:', err);
+    res.status(500).send('Error');
+  }
+});
+
 // 8. SPA fallback (en sona)
 app.get('*', (req, res) => {
   const filepath = path.join(__dirname, 'public', 'index.html');
