@@ -2485,6 +2485,10 @@ window.closeNearbyPopup = function() {
     console.log('Nearby popup closed completely');
 };
 // 2. BUTON OLUŞTURUCU
+// ============================================
+// NEARBY POPUP VIEW SWITCHER BUTTON
+// ============================================
+
 function setupViewSwitcherButton(mapInstance) {
     let oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
@@ -2552,6 +2556,21 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
+// showCustomPopup içinde bu fonksiyonu çağır
+const origShowCustomPopup = window.showCustomPopup;
+window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+    // Orijinal fonksiyonu çalıştır
+    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+    
+    // View switcher butonunu ekle
+    setTimeout(() => {
+        const popup = document.getElementById('custom-nearby-popup');
+        if (popup) {
+            setupViewSwitcherButton(map);
+        }
+    }, 100);
+};
+
 
 
 // 4. SAYFA DEĞİŞİKLİĞİ
@@ -2576,76 +2595,5 @@ document.addEventListener('click', function(e) {
     }
 });
 
-function addNearbyMapToggleButton() {
-    // Eğer popup kapalıysa hiçbirşey yapma
-    const popup = document.getElementById('custom-nearby-popup');
-    if (!popup) {
-        return;
-    }
-
-    // Varsa eski buton temizle
-    let existingBtn = document.getElementById('nearby-map-toggle-btn');
-    if (existingBtn) {
-        existingBtn.remove();
-    }
-
-    const btn = document.createElement('button');
-    btn.id = 'nearby-map-toggle-btn';
-    btn.innerHTML = '🗺️ Toggle Map / Nearby';
-    btn.style.position = 'fixed';
-    btn.style.bottom = '24px';
-    btn.style.right = '24px';
-    btn.style.zIndex = '9999';
-    btn.style.padding = '12px 20px';
-    btn.style.background = '#1976d2';
-    btn.style.color = '#fff';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '24px';
-    btn.style.boxShadow = '0 4px 18px rgba(25, 118, 210, 0.18)';
-    btn.style.fontWeight = 'bold';
-    btn.style.fontSize = '15px';
-    btn.style.display = 'block';
-    btn.style.cursor = 'pointer';
-
-    btn.onclick = function (e) {
-        e.stopPropagation();
-        const map = document.querySelector('.leaflet-container, .maplibregl-map');
-        const popup = document.getElementById('custom-nearby-popup');
-
-        if (!map || !popup) return;
-
-        // Alternatif göster/gizle
-        if (map.style.display !== 'none') {
-            map.style.display = 'none';
-            popup.style.display = 'block';
-        } else {
-            map.style.display = '';
-            popup.style.display = 'none';
-        }
-    };
-
-    document.body.appendChild(btn);
-    console.log('Toggle button created');
-}
 
 // showCustomPopup override - bu daha güvenli
-const origShowCustomPopup = window.showCustomPopup;
-window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
-    // Eski popup varsa temizle
-    if (document.getElementById('nearby-map-toggle-btn')) {
-        document.getElementById('nearby-map-toggle-btn').remove();
-    }
-    
-    // Orijinal fonksiyonu çalıştır
-    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-    
-    // Sadece mobile'da buton göster
-    if (window.innerWidth < 700) {
-        setTimeout(() => {
-            const popup = document.getElementById('custom-nearby-popup');
-            if (popup) {
-                addNearbyMapToggleButton();
-            }
-        }, 100);
-    }
-};
