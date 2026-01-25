@@ -4502,7 +4502,7 @@ if (aiInfoSection) {
     // ÖNCE route'ları HAZIRLA!
     for (const d of days) {
         await renderRouteForDay(d);
-        // console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+        console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
     }
     console.log("updateCart başlatıldı");
     document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
@@ -7307,7 +7307,7 @@ locBtn.onclick = function() {
             expandedMapInstance._tileTimeout = null;
         }
 
-      
+        console.log(`[ExpandedMap] Style: ${styleKey}`);
 
         // --- 1. FALLBACK (CARTO) VE 3D GİZLEME ---
         const loadCartoFallback = () => {
@@ -7852,7 +7852,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
     // Eğer 0 veya 1 nokta varsa mesafe oluşmaz, işlem yapma.
     if (dayItems.length <= 1) return false;
 
-    // console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
+    console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
 
     let totalKm = 0;
     let splitIdx = -1;
@@ -7929,13 +7929,13 @@ async function renderRouteForDay(day) {
     if (limitHandled) return;
 
     // --- STANDART RENDER BAŞLANGICI ---
-    // console.log(`=== RENDER START for day ${day} ===`);
-   
-    // console.log(`Cart items for day ${day}:`, 
-    //     window.cart.filter(item => item.day === day).map((item, i) => 
-    //         `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
-    //     )
-    // );
+    console.log(`=== RENDER START for day ${day} ===`);
+    // ... kodun kalanı (gönderdiğin kodun devamı aynı kalabil
+    console.log(`Cart items for day ${day}:`, 
+        window.cart.filter(item => item.day === day).map((item, i) => 
+            `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
+        )
+    );
 
     const limitExceeded = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitExceeded) return; // Eğer bölündüyse bu fonksiyon zaten updateCart üzerinden tekrar tetiklenecek
@@ -8691,7 +8691,7 @@ try {
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
     
 
-    // console.log(`=== RENDER END for day ${day} ===`);
+    console.log(`=== RENDER END for day ${day} ===`);
 
 }
 
@@ -9519,10 +9519,10 @@ window.buildDirectionsUrl = function(coordsStr, day) {
 
   if (hasRealRoute) {
     if (!window.__TT_ROUTING_LOG_ONCE) {
-      // console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
+      console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
       window.__TT_ROUTING_LOG_ONCE = true;
     }
-    // console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
+    console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
   }
   // FLY MODE’da log atma!
 
