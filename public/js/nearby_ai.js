@@ -2227,31 +2227,34 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const distanceText = distance ? 
         `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
     
-    // CSS'i bir kere ekle
+    // CSS'i bir kere ekle - SADECE .tt-category-popup için
     if (!document.getElementById('popup-override-styles')) {
         const style = document.createElement('style');
         style.id = 'popup-override-styles';
         style.textContent = `
-            .leaflet-popup-content-wrapper {
+            /* Sadece category popup'ları için - diğer leaflet popup'ları etkilenmesin */
+            .leaflet-popup.tt-category-popup .leaflet-popup-content-wrapper {
                 background: transparent !important;
                 box-shadow: none !important;
                 padding: 0 !important;
             }
-            .leaflet-popup-content {
+            .leaflet-popup.tt-category-popup .leaflet-popup-content {
                 margin: 0 !important;
                 width: auto !important;
             }
-            .leaflet-popup-tip-container,
-            .leaflet-popup-close-button {
+            .leaflet-popup.tt-category-popup .leaflet-popup-tip-container,
+            .leaflet-popup.tt-category-popup .leaflet-popup-close-button {
                 display: none !important;
             }
-            .maplibregl-popup-content {
+            
+            /* MapLibre için */
+            .maplibregl-popup.tt-category-popup .maplibregl-popup-content {
                 background: transparent !important;
                 box-shadow: none !important;
                 padding: 0 !important;
             }
-            .maplibregl-popup-tip,
-            .maplibregl-popup-close-button {
+            .maplibregl-popup.tt-category-popup .maplibregl-popup-tip,
+            .maplibregl-popup.tt-category-popup .maplibregl-popup-close-button {
                 display: none !important;
             }
         `;
