@@ -364,4 +364,5 @@ const PORT = process.env.PORT || 3004;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Feedback email configured:', !!process.env.FEEDBACK_FROM_EMAIL);
+
 }); 
