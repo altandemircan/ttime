@@ -5785,7 +5785,7 @@ ease;
     border-radius: 5px;
     font-weight: 400;
 }
-/*
+
 
 .leaflet-control-attribution  {
        position: absolute !important;
@@ -5838,8 +5838,9 @@ ease;
 .leaflet-popup-content {
         font-weight: bold;
     text-align: center;
-}*/
+}
 
+/* Hint tooltip (top) — NO close icon, just a small dark bubble, auto hides */
 .leaflet-popup.drag-hint-popup {
   pointer-events: none;
 }
