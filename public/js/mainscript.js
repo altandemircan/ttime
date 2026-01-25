@@ -9519,10 +9519,10 @@ window.buildDirectionsUrl = function(coordsStr, day) {
 
   if (hasRealRoute) {
     if (!window.__TT_ROUTING_LOG_ONCE) {
-      console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
+      // console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
       window.__TT_ROUTING_LOG_ONCE = true;
     }
-    console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
+    // console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
   }
   // FLY MODE’da log atma!
 
