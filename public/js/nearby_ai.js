@@ -2487,12 +2487,17 @@ window.closeNearbyPopup = function() {
     
     console.log('Nearby popup closed completely');
 };
-// 2. BUTON OLUŞTURUCU
+
 // ============================================
-// NEARBY POPUP VIEW SWITCHER BUTTON
+// NEARBY POPUP VIEW SWITCHER BUTTON (MOBILE ONLY)
 // ============================================
 
 function setupViewSwitcherButton(mapInstance) {
+    // ✅ Sadece mobile'da göster (768px altında)
+    if (window.innerWidth > 768) {
+        return; // Desktop'ta buton gösterme
+    }
+
     let oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
 
@@ -2559,6 +2564,20 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
+// showCustomPopup içinde bu fonksiyonu çağır
+const origShowCustomPopup = window.showCustomPopup;
+window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
+    // Orijinal fonksiyonu çalıştır
+    origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
+    
+    // View switcher butonunu ekle (sadece mobile'da)
+    setTimeout(() => {
+        const popup = document.getElementById('custom-nearby-popup');
+        if (popup && window.innerWidth < 768) {
+            setupViewSwitcherButton(map);
+        }
+    }, 100);
+};
 // showCustomPopup içinde bu fonksiyonu çağır
 const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
