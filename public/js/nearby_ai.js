@@ -2208,11 +2208,6 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 }
 
 
-
-// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
-
-// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
-// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
@@ -2227,34 +2222,38 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const distanceText = distance ? 
         `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
     
-    // CSS'i bir kere ekle - SADECE .tt-category-popup için
+    // CSS'i bir kere ekle - category-place-item içeren popup'ları hedefle
     if (!document.getElementById('popup-override-styles')) {
         const style = document.createElement('style');
         style.id = 'popup-override-styles';
         style.textContent = `
-            /* Sadece category popup'ları için - diğer leaflet popup'ları etkilenmesin */
-            .leaflet-popup.tt-category-popup .leaflet-popup-content-wrapper {
+            /* Leaflet popup - category-place-item içerenleri hedefle */
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-content-wrapper {
                 background: transparent !important;
                 box-shadow: none !important;
                 padding: 0 !important;
             }
-            .leaflet-popup.tt-category-popup .leaflet-popup-content {
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-content {
                 margin: 0 !important;
                 width: auto !important;
             }
-            .leaflet-popup.tt-category-popup .leaflet-popup-tip-container,
-            .leaflet-popup.tt-category-popup .leaflet-popup-close-button {
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-tip-container {
+                display: none !important;
+            }
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-close-button {
                 display: none !important;
             }
             
-            /* MapLibre için */
-            .maplibregl-popup.tt-category-popup .maplibregl-popup-content {
+            /* MapLibre popup - category-place-item içerenleri hedefle */
+            .maplibregl-popup:has(.category-place-item) .maplibregl-popup-content {
                 background: transparent !important;
                 box-shadow: none !important;
                 padding: 0 !important;
             }
-            .maplibregl-popup.tt-category-popup .maplibregl-popup-tip,
-            .maplibregl-popup.tt-category-popup .maplibregl-popup-close-button {
+            .maplibregl-popup:has(.category-place-item) .maplibregl-popup-tip {
+                display: none !important;
+            }
+            .maplibregl-popup:has(.category-place-item) .maplibregl-popup-close-button {
                 display: none !important;
             }
         `;
@@ -2303,6 +2302,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
       </div>
     `;
 }
+
 // Yardımcı fonksiyon: Popup açıldığında resim yükleme
 function handlePlacePopupImageLoading(f, imgId, categoryType) {
     getImageForPlace(f.properties.name, categoryType, window.selectedCity || "")
