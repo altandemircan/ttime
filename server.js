@@ -339,7 +339,20 @@ app.get('/test-root', (req, res) => {
 // 6. Statik dosyalar
 // index: false diyerek index.html'in otomatik sunulmasını engelliyoruz.
 // Böylece aşağıda kendi işlediğimiz versiyonlu HTML'i gönderebiliriz.
-app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+app.use(express.static(
+  path.join(__dirname, 'public'),
+  {
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store');
+      } else {
+        // JS, CSS, image → cache OK ama version ile
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    }
+  }
+));
 
 // 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
 app.use('/api', (req, res) => {
