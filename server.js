@@ -1,7 +1,10 @@
-const fs = require('fs'); // 1. BURAYA AL (Global)
+const fs = require('fs'); 
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
+
+// [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
+const BUILD_ID = Date.now().toString();
 
 try {
     // Burada fs'i tekrar tanımlama, yukarıdakini kullan
@@ -14,48 +17,9 @@ try {
 
 const app = express();
 
-// ========================================
-// ✅ YENİ: Build version (cache busting)
-// ========================================
-const BUILD_VERSION = Math.floor(Date.now() / 1000); // Unixtime
-console.log(`[BUILD] Version: ${BUILD_VERSION}`);
-
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
 app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// ========================================
-// ✅ YENİ: HTML dosyasını serve etmeden önce __BUILD__ replace et
-// ========================================
-app.use((req, res, next) => {
-    // Sadece HTML request'lerine işlem yap
-    const originalSendFile = res.sendFile;
-    res.sendFile = function(filepath, options, callback) {
-        // Eğer index.html ise __BUILD__ yerine gerçek version koy
-        if (filepath.includes('index.html')) {
-            let html = fs.readFileSync(filepath, 'utf8');
-            html = html.replace(/__BUILD__/g, BUILD_VERSION);
-            return res.send(html);
-        }
-        return originalSendFile.call(this, filepath, options, callback);
-    };
-    next();
-});
-
-// ========================================
-// ✅ YENİ: JS dosyalarında Cache-Control header'ı ayarla
-// ========================================
-app.use(express.static(path.join(__dirname, 'public'), {
-    setHeaders: (res, filepath) => {
-        if (filepath.endsWith('.js') || filepath.endsWith('.css')) {
-            // JS/CSS dosyaları: 1 saat cache, ama version query ile busting
-            res.set('Cache-Control', 'public, max-age=3600');
-        } else if (filepath.endsWith('.html')) {
-            // HTML: Hiç cache yapma, her zaman kontrol et
-            res.set('Cache-Control', 'public, max-age=0, must-revalidate');
-        }
-    }
-}));
 
 // 2. Feedback Route
 const feedbackRoute = require('./feedbackRoute');
@@ -82,7 +46,7 @@ app.use('/photoget-proxy', photogetProxy);
 
 const geoapify = require('./geoapify.js');
 
-// --- YENİ: /api/geoapify/nearby-cities endpoint'i ---
+// --- YENİ: /api/geoapify/nearby-cities endpoint’i ---
 app.get('/api/geoapify/nearby-cities', async (req, res) => {
   try {
     const { lat, lon, radius, limit } = req.query;
@@ -190,6 +154,8 @@ app.get('/api/geoapify/places', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+
 
 app.post('/api/elevation', async (req, res) => {
     // locations parametresi array mi string mi kontrolü
@@ -324,7 +290,6 @@ app.post('/api/shorten', (req, res) => {
         res.status(500).json({ error: 'Shorten failed' });
     }
 });
-
 // 2. Yönlendirme (GET /s/id) - DİKKAT: Bunu 'express.static' satırından önceye koy
 app.get('/s/:id', (req, res) => {
     try {
@@ -371,6 +336,11 @@ app.get('/test-root', (req, res) => {
   res.json({ message: 'Root test OK' });
 });
 
+// 6. Statik dosyalar
+// index: false diyerek index.html'in otomatik sunulmasını engelliyoruz.
+// Böylece aşağıda kendi işlediğimiz versiyonlu HTML'i gönderebiliriz.
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+
 // 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });
@@ -378,7 +348,21 @@ app.use('/api', (req, res) => {
 
 // 8. SPA fallback (en sona)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Dosyayı diskten oku
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  
+  fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+    if (err) {
+      console.error('Error reading index.html:', err);
+      return res.status(500).send('Error loading page');
+    }
+
+    // HTML içindeki __BUILD__ placeholder'ını sunucu başlangıç zamanıyla değiştir
+    const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
+    
+    // İşlenmiş HTML'i gönder
+    res.send(versionedHtml);
+  });
 });
 
 // 9. Global error handler
@@ -399,5 +383,5 @@ const PORT = process.env.PORT || 3004;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Feedback email configured:', !!process.env.FEEDBACK_FROM_EMAIL);
-  console.log(`[BUILD] Build version: ${BUILD_VERSION}`);
-});
+
+}); 
