@@ -2624,3 +2624,14 @@ addMobileOnlyStyle();
 
 // Sayfada değişiklik olduğunda da kontrol et
 document.addEventListener('DOMContentLoaded', addMobileOnlyStyle);
+
+// ============================================
+// Window resize dinle ve buton oluşturmayı kontrol et
+// ============================================
+window.addEventListener('resize', () => {
+    // Desktop'ta buton varsa sil
+    if (window.innerWidth > 768) {
+        const btn = document.getElementById('nearby-view-switcher-btn');
+        if (btn) btn.remove();
+    }
+});
