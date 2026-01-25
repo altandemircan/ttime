@@ -1503,7 +1503,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                     facts 
                 })
             });
-            console.timeEnd('AI-API-Response');
+            // console.timeEnd('AI-API-Response');
 
             // --- YALNIZCA EN GÜNCEL İSTEKTE SONUÇ YAZ ---
             if (myRequestId !== aiActiveRequest) {
@@ -1511,9 +1511,9 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 return;
             }
 
-            console.log('API Response status:', response.status);
+            // console.log('API Response status:', response.status);
             const data = await response.json();
-            console.log('API Data received:', data);
+            // console.log('API Data received:', data);
 
             // Loading temizle
             loadingTimers.forEach(timer => clearTimeout(timer));
@@ -2526,7 +2526,7 @@ window.closeNearbyPopup = function() {
     
     window._currentNearbyPopupElement = null;
     
-    console.log('Nearby popup closed completely');
+    // console.log('Nearby popup closed completely');
 };
 
 // ============================================
