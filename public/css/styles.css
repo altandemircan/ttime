@@ -7483,6 +7483,7 @@ scrollbar-width: thin;
     }
     #tt-welcome p {
         font-size: 0.9rem;
+        max-width: 350px;
     }
     #tt-welcome img {
         width: 100px;
