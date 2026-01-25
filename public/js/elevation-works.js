@@ -142,26 +142,26 @@ function createScaleElements(track, widthPx, spanKm, startKmDom, markers = [], c
     track.clientWidth || 0
   );
   
-  // console.log("📏 SCALEBAR Genişlik:", actualWidth, "px");
+  console.log("📏 SCALEBAR Genişlik:", actualWidth, "px");
   
   // Eğer hala 0 ise, container'dan al
   if (actualWidth < 300) {
     const container = track.closest('.route-scale-bar');
     if (container) {
       widthPx = container.offsetWidth || 400;
-      // console.log("📏 Container genişliği kullanılıyor:", widthPx, "px");
+      console.log("📏 Container genişliği kullanılıyor:", widthPx, "px");
     }
   } else {
     widthPx = actualWidth;
   }
-    // console.group(`[ScaleBar Debug] Day: ${track?.parentElement?.id || 'unknown'} | Attempt: ${retryCount}`);
+    console.group(`[ScaleBar Debug] Day: ${track?.parentElement?.id || 'unknown'} | Attempt: ${retryCount}`);
 
 
-    // console.log("Param Width:", widthPx);
-    // console.log("Actual OffsetWidth:", actualWidth);
-    // console.log("Span KM:", spanKm);
-    // console.log("Elevation Data:", track?.parentElement?._elevationData ? "Mevcut ✅" : "YOK ❌");
-    // console.groupEnd();
+    console.log("Param Width:", widthPx);
+    console.log("Actual OffsetWidth:", actualWidth);
+    console.log("Span KM:", spanKm);
+    console.log("Elevation Data:", track?.parentElement?._elevationData ? "Mevcut ✅" : "YOK ❌");
+    console.groupEnd();
     // --- DEBUG LOG END ---
 
     // 1. KONTROL: Element yoksa veya DOM'dan tamamen silinmişse işlemi durdur.
@@ -433,12 +433,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   if (!Array.isArray(coords) || coords.length < 2) {
       if (typeof getDayPoints === 'function' && day) {
           const rawPoints = getDayPoints(day);
-          const validPoints = rawPoints.filter(p =>
-  p.lat != null &&
-  p.lng != null &&
-  !isNaN(parseFloat(p.lat)) &&
-  !isNaN(parseFloat(p.lng))
-);          
+          const validPoints = rawPoints.filter(p => p.lat && p.lng && !isNaN(parseFloat(p.lat)) && !isNaN(parseFloat(p.lng)));
+          
           if (validPoints.length >= 2) {
               coords = validPoints.map(p => [parseFloat(p.lng), parseFloat(p.lat)]);
               
