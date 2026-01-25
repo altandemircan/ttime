@@ -7929,13 +7929,13 @@ async function renderRouteForDay(day) {
     if (limitHandled) return;
 
     // --- STANDART RENDER BAŞLANGICI ---
-    console.log(`=== RENDER START for day ${day} ===`);
-    // ... kodun kalanı (gönderdiğin kodun devamı aynı kalabil
-    console.log(`Cart items for day ${day}:`, 
-        window.cart.filter(item => item.day === day).map((item, i) => 
-            `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
-        )
-    );
+    // console.log(`=== RENDER START for day ${day} ===`);
+   
+    // console.log(`Cart items for day ${day}:`, 
+    //     window.cart.filter(item => item.day === day).map((item, i) => 
+    //         `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
+    //     )
+    // );
 
     const limitExceeded = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitExceeded) return; // Eğer bölündüyse bu fonksiyon zaten updateCart üzerinden tekrar tetiklenecek
