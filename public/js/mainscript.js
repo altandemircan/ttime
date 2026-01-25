@@ -7477,22 +7477,21 @@ function updateExpandedMap(expandedMap, day) {
                 renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
                 
                 const track = scaleBarDiv.querySelector('.scale-bar-track');
-if (track) {
-    // Genişliği almak için bir mikro gecikme veya kontrol ekliyoruz
-    const renderScale = () => {
-        const rect = track.getBoundingClientRect();
-        // Eğer genişlik hala 0 ise (element henüz render edilmediyse) 200ms sonra tekrar dene
-        if (rect.width === 0) {
-            setTimeout(renderScale, 200);
-            return;
-        }
-        const width = Math.max(200, Math.round(rect.width));
-        if (typeof createScaleElements === 'function') {
-            createScaleElements(track, width, totalKm, 0, markerPositions);
-        }
-    };
-    renderScale();
-}
+                if (track) {
+                    // Genişliği almak için bir mikro gecikme veya kontrol ekliyoruz
+                    const renderScale = () => {
+                        const rect = track.getBoundingClientRect();
+                        if (rect.width === 0) {
+                            setTimeout(renderScale, 200);
+                            return;
+                        }
+                        const width = Math.max(200, Math.round(rect.width));
+                        if (typeof createScaleElements === 'function') {
+                            createScaleElements(track, width, totalKm, 0, markerPositions);
+                        }
+                    };
+                    renderScale();
+                }
             }
         }
         return; 
@@ -7556,36 +7555,23 @@ if (track) {
             bounds.extend(poly.getBounds());
             window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
 
-            // --- YENİ EKLENEN KISIM: EKSİK NOKTA BAĞLAYICILARI ---
-            // Markerlar ile rota çizgisi arasındaki mesafeyi kontrol et.
-            // Eğer marker rotaya oturmamışsa (Missing Point), kesik çizgi çek.
+            // --- EKSİK NOKTA BAĞLAYICILARI ---
             pts.forEach(p => {
                 let minDist = Infinity;
                 let closestPoint = null;
-
-                // En yakın rota noktasını bul (Basit Öklid hesabı yeterli)
                 for (const rc of routeCoords) {
-                    // rc: [lat, lng]
                     const dSq = (rc[0] - p.lat) ** 2 + (rc[1] - p.lng) ** 2;
                     if (dSq < minDist) {
                         minDist = dSq;
                         closestPoint = rc;
                     }
                 }
-
-                // Eşik değer (Yaklaşık 50-80 metreye denk gelen derece farkı karesi)
-                // 0.0000005 derece karesi ~80m civarıdır.
                 if (closestPoint && minDist > 0.0000005) {
                     L.polyline([[p.lat, p.lng], closestPoint], {
-                        color: '#d32f2f', // Kırmızı
-                        weight: 3,
-                        opacity: 0.6,
-                        dashArray: '5, 8', // Kesik çizgi
-                        interactive: false // Tıklanmasın
+                        color: '#d32f2f', weight: 3, opacity: 0.6, dashArray: '5, 8', interactive: false 
                     }).addTo(expandedMap);
                 }
             });
-            // -----------------------------------------------------
         }
     } 
     else if (pts.length > 1 && !isInTurkey) {
@@ -7615,15 +7601,24 @@ if (track) {
                 <span class="custom-marker-label">${idx + 1}</span>
             </div>`;
         const icon = L.divIcon({ html: markerHtml, className: "", iconSize: [32, 32], iconAnchor: [16, 16] });
+        
         const marker = L.marker([item.lat, item.lng], { icon }).addTo(expandedMap);
         marker.bindPopup(`<b>${item.name || "Point"}</b>`);
+        
+        // --- FIX: ROTA MARKERINA TIKLAYINCA HARİTAYI ORTALA ---
+        marker.on('click', function() {
+            expandedMap.flyTo([item.lat, item.lng], expandedMap.getZoom(), {
+                animate: true,
+                duration: 0.5
+            });
+        });
+        // -----------------------------------------------------
+
         bounds.extend(marker.getLatLng());
     });
 
    // --- ODAKLANMA ---
     try {
-        // DÜZELTME: 1 item varken fitBounds yerine setView kullanıyoruz.
-        // Bu sayede marker kaybolmuyor ve tıklanabilir (nearby places vs.) kalıyor.
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
         } else if (bounds.isValid()) {
@@ -7633,18 +7628,16 @@ if (track) {
         }
     } catch(e) { console.warn("FitBounds error:", e); }
 
-    // Hem fonksiyonun başında hem sonunda invalidateSize yaparak koordinat sistemini zorluyoruz
-expandedMap.invalidateSize(); 
+    expandedMap.invalidateSize(); 
 
-setTimeout(() => { 
-    try { 
-        expandedMap.invalidateSize(); 
-        // Eğer rota varsa bounds'u bir kez daha tazele (Kaymayı önler)
-        if (bounds.isValid() && pts.length > 1) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
-        }
-    } catch(e){} 
-}, 350); // CSS animasyon süresinden (0.3s) biraz daha uzun
+    setTimeout(() => { 
+        try { 
+            expandedMap.invalidateSize(); 
+            if (bounds.isValid() && pts.length > 1) {
+                expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
+            }
+        } catch(e){} 
+    }, 350);
     
     if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMap, day);
 
