@@ -5231,7 +5231,7 @@ if (aiInfoSection) {
     if (!pdfBtn) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
-        pdfBtn.className = 'add-to-calendar-btn'; 
+        pdfBtn.className = 'pdf-download-btn'; 
         pdfBtn.textContent = 'Download Offline Plan (PDF)';
         pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
         pdfBtn.style.color = '#fff';
@@ -5257,7 +5257,6 @@ if (aiInfoSection) {
     }
 
 })();
-    // ========================================================
 
     (function ensurePostDateSections() {
         if (!window.cart.startDate) return;
