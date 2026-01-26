@@ -5221,8 +5221,8 @@ if (aiInfoSection) {
         }
     })();
 
-    // === PDF DOWNLOAD BUTTON & FINAL ORDERING ===
     (function ensurePdfButtonAndOrder() {
+        // Hem cart hem cart-items kontrolü yapalım
         const cartRoot = document.getElementById('cart') || document.getElementById('cart-items');
         if (!cartRoot) return;
 
@@ -5233,14 +5233,8 @@ if (aiInfoSection) {
             pdfBtn.id = 'tt-pdf-dl-btn';
             pdfBtn.className = 'add-to-calendar-btn'; 
             pdfBtn.textContent = 'Download Offline Plan (PDF)';
-            
-            // Stil Ayarları
             pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
             pdfBtn.style.color = '#fff';
-            pdfBtn.style.display = 'block';
-            pdfBtn.style.marginTop = '10px';    // Üstteki butonla (Add Day) mesafe
-            pdfBtn.style.marginBottom = '5px';  // Alttaki butonla (Select Dates) mesafe
-
             pdfBtn.onclick = function () {
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
                 if (typeof downloadTripPlanPDF === "function") {
@@ -5252,49 +5246,49 @@ if (aiInfoSection) {
             };
         }
 
-        // 2. Görünürlük (Sepet doluysa göster)
+        // 2. Görünürlük
         const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
         pdfBtn.style.display = hasRealItem ? 'block' : 'none';
 
-
-        // 3. DOM SIRALAMASI (FIXED ORDER)
-        // Hedef Sıra: [PDF] -> [Select Dates] -> [Takvim] -> [Tarih Bilgisi] -> [New Trip Plan]
+        // 3. DOM SIRALAMASI (Zincirleme Mantık)
+        // Hedef Sıra: [Select/Change Dates] -> [Takvim] -> [Tarih Bilgisi] -> [PDF] -> [New Trip Plan]
 
         const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         const calContainer = document.getElementById('calendar-container');
-        const dateRangeDiv = document.querySelector('.date-range');
+        const dateRangeDiv = document.querySelector('.date-range'); // Tarih aralığı kutusu
         const newChatBtn = document.getElementById('newchat');
 
+        // Eğer ana buton (Dates) varsa zinciri başlat
         if (datesBtn && datesBtn.parentElement) {
-            // A. PDF Butonunu "Select Dates" butonunun ÜSTÜNE koy
-            if (pdfBtn) {
-                datesBtn.parentElement.insertBefore(pdfBtn, datesBtn);
-            }
-
-            // B. Diğer elemanları "Select Dates" butonunun ALTINA sırala
             let lastElement = datesBtn;
 
-            // Takvim (Varsa Dates butonunun hemen altına)
+            // A. Takvim varsa, son elemanın altına ekle
             if (calContainer && calContainer.parentElement) {
                 lastElement.insertAdjacentElement('afterend', calContainer);
                 lastElement = calContainer; 
             }
 
-            // Tarih Bilgisi (Varsa takvimin/dates butonunun altına)
+            // B. Tarih Aralığı (Date Range) varsa, son elemanın altına ekle
             if (dateRangeDiv && dateRangeDiv.parentElement) {
                 lastElement.insertAdjacentElement('afterend', dateRangeDiv);
                 lastElement = dateRangeDiv;
             }
 
-            // New Trip Plan (En sona)
+            // C. PDF Butonu varsa, son elemanın altına ekle
+            if (pdfBtn) {
+                lastElement.insertAdjacentElement('afterend', pdfBtn);
+                lastElement = pdfBtn;
+            }
+
+            // D. New Trip Plan butonu en sona
             if (newChatBtn && newChatBtn.parentElement) {
                 lastElement.insertAdjacentElement('afterend', newChatBtn);
             }
         } 
-        // Fallback: Dates butonu yoksa PDF'i en sona ekle
-        else if (pdfBtn && cartRoot) {
-            cartRoot.appendChild(pdfBtn);
-            if (newChatBtn) cartRoot.appendChild(newChatBtn);
+        // Fallback: Dates butonu yoksa (henüz oluşmadıysa)
+        else if (pdfBtn && pdfBtn.parentElement) {
+            // Mevcut yerinde kalsın veya cartRoot sonuna eklensin
+            if (newChatBtn) pdfBtn.insertAdjacentElement('afterend', newChatBtn);
         }
 
     })();
