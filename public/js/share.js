@@ -616,9 +616,9 @@ async function shareWithoutDates() {
 
 function formatDateLong(dateInput) {
     const d = new Date(dateInput);
-    // en-US formatı: Month (Long), Day (Numeric), Year (Numeric)
+    // en-US formatı: Month (Short -> Jan, Feb), Day (Numeric), Year (Numeric)
     return d.toLocaleDateString('en-US', { 
-        month: 'long', 
+        month: 'short',  // 'long' yerine 'short' yaptık
         day: 'numeric', 
         year: 'numeric' 
     });
