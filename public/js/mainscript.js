@@ -5235,9 +5235,7 @@ if (aiInfoSection) {
             pdfBtn.textContent = 'Download Offline Plan (PDF)';
             pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
             pdfBtn.style.color = '#fff';
-            // Görsel ayrım için altına biraz boşluk bırakalım
-            pdfBtn.style.marginBottom = '10px'; 
-            
+          
             pdfBtn.onclick = function () {
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
                 if (typeof downloadTripPlanPDF === "function") {
