@@ -315,31 +315,28 @@ function showTripDetails(startDate) {
             }
         });
 
-        // TARİH HESAPLA
-       const activeStartDate = window.cart.startDate || localStorage.getItem('tripStartDate') || startDate;
+        // --- DÜZELTME BURADA BAŞLIYOR ---
+        
+        // 1. Önce değişkeni tanımlıyoruz (Hata almamak için şart)
+        let dateStr = ""; 
 
+        // 2. Tarih kaynağını belirliyoruz (Sırasıyla: Cart > LocalStorage > Parametre)
+        const activeStartDate = window.cart.startDate || localStorage.getItem('tripStartDate') || startDate;
+
+        // 3. Tarih varsa hesaplıyoruz
         if (activeStartDate) {
             const startDateObj = new Date(activeStartDate);
-            // Tarih geçerli mi kontrolü
+            // Geçerli bir tarih mi kontrolü
             if (!isNaN(startDateObj.getTime())) {
                 const d = new Date(startDateObj);
                 d.setDate(startDateObj.getDate() + (day - 1));
                 dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
             }
         }
-        // Önce window.cart.startDate'i kontrol et
-        if (window.cart.startDate) {
-            const startDateObj = new Date(window.cart.startDate);
-            const d = new Date(startDateObj);
-            d.setDate(startDateObj.getDate() + (day - 1));
-            dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-        } else if (startDate) {
-            // Fallback: fonksiyon parametresini kullan
-            const startDateObj = new Date(startDate);
-            const d = new Date(startDateObj);
-            d.setDate(startDateObj.getDate() + (day - 1));
-            dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-        }
+        
+        // (Eski "if (window.cart.startDate)..." bloğunu buradan sildik, yukarıdaki kod zaten o işi yapıyor)
+
+        // --- DÜZELTME BİTTİ ---
         
         const dayTitle = window.customDayNames[day] || `Day ${day}`;
         const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`;
@@ -369,7 +366,8 @@ function showTripDetails(startDate) {
         daySteps.setAttribute("data-day", String(day));
 
         if (groupedItems.length > 0) {
-            daySteps.innerHTML = `
+            // ... (Buradaki HTML oluşturma kodların aynı kalacak) ...
+             daySteps.innerHTML = `
   <div class="splide" id="splide-trip-details-day${day}">
     <div class="splide__track">
       <ul class="splide__list">
