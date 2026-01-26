@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // EKLEMEN GEREKEN SATIR:
                 localStorage.setItem('tripStartDate', window.cart.startDate);
             }
+            }
 
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
