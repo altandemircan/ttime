@@ -5225,9 +5225,13 @@ if (aiInfoSection) {
         };
     }
 
-    // "Change Dates" butonunun altına ekle
+    // "Change Dates" butonunun hemen altına ekle (New Trip Plan'ın üstüne)
     const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
     if (datesBtn) {
+        // Eğer dateRangeDiv zaten var ve başka yerde ise, kaldır
+        if (dateRangeDiv.parentElement) {
+            dateRangeDiv.remove();
+        }
         datesBtn.insertAdjacentElement('afterend', dateRangeDiv);
     } else {
         cartDiv.appendChild(dateRangeDiv);
