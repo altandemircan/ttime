@@ -3342,7 +3342,7 @@ hr {
     justify-content: center;
     border: 1px solid #ffffff;
     border-radius: 8px;
-    background: #8a4af3;
+        background: linear-gradient(135deg, #36828c 0%, #00c4a3 100%);
     cursor: pointer;
     transition: all 0.3s 
 ease;
