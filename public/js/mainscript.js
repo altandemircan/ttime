@@ -5081,206 +5081,115 @@ if (aiInfoSection) {
 };
     })();
 
-(function ensureNewChatInsideCart() {
-    const oldOutside = document.querySelector('#newchat');
-    if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
-    const cartRoot = document.getElementById('cart');
-    if (!cartRoot) return;
-    let newChat = cartRoot.querySelector('#newchat');
-    if (!newChat) {
-        newChat = document.createElement('div');
-        newChat.id = 'newchat';
-        newChat.textContent = 'New Trip Plan';
-        newChat.style.cursor = 'pointer';
+    (function ensureNewChatInsideCart() {
+        const oldOutside = document.querySelector('#newchat');
+        if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
+        const cartRoot = document.getElementById('cart');
+        if (!cartRoot) return;
+        let newChat = cartRoot.querySelector('#newchat');
+        if (!newChat) {
+            newChat = document.createElement('div');
+            newChat.id = 'newchat';
+            newChat.textContent = 'New Trip Plan';
+            newChat.style.cursor = 'pointer';
 
-    newChat.onclick = function () {
-    const chatBox = document.getElementById('chat-box');
-    if (chatBox) chatBox.innerHTML = ''; 
+        newChat.onclick = function () {
+        const chatBox = document.getElementById('chat-box');
+        if (chatBox) chatBox.innerHTML = ''; 
 
-    // Önemli: Botun ilk mesajı tekrar atabilmesi için flagleri sıfırla
-    window.__welcomeShown = false; 
-    window.__welcomeHiddenForever = false;
-    window.__locationPickedFromSuggestions = false;
+        // Önemli: Botun ilk mesajı tekrar atabilmesi için flagleri sıfırla
+        window.__welcomeShown = false; 
+        window.__welcomeHiddenForever = false;
+        window.__locationPickedFromSuggestions = false;
 
-    // Diğer temizlik işlemleri...
-    window.selectedCity = null;
-    window.cart = [];
-    
-    // Typing indicator'ı temizle ve gizli olarak ekle
-    if (chatBox) {
-        let indicator = document.getElementById('typing-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'typing-indicator';
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = '<span></span><span></span><span></span>';
-        }
-        chatBox.appendChild(indicator);
-        indicator.style.display = 'none';
-    }
-
-    try {
-        if (typeof window.__ttNewTripToken === 'function') {
-            window.__activeTripSessionToken = window.__ttNewTripToken();
-        }
-        window.__dayCollagePhotosByDay = {};
-        window.__globalCollageUsed = new Set();
-    } catch (e) {
-        console.warn('[collage] Token reset error:', e);
-    }
-    
-    if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-    
-    window.routeElevStatsByDay = {};
-    window.__ttElevDayCache = {};
-    window._segmentHighlight = {};
-    window._lastSegmentDay = undefined;
-    window._lastSegmentStartKm = undefined;
-    window._lastSegmentEndKm = undefined;
-
-    document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
-
-    if (typeof updateCart === "function") updateCart();
-    
-    document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
-    const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
-    if (sidebar) sidebar.classList.add('open');
-
-    // --- Let's get started mesajını tekrar ekle ---
-    window.__welcomeShown = false; 
-    window.__welcomeHiddenForever = false;
-
-    if (chatBox) {
-        chatBox.innerHTML = ''; // İçeriği tamamen boşalt
+        // Diğer temizlik işlemleri...
+        window.selectedCity = null;
+        window.cart = [];
         
-        // Typing indicator'ı (gizli olarak) tekrar oluştur/ekle
-        let indicator = document.getElementById('typing-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'typing-indicator';
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = '<span></span><span></span><span></span>';
-            chatBox.appendChild(indicator);
-        }
-        indicator.style.display = 'none';
-    }
-
-    var iw = document.querySelector('.input-wrapper');
-    if (iw) iw.style.display = '';
-
-    // Önerileri sıfırla
-    if (typeof showSuggestions === "function") showSuggestions(); 
-
-    document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
-        el.classList.remove('selected-suggestion');
-    });
-
-    const tripDetailsSection = document.getElementById("tt-trip-details");
-    if (tripDetailsSection) tripDetailsSection.remove();
-
-    const chatScreen = document.getElementById("chat-screen");
-    if (chatScreen) chatScreen.innerHTML = "";
-};
-    }
-    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    if (datesBtn && datesBtn.nextSibling !== newChat) {
-        datesBtn.insertAdjacentElement('afterend', newChat);
-    } else if (!datesBtn && newChat.parentNode !== cartRoot) {
-        cartRoot.appendChild(newChat);
-    }
-    const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-    newChat.style.display = itemCount > 0 ? 'block' : 'none';
-})();
-
-    // === PDF DOWNLOAD BUTTON & ORDERING (FIXED ORDER) ===
-(function ensurePdfButtonAndOrder() {
-    const cartRoot = document.getElementById('cart');
-    if (!cartRoot) return;
-
-    // 1. PDF Butonunu Oluştur veya Bul
-    let pdfBtn = document.getElementById('tt-pdf-dl-btn');
-    if (!pdfBtn) {
-        pdfBtn = document.createElement('button');
-        pdfBtn.id = 'tt-pdf-dl-btn';
-        pdfBtn.className = 'add-to-calendar-btn'; 
-        pdfBtn.textContent = 'Download Offline Plan (PDF)';
-        
-        // Görsel ayarlar
-        pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
-        pdfBtn.style.color = '#fff';
-        pdfBtn.style.display = 'block'; // Varsayılan görünürlük
-
-        pdfBtn.onclick = function () {
-            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-            if (typeof downloadTripPlanPDF === "function") {
-                const key = window.activeTripKey || 'current_draft';
-                downloadTripPlanPDF(key);
-            } else {
-                alert("PDF module not ready.");
+        // Typing indicator'ı temizle ve gizli olarak ekle
+        if (chatBox) {
+            let indicator = document.getElementById('typing-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'typing-indicator';
+                indicator.className = 'typing-indicator';
+                indicator.innerHTML = '<span></span><span></span><span></span>';
             }
-        };
-    }
-
-    // 2. Görünürlük (Sepet boşsa gizle)
-    const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
-    pdfBtn.style.display = hasRealItem ? 'block' : 'none';
-
-    // 3. DOM SIRALAMASI (ZİNCİRLEME MANTIK)
-    // Hedef Sıra: [Select/Change Dates] -> [Takvim] -> [Tarih Bilgisi] -> [PDF] -> [New Trip Plan]
-
-    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    const calContainer = document.getElementById('calendar-container');
-    const dateRangeDiv = document.querySelector('.date-range'); // EKLENDİ: Tarih kutusu
-    const newChatBtn = document.getElementById('newchat');
-
-    // Eğer ana buton (Select/Change Dates) varsa zinciri başlat
-    if (datesBtn) {
-        let lastElement = datesBtn; // Başlangıç noktası
-
-        // A. Takvim varsa, son elemanın altına ekle ve son elemanı güncelle
-        if (calContainer && calContainer.parentElement) {
-            lastElement.insertAdjacentElement('afterend', calContainer);
-            lastElement = calContainer; 
+            chatBox.appendChild(indicator);
+            indicator.style.display = 'none';
         }
 
-        // B. Tarih Aralığı (Date Range) varsa, son elemanın altına ekle ve güncelle
-        if (dateRangeDiv && dateRangeDiv.parentElement) {
-            lastElement.insertAdjacentElement('afterend', dateRangeDiv);
-            lastElement = dateRangeDiv;
+        try {
+            if (typeof window.__ttNewTripToken === 'function') {
+                window.__activeTripSessionToken = window.__ttNewTripToken();
+            }
+            window.__dayCollagePhotosByDay = {};
+            window.__globalCollageUsed = new Set();
+        } catch (e) {
+            console.warn('[collage] Token reset error:', e);
+        }
+        
+        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+        
+        window.routeElevStatsByDay = {};
+        window.__ttElevDayCache = {};
+        window._segmentHighlight = {};
+        window._lastSegmentDay = undefined;
+        window._lastSegmentStartKm = undefined;
+        window._lastSegmentEndKm = undefined;
+
+        document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
+
+        if (typeof updateCart === "function") updateCart();
+        
+        document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
+        const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
+        if (sidebar) sidebar.classList.add('open');
+
+        // --- Let's get started mesajını tekrar ekle ---
+        window.__welcomeShown = false; 
+        window.__welcomeHiddenForever = false;
+
+        if (chatBox) {
+            chatBox.innerHTML = ''; // İçeriği tamamen boşalt
+            
+            // Typing indicator'ı (gizli olarak) tekrar oluştur/ekle
+            let indicator = document.getElementById('typing-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'typing-indicator';
+                indicator.className = 'typing-indicator';
+                indicator.innerHTML = '<span></span><span></span><span></span>';
+                chatBox.appendChild(indicator);
+            }
+            indicator.style.display = 'none';
         }
 
-        // C. PDF Butonu varsa, son elemanın altına ekle ve güncelle
-        if (pdfBtn) {
-            lastElement.insertAdjacentElement('afterend', pdfBtn);
-            lastElement = pdfBtn;
-        }
+        var iw = document.querySelector('.input-wrapper');
+        if (iw) iw.style.display = '';
 
-        // D. New Trip Plan butonu en sona
-        if (newChatBtn) {
-            lastElement.insertAdjacentElement('afterend', newChatBtn);
-        }
-    } 
-    // Fallback: Eğer Dates butonu yoksa ama PDF varsa (nadir durum), listenin sonuna eklemeye çalış
-    else if (pdfBtn && cartRoot) {
-        cartRoot.appendChild(pdfBtn);
-        if (newChatBtn) cartRoot.appendChild(newChatBtn);
-    }
+        // Önerileri sıfırla
+        if (typeof showSuggestions === "function") showSuggestions(); 
 
-})();
-    // ========================================================
+        document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
+            el.classList.remove('selected-suggestion');
+        });
 
-    (function ensurePostDateSections() {
-        if (!window.cart.startDate) return;
-        let share = document.getElementById('trip-share-section');
-        if (!share) {
-            share = document.createElement('div');
-            share.id = 'trip-share-section';
-            share.className = 'trip-share-section';
-            cartDiv.appendChild(share);
+        const tripDetailsSection = document.getElementById("tt-trip-details");
+        if (tripDetailsSection) tripDetailsSection.remove();
+
+        const chatScreen = document.getElementById("chat-screen");
+        if (chatScreen) chatScreen.innerHTML = "";
+    };
         }
-        if (typeof buildShareSection === 'function') buildShareSection();
-        const oldAI = document.getElementById('ai-info-section');
-        if (oldAI) oldAI.remove();
+        const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+        if (datesBtn && datesBtn.nextSibling !== newChat) {
+            datesBtn.insertAdjacentElement('afterend', newChat);
+        } else if (!datesBtn && newChat.parentNode !== cartRoot) {
+            cartRoot.appendChild(newChat);
+        }
+        const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+        newChat.style.display = itemCount > 0 ? 'block' : 'none';
     })();
 
     (function ensureTripDetailsBlock() {
@@ -5311,6 +5220,95 @@ if (aiInfoSection) {
             };
         }
     })();
+
+    (function ensurePdfButtonAndOrder() {
+        // Hem cart hem cart-items kontrolü yapalım
+        const cartRoot = document.getElementById('cart') || document.getElementById('cart-items');
+        if (!cartRoot) return;
+
+        // 1. PDF Butonunu Oluştur veya Bul
+        let pdfBtn = document.getElementById('tt-pdf-dl-btn');
+        if (!pdfBtn) {
+            pdfBtn = document.createElement('button');
+            pdfBtn.id = 'tt-pdf-dl-btn';
+            pdfBtn.className = 'add-to-calendar-btn'; 
+            pdfBtn.textContent = 'Download Offline Plan (PDF)';
+            pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
+            pdfBtn.style.color = '#fff';
+            pdfBtn.onclick = function () {
+                if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+                if (typeof downloadTripPlanPDF === "function") {
+                    const key = window.activeTripKey || 'current_draft';
+                    downloadTripPlanPDF(key);
+                } else {
+                    alert("PDF module not ready.");
+                }
+            };
+        }
+
+        // 2. Görünürlük
+        const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
+        pdfBtn.style.display = hasRealItem ? 'block' : 'none';
+
+        // 3. DOM SIRALAMASI (Zincirleme Mantık)
+        // Hedef Sıra: [Select/Change Dates] -> [Takvim] -> [Tarih Bilgisi] -> [PDF] -> [New Trip Plan]
+
+        const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+        const calContainer = document.getElementById('calendar-container');
+        const dateRangeDiv = document.querySelector('.date-range'); // Tarih aralığı kutusu
+        const newChatBtn = document.getElementById('newchat');
+
+        // Eğer ana buton (Dates) varsa zinciri başlat
+        if (datesBtn && datesBtn.parentElement) {
+            let lastElement = datesBtn;
+
+            // A. Takvim varsa, son elemanın altına ekle
+            if (calContainer && calContainer.parentElement) {
+                lastElement.insertAdjacentElement('afterend', calContainer);
+                lastElement = calContainer; 
+            }
+
+            // B. Tarih Aralığı (Date Range) varsa, son elemanın altına ekle
+            if (dateRangeDiv && dateRangeDiv.parentElement) {
+                lastElement.insertAdjacentElement('afterend', dateRangeDiv);
+                lastElement = dateRangeDiv;
+            }
+
+            // C. PDF Butonu varsa, son elemanın altına ekle
+            if (pdfBtn) {
+                lastElement.insertAdjacentElement('afterend', pdfBtn);
+                lastElement = pdfBtn;
+            }
+
+            // D. New Trip Plan butonu en sona
+            if (newChatBtn && newChatBtn.parentElement) {
+                lastElement.insertAdjacentElement('afterend', newChatBtn);
+            }
+        } 
+        // Fallback: Dates butonu yoksa (henüz oluşmadıysa)
+        else if (pdfBtn && pdfBtn.parentElement) {
+            // Mevcut yerinde kalsın veya cartRoot sonuna eklensin
+            if (newChatBtn) pdfBtn.insertAdjacentElement('afterend', newChatBtn);
+        }
+
+    })();
+    // ========================================================
+
+    (function ensurePostDateSections() {
+        if (!window.cart.startDate) return;
+        let share = document.getElementById('trip-share-section');
+        if (!share) {
+            share = document.createElement('div');
+            share.id = 'trip-share-section';
+            share.className = 'trip-share-section';
+            cartDiv.appendChild(share);
+        }
+        if (typeof buildShareSection === 'function') buildShareSection();
+        const oldAI = document.getElementById('ai-info-section');
+        if (oldAI) oldAI.remove();
+    })();
+
+   
 
 
     // === OTOMATİK AI INFO GENERATION (Start With Map İçin) ===
