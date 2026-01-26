@@ -5213,7 +5213,7 @@ if (aiInfoSection) {
     
     dateRangeDiv.innerHTML = `
       <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
-      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 A Trip Details</button>
     `;
     
     const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
