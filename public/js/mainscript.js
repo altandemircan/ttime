@@ -5221,12 +5221,12 @@ if (aiInfoSection) {
         }
     })();
 
+   // 2. SONRA bu çalışsın ve sıralamayı düzeltsin
     (function ensurePdfButtonAndOrder() {
-        // Hem cart hem cart-items kontrolü yapalım
         const cartRoot = document.getElementById('cart') || document.getElementById('cart-items');
         if (!cartRoot) return;
 
-        // 1. PDF Butonunu Oluştur veya Bul
+        // --- 1. PDF Butonunu Hazırla ---
         let pdfBtn = document.getElementById('tt-pdf-dl-btn');
         if (!pdfBtn) {
             pdfBtn = document.createElement('button');
@@ -5235,6 +5235,9 @@ if (aiInfoSection) {
             pdfBtn.textContent = 'Download Offline Plan (PDF)';
             pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
             pdfBtn.style.color = '#fff';
+            // Görsel ayrım için altına biraz boşluk bırakalım
+            pdfBtn.style.marginBottom = '10px'; 
+            
             pdfBtn.onclick = function () {
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
                 if (typeof downloadTripPlanPDF === "function") {
@@ -5246,49 +5249,48 @@ if (aiInfoSection) {
             };
         }
 
-        // 2. Görünürlük
+        // Görünürlük ayarı
         const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
         pdfBtn.style.display = hasRealItem ? 'block' : 'none';
 
-        // 3. DOM SIRALAMASI (Zincirleme Mantık)
-        // Hedef Sıra: [Select/Change Dates] -> [Takvim] -> [Tarih Bilgisi] -> [PDF] -> [New Trip Plan]
-
+        // --- 2. Elementleri Bul ---
         const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         const calContainer = document.getElementById('calendar-container');
-        const dateRangeDiv = document.querySelector('.date-range'); // Tarih aralığı kutusu
+        const dateRangeDiv = document.querySelector('.date-range');
         const newChatBtn = document.getElementById('newchat');
 
-        // Eğer ana buton (Dates) varsa zinciri başlat
+        // --- 3. YERLEŞTİRME MANTIĞI ---
+
         if (datesBtn && datesBtn.parentElement) {
+            // A. PDF Butonunu "Select Dates" butonunun ÜSTÜNE (Önüne) ekle
+            // Bu sayede "Add Day" vb. listeleme elemanlarının altında, Tarih butonunun üstünde kalır.
+            if (pdfBtn) {
+                datesBtn.parentElement.insertBefore(pdfBtn, datesBtn);
+            }
+
+            // B. Diğer Elemanları (Takvim, Tarih Bilgisi, New Chat) "Select Dates"in ALTINA sırala
             let lastElement = datesBtn;
 
-            // A. Takvim varsa, son elemanın altına ekle
+            // Takvim
             if (calContainer && calContainer.parentElement) {
                 lastElement.insertAdjacentElement('afterend', calContainer);
                 lastElement = calContainer; 
             }
 
-            // B. Tarih Aralığı (Date Range) varsa, son elemanın altına ekle
+            // Tarih Bilgisi
             if (dateRangeDiv && dateRangeDiv.parentElement) {
                 lastElement.insertAdjacentElement('afterend', dateRangeDiv);
                 lastElement = dateRangeDiv;
             }
 
-            // C. PDF Butonu varsa, son elemanın altına ekle
-            if (pdfBtn) {
-                lastElement.insertAdjacentElement('afterend', pdfBtn);
-                lastElement = pdfBtn;
-            }
-
-            // D. New Trip Plan butonu en sona
+            // New Trip Butonu (En sona)
             if (newChatBtn && newChatBtn.parentElement) {
                 lastElement.insertAdjacentElement('afterend', newChatBtn);
             }
         } 
-        // Fallback: Dates butonu yoksa (henüz oluşmadıysa)
-        else if (pdfBtn && pdfBtn.parentElement) {
-            // Mevcut yerinde kalsın veya cartRoot sonuna eklensin
-            if (newChatBtn) pdfBtn.insertAdjacentElement('afterend', newChatBtn);
+        else if (pdfBtn && cartRoot) {
+            // Eğer tarih butonu yoksa (henüz oluşmadıysa) PDF'i en sona ekle
+            cartRoot.appendChild(pdfBtn);
         }
 
     })();
