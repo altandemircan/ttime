@@ -5192,51 +5192,7 @@ if (aiInfoSection) {
         newChat.style.display = itemCount > 0 ? 'block' : 'none';
     })();
 
-    (function ensureTripDetailsBlock() {
-    const cartDiv = document.getElementById("cart-items");
-    
-    if (!window.cart.startDate) {
-        const existing = cartDiv.querySelector('.date-range');
-        if (existing) existing.remove();
-        return;
-    }
-    
-    let dateRangeDiv = cartDiv.querySelector('.date-range');
-    if (!dateRangeDiv) {
-        dateRangeDiv = document.createElement('div');
-        dateRangeDiv.className = 'date-range';
-    }
-    
-    const endDate = (window.cart.endDates && window.cart.endDates.length)
-        ? window.cart.endDates[window.cart.endDates.length - 1]
-        : window.cart.startDate;
-    
-    dateRangeDiv.innerHTML = `
-      <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
-      <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 A Trip Details</button>
-    `;
-    
-    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
-    if (detailsBtn) {
-        detailsBtn.onclick = () => {
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(window.cart.startDate);
-            }
-        };
-    }
 
-    // "Change Dates" butonunun hemen altına ekle (New Trip Plan'ın üstüne)
-    // const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    // if (datesBtn) {
-    //     // Eğer dateRangeDiv zaten var ve başka yerde ise, kaldır
-    //     if (dateRangeDiv.parentElement) {
-    //         dateRangeDiv.remove();
-    //     }
-    //     datesBtn.insertAdjacentElement('afterend', dateRangeDiv);
-    // } else {
-    //     cartDiv.appendChild(dateRangeDiv);
-    // }
-})();
 
 (function ensurePdfButtonAndOrder() {
     // Hem cart hem cart-items kontrolü yapalım
@@ -5275,34 +5231,40 @@ if (aiInfoSection) {
 
 })();
 
-// updateCart'ın sonuna ekle (ensurePdfButtonAndOrder'dan SONRA):
-
 (function ensureTripDetailsButtonAlways() {
     const cartDiv = document.getElementById("cart-items");
-    
+    if (!cartDiv) return;
+
     let dateRangeDiv = cartDiv.querySelector('.date-range');
     if (!dateRangeDiv) {
         dateRangeDiv = document.createElement('div');
         dateRangeDiv.className = 'date-range';
     }
     
+    // Butonun HTML'i (İkonlu)
+    const btnHtml = `
+        <button type="button" class="see-details-btn" data-role="trip-details-btn" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <img src="/img/trip_details.svg" alt="" style="width: 18px; height: 18px;">
+            Trip Details
+        </button>
+    `;
+    
     if (window.cart.startDate) {
-        // Tarih varsa normal göster
+        // DURUM 1: Tarih VAR
         const endDate = (window.cart.endDates && window.cart.endDates.length)
             ? window.cart.endDates[window.cart.endDates.length - 1]
             : window.cart.startDate;
         
         dateRangeDiv.innerHTML = `
           <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
-          <button type="button" class="see-details-btn" data-role="trip-details-btn">😀 B Trip Details</button>
+          ${btnHtml}
         `;
     } else {
-        // Tarih yoksa sadece buton göster
-        dateRangeDiv.innerHTML = `
-          <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 C Trip Details</button>
-        `;
+        // DURUM 2: Tarih YOK
+        dateRangeDiv.innerHTML = btnHtml;
     }
     
+    // Tıklama Olayını Bağla
     const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
     if (detailsBtn) {
         detailsBtn.onclick = () => {
@@ -5312,7 +5274,7 @@ if (aiInfoSection) {
         };
     }
     
-    // Ekle veya güncelle
+    // UI Güncelle
     const existing = cartDiv.querySelector('.date-range');
     if (existing) {
         existing.replaceWith(dateRangeDiv);
