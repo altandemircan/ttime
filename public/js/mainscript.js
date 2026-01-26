@@ -167,61 +167,63 @@ function showSuggestions() {
     suggestionsDiv.innerHTML = "";
 
     const options = [
-        { text: "2 days in Antalya",         flag: countryFlag("TR") }, // Türkiye
-        { text: "Explore Rome for 3 day",    flag: countryFlag("IT") }, // İtalya
-        { text: "1 days in Tokyo",           flag: countryFlag("JP") }, // Japonya
-        { text: "London 2-day guide",        flag: countryFlag("GB") }, // İngiltere
-        { text: "3-day Paris itinerary",     flag: countryFlag("FR") }, // Fransa
-        { text: "Visit Madrid in 1 days",    flag: countryFlag("ES") }, // İspanya
-        { text: "3 days in Bangkok",         flag: countryFlag("TH") }, // Tayland
-        { text: "Discover Petra for 2 day",  flag: countryFlag("JO") }  // Ürdün
+        { text: "2 days in Antalya",          flag: countryFlag("TR") },
+        { text: "Explore Rome for 3 days",    flag: countryFlag("IT") },
+        { text: "1 day in Tokyo",             flag: countryFlag("JP") },
+        { text: "London 2-day guide",         flag: countryFlag("GB") },
+        { text: "3-day Paris itinerary",      flag: countryFlag("FR") },
+        { text: "Visit Madrid in 1 day",      flag: countryFlag("ES") },
+        { text: "3 days in Bangkok",          flag: countryFlag("TH") },
+        { text: "Discover Petra for 2 days",  flag: countryFlag("JO") }
     ];
 
-   options.forEach(option => {
-    const suggestion = document.createElement("div");
-    suggestion.className = "category-area-option";
-    suggestion.innerText = `${option.text} ${option.flag}`;
+    options.forEach(option => {
+        const suggestion = document.createElement("div");
+        suggestion.className = "category-area-option";
+        suggestion.innerText = `${option.text} ${option.flag}`;
 
-    suggestion.onclick = function() {
-        Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-        suggestion.classList.add("selected-suggestion");
+        suggestion.onclick = function() {
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            suggestion.classList.add("selected-suggestion");
 
-        // SABİT VE GARANTİLİ ŞEHİR-GÜN TANIMI!
-        let city, days;
-        switch(option.text) {
-            case "2 days in Antalya":          city = "Antalya"; days = 2; break;
-            case "Explore Rome for 3 day":     city = "Rome";    days = 3; break;
-            case "1 days in Tokyo":            city = "Tokyo";   days = 1; break;
-            case "London 2-day guide":         city = "London";  days = 2; break;
-            case "3-day Paris itinerary":      city = "Paris";   days = 3; break;
-            case "Visit Madrid in 1 days":     city = "Madrid";  days = 1; break;
-            case "3 days in Bangkok":          city = "Bangkok"; days = 3; break;
-            case "Discover Petra for 2 day":   city = "Petra";   days = 2; break;
-            default: /* fallback */            city = "City";    days = 2; break;
-        }
-        let canonicalStr = `Plan a ${days}-day tour for ${city}`;
-        window.__programmaticInput = true;
-        if (typeof setChatInputValue === "function") {
-            setChatInputValue(canonicalStr);
-        } else {
-            chatInput.value = canonicalStr;
-        }
-        setTimeout(() => { window.__programmaticInput = false; }, 0);
+            let city, days;
+            switch(option.text) {
+                case "2 days in Antalya":           city = "Antalya"; days = 2; break;
+                case "Explore Rome for 3 days":     city = "Rome";    days = 3; break;
+                case "1 day in Tokyo":              city = "Tokyo";   days = 1; break;
+                case "London 2-day guide":          city = "London";  days = 2; break;
+                case "3-day Paris itinerary":       city = "Paris";   days = 3; break;
+                case "Visit Madrid in 1 day":       city = "Madrid";  days = 1; break;
+                case "3 days in Bangkok":           city = "Bangkok"; days = 3; break;
+                case "Discover Petra for 2 days":   city = "Petra";   days = 2; break;
+                default:                            city = "City";    days = 2; break;
+            }
 
-        window.selectedSuggestion = { displayText: canonicalStr, city, days };
-        window.selectedLocation = { city, days };
-        window.selectedLocationLocked = true;
-        window.__locationPickedFromSuggestions = true;
-        enableSendButton?.();
-        showSuggestionsDiv?.();
-        if (typeof updateCanonicalPreview === "function") {
-            updateCanonicalPreview();
-        }
-    };
-    suggestionsDiv.appendChild(suggestion);
-});
+            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+            window.__programmaticInput = true;
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
+
+            window.selectedSuggestion = { displayText: canonicalStr, city, days };
+            window.selectedLocation = { city, days };
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton?.();
+            showSuggestionsDiv?.();
+            if (typeof updateCanonicalPreview === "function") {
+                updateCanonicalPreview();
+            }
+        };
+        suggestionsDiv.appendChild(suggestion);
+    });
+
     showSuggestionsDiv?.();
 }
+
     if (!chatInput) return;
 
 
