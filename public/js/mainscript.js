@@ -5050,36 +5050,36 @@ if (aiInfoSection) {
 
     if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-    (function ensureSelectDatesButton() {
-        const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
-            !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
-        );
-        if (!hasRealItem) {
-            let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-            if (btn) btn.remove();
-            return;
-        }
-        let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-        if (!btn) {
-            btn = document.createElement('button');
-            btn.className = 'add-to-calendar-btn';
-            btn.setAttribute('data-role', 'trip-dates');
-            cartDiv.appendChild(btn);
-        }
-        btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
-        btn.onclick = () => {
-    if (typeof openCalendar === 'function') {
-        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
-        openCalendar(maxDay);
+//     (function ensureSelectDatesButton() {
+//         const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
+//             !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
+//         );
+//         if (!hasRealItem) {
+//             let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+//             if (btn) btn.remove();
+//             return;
+//         }
+//         let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+//         if (!btn) {
+//             btn = document.createElement('button');
+//             btn.className = 'add-to-calendar-btn';
+//             btn.setAttribute('data-role', 'trip-dates');
+//             cartDiv.appendChild(btn);
+//         }
+//         btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
+//         btn.onclick = () => {
+//     if (typeof openCalendar === 'function') {
+//         const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
+//         openCalendar(maxDay);
 
-        // [FIX] Takvim açıldıktan hemen sonra butonun altına taşı
-        const calContainer = document.getElementById('calendar-container');
-        if (calContainer) {
-            btn.insertAdjacentElement('afterend', calContainer);
-        }
-    }
-};
-    })();
+//         // [FIX] Takvim açıldıktan hemen sonra butonun altına taşı
+//         const calContainer = document.getElementById('calendar-container');
+//         if (calContainer) {
+//             btn.insertAdjacentElement('afterend', calContainer);
+//         }
+//     }
+// };
+//     })();
 
     (function ensureNewChatInsideCart() {
         const oldOutside = document.querySelector('#newchat');
@@ -5226,16 +5226,16 @@ if (aiInfoSection) {
     }
 
     // "Change Dates" butonunun hemen altına ekle (New Trip Plan'ın üstüne)
-    const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-    if (datesBtn) {
-        // Eğer dateRangeDiv zaten var ve başka yerde ise, kaldır
-        if (dateRangeDiv.parentElement) {
-            dateRangeDiv.remove();
-        }
-        datesBtn.insertAdjacentElement('afterend', dateRangeDiv);
-    } else {
-        cartDiv.appendChild(dateRangeDiv);
-    }
+    // const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    // if (datesBtn) {
+    //     // Eğer dateRangeDiv zaten var ve başka yerde ise, kaldır
+    //     if (dateRangeDiv.parentElement) {
+    //         dateRangeDiv.remove();
+    //     }
+    //     datesBtn.insertAdjacentElement('afterend', dateRangeDiv);
+    // } else {
+    //     cartDiv.appendChild(dateRangeDiv);
+    // }
 })();
 
 (function ensurePdfButtonAndOrder() {
