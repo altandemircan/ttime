@@ -316,6 +316,43 @@ async function shareOnWhatsApp() {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
 }
 
+
+
+// ===== createOptimizedLongLink'i GÜNCELLE - Tarih ekle =====
+// (Eski fonksiyonu şu şekilde güncelle:)
+function createOptimizedLongLink() {
+    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
+    const items = (window.cart || []).map(item => {
+        const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
+        const lat = parseFloat(item.lat || item.location?.lat || 0).toFixed(4);
+        const lng = parseFloat(item.lng || item.location?.lng || 0).toFixed(4);
+        const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
+        return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
+    }).join('*');
+
+    let aiPart = "";
+    const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
+    if (aiSummaryText) {
+        const s = aiSummaryText.replace(/[|*~]/g, '').trim();
+        const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
+        const h = (window.lastTripAIInfo?.highlight || document.getElementById('ai-highlight')?.innerText || "").replace(/[|*~]/g, '').trim();
+        aiPart = `|${s}~${t}~${h}`;
+    } else { aiPart = "|"; }
+
+    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
+    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
+    
+    // TAR İH EKLE (Eğer varsa)
+    let datePart = "";
+    if (window.cart.startDate) {
+        const encodedStartDate = window.cart.startDate.replace(/\//g, '-');
+        datePart = `|${encodedStartDate}`;
+    }
+
+    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart + datePart)}`;
+} 
+
+
 // ===== 1. MODAL - Share öncesi tarih seçimi =====
 function showDatePickerBeforeShare() {
     const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
@@ -474,7 +511,10 @@ async function confirmShareWithDates() {
     
     // Share mekanizmasını başlat
     let shareText = `Check out my trip plan!\n`;
-    shareText += `📅 ${window.modalSelectedStartDate} - ${window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]}\n\n`;
+    const endDate = (window.modalSelectedEndDates && window.modalSelectedEndDates.length > 0)
+        ? window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]
+        : window.modalSelectedStartDate;
+    shareText += `📅 ${window.modalSelectedStartDate} - ${endDate}\n\n`;
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     for (let day = 1; day <= maxDay; day++) {
@@ -503,38 +543,4 @@ async function confirmShareWithDates() {
     
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-}
-
-// ===== createOptimizedLongLink'i GÜNCELLE - Tarih ekle =====
-// (Eski fonksiyonu şu şekilde güncelle:)
-function createOptimizedLongLink() {
-    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
-    const items = (window.cart || []).map(item => {
-        const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
-        const lat = parseFloat(item.lat || item.location?.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || item.location?.lng || 0).toFixed(4);
-        const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
-        return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
-    }).join('*');
-
-    let aiPart = "";
-    const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
-    if (aiSummaryText) {
-        const s = aiSummaryText.replace(/[|*~]/g, '').trim();
-        const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
-        const h = (window.lastTripAIInfo?.highlight || document.getElementById('ai-highlight')?.innerText || "").replace(/[|*~]/g, '').trim();
-        aiPart = `|${s}~${t}~${h}`;
-    } else { aiPart = "|"; }
-
-    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
-    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
-    
-    // TAR İH EKLE (Eğer varsa)
-    let datePart = "";
-    if (window.cart.startDate) {
-        const encodedStartDate = window.cart.startDate.replace(/\//g, '-');
-        datePart = `|${encodedStartDate}`;
-    }
-
-    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart + datePart)}`;
 }
