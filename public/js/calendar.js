@@ -236,8 +236,12 @@ function selectDate(day, month, year, tripDuration) {
         }
     });
 
-    const buttonText = window.tripDates.startDate
-        ? `Change Dates (${window.tripDates.startDate} - ${window.tripDates.endDates[window.tripDates.endDates.length - 1]})`
-        : "Select Dates (No date selected)";
+const buttonText = window.tripDates.startDate
+    ? `Change Dates (${window.tripDates.startDate} - ${window.tripDates.endDates[window.tripDates.endDates.length - 1]})`
+    : "Select Dates (No date selected)";
+
+// SADECE data-role="trip-dates" olan butonu güncelle (PDF butonuna dokunma!)
+const addToCalendarButton = document.querySelector(".add-to-calendar-btn[data-role='trip-dates']");
+if (addToCalendarButton) {
     addToCalendarButton.textContent = buttonText;
 }
