@@ -5221,21 +5221,26 @@ if (aiInfoSection) {
         }
     })();
 
-   // 2. SONRA bu çalışsın ve sıralamayı düzeltsin
+    // === PDF DOWNLOAD BUTTON & FINAL ORDERING ===
     (function ensurePdfButtonAndOrder() {
         const cartRoot = document.getElementById('cart') || document.getElementById('cart-items');
         if (!cartRoot) return;
 
-        // --- 1. PDF Butonunu Hazırla ---
+        // 1. PDF Butonunu Oluştur veya Bul
         let pdfBtn = document.getElementById('tt-pdf-dl-btn');
         if (!pdfBtn) {
             pdfBtn = document.createElement('button');
             pdfBtn.id = 'tt-pdf-dl-btn';
             pdfBtn.className = 'add-to-calendar-btn'; 
             pdfBtn.textContent = 'Download Offline Plan (PDF)';
+            
+            // Stil Ayarları
             pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
             pdfBtn.style.color = '#fff';
-          
+            pdfBtn.style.display = 'block';
+            pdfBtn.style.marginTop = '10px';    // Üstteki butonla (Add Day) mesafe
+            pdfBtn.style.marginBottom = '5px';  // Alttaki butonla (Select Dates) mesafe
+
             pdfBtn.onclick = function () {
                 if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
                 if (typeof downloadTripPlanPDF === "function") {
@@ -5247,48 +5252,49 @@ if (aiInfoSection) {
             };
         }
 
-        // Görünürlük ayarı
+        // 2. Görünürlük (Sepet doluysa göster)
         const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
         pdfBtn.style.display = hasRealItem ? 'block' : 'none';
 
-        // --- 2. Elementleri Bul ---
+
+        // 3. DOM SIRALAMASI (FIXED ORDER)
+        // Hedef Sıra: [PDF] -> [Select Dates] -> [Takvim] -> [Tarih Bilgisi] -> [New Trip Plan]
+
         const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         const calContainer = document.getElementById('calendar-container');
         const dateRangeDiv = document.querySelector('.date-range');
         const newChatBtn = document.getElementById('newchat');
 
-        // --- 3. YERLEŞTİRME MANTIĞI ---
-
         if (datesBtn && datesBtn.parentElement) {
-            // A. PDF Butonunu "Select Dates" butonunun ÜSTÜNE (Önüne) ekle
-            // Bu sayede "Add Day" vb. listeleme elemanlarının altında, Tarih butonunun üstünde kalır.
+            // A. PDF Butonunu "Select Dates" butonunun ÜSTÜNE koy
             if (pdfBtn) {
                 datesBtn.parentElement.insertBefore(pdfBtn, datesBtn);
             }
 
-            // B. Diğer Elemanları (Takvim, Tarih Bilgisi, New Chat) "Select Dates"in ALTINA sırala
+            // B. Diğer elemanları "Select Dates" butonunun ALTINA sırala
             let lastElement = datesBtn;
 
-            // Takvim
+            // Takvim (Varsa Dates butonunun hemen altına)
             if (calContainer && calContainer.parentElement) {
                 lastElement.insertAdjacentElement('afterend', calContainer);
                 lastElement = calContainer; 
             }
 
-            // Tarih Bilgisi
+            // Tarih Bilgisi (Varsa takvimin/dates butonunun altına)
             if (dateRangeDiv && dateRangeDiv.parentElement) {
                 lastElement.insertAdjacentElement('afterend', dateRangeDiv);
                 lastElement = dateRangeDiv;
             }
 
-            // New Trip Butonu (En sona)
+            // New Trip Plan (En sona)
             if (newChatBtn && newChatBtn.parentElement) {
                 lastElement.insertAdjacentElement('afterend', newChatBtn);
             }
         } 
+        // Fallback: Dates butonu yoksa PDF'i en sona ekle
         else if (pdfBtn && cartRoot) {
-            // Eğer tarih butonu yoksa (henüz oluşmadıysa) PDF'i en sona ekle
             cartRoot.appendChild(pdfBtn);
+            if (newChatBtn) cartRoot.appendChild(newChatBtn);
         }
 
     })();
