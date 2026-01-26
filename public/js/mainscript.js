@@ -5233,8 +5233,8 @@ if (aiInfoSection) {
         pdfBtn.id = 'tt-pdf-dl-btn';
         pdfBtn.className = 'pdf-download-btn'; 
         pdfBtn.textContent = 'Download Offline Plan (PDF)';
-        pdfBtn.style.background = '';
-        pdfBtn.style.color = '';
+        pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
+        pdfBtn.style.color = '#fff';
         pdfBtn.onclick = function () {
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
             if (typeof downloadTripPlanPDF === "function") {
