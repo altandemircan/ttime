@@ -452,33 +452,49 @@ function renderModalCalendar(tripDuration) {
     container.innerHTML = html;
 }
 
-// --- 6. Modal'da tarih seç ---
+// --- 6. Modal'da tarih seç (DÜZELTİLMİŞ VERSİYON) ---
 function selectModalDate(day, month, year, tripDuration) {
     const selectedDate = new Date(year, month, day);
     
-    // ... (Highlight / Renklendirme kodları aynı kalacak, buraya dokunma) ...
+    // 1. ÖNCEKİ SEÇİMLERİ TEMİZLE (Reset)
+    // Tıklama yapıldığında sahadaki tüm butonları sıfırlıyoruz
     document.querySelectorAll('.modal-date-btn').forEach(btn => {
-        const btnDay = parseInt(btn.getAttribute('data-day'));
-        let shouldHighlight = false;
-        
-        for (let i = 0; i < tripDuration; i++) {
-            const checkDate = new Date(year, month, day + i);
-            const btnDate = new Date(year, month, btnDay);
-            if (checkDate.toDateString() === btnDate.toDateString()) {
-                shouldHighlight = true;
-                break;
-            }
-        }
-        
-        if (shouldHighlight) {
-            btn.style.borderColor = '#8a4af3';
-            btn.style.background = '#faf8ff';
-        }
+        btn.style.background = '#fafafa';
+        btn.style.borderColor = 'transparent';
+        btn.style.color = '#1a1a1a';
+        btn.style.fontWeight = '500';
     });
     
-    // --- GÜNCELLEME BURADA: YENİ FORMAT ---
-    // Tarihi "May 14, 2026" olarak kaydet
-    window.modalSelectedStartDate = formatDateLong(selectedDate); 
+    // 2. YENİ SEÇİMİ BOYA (Range Highlight)
+    // Gezi süresi kaç günse (tripDuration), o kadar günü boyuyoruz
+    for (let i = 0; i < tripDuration; i++) {
+        // Döngüdeki tarihi hesapla
+        const currentLoopDate = new Date(selectedDate);
+        currentLoopDate.setDate(selectedDate.getDate() + i);
+
+        // Bu tarih şu anki gösterilen ay içinde mi? (Sadece ekrandaki butonları boya)
+        if (currentLoopDate.getMonth() === month && currentLoopDate.getFullYear() === year) {
+            const dayToHighlight = currentLoopDate.getDate();
+            const btn = document.querySelector(`.modal-date-btn[data-day="${dayToHighlight}"]`);
+
+            if (btn) {
+                // Seçili günleri boya
+                btn.style.borderColor = '#8a4af3';
+                btn.style.background = '#faf8ff'; // Açık mor arka plan
+                btn.style.color = '#1a1a1a';
+                
+                // Başlangıç gününü (ilk gün) daha belirgin yap
+                if (i === 0) {
+                    btn.style.background = '#8a4af3'; // Koyu mor
+                    btn.style.color = '#ffffff';       // Beyaz yazı
+                    btn.style.fontWeight = '700';
+                }
+            }
+        }
+    }
+    
+    // 3. VERİYİ KAYDET (May 14, 2026 formatında)
+    window.modalSelectedStartDate = formatDateLong(selectedDate);
     window.modalSelectedEndDates = [];
     
     for (let i = 0; i < tripDuration; i++) {
@@ -487,9 +503,8 @@ function selectModalDate(day, month, year, tripDuration) {
         window.modalSelectedEndDates.push(formatDateLong(d));
     }
     
-    console.log('Kaydedilen:', window.modalSelectedStartDate, window.modalSelectedEndDates);
+    console.log('Seçilen Başlangıç:', window.modalSelectedStartDate);
 }
-
 // --- 7. Modal'ı kapat ---
 function closeShareModal() {
     const modal = document.getElementById('date-picker-modal');
