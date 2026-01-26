@@ -178,16 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let i = 0; i < maxDay; i++) {
                     const d = new Date(startDate);
                     d.setDate(d.getDate() + i);
-                    endDates.push(d.toLocaleDateString());
+                    // --- DÜZELTME: en-US formatı ---
+                    endDates.push(d.toLocaleDateString('en-US'));
                 }
                 
-              window.cart.startDate = startDate.toLocaleDateString();
+                // --- DÜZELTME: en-US formatı ---
+                window.cart.startDate = startDate.toLocaleDateString('en-US');
                 window.cart.endDates = endDates;
 
-                // EKLEMEN GEREKEN SATIR:
                 localStorage.setItem('tripStartDate', window.cart.startDate);
             }
-            }
+        }
 
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
@@ -444,6 +445,7 @@ function renderModalCalendar(tripDuration) {
 }
 
 // --- 6. Modal'da tarih seç ---
+// --- 6. Modal'da tarih seç ---
 function selectModalDate(day, month, year, tripDuration) {
     const selectedDate = new Date(year, month, day);
     
@@ -455,12 +457,11 @@ function selectModalDate(day, month, year, tripDuration) {
         btn.style.background = '#fafafa';
     });
     
-    // Yeni seçimi işaretle - TÜM GÜNLERI RENKLENDIR
+    // Yeni seçimi işaretle
     document.querySelectorAll('.modal-date-btn').forEach(btn => {
         const btnDay = parseInt(btn.getAttribute('data-day'));
         let shouldHighlight = false;
         
-        // Seçilen gün ve sonraki tripDuration günleri renklendir
         for (let i = 0; i < tripDuration; i++) {
             const checkDate = new Date(year, month, day + i);
             const btnDate = new Date(year, month, btnDay);
@@ -476,14 +477,15 @@ function selectModalDate(day, month, year, tripDuration) {
         }
     });
     
-    // Global variable'a kaydet
-    window.modalSelectedStartDate = selectedDate.toLocaleDateString();
+    // --- DÜZELTME BURADA: 'en-US' FORMATI KULLAN ---
+    // Tarihleri her zaman MM/DD/YYYY formatında tutuyoruz ki 'Invalid Date' olmasın.
+    window.modalSelectedStartDate = selectedDate.toLocaleDateString('en-US');
     window.modalSelectedEndDates = [];
     
     for (let i = 0; i < tripDuration; i++) {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() + i);
-        window.modalSelectedEndDates.push(d.toLocaleDateString());
+        window.modalSelectedEndDates.push(d.toLocaleDateString('en-US'));
     }
     
     console.log('Kaydedilen tarihler:', window.modalSelectedStartDate, window.modalSelectedEndDates);
