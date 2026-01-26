@@ -5205,7 +5205,7 @@ if (aiInfoSection) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
         pdfBtn.className = 'add-to-calendar-btn'; 
-        pdfBtn.textContent = 'Download Offline Plan (PDF)';
+        pdfBtn.textContent = 'Download Your Plan';
         pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
         pdfBtn.style.color = '#fff';
         pdfBtn.onclick = function () {
