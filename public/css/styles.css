@@ -4526,7 +4526,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .route-scale-bar {
-    width: calc(100% - 30px);
+    width: calc(100% - 40px);
 }
 
 .scale-bar-track { user-select: none; }
@@ -4537,16 +4537,16 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .scale-bar-label { color: #333 !important; font-size: 0.6rem !important;}
 
 .expanded-map-panel {
-    right: 30px;
+right: 30px;
     left: 30px;
-    width: calc(100% - 450px);
+    width: calc(100% - 465px);
     z-index: 123456;
     display: flex;
     position: fixed;
     bottom: 20px;
     background: rgb(255 255 255);
     gap: 4px;
-    padding: 0 10px;
+    padding: 0px 20px 0px 20px;
     /* border-radius: 10px; */
     align-items: center;
     /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
@@ -4597,8 +4597,9 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 }
 
 .elev-segment-toolbar {
-        bottom: 150px;
-    right: 14px;
+    bottom: 150px;
+    right: 15px;
+    left: -30px;
     position: absolute;
     display: flex;
     align-items: center;
@@ -4606,14 +4607,12 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     z-index: 5;
     background: #ffffff;
     border-radius: 12px 0 0 0;
-    padding: 6px 10px;
+    padding: 5px 20px 5px 10px;
     font-size: 11px;
     color: #1e293b;
     font-weight: 700;
-
     justify-content: flex-end;
     border-radius: 0;
-    width: 100%;
 }
 
 @media (max-width: 768px) {
