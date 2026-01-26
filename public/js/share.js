@@ -520,7 +520,7 @@ async function confirmShareWithDates() {
         : window.modalSelectedStartDate;
         
     // (Düzeltme: Değişkenler silinmeden kullanılıyor)
-    shareText += `📅 ${window.modalSelectedStartDate} - ${endDate}\n\n`;
+    shareText += `${window.modalSelectedStartDate} - ${endDate}\n\n`;
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     for (let day = 1; day <= maxDay; day++) {
