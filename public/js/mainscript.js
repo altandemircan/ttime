@@ -5221,8 +5221,6 @@ if (aiInfoSection) {
         }
     })();
 
-    // SADECE DEĞİŞEN KISMINI GÖSTERİYORUM - ensurePdfButtonAndOrder fonksiyonunu değiştir
-
 (function ensurePdfButtonAndOrder() {
     // Hem cart hem cart-items kontrolü yapalım
     const cartRoot = document.getElementById('cart') || document.getElementById('cart-items');
@@ -5252,56 +5250,10 @@ if (aiInfoSection) {
     const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
     pdfBtn.style.display = hasRealItem ? 'block' : 'none';
 
-    // 3. DOM SIRALAMASI (Yenı Sıra)
-    // Hedef Sıra: [Select/Change Dates] -> [Takvim] -> [Tarih Bilgisi] -> [New Trip Plan] -> [Add New Day] -> [PDF] -> [Share]
-
-    const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    // 3. PDF Butonunu "Add New Day"'in altına koy
     const addNewDayBtn = document.getElementById('add-new-day-button');
-    const calContainer = document.getElementById('calendar-container');
-    const dateRangeDiv = document.querySelector('.date-range');
-    const newChatBtn = document.getElementById('newchat');
-
-    // A. Dates butonu varsa zinciri başlat
-    if (datesBtn && datesBtn.parentElement) {
-        let lastElement = datesBtn;
-
-        // B. Takvim varsa, son elemanın altına ekle
-        if (calContainer && calContainer.parentElement) {
-            lastElement.insertAdjacentElement('afterend', calContainer);
-            lastElement = calContainer; 
-        }
-
-        // C. Tarih Aralığı (Date Range) varsa, son elemanın altına ekle
-        if (dateRangeDiv && dateRangeDiv.parentElement) {
-            lastElement.insertAdjacentElement('afterend', dateRangeDiv);
-            lastElement = dateRangeDiv;
-        }
-
-        // D. New Trip Plan butonu
-        if (newChatBtn && newChatBtn.parentElement) {
-            lastElement.insertAdjacentElement('afterend', newChatBtn);
-            lastElement = newChatBtn;
-        }
-
-        // E. Add New Day butonu
-        if (addNewDayBtn && addNewDayBtn.parentElement) {
-            lastElement.insertAdjacentElement('afterend', addNewDayBtn);
-            lastElement = addNewDayBtn;
-        }
-
-        // F. PDF Butonu - en sona ekleme yerine yeni konumuna
-        if (pdfBtn) {
-            lastElement.insertAdjacentElement('afterend', pdfBtn);
-        }
-    } 
-    // Fallback: Dates butonu yoksa
-    else if (addNewDayBtn && addNewDayBtn.parentElement) {
-        // Add New Day'in altına ekle
+    if (addNewDayBtn) {
         addNewDayBtn.insertAdjacentElement('afterend', pdfBtn);
-    }
-    // Son fallback: PDF'yi direkt ekle
-    else if (pdfBtn && !pdfBtn.parentElement) {
-        cartRoot.appendChild(pdfBtn);
     }
 
 })();
