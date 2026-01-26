@@ -328,7 +328,7 @@ function showTripDetails(startDate) {
     const startDateObj = startDate ? new Date(startDate) : null;
     if (typeof window.customDayNames === "undefined") window.customDayNames = {};
 
-   for (let day = 1; day <= maxDay; day++) {
+    for (let day = 1; day <= maxDay; day++) {
     const rawItems = window.cart.filter(it => it.day == day && it.name !== undefined);
     
     let groupedItems = [];
@@ -361,7 +361,133 @@ function showTripDetails(startDate) {
     }
     
     const dayTitle = window.customDayNames[day] || `Day ${day}`;
-    const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`;
+    const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`
+        const li = document.createElement("li");
+        li.className = "day-item";
+        const container = document.createElement("div");
+        container.className = "accordion-container";
+        const inputId = `tt-day-${day}`;
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.id = inputId;
+        input.className = "accordion-toggle";
+        input.checked = true;
+        container.appendChild(input);
+
+        const label = document.createElement("label");
+        label.setAttribute("for", inputId);
+        label.className = "accordion-label";
+        label.innerHTML = `${labelText} <img src="img/arrow_down.svg" class="accordion-arrow">`;
+        container.appendChild(label);
+
+        const content = document.createElement("div");
+        content.className = "accordion-content";
+        const daySteps = document.createElement("div");
+        daySteps.className = "day-steps active-view";
+        daySteps.setAttribute("data-day", String(day));
+
+        if (groupedItems.length > 0) {
+            daySteps.innerHTML = `
+  <div class="splide" id="splide-trip-details-day${day}">
+    <div class="splide__track">
+      <ul class="splide__list">
+        ${groupedItems.map((step, idx) => {
+            
+            // --- 3. HTML OLUŞTURMA ---
+            let notesHtml = "";
+            if (step.attachedNotes && step.attachedNotes.length > 0) {
+                const uniqueDisplayId = `note-display-${day}-${idx}`;
+                
+                notesHtml = `
+                <div class="attached-notes-container">
+                    
+                    <div id="${uniqueDisplayId}" class="shared-note-view">
+                        </div>
+
+                    <div class="note-buttons-wrapper">
+                        ${step.attachedNotes.map((note, nIdx) => {
+                            const nTitle = note.name || "Note";
+                            const nDesc = (note.noteDetails || "").replace(/"/g, '&quot;').replace(/\n/g, '<br>');
+                            
+                            return `
+                            <div class="note-trigger-btn" 
+                                 onclick="updateAttachedNote('${uniqueDisplayId}', this)"
+                                 data-title="${nTitle}"
+                                 data-desc="${nDesc}">
+                                
+                                <img src="img/custom-note.svg" class="note-trigger-icon">
+                                <div class="note-trigger-badge">N</div>
+                                
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                </div>`;
+            }
+
+            return `<li class="splide__slide">
+          <div class="steps" data-day="${day}" data-category="${step.category}"${step.lat && step.lon ? ` data-lat="${step.lat}" data-lon="${step.lon}"` : ""} style="position: relative;">
+            
+            ${notesHtml} 
+            
+            <div class="visual" style="opacity: 1;">
+              <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
+              <img class="check" src="${step.image || "https://www.svgrepo.com/show/522166/location.svg"}" alt="${step.name || step.category}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+            </div>
+            <div class="info day_cats item-info-view">
+              <div class="title">${step.name || step.category}</div>
+              <div class="address">
+                <img src="img/address_icon.svg"> ${step.address || ""}
+              </div>
+              <div class="geoapify-tags-section">
+                <div class="geoapify-tags"></div>
+              </div>
+              <div class="opening_hours">
+                <img src="img/hours_icon.svg"> ${step.opening_hours ? step.opening_hours : "Working hours not found."}
+              </div>
+            </div>
+            <div class="item_action">
+              <div class="change">
+                <span onclick="window.showImage && window.showImage(this)">
+                  <img src="img/camera_icon.svg">
+                </span>
+                <span onclick="window.showMap && window.showMap(this)">
+                  <img src="img/map_icon.svg">
+                </span>
+                ${step.website ? `
+                <span onclick="window.openWebsite && window.openWebsite(this, '${step.website}')">
+                  <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
+                </span>
+                ` : ""}
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <div class="cats cats${(idx % 5) + 1}">
+                  <img src="" alt="${step.category}"> ${step.category}
+                </div>
+                <a class="addtotrip">
+                  <img src="img/addtotrip-icon.svg">
+                </a>
+              </div>
+            </div>
+          </div>
+        </li>`;
+        }).join('')}
+      </ul>
+    </div>
+  </div>
+`;
+        } else {
+            const emptyP = document.createElement("p");
+            emptyP.className = "empty-day-message";
+            emptyP.textContent = "No items have been added for this day yet.";
+            daySteps.appendChild(emptyP);
+        }
+        content.appendChild(daySteps);
+        container.appendChild(content);
+        li.appendChild(container);
+        ul.appendChild(li);
+    }
     tripDetailsSection.appendChild(sect);
 
     setTimeout(() => {
