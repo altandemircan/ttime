@@ -5274,6 +5274,53 @@ if (aiInfoSection) {
     }
 
 })();
+
+// updateCart'ın sonuna ekle (ensurePdfButtonAndOrder'dan SONRA):
+
+(function ensureTripDetailsButtonAlways() {
+    const cartDiv = document.getElementById("cart-items");
+    
+    let dateRangeDiv = cartDiv.querySelector('.date-range');
+    if (!dateRangeDiv) {
+        dateRangeDiv = document.createElement('div');
+        dateRangeDiv.className = 'date-range';
+    }
+    
+    if (window.cart.startDate) {
+        // Tarih varsa normal göster
+        const endDate = (window.cart.endDates && window.cart.endDates.length)
+            ? window.cart.endDates[window.cart.endDates.length - 1]
+            : window.cart.startDate;
+        
+        dateRangeDiv.innerHTML = `
+          <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
+          <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+        `;
+    } else {
+        // Tarih yoksa sadece buton göster
+        dateRangeDiv.innerHTML = `
+          <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
+        `;
+    }
+    
+    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+    if (detailsBtn) {
+        detailsBtn.onclick = () => {
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(window.cart.startDate || null);
+            }
+        };
+    }
+    
+    // Ekle veya güncelle
+    const existing = cartDiv.querySelector('.date-range');
+    if (existing) {
+        existing.replaceWith(dateRangeDiv);
+    } else {
+        cartDiv.appendChild(dateRangeDiv);
+    }
+})();
+
     (function ensurePostDateSections() {
         if (!window.cart.startDate) return;
         let share = document.getElementById('trip-share-section');
