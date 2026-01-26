@@ -335,7 +335,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             }
         } catch (e) {}
     } else {
-        console.log(`[Collage] Location Changed: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
+        // console.log(`[Collage] Location Changed: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
         collage.innerHTML = ""; 
         fromCache = false; 
     }

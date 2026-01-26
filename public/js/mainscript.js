@@ -167,61 +167,63 @@ function showSuggestions() {
     suggestionsDiv.innerHTML = "";
 
     const options = [
-        { text: "2 days in Antalya",         flag: countryFlag("TR") }, // Türkiye
-        { text: "Explore Rome for 3 day",    flag: countryFlag("IT") }, // İtalya
-        { text: "1 days in Tokyo",           flag: countryFlag("JP") }, // Japonya
-        { text: "London 2-day guide",        flag: countryFlag("GB") }, // İngiltere
-        { text: "3-day Paris itinerary",     flag: countryFlag("FR") }, // Fransa
-        { text: "Visit Madrid in 1 days",    flag: countryFlag("ES") }, // İspanya
-        { text: "3 days in Bangkok",         flag: countryFlag("TH") }, // Tayland
-        { text: "Discover Petra for 2 day",  flag: countryFlag("JO") }  // Ürdün
+        { text: "2 days in Antalya",          flag: countryFlag("TR") },
+        { text: "Explore Rome for 3 days",    flag: countryFlag("IT") },
+        { text: "1 day in Tokyo",             flag: countryFlag("JP") },
+        { text: "London 2-day guide",         flag: countryFlag("GB") },
+        { text: "3-day Paris itinerary",      flag: countryFlag("FR") },
+        { text: "Visit Madrid in 1 day",      flag: countryFlag("ES") },
+        { text: "3 days in Bangkok",          flag: countryFlag("TH") },
+        { text: "Discover Petra for 2 days",  flag: countryFlag("JO") }
     ];
 
-   options.forEach(option => {
-    const suggestion = document.createElement("div");
-    suggestion.className = "category-area-option";
-    suggestion.innerText = `${option.text} ${option.flag}`;
+    options.forEach(option => {
+        const suggestion = document.createElement("div");
+        suggestion.className = "category-area-option";
+        suggestion.innerText = `${option.text} ${option.flag}`;
 
-    suggestion.onclick = function() {
-        Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
-        suggestion.classList.add("selected-suggestion");
+        suggestion.onclick = function() {
+            Array.from(suggestionsDiv.children).forEach(d => d.classList.remove("selected-suggestion"));
+            suggestion.classList.add("selected-suggestion");
 
-        // SABİT VE GARANTİLİ ŞEHİR-GÜN TANIMI!
-        let city, days;
-        switch(option.text) {
-            case "2 days in Antalya":          city = "Antalya"; days = 2; break;
-            case "Explore Rome for 3 day":     city = "Rome";    days = 3; break;
-            case "1 days in Tokyo":            city = "Tokyo";   days = 1; break;
-            case "London 2-day guide":         city = "London";  days = 2; break;
-            case "3-day Paris itinerary":      city = "Paris";   days = 3; break;
-            case "Visit Madrid in 1 days":     city = "Madrid";  days = 1; break;
-            case "3 days in Bangkok":          city = "Bangkok"; days = 3; break;
-            case "Discover Petra for 2 day":   city = "Petra";   days = 2; break;
-            default: /* fallback */            city = "City";    days = 2; break;
-        }
-        let canonicalStr = `Plan a ${days}-day tour for ${city}`;
-        window.__programmaticInput = true;
-        if (typeof setChatInputValue === "function") {
-            setChatInputValue(canonicalStr);
-        } else {
-            chatInput.value = canonicalStr;
-        }
-        setTimeout(() => { window.__programmaticInput = false; }, 0);
+            let city, days;
+            switch(option.text) {
+                case "2 days in Antalya":           city = "Antalya"; days = 2; break;
+                case "Explore Rome for 3 days":     city = "Rome";    days = 3; break;
+                case "1 day in Tokyo":              city = "Tokyo";   days = 1; break;
+                case "London 2-day guide":          city = "London";  days = 2; break;
+                case "3-day Paris itinerary":       city = "Paris";   days = 3; break;
+                case "Visit Madrid in 1 day":       city = "Madrid";  days = 1; break;
+                case "3 days in Bangkok":           city = "Bangkok"; days = 3; break;
+                case "Discover Petra for 2 days":   city = "Petra";   days = 2; break;
+                default:                            city = "City";    days = 2; break;
+            }
 
-        window.selectedSuggestion = { displayText: canonicalStr, city, days };
-        window.selectedLocation = { city, days };
-        window.selectedLocationLocked = true;
-        window.__locationPickedFromSuggestions = true;
-        enableSendButton?.();
-        showSuggestionsDiv?.();
-        if (typeof updateCanonicalPreview === "function") {
-            updateCanonicalPreview();
-        }
-    };
-    suggestionsDiv.appendChild(suggestion);
-});
+            let canonicalStr = `Plan a ${days}-day tour for ${city}`;
+            window.__programmaticInput = true;
+            if (typeof setChatInputValue === "function") {
+                setChatInputValue(canonicalStr);
+            } else {
+                chatInput.value = canonicalStr;
+            }
+            setTimeout(() => { window.__programmaticInput = false; }, 0);
+
+            window.selectedSuggestion = { displayText: canonicalStr, city, days };
+            window.selectedLocation = { city, days };
+            window.selectedLocationLocked = true;
+            window.__locationPickedFromSuggestions = true;
+            enableSendButton?.();
+            showSuggestionsDiv?.();
+            if (typeof updateCanonicalPreview === "function") {
+                updateCanonicalPreview();
+            }
+        };
+        suggestionsDiv.appendChild(suggestion);
+    });
+
     showSuggestionsDiv?.();
 }
+
     if (!chatInput) return;
 
 
@@ -4502,7 +4504,7 @@ if (aiInfoSection) {
     // ÖNCE route'ları HAZIRLA!
     for (const d of days) {
         await renderRouteForDay(d);
-        console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
+        // console.log('pairwise summary', d, window.pairwiseRouteSummaries[`route-map-day${d}`]);
     }
     console.log("updateCart başlatıldı");
     document.querySelectorAll('.route-scale-bar[id^="route-scale-bar-day"]').forEach(el => el.remove());
@@ -7307,7 +7309,7 @@ locBtn.onclick = function() {
             expandedMapInstance._tileTimeout = null;
         }
 
-        console.log(`[ExpandedMap] Style: ${styleKey}`);
+      
 
         // --- 1. FALLBACK (CARTO) VE 3D GİZLEME ---
         const loadCartoFallback = () => {
@@ -7495,12 +7497,20 @@ function updateExpandedMap(expandedMap, day) {
             scaleBarDiv.innerHTML = ""; 
             if (typeof renderRouteScaleBar === 'function') {
                 renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-                const track = scaleBarDiv.querySelector('.scale-bar-track');
-                if (track && typeof createScaleElements === 'function') {
-                    setTimeout(() => {
-                        const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                        createScaleElements(track, width, totalKm, 0, markerPositions);
-                    }, 200);
+               const track = scaleBarDiv.querySelector('.scale-bar-track');
+                if (track) {
+                    const renderScale = () => {
+                        const rect = track.getBoundingClientRect();
+                        if (rect.width === 0) {
+                            setTimeout(renderScale, 200);
+                            return;
+                        }
+                        const width = Math.max(200, Math.round(rect.width));
+                        if (typeof createScaleElements === 'function') {
+                            createScaleElements(track, width, totalKm, 0, markerPositions);
+                        }
+                    };
+                    renderScale();
                 }
             }
         }
@@ -7549,7 +7559,8 @@ function updateExpandedMap(expandedMap, day) {
             color: "#1976d2", weight: 6, opacity: 1, renderer: ensureCanvasRenderer(expandedMap) 
         }).addTo(expandedMap);
         bounds.extend(poly.getBounds());
-        window._curvedArcPointsByDay[day] = routeCoords;
+        // [FIX] Segment seçimi için koordinatları tekrar [Lon, Lat] formatına çevir
+        window._curvedArcPointsByDay[day] = routeCoords.map(coord => [coord[1], coord[0]]);
 
         // Eksik nokta bağlayıcıları
         pts.forEach(p => {
@@ -7648,10 +7659,19 @@ function updateExpandedMap(expandedMap, day) {
             renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
             const track = scaleBarDiv.querySelector('.scale-bar-track');
             if (track) {
-                setTimeout(() => {
-                    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-                    if (typeof createScaleElements === 'function') createScaleElements(track, width, totalKm, 0, markerPositions);
-                }, 100);
+                // [FIX] Elementin genişliği oluşana kadar bekle (Recursive)
+                const renderScale = () => {
+                    const rect = track.getBoundingClientRect();
+                    if (rect.width === 0) {
+                        setTimeout(renderScale, 200);
+                        return;
+                    }
+                    const width = Math.max(200, Math.round(rect.width));
+                    if (typeof createScaleElements === 'function') {
+                        createScaleElements(track, width, totalKm, 0, markerPositions);
+                    }
+                };
+                renderScale();
             }
         } else {
             scaleBarDiv.innerHTML = "";
@@ -7659,7 +7679,43 @@ function updateExpandedMap(expandedMap, day) {
     }
 }
  
-function restoreMap(containerId, day) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ function restoreMap(containerId, day) {
 
     // --- YENİ EKLENEN: Harita kapanınca Header'ı geri getir (Temizlik) ---
     const mainHeader = document.querySelector('.fixed-header'); 
@@ -7852,7 +7908,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
     // Eğer 0 veya 1 nokta varsa mesafe oluşmaz, işlem yapma.
     if (dayItems.length <= 1) return false;
 
-    console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
+    // console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
 
     let totalKm = 0;
     let splitIdx = -1;
@@ -7929,13 +7985,13 @@ async function renderRouteForDay(day) {
     if (limitHandled) return;
 
     // --- STANDART RENDER BAŞLANGICI ---
-    console.log(`=== RENDER START for day ${day} ===`);
-    // ... kodun kalanı (gönderdiğin kodun devamı aynı kalabil
-    console.log(`Cart items for day ${day}:`, 
-        window.cart.filter(item => item.day === day).map((item, i) => 
-            `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
-        )
-    );
+    // console.log(`=== RENDER START for day ${day} ===`);
+   
+    // console.log(`Cart items for day ${day}:`, 
+    //     window.cart.filter(item => item.day === day).map((item, i) => 
+    //         `${i}: ${item.name || 'unnamed'} (${item.location?.lat},${item.location?.lng})`
+    //     )
+    // );
 
     const limitExceeded = await enforceDailyRouteLimit(day, CURRENT_ROUTE_KM_LIMIT);
     if (limitExceeded) return; // Eğer bölündüyse bu fonksiyon zaten updateCart üzerinden tekrar tetiklenecek
@@ -8691,7 +8747,7 @@ try {
     document.dispatchEvent(new CustomEvent('tripUpdated', { detail: { day: day } }));
     
 
-    console.log(`=== RENDER END for day ${day} ===`);
+    // console.log(`=== RENDER END for day ${day} ===`);
 
 }
 
@@ -9052,6 +9108,13 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
   }
 }
+
+
+
+
+
+
+
 
 function getDayPoints(day) {
   return window.cart
@@ -9519,10 +9582,10 @@ window.buildDirectionsUrl = function(coordsStr, day) {
 
   if (hasRealRoute) {
     if (!window.__TT_ROUTING_LOG_ONCE) {
-      console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
+      // console.log('[Triptime][Directions] Using self-hosted OSRM via /route/v1/*');
       window.__TT_ROUTING_LOG_ONCE = true;
     }
-    console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
+    // console.log('[Triptime][Directions] day=%s, profile=%s, url=%s', d, profile, url);
   }
   // FLY MODE’da log atma!
 
