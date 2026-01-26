@@ -2449,7 +2449,7 @@ ease;
     justify-content: center;
     border: 1px solid #ffffff;
     border-radius: 8px;
-    background: #09aae1;
+    background: #58b0cf;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.9rem;
@@ -3342,7 +3342,7 @@ hr {
     justify-content: center;
     border: 1px solid #ffffff;
     border-radius: 8px;
-        background: linear-gradient(135deg, #36828c 0%, #00c4a3 100%);
+        background: #5cae5c;
     cursor: pointer;
     transition: all 0.3s 
 ease;
