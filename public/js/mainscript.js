@@ -5231,10 +5231,8 @@ if (aiInfoSection) {
     if (!pdfBtn) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
-        pdfBtn.className = 'pdf-download-btn'; 
+        pdfBtn.className = 'pdf-download-btn add-to-calendar-btn'; 
         pdfBtn.textContent = 'Download Offline Plan (PDF)';
-        pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
-        pdfBtn.style.color = '#fff';
         pdfBtn.onclick = function () {
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
             if (typeof downloadTripPlanPDF === "function") {
@@ -5257,7 +5255,6 @@ if (aiInfoSection) {
     }
 
 })();
-
     (function ensurePostDateSections() {
         if (!window.cart.startDate) return;
         let share = document.getElementById('trip-share-section');
