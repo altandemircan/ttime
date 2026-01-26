@@ -5246,7 +5246,7 @@ if (aiInfoSection) {
         <button type="button" class="see-details-btn" data-role="trip-details-btn" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
             <img src="/img/trip_details.svg" alt="" style="width: 18px; height: 18px;">
             Trip Details
-        </button>
+        </button> 
     `;
     
     if (window.cart.startDate) {
