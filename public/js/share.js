@@ -168,22 +168,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. TARİH PARSE ETME
        if (dateStr && dateStr.trim() !== "") {
-            const startDateStr = dateStr.replace(/-/g, '/');
+            // URL'den "May-14-2026" gelebilir. Tireleri boşluk yapalım: "May 14 2026"
+            // JavaScript Date objesi "May 14 2026" metnini otomatik ve hatasız tanır.
+            const cleanDateStr = dateStr.replace(/-/g, ' ');
             
             if (window.cart && window.cart.length > 0) {
                 const maxDay = Math.max(...window.cart.map(i => i.day || 1));
-                const startDate = new Date(startDateStr);
-                const endDates = [];
+                const startDate = new Date(cleanDateStr); 
                 
+                const endDates = [];
                 for (let i = 0; i < maxDay; i++) {
                     const d = new Date(startDate);
                     d.setDate(d.getDate() + i);
-                    // --- DÜZELTME: en-US formatı ---
-                    endDates.push(d.toLocaleDateString('en-US'));
+                    // Yardımcı fonksiyonu kullan
+                    endDates.push(formatDateLong(d));
                 }
                 
-                // --- DÜZELTME: en-US formatı ---
-                window.cart.startDate = startDate.toLocaleDateString('en-US');
+                // Yardımcı fonksiyonu kullan
+                window.cart.startDate = formatDateLong(startDate);
                 window.cart.endDates = endDates;
 
                 localStorage.setItem('tripStartDate', window.cart.startDate);
@@ -239,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
 // --- 3. SHARE LINK OLUŞTURMA ---
 function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
@@ -264,7 +267,12 @@ function createOptimizedLongLink() {
     
     let datePart = "";
     if (window.cart && window.cart.startDate) {
-        const encodedStartDate = window.cart.startDate.replace(/\//g, '-');
+        // "May 14, 2026" -> "May-14-2026"
+        // 1. Virgülleri sil
+        // 2. Boşlukları tire (-) yap
+        const rawDate = window.cart.startDate;
+        const encodedStartDate = rawDate.replace(/,/g, '').replace(/ /g, '-');
+        
         datePart = `|${encodedStartDate}`;
     }
 
@@ -445,19 +453,10 @@ function renderModalCalendar(tripDuration) {
 }
 
 // --- 6. Modal'da tarih seç ---
-// --- 6. Modal'da tarih seç ---
 function selectModalDate(day, month, year, tripDuration) {
     const selectedDate = new Date(year, month, day);
     
-    console.log('Seçilen:', day, month, year, 'Gün sayısı:', tripDuration);
-    
-    // Eski seçimi kaldır
-    document.querySelectorAll('.modal-date-btn').forEach(btn => {
-        btn.style.borderColor = 'transparent';
-        btn.style.background = '#fafafa';
-    });
-    
-    // Yeni seçimi işaretle
+    // ... (Highlight / Renklendirme kodları aynı kalacak, buraya dokunma) ...
     document.querySelectorAll('.modal-date-btn').forEach(btn => {
         const btnDay = parseInt(btn.getAttribute('data-day'));
         let shouldHighlight = false;
@@ -477,18 +476,18 @@ function selectModalDate(day, month, year, tripDuration) {
         }
     });
     
-    // --- DÜZELTME BURADA: 'en-US' FORMATI KULLAN ---
-    // Tarihleri her zaman MM/DD/YYYY formatında tutuyoruz ki 'Invalid Date' olmasın.
-    window.modalSelectedStartDate = selectedDate.toLocaleDateString('en-US');
+    // --- GÜNCELLEME BURADA: YENİ FORMAT ---
+    // Tarihi "May 14, 2026" olarak kaydet
+    window.modalSelectedStartDate = formatDateLong(selectedDate); 
     window.modalSelectedEndDates = [];
     
     for (let i = 0; i < tripDuration; i++) {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() + i);
-        window.modalSelectedEndDates.push(d.toLocaleDateString('en-US'));
+        window.modalSelectedEndDates.push(formatDateLong(d));
     }
     
-    console.log('Kaydedilen tarihler:', window.modalSelectedStartDate, window.modalSelectedEndDates);
+    console.log('Kaydedilen:', window.modalSelectedStartDate, window.modalSelectedEndDates);
 }
 
 // --- 7. Modal'ı kapat ---
@@ -598,4 +597,14 @@ async function shareWithoutDates() {
     
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+}
+
+function formatDateLong(dateInput) {
+    const d = new Date(dateInput);
+    // en-US formatı: Month (Long), Day (Numeric), Year (Numeric)
+    return d.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
 }
