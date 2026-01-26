@@ -289,7 +289,7 @@ function showDatePickerBeforeShare() {
     `;
     
     modal.innerHTML = `
-        <div style="background: white; border-radius: 16px; padding: 32px 24px; max-width: 360px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+        <div style="background: white; border-radius: 16px; padding: 32px 24px; max-width: 300px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
             <div id="share-step-1" style="display: block;">
                 <h3 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 20px; font-weight: 700;">Share your plan</h3>
                 <p style="margin: 0 0 24px 0; color: #666; font-size: 14px; line-height: 1.5;">Help others discover amazing places</p>

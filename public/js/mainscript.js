@@ -5205,7 +5205,7 @@ if (aiInfoSection) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
         pdfBtn.className = 'add-to-calendar-btn'; 
-        pdfBtn.textContent = 'Download Offline Plan (PDF)';
+        pdfBtn.textContent = 'Download Trip Plan';
         pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
         pdfBtn.style.color = '#fff';
         pdfBtn.onclick = function () {
@@ -5245,8 +5245,8 @@ if (aiInfoSection) {
     const btnHtml = `
         <button type="button" class="see-details-btn" data-role="trip-details-btn" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
             <img src="/img/trip_details.svg" alt="" style="width: 18px; height: 18px;">
-            Trip Details
-        </button> 
+            Share Your Plan
+        </button>
     `;
     
     if (window.cart.startDate) {
