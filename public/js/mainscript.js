@@ -5245,7 +5245,7 @@ if (aiInfoSection) {
     const btnHtml = `
         <button type="button" class="see-details-btn" data-role="trip-details-btn" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
             <img src="/img/trip_details.svg" alt="" style="width: 18px; height: 18px;">
-            Trip Details
+            Share Your Trip
         </button> 
     `;
     
@@ -5267,26 +5267,7 @@ if (aiInfoSection) {
     // Tıklama Olayını Bağla
     const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
     if (detailsBtn) {
-        detailsBtn.onclick = () => {
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(window.cart.startDate || null);
-            }
-        };
-    }
-    
-    // UI Güncelle
-    const existing = cartDiv.querySelector('.date-range');
-    if (existing) {
-        existing.replaceWith(dateRangeDiv);
-    } else {
-        cartDiv.appendChild(dateRangeDiv);
-    }
-})();
-
-    (function ensurePostDateSections() {
-        if (!window.cart.startDate) return;
-        let share = document.getElementById('trip-share-section');
-        if (!share) {
+        detailsBtn.onclick = () => 
             share = document.createElement('div');
             share.id = 'trip-share-section';
             share.className = 'trip-share-section';
