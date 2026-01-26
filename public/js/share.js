@@ -287,7 +287,7 @@ function showDatePickerBeforeShare() {
     modal.innerHTML = `
         <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto;">
             <h3 style="margin-top: 0; color: #333;">When is your trip?</h3>
-            <p style="color: #666; font-size: 14px;">Select start date for your ${maxDay}-day journey</p>
+            <p style="color: #666; font-size: 14px;">Select start date for your ${maxDay}-day journey (optional)</p>
             
             <div id="modal-calendar-container" style="margin: 20px 0;"></div>
             
@@ -295,7 +295,10 @@ function showDatePickerBeforeShare() {
                 <button onclick="closeShareModal()" style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; background: #f5f5f5; font-weight: 500;">
                     Cancel
                 </button>
-                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #d32f2f; color: white; font-weight: 600; opacity: 0.5;" disabled>
+                <button onclick="shareWithoutDates()" style="flex: 1; padding: 12px; border: 1px solid #d32f2f; border-radius: 8px; cursor: pointer; background: white; color: #d32f2f; font-weight: 500;">
+                    Skip
+                </button>
+                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #d32f2f; color: white; font-weight: 600; opacity: 1;">
                     Share
                 </button>
             </div>
@@ -445,6 +448,50 @@ async function confirmShareWithDates() {
         ? window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]
         : window.modalSelectedStartDate;
     shareText += `📅 ${window.modalSelectedStartDate} - ${endDate}\n\n`;
+    
+    const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
+    for (let day = 1; day <= maxDay; day++) {
+        const dayItems = window.cart.filter(item => item.day == day && item.name);
+        if (dayItems.length > 0) {
+            shareText += `--- Day ${day} ---\n`;
+            dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
+            shareText += "\n";
+        }
+    }
+    
+    let shortUrl = url;
+    try {
+        const response = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ longUrl: url })
+        });
+        if (response.ok) {
+            const result = await response.json();
+            shortUrl = result.shortUrl;
+        }
+    } catch (e) {
+        console.warn("URL shortening failed");
+    }
+    
+    shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+}
+
+// --- 9. Tarih seçmeden share ---
+async function shareWithoutDates() {
+    // Tarihleri temizle
+    window.modalSelectedStartDate = null;
+    window.modalSelectedEndDates = null;
+    
+    // Modal'ı kapat
+    closeShareModal();
+    
+    // Share linkini oluştur (tarih olmadan)
+    const url = createOptimizedLongLink();
+    
+    // Share mekanizmasını başlat
+    let shareText = `Check out my trip plan!\n\n`;
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     for (let day = 1; day <= maxDay; day++) {
