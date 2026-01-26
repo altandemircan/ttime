@@ -292,7 +292,20 @@ function showDatePickerBeforeShare() {
                 <p style="margin: 0 0 24px 0; color: #666; font-size: 14px; line-height: 1.5;">Help others discover amazing places</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button onclick="shareWithoutDates()" style="width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; background: #8a4af3; color: white; font-weight: 600; font-size: 15px; transition: all 0.2s;">
+                    <button onclick="shareWithoutDates()" style="padding: 10px;
+    margin-top: 0px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #8a4af3;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    cursor: default;
+    width: -webkit-fill-available;">
                         Just share
                     </button>
                     <button onclick="showDateStep()" style="width: 100%; padding: 14px; border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; background: white; color: #1a1a1a; font-weight: 600; font-size: 15px; transition: all 0.2s;">
