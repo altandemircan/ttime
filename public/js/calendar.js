@@ -102,7 +102,7 @@ function openCalendar(tripDuration) {
         return calendarHTML;
     }
 
-    const addToCalendarButton = document.querySelector(".add-to-calendar-btn");
+    const addToCalendarButton = document.querySelector(".add-to-calendar-btn[data-role='trip-dates']");
     addToCalendarButton.disabled = true;
     document.body.classList.add('calendar-open');
 
