@@ -308,12 +308,36 @@ function showDatePickerBeforeShare() {
     width: -webkit-fill-available;">
                         Just share
                     </button>
-                    <button onclick="showDateStep()" style="width: 100%; padding: 14px; border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; background: white; color: #1a1a1a; font-weight: 600; font-size: 15px; transition: all 0.2s;">
+                    <button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
+    background: white;
+    color: #1a1a1a;
+    padding: 10px;
+    margin-top: 0px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    cursor: default;
+    width: -webkit-fill-available;">
                         Add dates
                     </button>
                 </div>
                 
-                <button onclick="closeShareModal()" style="width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; background: #faf8ff; color: #1a1a1a; font-weight: 500; font-size: 14px;">
+                <button onclick="closeShareModal()" style="margin-top: 12px;
+    border: none;
+    background: #faf8ff;
+    color: #1a1a1a;
+    padding: 10px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    cursor: default;
+    width: -webkit-fill-available;">
                     Cancel
                 </button>
             </div>
@@ -328,7 +352,20 @@ function showDatePickerBeforeShare() {
                 
                 <div id="modal-calendar-container" style="margin: 0 0 24px 0;"></div>
                 
-                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; background: #8a4af3; color: white; font-weight: 600; font-size: 15px;">
+                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="padding: 10px;
+    margin-top: 0px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    background: #8a4af3;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    cursor: default;
+    width: -webkit-fill-available;">
                     Share with dates
                 </button>
             </div>
