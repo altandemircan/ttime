@@ -5193,33 +5193,46 @@ if (aiInfoSection) {
     })();
 
     (function ensureTripDetailsBlock() {
-        if (!window.cart.startDate) {
-            const existing = cartDiv.querySelector('.date-range');
-            if (existing) existing.remove();
-            return;
-        }
-        let dateRangeDiv = cartDiv.querySelector('.date-range');
-        if (!dateRangeDiv) {
-            dateRangeDiv = document.createElement('div');
-            dateRangeDiv.className = 'date-range';
-            cartDiv.appendChild(dateRangeDiv);
-        }
-        const endDate = (window.cart.endDates && window.cart.endDates.length)
-            ? window.cart.endDates[window.cart.endDates.length - 1]
-            : window.cart.startDate;
-        dateRangeDiv.innerHTML = `
+    const cartDiv = document.getElementById("cart-items");
+    
+    if (!window.cart.startDate) {
+        const existing = cartDiv.querySelector('.date-range');
+        if (existing) existing.remove();
+        return;
+    }
+    
+    let dateRangeDiv = cartDiv.querySelector('.date-range');
+    if (!dateRangeDiv) {
+        dateRangeDiv = document.createElement('div');
+        dateRangeDiv.className = 'date-range';
+    }
+    
+    const endDate = (window.cart.endDates && window.cart.endDates.length)
+        ? window.cart.endDates[window.cart.endDates.length - 1]
+        : window.cart.startDate;
+    
+    dateRangeDiv.innerHTML = `
       <span class="date-info">📅 Dates: ${window.cart.startDate} - ${endDate}</span>
       <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 Trip Details</button>
     `;
-        const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
-        if (detailsBtn) {
-            detailsBtn.onclick = () => {
-                if (typeof showTripDetails === 'function') {
-                    showTripDetails(window.cart.startDate);
-                }
-            };
-        }
-    })();
+    
+    const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
+    if (detailsBtn) {
+        detailsBtn.onclick = () => {
+            if (typeof showTripDetails === 'function') {
+                showTripDetails(window.cart.startDate);
+            }
+        };
+    }
+
+    // "Change Dates" butonunun altına ekle
+    const datesBtn = document.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    if (datesBtn) {
+        datesBtn.insertAdjacentElement('afterend', dateRangeDiv);
+    } else {
+        cartDiv.appendChild(dateRangeDiv);
+    }
+})();
 
 (function ensurePdfButtonAndOrder() {
     // Hem cart hem cart-items kontrolü yapalım
