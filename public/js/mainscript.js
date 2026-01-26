@@ -5231,7 +5231,7 @@ if (aiInfoSection) {
     if (!pdfBtn) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
-        pdfBtn.className = 'pdf-download-btn add-to-calendar-btn'; 
+        pdfBtn.className = 'add-to-calendar-btn'; 
         pdfBtn.textContent = 'Download Offline Plan (PDF)';
         pdfBtn.onclick = function () {
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
