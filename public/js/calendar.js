@@ -216,9 +216,6 @@ function selectDate(day, month, year, tripDuration) {
     window.tripDates.startDate = startDate.toLocaleDateString();
     window.tripDates.endDates = endDates;
 
-    // Update the button text to "Change Dates"
-    const addToCalendarButton = document.querySelector(".add-to-calendar-btn");
-
     // Re-generate the calendar to show the selected dates
     const calendarDays = calendarContainer.querySelectorAll('.calendar-day');
 
@@ -236,12 +233,13 @@ function selectDate(day, month, year, tripDuration) {
         }
     });
 
-const buttonText = window.tripDates.startDate
-    ? `Change Dates (${window.tripDates.startDate} - ${window.tripDates.endDates[window.tripDates.endDates.length - 1]})`
-    : "Select Dates (No date selected)";
+    const buttonText = window.tripDates.startDate
+        ? `Change Dates (${window.tripDates.startDate} - ${window.tripDates.endDates[window.tripDates.endDates.length - 1]})`
+        : "Select Dates (No date selected)";
 
-// SADECE data-role="trip-dates" olan butonu güncelle (PDF butonuna dokunma!)
-const addToCalendarButton = document.querySelector(".add-to-calendar-btn[data-role='trip-dates']");
-if (addToCalendarButton) {
-    addToCalendarButton.textContent = buttonText;
+    // SADECE data-role="trip-dates" olan butonu güncelle
+    const addToCalendarButton = document.querySelector(".add-to-calendar-btn[data-role='trip-dates']");
+    if (addToCalendarButton) {
+        addToCalendarButton.textContent = buttonText;
+    }
 }
