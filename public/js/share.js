@@ -1,5 +1,5 @@
 /**
- * share.js - THE FINAL ULTIMATE VERSION
+ * share.js - COMPLETE VERSION WITH DATE PICKER MODAL
  * Created with triptime.ai!
  */
 
@@ -38,7 +38,7 @@ function showGlobalLoading() {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: #f8f9fa; /* Arkadaki hizasızlığı kapatan solid fon */
+                    background: #f8f9fa;
                     z-index: 9999999;
                     display: flex;
                     align-items: center;
@@ -81,7 +81,7 @@ function showGlobalLoading() {
                 .progress-bar-fill {
                     width: 40%;
                     height: 100%;
-                    background: #8a4af3; /* İstediğin mor tonu */
+                    background: #8a4af3;
                     border-radius: 10px;
                     position: absolute;
                     left: -40%;
@@ -110,6 +110,7 @@ function showGlobalLoading() {
         document.body.appendChild(loader);
     }
 }
+
 function hideGlobalLoading() {
     const loader = document.getElementById('trip-loader');
     if (loader) {
@@ -120,10 +121,7 @@ function hideGlobalLoading() {
     }
 }
 
-// --- 2. SAYFA YÜKLENDİĞİNDE VERİ ÇÖZÜCÜ ---
-// --- PAYLAŞIM LİNKİNDEN TARİH PARSE ETME ---
-// share.js'deki DOMContentLoaded event'inin içine ekle
-
+// --- 2. PAYLAŞIM LİNKİNDEN TARİH PARSE ETME ---
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const v2Raw = params.get('v2');
@@ -139,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemsStr = parts[1];
         const aiStr = parts[2];
         const cityStr = parts[3];
-        const dateStr = parts[4]; // YENİ: Tarih bilgisi
+        const dateStr = parts[4];
 
         // 1. Şehir Planı Verileri
         if (itemsStr) {
@@ -168,9 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.selectedCity = cityStr;
         }
 
-        // 4. TARİH PARSE ETME (YENİ)
+        // 4. TARİH PARSE ETME
         if (dateStr && dateStr.trim() !== "") {
-            const startDateStr = dateStr.replace(/-/g, '/'); // 1-14-2026 -> 1/14/2026
+            const startDateStr = dateStr.replace(/-/g, '/');
             
             if (window.cart && window.cart.length > 0) {
                 const maxDay = Math.max(...window.cart.map(i => i.day || 1));
@@ -183,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     endDates.push(d.toLocaleDateString());
                 }
                 
-                // Cart'a tarihleri ata
                 window.cart.startDate = startDate.toLocaleDateString();
                 window.cart.endDates = endDates;
             }
@@ -209,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (window.sharedCityForCollage && isCollageReady) {
                         const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
-                        console.log("Slider tetikleniyor: ", window.sharedCityForCollage);
                         
                         for (let d = 1; d <= maxDay; d++) {
                             const dayContainer = document.querySelector(`.day-section[data-day="${d}"]`) || 
@@ -238,88 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
         hideGlobalLoading();
     }
 });
-// --- 3. PAYLAŞIM FONKSİYONLARI ---
-function createOptimizedLongLink() {
-    const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
-    const items = (window.cart || []).map(item => {
-        const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
-        const lat = parseFloat(item.lat || item.location?.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || item.location?.lng || 0).toFixed(4);
-        const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
-        return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
-    }).join('*');
 
-    let aiPart = "";
-    const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
-    if (aiSummaryText) {
-        const s = aiSummaryText.replace(/[|*~]/g, '').trim();
-        const t = (window.lastTripAIInfo?.tip || document.getElementById('ai-tip')?.innerText || "").replace(/[|*~]/g, '').trim();
-        const h = (window.lastTripAIInfo?.highlight || document.getElementById('ai-highlight')?.innerText || "").replace(/[|*~]/g, '').trim();
-        aiPart = `|${s}~${t}~${h}`;
-    } else { aiPart = "|"; }
-
-    const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
-    const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
-
-    return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart)}`;
-}
-
-// ... [shareOnWhatsApp fonksiyonu aynı kalsın, createOptimizedLongLink'i otomatik kullanacak zaten] ...
-async function generateShareableText() {
-    const longUrl = createOptimizedLongLink();
-    let shortUrl = longUrl;
-    try {
-        const apiTarget = `https://tinyurl.com/api-create?url=${encodeURIComponent(longUrl)}`;
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
-        const data = await res.json();
-        if (data.contents && data.contents.startsWith('http')) shortUrl = data.contents;
-    } catch(e) {}
-    return `Check out my trip plan: ${shortUrl}\n\nCreated with triptime.ai!`;
-}
-
-// --- 3. PAYLAŞIM FONKSİYONLARI ---
-async function shareOnWhatsApp() {
-    console.log("WhatsApp tetiklendi...");
-    
-    let shareText = "Check out my trip plan!\n\n";
-    const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
-
-    for (let day = 1; day <= maxDay; day++) {
-        const dayItems = window.cart.filter(item => item.day == day && item.name);
-        if (dayItems.length > 0) {
-            shareText += `--- Day ${day} ---\n`;
-            dayItems.forEach(item => { shareText += `• ${item.name}\n`; });
-            shareText += "\n";
-        }
-    }
-
-    const longUrl = createOptimizedLongLink();
-    let shortUrl = longUrl;
-
-    // KENDİ SERVİSİMİZİ KULLANIYORUZ
-    try {
-        const response = await fetch('/api/shorten', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ longUrl: longUrl })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            shortUrl = result.shortUrl;
-        }
-    } catch (e) {
-        console.warn("Kendi kısaltma servisimiz cevap vermedi, uzun linkle devam ediliyor.");
-    }
-
-    shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-}
-
-
-
-// ===== createOptimizedLongLink'i GÜNCELLE - Tarih ekle =====
-// (Eski fonksiyonu şu şekilde güncelle:)
+// --- 3. SHARE LINK OLUŞTURMA ---
 function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
     const items = (window.cart || []).map(item => {
@@ -342,18 +258,16 @@ function createOptimizedLongLink() {
     const targetCity = window.selectedCity || (window.cart && window.cart[0] ? window.cart[0].name : "");
     const collagePart = targetCity ? `|${targetCity.replace(/[|*~,]/g, '')}` : "";
     
-    // TAR İH EKLE (Eğer varsa)
     let datePart = "";
-    if (window.cart.startDate) {
+    if (window.cart && window.cart.startDate) {
         const encodedStartDate = window.cart.startDate.replace(/\//g, '-');
         datePart = `|${encodedStartDate}`;
     }
 
     return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart + datePart)}`;
-} 
+}
 
-
-// ===== 1. MODAL - Share öncesi tarih seçimi =====
+// --- 4. MODAL - Share öncesi tarih seçimi ---
 function showDatePickerBeforeShare() {
     const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
     
@@ -389,12 +303,10 @@ function showDatePickerBeforeShare() {
     `;
     
     document.body.appendChild(modal);
-    
-    // Mini takvim render et
     renderModalCalendar(maxDay);
 }
 
-// ===== 2. Modal takvimi render et =====
+// --- 5. Modal takvimi render et ---
 function renderModalCalendar(tripDuration) {
     const container = document.getElementById('modal-calendar-container');
     const now = new Date();
@@ -413,19 +325,17 @@ function renderModalCalendar(tripDuration) {
         <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;">
     `;
     
-    // Boş günler
     for (let i = 0; i < startingDay; i++) {
         html += `<div></div>`;
     }
     
-    // Ayın günleri
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const isToday = date.toDateString() === now.toDateString();
         const isPast = date < now;
         
         html += `
-            <div onclick="${!isPast ? `selectModalDate(${day}, ${currentMonth}, ${currentYear}, ${tripDuration})` : ''}" 
+            <button onclick="selectModalDate(${day}, ${currentMonth}, ${currentYear}, ${tripDuration})" 
                  style="
                     padding: 10px;
                     text-align: center;
@@ -436,11 +346,12 @@ function renderModalCalendar(tripDuration) {
                     border: 2px solid transparent;
                     transition: all 0.2s;
                     font-weight: 500;
+                    font-size: 14px;
                  "
                  class="modal-date-btn"
-                 data-date="${date.toISOString()}">
+                 data-day="${day}">
                 ${day}
-            </div>
+            </button>
         `;
     }
     
@@ -448,7 +359,7 @@ function renderModalCalendar(tripDuration) {
     container.innerHTML = html;
 }
 
-// ===== 3. Modal'da tarih seç =====
+// --- 6. Modal'da tarih seç ---
 function selectModalDate(day, month, year, tripDuration) {
     const selectedDate = new Date(year, month, day);
     if (selectedDate < new Date()) return;
@@ -460,7 +371,7 @@ function selectModalDate(day, month, year, tripDuration) {
     });
     
     // Yeni seçimi işaretle
-    const selectedBtn = document.querySelector(`[data-date="${selectedDate.toISOString()}"]`);
+    const selectedBtn = document.querySelector(`.modal-date-btn[data-day="${day}"]`);
     if (selectedBtn) {
         selectedBtn.style.borderColor = '#d32f2f';
         selectedBtn.style.background = '#fff5f5';
@@ -484,7 +395,7 @@ function selectModalDate(day, month, year, tripDuration) {
     }
 }
 
-// ===== 4. Modal'ı kapat =====
+// --- 7. Modal'ı kapat ---
 function closeShareModal() {
     const modal = document.getElementById('date-picker-modal');
     if (modal) modal.remove();
@@ -492,7 +403,7 @@ function closeShareModal() {
     window.modalSelectedEndDates = null;
 }
 
-// ===== 5. Tarihlerle birlikte share =====
+// --- 8. Tarihlerle birlikte share ---
 async function confirmShareWithDates() {
     if (!window.modalSelectedStartDate) {
         alert('Please select a date');
@@ -506,7 +417,7 @@ async function confirmShareWithDates() {
     // Modal'ı kapat
     closeShareModal();
     
-    // Share linkini oluştur (tarihler dahil)
+    // Share linkini oluştur
     const url = createOptimizedLongLink();
     
     // Share mekanizmasını başlat
@@ -538,7 +449,7 @@ async function confirmShareWithDates() {
             shortUrl = result.shortUrl;
         }
     } catch (e) {
-        console.warn("URL shortening failed, using long URL");
+        console.warn("URL shortening failed");
     }
     
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
