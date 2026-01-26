@@ -5193,66 +5193,80 @@ if (aiInfoSection) {
 })();
 
     // === PDF DOWNLOAD BUTTON & ORDERING (FIXED ORDER) ===
-    (function ensurePdfButtonAndOrder() {
-        const cartRoot = document.getElementById('cart');
-        if (!cartRoot) return;
+(function ensurePdfButtonAndOrder() {
+    const cartRoot = document.getElementById('cart');
+    if (!cartRoot) return;
 
-        // 1. PDF Butonunu Oluştur veya Bul
-        let pdfBtn = document.getElementById('tt-pdf-dl-btn');
-        if (!pdfBtn) {
-            pdfBtn = document.createElement('button');
-            pdfBtn.id = 'tt-pdf-dl-btn';
-            pdfBtn.className = 'add-to-calendar-btn'; // Select Dates ile aynı stil
-            pdfBtn.textContent = 'Download Offline Plan (PDF)';
-            // Görsel ayarlar
-           pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
-            pdfBtn.style.color = '#fff';
+    // 1. PDF Butonunu Oluştur veya Bul
+    let pdfBtn = document.getElementById('tt-pdf-dl-btn');
+    if (!pdfBtn) {
+        pdfBtn = document.createElement('button');
+        pdfBtn.id = 'tt-pdf-dl-btn';
+        pdfBtn.className = 'add-to-calendar-btn'; 
+        pdfBtn.textContent = 'Download Offline Plan (PDF)';
+        
+        // Görsel ayarlar
+        pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
+        pdfBtn.style.color = '#fff';
+        pdfBtn.style.display = 'block'; // Varsayılan görünürlük
 
-            pdfBtn.onclick = function () {
-                if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
-                if (typeof downloadTripPlanPDF === "function") {
-                    const key = window.activeTripKey || 'current_draft';
-                    downloadTripPlanPDF(key);
-                } else {
-                    alert("PDF module not ready.");
-                }
-            };
-        }
-
-        // 2. Görünürlük (Boşsa gizle)
-        const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
-        pdfBtn.style.display = hasRealItem ? 'block' : 'none';
-
-        // 3. DOM SIRALAMASI (DÜZELTİLDİ)
-        // Hedef Sıra: [Select Dates] -> [PDF] -> [New Trip Plan]
-
-        const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-        const newChatBtn = document.getElementById('newchat');
-
-        // Adım A: PDF butonunu "Select Dates" butonunun HEMEN ALTINA yerleştir
-        if (datesBtn && pdfBtn) {
-    const calContainer = document.getElementById('calendar-container');
-    
-    // Eğer takvim açıksa ve butonun hemen altındaysa, PDF'i takvimin altına koy
-    if (calContainer && datesBtn.nextElementSibling === calContainer) {
-        calContainer.insertAdjacentElement('afterend', pdfBtn);
-    } else {
-        // Takvim yoksa direkt butonun altına koy
-        datesBtn.insertAdjacentElement('afterend', pdfBtn);
+        pdfBtn.onclick = function () {
+            if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
+            if (typeof downloadTripPlanPDF === "function") {
+                const key = window.activeTripKey || 'current_draft';
+                downloadTripPlanPDF(key);
+            } else {
+                alert("PDF module not ready.");
+            }
+        };
     }
-}
-        // Eğer Select Dates butonu henüz yoksa ama New Chat varsa, onun üstüne koy (Fallback)
-        else if (newChatBtn && pdfBtn && pdfBtn.parentNode !== cartRoot) {
-            cartRoot.insertBefore(pdfBtn, newChatBtn);
+
+    // 2. Görünürlük (Sepet boşsa gizle)
+    const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
+    pdfBtn.style.display = hasRealItem ? 'block' : 'none';
+
+    // 3. DOM SIRALAMASI (ZİNCİRLEME MANTIK)
+    // Hedef Sıra: [Select/Change Dates] -> [Takvim] -> [Tarih Bilgisi] -> [PDF] -> [New Trip Plan]
+
+    const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
+    const calContainer = document.getElementById('calendar-container');
+    const dateRangeDiv = document.querySelector('.date-range'); // EKLENDİ: Tarih kutusu
+    const newChatBtn = document.getElementById('newchat');
+
+    // Eğer ana buton (Select/Change Dates) varsa zinciri başlat
+    if (datesBtn) {
+        let lastElement = datesBtn; // Başlangıç noktası
+
+        // A. Takvim varsa, son elemanın altına ekle ve son elemanı güncelle
+        if (calContainer && calContainer.parentElement) {
+            lastElement.insertAdjacentElement('afterend', calContainer);
+            lastElement = calContainer; 
         }
 
-        // Adım B: "New Trip Plan" butonunu PDF butonunun ALTINA taşı
-        // Bu işlem New Chat butonunu zincirin en sonuna iter.
-        if (pdfBtn && newChatBtn && document.body.contains(pdfBtn)) {
-            pdfBtn.insertAdjacentElement('afterend', newChatBtn);
+        // B. Tarih Aralığı (Date Range) varsa, son elemanın altına ekle ve güncelle
+        if (dateRangeDiv && dateRangeDiv.parentElement) {
+            lastElement.insertAdjacentElement('afterend', dateRangeDiv);
+            lastElement = dateRangeDiv;
         }
 
-    })();
+        // C. PDF Butonu varsa, son elemanın altına ekle ve güncelle
+        if (pdfBtn) {
+            lastElement.insertAdjacentElement('afterend', pdfBtn);
+            lastElement = pdfBtn;
+        }
+
+        // D. New Trip Plan butonu en sona
+        if (newChatBtn) {
+            lastElement.insertAdjacentElement('afterend', newChatBtn);
+        }
+    } 
+    // Fallback: Eğer Dates butonu yoksa ama PDF varsa (nadir durum), listenin sonuna eklemeye çalış
+    else if (pdfBtn && cartRoot) {
+        cartRoot.appendChild(pdfBtn);
+        if (newChatBtn) cartRoot.appendChild(newChatBtn);
+    }
+
+})();
     // ========================================================
 
     (function ensurePostDateSections() {
