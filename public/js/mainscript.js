@@ -5068,11 +5068,17 @@ if (aiInfoSection) {
         }
         btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
         btn.onclick = () => {
-            if (typeof openCalendar === 'function') {
-                const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
-                openCalendar(maxDay);
-            }
-        };
+    if (typeof openCalendar === 'function') {
+        const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
+        openCalendar(maxDay);
+
+        // [FIX] Takvim açıldıktan hemen sonra butonun altına taşı
+        const calContainer = document.getElementById('calendar-container');
+        if (calContainer) {
+            btn.insertAdjacentElement('afterend', calContainer);
+        }
+    }
+};
     })();
 
 (function ensureNewChatInsideCart() {
@@ -5225,8 +5231,16 @@ if (aiInfoSection) {
 
         // Adım A: PDF butonunu "Select Dates" butonunun HEMEN ALTINA yerleştir
         if (datesBtn && pdfBtn) {
-            datesBtn.insertAdjacentElement('afterend', pdfBtn);
-        }
+    const calContainer = document.getElementById('calendar-container');
+    
+    // Eğer takvim açıksa ve butonun hemen altındaysa, PDF'i takvimin altına koy
+    if (calContainer && datesBtn.nextElementSibling === calContainer) {
+        calContainer.insertAdjacentElement('afterend', pdfBtn);
+    } else {
+        // Takvim yoksa direkt butonun altına koy
+        datesBtn.insertAdjacentElement('afterend', pdfBtn);
+    }
+}
         // Eğer Select Dates butonu henüz yoksa ama New Chat varsa, onun üstüne koy (Fallback)
         else if (newChatBtn && pdfBtn && pdfBtn.parentNode !== cartRoot) {
             cartRoot.insertBefore(pdfBtn, newChatBtn);
