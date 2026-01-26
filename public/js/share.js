@@ -364,6 +364,8 @@ function selectModalDate(day, month, year, tripDuration) {
     const selectedDate = new Date(year, month, day);
     if (selectedDate < new Date()) return;
     
+    console.log('Seçilen:', day, month, year, 'Gün sayısı:', tripDuration);
+    
     // Eski seçimi kaldır
     document.querySelectorAll('.modal-date-btn').forEach(btn => {
         btn.style.borderColor = 'transparent';
@@ -377,21 +379,25 @@ function selectModalDate(day, month, year, tripDuration) {
         selectedBtn.style.background = '#fff5f5';
     }
     
-    // Global variable'a kaydet
+    // Global variable'a kaydet - TÜĞÜN SAYISINI DOĞRU BİLDİR
     window.modalSelectedStartDate = selectedDate.toLocaleDateString();
     window.modalSelectedEndDates = [];
     
+    // tripDuration kaç ise o kadar gün ekle
     for (let i = 0; i < tripDuration; i++) {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() + i);
         window.modalSelectedEndDates.push(d.toLocaleDateString());
     }
     
+    console.log('Kaydedilen tarihler:', window.modalSelectedStartDate, window.modalSelectedEndDates);
+    
     // Share butonunu aktif et
     const shareBtn = document.getElementById('modal-share-btn');
     if (shareBtn) {
         shareBtn.disabled = false;
         shareBtn.style.opacity = '1';
+        shareBtn.style.cursor = 'pointer';
     }
 }
 
