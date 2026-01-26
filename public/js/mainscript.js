@@ -5299,7 +5299,7 @@ if (aiInfoSection) {
     } else {
         // Tarih yoksa sadece buton göster
         dateRangeDiv.innerHTML = `
-          <button type="button" class="see-details-btn" data-role="trip-details-btn">😍 C Trip Details</button>
+          <button type="button" class="see-details-btn" data-role="trip-details-btn">🧐 C Trip Details</button>
         `;
     }
     
@@ -5427,7 +5427,7 @@ function showRemoveItemConfirmation(index, btn) {
   btn.style.display = "none";
 }
 
-function confirmRemoveItem(index) {trip de
+function confirmRemoveItem(index) {
   // Silme işlemi (window.cart'tan çıkar vs.)
   removeFromCart(index); // Senin silme fonksiyonun!
   hideItemConfirmation(`confirmation-item-${index}`);
