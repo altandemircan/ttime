@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 4. TARİH PARSE ETME
-        if (dateStr && dateStr.trim() !== "") {
+       if (dateStr && dateStr.trim() !== "") {
             const startDateStr = dateStr.replace(/-/g, '/');
             
             if (window.cart && window.cart.length > 0) {
@@ -181,10 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     endDates.push(d.toLocaleDateString());
                 }
                 
-                window.cart.startDate = startDate.toLocaleDateString();
+              window.cart.startDate = startDate.toLocaleDateString();
                 window.cart.endDates = endDates;
+
+                // EKLEMEN GEREKEN SATIR:
+                localStorage.setItem('tripStartDate', window.cart.startDate);
             }
-        }
 
         localStorage.setItem('cart', JSON.stringify(window.cart));
         if (document.getElementById('trip_title')) document.getElementById('trip_title').innerText = title;
@@ -495,27 +497,28 @@ function closeShareModal() {
 }
 
 // --- 8. Tarihlerle birlikte share ---
+// --- 8. Tarihlerle birlikte share ---
 async function confirmShareWithDates() {
     if (!window.modalSelectedStartDate) {
         alert('Please select a date');
         return;
     }
     
-    // window.cart'a tarihleri kaydet
+    // 1. window.cart'a ve PERSISTENCE İÇİN LOCALSTORAGE'A KAYDET (Düzeltme: Dizi property'si kaybolacağı için)
     window.cart.startDate = window.modalSelectedStartDate;
     window.cart.endDates = window.modalSelectedEndDates;
+    localStorage.setItem('tripStartDate', window.modalSelectedStartDate); 
     
-    // Modal'ı kapat
-    closeShareModal();
-    
-    // Share linkini oluştur
+    // 2. Share linkini oluştur
     const url = createOptimizedLongLink();
     
-    // Share mekanizmasını başlat
+    // 3. Share text'i hazırla (HENÜZ MODAL'I KAPATMA, DEĞİŞKENLER LAZIM)
     let shareText = `Check out my trip plan!\n`;
     const endDate = (window.modalSelectedEndDates && window.modalSelectedEndDates.length > 0)
         ? window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]
         : window.modalSelectedStartDate;
+        
+    // (Düzeltme: Değişkenler silinmeden kullanılıyor)
     shareText += `📅 ${window.modalSelectedStartDate} - ${endDate}\n\n`;
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
@@ -527,6 +530,9 @@ async function confirmShareWithDates() {
             shareText += "\n";
         }
     }
+    
+    // 4. ŞİMDİ MODAL'I KAPATABİLİRSİN (Değişkenler null oluyor)
+    closeShareModal();
     
     let shortUrl = url;
     try {

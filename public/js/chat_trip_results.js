@@ -316,7 +316,17 @@ function showTripDetails(startDate) {
         });
 
         // TARİH HESAPLA
-        let dateStr = "";
+       const activeStartDate = window.cart.startDate || localStorage.getItem('tripStartDate') || startDate;
+
+        if (activeStartDate) {
+            const startDateObj = new Date(activeStartDate);
+            // Tarih geçerli mi kontrolü
+            if (!isNaN(startDateObj.getTime())) {
+                const d = new Date(startDateObj);
+                d.setDate(startDateObj.getDate() + (day - 1));
+                dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+            }
+        }
         // Önce window.cart.startDate'i kontrol et
         if (window.cart.startDate) {
             const startDateObj = new Date(window.cart.startDate);
