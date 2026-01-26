@@ -267,7 +267,7 @@ function createOptimizedLongLink() {
     return `${window.location.origin}${window.location.pathname}?v2=${encodeURIComponent(title + '|' + items + aiPart + collagePart + datePart)}`;
 }
 
-// --- 4. MODAL - Share öncesi tarih seçimi ---
+// --- 4. MODAL - İki Aşamalı Share ---
 function showDatePickerBeforeShare() {
     const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
     
@@ -282,34 +282,62 @@ function showDatePickerBeforeShare() {
         align-items: center;
         justify-content: center;
         z-index: 10000;
+        padding: 20px;
     `;
     
     modal.innerHTML = `
-        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h3 style="margin-top: 0; color: #333;">When is your trip?</h3>
-            <p style="color: #666; font-size: 14px;">Select start date for your ${maxDay}-day journey (optional)</p>
-            
-            <div id="modal-calendar-container" style="margin: 20px 0;"></div>
-            
-            <div style="display: flex; gap: 12px; margin-top: 20px;">
-                <button onclick="closeShareModal()" style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; background: #f5f5f5; font-weight: 500;">
+        <div style="background: white; border-radius: 16px; padding: 32px 24px; max-width: 360px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+            <div id="share-step-1" style="display: block;">
+                <h3 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 20px; font-weight: 700;">Share your plan</h3>
+                <p style="margin: 0 0 24px 0; color: #666; font-size: 14px; line-height: 1.5;">Help others discover amazing places</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button onclick="shareWithoutDates()" style="width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; background: #8a4af3; color: white; font-weight: 600; font-size: 15px; transition: all 0.2s;">
+                        Just share
+                    </button>
+                    <button onclick="showDateStep()" style="width: 100%; padding: 14px; border: 1px solid #e0e0e0; border-radius: 10px; cursor: pointer; background: white; color: #1a1a1a; font-weight: 600; font-size: 15px; transition: all 0.2s;">
+                        Add dates
+                    </button>
+                </div>
+                
+                <button onclick="closeShareModal()" style="width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; background: #faf8ff; color: #1a1a1a; font-weight: 500; font-size: 14px;">
                     Cancel
                 </button>
-                <button onclick="shareWithoutDates()" style="flex: 1; padding: 12px; border: 1px solid #d32f2f; border-radius: 8px; cursor: pointer; background: white; color: #d32f2f; font-weight: 500;">
-                    Skip
+            </div>
+            
+            <div id="share-step-2" style="display: none;">
+                <button onclick="backToStep1()" style="background: none; border: none; color: #8a4af3; font-weight: 600; font-size: 14px; cursor: pointer; padding: 0 0 16px 0; display: flex; align-items: center; gap: 6px;">
+                    ← Back
                 </button>
-                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #d32f2f; color: white; font-weight: 600; opacity: 1;">
-                    Share
+                
+                <h3 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">When is your trip?</h3>
+                <p style="margin: 0 0 20px 0; color: #666; font-size: 13px;">Select start date for your ${maxDay}-day journey</p>
+                
+                <div id="modal-calendar-container" style="margin: 0 0 24px 0;"></div>
+                
+                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; background: #8a4af3; color: white; font-weight: 600; font-size: 15px;">
+                    Share with dates
                 </button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
+}
+
+function showDateStep() {
+    document.getElementById('share-step-1').style.display = 'none';
+    document.getElementById('share-step-2').style.display = 'block';
+    const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
     renderModalCalendar(maxDay);
 }
 
-// --- 5. Modal takvimi render et ---
+function backToStep1() {
+    document.getElementById('share-step-1').style.display = 'block';
+    document.getElementById('share-step-2').style.display = 'none';
+}
+
+// --- 5. Modal takvimi render et (Geçmiş tarihler seçilebilir) ---
 function renderModalCalendar(tripDuration) {
     const container = document.getElementById('modal-calendar-container');
     const now = new Date();
@@ -322,7 +350,7 @@ function renderModalCalendar(tripDuration) {
     const startingDay = firstDay.getDay();
     
     let html = `
-        <div style="margin-bottom: 15px; text-align: center; font-weight: 600; color: #333;">
+        <div style="margin-bottom: 15px; text-align: center; font-weight: 600; color: #1a1a1a; font-size: 15px;">
             ${new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </div>
         <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;">
@@ -335,21 +363,21 @@ function renderModalCalendar(tripDuration) {
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const isToday = date.toDateString() === now.toDateString();
-        const isPast = date < now;
         
         html += `
             <button onclick="selectModalDate(${day}, ${currentMonth}, ${currentYear}, ${tripDuration})" 
                  style="
                     padding: 10px;
                     text-align: center;
-                    border-radius: 6px;
-                    cursor: ${isPast ? 'not-allowed' : 'pointer'};
-                    background: ${isToday ? '#e8f5e9' : '#f5f5f5'};
-                    opacity: ${isPast ? 0.4 : 1};
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: ${isToday ? '#e8f5e9' : '#fafafa'};
+                    opacity: 1;
                     border: 2px solid transparent;
                     transition: all 0.2s;
                     font-weight: 500;
                     font-size: 14px;
+                    color: #1a1a1a;
                  "
                  class="modal-date-btn"
                  data-day="${day}">
@@ -365,14 +393,13 @@ function renderModalCalendar(tripDuration) {
 // --- 6. Modal'da tarih seç ---
 function selectModalDate(day, month, year, tripDuration) {
     const selectedDate = new Date(year, month, day);
-    if (selectedDate < new Date()) return;
     
     console.log('Seçilen:', day, month, year, 'Gün sayısı:', tripDuration);
     
     // Eski seçimi kaldır
     document.querySelectorAll('.modal-date-btn').forEach(btn => {
         btn.style.borderColor = 'transparent';
-        btn.style.background = '#f5f5f5';
+        btn.style.background = '#fafafa';
     });
     
     // Yeni seçimi işaretle - TÜM GÜNLERI RENKLENDIR
@@ -391,8 +418,8 @@ function selectModalDate(day, month, year, tripDuration) {
         }
         
         if (shouldHighlight) {
-            btn.style.borderColor = '#d32f2f';
-            btn.style.background = '#fff5f5';
+            btn.style.borderColor = '#8a4af3';
+            btn.style.background = '#faf8ff';
         }
     });
     
@@ -407,14 +434,6 @@ function selectModalDate(day, month, year, tripDuration) {
     }
     
     console.log('Kaydedilen tarihler:', window.modalSelectedStartDate, window.modalSelectedEndDates);
-    
-    // Share butonunu aktif et
-    const shareBtn = document.getElementById('modal-share-btn');
-    if (shareBtn) {
-        shareBtn.disabled = false;
-        shareBtn.style.opacity = '1';
-        shareBtn.style.cursor = 'pointer';
-    }
 }
 
 // --- 7. Modal'ı kapat ---
