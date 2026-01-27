@@ -1523,7 +1523,81 @@ document.querySelectorAll('.add_theme').forEach(btn => {
 
 
 
+// 3️⃣  initializeAddToTripListener() - DROPDOWN'DAN GÜN OKU
+function initializeAddToTripListener() {
+    if (window.__triptime_addtotrip_listener) {
+        document.removeEventListener('click', window.__triptime_addtotrip_listener);
+    }
+    
+    const listener = function(e) {
+        const btn = e.target.closest('.addtotrip');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        
+        const stepsDiv = btn.closest('.steps');
+        if (!stepsDiv) return;
+        
+        // Dropdown'dan seçili gün'ü oku
+        const daySelector = stepsDiv.querySelector('.day-select-dropdown-premium');
+        const selectedDay = daySelector ? Number(daySelector.value) : 1;
+        
+        const category = stepsDiv.getAttribute('data-category');
+        const title = stepsDiv.querySelector('.title')?.textContent.trim() || '';
+        const image = stepsDiv.querySelector('img.check')?.src || 'img/placeholder.png';
+        const address = stepsDiv.querySelector('.address span')?.textContent.trim() || '';
+        const opening_hours = stepsDiv.querySelector('.opening_hours span')?.textContent.trim() || '';
+        const lat = stepsDiv.getAttribute('data-lat');
+        const lon = stepsDiv.getAttribute('data-lon');
+        
+        // Website linkini al
+        const websiteLink = stepsDiv.querySelector('.website-info a');
+        const website = websiteLink ? websiteLink.href : '';
+        
+        let location = null;
+        if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && 
+            !isNaN(Number(lat)) && !isNaN(Number(lon))) {
+            location = { lat: Number(lat), lng: Number(lon) };
+        }
+        
+        addToCart(
+            title,
+            image,
+            null,
+            category,
+            address,
+            null,
+            null,
+            opening_hours,
+            null,
+            location,
+            website,
+            { forceDay: selectedDay }
+        );
+        
+        btn.classList.add('added');
+        setTimeout(() => btn.classList.remove('added'), 1000);
+        
+        if (typeof restoreSidebar === "function") restoreSidebar();
+        if (typeof updateCart === "function") updateCart();
+        
+        if (window.innerWidth <= 768) {
+            const sidebarTrip = document.querySelector('.sidebar-trip');
+            const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
+            if (sidebarTrip) sidebarTrip.classList.add('open');
+            if (sidebarOverlay) sidebarOverlay.classList.add('open');
+        }
+        
+        if (typeof window.showToast === 'function') {
+            window.showToast(`✓ Added to Day ${selectedDay}`, 'success');
+        }
+    };
+    
+    document.addEventListener('click', listener);
+    window.__triptime_addtotrip_listener = listener;
+}
 
+initializeAddToTripListener();
 
 let selectedCity = null;
 let selectedDays = null;
@@ -2085,7 +2159,58 @@ function normalizePlaceName(place) {
   place.name = getDisplayName(place);
   return place;
 }
-
+// 1️⃣  addChatResultsToCart() - İLK GÜN'Ü OTOMATIK EKLE
+function addChatResultsToCart() {
+    if (window.cart && window.cart.length > 0) return;
+    
+    const chatResults = document.querySelectorAll(".steps");
+    const sorted = Array.from(chatResults).sort((a, b) => {
+        const dayA = Number(a.getAttribute('data-day') || 1);
+        const dayB = Number(b.getAttribute('data-day') || 1);
+        if (dayA !== dayB) return dayA - dayB;
+        const catA = a.getAttribute('data-category') || '';
+        const catB = b.getAttribute('data-category') || '';
+        const catOrder = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
+        return catOrder.indexOf(catA) - catOrder.indexOf(catB);
+    });
+    
+    sorted.forEach(result => {
+        const day = Number(result.getAttribute('data-day') || 1);
+        const category = result.getAttribute('data-category');
+        const lat = result.getAttribute('data-lat');
+        const lon = result.getAttribute('data-lon');
+        const image = result.querySelector('img.check')?.src || 'img/placeholder.png';
+        const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        const opening_hours = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        
+        let stepObj = null;
+        if (result.dataset.step) {
+            try { stepObj = JSON.parse(decodeURIComponent(result.dataset.step)); } catch (e) { stepObj = null; }
+        }
+        
+        let name = "";
+        if (stepObj && typeof getDisplayName === "function") {
+            name = getDisplayName(stepObj);
+        } else {
+            name = result.querySelector('.title')?.textContent.trim() || '';
+        }
+        
+        if (lat && lon && name) {
+            addToCart(
+                name,
+                image,
+                day,
+                category,
+                address,
+                null, null,
+                opening_hours,
+                null,
+                { lat: Number(lat), lng: Number(lon) },
+                ''
+            );
+        }
+    });
+}
 
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
