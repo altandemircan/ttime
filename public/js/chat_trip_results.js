@@ -1,11 +1,5 @@
-// ============================================================================
-// IMPROVED: Güzel Dropdown + Website + Seçili Gün Highlight
-// ============================================================================
 
-
-
-
-// 2️⃣  generateStepHtml() GÜNCELLEME - Dropdown + Website
+// 2️⃣  generateStepHtml() - DROPDOWN'U "change" DIV'İNE EKLE (HTML AYNI KALIR)
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -42,7 +36,7 @@ function generateStepHtml(step, day, category, idx = 0) {
         : false;
     const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
-    // Gün seçeneklerini oluştur
+    // Gün seçeneklerini oluştur (Dropdown için)
     const daysCount = window.latestTripPlan 
         ? Math.max(...window.latestTripPlan.map(item => item.day || 1)) 
         : 1;
@@ -52,15 +46,6 @@ function generateStepHtml(step, day, category, idx = 0) {
         const checkmark = d === day ? ' ✓' : '';
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}${checkmark}</option>`;
     }
-
-    // Website kısmı (geri getirildi)
-    const websiteHtml = website ? `
-        <div class="website-info" style="margin-top: 8px;">
-            🔗 <a href="${website}" target="_blank" rel="noopener">
-                ${website.replace(/^https?:\/\//, '').substring(0, 40)}${website.length > 40 ? '...' : ''}
-            </a>
-        </div>
-    ` : '';
 
     return `
     <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
@@ -118,9 +103,6 @@ function generateStepHtml(step, day, category, idx = 0) {
                     ${opening || 'Working hours not found.'}
                 </span>
             </div>
-
-            <!-- 🔗 WEBSITE (GERI GETİRİLDİ) -->
-            ${websiteHtml}
         </div>
 
         <div class="item_action">
@@ -131,24 +113,87 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <span onclick="window.showMap && window.showMap(this)">
                     <img src="img/map_icon.svg">
                 </span>
-            </div>
-            
-            <!-- 🎨 GÜZEL DROPDOWN + ADD BUTONU -->
-            <div style="display: flex; align-items: center; gap: 6px;">
+                
+                <!-- 🆕 DROPDOWN (change div'ine ekli) -->
                 <select class="day-select-dropdown-premium" 
-                        style="padding: 7px 10px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 0.85rem; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #333; cursor: pointer; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        style="padding: 7px 10px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 0.85rem; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #333; cursor: pointer; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); appearance: none; background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath fill=%27%23333%27 d=%27M6 9L1 4h10z%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;">
                     ${dayOptionsHtml}
                 </select>
-                
-                <a class="addtotrip"><span>Add to trip</span>
-                    <img src="img/addtotrip-icon.svg">
-                </a>
             </div>
+            
+            <a class="addtotrip"><span>Add to trip</span>
+                <img src="img/addtotrip-icon.svg">
+            </a>
         </div>
     </div>`;
 }
 
+// 4️⃣  DROPDOWN CSS'İ OTOMATİK ENJEKTE ET
+function injectDropdownStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .day-select-dropdown-premium {
+            padding: 7px 10px !important;
+            border: 1.5px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            font-size: 0.85rem !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+            color: #333 !important;
+            cursor: pointer !important;
+            font-weight: 500 !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+            font-family: inherit !important;
+            min-width: 80px !important;
+        }
 
+        .day-select-dropdown-premium:hover {
+            border-color: #4CAF50 !important;
+            background: linear-gradient(135deg, #f0f9ff 0%, #f0f7f4 100%) !important;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15) !important;
+        }
+
+        .day-select-dropdown-premium:focus {
+            outline: none !important;
+            border-color: #4CAF50 !important;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1), 0 4px 12px rgba(76, 175, 80, 0.2) !important;
+        }
+
+        .day-select-dropdown-premium option:checked {
+            background-color: #4CAF50 !important;
+            color: white !important;
+        }
+
+        @media (max-width: 768px) {
+            .day-select-dropdown-premium {
+                font-size: 0.8rem !important;
+                padding: 6px 8px !important;
+                min-width: 70px !important;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .day-select-dropdown-premium {
+                background: linear-gradient(135deg, #2a2a2a 0%, #262626 100%) !important;
+                color: #e0e0e0 !important;
+                border-color: #444 !important;
+            }
+
+            .day-select-dropdown-premium:hover {
+                border-color: #66BB6A !important;
+                background: linear-gradient(135deg, #1b5e20 0%, #1e3a1f 100%) !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Sayfa yüklendiğinde CSS'i enjekte et
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectDropdownStyles);
+} else {
+    injectDropdownStyles();
+}
 
 
 function showTripDetails(startDate) {
