@@ -35,7 +35,7 @@ function generateStepHtml(step, day, category, idx = 0) {
         : false;
     const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
-    // Gün seçeneklerini oluştur
+    // Gün seçeneklerini oluştur (Sadece gün isimleri, tick yok)
     const daysCount = window.latestTripPlan 
         ? Math.max(...window.latestTripPlan.map(item => item.day || 1)) 
         : 1;
@@ -45,7 +45,7 @@ function generateStepHtml(step, day, category, idx = 0) {
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
-    // JSON verisini güvenli sakla
+    // JSON verisini güvenli sakla (Ekleme işlemi için)
     const stepJson = encodeURIComponent(JSON.stringify(step));
 
     return `
@@ -132,7 +132,7 @@ function generateStepHtml(step, day, category, idx = 0) {
     </div>`;
 }
 
-// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ (RENK GÜNCELLENDİ)
+// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
@@ -146,7 +146,7 @@ function injectDropdownStyles() {
             overflow: hidden;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
-            margin-left: auto;
+            margin-left: auto; /* Sağa yasla */
         }
 
         .trip-action-group:hover {
@@ -178,9 +178,10 @@ function injectDropdownStyles() {
             background-color: #f9f9f9;
         }
 
-        /* Buton Stili (Temel) */
+        /* Buton Stili */
         .trip-action-group .action-btn {
             border: none;
+            border-left: 1px solid #eee;
             padding: 8px 14px;
             font-size: 0.85rem;
             font-weight: 600;
@@ -194,27 +195,19 @@ function injectDropdownStyles() {
             font-family: inherit;
         }
 
-        /* --- ADD MODU (MOR TASARIM) --- */
+        /* ADD MODU */
         .trip-action-group .action-btn.btn-add {
-            background-color: #8a4af3; /* İSTENİLEN RENK */
-            color: #ffffff;            /* BEYAZ YAZI */
-            border-left: 1px solid rgba(255,255,255,0.2); /* Hafif ayraç */
+            background-color: #fff;
+            color: #007bff;
         }
-        
         .trip-action-group .action-btn.btn-add:hover {
-            background-color: #7b42db; /* Hover: Hafif koyu mor */
+            background-color: #f0f8ff;
         }
 
-        /* İkonu Beyaz Yapmak İçin Filtre */
-        .trip-action-group .action-btn.btn-add img {
-            filter: brightness(0) invert(1);
-        }
-
-        /* --- REMOVE MODU (Kırmızı Tasarım) --- */
+        /* REMOVE MODU */
         .trip-action-group .action-btn.btn-remove {
             background-color: #fff1f0;
             color: #dc3545;
-            border-left: 1px solid #eee;
         }
         .trip-action-group .action-btn.btn-remove:hover {
             background-color: #ffe8e6;
@@ -229,15 +222,19 @@ function injectDropdownStyles() {
                 color: #e0e0e0;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             }
-            /* Dark modda Add butonu parlak kalsın veya hafif koyulabilir */
+            .trip-action-group .action-btn {
+                border-left-color: #444;
+            }
             .trip-action-group .action-btn.btn-add {
-                background-color: #8a4af3; 
-                color: white;
+                background-color: #2a2a2a;
+                color: #64b5f6;
+            }
+            .trip-action-group .action-btn.btn-add:hover {
+                background-color: #333;
             }
              .trip-action-group .action-btn.btn-remove {
                 background-color: #3e2a2a;
                 color: #ef5350;
-                border-left-color: #444;
             }
         }
     `;
@@ -333,6 +330,7 @@ function updateAllChatButtons() {
 }
 
 // 4. Olay Dinleyicileri (Click ve Change)
+// Global event delegation kullanarak performanslı hale getiriyoruz
 document.addEventListener('click', function(e) {
     const btn = e.target.closest('.addtotrip-toggle');
     if (!btn) return;
@@ -405,10 +403,11 @@ document.addEventListener('change', function(e) {
     }
 });
 
-// MutationObserver: Chat'e yeni mesaj geldiğinde
+// MutationObserver: Chat'e yeni mesaj geldiğinde (yeni itemler yüklendiğinde) butonları kontrol et
 const observer = new MutationObserver(function(mutations) {
     updateAllChatButtons();
 });
+// Chat container'ı izlemeye başla (ID'si main-chat veya benzeri ise)
 const chatContainer = document.getElementById('chat-container') || document.body;
 observer.observe(chatContainer, { childList: true, subtree: true });
 
