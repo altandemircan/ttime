@@ -2530,12 +2530,12 @@ window.cleanElevationData = function(elevations, samples = null) {
         }
     }
     
-    console.log("[ELEV CLEAN] Sonuç:", {
-        total: cleaned.length,
-        fixedCount: fixedCount,
-        min: Math.min(...cleaned),
-        max: Math.max(...cleaned)
-    });
+    // console.log("[ELEV CLEAN] Sonuç:", {
+    //     total: cleaned.length,
+    //     fixedCount: fixedCount,
+    //     min: Math.min(...cleaned),
+    //     max: Math.max(...cleaned)
+    // });
     
     return cleaned;
 };
@@ -2572,12 +2572,12 @@ window.cleanElevationData = function(elevations, samples = null) {
             }
             
             // Veriyi temizle
-            console.log(`[ELEVATION] ${samples.length} noktanın elevation verisi alındı`);
+            // console.log(`[ELEVATION] ${samples.length} noktanın elevation verisi alındı`);
             elevations = window.cleanElevationData(elevations, samples);
             
             return elevations;
         } catch (error) {
-            console.error('[ELEVATION] Hata:', error);
+            // console.error('[ELEVATION] Hata:', error);
             throw error;
         }
     };
