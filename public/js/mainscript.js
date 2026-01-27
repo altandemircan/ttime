@@ -5373,7 +5373,10 @@ if (aiInfoSection) {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-
+// EN SONA EKLEYİN:
+    if (typeof updateAllChatButtons === 'function') {
+        updateAllChatButtons();
+    }
 }
 
 function showRemoveItemConfirmation(index, btn) {
