@@ -2275,11 +2275,11 @@ if (window._nearbyWatchdog) clearInterval(window._nearbyWatchdog);
 if (window._nearbyButtonTimer) clearTimeout(window._nearbyButtonTimer);
 
 // 1. TEMİZLİK VE KAPATMA FONKSİYONU
+// 1. TEMİZLİK VE KAPATMA FONKSİYONU (FIXED)
 window.closeNearbyPopup = function() {
-    // 0. TOGGLE BUTONUNU HEMENCECIK KALDIR (En başta!)
-    const toggleBtn = document.getElementById('nearby-map-toggle-btn');
+    // 0. TOGGLE BUTONUNU KALDIR
+    const toggleBtn = document.getElementById('nearby-view-switcher-btn');
     if (toggleBtn) {
-        console.log('Toggle button removed');
         toggleBtn.remove();
     }
 
@@ -2305,7 +2305,7 @@ window.closeNearbyPopup = function() {
         window._nearbyPulseMarker3D = null;
     }
     
-    // 4. RADIUS DAİRELERİNİ SİL
+    // 4. RADIUS DAİRELERİNİ SİL (Mavi Arama Dairesi)
     if (window._nearbyRadiusCircle) {
         try { window._nearbyRadiusCircle.remove(); } catch(e) {}
         window._nearbyRadiusCircle = null;
@@ -2321,24 +2321,30 @@ window.closeNearbyPopup = function() {
         window._nearbyRadiusCircle3D = null;
     }
     
-    // 5. KATEGORİ DAİRELERİNİ SİL
+    // 5. KATEGORİ DAİRELERİNİ SİL (Yeşil/Kırmızı Kategori Alanı)
     if (window._categoryRadiusCircle) {
         try { window._categoryRadiusCircle.remove(); } catch(e) {}
         window._categoryRadiusCircle = null;
     }
+    // --- BURASI DÜZELTİLDİ ---
     if (window._categoryRadiusCircle3D && window._maplibre3DInstance) {
         try {
             const circleId = window._categoryRadiusCircle3D;
             const map3d = window._maplibre3DInstance;
+            
+            // Önce katmanları (layer) sil
             if (map3d.getLayer(circleId + '-layer')) map3d.removeLayer(circleId + '-layer');
+            if (map3d.getLayer(circleId + '-stroke')) map3d.removeLayer(circleId + '-stroke'); // <--- EKLENEN KRİTİK SATIR
+            
+            // Sonra kaynağı (source) sil
             if (map3d.getSource(circleId)) map3d.removeSource(circleId);
-        } catch(e) {}
+        } catch(e) {
+            console.warn("Cleanup error:", e);
+        }
         window._categoryRadiusCircle3D = null;
     }
     
     window._currentNearbyPopupElement = null;
-    
-    // console.log('Nearby popup closed completely');
 };
 
 // ============================================
