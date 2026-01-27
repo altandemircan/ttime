@@ -953,34 +953,32 @@ showCustomPopup(lat, lng, map, loadingContent, false);
     entertainment: { text: "Show more", color: "#1976d2" }
 };
 
-        // Tıkalanan nokta bölümü
-        const addPointSection = `
-            <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
-                <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
-                    <div class="point-image" style="width: 60px; height: 40px; position: relative; flex-shrink: 0;">
-    <img id="clicked-point-img" src="img/placeholder.png" alt="Clicked Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
-</div>
-                    <div class="point-info" style="flex: 1; min-width: 0;">
-                        <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span id="point-name-display" style="font-weight: 600; font-size: 15px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
-                            
-                                                    </div>
-                        <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
-                            ${pointInfo.address || 'Selected location'}
-                        </div>
-                    </div>
-                    <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-                        <div style="font-size: 11px; color: #999;">Clicked</div>
-<button class="add-point-to-cart-btn" 
-    onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${placeLat}, ${placeLon}, '${config.layerPrefix}')" 
-    style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">
-    +
-</button>                    </div>
-                    <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
+        // Tıklanan nokta bölümü (FIXED - ReferenceError Düzeltmesi)
+    const addPointSection = `
+        <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
+            <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                <div class="point-image" style="width: 60px; height: 40px; position: relative; flex-shrink: 0;">
+                    <img id="clicked-point-img" src="img/placeholder.png" alt="Clicked Point" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0.8;">
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px;">📍</div>
                 </div>
+                <div class="point-info" style="flex: 1; min-width: 0;">
+                    <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <span id="point-name-display" style="font-weight: 600; font-size: 15px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
+                    </div>
+                    <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
+                        ${pointInfo.address || 'Selected location'}
+                    </div>
+                </div>
+                <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                    <div style="font-size: 11px; color: #999;">Clicked</div>
+                    <button class="add-point-to-cart-btn" 
+                        onclick="window.addPlaceToTripFromPopup('clicked-point-img', '${(pointInfo.name || '').replace(/'/g, "\\'")}', '${(pointInfo.address || '').replace(/'/g, "\\'")}', ${day}, ${lat}, ${lng}, 'place')" 
+                        style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
+                </div>
+                <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
             </div>
-        `;
+        </div>
+    `;
 
         // Aktif tab belirle (en fazla içeriğe sahip olan)
         let activeTab = 'restaurants';
