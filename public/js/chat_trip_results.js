@@ -1,5 +1,62 @@
-// chat_trip_results.js
+// ============================================================================
+// IMPROVED: Güzel Dropdown + Website + Seçili Gün Highlight
+// ============================================================================
 
+// 1️⃣  addChatResultsToCart() - İLK GÜN'Ü OTOMATIK EKLE
+function addChatResultsToCart() {
+    if (window.cart && window.cart.length > 0) return;
+    
+    const chatResults = document.querySelectorAll(".steps");
+    const sorted = Array.from(chatResults).sort((a, b) => {
+        const dayA = Number(a.getAttribute('data-day') || 1);
+        const dayB = Number(b.getAttribute('data-day') || 1);
+        if (dayA !== dayB) return dayA - dayB;
+        const catA = a.getAttribute('data-category') || '';
+        const catB = b.getAttribute('data-category') || '';
+        const catOrder = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
+        return catOrder.indexOf(catA) - catOrder.indexOf(catB);
+    });
+    
+    sorted.forEach(result => {
+        const day = Number(result.getAttribute('data-day') || 1);
+        const category = result.getAttribute('data-category');
+        const lat = result.getAttribute('data-lat');
+        const lon = result.getAttribute('data-lon');
+        const image = result.querySelector('img.check')?.src || 'img/placeholder.png';
+        const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        const opening_hours = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        
+        let stepObj = null;
+        if (result.dataset.step) {
+            try { stepObj = JSON.parse(decodeURIComponent(result.dataset.step)); } catch (e) { stepObj = null; }
+        }
+        
+        let name = "";
+        if (stepObj && typeof getDisplayName === "function") {
+            name = getDisplayName(stepObj);
+        } else {
+            name = result.querySelector('.title')?.textContent.trim() || '';
+        }
+        
+        if (lat && lon && name) {
+            addToCart(
+                name,
+                image,
+                day,
+                category,
+                address,
+                null, null,
+                opening_hours,
+                null,
+                { lat: Number(lat), lng: Number(lon) },
+                ''
+            );
+        }
+    });
+}
+
+
+// 2️⃣  generateStepHtml() GÜNCELLEME - Dropdown + Website
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -43,8 +100,18 @@ function generateStepHtml(step, day, category, idx = 0) {
     let dayOptionsHtml = '';
     for (let d = 1; d <= daysCount; d++) {
         const selected = d === day ? 'selected' : '';
-        dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
+        const checkmark = d === day ? ' ✓' : '';
+        dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}${checkmark}</option>`;
     }
+
+    // Website kısmı (geri getirildi)
+    const websiteHtml = website ? `
+        <div class="website-info" style="margin-top: 8px;">
+            🔗 <a href="${website}" target="_blank" rel="noopener">
+                ${website.replace(/^https?:\/\//, '').substring(0, 40)}${website.length > 40 ? '...' : ''}
+            </a>
+        </div>
+    ` : '';
 
     return `
     <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
@@ -102,6 +169,9 @@ function generateStepHtml(step, day, category, idx = 0) {
                     ${opening || 'Working hours not found.'}
                 </span>
             </div>
+
+            <!-- 🔗 WEBSITE (GERI GETİRİLDİ) -->
+            ${websiteHtml}
         </div>
 
         <div class="item_action">
@@ -114,10 +184,10 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </span>
             </div>
             
-            <!-- 🆕 DROPDOWN + ADD BUTONU (Tasarımı koruyan) -->
+            <!-- 🎨 GÜZEL DROPDOWN + ADD BUTONU -->
             <div style="display: flex; align-items: center; gap: 6px;">
-                <select class="day-select-dropdown" 
-                        style="padding: 5px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 0.85rem; background: white; color: #333; cursor: pointer;">
+                <select class="day-select-dropdown-premium" 
+                        style="padding: 7px 10px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 0.85rem; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #333; cursor: pointer; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     ${dayOptionsHtml}
                 </select>
                 
@@ -146,7 +216,7 @@ function initializeAddToTripListener() {
         if (!stepsDiv) return;
         
         // Dropdown'dan seçili gün'ü oku
-        const daySelector = stepsDiv.querySelector('.day-select-dropdown');
+        const daySelector = stepsDiv.querySelector('.day-select-dropdown-premium');
         const selectedDay = daySelector ? Number(daySelector.value) : 1;
         
         const category = stepsDiv.getAttribute('data-category');
@@ -156,7 +226,10 @@ function initializeAddToTripListener() {
         const opening_hours = stepsDiv.querySelector('.opening_hours span')?.textContent.trim() || '';
         const lat = stepsDiv.getAttribute('data-lat');
         const lon = stepsDiv.getAttribute('data-lon');
-        const website = stepsDiv.getAttribute('data-website') || '';
+        
+        // Website linkini al
+        const websiteLink = stepsDiv.querySelector('.website-info a');
+        const website = websiteLink ? websiteLink.href : '';
         
         let location = null;
         if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && 
@@ -200,7 +273,6 @@ function initializeAddToTripListener() {
     document.addEventListener('click', listener);
     window.__triptime_addtotrip_listener = listener;
 }
-
 
 function showTripDetails(startDate) {
     const isMobile = window.innerWidth <= 768;
