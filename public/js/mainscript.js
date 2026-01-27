@@ -7,7 +7,11 @@ window.mapPlanningDay = null;
 window.mapPlanningActive = false;
 window.mapPlanningMarkersByDay = {};
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+
 window.cart = JSON.parse(localStorage.getItem('cart')) || [];
+window.activeTripKey = localStorage.getItem('activeTripKey') || null;
+window.selectedCity = localStorage.getItem('selectedCity') || null;
+
 window.__locationPickedFromSuggestions = false;
 window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
