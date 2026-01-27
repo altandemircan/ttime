@@ -7915,15 +7915,18 @@ function getSafeCoord(item) {
  */
 async function enforceDailyRouteLimit(day, maxKm) {
     // 1. O güne ait itemları al
-    // window.cart tanımlı değilse hata vermesin diye kontrol ekledik
     if (!window.cart) return false;
 
-    let dayItems = window.cart.filter(item => item.day == day);
+    // --- DÜZELTME BAŞLANGICI ---
+    // Sadece günü eşleşen DEĞİL, aynı zamanda kategorisi 'Note' OLMAYANLARI alıyoruz.
+    let dayItems = window.cart.filter(item => 
+        item.day == day && 
+        item.category !== 'Note' // <--- Notlar mesafe hesabından muaf tutuldu
+    );
+    // --- DÜZELTME BİTİŞİ ---
     
     // Eğer 0 veya 1 nokta varsa mesafe oluşmaz, işlem yapma.
     if (dayItems.length <= 1) return false;
-
-    // console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
 
     let totalKm = 0;
     let splitIdx = -1;
@@ -7936,7 +7939,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
 
         // Koordinat hatası varsa (NaN), bu item'ı atla ve log düş
         if (isNaN(p1.lat) || isNaN(p1.lng) || isNaN(p2.lat) || isNaN(p2.lng)) {
-            console.warn("[LimitCheck] Invalid coordinates detected, skipping calculation for item:", dayItems[i]);
+            // Notları filtrelediğimiz için buraya düşme ihtimali azaldı ama yine de güvenlik.
             continue;
         }
 
@@ -7976,7 +7979,6 @@ async function enforceDailyRouteLimit(day, maxKm) {
         }
 
         // C. Arayüzü Güncelle
-        // renderRouteForDay içindeysek çakışmayı önlemek için minik bir gecikme ile çağırıyoruz.
         if (typeof updateCart === "function") {
             setTimeout(() => {
                 console.log("[LimitCheck] Refreshing cart UI...");
