@@ -1,20 +1,12 @@
 // chat_trip_results.js
 
-function generateStepHtml(step, day, category, idx = 0) {
-    const name = getDisplayName(step) || category;
-    const localName = getLocalName(step);
-    const address = step?.address || "";
-    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
-    const website = step?.website || "";
-    const opening = step?.opening_hours || "";
-    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
-    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
-
-    let tagsHtml = "";
-    const tags = (step.properties && step.properties.categories) || step.categories;
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-        const uniqueTags = getUniqueSpecificTags(tags);
-        tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
+function generateStepHtml(step, day, category) {
+    const daysCount = Math.max(...(window.latestTripPlan || []).map(item => item.day || 1));
+    
+    let dayOptionsHtml = '';
+    for (let d = 1; d <= daysCount; d++) {
+        const selected = d === day ? 'selected' : '';
+        dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
     let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
@@ -44,77 +36,51 @@ function generateStepHtml(step, day, category, idx = 0) {
         <div class="visual">
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             
-            ${tagsHtml ? `
-            <div class="geoapify-tags-section">
-                <div class="geoapify-tags">${tagsHtml}</div>
-            </div>` : ''}
-
-            <div class="cats cats1">
-                <img src="${catIcon}" alt="${category}"> ${category}
-            </div>
+            <img src="${step.image || 'img/placeholder.png'}" 
+                 alt="${step.name}" 
+                 class="check"
+                 onerror="this.src='img/default_place.jpg'">
             
-            <span class="fav-heart" 
-                  data-name="${name}" 
-                  data-category="${category}" 
-                  data-lat="${lat}" 
-                  data-lon="${lon}" 
-                  data-image="${image}">
-                <img class="fav-icon" src="${favIconSrc}" alt="Favorite">
-            </span>
-
-            <span class="info-icon-wrapper">
-                <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">                
-                <div class="info-tooltip">
-                    Photos associated with this place are matched by analyzing search results and may not reflect reality.
-                    <div style="position: absolute; top: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #333;"></div>
-                </div>
-            </span>
-            <style>
-                /* Tooltip Hover Efekti */
-                .info-icon-wrapper:hover .info-tooltip { display: block !important; }
-            </style>
-
-        </div>
-
-        <div class="info day_cats item-info-view">
-   
-            <div class="title" title="${name}">${name}</div>
-            
-      
-            <div class="address">
-                <img src="img/address_icon.svg">
-                <span title="${address || 'Address not found'}">
-                    ${address || 'Address not found'}
-                </span>
-            </div>
-
-      
-            <div class="opening_hours">
-                <img src="img/hours_icon.svg">
-                <span title="${opening || 'Working hours not found.'}">
-                    ${opening || 'Working hours not found.'}
-                </span>
-            </div>
-        </div>
-
-        <div class="item_action">
-            <div class="change">
-                <span onclick="window.showImage && window.showImage(this)">
-                    <img src="img/camera_icon.svg">
-                </span>
-                <span onclick="window.showMap && window.showMap(this)">
-                    <img src="img/map_icon.svg">
-                </span>
+            <div class="steps-content">
+                <h4 class="title">${step.name || 'Unknown'}</h4>
+                <p class="category" style="font-size: 0.85rem; color: #666; margin: 4px 0;">
+                    📍 ${step.category}
+                </p>
                 
+                ${step.address ? `
+                    <p class="address" style="font-size: 0.85rem; color: #888; margin: 4px 0;">
+                        📌 Address: ${step.address}
+                    </p>
+                ` : ''}
+                
+                ${step.opening_hours ? `
+                    <p class="opening_hours" style="font-size: 0.85rem; color: #888; margin: 4px 0;">
+                        🕔 Hours: ${step.opening_hours}
+                    </p>
+                ` : ''}
+                
+                ${step.description && step.description !== "No detailed description." ? `
+                    <p class="description" style="font-size: 0.85rem; color: #777; margin: 8px 0; line-height: 1.4;">
+                        ${step.description}
+                    </p>
+                ` : ''}
             </div>
-            
-            <a class="addtotrip"><span>Add to trip</span>
-                <img src="img/addtotrip-icon.svg">
-            </a>
-        </div>
-    </div>`;
-}
 
+            <div class="add-to-trip-controls" style="display: flex; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+                <select class="day-select-dropdown" 
+                        style="padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; flex: 1; background-color: #fff; color: #333; cursor: pointer;">
+                    ${dayOptionsHtml}
+                </select>
+                <button class="addtotrip" 
+                        style="padding: 6px 12px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; font-weight: 500;">
+                    ➕ Add
+                </button>
+            </div>
+        </div>
+    `;
+
+    return stepHtml;
+}
 
 
 function showTripDetails(startDate) {
