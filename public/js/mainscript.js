@@ -10344,3 +10344,162 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 }
 
+// CSS'i JavaScript'e çevir ve otomatik enjekte et
+function injectDropdownStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .day-select-dropdown-premium {
+            padding: 7px 10px !important;
+            border: 1.5px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            font-size: 0.85rem !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+            color: #333 !important;
+            cursor: pointer !important;
+            font-weight: 500 !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+            font-family: inherit !important;
+            min-width: 80px !important;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px !important;
+        }
+
+        .day-select-dropdown-premium:hover {
+            border-color: #4CAF50 !important;
+            background: linear-gradient(135deg, #f0f9ff 0%, #f0f7f4 100%) !important;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15) !important;
+            transform: translateY(-1px);
+        }
+
+        .day-select-dropdown-premium:focus {
+            outline: none !important;
+            border-color: #4CAF50 !important;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1), 0 4px 12px rgba(76, 175, 80, 0.2) !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f7f4 100%) !important;
+        }
+
+        .day-select-dropdown-premium:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.15) !important;
+        }
+
+        .day-select-dropdown-premium option {
+            padding: 8px 12px;
+            background: white;
+            color: #333;
+            border: none;
+        }
+
+        .day-select-dropdown-premium option:checked {
+            background: linear-gradient(#4CAF50, #4CAF50);
+            background-color: #4CAF50 !important;
+            color: white;
+        }
+
+        .day-select-dropdown-premium option:hover {
+            background: #e8f5e9;
+        }
+
+        .website-info {
+            margin-top: 8px;
+            padding: 8px 0;
+        }
+
+        .website-info a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .website-info a:hover {
+            color: #45a049;
+            text-decoration: underline;
+        }
+
+        .website-info a:before {
+            content: "🔗";
+        }
+
+        @media (max-width: 768px) {
+            .day-select-dropdown-premium {
+                font-size: 0.8rem !important;
+                padding: 6px 8px !important;
+                min-width: 70px !important;
+                padding-right: 26px !important;
+            }
+            
+            .website-info {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .day-select-dropdown-premium {
+                background: linear-gradient(135deg, #2a2a2a 0%, #262626 100%) !important;
+                color: #e0e0e0 !important;
+                border-color: #444 !important;
+            }
+
+            .day-select-dropdown-premium:hover {
+                border-color: #66BB6A !important;
+                background: linear-gradient(135deg, #1b5e20 0%, #1e3a1f 100%) !important;
+                box-shadow: 0 4px 12px rgba(102, 187, 106, 0.25) !important;
+            }
+
+            .day-select-dropdown-premium:focus {
+                border-color: #66BB6A !important;
+                box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.15), 0 4px 12px rgba(102, 187, 106, 0.3) !important;
+            }
+
+            .day-select-dropdown-premium option {
+                background: #2a2a2a;
+                color: #e0e0e0;
+            }
+
+            .day-select-dropdown-premium option:checked {
+                background: #4CAF50 !important;
+            }
+
+            .website-info a {
+                color: #66BB6A;
+            }
+
+            .website-info a:hover {
+                color: #81C784;
+            }
+        }
+
+        @keyframes dropdownPulse {
+            0% {
+                box-shadow: 0 2px 4px rgba(76, 175, 80, 0.05);
+            }
+            50% {
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+            }
+            100% {
+                box-shadow: 0 2px 4px rgba(76, 175, 80, 0.05);
+            }
+        }
+
+        .day-select-dropdown-premium.active {
+            animation: dropdownPulse 0.6s ease;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Sayfa yüklendiğinde CSS'i enjekte et
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectDropdownStyles);
+} else {
+    injectDropdownStyles();
+}
