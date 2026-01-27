@@ -1593,6 +1593,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 // Cache for category data
 window._categoryCacheData = window._categoryCacheData || {};
 
+// GÜNCELLENMİŞ VE DÜZELTİLMİŞ FONKSİYON
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants', radiusOverride = null) {
     window._lastSelectedCategory = categoryType;
 
@@ -1808,19 +1809,15 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 
-    // === Layer Temizliği (HATA DÜZELTİLDİ) ===
+    // Layer Temizliği
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
 
-    // 2D Temizlik
     if (map[layerKey]) { map[layerKey].forEach(l => l.remove()); map[layerKey] = []; }
-    
-    // 3D Temizlik (Global 3D Instance Kullanarak)
     if (window[layer3DKey]) { 
         window[layer3DKey].forEach(id => { 
             const map3d = window._maplibre3DInstance;
-            // Sadece 3D instance varsa ve fonksiyonları varsa temizle
             if (map3d && typeof map3d.getLayer === 'function') {
                 if (map3d.getLayer(id)) map3d.removeLayer(id); 
                 if (map3d.getSource(id)) map3d.removeSource(id);
@@ -1828,8 +1825,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         }); 
         window[layer3DKey] = []; 
     }
-    
-    // 3D Marker Temizlik
     if (window[marker3DKey]) { window[marker3DKey].forEach(m => m.remove()); window[marker3DKey] = []; }
 
     // API ÇAĞRISI
@@ -1877,62 +1872,62 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const countBadge = document.querySelector('.category-count');
         if (countBadge) countBadge.textContent = topPlaces.length;
 
-        // SIDEBAR LİSTESİ
+        // --- DAİRE ÇİZİMİ (ARTIK LİSTEDEN BAĞIMSIZ) ---
+        if (maxDistance > 0) {
+            const circleColor = '#1976d2';
+            const radiusMeters = Math.ceil(maxDistance);
+
+            if (isMapLibre) {
+                const circleId = `category-radius-${categoryType}-${Date.now()}`;
+                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+
+                map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
+
+                // 1. FILL LAYER
+                map.addLayer({
+                    id: circleId + '-layer',
+                    type: 'fill',
+                    source: circleId,
+                    paint: {
+                        'fill-color': circleColor,
+                        'fill-opacity': 0.2, // Şeffaflık artırıldı
+                        'fill-outline-color': circleColor
+                    }
+                });
+
+                // 2. LINE LAYER (ÇERÇEVE)
+                map.addLayer({
+                    id: circleId + '-stroke',
+                    type: 'line',
+                    source: circleId,
+                    paint: {
+                        'line-color': circleColor,
+                        'line-width': 2,
+                        'line-opacity': 0.8,
+                        'line-dasharray': [2, 4]
+                    }
+                });
+
+                window._categoryRadiusCircle3D = circleId;
+
+            } else {
+                window._categoryRadiusCircle = L.circle([lat, lng], {
+                    radius: radiusMeters,
+                    color: circleColor,
+                    weight: 1,
+                    opacity: 0.6,
+                    fillColor: circleColor,
+                    fillOpacity: 0.1,
+                    dashArray: "5, 10",
+                    className: `category-radius-circle`
+                }).addTo(map);
+            }
+        }
+
+        // SIDEBAR LİSTESİ DOLDURMA
         const itemsContainer = document.querySelector('.category-items-container');
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
-
-            if (maxDistance > 0) {
-                const circleColor = '#1976d2';
-                const radiusMeters = Math.ceil(maxDistance);
-
-                if (isMapLibre) {
-                    const circleId = `category-radius-${categoryType}-${Date.now()}`;
-                    const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-
-                    map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
-
-                    // 1. FILL LAYER
-                    map.addLayer({
-                        id: circleId + '-layer',
-                        type: 'fill',
-                        source: circleId,
-                        paint: {
-                            'fill-color': circleColor,
-                            'fill-opacity': 0.15,
-                            'fill-outline-color': circleColor
-                        }
-                    });
-
-                    // 2. LINE LAYER
-                    map.addLayer({
-                        id: circleId + '-stroke',
-                        type: 'line',
-                        source: circleId,
-                        paint: {
-                            'line-color': circleColor,
-                            'line-width': 2,
-                            'line-opacity': 0.6,
-                            'line-dasharray': [2, 4]
-                        }
-                    });
-
-                    window._categoryRadiusCircle3D = circleId;
-
-                } else {
-                    window._categoryRadiusCircle = L.circle([lat, lng], {
-                        radius: radiusMeters,
-                        color: circleColor,
-                        weight: 1,
-                        opacity: 0.6,
-                        fillColor: circleColor,
-                        fillOpacity: 0.1,
-                        dashArray: "5, 10",
-                        className: `category-radius-circle`
-                    }).addTo(map);
-                }
-            }
-
             topPlaces.forEach((placeData, idx) => {
                 const f = placeData.feature;
                 const distance = placeData.distance;
@@ -2027,7 +2022,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         if (container) container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">Error loading places</div>`;
     }
 }
-
 // Marker HTML'i de güncelleyelim (mesafe yazısını daire renginde yapalım)
 function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
     const distanceText = distance ? 
