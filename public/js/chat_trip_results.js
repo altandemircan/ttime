@@ -35,13 +35,26 @@ function generateStepHtml(step, day, category, idx = 0) {
         : false;
     const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
-    // Gün seçeneklerini oluştur
-    const daysCount = window.latestTripPlan 
-        ? Math.max(...window.latestTripPlan.map(item => item.day || 1)) 
-        : 1;
+    // === GÜN SEÇİMİ DÜZELTMESİ ===
+    // 1. Gelen 'day' parametresini kesinlikle sayıya çevir
+    const targetDay = parseInt(day, 10) || 1;
+
+    // 2. Toplam gün sayısını hem Plan'dan hem Cart'tan kontrol et (Manuel eklenen günler için)
+    let maxDay = 1;
+    if (window.cart && window.cart.length > 0) {
+        maxDay = Math.max(...window.cart.map(i => i.day || 1));
+    }
+    if (window.latestTripPlan && window.latestTripPlan.length > 0) {
+        const maxPlan = Math.max(...window.latestTripPlan.map(i => i.day || 1));
+        if (maxPlan > maxDay) maxDay = maxPlan;
+    }
+    // Dropdown en az hedef gün kadar olmalı
+    const daysCount = Math.max(maxDay, targetDay);
+
     let dayOptionsHtml = '';
     for (let d = 1; d <= daysCount; d++) {
-        const selected = d === day ? 'selected' : '';
+        // Burada her ikisi de number olduğu için karşılaştırma doğru çalışır
+        const selected = d === targetDay ? 'selected' : '';
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
@@ -49,7 +62,7 @@ function generateStepHtml(step, day, category, idx = 0) {
     const stepJson = encodeURIComponent(JSON.stringify(step));
 
     return `
-    <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
+    <div class="steps" data-day="${targetDay}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
          data-step="${stepJson}">
         <div class="visual">
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
