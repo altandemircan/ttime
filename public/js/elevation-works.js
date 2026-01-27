@@ -2465,12 +2465,12 @@ window.cleanElevationData = function(elevations, samples = null) {
     const cleaned = elevations.slice();
     const SPIKE_THRESHOLD = 25; // 25m'den fazla sıçrama = hata
     
-    console.log("[ELEV CLEAN] Başlangıç:", {
-        total: cleaned.length,
-        nullCount: cleaned.filter(e => e == null).length,
-        min: Math.min(...cleaned.filter(e => e != null)),
-        max: Math.max(...cleaned.filter(e => e != null))
-    });
+    // console.log("[ELEV CLEAN] Başlangıç:", {
+    //     total: cleaned.length,
+    //     nullCount: cleaned.filter(e => e == null).length,
+    //     min: Math.min(...cleaned.filter(e => e != null)),
+    //     max: Math.max(...cleaned.filter(e => e != null))
+    // });
     
     // 1. Null/NaN değerleri komşuların ortalamasıyla doldur
     for (let i = 0; i < cleaned.length; i++) {
