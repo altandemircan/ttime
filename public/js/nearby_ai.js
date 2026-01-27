@@ -2146,17 +2146,23 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                     .addTo(map);
                 
                 el.addEventListener('click', (e) => { 
-                    e.stopPropagation(); 
-                    // ✅ GÜNCELLEME: 3D Haritada tıklayınca ortala
-                    map.flyTo({
-                        center: [pLng, pLat],
-                        zoom: map.getZoom() > 14 ? map.getZoom() : 15,
-                        speed: 0.8,
-                        curve: 1,
-                        essential: true
-                    });
-                    marker.togglePopup(); 
-                });
+    e.stopPropagation(); // Harita tıklamasını engelle
+    
+    // 3D Haritada Marker Tıklama
+    map.flyTo({
+        center: [pLng, pLat],
+        zoom: Math.max(map.getZoom(), 16), // Çok uzaksa yaklaş
+        speed: 0.8,
+        curve: 1,
+        essential: true,
+        offset: [0, 100] // Popup için biraz aşağı kaydır
+    });
+
+    // Popup'ı aç (toggle yerine explicit open daha güvenli olabilir ama toggle da ok)
+    if (!marker.getPopup().isOpen()) {
+        marker.togglePopup();
+    }
+});
                 window[marker3DKey].push(marker);
             } else {
                 map[layerKey] = map[layerKey] || [];
@@ -2233,9 +2239,6 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 }
 
 
-// getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
-
-// getFastPlacePopupHTML fonksiyonunu TAMAMEN bununla değiştirin:
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     // 1. Değişkenleri Tanımla
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
@@ -2660,3 +2663,34 @@ if (!document.getElementById('nearby-mobile-only-style')) {
     `;
     document.head.appendChild(style);
 }
+
+// === 3D HARİTA İÇİN TIKLAMA DİNLEYİCİSİ (FIX) ===
+
+// 3D Harita değişkenini izle ve tanımlandığı an click eventini bağla
+Object.defineProperty(window, '_maplibre3DInstance', {
+    configurable: true,
+    enumerable: true,
+    get: function() {
+        return this._maplibre3DInstanceValue;
+    },
+    set: function(val) {
+        this._maplibre3DInstanceValue = val;
+        if (val) {
+            console.log("3D Map Detected via Setter - Attaching Nearby Click Listener");
+            // Biraz gecikmeli ekle ki harita tam yüklensin
+            setTimeout(() => {
+                if (typeof attachClickNearbySearch === 'function') {
+                    attachClickNearbySearch(val, window.currentDay || 1);
+                }
+            }, 1000);
+        }
+    }
+});
+
+// Ayrıca mevcut bir 3D harita varsa hemen bağla (sayfa yenileme vs durumları için)
+setTimeout(() => {
+    if (window._maplibre3DInstance && typeof attachClickNearbySearch === 'function') {
+        console.log("Existing 3D Map Detected - Attaching Nearby Click Listener");
+        attachClickNearbySearch(window._maplibre3DInstance, window.currentDay || 1);
+    }
+}, 2000);
