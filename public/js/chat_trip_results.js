@@ -1,4 +1,4 @@
-// 2️⃣  generateStepHtml() - DROPDOWN ADD BUTONUNUN SOLUNDA
+// 2️⃣  generateStepHtml() - DROPDOWN VE BUTON BİRLEŞİK TASARIM
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -35,20 +35,22 @@ function generateStepHtml(step, day, category, idx = 0) {
         : false;
     const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
-    // Gün seçeneklerini oluştur (Dropdown için)
+    // Gün seçeneklerini oluştur (Sadece gün isimleri, tick yok)
     const daysCount = window.latestTripPlan 
         ? Math.max(...window.latestTripPlan.map(item => item.day || 1)) 
         : 1;
     let dayOptionsHtml = '';
     for (let d = 1; d <= daysCount; d++) {
         const selected = d === day ? 'selected' : '';
-        // Tick mantığını tamamen kaldırdık
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
+    // JSON verisini güvenli sakla (Ekleme işlemi için)
+    const stepJson = encodeURIComponent(JSON.stringify(step));
+
     return `
     <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
-         data-step="${encodeURIComponent(JSON.stringify(step))}">
+         data-step="${stepJson}">
         <div class="visual">
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             
@@ -80,14 +82,12 @@ function generateStepHtml(step, day, category, idx = 0) {
             <style>
                 .info-icon-wrapper:hover .info-tooltip { display: block !important; }
             </style>
-
         </div>
 
         <div class="info day_cats item-info-view">
    
             <div class="title" title="${name}">${name}</div>
             
-      
             <div class="address">
                 <img src="img/address_icon.svg">
                 <span title="${address || 'Address not found'}">
@@ -95,7 +95,6 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </span>
             </div>
 
-      
             <div class="opening_hours">
                 <img src="img/hours_icon.svg">
                 <span title="${opening || 'Working hours not found.'}">
@@ -119,130 +118,130 @@ function generateStepHtml(step, day, category, idx = 0) {
                 ` : ''}
             </div>
             
-            <!-- 🆕 DROPDOWN + ADD BUTONU (Sağ tarafta yan yana) -->
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <select class="day-select-dropdown-premium" 
-                        style="padding: 7px 10px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 0.85rem; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #333; cursor: pointer; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); appearance: none; background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath fill=%27%23333%27 d=%27M6 9L1 4h10z%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;">
+            <div class="trip-action-group">
+                <select class="day-select-dropdown-premium">
                     ${dayOptionsHtml}
                 </select>
                 
-                <a class="addtotrip"><span>Add</span>
-                    <img src="img/addtotrip-icon.svg">
-                </a>
+                <button class="action-btn btn-add addtotrip-toggle">
+                    <span>Add</span>
+                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px;">
+                </button>
             </div>
         </div>
     </div>`;
 }
-// 4️⃣  DROPDOWN CSS'İ OTOMATİK ENJEKTE ET
+
+// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        .day-select-dropdown-premium {
-            padding: 7px 10px !important;
-            border: 1.5px solid #e0e0e0 !important;
-            border-radius: 6px !important;
-            font-size: 0.85rem !important;
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
-            color: #333 !important;
-            cursor: pointer !important;
-            font-weight: 500 !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-            font-family: inherit !important;
-            min-width: 80px !important;
+        /* === BÜTÜNLEŞİK AKSİYON GRUBU === */
+        .trip-action-group {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            margin-left: auto; /* Sağa yasla */
         }
 
-        .day-select-dropdown-premium:hover {
-            border-color: #4CAF50 !important;
-            background: linear-gradient(135deg, #f0f9ff 0%, #f0f7f4 100%) !important;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15) !important;
+        .trip-action-group:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: #d0d0d0;
         }
 
-        .day-select-dropdown-premium:focus {
-            outline: none !important;
-            border-color: #4CAF50 !important;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1), 0 4px 12px rgba(76, 175, 80, 0.2) !important;
+        /* Dropdown Stili */
+        .trip-action-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            border: none;
+            background-color: transparent;
+            padding: 8px 6px 8px 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            outline: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            padding-right: 16px;
+            margin-right: 4px;
+            font-family: inherit;
         }
 
-        .day-select-dropdown-premium option:checked {
-            background-color: #4CAF50 !important;
-            color: white !important;
+        .trip-action-group select:hover {
+            background-color: #f9f9f9;
         }
 
-        /* 🆕 STEPS ITEM - ADDED TO CART STATE */
-        .steps.item-added {
-            opacity: 0.6;
-            filter: grayscale(50%);
-            position: relative;
+        /* Buton Stili */
+        .trip-action-group .action-btn {
+            border: none;
+            border-left: 1px solid #eee;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            outline: none;
+            height: 100%;
+            font-family: inherit;
         }
 
-        .steps.item-added .addtotrip {
-            display: none !important;
+        /* ADD MODU */
+        .trip-action-group .action-btn.btn-add {
+            background-color: #fff;
+            color: #007bff;
+        }
+        .trip-action-group .action-btn.btn-add:hover {
+            background-color: #f0f8ff;
         }
 
-        .steps.item-added::before {
-            content: "✓ Added";
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: #4CAF50;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            z-index: 10;
-            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+        /* REMOVE MODU */
+        .trip-action-group .action-btn.btn-remove {
+            background-color: #fff1f0;
+            color: #dc3545;
         }
-
-        .steps.item-added:hover {
-            opacity: 0.75;
-        }
-
-        @media (max-width: 768px) {
-            .day-select-dropdown-premium {
-                font-size: 0.8rem !important;
-                padding: 6px 8px !important;
-                min-width: 70px !important;
-            }
-
-            .steps.item-added::before {
-                font-size: 0.7rem;
-                padding: 3px 6px;
-                top: 4px;
-                right: 4px;
-            }
+        .trip-action-group .action-btn.btn-remove:hover {
+            background-color: #ffe8e6;
         }
 
         @media (prefers-color-scheme: dark) {
-            .day-select-dropdown-premium {
-                background: linear-gradient(135deg, #2a2a2a 0%, #262626 100%) !important;
-                color: #e0e0e0 !important;
-                border-color: #444 !important;
+            .trip-action-group {
+                background: #2a2a2a;
+                border-color: #444;
             }
-
-            .day-select-dropdown-premium:hover {
-                border-color: #66BB6A !important;
-                background: linear-gradient(135deg, #1b5e20 0%, #1e3a1f 100%) !important;
+            .trip-action-group select {
+                color: #e0e0e0;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             }
-
-            .steps.item-added::before {
-                background: #66BB6A;
-                box-shadow: 0 2px 4px rgba(102, 187, 106, 0.3);
+            .trip-action-group .action-btn {
+                border-left-color: #444;
+            }
+            .trip-action-group .action-btn.btn-add {
+                background-color: #2a2a2a;
+                color: #64b5f6;
+            }
+            .trip-action-group .action-btn.btn-add:hover {
+                background-color: #333;
+            }
+             .trip-action-group .action-btn.btn-remove {
+                background-color: #3e2a2a;
+                color: #ef5350;
             }
         }
     `;
     document.head.appendChild(style);
 }
 
-// Sayfa yüklendiğinde CSS'i enjekte et
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectDropdownStyles);
-} else {
-    injectDropdownStyles();
-}
-
-// Sayfa yüklendiğinde CSS'i enjekte et
+// CSS'i Yükle
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', injectDropdownStyles);
 } else {
@@ -250,20 +249,16 @@ if (document.readyState === 'loading') {
 }
 
 
+// ==========================================================
+// === LOGIC: BUTON YÖNETİMİ, EKLEME VE ÇIKARMA İŞLEMLERİ ===
+// ==========================================================
 
-// === CHAT BUTON & DROPDOWN SENKRONİZASYONU ===
-
-// === CHAT BUTON SENKRONİZASYONU (SADELEŞTİRİLMİŞ) ===
-
-// Yardımcı: Bir item o gün için sepette mi?
+// 1. Yardımcı: Item sepette var mı?
 function isItemInCartForDay(lat, lon, name, day) {
     if (!window.cart) return false;
     return window.cart.some(item => {
-        // Gün tutuyor mu?
         if (Number(item.day) !== Number(day)) return false;
         
-        // 1. Koordinat kontrolü (Varsa en sağlamı)
-        // Sepetteki item yapısı farklı olabileceği için hem .lat hem .location.lat kontrol ediyoruz
         const iLat = item.lat || (item.location ? item.location.lat : null);
         const iLon = item.lon || (item.location ? (item.location.lng || item.location.lon) : null);
 
@@ -272,8 +267,6 @@ function isItemInCartForDay(lat, lon, name, day) {
             const dLng = Math.abs(iLon - lon);
             if (dLat < 0.0005 && dLng < 0.0005) return true;
         }
-        
-        // 2. İsim kontrolü (Yedek)
         if (name && item.name) {
             return name.toLowerCase().trim() === item.name.toLowerCase().trim();
         }
@@ -281,69 +274,142 @@ function isItemInCartForDay(lat, lon, name, day) {
     });
 }
 
-// Tüm butonları o anki dropdown seçimine göre güncelle
+// 2. Yardımcı: Sepet Index'ini Bul
+function findCartItemIndex(lat, lon, name, day) {
+    if (!window.cart) return -1;
+    return window.cart.findIndex(item => {
+        if (Number(item.day) !== Number(day)) return false;
+        
+        const iLat = item.lat || (item.location ? item.location.lat : null);
+        const iLon = item.lon || (item.location ? (item.location.lng || item.location.lon) : null);
+
+        if (lat && lon && iLat && iLon) {
+            const dLat = Math.abs(iLat - lat);
+            const dLng = Math.abs(iLon - lon);
+            if (dLat < 0.0005 && dLng < 0.0005) return true;
+        }
+        if (name && item.name) {
+            return name.toLowerCase().trim() === item.name.toLowerCase().trim();
+        }
+        return false;
+    });
+}
+
+// 3. UI Güncelleme (Tüm butonları tara ve güncelle)
 function updateAllChatButtons() {
     const steps = document.querySelectorAll('.steps');
     steps.forEach(step => {
         const dropdown = step.querySelector('.day-select-dropdown-premium');
-        const btn = step.querySelector('.addtotrip');
+        const btn = step.querySelector('.addtotrip-toggle');
         
         if (!dropdown || !btn) return;
 
-        // Item bilgilerini al
         const lat = parseFloat(step.getAttribute('data-lat'));
         const lon = parseFloat(step.getAttribute('data-lon'));
         const name = step.querySelector('.title')?.textContent.trim();
-        
-        // Dropdown'da HANGİ GÜN seçili?
         const selectedDay = parseInt(dropdown.value);
         
-        // O seçili günde bu item var mı?
         const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
 
         if (isAdded) {
-            // VARSA: Pasif yap, "Added" yaz
-            if (!btn.classList.contains('added-passive')) {
-                btn.classList.add('added-passive');
-                btn.innerHTML = `<span>Added</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                
-                // Görsel stil (CSS yerine JS ile garanti olsun)
-                btn.style.opacity = '0.6';
-                btn.style.pointerEvents = 'none';
-                btn.style.background = '#f0f0f0';
-                btn.style.color = '#666';
-                btn.style.borderColor = '#ccc';
-                btn.style.boxShadow = 'none';
+            // REMOVE MODUNA GEÇ
+            if (!btn.classList.contains('btn-remove')) {
+                btn.className = 'action-btn btn-remove addtotrip-toggle';
+                btn.innerHTML = `<span>Remove</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
             }
         } else {
-            // YOKSA: Aktif yap, "Add" yaz
-            if (btn.classList.contains('added-passive')) {
-                btn.classList.remove('added-passive');
-                btn.innerHTML = `<span>Add</span><img src="img/addtotrip-icon.svg">`;
-                
-                // Stilleri sıfırla
-                btn.style.opacity = '';
-                btn.style.pointerEvents = '';
-                btn.style.background = '';
-                btn.style.color = '';
-                btn.style.borderColor = '';
-                btn.style.boxShadow = '';
+            // ADD MODUNA GEÇ
+            if (!btn.classList.contains('btn-add')) {
+                btn.className = 'action-btn btn-add addtotrip-toggle';
+                btn.innerHTML = `<span>Add</span>
+                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px;">`;
             }
         }
     });
 }
 
-// Dropdown her değiştiğinde sadece o anki durumu kontrol et
+// 4. Olay Dinleyicileri (Click ve Change)
+// Global event delegation kullanarak performanslı hale getiriyoruz
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.addtotrip-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const step = btn.closest('.steps');
+    const dropdown = step.querySelector('.day-select-dropdown-premium');
+    const day = parseInt(dropdown.value);
+    
+    // Verileri data attribute'tan al
+    const lat = parseFloat(step.getAttribute('data-lat'));
+    const lon = parseFloat(step.getAttribute('data-lon'));
+    const name = step.querySelector('.title')?.textContent.trim();
+    
+    // BUTON "REMOVE" MODUNDA MI?
+    if (btn.classList.contains('btn-remove')) {
+        const index = findCartItemIndex(lat, lon, name, day);
+        if (index > -1) {
+            window.cart.splice(index, 1);
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+            
+            // Eğer updateCart varsa çağır
+            if (typeof updateCart === 'function') updateCart();
+            
+            // UI'ı hemen güncelle
+            updateAllChatButtons();
+        }
+    } 
+    // BUTON "ADD" MODUNDA
+    else {
+        // Ham veriyi çözümle
+        let stepData = {};
+        try {
+            stepData = JSON.parse(decodeURIComponent(step.getAttribute('data-step')));
+        } catch (err) {
+            console.error("Step data parse error", err);
+            return;
+        }
+
+        // Sepet objesi oluştur
+        const newItem = {
+            id: Date.now(),
+            name: stepData.name || name,
+            address: stepData.address || step.querySelector('.address')?.textContent.trim(),
+            image: stepData.image || step.querySelector('img.check')?.src,
+            day: day,
+            lat: lat,
+            lon: lon,
+            location: { lat: lat, lng: lon },
+            // Varsa diğer detaylar
+            category: step.getAttribute('data-category'),
+            website: stepData.website,
+            opening_hours: stepData.opening_hours
+        };
+        
+        window.cart.push(newItem);
+        localStorage.setItem('cart', JSON.stringify(window.cart));
+        
+        if (typeof updateCart === 'function') updateCart();
+        updateAllChatButtons();
+    }
+});
+
+// Dropdown değiştiğinde kontrol et
 document.addEventListener('change', function(e) {
     if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
         updateAllChatButtons();
     }
 });
 
-// Dropdown değiştiğinde buton durumunu anlık güncelle
-document.addEventListener('change', function(e) {
-    if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
-        updateAllChatButtons();
-    }
+// MutationObserver: Chat'e yeni mesaj geldiğinde (yeni itemler yüklendiğinde) butonları kontrol et
+const observer = new MutationObserver(function(mutations) {
+    updateAllChatButtons();
 });
+// Chat container'ı izlemeye başla (ID'si main-chat veya benzeri ise)
+const chatContainer = document.getElementById('chat-container') || document.body;
+observer.observe(chatContainer, { childList: true, subtree: true });
+
+// İlk yüklemede çalıştır
+updateAllChatButtons();
