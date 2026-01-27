@@ -1658,7 +1658,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // ... (Popup HTML oluşturma kısımları - buralar aynı kalıyor, kısalttım) ...
+    // Popup HTML oluşturma
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -1687,7 +1687,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
     // Tab oluşturma
     let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
-    // Basit icon mapping
     const icons = { restaurants: "🍽️", hotels: "🏨", markets: "🛒", entertainment: "🎭" };
     Object.keys(categoryConfig).forEach(key => {
         const tab = categoryConfig[key];
@@ -1734,7 +1733,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     showCustomPopup(lat, lng, map, html, true);
     window._currentPointInfo = pointInfo;
     
-    // Foto yükle
     setTimeout(() => { loadClickedPointImage(pointInfo.name); }, 30);
 
     // Tab Click Listeners
@@ -1742,7 +1740,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             if (window._lastSelectedCategory === tabId) return;
-            // UI Update
             document.querySelectorAll('.category-tab').forEach(t => {
                 t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
                 t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
@@ -1757,7 +1754,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, {}, 'ai-point-description');
     }
 
-    // CSS for custom marker
     if (!document.getElementById('hide-leaflet-default-icon')) {
         const style = document.createElement('style');
         style.id = 'hide-leaflet-default-icon';
@@ -1783,7 +1779,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
       </div>
     `;
     
-    // CSS Pulse
     if (!document.getElementById('tt-pulse-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-pulse-styles';
@@ -1813,13 +1808,28 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 
-    // Layer Temizliği
+    // === Layer Temizliği (HATA DÜZELTİLDİ) ===
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
 
+    // 2D Temizlik
     if (map[layerKey]) { map[layerKey].forEach(l => l.remove()); map[layerKey] = []; }
-    if (window[layer3DKey]) { window[layer3DKey].forEach(id => { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }); window[layer3DKey] = []; }
+    
+    // 3D Temizlik (Global 3D Instance Kullanarak)
+    if (window[layer3DKey]) { 
+        window[layer3DKey].forEach(id => { 
+            const map3d = window._maplibre3DInstance;
+            // Sadece 3D instance varsa ve fonksiyonları varsa temizle
+            if (map3d && typeof map3d.getLayer === 'function') {
+                if (map3d.getLayer(id)) map3d.removeLayer(id); 
+                if (map3d.getSource(id)) map3d.removeSource(id);
+            }
+        }); 
+        window[layer3DKey] = []; 
+    }
+    
+    // 3D Marker Temizlik
     if (window[marker3DKey]) { window[marker3DKey].forEach(m => m.remove()); window[marker3DKey] = []; }
 
     // API ÇAĞRISI
@@ -1872,7 +1882,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
 
-            // --- FİX: 3D DAİRE GÖSTERİMİ (ŞEFFAFLIK ve ÇERÇEVE) ---
             if (maxDistance > 0) {
                 const circleColor = '#1976d2';
                 const radiusMeters = Math.ceil(maxDistance);
@@ -1883,19 +1892,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
                     map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
 
-                    // 1. FILL LAYER (Daha görünür şeffaflık)
+                    // 1. FILL LAYER
                     map.addLayer({
                         id: circleId + '-layer',
                         type: 'fill',
                         source: circleId,
                         paint: {
                             'fill-color': circleColor,
-                            'fill-opacity': 0.15, // Artırıldı (0.04 -> 0.15)
+                            'fill-opacity': 0.15,
                             'fill-outline-color': circleColor
                         }
                     });
 
-                    // 2. LINE LAYER (Çerçeve - daha belirgin olması için)
+                    // 2. LINE LAYER
                     map.addLayer({
                         id: circleId + '-stroke',
                         type: 'line',
@@ -1904,7 +1913,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             'line-color': circleColor,
                             'line-width': 2,
                             'line-opacity': 0.6,
-                            'line-dasharray': [2, 4] // Kesikli çizgi
+                            'line-dasharray': [2, 4]
                         }
                     });
 
