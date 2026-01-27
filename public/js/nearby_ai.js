@@ -2285,40 +2285,52 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
         document.head.appendChild(style);
     }
      
+    // --- BURAYI KOMPLE MEVCUT 'return' BLOĞU YERİNE YAPIŞTIR ---
+
+    // 1. Önce kesme işareti (') sorununu çözen temizliği yapıyoruz
+    const safeName = (place.name || '').replace(/'/g, "\\'");
+    const safeAddress = (place.address || '').replace(/'/g, "\\'");
+    const placeLat = place.lat || place.location?.lat;
+    const placeLon = place.lon || place.location?.lng;
+    const activeDay = window.currentDay || 1;
+
+    // 2. Ardından HTML'i döndürüyoruz (Temizlenmiş değişkenleri kullanarak)
     return `
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
-                                        background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
-                                        border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);
-                                        max-width: 300px; width: 300px;">
+                                            background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
+                                            border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+                                            max-width: 300px; width: 300px;">
         <button onclick="this.closest('.leaflet-popup').style.display='none'; var mp = this.closest('.maplibregl-popup'); if(mp) mp.remove();" style="position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
         
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
-          <img id="${imgId}" class="" src="img/placeholder.png" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+          <img id="${imgId}" class="" src="${imgUrl}" alt="${place.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
         </div>
         
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                         margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-            ${name}
+            ${place.name}
           </div>
           <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                         text-overflow: ellipsis; white-space: nowrap;">
-            ${safeAddress}
+            ${place.address || ''}
           </div>
         </div>
         
         <div style="display: flex; flex-direction: column; align-items: center; 
                     gap: 4px; flex-shrink: 0;">
           <div style="font-size: 10px; color: #999; white-space: nowrap;">
-            ${distanceText}
+            ${(typeof distanceText !== 'undefined' ? distanceText : '')}
           </div>
-
-          <button class="add-point-to-cart-btn" onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon}, '${config.layerPrefix}')" style="width: 30px; height: 30px; background: #fff; 
-                                           border: 1px solid #ddd; border-radius: 50%; 
-                                           cursor: pointer; color: #1976d2; font-weight: bold; 
-                                           font-size: 16px; display: flex; align-items: center; 
-                                           justify-content: center;">
+          
+          <button class="add-point-to-cart-btn" 
+              onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${placeLat}, ${placeLon}, '${config.layerPrefix}')" 
+              style="width: 30px; height: 30px; background: #fff; 
+                     border: 1px solid #ddd; border-radius: 50%; 
+                     cursor: pointer; color: #1976d2; font-weight: bold; 
+                     font-size: 16px; display: flex; align-items: center; 
+                     justify-content: center;">
             +
           </button>
         </div>
