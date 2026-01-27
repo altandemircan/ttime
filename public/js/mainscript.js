@@ -1603,96 +1603,75 @@ function showDaySelectionModal(totalDays, currentItemName, onSelect) {
         if(e.target === modalOverlay) modalOverlay.remove();
     };
 }
-
-// --- GÜNCELLENMİŞ LISTENER ---
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
         document.removeEventListener('click', window.__triptime_addtotrip_listener);
     }
-
+    
     const listener = function(e) {
-        // Tıklanan element .addtotrip butonu mu?
         const btn = e.target.closest('.addtotrip');
         if (!btn) return;
-
         e.preventDefault();
         e.stopImmediatePropagation();
-
+        
         const stepsDiv = btn.closest('.steps');
         if (!stepsDiv) return;
-
-        // Verileri al
-        const currentCategoryDay = stepsDiv.getAttribute('data-day') || 1; // Kartın orijinal günü
-        const title = stepsDiv.querySelector('.title')?.textContent.trim() || '';
+        
+        // Dropdown'dan seçili gün'ü oku
+        const daySelector = stepsDiv.querySelector('.day-select-dropdown');
+        const selectedDay = daySelector ? Number(daySelector.value) : 1;
+        
         const category = stepsDiv.getAttribute('data-category');
+        const title = stepsDiv.querySelector('.title')?.textContent.trim() || '';
         const image = stepsDiv.querySelector('img.check')?.src || 'img/placeholder.png';
         const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
         const opening_hours = stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
         const lat = stepsDiv.getAttribute('data-lat');
         const lon = stepsDiv.getAttribute('data-lon');
         const website = (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || '';
-
+        
         let location = null;
-        if (lat && lon && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
+        if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && 
+            !isNaN(Number(lat)) && !isNaN(Number(lon))) {
             location = { lat: Number(lat), lng: Number(lon) };
         }
-
-        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-        // Mevcut maksimum günü bul (Sepetteki en büyük gün sayısı)
-        let maxDay = 1;
-        if (window.cart && window.cart.length > 0) {
-            maxDay = Math.max(...window.cart.map(i => i.day || 1));
+        
+        addToCart(
+            title,
+            image,
+            null,
+            category,
+            address,
+            null,
+            null,
+            opening_hours,
+            null,
+            location,
+            website,
+            { forceDay: selectedDay }
+        );
+        
+        btn.classList.add('added');
+        setTimeout(() => btn.classList.remove('added'), 1000);
+        
+        if (typeof restoreSidebar === "function") restoreSidebar();
+        if (typeof updateCart === "function") updateCart();
+        
+        if (window.innerWidth <= 768) {
+            const sidebarTrip = document.querySelector('.sidebar-trip');
+            const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
+            if (sidebarTrip) sidebarTrip.classList.add('open');
+            if (sidebarOverlay) sidebarOverlay.classList.add('open');
         }
-
-        // Modalı göster ve kullanıcıdan gün seçmesini bekle
-        showDaySelectionModal(maxDay, title, (selectedDay) => {
-            
-            // Seçilen güne ekle
-            addToCart(
-                title,
-                image,
-                selectedDay, // Kullanıcının seçtiği gün
-                category,
-                address,
-                null, 
-                null,
-                opening_hours,
-                null, 
-                location,
-                website
-            );
-
-            // Buton animasyonu (Feedback)
-            btn.classList.add('added');
-            const originalText = btn.querySelector('span')?.textContent;
-            if(btn.querySelector('span')) btn.querySelector('span').textContent = `Added to Day ${selectedDay}`;
-            
-            setTimeout(() => { 
-                btn.classList.remove('added'); 
-                if(btn.querySelector('span')) btn.querySelector('span').textContent = originalText || "Add to trip";
-            }, 1500);
-
-            if (typeof restoreSidebar === "function") restoreSidebar();
-            if (typeof updateCart === "function") updateCart();
-
-            // Mobilde sidebar aç
-            if (window.innerWidth <= 768) {
-                const sidebarTrip = document.querySelector('.sidebar-trip');
-                const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
-                if (sidebarTrip) sidebarTrip.classList.add('open');
-                if (sidebarOverlay) sidebarOverlay.classList.add('open');
-            }
-        });
-        // --- DEĞİŞİKLİK BURADA BİTİYOR ---
+        
+        if (typeof window.showToast === 'function') {
+            window.showToast(`✓ Added to Day ${selectedDay}`, 'success');
+        }
     };
-
+    
     document.addEventListener('click', listener);
     window.__triptime_addtotrip_listener = listener;
 }
-
-// Listener'ı tekrar başlat (Konsoldan veya kod sonundan çağırılabilir)
-initializeAddToTripListener();
-
 // function initializeAddToTripListener() {
 //     if (window.__triptime_addtotrip_listener) {
 //         document.removeEventListener('click', window.__triptime_addtotrip_listener);
@@ -2325,7 +2304,7 @@ function normalizePlaceName(place) {
 }
 function addChatResultsToCart() {
     if (window.cart && window.cart.length > 0) return;
-
+    
     const chatResults = document.querySelectorAll(".steps");
     const sorted = Array.from(chatResults).sort((a, b) => {
         const dayA = Number(a.getAttribute('data-day') || 1);
@@ -2336,7 +2315,7 @@ function addChatResultsToCart() {
         const catOrder = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
         return catOrder.indexOf(catA) - catOrder.indexOf(catB);
     });
-
+    
     sorted.forEach(result => {
         const day = Number(result.getAttribute('data-day') || 1);
         const category = result.getAttribute('data-category');
@@ -2345,26 +2324,22 @@ function addChatResultsToCart() {
         const image = result.querySelector('img.check')?.src || 'img/placeholder.png';
         const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
         const opening_hours = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-
-        // Orijinal step objesini çek
+        
         let stepObj = null;
         if (result.dataset.step) {
             try { stepObj = JSON.parse(result.dataset.step); } catch (e) { stepObj = null; }
         }
-
-        // Latin adı al
+        
         let name = "";
-        // PATCH: Latin/İngilizce ad yoksa TITLE'dan al!
         if (stepObj && typeof getDisplayName === "function") {
             name = getDisplayName(stepObj);
-            // Eğer name_en ve name_latin yoksa başlıktan al
             if ((!stepObj.name_en && !stepObj.name_latin) && result.querySelector('.title')) {
                 name = result.querySelector('.title').textContent;
             }
         } else {
             name = result.querySelector('.title').textContent;
         }
-
+        
         if (lat && lon) {
             addToCart(
                 name,
