@@ -528,13 +528,15 @@ function attachClickNearbySearch(map, day, options = {}) {
       if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
       
       __nearbySingleTimer = setTimeout(async () => {
-          const isMapLibre = !!map.addSource;
+          const isMapLibre = !!map.addSource; // MapLibre kontrolü
           let lat, lng;
           
           if (isMapLibre) {
+              // MapLibre'de e.lngLat kullanılır
               lat = e.lngLat.lat;
               lng = e.lngLat.lng;
           } else {
+              // Leaflet'te e.latlng kullanılır
               lat = e.latlng.lat;
               lng = e.latlng.lng;
           }
