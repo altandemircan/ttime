@@ -42,8 +42,8 @@ function generateStepHtml(step, day, category, idx = 0) {
     let dayOptionsHtml = '';
     for (let d = 1; d <= daysCount; d++) {
         const selected = d === day ? 'selected' : '';
-        const checkmark = d === day ? ' ✓' : '';
-        dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}${checkmark}</option>`;
+        // Tick mantığını tamamen kaldırdık
+        dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
     return `
@@ -253,16 +253,23 @@ if (document.readyState === 'loading') {
 
 // === CHAT BUTON & DROPDOWN SENKRONİZASYONU ===
 
-// Bir item'ın belirli bir günde sepette olup olmadığını kontrol eder
+// === CHAT BUTON SENKRONİZASYONU (SADELEŞTİRİLMİŞ) ===
+
+// Yardımcı: Bir item o gün için sepette mi?
 function isItemInCartForDay(lat, lon, name, day) {
     if (!window.cart) return false;
     return window.cart.some(item => {
+        // Gün tutuyor mu?
         if (Number(item.day) !== Number(day)) return false;
         
-        // 1. Koordinat kontrolü (En hassas)
-        if (lat !== null && lon !== null && item.location) {
-            const dLat = Math.abs(item.location.lat - lat);
-            const dLng = Math.abs(item.location.lng - lon);
+        // 1. Koordinat kontrolü (Varsa en sağlamı)
+        // Sepetteki item yapısı farklı olabileceği için hem .lat hem .location.lat kontrol ediyoruz
+        const iLat = item.lat || (item.location ? item.location.lat : null);
+        const iLon = item.lon || (item.location ? (item.location.lng || item.location.lon) : null);
+
+        if (lat && lon && iLat && iLon) {
+            const dLat = Math.abs(iLat - lat);
+            const dLng = Math.abs(iLon - lon);
             if (dLat < 0.0005 && dLng < 0.0005) return true;
         }
         
@@ -274,63 +281,48 @@ function isItemInCartForDay(lat, lon, name, day) {
     });
 }
 
-// Tüm chat kartlarını tarar ve durumlarını günceller
+// Tüm butonları o anki dropdown seçimine göre güncelle
 function updateAllChatButtons() {
     const steps = document.querySelectorAll('.steps');
     steps.forEach(step => {
-        const latStr = step.getAttribute('data-lat');
-        const lonStr = step.getAttribute('data-lon');
-        const lat = latStr ? parseFloat(latStr) : null;
-        const lon = lonStr ? parseFloat(lonStr) : null;
-        const name = step.querySelector('.title')?.textContent.trim();
         const dropdown = step.querySelector('.day-select-dropdown-premium');
         const btn = step.querySelector('.addtotrip');
         
         if (!dropdown || !btn) return;
 
-        // 1. Dropdown Seçeneklerini Güncelle (✓ işareti ekle/kaldır)
-        Array.from(dropdown.options).forEach(opt => {
-            const d = parseInt(opt.value);
-            const isAdded = isItemInCartForDay(lat, lon, name, d);
-            
-            // Mevcut metni temizle (varsa eski tiki kaldır)
-            let cleanText = opt.textContent.replace(' ✓', '').trim();
-            
-            if (isAdded) {
-                opt.textContent = `${cleanText} ✓`;
-            } else {
-                opt.textContent = cleanText;
-            }
-        });
-
-        // 2. Buton Durumunu Güncelle (Seçili güne göre)
+        // Item bilgilerini al
+        const lat = parseFloat(step.getAttribute('data-lat'));
+        const lon = parseFloat(step.getAttribute('data-lon'));
+        const name = step.querySelector('.title')?.textContent.trim();
+        
+        // Dropdown'da HANGİ GÜN seçili?
         const selectedDay = parseInt(dropdown.value);
-        const isSelectedDayAdded = isItemInCartForDay(lat, lon, name, selectedDay);
+        
+        // O seçili günde bu item var mı?
+        const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
 
-        if (isSelectedDayAdded) {
-            // PASİF DURUM (Zaten ekli)
+        if (isAdded) {
+            // VARSA: Pasif yap, "Added" yaz
             if (!btn.classList.contains('added-passive')) {
                 btn.classList.add('added-passive');
-                // Buton içeriğini değiştir
                 btn.innerHTML = `<span>Added</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
                 
-                // Stil müdahaleleri
+                // Görsel stil (CSS yerine JS ile garanti olsun)
                 btn.style.opacity = '0.6';
-                btn.style.pointerEvents = 'none'; // Tıklamayı engelle
+                btn.style.pointerEvents = 'none';
                 btn.style.background = '#f0f0f0';
                 btn.style.color = '#666';
                 btn.style.borderColor = '#ccc';
                 btn.style.boxShadow = 'none';
             }
         } else {
-            // AKTİF DURUM (Eklenebilir)
+            // YOKSA: Aktif yap, "Add" yaz
             if (btn.classList.contains('added-passive')) {
                 btn.classList.remove('added-passive');
-                // Orijinal haline döndür
                 btn.innerHTML = `<span>Add</span><img src="img/addtotrip-icon.svg">`;
                 
-                // Stilleri sıfırla (CSS'e bırak)
+                // Stilleri sıfırla
                 btn.style.opacity = '';
                 btn.style.pointerEvents = '';
                 btn.style.background = '';
@@ -341,6 +333,13 @@ function updateAllChatButtons() {
         }
     });
 }
+
+// Dropdown her değiştiğinde sadece o anki durumu kontrol et
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
+        updateAllChatButtons();
+    }
+});
 
 // Dropdown değiştiğinde buton durumunu anlık güncelle
 document.addEventListener('change', function(e) {
