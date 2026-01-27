@@ -6314,13 +6314,21 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     window.leafletMaps[containerId] = map;
 
-    // --- GÜVENLİ ODAKLAMA ---
+  // --- GÜVENLİ ODAKLAMA ---
     const refitMap = () => {
+        // FIX: Added map.getContainer() check
         if (!map || !sidebarContainer) return;
+        
+        // FIX: Check if container is actually in the DOM
+        const container = map.getContainer();
+        if (!container || !container.isConnected) return;
+
         if (sidebarContainer.offsetParent === null) return;
+        
         try {
             // [FIX] Mobil cihazlarda marker kaymasını önlemek için boyutları yenile
             map.invalidateSize(); 
+            
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
@@ -6328,7 +6336,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const isMobile = window.innerWidth <= 768;
                 map.fitBounds(bounds, { padding: isMobile ? [40, 40] : [20, 20], animate: false });
             }
-        } catch (err) {}
+        } catch (err) {
+            console.warn("Map refit error:", err);
+        }
     };
 
     requestAnimationFrame(refitMap);
