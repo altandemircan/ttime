@@ -10028,43 +10028,43 @@ window.TT_SVG_ICONS = {
     return parts.join('');
   }
 
-  function applyToSpan(span) {
-    if (!span) return;
-    // If already iconized, skip
-    if (span.querySelector('.stat')) return;
+  // function applyToSpan(span) {
+  //   if (!span) return;
+  //   // If already iconized, skip
+  //   if (span.querySelector('.stat')) return;
 
-    const { dist, dura } = parseStats(span.textContent || '');
-    if (!dist && !dura) return;
-    // Avoid recursive MO loops
-    if (span.__ttIconizing) return;
-    span.__ttIconizing = true;
-    try {
-      span.innerHTML = renderSummary(dist, dura);
-    } finally {
-      span.__ttIconizing = false;
-    }
-  }
+  //   const { dist, dura } = parseStats(span.textContent || '');
+  //   if (!dist && !dura) return;
+  //   // Avoid recursive MO loops
+  //   if (span.__ttIconizing) return;
+  //   span.__ttIconizing = true;
+  //   try {
+  //     span.innerHTML = renderSummary(dist, dura);
+  //   } finally {
+  //     span.__ttIconizing = false;
+  //   }
+  // }
 
   function applyAll() {
     document.querySelectorAll('.route-summary-control').forEach(applyToSpan);
   }
 
-  const mo = new MutationObserver((mutList) => {
-    for (const mut of mutList) {
-      mut.addedNodes.forEach(node => {
-        if (node.nodeType !== 1) return;
-        if (node.matches?.('.route-summary-control')) applyToSpan(node);
-        node.querySelectorAll?.('.route-summary-control').forEach(applyToSpan);
-      });
-      if (mut.type === 'childList' && mut.target?.classList?.contains('route-summary-control')) {
-        applyToSpan(mut.target);
-      }
-      if (mut.type === 'characterData') {
-        const el = mut.target.parentElement;
-        if (el && el.classList?.contains('route-summary-control')) applyToSpan(el);
-      }
-    }
-  });
+  // const mo = new MutationObserver((mutList) => {
+  //   for (const mut of mutList) {
+  //     mut.addedNodes.forEach(node => {
+  //       if (node.nodeType !== 1) return;
+  //       if (node.matches?.('.route-summary-control')) applyToSpan(node);
+  //       node.querySelectorAll?.('.route-summary-control').forEach(applyToSpan);
+  //     });
+  //     if (mut.type === 'childList' && mut.target?.classList?.contains('route-summary-control')) {
+  //       applyToSpan(mut.target);
+  //     }
+  //     if (mut.type === 'characterData') {
+  //       const el = mut.target.parentElement;
+  //       if (el && el.classList?.contains('route-summary-control')) applyToSpan(el);
+  //     }
+  //   }
+  // });
 
   function startObserver() {
     mo.observe(document.body, { childList: true, subtree: true, characterData: true });
