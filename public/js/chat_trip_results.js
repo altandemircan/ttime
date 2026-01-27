@@ -9,32 +9,13 @@ function generateStepHtml(step, day, category) {
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
-    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-    if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-        catIcon = "/img/coffee_icon.svg";
-    else if (category === "Museum")
-        catIcon = "/img/museum_icon.svg";
-    else if (category === "Touristic attraction")
-        catIcon = "/img/touristic_icon.svg";
-    else if (category === "Restaurant" || category === "Lunch" || category === "Dinner")
-        catIcon = "/img/restaurant_icon.svg";
-    else if (category === "Accommodation")
-        catIcon = "/img/accommodation_icon.svg";
-    else if (category === "Parks")
-        catIcon = "/img/park_icon.svg"; // Varsa
-
-    // Favori durumu (örnek fonksiyon)
-    const isFav = (typeof isTripFav === 'function') 
-        ? isTripFav({ name, category, lat, lon }) 
-        : false;
-    const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
-
-    // --- HTML ÇIKTISI (Info İkonu Eklendi) ---
-    return `
-    <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
-         data-step="${encodeURIComponent(JSON.stringify(step))}">
-        <div class="visual">
-            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
+    const stepHtml = `
+        <div class="steps" 
+             data-day="${step.day}" 
+             data-category="${step.category}" 
+             data-lat="${step.lat || ''}" 
+             data-lon="${step.lon || ''}"
+             data-step='${JSON.stringify(step).replace(/'/g, "&apos;")}'>
             
             <img src="${step.image || 'img/placeholder.png'}" 
                  alt="${step.name}" 
