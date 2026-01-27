@@ -2235,66 +2235,52 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 
 // getFastPlacePopupHTML fonksiyonunu şu şekilde değiştirin:
 
+// getFastPlacePopupHTML fonksiyonunu TAMAMEN bununla değiştirin:
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
+    // 1. Değişkenleri Tanımla
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
     const lon = f.properties.lon;
     
+    // 2. Güvenli Stringler (Kesme işareti temizliği - TEK SEFER TANIMLANDI)
     const safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
-    const safeAddress = address.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    const safeAddress = address.replace(/'/g, "\\'").replace(/"/g, '\\"'); // JS safe
+    const htmlSafeName = name.replace(/"/g, '&quot;'); // HTML attribute safe
     
+    const activeDay = window.currentDay || day || 1;
+
     const distanceText = distance ? 
         `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
-    
-    // CSS'i bir kere ekle - category-place-item içeren popup'ları hedefle
+
+    // 3. CSS Stili (Varsa eklemez, yoksa ekler)
     if (!document.getElementById('popup-override-styles')) {
         const style = document.createElement('style');
         style.id = 'popup-override-styles';
         style.textContent = `
-            /* Leaflet popup - category-place-item içerenleri hedefle */
-            .leaflet-popup:has(.category-place-item) .leaflet-popup-content-wrapper {
-                background: transparent !important;
-                box-shadow: none !important;
-                padding: 0 !important;
-            }
-            .leaflet-popup:has(.category-place-item) .leaflet-popup-content {
-                margin: 0 !important;
-                width: auto !important;
-            }
-            .leaflet-popup:has(.category-place-item) .leaflet-popup-tip-container {
-                display: none !important;
-            }
-            .leaflet-popup:has(.category-place-item) .leaflet-popup-close-button {
-                display: none !important;
-            }
-            
-            /* MapLibre popup - category-place-item içerenleri hedefle */
+            /* Popup stilleri */
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-content-wrapper,
             .maplibregl-popup:has(.category-place-item) .maplibregl-popup-content {
                 background: transparent !important;
                 box-shadow: none !important;
                 padding: 0 !important;
             }
-            .maplibregl-popup:has(.category-place-item) .maplibregl-popup-tip {
-                display: none !important;
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-content,
+            .maplibregl-popup:has(.category-place-item) .maplibregl-popup-content {
+                margin: 0 !important;
+                width: auto !important;
             }
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-tip-container,
+            .leaflet-popup:has(.category-place-item) .leaflet-popup-close-button,
+            .maplibregl-popup:has(.category-place-item) .maplibregl-popup-tip,
             .maplibregl-popup:has(.category-place-item) .maplibregl-popup-close-button {
                 display: none !important;
             }
         `;
         document.head.appendChild(style);
     }
-     
-    // --- BURAYI KOMPLE MEVCUT 'return' BLOĞU YERİNE YAPIŞTIR ---
-
-    // 1. Önce kesme işareti (') sorununu çözen temizliği yapıyoruz
-    const safeName = (place.name || '').replace(/'/g, "\\'");
-    const safeAddress = (place.address || '').replace(/'/g, "\\'");
-    const placeLat = place.lat || place.location?.lat;
-    const placeLon = place.lon || place.location?.lng;
-    const activeDay = window.currentDay || 1;
-
-    // 2. Ardından HTML'i döndürüyoruz (Temizlenmiş değişkenleri kullanarak)
+      
+    // 4. HTML Return (Düzeltilmiş değişkenlerle)
     return `
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
                                             background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
@@ -2303,29 +2289,29 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
         <button onclick="this.closest('.leaflet-popup').style.display='none'; var mp = this.closest('.maplibregl-popup'); if(mp) mp.remove();" style="position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
         
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
-          <img id="${imgId}" class="" src="${imgUrl}" alt="${place.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+          <img id="${imgId}" src="img/placeholder.png" alt="${htmlSafeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
         </div>
         
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                         margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-            ${place.name}
+            ${name}
           </div>
           <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                         text-overflow: ellipsis; white-space: nowrap;">
-            ${place.address || ''}
+            ${address}
           </div>
         </div>
         
         <div style="display: flex; flex-direction: column; align-items: center; 
                     gap: 4px; flex-shrink: 0;">
           <div style="font-size: 10px; color: #999; white-space: nowrap;">
-            ${(typeof distanceText !== 'undefined' ? distanceText : '')}
+            ${distanceText}
           </div>
           
           <button class="add-point-to-cart-btn" 
-              onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${placeLat}, ${placeLon}, '${config.layerPrefix}')" 
+              onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${lat}, ${lon}, '${config.layerPrefix}')" 
               style="width: 30px; height: 30px; background: #fff; 
                      border: 1px solid #ddd; border-radius: 50%; 
                      cursor: pointer; color: #1976d2; font-weight: bold; 
