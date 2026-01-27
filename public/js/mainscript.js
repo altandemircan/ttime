@@ -4158,23 +4158,28 @@ marker.bindPopup(`<b>${name || 'Point'}</b>`, {
 }).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
-    setTimeout(function() { 
-    map.invalidateSize();
+   setTimeout(function() { 
+        // FIX: Check if map and container exist before invalidating size
+        if (map && map.getContainer() && map.getContainer().isConnected) {
+            map.invalidateSize();
+        }
     
-    // MARKER'I ORTALA
-    map.setView([lat, lon], 16, {
-        animate: false // Animasyon yok
-    });
+        // MARKER'I ORTALA
+        if (map) {
+             map.setView([lat, lon], 16, {
+                animate: false // Animasyon yok
+            });
+        }
     
-    // Popup'ı aç (zaten açık ama güvence için)
-    marker.openPopup();
+        // Popup'ı aç (zaten açık ama güvence için)
+        marker.openPopup();
     
-    // EKSTRA: Popup'ı da ortalamak için
-    if (marker._popup) {
-        marker._popup._updateLayout();
-        marker._popup._adjustPan();
-    }
-}, 150);
+        // EKSTRA: Popup'ı da ortalamak için
+        if (marker._popup) {
+            marker._popup._updateLayout();
+            marker._popup._adjustPan();
+        }
+    }, 150);
     
     // Popup'ın otomatik kapanmasını engelle
     marker.on('popupclose', function() {
