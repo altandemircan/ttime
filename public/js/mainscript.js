@@ -2085,60 +2085,6 @@ function normalizePlaceName(place) {
   place.name = getDisplayName(place);
   return place;
 }
-function addChatResultsToCart() {
-    if (window.cart && window.cart.length > 0) return;
-    
-    const chatResults = document.querySelectorAll(".steps");
-    const sorted = Array.from(chatResults).sort((a, b) => {
-        const dayA = Number(a.getAttribute('data-day') || 1);
-        const dayB = Number(b.getAttribute('data-day') || 1);
-        if (dayA !== dayB) return dayA - dayB;
-        const catA = a.getAttribute('data-category') || '';
-        const catB = b.getAttribute('data-category') || '';
-        const catOrder = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
-        return catOrder.indexOf(catA) - catOrder.indexOf(catB);
-    });
-    
-    sorted.forEach(result => {
-        const day = Number(result.getAttribute('data-day') || 1);
-        const category = result.getAttribute('data-category');
-        const lat = result.getAttribute('data-lat');
-        const lon = result.getAttribute('data-lon');
-        const image = result.querySelector('img.check')?.src || 'img/placeholder.png';
-        const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-        const opening_hours = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-        
-        let stepObj = null;
-        if (result.dataset.step) {
-            try { stepObj = JSON.parse(result.dataset.step); } catch (e) { stepObj = null; }
-        }
-        
-        let name = "";
-        if (stepObj && typeof getDisplayName === "function") {
-            name = getDisplayName(stepObj);
-            if ((!stepObj.name_en && !stepObj.name_latin) && result.querySelector('.title')) {
-                name = result.querySelector('.title').textContent;
-            }
-        } else {
-            name = result.querySelector('.title').textContent;
-        }
-        
-        if (lat && lon) {
-            addToCart(
-                name,
-                image,
-                day,
-                category,
-                address,
-                null, null,
-                opening_hours,
-                null,
-                { lat: Number(lat), lng: Number(lon) },
-                ''
-            );
-        }
-    });
-}
 
 
 window.showMap = function(element) {
