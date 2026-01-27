@@ -1,4 +1,5 @@
 
+
 // 2️⃣  generateStepHtml() - DROPDOWN'U "change" DIV'İNE EKLE (HTML AYNI KALIR)
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
@@ -113,6 +114,11 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <span onclick="window.showMap && window.showMap(this)">
                     <img src="img/map_icon.svg">
                 </span>
+                ${website ? `
+                <span onclick="window.open('${website}', '_blank')">
+                    <img src="img/website_icon.svg" title="${website}">
+                </span>
+                ` : ''}
                 
                 <!-- 🆕 DROPDOWN (change div'ine ekli) -->
                 <select class="day-select-dropdown-premium" 
