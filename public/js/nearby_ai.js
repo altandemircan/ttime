@@ -510,9 +510,7 @@ function clearAllCategoryMarkers(map) {
     
     // HİÇBİR map.eachLayer() KULLANMA!
 }
-// attachClickNearbySearch fonksiyonunu güncelle
-// attachClickNearbySearch fonksiyonunu güncelle
-// attachClickNearbySearch fonksiyonunda:
+
 
 function attachClickNearbySearch(map, day, options = {}) {
   const radius = options.radius || 500; 
@@ -972,8 +970,11 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                     </div>
                     <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
                         <div style="font-size: 11px; color: #999;">Clicked</div>
-                        <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
-                    </div>
+<button class="add-point-to-cart-btn" 
+    onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${placeLat}, ${placeLon}, '${config.layerPrefix}')" 
+    style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">
+    +
+</button>                    </div>
                     <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
                 </div>
             </div>
@@ -2312,6 +2313,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
           <div style="font-size: 10px; color: #999; white-space: nowrap;">
             ${distanceText}
           </div>
+
           <button class="add-point-to-cart-btn" onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${day}, ${lat}, ${lon}, '${config.layerPrefix}')" style="width: 30px; height: 30px; background: #fff; 
                                            border: 1px solid #ddd; border-radius: 50%; 
                                            cursor: pointer; color: #1976d2; font-weight: bold; 
