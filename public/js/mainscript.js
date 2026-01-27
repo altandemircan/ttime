@@ -1515,14 +1515,6 @@ document.querySelectorAll('.add_theme').forEach(btn => {
 
 
 
-
-
-
-
-
-
-
-
 // 3️⃣  initializeAddToTripListener() - DROPDOWN'DAN GÜN OKU
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
@@ -1549,10 +1541,7 @@ function initializeAddToTripListener() {
         const opening_hours = stepsDiv.querySelector('.opening_hours span')?.textContent.trim() || '';
         const lat = stepsDiv.getAttribute('data-lat');
         const lon = stepsDiv.getAttribute('data-lon');
-        
-        // Website linkini al
-        const websiteLink = stepsDiv.querySelector('.website-info a');
-        const website = websiteLink ? websiteLink.href : '';
+        const website = stepsDiv.getAttribute('data-website') || '';
         
         let location = null;
         if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && 
@@ -2211,7 +2200,6 @@ function addChatResultsToCart() {
         }
     });
 }
-
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
