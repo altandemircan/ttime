@@ -116,7 +116,7 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </span>
                 ${website ? `
                 <span onclick="window.open('${website}', '_blank')">
-                    <img src="img/website_icon.svg" title="${website}">
+                    <img src="img/website_link.svg" title="${website}">
                 </span>
                 ` : ''}
                 
