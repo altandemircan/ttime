@@ -1,6 +1,4 @@
-
-
-// 2️⃣  generateStepHtml() - DROPDOWN'U "change" DIV'İNE EKLE (HTML AYNI KALIR)
+// 2️⃣  generateStepHtml() - DROPDOWN ADD BUTONUNUN SOLUNDA
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -119,21 +117,22 @@ function generateStepHtml(step, day, category, idx = 0) {
                     <img src="img/website_link.svg" title="${website}">
                 </span>
                 ` : ''}
-                
-                <!-- 🆕 DROPDOWN (change div'ine ekli) -->
+            </div>
+            
+            <!-- 🆕 DROPDOWN + ADD BUTONU (Sağ tarafta yan yana) -->
+            <div style="display: flex; align-items: center; gap: 6px;">
                 <select class="day-select-dropdown-premium" 
                         style="padding: 7px 10px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 0.85rem; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); color: #333; cursor: pointer; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); appearance: none; background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath fill=%27%23333%27 d=%27M6 9L1 4h10z%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;">
                     ${dayOptionsHtml}
                 </select>
+                
+                <a class="addtotrip"><span>Add</span>
+                    <img src="img/addtotrip-icon.svg">
+                </a>
             </div>
-            
-            <a class="addtotrip"><span>Add</span>
-                <img src="img/addtotrip-icon.svg">
-            </a>
         </div>
     </div>`;
 }
-
 // 4️⃣  DROPDOWN CSS'İ OTOMATİK ENJEKTE ET
 function injectDropdownStyles() {
     const style = document.createElement('style');
@@ -170,11 +169,48 @@ function injectDropdownStyles() {
             color: white !important;
         }
 
+        /* 🆕 STEPS ITEM - ADDED TO CART STATE */
+        .steps.item-added {
+            opacity: 0.6;
+            filter: grayscale(50%);
+            position: relative;
+        }
+
+        .steps.item-added .addtotrip {
+            display: none !important;
+        }
+
+        .steps.item-added::before {
+            content: "✓ Added";
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+        }
+
+        .steps.item-added:hover {
+            opacity: 0.75;
+        }
+
         @media (max-width: 768px) {
             .day-select-dropdown-premium {
                 font-size: 0.8rem !important;
                 padding: 6px 8px !important;
                 min-width: 70px !important;
+            }
+
+            .steps.item-added::before {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+                top: 4px;
+                right: 4px;
             }
         }
 
@@ -189,9 +225,21 @@ function injectDropdownStyles() {
                 border-color: #66BB6A !important;
                 background: linear-gradient(135deg, #1b5e20 0%, #1e3a1f 100%) !important;
             }
+
+            .steps.item-added::before {
+                background: #66BB6A;
+                box-shadow: 0 2px 4px rgba(102, 187, 106, 0.3);
+            }
         }
     `;
     document.head.appendChild(style);
+}
+
+// Sayfa yüklendiğinde CSS'i enjekte et
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectDropdownStyles);
+} else {
+    injectDropdownStyles();
 }
 
 // Sayfa yüklendiğinde CSS'i enjekte et
