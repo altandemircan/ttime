@@ -1,66 +1,204 @@
 // chat_trip_results.js
 
-function generateStepHtml(step, day, category) {
-    const daysCount = Math.max(...(window.latestTripPlan || []).map(item => item.day || 1));
-    
+function generateStepHtml(step, day, category, idx = 0) {
+    const name = getDisplayName(step) || category;
+    const localName = getLocalName(step);
+    const address = step?.address || "";
+    const image = step?.image || "https://www.svgrepo.com/show/522166/location.svg";
+    const website = step?.website || "";
+    const opening = step?.opening_hours || "";
+    const lat = step?.lat || (step?.location?.lat || step?.location?.latitude);
+    const lon = step?.lon || (step?.location?.lon || step?.location?.lng || step?.location?.longitude);
+
+    let tagsHtml = "";
+    const tags = (step.properties && step.properties.categories) || step.categories;
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+        const uniqueTags = getUniqueSpecificTags(tags);
+        tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
+    }
+
+    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
+    if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
+        catIcon = "/img/coffee_icon.svg";
+    else if (category === "Museum")
+        catIcon = "/img/museum_icon.svg";
+    else if (category === "Touristic attraction")
+        catIcon = "/img/touristic_icon.svg";
+    else if (category === "Restaurant" || category === "Lunch" || category === "Dinner")
+        catIcon = "/img/restaurant_icon.svg";
+    else if (category === "Accommodation")
+        catIcon = "/img/accommodation_icon.svg";
+    else if (category === "Parks")
+        catIcon = "/img/park_icon.svg";
+
+    const isFav = (typeof isTripFav === 'function') 
+        ? isTripFav({ name, category, lat, lon }) 
+        : false;
+    const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
+
+    // Gün seçeneklerini oluştur
+    const daysCount = window.latestTripPlan 
+        ? Math.max(...window.latestTripPlan.map(item => item.day || 1)) 
+        : 1;
     let dayOptionsHtml = '';
     for (let d = 1; d <= daysCount; d++) {
         const selected = d === day ? 'selected' : '';
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
-    const stepHtml = `
-        <div class="steps" 
-             data-day="${step.day}" 
-             data-category="${step.category}" 
-             data-lat="${step.lat || ''}" 
-             data-lon="${step.lon || ''}"
-             data-step='${JSON.stringify(step).replace(/'/g, "&apos;")}'>
+    return `
+    <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
+         data-step="${encodeURIComponent(JSON.stringify(step))}">
+        <div class="visual">
+            <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             
-            <img src="${step.image || 'img/placeholder.png'}" 
-                 alt="${step.name}" 
-                 class="check"
-                 onerror="this.src='img/default_place.jpg'">
+            ${tagsHtml ? `
+            <div class="geoapify-tags-section">
+                <div class="geoapify-tags">${tagsHtml}</div>
+            </div>` : ''}
+
+            <div class="cats cats1">
+                <img src="${catIcon}" alt="${category}"> ${category}
+            </div>
             
-            <div class="steps-content">
-                <h4 class="title">${step.name || 'Unknown'}</h4>
-                <p class="category" style="font-size: 0.85rem; color: #666; margin: 4px 0;">
-                    📍 ${step.category}
-                </p>
-                
-                ${step.address ? `
-                    <p class="address" style="font-size: 0.85rem; color: #888; margin: 4px 0;">
-                        📌 Address: ${step.address}
-                    </p>
-                ` : ''}
-                
-                ${step.opening_hours ? `
-                    <p class="opening_hours" style="font-size: 0.85rem; color: #888; margin: 4px 0;">
-                        🕔 Hours: ${step.opening_hours}
-                    </p>
-                ` : ''}
-                
-                ${step.description && step.description !== "No detailed description." ? `
-                    <p class="description" style="font-size: 0.85rem; color: #777; margin: 8px 0; line-height: 1.4;">
-                        ${step.description}
-                    </p>
-                ` : ''}
+            <span class="fav-heart" 
+                  data-name="${name}" 
+                  data-category="${category}" 
+                  data-lat="${lat}" 
+                  data-lon="${lon}" 
+                  data-image="${image}">
+                <img class="fav-icon" src="${favIconSrc}" alt="Favorite">
+            </span>
+
+            <span class="info-icon-wrapper">
+                <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">                
+                <div class="info-tooltip">
+                    Photos associated with this place are matched by analyzing search results and may not reflect reality.
+                    <div style="position: absolute; top: -6px; right: 10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #333;"></div>
+                </div>
+            </span>
+            <style>
+                .info-icon-wrapper:hover .info-tooltip { display: block !important; }
+            </style>
+
+        </div>
+
+        <div class="info day_cats item-info-view">
+   
+            <div class="title" title="${name}">${name}</div>
+            
+      
+            <div class="address">
+                <img src="img/address_icon.svg">
+                <span title="${address || 'Address not found'}">
+                    ${address || 'Address not found'}
+                </span>
             </div>
 
-            <div class="add-to-trip-controls" style="display: flex; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
-                <select class="day-select-dropdown" 
-                        style="padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; flex: 1; background-color: #fff; color: #333; cursor: pointer;">
-                    ${dayOptionsHtml}
-                </select>
-                <button class="addtotrip" 
-                        style="padding: 6px 12px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; font-weight: 500;">
-                    ➕ Add
-                </button>
+      
+            <div class="opening_hours">
+                <img src="img/hours_icon.svg">
+                <span title="${opening || 'Working hours not found.'}">
+                    ${opening || 'Working hours not found.'}
+                </span>
             </div>
         </div>
-    `;
 
-    return stepHtml;
+        <div class="item_action">
+            <div class="change">
+                <span onclick="window.showImage && window.showImage(this)">
+                    <img src="img/camera_icon.svg">
+                </span>
+                <span onclick="window.showMap && window.showMap(this)">
+                    <img src="img/map_icon.svg">
+                </span>
+            </div>
+            
+            <!-- 🆕 DROPDOWN + ADD BUTONU (Tasarımı koruyan) -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <select class="day-select-dropdown" 
+                        style="padding: 5px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 0.85rem; background: white; color: #333; cursor: pointer;">
+                    ${dayOptionsHtml}
+                </select>
+                
+                <a class="addtotrip"><span>Add to trip</span>
+                    <img src="img/addtotrip-icon.svg">
+                </a>
+            </div>
+        </div>
+    </div>`;
+}
+
+
+// 3️⃣  initializeAddToTripListener() - DROPDOWN'DAN GÜN OKU
+function initializeAddToTripListener() {
+    if (window.__triptime_addtotrip_listener) {
+        document.removeEventListener('click', window.__triptime_addtotrip_listener);
+    }
+    
+    const listener = function(e) {
+        const btn = e.target.closest('.addtotrip');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        
+        const stepsDiv = btn.closest('.steps');
+        if (!stepsDiv) return;
+        
+        // Dropdown'dan seçili gün'ü oku
+        const daySelector = stepsDiv.querySelector('.day-select-dropdown');
+        const selectedDay = daySelector ? Number(daySelector.value) : 1;
+        
+        const category = stepsDiv.getAttribute('data-category');
+        const title = stepsDiv.querySelector('.title')?.textContent.trim() || '';
+        const image = stepsDiv.querySelector('img.check')?.src || 'img/placeholder.png';
+        const address = stepsDiv.querySelector('.address span')?.textContent.trim() || '';
+        const opening_hours = stepsDiv.querySelector('.opening_hours span')?.textContent.trim() || '';
+        const lat = stepsDiv.getAttribute('data-lat');
+        const lon = stepsDiv.getAttribute('data-lon');
+        const website = stepsDiv.getAttribute('data-website') || '';
+        
+        let location = null;
+        if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && 
+            !isNaN(Number(lat)) && !isNaN(Number(lon))) {
+            location = { lat: Number(lat), lng: Number(lon) };
+        }
+        
+        addToCart(
+            title,
+            image,
+            null,
+            category,
+            address,
+            null,
+            null,
+            opening_hours,
+            null,
+            location,
+            website,
+            { forceDay: selectedDay }
+        );
+        
+        btn.classList.add('added');
+        setTimeout(() => btn.classList.remove('added'), 1000);
+        
+        if (typeof restoreSidebar === "function") restoreSidebar();
+        if (typeof updateCart === "function") updateCart();
+        
+        if (window.innerWidth <= 768) {
+            const sidebarTrip = document.querySelector('.sidebar-trip');
+            const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
+            if (sidebarTrip) sidebarTrip.classList.add('open');
+            if (sidebarOverlay) sidebarOverlay.classList.add('open');
+        }
+        
+        if (typeof window.showToast === 'function') {
+            window.showToast(`✓ Added to Day ${selectedDay}`, 'success');
+        }
+    };
+    
+    document.addEventListener('click', listener);
+    window.__triptime_addtotrip_listener = listener;
 }
 
 
