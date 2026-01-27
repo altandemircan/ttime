@@ -1607,13 +1607,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         console.warn('getPlaceInfoFromLatLng failed:', e.message);
     }
     
-    // Reverse geocode için şehir adı al
+    // Reverse geocode
     let currentCityName = "";
     const reverseUrl = `/api/geoapify/reverse?lat=${lat}&lon=${lng}`;
     try {
         const reverseResp = await fetch(reverseUrl);
         const reverseData = await reverseResp.json();
-        
         if (reverseData.features && reverseData.features[0]) {
             const props = reverseData.features[0].properties;
             if (props.country_code === 'tr' || props.country === 'Turkey') {
@@ -1622,65 +1621,44 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 currentCityName = props.city || "";
             }
         }
-    } catch (e) {
-        console.error('Reverse geocode error:', e);
-    }
+    } catch (e) {}
     
-    if (!currentCityName) {
-        currentCityName = window.selectedCity || "";
-    }
+    if (!currentCityName) currentCityName = window.selectedCity || "";
     
-    // AI için ülke bilgisini de ekle
     const country = "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-    // Kategori konfigürasyonları
+    // Kategori Yapılandırması
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
             color: '#FF5252',
             iconUrl: '/img/restaurant_icon.svg',
-            buttonText: 'Show Restaurants',
-            placeholderIcon: '/img/restaurant_icon.svg',
-            layerPrefix: 'restaurant',
-            icon: '🍽️',
-            title: 'Restaurants'
+            title: 'Restaurants', layerPrefix: 'restaurant'
         },
         'hotels': {
             apiCategories: 'accommodation',
             color: '#2196F3',
             iconUrl: '/img/accommodation_icon.svg',
-            buttonText: 'Show Hotels',
-            placeholderIcon: '/img/hotel_icon.svg',
-            layerPrefix: 'hotel',
-            icon: '🏨',
-            title: 'Hotels'
+            title: 'Hotels', layerPrefix: 'hotel'
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
             color: '#4CAF50',
             iconUrl: '/img/market_icon.svg',
-            buttonText: 'Show Markets',
-            placeholderIcon: '/img/market_icon.svg',
-            layerPrefix: 'market',
-            icon: '🛒',
-            title: 'Markets'
+            title: 'Markets', layerPrefix: 'market'
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
             color: '#FF9800',
-            iconUrl: '/img/touristic_icon.svg',
-            buttonText: 'Show Entertainment',
-            placeholderIcon: '/img/entertainment_icon.svg',
-            layerPrefix: 'entertainment',
-            icon: '🎭',
-            title: 'Entertainment'
+            iconUrl: '/img/entertainment_icon.svg',
+            title: 'Entertainment', layerPrefix: 'entertainment'
         }
     };
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // Tıklanan nokta bölümü
+    // ... (Popup HTML oluşturma kısımları - buralar aynı kalıyor, kısalttım) ...
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -1698,36 +1676,35 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 </div>
                 <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
                     <div style="font-size: 11px; color: #999;">Clicked</div>
-                    <button class="add-point-to-cart-btn" onclick="window.addClickedPointToCart(${lat}, ${lng}, ${day})" style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
+                    <button class="add-point-to-cart-btn" 
+                        onclick="window.addPlaceToTripFromPopup('clicked-point-img', '${pointInfo.name.replace(/'/g, "\\'")}', '${(pointInfo.address||"").replace(/'/g, "\\'")}', ${day}, ${lat}, ${lng}, 'place')" 
+                        style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
                 </div>
                 <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
             </div>
         </div>
     `;
-    
-    // Kategori sekmelerini oluştur
+
+    // Tab oluşturma
     let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
-    
+    // Basit icon mapping
+    const icons = { restaurants: "🍽️", hotels: "🏨", markets: "🛒", entertainment: "🎭" };
     Object.keys(categoryConfig).forEach(key => {
         const tab = categoryConfig[key];
         const isActive = key === categoryType;
-        
         tabsHtml += `
-            <button class="category-tab ${isActive ? 'active' : ''}" 
-                    data-tab="${key}"
+            <button class="category-tab ${isActive ? 'active' : ''}" data-tab="${key}"
                     style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
                            border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
                            cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
                            display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <div style="font-size: 16px;">${tab.icon}</div>
+                <div style="font-size: 16px;">${icons[key] || "📍"}</div>
                 <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
             </button>
         `;
     });
-    
     tabsHtml += '</div>';
-    
-    // Kategori başlığı
+
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
             ${tabsHtml}
@@ -1755,73 +1732,49 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     `;
 
     showCustomPopup(lat, lng, map, html, true);
-
     window._currentPointInfo = pointInfo;
-
-    // Dinamik görseli yükle
-    setTimeout(() => {
-        loadClickedPointImage(pointInfo.name);
-    }, 30);
     
-    // TAB LISTENER'LARINI HEMEN KUR
+    // Foto yükle
+    setTimeout(() => { loadClickedPointImage(pointInfo.name); }, 30);
+
+    // Tab Click Listeners
     document.querySelectorAll('.category-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
-            
             if (window._lastSelectedCategory === tabId) return;
-            
+            // UI Update
             document.querySelectorAll('.category-tab').forEach(t => {
                 t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
                 t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
                 t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
                 t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
             });
-            
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
     });
-    
+
     if (pointInfo?.name && pointInfo?.name !== "Selected Point") {
-        window.fetchClickedPointAI(
-            pointInfo.name, 
-            lat, 
-            lng, 
-            locationContext, 
-            {}, 
-            'ai-point-description'
-        );
+        window.fetchClickedPointAI(pointInfo.name, lat, lng, locationContext, {}, 'ai-point-description');
     }
-    
-    // +++ SIDEBAR'I AÇTIKTAN SONRA +++
+
+    // CSS for custom marker
     if (!document.getElementById('hide-leaflet-default-icon')) {
         const style = document.createElement('style');
         style.id = 'hide-leaflet-default-icon';
-        style.textContent = `
-            .custom-category-marker {
-                opacity: 1 !important;
-            }
-        `;
+        style.textContent = `.custom-category-marker { opacity: 1 !important; }`;
         document.head.appendChild(style);
     }
-    
+
     clearAllCategoryMarkers(map);
-    
-    // Pulse marker temizle
-    if (window._nearbyPulseMarker) {
-        try { window._nearbyPulseMarker.remove(); } catch(e) {}
-        window._nearbyPulseMarker = null;
-    }
-    if (window._nearbyPulseMarker3D) {
-        try { window._nearbyPulseMarker3D.remove(); } catch(e) {}
-        window._nearbyPulseMarker3D = null;
-    }
-    
-    // Yeni pulse marker HTML
+
+    // Pulse Marker Temizlik
+    if (window._nearbyPulseMarker) { try { window._nearbyPulseMarker.remove(); } catch(e) {} window._nearbyPulseMarker = null; }
+    if (window._nearbyPulseMarker3D) { try { window._nearbyPulseMarker3D.remove(); } catch(e) {} window._nearbyPulseMarker3D = null; }
+
+    // Pulse Marker Ekle
     const pulseHtml = `
       <div class="tt-pulse-marker">
-        <div class="tt-pulse-dot">
-          <div class="tt-pulse-dot-inner"></div>
-        </div>
+        <div class="tt-pulse-dot"><div class="tt-pulse-dot-inner"></div></div>
         <div class="tt-pulse-ring tt-pulse-ring-1"></div>
         <div class="tt-pulse-ring tt-pulse-ring-2"></div>
         <div class="tt-pulse-ring tt-pulse-ring-3"></div>
@@ -1830,100 +1783,58 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
       </div>
     `;
     
-    // CSS'i ekle (eğer yoksa)
+    // CSS Pulse
     if (!document.getElementById('tt-pulse-styles')) {
         const style = document.createElement('style');
         style.id = 'tt-pulse-styles';
         style.textContent = `
-            .tt-pulse-marker {
-                position: relative;
-                width: 40px;
-                height: 40px;
-                pointer-events: none;
-                z-index: 1000;
-                filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5));
-            }
-            .tt-pulse-dot {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                width: 20px;
-                height: 20px;
-                transform: translate(-50%, -50%);
-                background: linear-gradient(135deg, #1976d2, #64b5f6);
-                border-radius: 50%;
-                border: 3px solid white;
-                box-shadow: 
-                    0 0 15px rgba(25, 118, 210, 0.8),
-                    0 0 30px rgba(25, 118, 210, 0.4),
-                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
-                z-index: 10;
-                animation: tt-pulse-dot 2s ease-in-out infinite;
-            }
-            /* ... Diğer pulse CSS stilleri zaten mevcut ... */
+            .tt-pulse-marker { position: relative; width: 40px; height: 40px; pointer-events: none; z-index: 1000; filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.5)); }
+            .tt-pulse-dot { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); background: linear-gradient(135deg, #1976d2, #64b5f6); border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px rgba(25, 118, 210, 0.8); z-index: 10; animation: tt-pulse-dot 2s ease-in-out infinite; }
+            .tt-pulse-dot-inner { position: absolute; width: 6px; height: 6px; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .tt-pulse-ring { position: absolute; left: 50%; top: 50%; border: 2px solid rgba(25, 118, 210, 0.8); border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; }
+            .tt-pulse-ring-1 { width: 20px; height: 20px; animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+            .tt-pulse-ring-2 { width: 20px; height: 20px; animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s; }
+            .tt-pulse-ring-3 { width: 20px; height: 20px; animation: tt-pulse-wave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s; }
+            .tt-pulse-glow { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(25, 118, 210, 0.3) 0%, transparent 70%); border-radius: 50%; z-index: 1; animation: tt-pulse-glow 2s ease-in-out infinite; }
+            .tt-pulse-inner-ring { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; border: 1.5px solid rgba(255, 255, 255, 0.9); border-radius: 50%; transform: translate(-50%, -50%); animation: tt-pulse-inner 1.5s linear infinite; opacity: 0.7; }
+            @keyframes tt-pulse-dot { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } }
+            @keyframes tt-pulse-wave { 0% { width: 20px; height: 20px; opacity: 0.8; border-width: 2px; } 100% { width: 80px; height: 80px; opacity: 0; border-width: 1px; } }
+            @keyframes tt-pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
+            @keyframes tt-pulse-inner { 0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); } 100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); opacity: 0; } }
         `;
         document.head.appendChild(style);
     }
-    
-    // Pulse marker'ı haritaya ekle
+
     if (isMapLibre) {
-        const el = document.createElement('div');
-        el.className = 'tt-pulse-marker';
-        el.innerHTML = pulseHtml;
-        
-        window._nearbyPulseMarker3D = new maplibregl.Marker({ 
-            element: el,
-            anchor: 'center'
-        })
-        .setLngLat([lng, lat])
-        .addTo(map);
+        const el = document.createElement('div'); el.className = 'tt-pulse-marker'; el.innerHTML = pulseHtml;
+        window._nearbyPulseMarker3D = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
     } else {
-        const pulseIcon = L.divIcon({
-            html: pulseHtml,
-            className: 'tt-pulse-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
+        const pulseIcon = L.divIcon({ html: pulseHtml, className: 'tt-pulse-marker', iconSize: [40, 40], iconAnchor: [20, 20] });
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
-    
+
+    // Layer Temizliği
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
-    
-    if (map[layerKey]) {
-        map[layerKey].forEach(l => l.remove());
-        map[layerKey] = [];
-    }
-    
-    if (window[layer3DKey]) {
-        window[layer3DKey].forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        window[layer3DKey] = [];
-    }
-    
-    if (window[marker3DKey]) {
-        window[marker3DKey].forEach(m => m.remove());
-        window[marker3DKey] = [];
-    }
-    
+
+    if (map[layerKey]) { map[layerKey].forEach(l => l.remove()); map[layerKey] = []; }
+    if (window[layer3DKey]) { window[layer3DKey].forEach(id => { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }); window[layer3DKey] = []; }
+    if (window[marker3DKey]) { window[marker3DKey].forEach(m => m.remove()); window[marker3DKey] = []; }
+
+    // API ÇAĞRISI
     const searchRadius = radiusOverride || 5000;
     const url = `/api/geoapify/places?categories=${config.apiCategories}&lat=${lat}&lon=${lng}&radius=${searchRadius}&limit=30`;
-    
+
     try {
         const resp = await fetch(url);
         const data = await resp.json();
-        
-        // Cache'e kaydet
         window._categoryCacheData[cacheKey] = data;
-        
+
         if (!data.features || data.features.length === 0) {
             const container = document.querySelector('.category-items-container');
             const countBadge = document.querySelector('.category-count');
             if (countBadge) countBadge.textContent = "0";
-            
             if (container) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">
@@ -1939,82 +1850,80 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             }
             return;
         }
-        
+
         let maxDistance = 0;
         const placesWithDistance = [];
-        
         data.features.forEach((f, idx) => {
             const pLng = f.properties.lon;
             const pLat = f.properties.lat;
-            
             const distance = haversine(lat, lng, pLat, pLng);
-            placesWithDistance.push({
-                feature: f,
-                distance: distance,
-                index: idx
-            });
-            
-            if (distance > maxDistance) {
-                maxDistance = distance;
-            }
+            placesWithDistance.push({ feature: f, distance: distance, index: idx });
+            if (distance > maxDistance) maxDistance = distance;
         });
-        
         placesWithDistance.sort((a, b) => a.distance - b.distance);
-        
         const topPlaces = placesWithDistance.slice(0, 20);
         window._lastNearbyPlaces = topPlaces.map(p => p.feature);
-        // Sidebar kategori count güncellemeleri
-        const countBadge = document.querySelector('.category-count');
-        if (countBadge) {
-            countBadge.textContent = topPlaces.length;
-        }
         
-        // Sidebar öğelerini ekle
+        const countBadge = document.querySelector('.category-count');
+        if (countBadge) countBadge.textContent = topPlaces.length;
+
+        // SIDEBAR LİSTESİ
         const itemsContainer = document.querySelector('.category-items-container');
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
-            
-            // Daire çiz
+
+            // --- FİX: 3D DAİRE GÖSTERİMİ (ŞEFFAFLIK ve ÇERÇEVE) ---
             if (maxDistance > 0) {
                 const circleColor = '#1976d2';
                 const radiusMeters = Math.ceil(maxDistance);
-                
+
                 if (isMapLibre) {
                     const circleId = `category-radius-${categoryType}-${Date.now()}`;
                     const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-                    
-                    map.addSource(circleId, {
-                        type: 'geojson',
-                        data: circleGeoJSON
-                    });
-                    
+
+                    map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
+
+                    // 1. FILL LAYER (Daha görünür şeffaflık)
                     map.addLayer({
                         id: circleId + '-layer',
                         type: 'fill',
                         source: circleId,
                         paint: {
                             'fill-color': circleColor,
-                            'fill-opacity': 0.04,
-                            'fill-outline-color': 'transparent'
+                            'fill-opacity': 0.15, // Artırıldı (0.04 -> 0.15)
+                            'fill-outline-color': circleColor
                         }
                     });
-                    
+
+                    // 2. LINE LAYER (Çerçeve - daha belirgin olması için)
+                    map.addLayer({
+                        id: circleId + '-stroke',
+                        type: 'line',
+                        source: circleId,
+                        paint: {
+                            'line-color': circleColor,
+                            'line-width': 2,
+                            'line-opacity': 0.6,
+                            'line-dasharray': [2, 4] // Kesikli çizgi
+                        }
+                    });
+
                     window._categoryRadiusCircle3D = circleId;
-                    
+
                 } else {
                     window._categoryRadiusCircle = L.circle([lat, lng], {
                         radius: radiusMeters,
                         color: circleColor,
-                        weight: 0,
-                        opacity: 0,
+                        weight: 1,
+                        opacity: 0.6,
                         fillColor: circleColor,
-                        fillOpacity: 0.04,
-                        dashArray: null,
+                        fillOpacity: 0.1,
+                        dashArray: "5, 10",
                         className: `category-radius-circle`
                     }).addTo(map);
                 }
             }
-            
+
             topPlaces.forEach((placeData, idx) => {
                 const f = placeData.feature;
                 const distance = placeData.distance;
@@ -2023,190 +1932,90 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const name = f.properties.name || "Unknown";
                 const address = f.properties.formatted || "";
                 const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
-                
-                const distanceText = distance < 1000 ? 
-                    `${Math.round(distance)} m` : 
-                    `${(distance / 1000).toFixed(2)} km`;
-                
+                const distanceText = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
+                const safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                const locationContext = [f.properties.suburb, f.properties.city, f.properties.country].filter(Boolean).join(', ');
+
                 const itemHtml = `
-                    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; 
-                                            background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; 
-                                            border: 1px solid #eee;">
+                    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
                         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
-                            <img id="${imgId}" src="img/placeholder.png" 
-                                 alt="${name}"
-                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${name.replace(/'/g, "\\'")}', ${pLat}, ${pLng}, '${window.selectedCity || ''}', {}, 'ai-point-description')" 
+                            <img id="${imgId}" src="img/placeholder.png" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${pLat}, ${pLng}, '${locationContext}', {}, 'ai-point-description')" 
                                  style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
                                 <span style="font-size: 10px; color: white;">✨</span>
                             </div>
                         </div>
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
-                                            margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-                                ${name}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
-                                            text-overflow: ellipsis; white-space: nowrap;">
-                                ${address}
-                            </div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                            <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: center; 
-                                        gap: 4px; flex-shrink: 0;">
-                            <div style="font-size: 10px; color: #999; white-space: nowrap;">
-                                ${distanceText}
-                            </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                            <div style="font-size: 10px; color: #999; white-space: nowrap;">${distanceText}</div>
                             <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${pLat}, ${pLng})"
-                                    style="width: 30px; height: 30px; background: #fff; 
-                                           border: 1px solid #ddd; border-radius: 50%; 
-                                           cursor: pointer; color: #1976d2; font-weight: bold; 
-                                           font-size: 16px; display: flex; align-items: center; 
-                                           justify-content: center;">
-                                +
-                            </button>
+                                    style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">+</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 
                 const itemDiv = document.createElement('div');
                 itemDiv.innerHTML = itemHtml;
                 itemsContainer.appendChild(itemDiv.firstElementChild);
-                
-                // Resim yükleme
-                getImageForPlace(name, config.layerPrefix, window.selectedCity || "")
-                    .then(src => {
-                        const img = document.getElementById(imgId);
-                        if (img && src) {
-                            img.src = src;
-                        }
-                    })
-                    .catch(() => {});
+                getImageForPlace(name, config.layerPrefix, window.selectedCity || "").then(src => { const img = document.getElementById(imgId); if (img && src) img.src = src; }).catch(() => {});
             });
         }
-        
-        // Harita marker ekleme loop'u
+
+        // MAP MARKERS LOOP
         topPlaces.forEach((placeData, idx) => {
             const f = placeData.feature;
             const distance = placeData.distance;
             const pLng = f.properties.lon;
             const pLat = f.properties.lat;
             const imgId = `${config.layerPrefix}-img-${idx}-${Date.now()}`;
-            
             let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance);
-            
+
             if (isMapLibre) {
                 window[layer3DKey] = window[layer3DKey] || [];
                 window[marker3DKey] = window[marker3DKey] || [];
-                
+
                 const sourceId = `${config.layerPrefix}-line-src-${idx}`;
                 const layerId = `${config.layerPrefix}-line-layer-${idx}`;
                 if (!map.getSource(sourceId)) {
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] }
-                        }
-                    });
-                    map.addLayer({
-                        id: layerId,
-                        type: 'line',
-                        source: sourceId,
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 
-                            'line-color': '#4CAF50',
-                            'line-width': 4,
-                            'line-opacity': 0.7,
-                            'line-dasharray': [8, 6]
-                        }
-                    });
+                    map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng, lat], [pLng, pLat]] } } });
+                    map.addLayer({ id: layerId, type: 'line', source: sourceId, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#4CAF50', 'line-width': 4, 'line-opacity': 0.7, 'line-dasharray': [8, 6] } });
                     window[layer3DKey].push(layerId, sourceId);
                 }
-                
+
                 const el = document.createElement('div');
                 el.innerHTML = getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance);
                 el.className = 'custom-3d-marker-element';
                 el.style.cursor = 'pointer';
                 el.style.zIndex = '2000';
-                
-                const popup = new maplibregl.Popup({ 
-                    offset: 25, 
-                    maxWidth: '360px',
-                    closeButton: true,
-                    className: 'tt-unified-popup'
-                }).setHTML(popupContent);
-                
-                popup.on('open', () => {
-                    handlePlacePopupImageLoading(f, imgId, categoryType);
-                });
-                
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([pLng, pLat])
-                    .setPopup(popup)
-                    .addTo(map);
-                
-                el.addEventListener('click', (e) => { 
-    e.stopPropagation(); // Harita tıklamasını engelle
-    
-    // 3D Haritada Marker Tıklama
-    map.flyTo({
-        center: [pLng, pLat],
-        zoom: Math.max(map.getZoom(), 16), // Çok uzaksa yaklaş
-        speed: 0.8,
-        curve: 1,
-        essential: true,
-        offset: [0, 100] // Popup için biraz aşağı kaydır
-    });
 
-    // Popup'ı aç (toggle yerine explicit open daha güvenli olabilir ama toggle da ok)
-    if (!marker.getPopup().isOpen()) {
-        marker.togglePopup();
-    }
-});
+                const popup = new maplibregl.Popup({ offset: 25, maxWidth: '360px', closeButton: true, className: 'tt-unified-popup' }).setHTML(popupContent);
+                popup.on('open', () => { handlePlacePopupImageLoading(f, imgId, categoryType); });
+
+                const marker = new maplibregl.Marker({ element: el }).setLngLat([pLng, pLat]).setPopup(popup).addTo(map);
+                el.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    map.flyTo({ center: [pLng, pLat], zoom: Math.max(map.getZoom(), 16), speed: 0.8, curve: 1, essential: true, offset: [0, 100] });
+                    if (!marker.getPopup().isOpen()) marker.togglePopup();
+                });
                 window[marker3DKey].push(marker);
             } else {
                 map[layerKey] = map[layerKey] || [];
-                
-                const line = L.polyline([[lat, lng], [pLat, pLng]], { 
-                    color: '#4CAF50',
-                    weight: 4,
-                    opacity: 0.7, 
-                    dashArray: "8,6"
-                }).addTo(map);
+                const line = L.polyline([[lat, lng], [pLat, pLng]], { color: '#4CAF50', weight: 4, opacity: 0.7, dashArray: "8,6" }).addTo(map);
                 map[layerKey].push(line);
-                
-                const marker = L.marker([pLat, pLng], {
-                    icon: L.divIcon({ 
-                        html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), 
-                        className: "custom-category-marker", 
-                        iconSize: [32,32], 
-                        iconAnchor: [16,16] 
-                    })
-                }).addTo(map);
+                const marker = L.marker([pLat, pLng], { icon: L.divIcon({ html: getCategoryMarkerHtml(config.color, config.iconUrl, categoryType, distance), className: "custom-category-marker", iconSize: [32,32], iconAnchor: [16,16] }) }).addTo(map);
                 map[layerKey].push(marker);
-
-                // ✅ GÜNCELLEME: 2D Haritada tıklayınca ortala
-                marker.on('click', function() {
-                    const targetZoom = map.getZoom() < 14 ? 15 : map.getZoom();
-                    map.flyTo([pLat, pLng], targetZoom, {
-                        animate: true,
-                        duration: 0.5
-                    });
-                });
-                
+                marker.on('click', function() { const targetZoom = map.getZoom() < 14 ? 15 : map.getZoom(); map.flyTo([pLat, pLng], targetZoom, { animate: true, duration: 0.5 }); });
                 marker.bindPopup(popupContent, { maxWidth: 341 });
-                marker.on("popupopen", function() { 
-                    handlePlacePopupImageLoading(f, imgId, categoryType);
-                });
+                marker.on("popupopen", function() { handlePlacePopupImageLoading(f, imgId, categoryType); });
             }
         });
-        
+
     } catch (err) {
         console.error(err);
         const container = document.querySelector('.category-items-container');
-        if (container) {
-            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">Error loading places</div>`;
-        }
+        if (container) container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">Error loading places</div>`;
     }
 }
 
@@ -2246,22 +2055,21 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
     const lat = f.properties.lat;
     const lon = f.properties.lon;
     
-    // 2. Güvenli Stringler (Kesme işareti temizliği - TEK SEFER TANIMLANDI)
+    // 2. Güvenli Stringler
     const safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
-    const safeAddress = address.replace(/'/g, "\\'").replace(/"/g, '\\"'); // JS safe
-    const htmlSafeName = name.replace(/"/g, '&quot;'); // HTML attribute safe
+    const safeAddress = address.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    const htmlSafeName = name.replace(/"/g, '&quot;');
     
     const activeDay = window.currentDay || day || 1;
 
     const distanceText = distance ? 
         `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
 
-    // 3. CSS Stili (Varsa eklemez, yoksa ekler)
+    // 3. CSS Stili (Popup resetleme)
     if (!document.getElementById('popup-override-styles')) {
         const style = document.createElement('style');
         style.id = 'popup-override-styles';
         style.textContent = `
-            /* Popup stilleri */
             .leaflet-popup:has(.category-place-item) .leaflet-popup-content-wrapper,
             .maplibregl-popup:has(.category-place-item) .maplibregl-popup-content {
                 background: transparent !important;
@@ -2283,13 +2091,14 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
         document.head.appendChild(style);
     }
       
-    // 4. HTML Return (Düzeltilmiş değişkenlerle)
+    // 4. HTML Return (FIX: Kapatma butonu hem Leaflet hem MapLibre destekli)
     return `
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
                                             background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
                                             border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);
                                             max-width: 300px; width: 300px;">
-        <button onclick="this.closest('.leaflet-popup').style.display='none'; var mp = this.closest('.maplibregl-popup'); if(mp) mp.remove();" style="position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
+        <button onclick="var p = this.closest('.leaflet-popup') || this.closest('.maplibregl-popup'); if(p) p.remove();" 
+                style="position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
         
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
           <img id="${imgId}" src="img/placeholder.png" alt="${htmlSafeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
