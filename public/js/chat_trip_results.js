@@ -127,7 +127,7 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </select>
             </div>
             
-            <a class="addtotrip"><span>Add to trip</span>
+            <a class="addtotrip"><span>Add</span>
                 <img src="img/addtotrip-icon.svg">
             </a>
         </div>
