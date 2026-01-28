@@ -307,7 +307,8 @@ async function geoapifyLocationAutocomplete(query) {
     if (!query || query.length < 1) return [];
     
     try {
-        let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+        const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`;
+        let response = await fetch(url);
         let data = await response.json();
         return data.features || [];
     } catch (e) {
