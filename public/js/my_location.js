@@ -1,5 +1,5 @@
 // ==========================================
-// MY LOCATION MODULE (WITH VISIBLE PERMISSION REQUEST)
+// MY LOCATION MODULE (GREEN STATIC MARKER)
 // ==========================================
 
 // 1. Initialize global variables and functions at the top
@@ -175,7 +175,7 @@ function createLocationPopupContent(lat, lng, addressData) {
     return html;
 }
 
-// 6. Add popup styles as CSS
+// 6. Add popup styles as CSS - GREEN STATIC MARKER
 function ensureLocationPopupStyles() {
     if (document.getElementById('location-popup-styles')) return;
 
@@ -221,6 +221,46 @@ function ensureLocationPopupStyles() {
         /* Leaflet popup compatibility */
         .leaflet-popup-content .location-popup {
             padding: 2px;
+        }
+
+        /* GREEN STATIC LOCATION MARKER (matching nearby_ai style) */
+        .location-marker-green {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            pointer-events: auto;
+            z-index: 1000;
+        }
+
+        .location-marker-green::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 24px;
+            height: 24px;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #4caf50, #81c784);
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 
+                0 0 12px rgba(76, 175, 80, 0.6),
+                0 0 24px rgba(76, 175, 80, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        .location-marker-green::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 7px;
+            height: 7px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 11;
         }
     `;
 
@@ -337,16 +377,13 @@ async function showLocationOnMap(position, day, expandedMap) {
     const popupContent = createLocationPopupContent(lat, lng, addressData);
 
     // Determine map type
-    const isMapLibre = !!(expandedMap && expandedMap.addSource); // MapLibre check
+    const isMapLibre = !!(expandedMap && expandedMap.addSource);
     const is3DMap = !!(expandedMap && expandedMap.getStyle && expandedMap.getStyle().name === 'Liberty');
 
     if (isMapLibre || is3DMap) {
         // --- 3D Map (MapLibre) ---
         const el = document.createElement('div');
-        el.className = 'custom-lds-ripple-marker';
-        el.innerHTML = '<div class="lds-ripple"><div></div><div></div></div>';
-        el.style.width = '44px';
-        el.style.height = '44px';
+        el.className = 'location-marker-green';
 
         try {
             const marker = new maplibregl.Marker({ element: el })
@@ -367,11 +404,10 @@ async function showLocationOnMap(position, day, expandedMap) {
     } else if (expandedMap && expandedMap.setView) {
         // --- 2D Map (Leaflet) ---
         const userIcon = L.divIcon({
-            className: 'custom-lds-ripple-marker', 
-            html: '<div class="lds-ripple"><div></div><div></div></div>',
-            iconSize: [44, 44],       
-            iconAnchor: [22, 44],     
-            popupAnchor: [0, -36]
+            className: 'location-marker-green', 
+            iconSize: [40, 40],       
+            iconAnchor: [20, 40],     
+            popupAnchor: [0, -40]
         });
 
         const marker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(expandedMap);
