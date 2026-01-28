@@ -1,5 +1,5 @@
 // ==========================================
-// MY LOCATION MODULE (ENHANCED WITH GEOCODING)
+// MY LOCATION MODULE (CLEAN & MINIMAL DESIGN)
 // ==========================================
 
 // 1. Initialize global variables and functions at the top
@@ -100,21 +100,11 @@ async function getAddressFromCoordinates(lat, lng) {
     }
 }
 
-// 4. Create popup HTML content
+// 4. Create popup HTML content - CLEAN & MINIMAL
 function createLocationPopupContent(lat, lng, addressData) {
-    let html = `
-        <div class="location-popup-container">
-            <div class="location-popup-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                <span>Your Location</span>
-            </div>
-            <div class="location-popup-content">
-    `;
+    let html = `<div class="location-popup">`;
 
-    if (addressData) {
+    if (addressData && addressData.address) {
         const address = addressData.address || {};
         
         // Nearby place name
@@ -141,171 +131,77 @@ function createLocationPopupContent(lat, lng, addressData) {
         if (address.city) nearbyItems.push(address.city);
 
         if (placeLabel) {
-            html += `
-                <div class="location-place-name">
-                    <strong>${placeLabel}</strong>
-                </div>
-            `;
+            html += `<p class="loc-place"><strong>${placeLabel}</strong></p>`;
         }
 
         if (nearbyItems.length > 0) {
-            html += `
-                <div class="location-nearby">
-                    <p class="location-nearby-label">📍 <strong>Near you</strong></p>
-                    <p class="location-nearby-text">${nearbyItems.slice(0, 2).join(', ')}</p>
-                </div>
-            `;
+            html += `<p class="loc-area">${nearbyItems.slice(0, 2).join(', ')}</p>`;
         }
 
-        // Country/Region
         if (address.country) {
-            html += `
-                <div class="location-country">
-                    <small>🌍 ${address.country}</small>
-                </div>
-            `;
+            html += `<p class="loc-country">${address.country}</p>`;
         }
     }
 
-    // Coordinates
-    html += `
-        <div class="location-coords">
-            <small>
-                <code>${lat.toFixed(5)}, ${lng.toFixed(5)}</code>
-            </small>
-        </div>
-    `;
-
-    html += `
-        <div class="location-accuracy">
-            <small>📡 GPS accuracy: ~50m</small>
-        </div>
-    `;
-
-    html += `
-            </div>
-        </div>
-    `;
+    // Coordinates - minimal display
+    html += `<p class="loc-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
+    html += `</div>`;
 
     return html;
 }
 
-// 5. Add popup styles as CSS
+// 5. Add popup styles as CSS - CLEAN & MINIMAL
 function ensureLocationPopupStyles() {
     if (document.getElementById('location-popup-styles')) return;
 
     const style = document.createElement('style');
     style.id = 'location-popup-styles';
     style.innerHTML = `
-        .location-popup-container {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        .location-popup {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             padding: 0;
-            min-width: 220px;
-        }
-
-        .location-popup-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 12px 8px 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 8px 8px 0 0;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .location-popup-header svg {
-            flex-shrink: 0;
-            animation: locationPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes locationPulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
-        }
-
-        .location-popup-content {
-            padding: 12px;
-            background: white;
-            border-radius: 0 0 8px 8px;
-            border: 1px solid #e0e0e0;
-            border-top: none;
-        }
-
-        .location-place-name {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .location-place-name strong {
-            color: #333;
-            font-size: 15px;
-            display: block;
-            word-break: break-word;
-        }
-
-        .location-nearby {
-            margin: 10px 0;
-            padding: 8px;
-            background: #f5f9ff;
-            border-left: 3px solid #667eea;
-            border-radius: 4px;
-        }
-
-        .location-nearby-label {
-            margin: 0 0 4px 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: #667eea;
-        }
-
-        .location-nearby-text {
             margin: 0;
             font-size: 13px;
-            color: #555;
-            line-height: 1.4;
-            word-break: break-word;
+            line-height: 1.5;
+            color: #333;
         }
 
-        .location-country {
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid #f0f0f0;
-            text-align: center;
+        .location-popup p {
+            margin: 4px 0;
+            padding: 0;
         }
 
-        .location-country small {
-            color: #888;
+        .location-popup .loc-place {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 6px;
+        }
+
+        .location-popup .loc-area {
             font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
         }
 
-        .location-coords {
-            margin-top: 8px;
-            text-align: center;
-        }
-
-        .location-coords code {
-            background: #f5f5f5;
-            padding: 4px 6px;
-            border-radius: 3px;
-            font-size: 11px;
-            color: #555;
-            font-family: 'Courier New', monospace;
-            word-break: break-all;
-        }
-
-        .location-accuracy {
+        .location-popup .loc-country {
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #e5e5e5;
+            padding-top: 4px;
             margin-top: 6px;
-            text-align: center;
-            color: #aaa;
+        }
+
+        .location-popup .loc-coords {
             font-size: 11px;
+            color: #999;
+            font-family: 'Monaco', 'Courier New', monospace;
+            margin-top: 6px;
         }
 
         /* Leaflet popup compatibility */
-        .leaflet-popup-content .location-popup-container {
-            margin: -2px -6px -6px -6px;
+        .leaflet-popup-content .location-popup {
+            padding: 2px;
         }
     `;
 
