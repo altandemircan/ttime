@@ -7212,51 +7212,78 @@ async function expandMap(containerId, day) {
         }
     };
 
+
     const locBtn = document.createElement('button');
     locBtn.className = 'map-ctrl-btn';
     locBtn.id = `use-my-location-btn-day${day}`;
     locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
-    // Başlangıç durumu: Eğer aktifse butona 'active' class'ı ekle veya farklı ikon göster
-if (window.isLocationActiveByDay[day]) {
-    locBtn.classList.add('active');
-    locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">'; // Maviye boyar
-}
-
-locBtn.onclick = function() {
-    window.isLocationActiveByDay[day] = !window.isLocationActiveByDay[day];
-    const isActive = window.isLocationActiveByDay[day];
-
-    if (isActive) {
+    // Başlangıç durumu
+    if (window.isLocationActiveByDay[day]) {
         locBtn.classList.add('active');
-        // İkonu CSS filter ile mavi yapıyoruz (Veya elinde mavi ikon varsa onu koyabilirsin)
-        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';;
+        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';
+    }
+
+    locBtn.onclick = function() {
+        window.isLocationActiveByDay[day] = !window.isLocationActiveByDay[day];
+        const isActive = window.isLocationActiveByDay[day];
+
+        if (isActive) {
+            locBtn.classList.add('active');
+            locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';
+            
+            // CSS ve animasyon stilleri ekle
             if (!document.getElementById('tt-unified-loc-style')) {
                 const s = document.createElement('style');
                 s.id = 'tt-unified-loc-style';
                 s.innerHTML = `@keyframes ttPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; } } @keyframes ttColorCycle { 0% { background-color: #4285F4; } 50% { background-color: #34A853; } 100% { background-color: #4285F4; } } .user-loc-wrapper { position: relative; width: 20px; height: 20px; } .user-loc-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2; animation: ttColorCycle 2s infinite ease-in-out; } .user-loc-ring-1, .user-loc-ring-2 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear; } .user-loc-ring-2 { animation-delay: 1.25s; }`;
                 document.head.appendChild(s);
             }
+
+            // Konumu getir ve harita üzerinde göster
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true);
-                }, () => {
-                    window.isLocationActiveByDay[day] = false;
-                    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
-                });
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        // ✅ DÜZELTME: Doğru parametrelerle çağır
+                        window.updateUserLocationMarker(position, day, expandedMapInstance);
+                    },
+                    function(error) {
+                        console.warn("Geolocation error:", error);
+                        window.isLocationActiveByDay[day] = false;
+                        locBtn.classList.remove('active');
+                        locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+                        
+                        if (error.code === 1) {
+                            alert("Please allow location access to use this feature.");
+                        }
+                    }
+                );
             }
-       } else {
-        locBtn.classList.remove('active');
-        locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
-        window.updateUserLocationMarker(expandedMapInstance, day);
-    }
-};
+        } else {
+            locBtn.classList.remove('active');
+            locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+            
+            // Markerları temizle
+            if (window.userLocationMarkersByDay && window.userLocationMarkersByDay[day]) {
+                window.userLocationMarkersByDay[day].forEach(marker => {
+                    try {
+                        if (expandedMapInstance && expandedMapInstance.hasLayer && expandedMapInstance.hasLayer(marker)) {
+                            expandedMapInstance.removeLayer(marker);
+                        }
+                        if (marker.remove) marker.remove();
+                    } catch(e) {}
+                });
+                window.userLocationMarkersByDay[day] = [];
+            }
+        }
+    };
+
+    controlsDiv.appendChild(locBtn);
 
     controlsDiv.appendChild(zoomInBtn);
     controlsDiv.appendChild(zoomOutBtn);
     controlsDiv.appendChild(compassBtn);
-    controlsDiv.appendChild(locBtn);
 
     const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (oldBar) oldBar.remove();
