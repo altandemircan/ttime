@@ -603,6 +603,9 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 // ============================================================
 // 4. INPUT LISTENER (TÜRKÇE KARAKTER DOSTU & GARANTİ ARAMA)
 // ============================================================
+// ============================================================
+// 4. INPUT LISTENER (CRASH KORUMALI & TÜRKÇE DOSTU)
+// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
@@ -620,21 +623,20 @@ chatInput.addEventListener("input", debounce(async function () {
     }
 
     // --- 2. HASSAS TEMİZLİK (Unicode \p{L} Teknolojisi) ---
-    // Bu Regex dünyadaki TÜM harfleri korur (İ, ı, ş, Ç, ö, ü, Rusça, Çince vs.)
-    // Sadece sayıları ve sembolleri siler.
+    // Harfleri KORU, sayı ve sembolleri SİL.
     let cleanText = rawText
-        .replace(/[0-9]/g, ' ') // Sayıları boşluk yap
-        .replace(/[^\p{L}\s]/gu, ' ') // HARF OLMAYAN HER ŞEYİ SİL (Unicode Flag 'u' önemli)
-        .replace(/\s+/g, ' ') // Çift boşlukları tek yap
+        .replace(/[0-9]/g, ' ') 
+        .replace(/[^\p{L}\s]/gu, ' ') 
+        .replace(/\s+/g, ' ') 
         .trim();
 
-    // Yasaklı kelimeler (Zaman birimleri)
+    // Yasaklı zaman kelimeleri
     const timeKeywords = ['day', 'days', 'gün', 'gun', 'daily', 'gunluk', 'gece', 'night', 'nights', 'week', 'weeks', 'hafta', 'month', 'months', 'ay', 'year', 'years', 'yil'];
     
     // Kelimelere ayır
     let allWords = cleanText.split(' ');
     
-    // Filtreleme: 2 harften uzun olsun VE zaman kelimesi olmasın
+    // Filtreleme
     const candidates = allWords.filter(w => {
         return w.length > 2 && !timeKeywords.includes(w.toLowerCase());
     });
@@ -645,43 +647,53 @@ chatInput.addEventListener("input", debounce(async function () {
     let foundSuggestions = [];
     let foundQuery = "";
 
-    // --- STRATEJİ 1: Önce temiz halini bütün olarak dene ---
-    // Örn: "New York"
+    // --- STRATEJİ 1: Bütün Cümle ---
     if (candidates.length > 0) {
         let fullQuery = candidates.join(" ");
-        // Tek kelimeyse boşuna API harcama, aşağıda döngüde bakacak
         if (candidates.length > 1) {
-            foundSuggestions = await geoapifyLocationAutocomplete(fullQuery);
-            if (foundSuggestions && foundSuggestions.length > 0) {
-                foundQuery = fullQuery;
-            }
+            try {
+                foundSuggestions = await geoapifyLocationAutocomplete(fullQuery);
+                if (foundSuggestions && foundSuggestions.length > 0) {
+                    foundQuery = fullQuery;
+                }
+            } catch(e) { console.warn("Full query error:", e); }
         }
     }
 
-    // --- STRATEJİ 2: KELİME KELİME TARA (Sırasıyla) ---
-    // "İstanbul aispdkjasmd" -> Önce "İstanbul" denenir, bulunursa biter.
+    // --- STRATEJİ 2: Kelime Kelime Tara ---
     if (!foundSuggestions || foundSuggestions.length === 0) {
         for (let word of candidates) {
             console.log(`[LocationHunter] Taranıyor: ${word}`);
             
-            let results = await geoapifyLocationAutocomplete(word);
+            try {
+                let results = await geoapifyLocationAutocomplete(word);
 
-            if (results && results.length > 0) {
-                // EKSTRA GÜVENLİK: 
-                // Bulunan sonuç ile aranan kelime alakasız mı? (Backend fuzzy search hatası için)
-                // Sonucun adının içinde aradığımız kelime geçiyor mu kontrol et.
-                const firstMatchName = results[0].properties.name.toLowerCase();
-                const searchedWord = word.toLocaleLowerCase('tr'); // Türkçe uyumlu küçük harf
+                if (results && results.length > 0) {
+                    // --- HATA DÜZELTME BURADA ---
+                    // Özelliklerin var olup olmadığını kontrol ederek alıyoruz (Safe Access)
+                    const props = results[0].properties || {};
+                    const matchName = (props.name || "").toLowerCase();
+                    const matchCity = (props.city || "").toLowerCase(); // Burası patlıyordu, düzeldi.
+                    const matchCountry = (props.country || "").toLowerCase();
+                    
+                    const searchedWord = word.toLocaleLowerCase('tr'); 
 
-                // Basit bir doğrulama: Aranan kelimenin en azından bir kısmı sonuçta geçmeli
-                if (firstMatchName.includes(searchedWord) || searchedWord.includes(firstMatchName) || results[0].properties.city.toLowerCase().includes(searchedWord)) {
-                    console.log(`[LocationHunter] BINGO: ${word} -> ${results[0].properties.formatted}`);
-                    foundSuggestions = results;
-                    foundQuery = word;
-                    break; // Bulduğumuz an döngüyü bitir, çöplere bakma
-                } else {
-                    console.log(`[LocationHunter] Reddedildi (Alakasız Eşleşme): ${word} -> Bulunan: ${firstMatchName}`);
+                    // Doğrulama: Bulunan sonuç aradığımız kelimeyi içeriyor mu?
+                    if (matchName.includes(searchedWord) || 
+                        searchedWord.includes(matchName) || 
+                        matchCity.includes(searchedWord) ||
+                        matchCountry.includes(searchedWord)) {
+                        
+                        console.log(`[LocationHunter] BINGO: ${word}`);
+                        foundSuggestions = results;
+                        foundQuery = word;
+                        break; 
+                    } else {
+                        console.log(`[LocationHunter] Reddedildi: ${word} -> Bulunan: ${props.formatted}`);
+                    }
                 }
+            } catch (e) {
+                console.warn(`Word search error (${word}):`, e);
             }
         }
     }
@@ -697,7 +709,6 @@ chatInput.addEventListener("input", debounce(async function () {
     }
 
 }, 500));
-
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
