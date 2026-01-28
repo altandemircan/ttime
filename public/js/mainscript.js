@@ -43,7 +43,21 @@ window.addEventListener('hashchange', function() {
         }
     }
 });
-
+// Türkçe karakterleri normalize eden yardımcı fonksiyon
+function normalizeTurkish(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/â/g, 'a')
+        .replace(/û/g, 'u')
+        .replace(/î/g, 'i');
+}
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Dünya yarıçapı metre cinsinden
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -623,56 +637,43 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // 2. DAHA İYİ TEMİZLİK - sadece rakam ve noktalama temizle
-    // Türkçe karakterleri de koruyarak
-    let cleanText = rawText
-        .replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?]/g, ' ') // sadece rakam ve noktalama
-        .replace(/\s+/g, ' ')
-        .trim();
+    // 2. TEMİZLİK (Sadece Sayıları Sil)
+    // Regex ile harfleri bozmayalım. Sadece rakamları uçuruyoruz.
+    let cleanText = rawText.replace(/[0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // 3. Türkçe stop words
-    const timeKeywords = [
-        'day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 
-        'week', 'weeks', 'hafta', 'year', 'yil', 'ay', 'month',
-        // Ek filler
-        'plan', 'trip', 'tour', 'itinerary', 'visit', 'travel'
-    ];
+    // Yasaklı kelimeler (Zaman bildirenler)
+    const timeKeywords = ['day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 'week', 'weeks', 'hafta', 'year', 'yil', 'ay', 'month'];
     
-    // Kelimelere ayır - Türkçe karakterler korunsun
+    // Kelimelere ayır
     let candidates = cleanText.split(' ').filter(w => {
-        // En az 2 karakter ve stop word olmasın
-        return w.length >= 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
+        // 2 harften uzun olsun ve zaman kelimesi olmasın
+        return w.length > 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
     });
 
     let foundSuggestions = [];
     let foundQuery = "";
 
-    // 4. ADAYLARI TARA
+    // 3. ADAYLARI TARA
     for (let word of candidates) {
         try {
-            // Eğer word Türkçe karakter içeriyorsa normalize et
-            const searchWord = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            
+            // API'ye sor
             let results = await geoapifyLocationAutocomplete(word);
 
             if (results && results.length > 0) {
-                // Sonuçları filtrele
+                // --- GÜMRÜK KAPISI (ÇÖP AYIKLAMA) ---
+                const searchLower = word.toLocaleLowerCase('tr');
+
                 const validResults = results.filter(item => {
                     const itemName = (item.properties.name || "").toLocaleLowerCase('tr');
                     const itemCity = (item.properties.city || "").toLocaleLowerCase('tr');
                     
-                    // Türkçe normalize edilmiş karşılaştırma
-                    const normalizedItem = itemName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    
-                    return itemName.includes(word.toLocaleLowerCase('tr')) || 
-                           normalizedItem.includes(searchWord) ||
-                           itemCity.includes(word.toLocaleLowerCase('tr'));
+                    return itemName.includes(searchLower) || itemCity.includes(searchLower);
                 });
 
                 if (validResults.length > 0) {
                     foundSuggestions = validResults;
                     foundQuery = word;
-                    break;
+                    break; // Geçerli bir şeyler bulduk, döngüyü kır.
                 }
             }
         } catch (e) {
@@ -682,34 +683,27 @@ chatInput.addEventListener("input", debounce(async function () {
 
     window.lastResults = foundSuggestions;
     
-    // 5. SONUÇLARI GÖSTER
+    // 4. SIRALAMA VE GÖSTERME
     if (foundSuggestions && foundSuggestions.length > 0) {
+        
         const target = foundQuery.toLocaleLowerCase('tr');
         
-        // Türkçe karakterleri normalize ederek sırala
         foundSuggestions.sort((a, b) => {
             const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
             const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
-            
-            // Normalize edilmiş isimler
-            const normA = nameA.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const normB = nameB.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const normTarget = target.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-            // Tam eşleşme
-            const isExactA = normA === normTarget;
-            const isExactB = normB === normTarget;
-            if (isExactA && !isExactB) return -1;
-            if (!isExactA && isExactB) return 1;
+            // KRİTER 1: Tam Eşleşme Kraldır ("istanbul" == "istanbul")
+            const isExactA = nameA === target;
+            const isExactB = nameB === target;
+            if (isExactA && !isExactB) return -1; // A üste
+            if (!isExactA && isExactB) return 1;  // B üste
 
-            // startsWith
-            const startsA = normA.startsWith(normTarget);
-            const startsB = normB.startsWith(normTarget);
-            if (startsA && !startsB) return -1;
-            if (!startsA && startsB) return 1;
+            // KRİTER 2: Kısa İsim Üste ("İstanbul" < "İstanbulluoğlu")
+            if (nameA.length !== nameB.length) {
+                return nameA.length - nameB.length;
+            }
 
-            // İsim uzunluğu
-            return nameA.length - nameB.length;
+            return 0; // Eşitse dokunma
         });
 
         renderSuggestions(foundSuggestions, foundQuery);

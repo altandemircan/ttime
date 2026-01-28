@@ -28,38 +28,49 @@ const { getSuggestions } = require('./localCities'); // Dosya aynı dizindeyse
 // ROTA İÇİNE:
 app.get('/api/cities', (req, res) => {
     try {
-        const query = req.query.q ? req.query.q.toLowerCase() : "";
-        if (!query) return res.json([]);
+        const query = req.query.q ? req.query.q.toLowerCase().trim() : "";
+        if (!query || query.length < 2) return res.json([]);
 
-        // Tüm dünyadaki state'leri çek - includes kullan
-        const allStates = State.getAllStates()
-            .filter(s => s.name.toLowerCase().includes(query)) // startsWith yerine includes
-            .map(s => ({
-                name: s.name,
-                countryCode: s.countryCode,
-                latitude: s.latitude,
-                longitude: s.longitude,
-                type: 'state'
-            }));
-
-        // Tüm dünyadaki city'leri çek - includes kullan
+        // TÜM DÜNYADAKİ ŞEHİRLERİ GETİR
         const allCities = City.getAllCities()
-            .filter(c => c.name.toLowerCase().includes(query)) // startsWith yerine includes
-            .map(c => ({
-                name: c.name,
-                countryCode: c.countryCode,
-                latitude: c.latitude,
-                longitude: c.longitude,
+            .filter(city => {
+                const name = city.name.toLowerCase();
+                // "ist" -> "istanbul" (startsWith)
+                // "istanb" -> "istanbul" (startsWith)
+                // "istan" -> "istanbul" (startsWith)
+                return name.startsWith(query) || name.includes(query);
+            })
+            .slice(0, 15) // İlk 15 sonuç
+            .map(city => ({
+                name: city.name,
+                countryCode: city.countryCode,
+                latitude: city.latitude,
+                longitude: city.longitude,
                 type: 'city'
             }));
 
-        // İkisini birleştir, ilk 10 sonucu dön
+        // TÜM DÜNYADAKİ STATE'LERİ GETİR
+        const allStates = State.getAllStates()
+            .filter(state => {
+                const name = state.name.toLowerCase();
+                return name.startsWith(query) || name.includes(query);
+            })
+            .slice(0, 5) // İlk 5 sonuç
+            .map(state => ({
+                name: state.name,
+                countryCode: state.countryCode,
+                latitude: state.latitude,
+                longitude: state.longitude,
+                type: 'state'
+            }));
+
+        // BİRLEŞTİR
         const combined = [...allStates, ...allCities].slice(0, 10);
-        
         res.json(combined);
+        
     } catch (err) {
         console.error("City API Error:", err);
-        res.status(500).json({ error: "Internal Server Error", details: err.message });
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
