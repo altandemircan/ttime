@@ -20,18 +20,18 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    // SADECE sayıları ve özel karakterleri sil
-    let cleaned = input.replace(/\d+/g, "");  // Sayıları sil
-    cleaned = cleaned.replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");  // Özel char sil
-    
-    // Boşlukları temizle
+    let cleaned = input.replace(/\d+/g, "");
+    cleaned = cleaned.replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     cleaned = cleaned.replace(/\s+/g, " ").trim();
     
-    // Kelimeleri böl
     let words = cleaned.split(/\s+/);
-    
-    // Çok kısa kelimeleri (1-2 harf) sil
     words = words.filter(w => w.length > 2);
+    
+    let capitalWords = words.filter(w => /^[A-ZÇĞİÖŞÜ]/.test(w));
+    
+    if (capitalWords.length > 0) {
+        return capitalWords[0];
+    }
     
     return words.join(" ").trim();
 }
