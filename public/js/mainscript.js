@@ -395,7 +395,7 @@ async function geoapifyLocationAutocomplete(query) {
     return combined.slice(0, 12);
 }
  
-function extractLocationQuery(input) {
+function extractLocationQuery(input) { 
     if (!input) return "";
     
     let cleaned = input;
