@@ -603,21 +603,7 @@ function extractCityName(text) {
     return null;
 }
 
-// Kullanım:
-let searchText = rawText;
-const cityName = extractCityName(searchText);
 
-if (cityName) {
-    searchText = normalizeTurkish(cityName);
-    console.log("Extracted city:", cityName, "->", searchText);
-} else {
-    // Fallback: eski mantık
-    searchText = normalizeTurkish(searchText
-        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
-        .replace(/[^\p{L}\s]/gu, ' ')
-        .replace(/\s+/g, ' ')
-        .trim());
-}
 // Sayfa yüklendiğinde listener'ı ekle
 document.addEventListener("DOMContentLoaded", function() {
     const inp = document.getElementById("user-input");
