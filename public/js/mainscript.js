@@ -20,24 +20,23 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    let cleaned = input;
+    let cleaned = input; 
     
-    // Türkçe kelime sonekleri sil: günlük, tura, turu, vs
-    cleaned = cleaned.replace(/\b(günlük|tura|turu|turunu|turuna|turuy|gezisi|gezisine|geziye|gezi)\b/gi, "");
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // Sayılar sil
-    cleaned = cleaned.replace(/\d+/g, "");
+    cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     
-    // Fiiller sil
-    cleaned = cleaned.replace(/\b(planlar|planla|planlay|mısın|mısınız|misiniz|mi|mı|musun|musunuz|muş|muşsunuz|muşsun)\b/gi, "");
+    const stopWords = [
+        "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
+        "create", "make", "build", "generate", "show", "give", "please", 
+        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
+        "day", "days", "gün", "gun", "night", "nights"
+    ];
     
-    // Edatlar sil
-    cleaned = cleaned.replace(/\b(bana|bize|için|ile|da|de|mi|mı|ve|ya|veya|gibi|daha)\b/gi, "");
+    let words = cleaned.split(/\s+/);
+    words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
     
-    // Boşlukları temizle
-    cleaned = cleaned.replace(/\s+/g, " ").trim();
-    
-    return cleaned;
+    return words.join(" ").trim();
 }
 
 // ============================================================
