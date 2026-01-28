@@ -36,13 +36,17 @@ app.get('/api/cities', (req, res) => {
             return res.json([]);
         }
 
-        // TÜRKÇE KARAKTER NORMALİZASYONU
+        // TÜRKÇE KARAKTER NORMALİZASYONU - DÜZELTİLMİŞ
         const normalizeTurkish = (text) => {
             if (!text) return '';
             return text
                 .toLowerCase()
+                // Önce noktalı i'yi düzelt (İ -> i)
+                .normalize('NFD')  // Unicode decomposition: İ -> i + ̇
+                .replace(/[\u0307]/g, '') // noktayı kaldır
+                .normalize('NFC')  // tekrar birleştir
+                // Diğer Türkçe karakterler
                 .replace(/ı/g, 'i')
-                .replace(/i̇/g, 'i')  // noktalı i (İ'nin lowercase'i)
                 .replace(/ğ/g, 'g')
                 .replace(/ü/g, 'u')
                 .replace(/ş/g, 's')
@@ -60,38 +64,58 @@ app.get('/api/cities', (req, res) => {
         const allStates = State.getAllStates();
         const allCities = City.getAllCities();
         
-        const allData = [
-            ...allStates.map(s => ({ ...s, type: 'state' })),
-            ...allCities.map(c => ({ ...c, type: 'city' }))
-        ];
+        console.log(`[API] Total states: ${allStates.length}, cities: ${allCities.length}`);
 
-        console.log(`[API] Total data: ${allData.length} items`);
-
-        // NORMALİZE EDİLMİŞ ARAMA
-        const results = allData
-            .filter(item => {
-                if (!item.name) return false;
+        // NORMALİZE EDİLMİŞ ARAMA - BASİT VERSİYON
+        const results = [];
+        
+        // State'leri ara
+        for (const state of allStates) {
+            if (!state.name) continue;
+            
+            const stateNameNorm = normalizeTurkish(state.name);
+            const stateNameLower = state.name.toLowerCase();
+            
+            if (stateNameNorm.includes(normalizedQuery) || 
+                stateNameLower.includes(query.toLowerCase())) {
+                results.push({
+                    name: state.name,
+                    countryCode: state.countryCode,
+                    latitude: state.latitude,
+                    longitude: state.longitude,
+                    type: 'state'
+                });
                 
-                const itemName = item.name.toLowerCase();
-                const normalizedItemName = normalizeTurkish(itemName);
+                if (results.length >= 10) break;
+            }
+        }
+        
+        // Eğer yeterli state bulamadıysak, city'leri de ara
+        if (results.length < 10) {
+            for (const city of allCities) {
+                if (!city.name) continue;
                 
-                // 3 şekilde kontrol et:
-                return itemName.includes(query.toLowerCase()) ||      // orijinal
-                       normalizedItemName.includes(normalizedQuery) || // normalize edilmiş
-                       itemName.includes(normalizedQuery);             // normalize query ile
-            })
-            .slice(0, 10)
-            .map(item => ({
-                name: item.name,
-                countryCode: item.countryCode,
-                latitude: item.latitude,
-                longitude: item.longitude,
-                type: item.type
-            }));
+                const cityNameNorm = normalizeTurkish(city.name);
+                const cityNameLower = city.name.toLowerCase();
+                
+                if (cityNameNorm.includes(normalizedQuery) || 
+                    cityNameLower.includes(query.toLowerCase())) {
+                    results.push({
+                        name: city.name,
+                        countryCode: city.countryCode,
+                        latitude: city.latitude,
+                        longitude: city.longitude,
+                        type: 'city'
+                    });
+                    
+                    if (results.length >= 10) break;
+                }
+            }
+        }
 
         console.log(`[API] Found ${results.length} results`);
         if (results.length > 0) {
-            console.log(`[API] Results:`, results.map(r => r.name));
+            console.log(`[API] Results:`, results.map(r => `${r.name} (${r.type})`));
         }
         
         res.json(results);
