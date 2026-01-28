@@ -94,28 +94,6 @@ function countryFlag(iso2) {
   return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => 127397 + c.charCodeAt()));
 }
 
-function hideSuggestionsDiv(clear = false) {
-    const el = document.getElementById('suggestions');
-    if (!el) return;
-    
-    el.hidden = true; // HTML attribute olarak gizle
-    
-    // Tasarımı sıfırlamak için display'i silebiliriz, burada sorun yok
-    el.style.removeProperty('display'); 
-    
-    if (clear) el.innerHTML = "";
-}
-
-function showSuggestionsDiv() {
-    const el = document.getElementById('suggestions');
-    if (!el) return;
-    
-    el.hidden = false; // HTML attribute'u aç
-    
-    // DİKKAT: Buradaki 'el.style.removeProperty('display');' satırını SİLDİM.
-    // Çünkü o satır, "Loading..." yazarken açtığımız kutuyu zorla kapatıyordu.
-    // Artık açık olan kutuya dokunmuyor, sadece hidden kilidini kaldırıyor.
-}
 
 function enableSendButton() {
       const btn = document.getElementById("send-button");
@@ -364,32 +342,29 @@ function extractLocationQuery(input) {
     
     return words.join(" ").trim();
 }
+
 // ============================================================
-// 2. GÖRÜNÜM YARDIMCILARI
+// GÖRÜNÜM YARDIMCILARI (KESİN ÇÖZÜM)
 // ============================================================
-// KUTUYU ZORLA AÇAN FONKSİYON
-if (typeof showSuggestionsDiv !== "function") {
-    window.showSuggestionsDiv = function() {
-        const el = document.getElementById('suggestions');
-        if (el) { 
-            el.removeAttribute('hidden'); // Hidden attribute'unu sök at
-            el.style.display = 'block';   // CSS ne derse desin, zorla GÖSTER
-        }
+
+// KUTUYU ZORLA AÇAR (Hidden'ı siler, Display Block yapar)
+window.showSuggestionsDiv = function() {
+    const el = document.getElementById('suggestions');
+    if (el) { 
+        el.removeAttribute('hidden'); // HTML attribute'unu sök
+        el.style.display = 'block';   // CSS'i ez ve göster
     }
 }
 
-// KUTUYU KAPATAN FONKSİYON
-if (typeof hideSuggestionsDiv !== "function") {
-    window.hideSuggestionsDiv = function(clear = false) {
-        const el = document.getElementById('suggestions');
-        if (el) { 
-            el.setAttribute('hidden', ''); // Hidden attribute ekle
-            el.style.display = 'none';     // Zorla GİZLE
-            if (clear) el.innerHTML = "";
-        }
+// KUTUYU KAPATIR
+window.hideSuggestionsDiv = function(clear = false) {
+    const el = document.getElementById('suggestions');
+    if (el) { 
+        el.setAttribute('hidden', ''); // HTML attribute ekle
+        el.style.display = 'none';     // CSS ile gizle
+        if (clear) el.innerHTML = "";
     }
 }
-
 // Global değişken (Listenin dışında tanımlı olmalı)
 let currentFocus = -1; // Global focus takibi
 
@@ -577,7 +552,9 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     if (suggestionsDiv.children.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     } else {
-        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
+        // Eğer filtreleme sonucu liste boşaldıysa kutuyu kapatma, mesaj ver!
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">No matching results</div>';
+        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     }
 }
 
