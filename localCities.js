@@ -1,6 +1,4 @@
-const { City, State } = require("country-state-city");
 
-// Gelen aramayı (query) karşılayan fonksiyon
 function getSuggestions(query) {
     if (!query || query.length < 2) return [];
 

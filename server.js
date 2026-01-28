@@ -2,7 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
-const { City } = require('country-state-city'); // Paketi dahil ettik
+const { City, State } = require('country-state-city');
 
 // [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
 const BUILD_ID = Date.now().toString();
@@ -25,12 +25,35 @@ app.use(express.urlencoded({ extended: true }));
 
 // Tüm dünyadaki State ve City listesini bir kez belleğe al (Performans için)
 const { getSuggestions } = require('./localCities'); // Dosya aynı dizindeyse
+// ROTA İÇİNE:
 app.get('/api/cities', (req, res) => {
-    const query = req.query.q;
-    const results = getSuggestions(query);
-    res.json(results);
-});
+    try {
+        const query = req.query.q ? req.query.q.toLowerCase() : "";
+        if (!query) return res.json([]);
 
+        // Performans için her seferinde çekmek yerine bir değişkene de atabilirsin ama önce çalıştığını görelim
+        const allStates = State.getStatesOfCountry("TR"); // Önce Türkiye odaklı bakalım
+        const allCities = City.getCitiesOfCountry("TR");
+
+        const combined = [
+            ...allStates.map(s => ({ ...s, type: 'state' })),
+            ...allCities.map(c => ({ ...c, type: 'city' }))
+        ];
+
+        let results = combined.filter(loc => 
+            loc.name.toLowerCase().startsWith(query) || 
+            loc.name.toLocaleLowerCase('tr').startsWith(query)
+        );
+
+        // Sıralama: Tam eşleşen en üste
+        results.sort((a, b) => a.name.length - b.name.length);
+
+        res.json(results.slice(0, 10));
+    } catch (err) {
+        console.error("City API Error:", err);
+        res.status(500).json({ error: "Internal Server Error", details: err.message });
+    }
+});
 
 // 2. Feedback Route
 const feedbackRoute = require('./feedbackRoute');
