@@ -24,46 +24,11 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // Tüm dünyadaki State ve City listesini bir kez belleğe al (Performans için)
-const allLocations = [
-    ...State.getAllStates().map(s => ({ ...s, type: 'state' })),
-    ...City.getAllCities().map(c => ({ ...c, type: 'city' }))
-];
-
-// ============================================================
-// 1. GÜNCELLENMİŞ YEREL ŞEHİR API (STATE + CITY DESTEKLİ)
-// ============================================================
+const { getSuggestions } = require('./localCities'); // Dosya aynı dizindeyse
 app.get('/api/cities', (req, res) => {
-    const query = req.query.q ? req.query.q.toLowerCase() : "";
-    if (!query) return res.json([]);
-
-    // Hem State hem City içinde ara
-    let results = allLocations.filter(loc => 
-        loc.name.toLowerCase().startsWith(query)
-    );
-
-    // AKILLI SIRALAMA
-    results.sort((a, b) => {
-        const nameA = a.name.toLowerCase();
-        const nameB = b.name.toLowerCase();
-
-        // 1. Tam Eşleşme (Örn: Istanbul yazınca State olan Istanbul en başa gelsin)
-        if (nameA === query && nameB !== query) return -1;
-        if (nameB === query && nameA !== query) return 1;
-
-        // 2. State (İl) her zaman City'den (İlçe) önce gelsin
-        if (a.type === 'state' && b.type === 'city') return -1;
-        if (a.type === 'city' && b.type === 'state') return 1;
-
-        // 3. Kısa isim önceliği
-        if (nameA.length !== nameB.length) {
-            return nameA.length - nameB.length; 
-        }
-
-        return nameA.localeCompare(nameB);
-    });
-
-    // İlk 10 sonucu dön
-    res.json(results.slice(0, 10));
+    const query = req.query.q;
+    const results = getSuggestions(query);
+    res.json(results);
 });
 
 
