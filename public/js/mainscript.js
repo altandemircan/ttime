@@ -249,19 +249,22 @@ async function geoapifyLocationAutocomplete(query) {
     try {
         console.log("Şehirler yerel veritabanından çekiliyor...");
         const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
-        const localCities = await resLocal.json();
-        localCityResults = localCities.map(item => ({
-            properties: {
-                name: item.name,
-                city: item.name,
-                country_code: (item.countryCode || "").toLowerCase(),
-                formatted: `${item.name}, ${item.countryCode}`,
-                lat: parseFloat(item.latitude),
-                lon: parseFloat(item.longitude),
-                result_type: 'city', // Senin sistemin bunu şehir olarak bilsin
-                place_id: `local-${item.latitude}-${item.longitude}`
-            }
-        }));
+        // mainscript.js içinde bul ve değiştir:
+const localCities = await resLocal.json();
+
+// Gelen verinin dizi olduğundan emin ol (Kritik koruma)
+localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
+    properties: {
+        name: item.name,
+        city: item.name,
+        country_code: (item.countryCode || "").toLowerCase(),
+        formatted: `${item.name}, ${item.countryCode || 'TR'}`,
+        lat: parseFloat(item.latitude),
+        lon: parseFloat(item.longitude),
+        result_type: item.type || 'city',
+        place_id: `local-${item.latitude}-${item.longitude}`
+    }
+})) : [];
     } catch (e) {
         console.warn("Yerel şehir API hatası:", e);
     }
