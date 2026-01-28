@@ -618,32 +618,32 @@ chatInput.addEventListener("input", debounce(async function () {
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    if (rawText.length === 0) {
-        showSuggestions();
+    // 1. KUTU KONTROLÜ VE LOADING BAŞLATMA
+    if (rawText.length > 0) {
+        // Kutuyu görünür yap ve içine Loading çak
+        suggestionsDiv.removeAttribute('hidden'); 
+        suggestionsDiv.style.display = 'block'; // Bazı CSS'lerde hidden display:none yapar
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
+    } else {
+        // Input boşsa default tagları göster (veya gizle, senin tercihin)
+        showSuggestions(); 
         return;
-    }
-
-    // Arama başlar başlamaz Loading yazısını çakıyoruz
-    if (suggestionsDiv) {
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
-        if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
     }
 
     const locationQuery = extractLocationQuery(rawText);
     if (locationQuery.length < 2) return;
 
+    // 2. VERİ ÇEKME (UNESCO + LOCAL CITY + API)
     let suggestions = await geoapifyLocationAutocomplete(locationQuery);
     window.lastResults = suggestions;
     
-    // SONUÇ VARSA LİSTELE, YOKSA "LOADING..." YAZISINI KORU (Zıplamayı önler)
+    // 3. SONUÇLARI GÖSTERME
     if (suggestions && suggestions.length > 0) {
         renderSuggestions(suggestions, locationQuery);
     } else {
-        // API boş döndüğünde (anlamsız yazı) div'i silmiyoruz, Loading yazısını tutuyoruz
-        if (suggestionsDiv) {
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
-            if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
-        }
+        // Eğer hiçbir şey bulunamazsa bile kutu kapanmasın, "No results" yerine "Loading..." kalmaya devam etsin
+        // Ya da kullanıcıya geri bildirim versin:
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Searching...</div>';
     }
 }, 400));
 
