@@ -6042,7 +6042,8 @@ ease;
     }
 }
 #suggestions[hidden] { display: none; }
-#suggestions:not([hidden]) { min-height: 60px; display:
+#suggestions:not([hidden]) { min-height: 60px; display: flex; }
+
     
 .canonical-preview {
   font-family: system-ui, sans-serif;
