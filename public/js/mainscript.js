@@ -650,19 +650,11 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // Değiştirilecek kısım (satır ~663 civarı):
+// Değiştirilecek kısım (satır ~663 civarı):
 let searchText = rawText
     .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
     .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
-    .replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-// YERİNE BUNU KOY:
-let searchText = rawText
-    .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
-    .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
-    .replace(/[^\p{L}\s]/gu, ' ')  // Unicode harf desteği
+    .replace(/[^\p{L}\s]/gu, ' ')  // Unicode harf desteği - DÜZELTİLDİ
     .replace(/\s+/g, ' ')
     .trim();
 
