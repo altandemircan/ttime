@@ -367,27 +367,24 @@ function extractLocationQuery(input) {
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
 // ============================================================
+// KUTUYU ZORLA AÇAN FONKSİYON
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
         if (el) { 
-            // 1. Kutunun gizlilik kilidini aç
-            el.hidden = false; 
-            
-            // 2. KİLİT NOKTA: Buradaki 'el.style.removeProperty('display')' satırını SİLDİM.
-            // O satır, bizim input listener'da zorla verdiğimiz 'display: block' ayarını siliyor
-            // ve kutunun tekrar kapanmasına neden oluyordu.
+            el.removeAttribute('hidden'); // Hidden attribute'unu sök at
+            el.style.display = 'block';   // CSS ne derse desin, zorla GÖSTER
         }
     }
 }
 
+// KUTUYU KAPATAN FONKSİYON
 if (typeof hideSuggestionsDiv !== "function") {
     window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
         if (el) { 
-            // Kapatırken her şeyi temizlemekte sorun yok
-            el.hidden = true; 
-            el.style.removeProperty('display'); 
+            el.setAttribute('hidden', ''); // Hidden attribute ekle
+            el.style.display = 'none';     // Zorla GİZLE
             if (clear) el.innerHTML = "";
         }
     }
