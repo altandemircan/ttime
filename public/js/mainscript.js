@@ -1259,10 +1259,11 @@ function sendMessage() {
 
     // 2. Gereksiz Kelimeleri Sil
     const stopWords = [
-        "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
-        "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
-        "hakkında", "ile", "gün", "day", "days"
-    ];
+    "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
+    "create", "make", "build", "generate", "show", "give", "please", 
+    "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
+    "day", "days", "gün", "gun", "night", "nights", "and", "or", "is", "am", "are"
+];
     stopWords.forEach(w => {
         text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
     });
