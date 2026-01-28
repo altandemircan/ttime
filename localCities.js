@@ -1,30 +1,19 @@
-const { City } = require('country-state-city');
+const { City, State } = require("country-state-city");
 
-// Performans için tüm şehirleri bir kez hafızaya alıyoruz
-const allCities = City.getAllCities();
+// Suggestion fonksiyonun tam olarak böyle olmalı:
+const searchGlobal = (query) => {
+    const q = query.toLowerCase();
 
-/**
- * Şehir ismine göre yerel veritabanında arama yapar
- * @param {string} query - Arama metni
- * @param {number} limit - Maksimum sonuç sayısı
- */
-function searchCities(query, limit = 10) {
-    if (!query || query.length < 2) return [];
+    // 1. Eyalet/İl listesinde ara (İstanbul, London, New York burada)
+    const states = State.getAllStates()
+        .filter(s => s.name.toLowerCase().startsWith(q))
+        .map(s => ({ ...s, label: s.name, type: 'state' }));
 
-    const search = query.toLowerCase();
+    // 2. Şehir/İlçe listesinde ara (Kadıköy, Westminster burada)
+    const cities = City.getAllCities()
+        .filter(c => c.name.toLowerCase().startsWith(q))
+        .map(c => ({ ...c, label: c.name, type: 'city' }));
 
-    // Filtreleme: İsim içerenleri bul ve limit kadarını döndür
-    return allCities
-        .filter(city => city.name.toLowerCase().includes(search))
-        .slice(0, limit)
-        .map(city => ({
-            name: city.name,
-            countryCode: city.countryCode,
-            latitude: city.latitude,
-            longitude: city.longitude
-        }));
-}
-
-module.exports = {
-    searchCities
-};
+    // İkisini birleştir, ilk 10-15 sonucu fırlat
+    return [...states, ...cities].slice(0, 15);
+}; 
