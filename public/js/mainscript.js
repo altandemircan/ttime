@@ -618,32 +618,34 @@ chatInput.addEventListener("input", debounce(async function () {
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    // 1. KUTU KONTROLÜ VE LOADING BAŞLATMA
+    // 1. INPUT VARSA KUTUYU AÇ VE LOADING ÇAK
     if (rawText.length > 0) {
-        // Kutuyu görünür yap ve içine Loading çak
-        suggestionsDiv.removeAttribute('hidden'); 
-        suggestionsDiv.style.display = 'block'; // Bazı CSS'lerde hidden display:none yapar
+        suggestionsDiv.removeAttribute('hidden');
+        suggestionsDiv.style.display = 'flex'; // tag-container genellikle flex olur, CSS'ine göre block da yapabilirsin
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
     } else {
-        // Input boşsa default tagları göster (veya gizle, senin tercihin)
+        // Input tamamen boşsa varsayılan tagları göster (veya gizle)
         showSuggestions(); 
         return;
     }
 
     const locationQuery = extractLocationQuery(rawText);
-    if (locationQuery.length < 2) return;
+    
+    // BURASI KRİTİK: Sorgu çok kısaysa "Loading" yazısı kalsın ama API'ye gitmesin.
+    // Eskiden burada 'return' diyip kutuyu kapatıyor olabilirdi.
+    if (locationQuery.length < 2) return; 
 
-    // 2. VERİ ÇEKME (UNESCO + LOCAL CITY + API)
+    // 2. VERİ ÇEKME
     let suggestions = await geoapifyLocationAutocomplete(locationQuery);
     window.lastResults = suggestions;
     
-    // 3. SONUÇLARI GÖSTERME
+    // 3. RENDER ET VEYA LOADING'DE TUT
     if (suggestions && suggestions.length > 0) {
+        // renderSuggestions fonksiyonunun içinde suggestionsDiv.innerHTML = '' olduğundan emin ol
         renderSuggestions(suggestions, locationQuery);
     } else {
-        // Eğer hiçbir şey bulunamazsa bile kutu kapanmasın, "No results" yerine "Loading..." kalmaya devam etsin
-        // Ya da kullanıcıya geri bildirim versin:
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Searching...</div>';
+        // Sonuç yoksa bile kutuyu kapatma! Yazıyı "Searching..." veya "Loading..." olarak koru.
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
     }
 }, 400));
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
