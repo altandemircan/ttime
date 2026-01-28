@@ -6041,8 +6041,8 @@ ease;
         color: #cbd5e1;
     }
 }
+#suggestions { display: flex; min-height: 60px; }
 #suggestions[hidden] { display: none; }
-#suggestions:not([hidden]) { display: flex; }
 
 
 .canonical-preview {
