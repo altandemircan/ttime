@@ -46,13 +46,15 @@ async function geoapifyLocationAutocomplete(query) {
 // ============================================================
 // MEVCUT FONKSİYONU BUL VE BUNUNLA DEĞİŞTİR
 // ============================================================
+// ============================================================
+// 1. EXTRACT LOCATION QUERY (GÜNCELLENMİŞ VERSİYON)
+// ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
 
     let clean = input.toLowerCase();
 
-    // 1. Gün kalıplarını sil (Örn: "1 day", "3 days", "2-day", "5 gün")
-    // Sayıları ve yanındaki day/gün ifadelerini temizler
+    // 1. Gün kalıplarını sil (Örn: "1 day", "2-day", "5 gün")
     clean = clean.replace(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|günü|günde)/gi, " ");
 
     // 2. Gereksiz kelimeleri (Stop Words) sil
@@ -66,7 +68,7 @@ function extractLocationQuery(input) {
     ];
 
     stopWords.forEach(word => {
-        // Kelimenin tam eşleşmesini bulup siler (örneğin "in" silinirken "india" bozulmaz)
+        // Kelimenin tam eşleşmesini bulup siler (örn: "in" silinirken "india" bozulmaz)
         const regex = new RegExp(`\\b${word}\\b`, "gi");
         clean = clean.replace(regex, " ");
     });
@@ -77,8 +79,6 @@ function extractLocationQuery(input) {
 
     return clean;
 }
-
-
 // ============================================================
 // 2. TURKISH CHARACTER VARIANTS
 // ============================================================
@@ -605,6 +605,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 // 4. INPUT EVENT LISTENER
 // ============================================================
+// ============================================================
+// 4. INPUT EVENT LISTENER (GÜNCELLENMİŞ VERSİYON)
+// ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
         if (window.__programmaticInput) return;
@@ -612,22 +615,22 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         const rawText = this.value.trim();
         const suggestionsDiv = document.getElementById("suggestions");
 
-        // 1. Input tamamen boşsa varsayılan önerileri (2 days in Antalya vs.) göster
+        // 1. Input tamamen boşsa varsayılan önerileri göster
         if (rawText.length === 0) {
-            showSuggestions();
+            if (typeof showSuggestions === 'function') showSuggestions();
             return;
         }
 
-        // 2. Input doluysa, API yanıt verene kadar HEMEN "Loading..." yazısını bas.
-        // Bu sayede kutu asla kapanmaz ve chat ekranı zıplama yapmaz.
+        // 2. Arama başlar başlamaz "Loading..." yazısını bas (Zıplamayı önler)
         if (suggestionsDiv) {
             suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
             if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
         }
 
+        // 3. Metni temizle (trip for antalya -> antalya)
         const locationQuery = extractLocationQuery(rawText);
         
-        // 3. Sorgu çok kısaysa API'ye gitme ama "Loading..." yazısı ekranda kalsın
+        // Sorgu çok kısaysa API'ye gitme ama Loading yazısı kalsın
         if (locationQuery.length < 2) {
             return;
         }
@@ -640,21 +643,20 @@ if (typeof chatInput !== 'undefined' && chatInput) {
                 suggestions = await geoapifyLocationAutocomplete(locationQuery);
             }
         } catch (err) {
-            if (err.name === "AbortError") return;
+            // Hata durumunda boş array döner
             suggestions = [];
         }
 
         window.lastResults = suggestions;
         
-        // 4. Sonuç varsa listele, YOKSA (anlamsız yazı) "Loading..." yazısını koru.
+        // 4. SONUÇ VARSA LİSTELE, YOKSA "LOADING..." (veya No Results) YAZISINI KORU
         if (suggestions && suggestions.length > 0) {
             if (typeof renderSuggestions === 'function') {
                 renderSuggestions(suggestions, locationQuery);
             }
         } else {
-            // Anlamsız yazı girildiğinde sonuç [ ] döner.
-            // Bu durumda kutuyu gizlemek yerine (zıplamayı önlemek için)
-            // Loading yazısını tekrar set ediyoruz veya koruyoruz.
+            // Sonuç yoksa kutuyu kapatma, "Loading suggestions..." (veya No results) olarak bırak
+            // Böylece tasarım zıplamaz.
             if (suggestionsDiv) {
                 suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
                 if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
@@ -663,13 +665,13 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
     }, 400));
 
-    // Focus ve Click mantığı aynen kalabilir
+    // Focus ve Click olaylarını bağla
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
-             showSuggestions();
+             if (typeof showSuggestions === 'function') showSuggestions();
         }
     };
 
