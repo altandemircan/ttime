@@ -2,20 +2,20 @@
 // MY LOCATION MODULE (ENHANCED WITH GEOCODING)
 // ==========================================
 
-// 1. Global değişkenleri ve fonksiyonları EN BAŞTA tanımla
+// 1. Initialize global variables and functions at the top
 window.userLocationMarkersByDay = window.userLocationMarkersByDay || {};
 window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
-// [FIX] Mainscript bu fonksiyonu arıyor, en başa koyduk ki hata vermesin.
+// [FIX] Main script calls this function, so we place it at the top to prevent errors
 window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
-    // Format 1: position objesi gönderildi (my_location.js arayan)
+    // Format 1: position object was passed (called from my_location.js)
     if (arg1 && arg1.coords && typeof arg1.coords.latitude === 'number') {
         const position = arg1;
         const day = arg2;
         const expandedMap = arg3;
         showLocationOnMap(position, day, expandedMap);
     }
-    // Format 2: Harita objesi + koordinatlar (mainscript.js arayan)
+    // Format 2: map object + coordinates (called from mainscript.js)
     else if (arg1 && (arg1.getContainer || arg1.setView)) {
         const expandedMap = arg1;
         const day = arg2;
@@ -24,7 +24,7 @@ window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
         const currentLayer = arg5;
         const shouldFetch = arg6;
         
-        // Eğer lat/lng varsa, position objesi oluştur ve çiz
+        // If lat/lng provided, create position object and display
         if (typeof lat === 'number' && typeof lng === 'number') {
             const fakePosition = {
                 coords: {
@@ -35,14 +35,14 @@ window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
             };
             showLocationOnMap(fakePosition, day, expandedMap);
         }
-        // Eğer sadece harita varsa, eski markerları temizle
+        // If only map provided, clear old markers
         else if (shouldFetch === false || lat === undefined) {
             clearLocationMarkers(day, expandedMap);
         }
     }
 };
 
-// Markerları temizleyen yardımcı fonksiyon
+// Helper function to clear location markers
 function clearLocationMarkers(day, expandedMap) {
     if (window.userLocationMarkersByDay[day]) {
         const mapObj = expandedMap || 
@@ -62,7 +62,7 @@ function clearLocationMarkers(day, expandedMap) {
     }
 }
 
-// 2. İzin Değişikliklerini Dinle (Sayfa yenilemeyi önler)
+// 2. Listen for permission changes (prevents page reload)
 if (navigator.permissions && navigator.permissions.query) {
     navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
         result.onchange = function() {
@@ -78,14 +78,14 @@ if (navigator.permissions && navigator.permissions.query) {
     });
 }
 
-// 3. Reverse Geocoding - Nominatim ile adres al
+// 3. Reverse Geocoding - Get address from coordinates using Nominatim
 async function getAddressFromCoordinates(lat, lng) {
     try {
         const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`,
             {
                 headers: {
-                    'Accept-Language': 'tr'
+                    'Accept-Language': 'en'
                 }
             }
         );
@@ -100,7 +100,7 @@ async function getAddressFromCoordinates(lat, lng) {
     }
 }
 
-// 4. Popup HTML oluştur
+// 4. Create popup HTML content
 function createLocationPopupContent(lat, lng, addressData) {
     let html = `
         <div class="location-popup-container">
@@ -109,7 +109,7 @@ function createLocationPopupContent(lat, lng, addressData) {
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
                 </svg>
-                <span>Konumunuz</span>
+                <span>Your Location</span>
             </div>
             <div class="location-popup-content">
     `;
@@ -117,7 +117,7 @@ function createLocationPopupContent(lat, lng, addressData) {
     if (addressData) {
         const address = addressData.address || {};
         
-        // Yakındaki yer adı
+        // Nearby place name
         let placeLabel = null;
         if (address.poi) {
             placeLabel = address.poi;
@@ -133,7 +133,7 @@ function createLocationPopupContent(lat, lng, addressData) {
             placeLabel = address.suburb;
         }
 
-        // Yakın alanlar
+        // Nearby areas
         const nearbyItems = [];
         if (address.road || address.street) nearbyItems.push(address.road || address.street);
         if (address.neighbourhood) nearbyItems.push(address.neighbourhood);
@@ -151,13 +151,13 @@ function createLocationPopupContent(lat, lng, addressData) {
         if (nearbyItems.length > 0) {
             html += `
                 <div class="location-nearby">
-                    <p class="location-nearby-label">📍 <strong>yakınlarındasınız</strong></p>
+                    <p class="location-nearby-label">📍 <strong>Near you</strong></p>
                     <p class="location-nearby-text">${nearbyItems.slice(0, 2).join(', ')}</p>
                 </div>
             `;
         }
 
-        // Ülke/Bölge
+        // Country/Region
         if (address.country) {
             html += `
                 <div class="location-country">
@@ -167,7 +167,7 @@ function createLocationPopupContent(lat, lng, addressData) {
         }
     }
 
-    // Koordinatlar
+    // Coordinates
     html += `
         <div class="location-coords">
             <small>
@@ -178,7 +178,7 @@ function createLocationPopupContent(lat, lng, addressData) {
 
     html += `
         <div class="location-accuracy">
-            <small>📡 GPS doğruluğu: ~50m</small>
+            <small>📡 GPS accuracy: ~50m</small>
         </div>
     `;
 
@@ -190,7 +190,7 @@ function createLocationPopupContent(lat, lng, addressData) {
     return html;
 }
 
-// 5. Popup stilleri CSS olarak ekle
+// 5. Add popup styles as CSS
 function ensureLocationPopupStyles() {
     if (document.getElementById('location-popup-styles')) return;
 
@@ -303,7 +303,7 @@ function ensureLocationPopupStyles() {
             font-size: 11px;
         }
 
-        /* Leaflet popup uyumluluğu */
+        /* Leaflet popup compatibility */
         .leaflet-popup-content .location-popup-container {
             margin: -2px -6px -6px -6px;
         }
@@ -312,7 +312,7 @@ function ensureLocationPopupStyles() {
     document.head.appendChild(style);
 }
 
-// 6. Konum alma fonksiyonu (Buton tetikler)
+// 6. Get location function (triggered by button)
 function getMyLocation(day, expandedMap) {
     if (!navigator.geolocation) {
         alert('Your browser does not support geolocation.');
@@ -334,7 +334,7 @@ function getMyLocation(day, expandedMap) {
             if(btn) btn.style.opacity = "1";
             
             if (error.code === 1) {
-                alert("Lütfen tarayıcı ayarlarında konum erişimine izin verin.");
+                alert("Please allow location access in your browser settings to use this feature.");
             }
         },
         {
@@ -344,7 +344,7 @@ function getMyLocation(day, expandedMap) {
         }
     );
 
-    // Daha hassas konum için ikinci deneme (arka planda)
+    // Second attempt with higher accuracy (in background)
     setTimeout(() => {
         if(window.isLocationActiveByDay[day]) {
             navigator.geolocation.getCurrentPosition(
@@ -362,9 +362,9 @@ function getMyLocation(day, expandedMap) {
     }, 2000);
 }
 
-// 7. Harita üzerinde konumu gösteren ana fonksiyon
+// 7. Main function to display location on map
 async function showLocationOnMap(position, day, expandedMap) {
-    // A. Eksik parametre kontrolü
+    // A. Validate parameters
     if (!position || !position.coords) {
         console.warn("[showLocationOnMap] Invalid position object:", position);
         return;
@@ -372,7 +372,7 @@ async function showLocationOnMap(position, day, expandedMap) {
 
     if (!day) day = window.currentDay || 1;
     
-    // B. Harita nesnesi yoksa bulmaya çalış
+    // B. Try to find map if not provided
     if (!expandedMap) {
         if (window.expandedMaps && window.expandedMaps[`route-map-day${day}`]) {
             expandedMap = window.expandedMaps[`route-map-day${day}`].expandedMap;
@@ -390,7 +390,7 @@ async function showLocationOnMap(position, day, expandedMap) {
     
     if (!window.isLocationActiveByDay[day]) window.isLocationActiveByDay[day] = true;
 
-    // C. Eski markerları temizle
+    // C. Clear old markers
     if (window.userLocationMarkersByDay[day]) {
         window.userLocationMarkersByDay[day].forEach(marker => {
             try {
@@ -406,18 +406,18 @@ async function showLocationOnMap(position, day, expandedMap) {
     const lat = position.coords.latitude;
     const lng = position.coords.longitude;
 
-    // Popup stillerini ekle
+    // Ensure popup styles are loaded
     ensureLocationPopupStyles();
 
-    // Adres bilgisini al (async)
+    // Fetch address information (async)
     const addressData = await getAddressFromCoordinates(lat, lng);
     const popupContent = createLocationPopupContent(lat, lng, addressData);
 
-    // D. Harita Tipine Göre Marker Ekleme
-    const isMapLibre = !!(expandedMap && expandedMap.addSource); // MapLibre kontrolü
+    // D. Add marker based on map type
+    const isMapLibre = !!(expandedMap && expandedMap.addSource); // MapLibre check
 
     if (isMapLibre) {
-        // --- 3D Harita (MapLibre) ---
+        // --- 3D Map (MapLibre) ---
         const el = document.createElement('div');
         el.className = 'custom-lds-ripple-marker';
         el.innerHTML = '<div class="lds-ripple"><div></div><div></div></div>';
@@ -434,7 +434,7 @@ async function showLocationOnMap(position, day, expandedMap) {
         expandedMap.flyTo({ center: [lng, lat], zoom: 15, essential: true });
 
     } else if (expandedMap && expandedMap.setView) {
-        // --- 2D Harita (Leaflet) ---
+        // --- 2D Map (Leaflet) ---
         const userIcon = L.divIcon({
             className: 'custom-lds-ripple-marker', 
             html: '<div class="lds-ripple"><div></div><div></div></div>',
