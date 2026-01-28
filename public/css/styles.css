@@ -6042,9 +6042,9 @@ ease;
     }
 }
 #suggestions[hidden] { display: none; }
-#suggestions:not([hidden]) { min-height: 60px; display: flex; }
+#suggestions:not([hidden]) { display: flex; }
 
-    
+
 .canonical-preview {
   font-family: system-ui, sans-serif;
   font-size: 13px;

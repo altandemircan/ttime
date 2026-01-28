@@ -355,18 +355,12 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     
     if (!suggestionsDiv || !chatInput) return;
     
-    // LOADING STATE - CSS ile height zorla
+    // Eğer sonuç yoksa, boş div göster (hiç gizleme)
     if (!originalResults || originalResults.length === 0) {
-        suggestionsDiv.innerHTML = '<div style="padding: 15px; text-align: center; color: #999; font-size: 14px;">Loading suggestions...</div>';
-        suggestionsDiv.hidden = false;
-        suggestionsDiv.style.display = 'block';
-        suggestionsDiv.style.minHeight = '50px';  // Height kaybolmasın
-        suggestionsDiv.style.visibility = 'visible';
+        suggestionsDiv.innerHTML = "";
         return;
     }
     
-    // Normal rendering
-    suggestionsDiv.style.minHeight = 'auto';
     suggestionsDiv.innerHTML = "";
 
   
