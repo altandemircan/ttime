@@ -98,9 +98,10 @@ function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
     
-    // 1. Hem hidden attribute ekle hem de display none yap (Garanti kapatma)
-    el.hidden = true;
-    el.style.display = 'none'; 
+    el.hidden = true; // HTML attribute olarak gizle
+    
+    // Tasarımı sıfırlamak için display'i silebiliriz, burada sorun yok
+    el.style.removeProperty('display'); 
     
     if (clear) el.innerHTML = "";
 }
@@ -109,10 +110,11 @@ function showSuggestionsDiv() {
     const el = document.getElementById('suggestions');
     if (!el) return;
     
-    // 2. Hidden'ı kaldır ve display BLOCK (veya flex) yap (Garanti açma)
-    el.removeAttribute('hidden');
-    el.hidden = false;
-    el.style.display = 'block'; // Bunu silersen CSS'teki display:none devreye girip kutuyu gizleyebilir
+    el.hidden = false; // HTML attribute'u aç
+    
+    // DİKKAT: Buradaki 'el.style.removeProperty('display');' satırını SİLDİM.
+    // Çünkü o satır, "Loading..." yazarken açtığımız kutuyu zorla kapatıyordu.
+    // Artık açık olan kutuya dokunmuyor, sadece hidden kilidini kaldırıyor.
 }
 
 function enableSendButton() {
