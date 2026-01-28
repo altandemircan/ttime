@@ -49,12 +49,15 @@ async function geoapifyLocationAutocomplete(query) {
 // ============================================================
 // 1. EXTRACT LOCATION QUERY (GÜNCELLENMİŞ VERSİYON)
 // ============================================================
+// ============================================================
+// 1. EXTRACT LOCATION QUERY (DÜZELTİLMİŞ HALİ)
+// ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
 
     let clean = input.toLowerCase();
 
-    // 1. Gün kalıplarını sil (Örn: "1 day", "2-day", "5 gün")
+    // 1. Gün kalıplarını sil (Örn: "1 day", "3 days", "2-day", "5 gün")
     clean = clean.replace(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|günü|günde)/gi, " ");
 
     // 2. Gereksiz kelimeleri (Stop Words) sil
@@ -603,10 +606,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 // ============================================================
-// 4. INPUT EVENT LISTENER
-// ============================================================
-// ============================================================
-// 4. INPUT EVENT LISTENER (GÜNCELLENMİŞ VERSİYON)
+// 4. INPUT EVENT LISTENER (DÜZELTİLMİŞ HALİ)
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
@@ -643,19 +643,20 @@ if (typeof chatInput !== 'undefined' && chatInput) {
                 suggestions = await geoapifyLocationAutocomplete(locationQuery);
             }
         } catch (err) {
-            // Hata durumunda boş array döner
             suggestions = [];
         }
 
         window.lastResults = suggestions;
         
-        // 4. SONUÇ VARSA LİSTELE, YOKSA "LOADING..." (veya No Results) YAZISINI KORU
+        // 4. SONUÇ VARSA LİSTELE, YOKSA "LOADING..." YAZISINI KORU
+        // renderSuggestions fonksiyonu boş liste gelince kutuyu kapattığı için
+        // boş durumda onu çağırmayıp manuel olarak loading yazısını bırakıyoruz.
         if (suggestions && suggestions.length > 0) {
             if (typeof renderSuggestions === 'function') {
                 renderSuggestions(suggestions, locationQuery);
             }
         } else {
-            // Sonuç yoksa kutuyu kapatma, "Loading suggestions..." (veya No results) olarak bırak
+            // Sonuç yoksa kutuyu kapatma, "Loading suggestions..." olarak bırak.
             // Böylece tasarım zıplamaz.
             if (suggestionsDiv) {
                 suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
@@ -678,7 +679,6 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("focus", showSuggestionsLogic);
     chatInput.addEventListener("click", showSuggestionsLogic);
 }
-
 
 // Global Değişkenler ve Element Seçimleri
 const chatBox = document.getElementById("chat-box");
