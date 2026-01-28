@@ -97,18 +97,22 @@ function countryFlag(iso2) {
 function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
+    
+    // 1. Hem hidden attribute ekle hem de display none yap (Garanti kapatma)
     el.hidden = true;
-    el.style.removeProperty('display');
-    if (!el.getAttribute('style')) el.removeAttribute('style');
+    el.style.display = 'none'; 
+    
     if (clear) el.innerHTML = "";
 }
 
 function showSuggestionsDiv() {
     const el = document.getElementById('suggestions');
     if (!el) return;
+    
+    // 2. Hidden'ı kaldır ve display BLOCK (veya flex) yap (Garanti açma)
+    el.removeAttribute('hidden');
     el.hidden = false;
-    el.style.removeProperty('display');
-    if (!el.getAttribute('style')) el.removeAttribute('style');
+    el.style.display = 'block'; // Bunu silersen CSS'teki display:none devreye girip kutuyu gizleyebilir
 }
 
 function enableSendButton() {
