@@ -371,9 +371,12 @@ if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
         if (el) { 
+            // 1. Kutunun gizlilik kilidini aç
             el.hidden = false; 
-            // BURADAKİ el.style.removeProperty('display'); SATIRINI SİLDİM.
-            // Artık input listener'ın eklediği görünürlük ayarını bozmuyor.
+            
+            // 2. KİLİT NOKTA: Buradaki 'el.style.removeProperty('display')' satırını SİLDİM.
+            // O satır, bizim input listener'da zorla verdiğimiz 'display: block' ayarını siliyor
+            // ve kutunun tekrar kapanmasına neden oluyordu.
         }
     }
 }
@@ -382,8 +385,9 @@ if (typeof hideSuggestionsDiv !== "function") {
     window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
         if (el) { 
+            // Kapatırken her şeyi temizlemekte sorun yok
             el.hidden = true; 
-            el.style.removeProperty('display'); // Gizlerken stili temizlemekte sorun yok
+            el.style.removeProperty('display'); 
             if (clear) el.innerHTML = "";
         }
     }
