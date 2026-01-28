@@ -250,6 +250,8 @@ async function geoapifyLocationAutocomplete(query) {
         console.log("Şehirler yerel veritabanından çekiliyor...");
         const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
         // mainscript.js içinde bul ve değiştir:
+        
+// mainscript.js içinde bul ve değiştir:
 const localCities = await resLocal.json();
 
 // Gelen verinin dizi olduğundan emin ol (Kritik koruma)
@@ -265,6 +267,8 @@ localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
         place_id: `local-${item.latitude}-${item.longitude}`
     }
 })) : [];
+
+
     } catch (e) {
         console.warn("Yerel şehir API hatası:", e);
     }

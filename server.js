@@ -31,24 +31,32 @@ app.get('/api/cities', (req, res) => {
         const query = req.query.q ? req.query.q.toLowerCase() : "";
         if (!query) return res.json([]);
 
-        // Performans için her seferinde çekmek yerine bir değişkene de atabilirsin ama önce çalıştığını görelim
-        const allStates = State.getStatesOfCountry("TR"); // Önce Türkiye odaklı bakalım
-        const allCities = City.getCitiesOfCountry("TR");
+        // Tüm dünyadaki state'leri çek
+        const allStates = State.getAllStates()
+            .filter(s => s.name.toLowerCase().includes(query))
+            .map(s => ({
+                name: s.name,
+                countryCode: s.countryCode,
+                latitude: s.latitude,
+                longitude: s.longitude,
+                type: 'state'
+            }));
 
-        const combined = [
-            ...allStates.map(s => ({ ...s, type: 'state' })),
-            ...allCities.map(c => ({ ...c, type: 'city' }))
-        ];
+        // Tüm dünyadaki city'leri çek
+        const allCities = City.getAllCities()
+            .filter(c => c.name.toLowerCase().includes(query))
+            .map(c => ({
+                name: c.name,
+                countryCode: c.countryCode,
+                latitude: c.latitude,
+                longitude: c.longitude,
+                type: 'city'
+            }));
 
-        let results = combined.filter(loc => 
-            loc.name.toLowerCase().startsWith(query) || 
-            loc.name.toLocaleLowerCase('tr').startsWith(query)
-        );
-
-        // Sıralama: Tam eşleşen en üste
-        results.sort((a, b) => a.name.length - b.name.length);
-
-        res.json(results.slice(0, 10));
+        // İkisini birleştir, ilk 10 sonucu dön
+        const combined = [...allStates, ...allCities].slice(0, 10);
+        
+        res.json(combined);
     } catch (err) {
         console.error("City API Error:", err);
         res.status(500).json({ error: "Internal Server Error", details: err.message });
