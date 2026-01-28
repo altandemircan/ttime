@@ -103,6 +103,7 @@ async function getAddressFromCoordinates(lat, lng) {
 // 4. Create popup HTML content - CLEAN & MINIMAL
 function createLocationPopupContent(lat, lng, addressData) {
     let html = `<div class="location-popup">`;
+    html += `<p class="loc-label">You are here</p>`;
 
     if (addressData && addressData.address) {
         const address = addressData.address || {};
@@ -137,14 +138,8 @@ function createLocationPopupContent(lat, lng, addressData) {
         if (nearbyItems.length > 0) {
             html += `<p class="loc-area">${nearbyItems.slice(0, 2).join(', ')}</p>`;
         }
-
-        if (address.country) {
-            html += `<p class="loc-country">${address.country}</p>`;
-        }
     }
 
-    // Coordinates - minimal display
-    html += `<p class="loc-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</p>`;
     html += `</div>`;
 
     return html;
@@ -169,6 +164,15 @@ function ensureLocationPopupStyles() {
         .location-popup p {
             margin: 4px 0;
             padding: 0;
+        }
+
+        .location-popup .loc-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
         }
 
         .location-popup .loc-place {
