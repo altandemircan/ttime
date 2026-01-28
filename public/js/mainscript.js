@@ -602,55 +602,66 @@ document.addEventListener("DOMContentLoaded", function() {
 if (typeof chatInput !== 'undefined' && chatInput) {
    // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
 // 4. INPUT EVENT LISTENER (ZIPLAMA YOK, AKILLI ARAMA VAR)
+// 4. INPUT EVENT LISTENER (AKILLI FALLBACK MODU)
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    // 1. KUTUYU ZORLA AÇ VE LOADING'İ ÇAK (Input boş değilse)
+    // 1. KUTUYU AÇ VE LOADING ÇAK
     if (rawText.length > 0) {
-        suggestionsDiv.removeAttribute('hidden');
-        suggestionsDiv.style.display = 'block'; // Flex değil Block yaparak satırı kaplamasını sağla
+        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Loading suggestions...</div>';
     } else {
-        showSuggestions(); // Input boşsa varsayılanları getir
+        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv(); // veya hideSuggestionsDiv() tercihe bağlı
+        showSuggestions(); 
         return;
     }
 
-    // 2. AKILLI SORGULAMA MANTIĞI
-    // Önce normal fonksiyonunla dene
+    // 2. NORMAL ARAMA (Önce cümleden konum çıkarmayı dene)
     let locationQuery = extractLocationQuery(rawText);
-    if (locationQuery.length < 2) return; // Çok kısaysa API'ye gitme ama Loading kalsın
+    
+    // Eğer locationQuery çok kısaysa (örn: "1") arama yapma ama Loading kalsın
+    if (locationQuery.length < 2) return; 
 
     let suggestions = await geoapifyLocationAutocomplete(locationQuery);
 
-    // 3. KURTARMA OPERASYONU (Eğer sonuç yoksa)
-    // Örn: "szdfsafasf 1 day antalya" yazıldıysa ve sonuç yoksa...
+    // 3. KURTARMA OPERASYONU (Eğer normal arama boş döndüyse)
     if (!suggestions || suggestions.length === 0) {
-        // Cümleyi parçala: ["szdfsafasf", "1", "day", "antalya"]
-        const words = rawText.split(' ').filter(w => w.length > 2 && isNaN(w)); 
+        // Cümleyi kelimelere böl (Sayıları ve 2 harften kısa kelimeleri at)
+        // Örn: "szdfsafasf 1 day antalya" -> ["szdfsafasf", "day", "antalya"]
+        const words = rawText.split(/\s+/).filter(w => w.length > 2 && isNaN(w)); 
         
-        // Sondan başa doğru kelimeleri dene (Genelde şehir sondadır)
         if (words.length > 0) {
-            const lastWord = words[words.length - 1]; // "antalya"
-            
-            // Eğer son kelime, ilk aradığımız şeyden farklıysa onu dene
+            // A) SON KELİMEYİ DENE (Genelde şehir sondadır: "Trip to Antalya")
+            const lastWord = words[words.length - 1];
             if (lastWord.toLowerCase() !== locationQuery.toLowerCase()) {
-                console.log("Karmaşık cümle, son kelime deneniyor:", lastWord);
+                console.log("Fallback 1 (Son Kelime):", lastWord);
                 suggestions = await geoapifyLocationAutocomplete(lastWord);
+            }
+
+            // B) İLK KELİMEYİ DENE (Eğer son kelime de boş döndüyse: "Antalya 3 days")
+            if ((!suggestions || suggestions.length === 0) && words.length > 1) {
+                const firstWord = words[0];
+                if (firstWord.toLowerCase() !== lastWord.toLowerCase()) {
+                    console.log("Fallback 2 (İlk Kelime):", firstWord);
+                    suggestions = await geoapifyLocationAutocomplete(firstWord);
+                }
             }
         }
     }
 
     window.lastResults = suggestions;
     
-    // 4. SONUÇ GÖSTERME VEYA LOADING SABİTLEME
+    // 4. SONUÇ GÖSTERME
     if (suggestions && suggestions.length > 0) {
+        // Sonuç bulunduysa listele
         renderSuggestions(suggestions, locationQuery);
     } else {
-        // Sonuç HALA yoksa kutuyu kapatma! Kullanıcı görsün.
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching...</div>';
+        // Hâlâ sonuç yoksa "No matching results" yazısı kalsın
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No matching results</div>';
+        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     }
 }, 400));
 
