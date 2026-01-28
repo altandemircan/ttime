@@ -45,20 +45,7 @@ async function geoapifyLocationAutocomplete(query) {
 
 function extractLocationQuery(input) {
     if (!input) return "";
-    
-    let text = input.toLowerCase();
-    text = text.replace(/\d+/g, " ");
-    text = text.replace(/\b(day|days|gün|night|nights|saat|ay|yıl|hafta)\b/gi, " ");
-    text = text.replace(/\s+/g, " ").trim();
-    
-    let words = text.split(/\s+/).filter(w => w.length > 1);
-    const filler = ["for", "in", "to", "at", "is", "am", "are", "be", "trip", "tour", "plan", "travel", "visit", "and", "or", "the", "a", "of", "with"];
-    words = words.filter(w => !filler.includes(w));
-    
-    if (words.length > 0) {
-        return words.sort((a, b) => b.length - a.length)[0];
-    }
-    return "";
+    return input;
 }
 
 
@@ -355,15 +342,13 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     
     if (!suggestionsDiv || !chatInput) return;
     
-    // Eğer sonuç yoksa, boş div göster (hiç gizleme)
-      if (!originalResults || originalResults.length === 0) {
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="padding: 10px; color: #999; text-align: center;">Loading suggestions...</div>';
-        return;
-    }
-    
     suggestionsDiv.innerHTML = "";
 
-  
+    if (!originalResults || !originalResults.length) {
+        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
+        return;
+    }
+
   const targetTermVariants = createTurkishVariants(manualQuery);
 const normalizedTarget = normalizeText(manualQuery);
 
@@ -542,8 +527,6 @@ const scoredResults = originalResults.map(item => {
     });
     if (suggestionsDiv.children.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-    } else {
-        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
     }
 }
 
@@ -595,17 +578,14 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     const rawText = this.value.trim();
     const locationQuery = extractLocationQuery(rawText);
     
-    if (locationQuery.length < 1) {
-        // Silerken: loading göster
+    if (locationQuery.length < 2) {
+        if (rawText.length < 2) showSuggestions();
         const suggestionsDiv = document.getElementById("suggestions");
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="padding: 10px; color: #999; text-align: center;">Loading suggestions...</div>';
+        if (!locationQuery && suggestionsDiv) {
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="padding: 10px; color: #999; text-align: center;">Loading suggestions...</div>';
+        }
         return;
     }
-    
-   if (locationQuery.length < 1) {
-    showSuggestions();
-    return;
-}
 
         let suggestions = [];
         try {
@@ -621,7 +601,6 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         window.lastResults = suggestions;
         
-        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
         if (typeof renderSuggestions === 'function') {
             renderSuggestions(suggestions, locationQuery);
         }
