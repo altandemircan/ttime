@@ -17,21 +17,24 @@ window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
 
-function extractLocationQuery(input) { 
+function extractLocationQuery(input) {
     if (!input) return "";
     
     let cleaned = input;
     
-    // 1. SİLİNECEK: Sayılar ve gün/ay/saat vb.
-    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|saat|sene|yıl|hafta|ay|ay|night|nights|günü|günde|saati|saate)/gi, "");
+    // Türkçe kelime sonekleri sil: günlük, tura, turu, vs
+    cleaned = cleaned.replace(/\b(günlük|tura|turu|turunu|turuna|turuy|gezisi|gezisine|geziye|gezi)\b/gi, "");
     
-    // 2. SİLİNECEK: Fiiller (yap, plan, düzenle, vs)
-cleaned = cleaned.replace(/\b(plan|yap|düzenle|oluştur|hazırla|bana|bize|bulun|ekle|göster|öner|seyahat|git|gitmek|gel|gelmek|yapma|yapacak|tur|tura|turuna|turuy|turunu|gezisi|gezisine|geziye)\b/gi, "");
+    // Sayılar sil
+    cleaned = cleaned.replace(/\d+/g, "");
     
-    // 3. SİLİNECEK: Edatlar ve bağlaçlar
-    cleaned = cleaned.replace(/\b(için|ile|da|de|mi|mı|ve|ya|veya|mi|mi|mı|mı|gibi|daha|çok|az|ne|hangi|kaç)\b/gi, "");
+    // Fiiller sil
+    cleaned = cleaned.replace(/\b(planlar|planla|planlay|mısın|mısınız|misiniz|mi|mı|musun|musunuz|muş|muşsunuz|muşsun)\b/gi, "");
     
-    // 4. SİLİNECEK: Boşlukları temizle
+    // Edatlar sil
+    cleaned = cleaned.replace(/\b(bana|bize|için|ile|da|de|mi|mı|ve|ya|veya|gibi|daha)\b/gi, "");
+    
+    // Boşlukları temizle
     cleaned = cleaned.replace(/\s+/g, " ").trim();
     
     return cleaned;
