@@ -240,77 +240,39 @@ let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
 async function geoapifyLocationAutocomplete(query) {
-    // 1. UNESCO (LOCAL) ARAMA - Evrensel
-    let unescoResults = [];
-    if (window.UNESCO_DATA) {
-        const q = query.toLowerCase().trim();
-        unescoResults = window.UNESCO_DATA
-            .filter(item => item.name.toLowerCase().includes(q))
-            .map(item => ({
-                properties: {
-                    name: item.name,
-                    city: item.name, 
-                    // Elle "Turkey" yazmak yok. Veri neyse o.
-                    country_code: item.country_code ? item.country_code.toLowerCase() : "", 
-                    formatted: `${item.name} (UNESCO Site)`, // Ülke kodunu bayrak halleder
-                    lat: item.lat,
-                    lon: item.lon,
-                    result_type: 'unesco_site', // Tek kriterimiz bu etiket
-                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
-                }
-            })).slice(0, 3);
-    }
-
-    // 2. API ARAMASI
-    let apiFeatures = [];
+    if (!query || query.length < 1) return [];
     try {
-        let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
-        let data = await response.json();
-        apiFeatures = data.features || [];
+        // 1. Kendi yerel API'mize (server.js'de oluşturduğumuz) istek atıyoruz
+        let response = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
         
-        // Yedek deneme
-        if (!apiFeatures.length) {
-            response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
-            data = await response.json();
-            apiFeatures = data.features || [];
+        if (!response.ok) {
+            console.error("City API error:", response.status);
+            return [];
         }
+
+        let data = await response.json();
+        
+        // 2. Gelen veriyi renderSuggestions fonksiyonunun beklediği Geoapify formatına çeviriyoruz
+        // (Böylece diğer hiçbir fonksiyonu değiştirmek zorunda kalmıyoruz)
+        return data.map(item => ({
+            properties: {
+                name: item.name,
+                city: item.name,
+                country_code: item.countryCode ? item.countryCode.toLowerCase() : "",
+                // Listede görünecek metin: "Isparta, TR"
+                formatted: `${item.name}, ${item.countryCode}`, 
+                lat: parseFloat(item.latitude),
+                lon: parseFloat(item.longitude),
+                // Harita işlemleri için benzersiz bir ID uyduruyoruz
+                place_id: `local-${item.latitude}-${item.longitude}` 
+            }
+        }));
+
     } catch (e) {
-        console.warn("API hatası:", e);
+        console.warn("Local City API error:", e);
+        return [];
     }
-
-    // 3. BİRLEŞTİRME
-    let combined = [...unescoResults, ...apiFeatures];
-
-    // ... (Bölge/Şehir tamamlama kodların aynen kalıyor) ...
-    const region = combined.find(f => {
-        const t = f.properties.result_type || f.properties.place_type || '';
-        return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
-    });
-
-    if (region) {
-        try {
-            const resNearby = await fetch(
-                `/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=80000`
-            );
-            const nearbyData = await resNearby.json();
-            let nearbyCities = (nearbyData.features || []).filter(f => {
-                const t = f.properties.result_type || f.properties.place_type || '';
-                return ['city', 'town', 'village'].includes(t);
-            });
-            
-            const existingNames = new Set(combined.map(f =>
-                (f.properties.city || f.properties.name || '').toLowerCase()
-            ));
-            
-            nearbyCities = nearbyCities.filter(f =>
-                !existingNames.has((f.properties.city || f.properties.name || '').toLowerCase())
-            );
-            combined = [...combined, ...nearbyCities];
-        } catch (err) {}
-    }
-
-    return combined;
-}
+}}
  
 
 function extractLocationQuery(input) {
