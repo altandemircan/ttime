@@ -6041,8 +6041,9 @@ ease;
         color: #cbd5e1;
     }
 }
-
-#suggestions.hidden { display: none; }
+#suggestions[hidden] { display: none; }
+#suggestions:not([hidden]) { min-height: 60px; display:
+    
 .canonical-preview {
   font-family: system-ui, sans-serif;
   font-size: 13px;
