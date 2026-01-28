@@ -23,9 +23,6 @@ app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 
-// --- YEREL VERİ HAZIRLIĞI ---
-const { City, State } = require("country-state-city");
-
 // Tüm dünyadaki State ve City listesini bir kez belleğe al (Performans için)
 const allLocations = [
     ...State.getAllStates().map(s => ({ ...s, type: 'state' })),
