@@ -17,6 +17,26 @@ window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
 
+function extractLocationQuery(input) { 
+    if (!input) return "";
+    
+    let cleaned = input;
+    
+    // 1. SİLİNECEK: Sayılar ve gün/ay/saat vb.
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|saat|sene|yıl|hafta|ay|ay|night|nights|günü|günde|saati|saate)/gi, "");
+    
+    // 2. SİLİNECEK: Fiiller (yap, plan, düzenle, vs)
+cleaned = cleaned.replace(/\b(plan|yap|düzenle|oluştur|hazırla|bana|bize|bulun|ekle|göster|öner|seyahat|git|gitmek|gel|gelmek|yapma|yapacak|tur|tura|turuna|turuy|turunu|gezisi|gezisine|geziye)\b/gi, "");
+    
+    // 3. SİLİNECEK: Edatlar ve bağlaçlar
+    cleaned = cleaned.replace(/\b(için|ile|da|de|mi|mı|ve|ya|veya|mi|mi|mı|mı|gibi|daha|çok|az|ne|hangi|kaç)\b/gi, "");
+    
+    // 4. SİLİNECEK: Boşlukları temizle
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
+    
+    return cleaned;
+}
+
 // ============================================================
 // 1. TURKISH CHARACTER NORMALIZATION
 // ============================================================
@@ -395,25 +415,7 @@ async function geoapifyLocationAutocomplete(query) {
     return combined.slice(0, 12);
 }
  
-function extractLocationQuery(input) { 
-    if (!input) return "";
-    
-    let cleaned = input;
-    
-    // 1. SİLİNECEK: Sayılar ve gün/ay/saat vb.
-    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|saat|sene|yıl|hafta|ay|ay|night|nights|günü|günde|saati|saate)/gi, "");
-    
-    // 2. SİLİNECEK: Fiiller (yap, plan, düzenle, vs)
-cleaned = cleaned.replace(/\b(plan|yap|düzenle|oluştur|hazırla|bana|bize|bulun|ekle|göster|öner|seyahat|git|gitmek|gel|gelmek|yapma|yapacak|tur|tura|turuna|turuy|turunu|gezisi|gezisine|geziye)\b/gi, "");
-    
-    // 3. SİLİNECEK: Edatlar ve bağlaçlar
-    cleaned = cleaned.replace(/\b(için|ile|da|de|mi|mı|ve|ya|veya|mi|mi|mı|mı|gibi|daha|çok|az|ne|hangi|kaç)\b/gi, "");
-    
-    // 4. SİLİNECEK: Boşlukları temizle
-    cleaned = cleaned.replace(/\s+/g, " ").trim();
-    
-    return cleaned;
-}
+
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
 // ============================================================
