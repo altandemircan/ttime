@@ -10111,18 +10111,6 @@ window.TT_SVG_ICONS = {
 // })();
 
 
-
-(function(){
-  if (!document.getElementById('suggestions-hidden-style')) {
-    const st = document.createElement('style');
-    st.id = 'suggestions-hidden-style';
-    st.textContent = '#suggestions.hidden{display:none;}';
-    document.head.appendChild(st);
-  }
-})();
-
-
-
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
