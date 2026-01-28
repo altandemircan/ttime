@@ -1,21 +1,24 @@
 // ==========================================
-// MY LOCATION MODULE (CLEAN & MINIMAL DESIGN)
+// MY LOCATION MODULE (WITH VISIBLE PERMISSION REQUEST)
 // ==========================================
 
 // 1. Initialize global variables and functions at the top
 window.userLocationMarkersByDay = window.userLocationMarkersByDay || {};
 window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
-// [FIX] Main script calls this function, so we place it at the top to prevent errors
+// Global location marker reference for 3D maps
+window.userLocation3DMarker = null;
+
+// [FIX] Main script calls this function
 window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
-    // Format 1: position object was passed (called from my_location.js)
+    // Format 1: position object was passed
     if (arg1 && arg1.coords && typeof arg1.coords.latitude === 'number') {
         const position = arg1;
         const day = arg2;
         const expandedMap = arg3;
         showLocationOnMap(position, day, expandedMap);
     }
-    // Format 2: map object + coordinates (called from mainscript.js)
+    // Format 2: map object + coordinates
     else if (arg1 && (arg1.getContainer || arg1.setView)) {
         const expandedMap = arg1;
         const day = arg2;
@@ -24,7 +27,6 @@ window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
         const currentLayer = arg5;
         const shouldFetch = arg6;
         
-        // If lat/lng provided, create position object and display
         if (typeof lat === 'number' && typeof lng === 'number') {
             const fakePosition = {
                 coords: {
@@ -35,7 +37,6 @@ window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
             };
             showLocationOnMap(fakePosition, day, expandedMap);
         }
-        // If only map provided, clear old markers
         else if (shouldFetch === false || lat === undefined) {
             clearLocationMarkers(day, expandedMap);
         }
@@ -47,22 +48,22 @@ function clearLocationMarkers(day, expandedMap) {
     if (window.userLocationMarkersByDay[day]) {
         const mapObj = expandedMap || 
                       (window.expandedMaps && window.expandedMaps[`route-map-day${day}`] ? 
-                       window.expandedMaps[`route-map-day${day}`].expandedMap : null);
+                       window.expandedMaps[`route-map-day${day}`].expandedMap : null) ||
+                      window._maplibre3DInstance;
         
         window.userLocationMarkersByDay[day].forEach(marker => {
             try {
                 if (mapObj && mapObj.hasLayer && mapObj.hasLayer(marker)) {
                     mapObj.removeLayer(marker);
-                } else if (marker.remove) {
-                    marker.remove();
                 }
+                if (marker.remove) marker.remove();
             } catch(e) {}
         });
         window.userLocationMarkersByDay[day] = [];
     }
 }
 
-// 2. Listen for permission changes (prevents page reload)
+// 2. Listen for permission changes
 if (navigator.permissions && navigator.permissions.query) {
     navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
         result.onchange = function() {
@@ -78,7 +79,38 @@ if (navigator.permissions && navigator.permissions.query) {
     });
 }
 
-// 3. Reverse Geocoding - Get address from coordinates using Nominatim
+// 3. Request Permission with visible dialog
+async function requestLocationPermission() {
+    if (!navigator.geolocation) {
+        alert('Your browser does not support geolocation.');
+        return false;
+    }
+
+    return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                console.log("Location permission granted");
+                resolve(true);
+            },
+            function(error) {
+                if (error.code === 1) {
+                    alert('Location permission denied. Please enable location access in your browser settings to use this feature.');
+                    resolve(false);
+                } else {
+                    console.warn("Location error:", error);
+                    resolve(false);
+                }
+            },
+            {
+                enableHighAccuracy: false,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
+    });
+}
+
+// 4. Reverse Geocoding
 async function getAddressFromCoordinates(lat, lng) {
     try {
         const response = await fetch(
@@ -100,7 +132,7 @@ async function getAddressFromCoordinates(lat, lng) {
     }
 }
 
-// 4. Create popup HTML content - CLEAN & MINIMAL
+// 5. Create popup HTML content
 function createLocationPopupContent(lat, lng, addressData) {
     let html = `<div class="location-popup">`;
     html += `<p class="loc-label">You are here</p>`;
@@ -108,7 +140,6 @@ function createLocationPopupContent(lat, lng, addressData) {
     if (addressData && addressData.address) {
         const address = addressData.address || {};
         
-        // Nearby place name
         let placeLabel = null;
         if (address.poi) {
             placeLabel = address.poi;
@@ -124,7 +155,6 @@ function createLocationPopupContent(lat, lng, addressData) {
             placeLabel = address.suburb;
         }
 
-        // Nearby areas
         const nearbyItems = [];
         if (address.road || address.street) nearbyItems.push(address.road || address.street);
         if (address.neighbourhood) nearbyItems.push(address.neighbourhood);
@@ -145,7 +175,7 @@ function createLocationPopupContent(lat, lng, addressData) {
     return html;
 }
 
-// 5. Add popup styles as CSS - CLEAN & MINIMAL
+// 6. Add popup styles as CSS
 function ensureLocationPopupStyles() {
     if (document.getElementById('location-popup-styles')) return;
 
@@ -188,21 +218,6 @@ function ensureLocationPopupStyles() {
             margin-bottom: 4px;
         }
 
-        .location-popup .loc-country {
-            font-size: 12px;
-            color: #999;
-            border-top: 1px solid #e5e5e5;
-            padding-top: 4px;
-            margin-top: 6px;
-        }
-
-        .location-popup .loc-coords {
-            font-size: 11px;
-            color: #999;
-            font-family: 'Monaco', 'Courier New', monospace;
-            margin-top: 6px;
-        }
-
         /* Leaflet popup compatibility */
         .leaflet-popup-content .location-popup {
             padding: 2px;
@@ -212,7 +227,7 @@ function ensureLocationPopupStyles() {
     document.head.appendChild(style);
 }
 
-// 6. Get location function (triggered by button)
+// 7. Get location function (triggered by button)
 function getMyLocation(day, expandedMap) {
     if (!navigator.geolocation) {
         alert('Your browser does not support geolocation.');
@@ -234,7 +249,7 @@ function getMyLocation(day, expandedMap) {
             if(btn) btn.style.opacity = "1";
             
             if (error.code === 1) {
-                alert("Please allow location access in your browser settings to use this feature.");
+                alert("Location permission denied. Please enable location access in your browser settings.");
             }
         },
         {
@@ -262,9 +277,9 @@ function getMyLocation(day, expandedMap) {
     }, 2000);
 }
 
-// 7. Main function to display location on map
+// 8. Main function to display location on map
 async function showLocationOnMap(position, day, expandedMap) {
-    // A. Validate parameters
+    // Validate parameters
     if (!position || !position.coords) {
         console.warn("[showLocationOnMap] Invalid position object:", position);
         return;
@@ -272,7 +287,7 @@ async function showLocationOnMap(position, day, expandedMap) {
 
     if (!day) day = window.currentDay || 1;
     
-    // B. Try to find map if not provided
+    // Try to find map if not provided
     if (!expandedMap) {
         if (window.expandedMaps && window.expandedMaps[`route-map-day${day}`]) {
             expandedMap = window.expandedMaps[`route-map-day${day}`].expandedMap;
@@ -283,6 +298,14 @@ async function showLocationOnMap(position, day, expandedMap) {
         }
     }
 
+    // Check for 3D map as fallback
+    const is3DMapActive = document.getElementById('maplibre-3d-view') && 
+                          document.getElementById('maplibre-3d-view').style.display !== 'none';
+    
+    if (!expandedMap && is3DMapActive && window._maplibre3DInstance) {
+        expandedMap = window._maplibre3DInstance;
+    }
+
     if (!expandedMap) {
         console.warn("[showLocationOnMap] No map found for day", day);
         return;
@@ -290,7 +313,7 @@ async function showLocationOnMap(position, day, expandedMap) {
     
     if (!window.isLocationActiveByDay[day]) window.isLocationActiveByDay[day] = true;
 
-    // C. Clear old markers
+    // Clear old markers
     if (window.userLocationMarkersByDay[day]) {
         window.userLocationMarkersByDay[day].forEach(marker => {
             try {
@@ -309,14 +332,15 @@ async function showLocationOnMap(position, day, expandedMap) {
     // Ensure popup styles are loaded
     ensureLocationPopupStyles();
 
-    // Fetch address information (async)
+    // Fetch address information
     const addressData = await getAddressFromCoordinates(lat, lng);
     const popupContent = createLocationPopupContent(lat, lng, addressData);
 
-    // D. Add marker based on map type
+    // Determine map type
     const isMapLibre = !!(expandedMap && expandedMap.addSource); // MapLibre check
+    const is3DMap = !!(expandedMap && expandedMap.getStyle && expandedMap.getStyle().name === 'Liberty');
 
-    if (isMapLibre) {
+    if (isMapLibre || is3DMap) {
         // --- 3D Map (MapLibre) ---
         const el = document.createElement('div');
         el.className = 'custom-lds-ripple-marker';
@@ -324,18 +348,20 @@ async function showLocationOnMap(position, day, expandedMap) {
         el.style.width = '44px';
         el.style.height = '44px';
 
-        // Try to add to the correct map instance (either expanded map or 3D instance)
-        const targetMap = expandedMap || window._maplibre3DInstance;
-        
-        if (targetMap && targetMap.getStyle) {
+        try {
             const marker = new maplibregl.Marker({ element: el })
                 .setLngLat([lng, lat])
                 .setPopup(new maplibregl.Popup({ offset: 25, maxWidth: 'none' }).setHTML(popupContent))
-                .addTo(targetMap);
+                .addTo(expandedMap);
                 
             window.userLocationMarkersByDay[day].push(marker);
+            window.userLocation3DMarker = marker;
             marker.togglePopup();
-            targetMap.flyTo({ center: [lng, lat], zoom: 15, essential: true });
+            expandedMap.flyTo({ center: [lng, lat], zoom: 15, essential: true });
+            
+            console.log("[Location] 3D marker added successfully");
+        } catch(e) {
+            console.error("[Location] 3D marker error:", e);
         }
 
     } else if (expandedMap && expandedMap.setView) {
@@ -353,6 +379,8 @@ async function showLocationOnMap(position, day, expandedMap) {
         window.userLocationMarkersByDay[day].push(marker);
         
         expandedMap.setView([lat, lng], 15);
+        
+        console.log("[Location] 2D marker added successfully");
     } else {
         console.warn("[showLocationOnMap] Map object type not recognized");
     }
