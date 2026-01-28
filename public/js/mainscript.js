@@ -17,10 +17,7 @@ window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
 
-function extractLocationQuery(input) {
-    if (!input) return "";
-    return input.replace(/\d+/g, " ").replace(/\s+/g, " ").trim();
-}
+
 
 // ============================================================
 // 1. TURKISH CHARACTER NORMALIZATION
@@ -36,106 +33,21 @@ function normalizeText(str) {
 
 async function geoapifyLocationAutocomplete(query) {
     if (!query || query.length < 1) return [];
-    
-    const queryVariants = createTurkishVariants(query);
-    const normalizedQuery = normalizeText(query);
-    
-    // UNESCO ARAMA
-    let unescoResults = [];
-    if (window.UNESCO_DATA && window.UNESCO_DATA.length > 0) {
-        unescoResults = window.UNESCO_DATA
-            .filter(item => {
-                const itemNameNorm = normalizeText(item.name);
-                return queryVariants.some(v => itemNameNorm.includes(normalizeText(v))) ||
-                       itemNameNorm.includes(normalizedQuery);
-            })
-            .map(item => ({
-                properties: {
-                    name: item.name,
-                    city: item.name,
-                    country_code: item.country_code ? item.country_code.toLowerCase() : "",
-                    formatted: `${item.name} (UNESCO Site)`,
-                    lat: item.lat,
-                    lon: item.lon,
-                    result_type: 'unesco_site',
-                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
-                }
-            }))
-            .slice(0, 5);
-    }
-    
-    // API ARAMA
-    let apiFeatures = [];
     try {
         let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
         let data = await response.json();
-        apiFeatures = data.features || [];
-        
-        if (!apiFeatures.length && queryVariants.length > 1) {
-            for (const variant of queryVariants) {
-                if (variant === query) continue;
-                response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(variant)}&limit=15`);
-                data = await response.json();
-                apiFeatures = [...apiFeatures, ...(data.features || [])];
-                if (apiFeatures.length >= 15) break;
-            }
-        }
+        return data.features || [];
     } catch (e) {
-        console.warn("[Location] API error:", e);
+        console.warn("API error:", e);
+        return [];
     }
-    
-    // DUPLIKAT TEMIZLE
-    const seen = new Set();
-    let combined = [];
-    
-    for (const item of unescoResults) {
-        const key = normalizeText((item.properties.city || item.properties.name || ""));
-        if (!seen.has(key)) {
-            combined.push(item);
-            seen.add(key);
-        }
-    }
-    
-    for (const item of apiFeatures) {
-        const props = item.properties || {};
-        const key = normalizeText((props.city || props.name || ""));
-        if (!seen.has(key)) {
-            combined.push(item);
-            seen.add(key);
-        }
-    }
-    
-    // NEARBY CITIES
-    const region = combined.find(f => {
-        const t = (f.properties.result_type || f.properties.place_type || "").toLowerCase();
-        return ['region', 'area', 'province'].includes(t) && f.properties.lat && f.properties.lon;
-    });
-    
-    if (region) {
-        try {
-            const resNearby = await fetch(`/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=100000`);
-            const nearbyData = await resNearby.json();
-            const nearbyCities = (nearbyData.features || [])
-                .filter(f => {
-                    const t = (f.properties.result_type || f.properties.place_type || "").toLowerCase();
-                    return ['city', 'town', 'village'].includes(t);
-                })
-                .slice(0, 8);
-            
-            for (const city of nearbyCities) {
-                const props = city.properties || {};
-                const key = normalizeText((props.city || props.name || ""));
-                if (!seen.has(key)) {
-                    combined.push(city);
-                    seen.add(key);
-                }
-            }
-        } catch (err) {}
-    }
-    
-    return combined.slice(0, 12);
 }
- 
+
+function extractLocationQuery(input) {
+    if (!input) return "";
+    return input;
+}
+
 
 // ============================================================
 // 2. TURKISH CHARACTER VARIANTS
