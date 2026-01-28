@@ -2,7 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
-
+const { City } = require('country-state-city'); // <--- BU SATIRI EKLE
 
 // [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
 const BUILD_ID = Date.now().toString();
