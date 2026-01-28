@@ -41,6 +41,21 @@ function normalizeText(str) {
         .trim();
 }
 
+async function geoapifyLocationAutocomplete(query) {
+    if (!query || query.length < 1) return [];
+    
+    try {
+        const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`;
+        let response = await fetch(url);
+        let data = await response.json();
+        return data.features || [];
+    } catch (e) {
+        console.warn("API error:", e);
+        return [];
+    }
+}
+ 
+
 // ============================================================
 // 2. TURKISH CHARACTER VARIANTS
 // ============================================================
@@ -303,20 +318,7 @@ function showSuggestions() {
 let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
-async function geoapifyLocationAutocomplete(query) {
-    if (!query || query.length < 1) return [];
-    
-    try {
-        const url = `/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`;
-        let response = await fetch(url);
-        let data = await response.json();
-        return data.features || [];
-    } catch (e) {
-        console.warn("API error:", e);
-        return [];
-    }
-}
- 
+
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
 // ============================================================
