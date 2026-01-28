@@ -20,21 +20,18 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    let cleaned = input; 
+    // SADECE sayıları ve özel karakterleri sil
+    let cleaned = input.replace(/\d+/g, "");  // Sayıları sil
+    cleaned = cleaned.replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");  // Özel char sil
     
-    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    // Boşlukları temizle
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
     
-    cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
-    
-    const stopWords = [
-        "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
-        "create", "make", "build", "generate", "show", "give", "please", 
-        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
-        "day", "days", "gün", "gun", "night", "nights"
-    ];
-    
+    // Kelimeleri böl
     let words = cleaned.split(/\s+/);
-    words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
+    
+    // Çok kısa kelimeleri (1-2 harf) sil
+    words = words.filter(w => w.length > 2);
     
     return words.join(" ").trim();
 }
