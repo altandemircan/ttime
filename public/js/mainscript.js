@@ -671,66 +671,68 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // 2. ÇOK BASİT TEMİZLEME - sadece rakam ve bazı kelimeleri temizle
-    let searchText = rawText
+    // 2. KELİMELERE AYIR ve TEMİZLE
+    let words = rawText
         .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '') // sayı ve gün
-        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel)\b/gi, '') // bazı filler
-        .replace(/[^\p{L}\s]/gu, ' ') // sadece harf ve boşluk
+        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at)\b/gi, '') // filler
+        .replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ') // sadece harf
         .replace(/\s+/g, ' ')
-        .trim();
+        .trim()
+        .split(' ')
+        .filter(word => word.length >= 3); // 3 harften uzun kelimeler
     
-    // Eğer hiç harf kalmadıysa, orijinal metni kullan
-    if (!searchText || searchText.length < 2) {
-        searchText = rawText.replace(/[^\p{L}\s]/gu, ' ').trim();
+    console.log("Words to search:", words);
+    
+    let foundResults = [];
+    let foundQuery = "";
+    
+    // 3. HER KELİME İÇİN API'YE SOR (en uzun kelimeden başla)
+    words.sort((a, b) => b.length - a.length); // en uzun önce
+    
+    for (let word of words) {
+        try {
+            // Küçük harfe çevir
+            const searchWord = word.toLowerCase();
+            console.log(`Trying word: "${searchWord}"`);
+            
+            const response = await fetch(`/api/cities?q=${encodeURIComponent(searchWord)}`);
+            const cities = await response.json();
+            
+            if (cities && cities.length > 0) {
+                console.log(`Found ${cities.length} results for "${searchWord}"`);
+                foundResults = cities;
+                foundQuery = searchWord;
+                break; // İlk bulduğunda dur
+            }
+        } catch (error) {
+            console.error("Search error for word:", word, error);
+        }
     }
     
-    // Türkçe karakterleri normalize et (istemci tarafında)
-    searchText = searchText
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // tüm aksanları kaldır
-        .replace(/ı/g, 'i')
-        .replace(/ğ/g, 'g')
-        .replace(/ü/g, 'u')
-        .replace(/ş/g, 's')
-        .replace(/ö/g, 'o')
-        .replace(/ç/g, 'c');
-
-    console.log("Searching for (normalized):", searchText);
-
-    // 3. API'YE SOR
-    try {
-        const response = await fetch(`/api/cities?q=${encodeURIComponent(searchText)}`);
-        console.log("API response status:", response.status);
+    // 4. SONUÇLARI GÖSTER
+    if (foundResults.length > 0) {
+        console.log("Showing results for:", foundQuery);
         
-        const cities = await response.json();
-        console.log("API returned:", cities.length, "results");
-        
-        if (cities && cities.length > 0) {
-            // renderSuggestions fonksiyonunu çağır
-            if (typeof renderSuggestions === 'function') {
-                renderSuggestions(
-                    cities.map(city => ({
-                        properties: {
-                            name: city.name,
-                            city: city.name,
-                            country_code: (city.countryCode || "").toLowerCase(),
-                            formatted: `${city.name}, ${city.countryCode || ''}`,
-                            lat: parseFloat(city.latitude),
-                            lon: parseFloat(city.longitude),
-                            result_type: city.type || 'city',
-                            place_id: `local-${city.latitude}-${city.longitude}`
-                        }
-                    })),
-                    searchText
-                );
-            }
-        } else {
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+        if (typeof renderSuggestions === 'function') {
+            renderSuggestions(
+                foundResults.map(city => ({
+                    properties: {
+                        name: city.name,
+                        city: city.name,
+                        country_code: (city.countryCode || "").toLowerCase(),
+                        formatted: `${city.name}, ${city.countryCode || ''}`,
+                        lat: parseFloat(city.latitude),
+                        lon: parseFloat(city.longitude),
+                        result_type: city.type || 'city',
+                        place_id: `local-${city.latitude}-${city.longitude}`
+                    }
+                })),
+                foundQuery
+            );
         }
-        
-    } catch (error) {
-        console.error("Search error:", error);
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Search error</div>';
+    } else {
+        console.log("No results found for any word");
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
     }
 }, 400));
 
