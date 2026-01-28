@@ -621,97 +621,95 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
    // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
+// ESKİ KODU SİL, YERİNE BUNU KOY:
 chatInput.addEventListener("input", debounce(async function () {
-    if (window.__programmaticInput) return;
-
-    const rawText = this.value.trim();
-    const suggestionsDiv = document.getElementById("suggestions");
-
-    // 1. KUTUYU AÇ
-    if (rawText.length > 0) {
-        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching...</div>';
-    } else {
-        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-        showSuggestions(); 
+    console.log("=== INPUT DEBUG ===");
+    
+    if (window.__programmaticInput) {
+        console.log("Skipping - programmatic input");
         return;
     }
 
-    // 2. TEMİZLİK (Sadece Sayıları Sil)
-    // Regex ile harfleri bozmayalım. Sadece rakamları uçuruyoruz.
-    let cleanText = rawText.replace(/[0-9]/g, ' ').replace(/\s+/g, ' ').trim();
-
-    // Yasaklı kelimeler (Zaman bildirenler)
-    const timeKeywords = ['day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 'week', 'weeks', 'hafta', 'year', 'yil', 'ay', 'month'];
+    const rawText = this.value.trim();
+    console.log("User typed:", rawText);
     
-    // Kelimelere ayır
-    let candidates = cleanText.split(' ').filter(w => {
-        // 2 harften uzun olsun ve zaman kelimesi olmasın
-        return w.length > 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
-    });
+    const suggestionsDiv = document.getElementById("suggestions");
+    if (!suggestionsDiv) return;
 
-    let foundSuggestions = [];
-    let foundQuery = "";
-
-    // 3. ADAYLARI TARA
-    for (let word of candidates) {
-        try {
-            // API'ye sor
-            let results = await geoapifyLocationAutocomplete(word);
-
-            if (results && results.length > 0) {
-                // --- GÜMRÜK KAPISI (ÇÖP AYIKLAMA) ---
-                const searchLower = word.toLocaleLowerCase('tr');
-
-                const validResults = results.filter(item => {
-                    const itemName = (item.properties.name || "").toLocaleLowerCase('tr');
-                    const itemCity = (item.properties.city || "").toLocaleLowerCase('tr');
-                    
-                    return itemName.includes(searchLower) || itemCity.includes(searchLower);
-                });
-
-                if (validResults.length > 0) {
-                    foundSuggestions = validResults;
-                    foundQuery = word;
-                    break; // Geçerli bir şeyler bulduk, döngüyü kır.
-                }
-            }
-        } catch (e) {
-            console.warn("Search API Error:", e);
-        }
-    }
-
-    window.lastResults = foundSuggestions;
-    
-    // 4. SIRALAMA VE GÖSTERME
-    if (foundSuggestions && foundSuggestions.length > 0) {
-        
-        const target = foundQuery.toLocaleLowerCase('tr');
-        
-        foundSuggestions.sort((a, b) => {
-            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
-            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
-
-            // KRİTER 1: Tam Eşleşme Kraldır ("istanbul" == "istanbul")
-            const isExactA = nameA === target;
-            const isExactB = nameB === target;
-            if (isExactA && !isExactB) return -1; // A üste
-            if (!isExactA && isExactB) return 1;  // B üste
-
-            // KRİTER 2: Kısa İsim Üste ("İstanbul" < "İstanbulluoğlu")
-            if (nameA.length !== nameB.length) {
-                return nameA.length - nameB.length;
-            }
-
-            return 0; // Eşitse dokunma
-        });
-
-        renderSuggestions(foundSuggestions, foundQuery);
+    // 1. KUTUYU AÇ
+    if (rawText.length > 0) {
+        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Searching...</div>';
     } else {
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No location found</div>';
-        if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+        showSuggestions();
+        return;
     }
 
+    // 2. BASİT TEMİZLEME
+    // Sadece "2 days", "3 gün" gibi ifadeleri temizle
+    let searchText = rawText
+        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
+        .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
+        .replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // Eğer boşsa, orijinal metni kullan
+    if (!searchText || searchText.length < 2) {
+        searchText = rawText.replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ').trim();
+    }
+
+    console.log("Searching for:", searchText);
+
+    // 3. API'YE SOR
+    try {
+        const response = await fetch(`/api/cities?q=${encodeURIComponent(searchText)}`);
+        console.log("API response status:", response.status);
+        
+        const cities = await response.json();
+        console.log("API returned:", cities.length, "results");
+        
+        if (cities && cities.length > 0) {
+            // renderSuggestions fonksiyonunu çağır
+            if (typeof renderSuggestions === 'function') {
+                renderSuggestions(
+                    cities.map(city => ({
+                        properties: {
+                            name: city.name,
+                            city: city.name,
+                            country_code: city.countryCode.toLowerCase(),
+                            formatted: `${city.name}, ${city.countryCode}`,
+                            lat: parseFloat(city.latitude),
+                            lon: parseFloat(city.longitude),
+                            result_type: city.type,
+                            place_id: `local-${city.latitude}-${city.longitude}`
+                        }
+                    })),
+                    searchText
+                );
+            } else {
+                // Fallback: basit liste
+                suggestionsDiv.innerHTML = '';
+                cities.forEach(city => {
+                    const div = document.createElement("div");
+                    div.className = "category-area-option";
+                    div.textContent = `${city.name}, ${city.countryCode}`;
+                    div.onclick = () => {
+                        console.log("Selected:", city.name);
+                        // Seçim işlemleri buraya
+                    };
+                    suggestionsDiv.appendChild(div);
+                });
+            }
+        } else {
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+        }
+        
+    } catch (error) {
+        console.error("Search error:", error);
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Search error</div>';
+    }
 }, 400));
 
 
