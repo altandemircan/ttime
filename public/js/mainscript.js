@@ -581,7 +581,43 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     }
 }
+// Regex ile şehir adını direk yakala
+function extractCityName(text) {
+    // Türkçe şehir adı pattern'i (büyük harf, 2+ harf)
+    const turkishCityPattern = /([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,}(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})*)/;
+    
+    // Küçük harf şehir adı pattern'i (tüm metin küçükse)
+    const lowercaseCityPattern = /\b([a-zçğıöşü]{3,}(?:\s+[a-zçğıöşü]{3,})*)\b/;
+    
+    let match = text.match(turkishCityPattern);
+    if (match) {
+        return match[1];
+    }
+    
+    match = text.match(lowercaseCityPattern);
+    if (match) {
+        // İlk harfi büyük yap
+        return match[1].replace(/\b\w/g, char => char.toUpperCase());
+    }
+    
+    return null;
+}
 
+// Kullanım:
+let searchText = rawText;
+const cityName = extractCityName(searchText);
+
+if (cityName) {
+    searchText = normalizeTurkish(cityName);
+    console.log("Extracted city:", cityName, "->", searchText);
+} else {
+    // Fallback: eski mantık
+    searchText = normalizeTurkish(searchText
+        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
+        .replace(/[^\p{L}\s]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim());
+}
 // Sayfa yüklendiğinde listener'ı ekle
 document.addEventListener("DOMContentLoaded", function() {
     const inp = document.getElementById("user-input");
