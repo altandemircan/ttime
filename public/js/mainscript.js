@@ -352,7 +352,7 @@ window.showSuggestionsDiv = function() {
     const el = document.getElementById('suggestions');
     if (el) { 
         el.removeAttribute('hidden'); // HTML attribute'unu sök
-        el.style.display = 'block';   // CSS'i ez ve göster
+       
     }
 }
 
