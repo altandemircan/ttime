@@ -1005,39 +1005,6 @@ city = city.charAt(0).toUpperCase() + city.slice(1);
 // Geocode doğrulama (cache ile)
 const __cityCoordCache = new Map();
 
-chatInput.addEventListener("input", function() {
-    if (window.__programmaticInput) return;
-
-    // [FIX] Akıllı Kontrol: Şehir ismi hala aynı mı? (Sadece gün mü değişti?)
-    if (window.selectedSuggestion && window.selectedSuggestion.displayText) {
-        const currentInput = this.value || "";
-        // Inputtaki "2 days" gibi kısımları temizle, sadece şehri al
-        const currentLocName = typeof extractLocationQuery === 'function' 
-            ? extractLocationQuery(currentInput) 
-            : currentInput.replace(/[0-9]/g, '').replace(/(day|days|gün)/gi, '').trim();
-
-        const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const savedText = normalize(window.selectedSuggestion.displayText);
-        const currentText = normalize(currentLocName);
-
-        // Eğer kayıtlı şehir ismi, şu an yazılı olanı kapsıyorsa (örn: "Venice, IT" içinde "Venice" var)
-if (savedText === currentText && currentText.length > 1) {             // Sadece gün sayısını güncelle, kilidi açma
-             const dayMatch = currentInput.match(/(\d+)\s*[-]?\s*(day|days|gün|gun)/i);
-             if (dayMatch && window.selectedLocation) {
-                 window.selectedLocation.days = parseInt(dayMatch[1], 10);
-             }
-             if (typeof enableSendButton === 'function') enableSendButton();
-             return; // SEÇİMİ SIFIRLAMADAN ÇIK
-        }
-    }
-
-    // Şehir ismi değiştiyse seçimi iptal et
-    window.__locationPickedFromSuggestions = false;
-    window.selectedLocationLocked = false;
-    window.selectedLocation = null;
-    disableSendButton && disableSendButton();
-});
-
 
 // === YARDIMCI FONKSİYONLAR (Dosyanın uygun bir yerine veya en üste ekleyin) ===
 // === GÜNLÜK LİMİT KONTROL FONKSİYONU ===
