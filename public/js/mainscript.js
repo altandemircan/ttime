@@ -646,7 +646,6 @@ chatInput.addEventListener("input", debounce(async function () {
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Searching...</div>';
     }
 }, 400));
-
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
