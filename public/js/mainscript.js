@@ -7,7 +7,11 @@ window.mapPlanningDay = null;
 window.mapPlanningActive = false;
 window.mapPlanningMarkersByDay = {};
 window.__suppressMiniUntilFirstPoint = window.__suppressMiniUntilFirstPoint || {};
+
 window.cart = JSON.parse(localStorage.getItem('cart')) || [];
+window.activeTripKey = localStorage.getItem('activeTripKey') || null;
+window.selectedCity = localStorage.getItem('selectedCity') || null;
+
 window.__locationPickedFromSuggestions = false;
 window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
@@ -1512,74 +1516,80 @@ document.querySelectorAll('.add_theme').forEach(btn => {
   });
 });
 
+
+
+
+// 3️⃣  initializeAddToTripListener() - DROPDOWN'DAN GÜN OKU
 function initializeAddToTripListener() {
     if (window.__triptime_addtotrip_listener) {
         document.removeEventListener('click', window.__triptime_addtotrip_listener);
     }
-
+    
     const listener = function(e) {
         const btn = e.target.closest('.addtotrip');
         if (!btn) return;
-
         e.preventDefault();
         e.stopImmediatePropagation();
-
+        
         const stepsDiv = btn.closest('.steps');
         if (!stepsDiv) return;
-
-        const day = stepsDiv.getAttribute('data-day') || window.currentDay || 1;
+        
+        // Dropdown'dan seçili gün'ü oku
+        const daySelector = stepsDiv.querySelector('.day-select-dropdown-premium');
+        const selectedDay = daySelector ? Number(daySelector.value) : 1;
+        
         const category = stepsDiv.getAttribute('data-category');
         const title = stepsDiv.querySelector('.title')?.textContent.trim() || '';
         const image = stepsDiv.querySelector('img.check')?.src || 'img/placeholder.png';
-        const address = stepsDiv.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-        const opening_hours = stepsDiv.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
+        const address = stepsDiv.querySelector('.address span')?.textContent.trim() || '';
+        const opening_hours = stepsDiv.querySelector('.opening_hours span')?.textContent.trim() || '';
         const lat = stepsDiv.getAttribute('data-lat');
         const lon = stepsDiv.getAttribute('data-lon');
-        const website = (stepsDiv.querySelector('[onclick*="openWebsite"]')?.getAttribute('onclick')?.match(/'([^']+)'/) || [])[1] || '';
-
-        // GÜVENLİ LOCATION PARAMETRESİ
+        const website = stepsDiv.getAttribute('data-website') || '';
+        
         let location = null;
-        if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
+        if (lat !== null && lat !== undefined && lon !== null && lon !== undefined && 
+            !isNaN(Number(lat)) && !isNaN(Number(lon))) {
             location = { lat: Number(lat), lng: Number(lon) };
         }
-
+        
         addToCart(
             title,
             image,
-            day,
+            null,
             category,
             address,
-            null, // rating
-            null, // user_ratings_total
+            null,
+            null,
             opening_hours,
-            null, // place_id
+            null,
             location,
-            website
+            website,
+            { forceDay: selectedDay }
         );
-
-        // Buton animasyonu
+        
         btn.classList.add('added');
         setTimeout(() => btn.classList.remove('added'), 1000);
-
+        
         if (typeof restoreSidebar === "function") restoreSidebar();
         if (typeof updateCart === "function") updateCart();
-
-        // --- YENİ EKLENEN KISIM: MOBİLDE SIDEBAR'I AÇ ---
+        
         if (window.innerWidth <= 768) {
-            // CSS yapınıza göre sidebar class'larını kontrol edip açıyoruz
             const sidebarTrip = document.querySelector('.sidebar-trip');
             const sidebarOverlay = document.querySelector('.sidebar-overlay.sidebar-trip');
-
             if (sidebarTrip) sidebarTrip.classList.add('open');
             if (sidebarOverlay) sidebarOverlay.classList.add('open');
         }
-        // -----------------------------------------------
+        
+        if (typeof window.showToast === 'function') {
+            window.showToast(`✓ Added to Day ${selectedDay}`, 'success');
+        }
     };
-
+    
     document.addEventListener('click', listener);
     window.__triptime_addtotrip_listener = listener;
 }
-// Listener'ı başlat
+
 initializeAddToTripListener();
 
 let selectedCity = null;
@@ -2142,9 +2152,10 @@ function normalizePlaceName(place) {
   place.name = getDisplayName(place);
   return place;
 }
+// 1️⃣  addChatResultsToCart() - İLK GÜN'Ü OTOMATIK EKLE
 function addChatResultsToCart() {
     if (window.cart && window.cart.length > 0) return;
-
+    
     const chatResults = document.querySelectorAll(".steps");
     const sorted = Array.from(chatResults).sort((a, b) => {
         const dayA = Number(a.getAttribute('data-day') || 1);
@@ -2155,7 +2166,7 @@ function addChatResultsToCart() {
         const catOrder = ["Coffee", "Museum", "Touristic attraction", "Restaurant", "Accommodation"];
         return catOrder.indexOf(catA) - catOrder.indexOf(catB);
     });
-
+    
     sorted.forEach(result => {
         const day = Number(result.getAttribute('data-day') || 1);
         const category = result.getAttribute('data-category');
@@ -2164,27 +2175,20 @@ function addChatResultsToCart() {
         const image = result.querySelector('img.check')?.src || 'img/placeholder.png';
         const address = result.querySelector('.address')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
         const opening_hours = result.querySelector('.opening_hours')?.textContent.replace(/^[^:]*:\s*/, '').trim() || '';
-
-        // Orijinal step objesini çek
+        
         let stepObj = null;
         if (result.dataset.step) {
-            try { stepObj = JSON.parse(result.dataset.step); } catch (e) { stepObj = null; }
+            try { stepObj = JSON.parse(decodeURIComponent(result.dataset.step)); } catch (e) { stepObj = null; }
         }
-
-        // Latin adı al
+        
         let name = "";
-        // PATCH: Latin/İngilizce ad yoksa TITLE'dan al!
         if (stepObj && typeof getDisplayName === "function") {
             name = getDisplayName(stepObj);
-            // Eğer name_en ve name_latin yoksa başlıktan al
-            if ((!stepObj.name_en && !stepObj.name_latin) && result.querySelector('.title')) {
-                name = result.querySelector('.title').textContent;
-            }
         } else {
-            name = result.querySelector('.title').textContent;
+            name = result.querySelector('.title')?.textContent.trim() || '';
         }
-
-        if (lat && lon) {
+        
+        if (lat && lon && name) {
             addToCart(
                 name,
                 image,
@@ -2200,8 +2204,6 @@ function addChatResultsToCart() {
         }
     });
 }
-
-
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
@@ -4160,23 +4162,28 @@ marker.bindPopup(`<b>${name || 'Point'}</b>`, {
 }).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
-    setTimeout(function() { 
-    map.invalidateSize();
+   setTimeout(function() { 
+        // FIX: Check if map and container exist before invalidating size
+        if (map && map.getContainer() && map.getContainer().isConnected) {
+            map.invalidateSize();
+        }
     
-    // MARKER'I ORTALA
-    map.setView([lat, lon], 16, {
-        animate: false // Animasyon yok
-    });
+        // MARKER'I ORTALA
+        if (map) {
+             map.setView([lat, lon], 16, {
+                animate: false // Animasyon yok
+            });
+        }
     
-    // Popup'ı aç (zaten açık ama güvence için)
-    marker.openPopup();
+        // Popup'ı aç (zaten açık ama güvence için)
+        marker.openPopup();
     
-    // EKSTRA: Popup'ı da ortalamak için
-    if (marker._popup) {
-        marker._popup._updateLayout();
-        marker._popup._adjustPan();
-    }
-}, 150);
+        // EKSTRA: Popup'ı da ortalamak için
+        if (marker._popup) {
+            marker._popup._updateLayout();
+            marker._popup._adjustPan();
+        }
+    }, 150);
     
     // Popup'ın otomatik kapanmasını engelle
     marker.on('popupclose', function() {
@@ -5375,7 +5382,10 @@ if (aiInfoSection) {
         window._lastSegmentStartKm = undefined;
         window._lastSegmentEndKm = undefined;
     }
-
+// EN SONA EKLEYİN:
+    if (typeof updateAllChatButtons === 'function') {
+        updateAllChatButtons();
+    }
 }
 
 function showRemoveItemConfirmation(index, btn) {
@@ -6308,13 +6318,24 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
 
     window.leafletMaps[containerId] = map;
 
-    // --- GÜVENLİ ODAKLAMA ---
-    const refitMap = () => {
+  // --- GÜVENLİ ODAKLAMA ---
+   const refitMap = () => {
+        // 1. Harita ve Container var mı?
         if (!map || !sidebarContainer) return;
+        
+        // 2. Container gerçekten sayfaya bağlı mı? (isConnected kontrolü)
+        const container = map.getContainer();
+        if (!container || !container.isConnected) return;
+
+        // 3. Görünürlük kontrolü
         if (sidebarContainer.offsetParent === null) return;
+
         try {
-            // [FIX] Mobil cihazlarda marker kaymasını önlemek için boyutları yenile
-            map.invalidateSize(); 
+            // [FIX] Sadece harita 'hazırsa' boyut yenile
+            if (map._mapPane) { 
+                map.invalidateSize(); 
+            }
+
             if (points.length === 1) {
                 map.setView([points[0].lat, points[0].lng], 14, { animate: false });
             } else if (bounds && bounds.isValid()) {
@@ -6322,7 +6343,9 @@ async function renderLeafletRoute(containerId, geojson, points = [], summary = n
                 const isMobile = window.innerWidth <= 768;
                 map.fitBounds(bounds, { padding: isMobile ? [40, 40] : [20, 20], animate: false });
             }
-        } catch (err) {}
+        } catch (err) {
+            // Sessizce geç, konsolu kirletme
+        }
     };
 
     requestAnimationFrame(refitMap);
@@ -7915,15 +7938,18 @@ function getSafeCoord(item) {
  */
 async function enforceDailyRouteLimit(day, maxKm) {
     // 1. O güne ait itemları al
-    // window.cart tanımlı değilse hata vermesin diye kontrol ekledik
     if (!window.cart) return false;
 
-    let dayItems = window.cart.filter(item => item.day == day);
+    // --- DÜZELTME BAŞLANGICI ---
+    // Sadece günü eşleşen DEĞİL, aynı zamanda kategorisi 'Note' OLMAYANLARI alıyoruz.
+    let dayItems = window.cart.filter(item => 
+        item.day == day && 
+        item.category !== 'Note' // <--- Notlar mesafe hesabından muaf tutuldu
+    );
+    // --- DÜZELTME BİTİŞİ ---
     
     // Eğer 0 veya 1 nokta varsa mesafe oluşmaz, işlem yapma.
     if (dayItems.length <= 1) return false;
-
-    // console.log(`[LimitCheck] Day ${day}: Checking ${dayItems.length} locations for ${maxKm}km limit...`);
 
     let totalKm = 0;
     let splitIdx = -1;
@@ -7936,7 +7962,7 @@ async function enforceDailyRouteLimit(day, maxKm) {
 
         // Koordinat hatası varsa (NaN), bu item'ı atla ve log düş
         if (isNaN(p1.lat) || isNaN(p1.lng) || isNaN(p2.lat) || isNaN(p2.lng)) {
-            console.warn("[LimitCheck] Invalid coordinates detected, skipping calculation for item:", dayItems[i]);
+            // Notları filtrelediğimiz için buraya düşme ihtimali azaldı ama yine de güvenlik.
             continue;
         }
 
@@ -7976,7 +8002,6 @@ async function enforceDailyRouteLimit(day, maxKm) {
         }
 
         // C. Arayüzü Güncelle
-        // renderRouteForDay içindeysek çakışmayı önlemek için minik bir gecikme ile çağırıyoruz.
         if (typeof updateCart === "function") {
             setTimeout(() => {
                 console.log("[LimitCheck] Refreshing cart UI...");
@@ -9972,88 +9997,88 @@ window.TT_SVG_ICONS = {
   duration: 'https://www.svgrepo.com/show/532984/clock-outline.svg',
 };
 
-/* 4) Convert route summary text ("Mesafe: ...  Süre: ...") to SVG + badge values */
-(function initRouteSummaryIconizer(){
-  function parseStats(text) {
-    if (!text) return { dist: '', dura: '' };
-    const t = text.replace(/\s+/g, ' ').trim();
-    const distMatch = t.match(/([\d.,]+)\s*(km|m)\b/i);
-    const duraMatch = t.match(/([\d.,]+)\s*(min|sec|hour|h)\b/i);
-    return {
-      dist: distMatch ? `${distMatch[1]} ${distMatch[2]}` : '',
-      dura: duraMatch ? `${duraMatch[1]} ${duraMatch[2]}` : ''
-    };
-  }
+// /* 4) Convert route summary text ("Mesafe: ...  Süre: ...") to SVG + badge values */
+// (function initRouteSummaryIconizer(){
+//   function parseStats(text) {
+//     if (!text) return { dist: '', dura: '' };
+//     const t = text.replace(/\s+/g, ' ').trim();
+//     const distMatch = t.match(/([\d.,]+)\s*(km|m)\b/i);
+//     const duraMatch = t.match(/([\d.,]+)\s*(min|sec|hour|h)\b/i);
+//     return {
+//       dist: distMatch ? `${distMatch[1]} ${distMatch[2]}` : '',
+//       dura: duraMatch ? `${duraMatch[1]} ${duraMatch[2]}` : ''
+//     };
+//   }
 
-  function renderSummary(dist, dura) {
-    const parts = [];
-    if (dist) {
-      parts.push(`
-        <span class="stat stat-distance">
-          <img class="icon" src="${window.TT_SVG_ICONS.distance}" alt="Distance" loading="lazy" decoding="async">
-          <span class="badge">${dist}</span>
-        </span>
-      `);
-    }
-    if (dura) {
-      parts.push(`
-        <span class="stat stat-duration">
-          <img class="icon" src="${window.TT_SVG_ICONS.duration}" alt="Duration" loading="lazy" decoding="async">
-          <span class="badge">${dura}</span>
-        </span>
-      `);
-    }
-    return parts.join('');
-  }
+//   function renderSummary(dist, dura) {
+//     const parts = [];
+//     if (dist) {
+//       parts.push(`
+//         <span class="stat stat-distance">
+//           <img class="icon" src="${window.TT_SVG_ICONS.distance}" alt="Distance" loading="lazy" decoding="async">
+//           <span class="badge">${dist}</span>
+//         </span>
+//       `);
+//     }
+//     if (dura) {
+//       parts.push(`
+//         <span class="stat stat-duration">
+//           <img class="icon" src="${window.TT_SVG_ICONS.duration}" alt="Duration" loading="lazy" decoding="async">
+//           <span class="badge">${dura}</span>
+//         </span>
+//       `);
+//     }
+//     return parts.join('');
+//   }
 
-  function applyToSpan(span) {
-    if (!span) return;
-    // If already iconized, skip
-    if (span.querySelector('.stat')) return;
+//   // function applyToSpan(span) {
+//   //   if (!span) return;
+//   //   // If already iconized, skip
+//   //   if (span.querySelector('.stat')) return;
 
-    const { dist, dura } = parseStats(span.textContent || '');
-    if (!dist && !dura) return;
-    // Avoid recursive MO loops
-    if (span.__ttIconizing) return;
-    span.__ttIconizing = true;
-    try {
-      span.innerHTML = renderSummary(dist, dura);
-    } finally {
-      span.__ttIconizing = false;
-    }
-  }
+//   //   const { dist, dura } = parseStats(span.textContent || '');
+//   //   if (!dist && !dura) return;
+//   //   // Avoid recursive MO loops
+//   //   if (span.__ttIconizing) return;
+//   //   span.__ttIconizing = true;
+//   //   try {
+//   //     span.innerHTML = renderSummary(dist, dura);
+//   //   } finally {
+//   //     span.__ttIconizing = false;
+//   //   }
+//   // }
 
-  function applyAll() {
-    document.querySelectorAll('.route-summary-control').forEach(applyToSpan);
-  }
+//   function applyAll() {
+//     document.querySelectorAll('.route-summary-control').forEach(applyToSpan);
+//   }
 
-  const mo = new MutationObserver((mutList) => {
-    for (const mut of mutList) {
-      mut.addedNodes.forEach(node => {
-        if (node.nodeType !== 1) return;
-        if (node.matches?.('.route-summary-control')) applyToSpan(node);
-        node.querySelectorAll?.('.route-summary-control').forEach(applyToSpan);
-      });
-      if (mut.type === 'childList' && mut.target?.classList?.contains('route-summary-control')) {
-        applyToSpan(mut.target);
-      }
-      if (mut.type === 'characterData') {
-        const el = mut.target.parentElement;
-        if (el && el.classList?.contains('route-summary-control')) applyToSpan(el);
-      }
-    }
-  });
+//   // const mo = new MutationObserver((mutList) => {
+//   //   for (const mut of mutList) {
+//   //     mut.addedNodes.forEach(node => {
+//   //       if (node.nodeType !== 1) return;
+//   //       if (node.matches?.('.route-summary-control')) applyToSpan(node);
+//   //       node.querySelectorAll?.('.route-summary-control').forEach(applyToSpan);
+//   //     });
+//   //     if (mut.type === 'childList' && mut.target?.classList?.contains('route-summary-control')) {
+//   //       applyToSpan(mut.target);
+//   //     }
+//   //     if (mut.type === 'characterData') {
+//   //       const el = mut.target.parentElement;
+//   //       if (el && el.classList?.contains('route-summary-control')) applyToSpan(el);
+//   //     }
+//   //   }
+//   // });
 
-  function startObserver() {
-    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
-  }
+//   function startObserver() {
+//     mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+//   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { applyAll(); startObserver(); });
-  } else {
-    applyAll(); startObserver();
-  }
-})();
+//   if (document.readyState === 'loading') {
+//     document.addEventListener('DOMContentLoaded', () => { applyAll(); startObserver(); });
+//   } else {
+//     applyAll(); startObserver();
+//   }
+// })();
 
 
 

@@ -1,5 +1,4 @@
-// chat_trip_results.js
-
+// 2️⃣  generateStepHtml() - DROPDOWN VE BUTON BİRLEŞİK TASARIM
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -29,18 +28,42 @@ function generateStepHtml(step, day, category, idx = 0) {
     else if (category === "Accommodation")
         catIcon = "/img/accommodation_icon.svg";
     else if (category === "Parks")
-        catIcon = "/img/park_icon.svg"; // Varsa
+        catIcon = "/img/park_icon.svg";
 
-    // Favori durumu (örnek fonksiyon)
     const isFav = (typeof isTripFav === 'function') 
         ? isTripFav({ name, category, lat, lon }) 
         : false;
     const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
-    // --- HTML ÇIKTISI (Info İkonu Eklendi) ---
+    // === GÜN SEÇİMİ DÜZELTMESİ ===
+    // 1. Gelen 'day' parametresini kesinlikle sayıya çevir
+    const targetDay = parseInt(day, 10) || 1;
+
+    // 2. Toplam gün sayısını hem Plan'dan hem Cart'tan kontrol et (Manuel eklenen günler için)
+    let maxDay = 1;
+    if (window.cart && window.cart.length > 0) {
+        maxDay = Math.max(...window.cart.map(i => i.day || 1));
+    }
+    if (window.latestTripPlan && window.latestTripPlan.length > 0) {
+        const maxPlan = Math.max(...window.latestTripPlan.map(i => i.day || 1));
+        if (maxPlan > maxDay) maxDay = maxPlan;
+    }
+    // Dropdown en az hedef gün kadar olmalı
+    const daysCount = Math.max(maxDay, targetDay);
+
+    let dayOptionsHtml = '';
+    for (let d = 1; d <= daysCount; d++) {
+        // Burada her ikisi de number olduğu için karşılaştırma doğru çalışır
+        const selected = d === targetDay ? 'selected' : '';
+        dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
+    }
+
+    // JSON verisini güvenli sakla
+    const stepJson = encodeURIComponent(JSON.stringify(step));
+
     return `
-    <div class="steps" data-day="${day}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
-         data-step="${encodeURIComponent(JSON.stringify(step))}">
+    <div class="steps" data-day="${targetDay}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
+         data-step="${stepJson}">
         <div class="visual">
             <img class="check" src="${image}" alt="${name}" onerror="this.onerror=null; this.src='img/placeholder.png';">
             
@@ -70,17 +93,14 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </div>
             </span>
             <style>
-                /* Tooltip Hover Efekti */
                 .info-icon-wrapper:hover .info-tooltip { display: block !important; }
             </style>
-
         </div>
 
         <div class="info day_cats item-info-view">
    
             <div class="title" title="${name}">${name}</div>
             
-      
             <div class="address">
                 <img src="img/address_icon.svg">
                 <span title="${address || 'Address not found'}">
@@ -88,14 +108,12 @@ function generateStepHtml(step, day, category, idx = 0) {
                 </span>
             </div>
 
-            <div class="opening_hours" title="${(opening || 'Working hours not found.').replace(/"/g, '&quot;')}">
-    <img src="img/hours_icon.svg">
-    <span>${(opening || 'Working hours not found.').length > 30 ? (opening || 'Working hours not found.').substring(0, 30) + '...' : (opening || 'Working hours not found.')}</span>
-</div>
-
-
-      
-
+            <div class="opening_hours">
+                <img src="img/hours_icon.svg">
+                <span title="${opening || 'Working hours not found.'}">
+                    ${opening || 'Working hours not found.'}
+                </span>
+            </div>
         </div>
 
         <div class="item_action">
@@ -106,426 +124,306 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <span onclick="window.showMap && window.showMap(this)">
                     <img src="img/map_icon.svg">
                 </span>
-                
+                ${website ? `
+                <span onclick="window.open('${website}', '_blank')">
+                    <img src="img/website_link.svg" title="${website}">
+                </span>
+                ` : ''}
             </div>
             
-            <a class="addtotrip"><span>Add to trip</span>
-                <img src="img/addtotrip-icon.svg">
-            </a>
+            <div class="trip-action-group">
+                <select class="day-select-dropdown-premium">
+                    ${dayOptionsHtml}
+                </select>
+                
+                <button class="action-btn btn-add addtotrip-toggle">
+                    <span>Add</span>
+                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px;">
+                </button>
+            </div>
         </div>
     </div>`;
 }
 
-
-
-function showTripDetails(startDate) {
-    const isMobile = window.innerWidth <= 768;
-
-    let chatScreen = document.getElementById("chat-screen");
-    if (!chatScreen) {
-        chatScreen = document.createElement("div");
-        chatScreen.id = "chat-screen";
-        document.body.appendChild(chatScreen);
-    }
-
-    let tripDetailsSection = document.getElementById("tt-trip-details");
-    if (!tripDetailsSection) {
-        tripDetailsSection = document.createElement("section");
-        tripDetailsSection.id = "tt-trip-details";
-        chatScreen.appendChild(tripDetailsSection);
-    }
-    tripDetailsSection.innerHTML = "";
-
-    if (!document.getElementById('tt-attached-notes-style')) {
-        const style = document.createElement('style');
-        style.id = 'tt-attached-notes-style';
-        style.textContent = `
-            .attached-notes-container {
-                position: absolute;
-                top: 14px;
-                right: 36px;
-                left: 10px;
-                z-index: 20;
-                display: block;
-                pointer-events: none;
-            }
-            .shared-note-view {
-                display: none; 
-                position: absolute; 
-                top: 100%;
-                left: 0;
-                width: 100%;
-                margin-top: 12px;
-                background: rgba(255, 255, 255, 0.98);
-                border-radius: 8px;
-                padding: 12px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                border: 1px solid #ddd;
-                pointer-events: auto;
-                flex-direction: column;
-                justify-content: center;
-                animation: slideDown 0.2s ease-out;
-                z-index: 25;
-            }
-            .shared-note-view.open {
-                display: flex;
-            }
-            @keyframes slideDown {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .shared-note-view h5 {
-                margin: 0 0 4px 0;
-                font-size: 0.9rem;
-                color: #d32f2f;
-                font-weight: 700;
-            }
-            .shared-note-view p {
-                margin: 0;
-                font-size: 0.8rem;
-                color: #444;
-                line-height: 1.3;
-            }
-            .note-buttons-wrapper {
-                position: relative; 
-                display: flex;
-                gap: 12px; 
-                pointer-events: auto;
-                padding-left: 5px;
-            }
-            .note-trigger-btn {
-                position: relative;
-                width: 36px;
-                height: 36px;
-                background: #fff;
-                border-radius: 8px;
-                border: 1px solid #ddd;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                transition: all 0.2s;
-            }
-            .note-trigger-btn:hover {
-                background: #f9f9f9;
-            }
-            .note-trigger-btn.active {
-                border-color: #d32f2f;
-                background: #fff5f5;
-                transform: scale(1.1);
-            }
-            .note-trigger-icon {
-                width: 24px; 
-                height: 24px;
-                opacity: 0.8;
-            }
-            .note-trigger-btn.active .note-trigger-icon {
-                opacity: 1;
-            }
-            .note-trigger-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                width: 18px; 
-                height: 18px;
-                background: #f57f17;
-                color: #fff;
-                font-size: 10px;
-                font-weight: bold;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 2px solid #fff;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            }
-            .shared-note-view::after {
-                content: '';
-                position: absolute;
-                top: -6px;
-                left: 20px; 
-                width: 10px;
-                height: 10px;
-                background: #fff;
-                transform: rotate(45deg);
-                border-top: 1px solid #ddd;
-                border-left: 1px solid #ddd;
-                border-bottom: none; 
-                border-right: none;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    window.updateAttachedNote = function(displayId, btnElement) {
-        const displayBox = document.getElementById(displayId);
-        if(!displayBox) return;
-
-        const isAlreadyActive = btnElement.classList.contains('active');
-
-        const parentWrapper = btnElement.closest('.note-buttons-wrapper');
-        const siblings = parentWrapper.querySelectorAll('.note-trigger-btn');
-        siblings.forEach(el => el.classList.remove('active'));
-
-        if (isAlreadyActive) {
-            displayBox.classList.remove('open'); 
-        } else {
-            const title = btnElement.getAttribute('data-title');
-            const desc = btnElement.getAttribute('data-desc');
-
-            displayBox.innerHTML = `
-                <h5>${title}</h5>
-                <p>${desc}</p>
-            `;
-            displayBox.classList.add('open'); 
-            btnElement.classList.add('active'); 
+// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ (RENK GÜNCELLENDİ)
+function injectDropdownStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* === BÜTÜNLEŞİK AKSİYON GRUBU === */
+        .trip-action-group {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            margin-left: auto;
         }
-    };
 
-    if (!Array.isArray(window.cart) || window.cart.length === 0) {
-        tripDetailsSection.textContent = "No trip details available.";
-        return;
-    }
+        .trip-action-group:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: #d0d0d0;
+        }
 
-    const sect = document.createElement("div");
-    sect.className = "sect";
-    const ul = document.createElement("ul");
-    ul.className = "accordion-list";
-    sect.appendChild(ul);
+        /* Dropdown Stili */
+        .trip-action-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            border: none;
+            background-color: transparent;
+            padding: 8px 6px 8px 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            outline: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            padding-right: 16px;
+            margin-right: 4px;
+            font-family: inherit;
+        }
 
-    let maxDay = 0;
-    window.cart.forEach(it => { if (it.day > maxDay) maxDay = it.day; });
+        .trip-action-group select:hover {
+            background-color: #f9f9f9;
+        }
 
-    if (typeof window.customDayNames === "undefined") window.customDayNames = {};
+        /* Buton Stili (Temel) */
+        .trip-action-group .action-btn {
+            border: none;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            outline: none;
+            height: 100%;
+            font-family: inherit;
+        }
 
-    for (let day = 1; day <= maxDay; day++) {
-        const rawItems = window.cart.filter(it => it.day == day && it.name !== undefined);
-        
-        let groupedItems = [];
-        let currentParent = null;
-
-        rawItems.forEach(item => {
-            if (item.category === 'Note') {
-                if (currentParent) {
-                    currentParent.attachedNotes.push(item);
-                }
-            } else {
-                currentParent = { ...item, attachedNotes: [] };
-                groupedItems.push(currentParent);
-            }
-        });
-
-        // --- DÜZELTME BURADA BAŞLIYOR ---
-        
-        // 1. Önce değişkeni tanımlıyoruz (Hata almamak için şart)
-        let dateStr = ""; 
-
-        // 2. Tarih kaynağını belirliyoruz (Sırasıyla: Cart > LocalStorage > Parametre)
-        const activeStartDate = window.cart.startDate || localStorage.getItem('tripStartDate') || startDate;
-
-        // 3. Tarih varsa hesaplıyoruz
-        if (activeStartDate) {
-            const startDateObj = new Date(activeStartDate);
-            // Geçerli bir tarih mi kontrolü
-            if (!isNaN(startDateObj.getTime())) {
-                const d = new Date(startDateObj);
-                d.setDate(startDateObj.getDate() + (day - 1));
-                dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-            }
+        /* --- ADD MODU (MOR TASARIM) --- */
+        .trip-action-group .action-btn.btn-add {
+            background-color: #8a4af3; /* İSTENİLEN RENK */
+            color: #ffffff;            /* BEYAZ YAZI */
+            border-left: 1px solid rgba(255,255,255,0.2); /* Hafif ayraç */
         }
         
-        // (Eski "if (window.cart.startDate)..." bloğunu buradan sildik, yukarıdaki kod zaten o işi yapıyor)
-
-        // --- DÜZELTME BİTTİ ---
-        
-        const dayTitle = window.customDayNames[day] || `Day ${day}`;
-        const labelText = `${dayTitle}${dateStr ? ` (${dateStr})` : ""}`;
-
-        const li = document.createElement("li");
-        li.className = "day-item";
-        const container = document.createElement("div");
-        container.className = "accordion-container";
-        const inputId = `tt-day-${day}`;
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.id = inputId;
-        input.className = "accordion-toggle";
-        input.checked = true;
-        container.appendChild(input);
-
-        const label = document.createElement("label");
-        label.setAttribute("for", inputId);
-        label.className = "accordion-label";
-        label.innerHTML = `${labelText} <img src="img/arrow_down.svg" class="accordion-arrow">`;
-        container.appendChild(label);
-
-        const content = document.createElement("div");
-        content.className = "accordion-content";
-        const daySteps = document.createElement("div");
-        daySteps.className = "day-steps active-view";
-        daySteps.setAttribute("data-day", String(day));
-
-        if (groupedItems.length > 0) {
-            // ... (Buradaki HTML oluşturma kodların aynı kalacak) ...
-             daySteps.innerHTML = `
-  <div class="splide" id="splide-trip-details-day${day}">
-    <div class="splide__track">
-      <ul class="splide__list">
-        ${groupedItems.map((step, idx) => {
-            
-            let notesHtml = "";
-            if (step.attachedNotes && step.attachedNotes.length > 0) {
-                const uniqueDisplayId = `note-display-${day}-${idx}`;
-                
-                notesHtml = `
-                <div class="attached-notes-container">
-                    
-                    <div id="${uniqueDisplayId}" class="shared-note-view">
-                        </div>
-
-                    <div class="note-buttons-wrapper">
-                        ${step.attachedNotes.map((note, nIdx) => {
-                            const nTitle = note.name || "Note";
-                            const nDesc = (note.noteDetails || "").replace(/"/g, '&quot;').replace(/\n/g, '<br>');
-                            
-                            return `
-                            <div class="note-trigger-btn" 
-                                 onclick="updateAttachedNote('${uniqueDisplayId}', this)"
-                                 data-title="${nTitle}"
-                                 data-desc="${nDesc}">
-                                
-                                <img src="img/custom-note.svg" class="note-trigger-icon">
-                                <div class="note-trigger-badge">N</div>
-                                
-                            </div>
-                            `;
-                        }).join('')}
-                    </div>
-
-                </div>`;
-            }
-
-            return `<li class="splide__slide">
-          <div class="steps" data-day="${day}" data-category="${step.category}"${step.lat && step.lon ? ` data-lat="${step.lat}" data-lon="${step.lon}"` : ""} style="position: relative;">
-            
-            ${notesHtml} 
-            
-            <div class="visual" style="opacity: 1;">
-              <div class="marker-num" style="width:24px;height:24px;background:#d32f2f;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:2px solid #fff;box-shadow:0 2px 6px #888;margin-right:7px;">${idx + 1}</div>
-              <img class="check" src="${step.image || "https://www.svgrepo.com/show/522166/location.svg"}" alt="${step.name || step.category}" onerror="this.onerror=null; this.src='img/placeholder.png';">
-            </div>
-            <div class="info day_cats item-info-view">
-              <div class="title">${step.name || step.category}</div>
-              <div class="address">
-                <img src="img/address_icon.svg"> ${step.address || ""}
-              </div>
-              <div class="geoapify-tags-section">
-                <div class="geoapify-tags"></div>
-              </div>
-              <div class="opening_hours">
-                <img src="img/hours_icon.svg"> ${step.opening_hours ? step.opening_hours : "Working hours not found."}
-              </div>
-            </div>
-            <div class="item_action">
-              <div class="change">
-                <span onclick="window.showImage && window.showImage(this)">
-                  <img src="img/camera_icon.svg">
-                </span>
-                <span onclick="window.showMap && window.showMap(this)">
-                  <img src="img/map_icon.svg">
-                </span>
-                ${step.website ? `
-                <span onclick="window.openWebsite && window.openWebsite(this, '${step.website}')">
-                  <img src="img/website_link.svg" style="vertical-align:middle;width:20px;">
-                </span>
-                ` : ""}
-              </div>
-              <div style="display: flex; gap: 12px;">
-                <div class="cats cats${(idx % 5) + 1}">
-                  <img src="" alt="${step.category}"> ${step.category}
-                </div>
-                <a class="addtotrip">
-                  <img src="img/addtotrip-icon.svg">
-                </a>
-              </div>
-            </div>
-          </div>
-        </li>`;
-        }).join('')}
-      </ul>
-    </div>
-  </div>
-`;
-        } else {
-            const emptyP = document.createElement("p");
-            emptyP.className = "empty-day-message";
-            emptyP.textContent = "No items have been added for this day yet.";
-            daySteps.appendChild(emptyP);
+        .trip-action-group .action-btn.btn-add:hover {
+            background-color: #7b42db; /* Hover: Hafif koyu mor */
         }
-        content.appendChild(daySteps);
-        container.appendChild(content);
-        li.appendChild(container);
-        ul.appendChild(li);
-    }
-    tripDetailsSection.appendChild(sect);
 
-    setTimeout(() => {
-        document.querySelectorAll('.splide').forEach(sliderElem => {
-            if (!sliderElem._splideInstance) {
-                const splideInstance = new Splide(sliderElem, {
-                    type: 'slide',
-                    perPage: 5,
-                    gap: '18px',
-                    arrows: true,
-                    pagination: false,
-                    drag: true,
-                    breakpoints: {
-                        575: { perPage: 1 },
-                        768: { perPage: 2 },
-                        1000: { perPage: 1 },
-                        1350: { perPage: 2 },
-                        1650: { perPage: 3 },
-                        2000: { perPage: 4 }
-                    }
-                });
-                splideInstance.mount();
-                sliderElem._splideInstance = splideInstance;
+        /* İkonu Beyaz Yapmak İçin Filtre */
+        .trip-action-group .action-btn.btn-add img {
+            filter: brightness(0) invert(1);
+        }
+
+        /* --- REMOVE MODU (Kırmızı Tasarım) --- */
+        .trip-action-group .action-btn.btn-remove {
+            background-color: #fff1f0;
+            color: #dc3545;
+            border-left: 1px solid #eee;
+        }
+        .trip-action-group .action-btn.btn-remove:hover {
+            background-color: #ffe8e6;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .trip-action-group {
+                background: #2a2a2a;
+                border-color: #444;
             }
-        });
-    }, 1);
-
-    const shareTitle = document.createElement("div");
-    shareTitle.className = "share-buttons-title";
-    tripDetailsSection.appendChild(shareTitle);
-
-    shareTitle.innerHTML = `
-        Share your travel plan and help others discover amazing places.<br>
-        With <strong>Triptime AI</strong>, every journey becomes a story worth sharing!
+            .trip-action-group select {
+                color: #e0e0e0;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            }
+            /* Dark modda Add butonu parlak kalsın veya hafif koyulabilir */
+            .trip-action-group .action-btn.btn-add {
+                background-color: #8a4af3; 
+                color: white;
+            }
+             .trip-action-group .action-btn.btn-remove {
+                background-color: #3e2a2a;
+                color: #ef5350;
+                border-left-color: #444;
+            }
+        }
     `;
+    document.head.appendChild(style);
+}
 
-    const shareDiv = document.createElement('div');
-    shareDiv.id = 'mobile-share-buttons';
-    shareDiv.className = 'share-buttons-container';
-    shareDiv.innerHTML = `
-        <div class="share-buttons">
-            <button class="share-btn whatsapp" onclick="showDatePickerBeforeShare()">
-                <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
-            </button>
-            <button class="share-btn instagram" onclick="showDatePickerBeforeShare()">
-                <img src="img/share_instagram.svg" alt="Instagram"> Instagram
-            </button>
-            <button class="share-btn facebook" onclick="showDatePickerBeforeShare()">
-                <img src="img/share_facebook.svg" alt="Facebook"> Facebook
-            </button>
-            <button class="share-btn twitter" onclick="showDatePickerBeforeShare()">
-                <img src="img/share_x.svg" alt="Twitter"> Twitter
-            </button>
-        </div>
-    `;
-    tripDetailsSection.appendChild(shareDiv);
+// CSS'i Yükle
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectDropdownStyles);
+} else {
+    injectDropdownStyles();
 }
 
 
+// ==========================================================
+// === LOGIC: BUTON YÖNETİMİ, EKLEME VE ÇIKARMA İŞLEMLERİ ===
+// ==========================================================
 
+// 1. Yardımcı: Item sepette var mı?
+function isItemInCartForDay(lat, lon, name, day) {
+    if (!window.cart) return false;
+    return window.cart.some(item => {
+        if (Number(item.day) !== Number(day)) return false;
+        
+        const iLat = item.lat || (item.location ? item.location.lat : null);
+        const iLon = item.lon || (item.location ? (item.location.lng || item.location.lon) : null);
 
+        if (lat && lon && iLat && iLon) {
+            const dLat = Math.abs(iLat - lat);
+            const dLng = Math.abs(iLon - lon);
+            if (dLat < 0.0005 && dLng < 0.0005) return true;
+        }
+        if (name && item.name) {
+            return name.toLowerCase().trim() === item.name.toLowerCase().trim();
+        }
+        return false;
+    });
+}
+
+// 2. Yardımcı: Sepet Index'ini Bul
+function findCartItemIndex(lat, lon, name, day) {
+    if (!window.cart) return -1;
+    return window.cart.findIndex(item => {
+        if (Number(item.day) !== Number(day)) return false;
+        
+        const iLat = item.lat || (item.location ? item.location.lat : null);
+        const iLon = item.lon || (item.location ? (item.location.lng || item.location.lon) : null);
+
+        if (lat && lon && iLat && iLon) {
+            const dLat = Math.abs(iLat - lat);
+            const dLng = Math.abs(iLon - lon);
+            if (dLat < 0.0005 && dLng < 0.0005) return true;
+        }
+        if (name && item.name) {
+            return name.toLowerCase().trim() === item.name.toLowerCase().trim();
+        }
+        return false;
+    });
+}
+
+// 3. UI Güncelleme (Tüm butonları tara ve güncelle)
+function updateAllChatButtons() {
+    const steps = document.querySelectorAll('.steps');
+    steps.forEach(step => {
+        const dropdown = step.querySelector('.day-select-dropdown-premium');
+        const btn = step.querySelector('.addtotrip-toggle');
+        
+        if (!dropdown || !btn) return;
+
+        const lat = parseFloat(step.getAttribute('data-lat'));
+        const lon = parseFloat(step.getAttribute('data-lon'));
+        const name = step.querySelector('.title')?.textContent.trim();
+        const selectedDay = parseInt(dropdown.value);
+        
+        const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
+
+        if (isAdded) {
+            // REMOVE MODUNA GEÇ
+            if (!btn.classList.contains('btn-remove')) {
+                btn.className = 'action-btn btn-remove addtotrip-toggle';
+                btn.innerHTML = `<span>Remove</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+            }
+        } else {
+            // ADD MODUNA GEÇ
+            if (!btn.classList.contains('btn-add')) {
+                btn.className = 'action-btn btn-add addtotrip-toggle';
+                btn.innerHTML = `<span>Add</span>
+                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px;">`;
+            }
+        }
+    });
+}
+
+// 4. Olay Dinleyicileri (Click ve Change)
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.addtotrip-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const step = btn.closest('.steps');
+    const dropdown = step.querySelector('.day-select-dropdown-premium');
+    const day = parseInt(dropdown.value);
+    
+    // Verileri data attribute'tan al
+    const lat = parseFloat(step.getAttribute('data-lat'));
+    const lon = parseFloat(step.getAttribute('data-lon'));
+    const name = step.querySelector('.title')?.textContent.trim();
+    
+    // BUTON "REMOVE" MODUNDA MI?
+    if (btn.classList.contains('btn-remove')) {
+        const index = findCartItemIndex(lat, lon, name, day);
+        if (index > -1) {
+            window.cart.splice(index, 1);
+            localStorage.setItem('cart', JSON.stringify(window.cart));
+            
+            // Eğer updateCart varsa çağır
+            if (typeof updateCart === 'function') updateCart();
+            
+            // UI'ı hemen güncelle
+            updateAllChatButtons();
+        }
+    } 
+    // BUTON "ADD" MODUNDA
+    else {
+        // Ham veriyi çözümle
+        let stepData = {};
+        try {
+            stepData = JSON.parse(decodeURIComponent(step.getAttribute('data-step')));
+        } catch (err) {
+            console.error("Step data parse error", err);
+            return;
+        }
+
+        // Sepet objesi oluştur
+        const newItem = {
+            id: Date.now(),
+            name: stepData.name || name,
+            address: stepData.address || step.querySelector('.address')?.textContent.trim(),
+            image: stepData.image || step.querySelector('img.check')?.src,
+            day: day,
+            lat: lat,
+            lon: lon,
+            location: { lat: lat, lng: lon },
+            // Varsa diğer detaylar
+            category: step.getAttribute('data-category'),
+            website: stepData.website,
+            opening_hours: stepData.opening_hours
+        };
+        
+        window.cart.push(newItem);
+        localStorage.setItem('cart', JSON.stringify(window.cart));
+        
+        if (typeof updateCart === 'function') updateCart();
+        updateAllChatButtons();
+    }
+});
+
+// Dropdown değiştiğinde kontrol et
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
+        updateAllChatButtons();
+    }
+});
+
+// MutationObserver: Chat'e yeni mesaj geldiğinde
+const observer = new MutationObserver(function(mutations) {
+    updateAllChatButtons();
+});
+const chatContainer = document.getElementById('chat-container') || document.body;
+observer.observe(chatContainer, { childList: true, subtree: true });
+
+// İlk yüklemede çalıştır
+updateAllChatButtons();

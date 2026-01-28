@@ -247,8 +247,6 @@ function safeParse(jsonStr) {
   try { return JSON.parse(jsonStr); } catch { return null; }
 }
 
-// === local_storage.js içindeki saveCurrentTripToStorage fonksiyonunu bununla değiştirin ===
-// === BU FONKSİYONU KOMPLE AŞAĞIDAKİ İLE DEĞİŞTİRİN ===
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
@@ -289,7 +287,8 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
       const currentCount = Object.keys(trips).length;
       if (currentCount >= 30) {
           // Kullanıcıyı uyar
-alert("You have reached the saved trip limit (30). Please delete old trips from the 'My Trips' panel to create a new one.");          // İşlemi durdur, kaydetme yapma.
+          alert("You have reached the saved trip limit (30). Please delete old trips from the 'My Trips' panel to create a new one."); 
+          // İşlemi durdur, kaydetme yapma.
           return; 
       }
   }
@@ -362,6 +361,10 @@ alert("You have reached the saved trip limit (30). Please delete old trips from 
 
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
+
+  // [FIX] ID ve Şehri LocalStorage'a ayrıca yaz ki yenileyince hatırlasın
+  localStorage.setItem('activeTripKey', tripKey);
+  localStorage.setItem('selectedCity', window.selectedCity || "");
 }
 
 
@@ -1031,18 +1034,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 
-// 7. Yeni plan başladığında eski trip state'i sıfırla (startNewChat fonksiyonu varsa!)
+// 7. Yeni plan başladığında eski trip state'i sıfırla
 window.startNewChat = function() {
     window.cart = [];
     window.customDayNames = {};
     window.lastUserQuery = "";
     window.selectedCity = "";
     window.activeTripKey = null;
-     
+    
+    // [FIX] Yeni geziye başlarken hafızadaki eski anahtarı sil
+    // Bu sayede sayfa yenilense bile eski geziye geri dönmez, temiz sayfa açar.
+    localStorage.removeItem('activeTripKey');
+    localStorage.removeItem('selectedCity');
+      
     // --- EKLENEN KISIM: AI Verisini Sıfırla ---
     window.lastTripAIInfo = null; 
     if (window.cart) window.cart.aiData = null;
-     
+      
     // UI'daki AI yazısını da temizle
     const aiSection = document.querySelector('.ai-info-section');
     if (aiSection) aiSection.style.display = 'none';
@@ -1051,9 +1059,9 @@ window.startNewChat = function() {
     }
     // ------------------------------------------
 
+    // Boş haliyle kaydet (State'i temizle)
     saveTripAfterRoutes();
 };
-
 
 
 document.addEventListener("DOMContentLoaded", function () {
