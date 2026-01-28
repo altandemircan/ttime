@@ -20,21 +20,13 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    let cleaned = input.replace(/\d+/g, "");
-    cleaned = cleaned.replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
+    // SADECE sayıları sil
+    let cleaned = input.replace(/\d+/g, " ");
+    
+    // Boşlukları temizle
     cleaned = cleaned.replace(/\s+/g, " ").trim();
     
-    let words = cleaned.split(/\s+/);
-    words = words.filter(w => w.length > 2);
-    
-    // Büyük harfle başlayan SON kelimeyi al (şehir adı genelde sonda)
-    let capitalWords = words.filter(w => /^[A-ZÇĞİÖŞÜ]/.test(w));
-    
-    if (capitalWords.length > 0) {
-        return capitalWords[capitalWords.length - 1]; // İLK değil, SON
-    }
-    
-    return words.join(" ").trim();
+    return cleaned;
 }
 
 // ============================================================
