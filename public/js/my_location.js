@@ -171,7 +171,7 @@ function ensureLocationPopupStyles() {
             font-weight: 500;
             color: #999;
             text-transform: uppercase;
-           
+            letter-spacing: 0.5px;
             margin-bottom: 6px;
         }
 
@@ -324,14 +324,19 @@ async function showLocationOnMap(position, day, expandedMap) {
         el.style.width = '44px';
         el.style.height = '44px';
 
-        const marker = new maplibregl.Marker({ element: el })
-            .setLngLat([lng, lat])
-            .setPopup(new maplibregl.Popup({ offset: 25, maxWidth: 'none' }).setHTML(popupContent))
-            .addTo(expandedMap);
-            
-        window.userLocationMarkersByDay[day].push(marker);
-        marker.togglePopup();
-        expandedMap.flyTo({ center: [lng, lat], zoom: 15, essential: true });
+        // Try to add to the correct map instance (either expanded map or 3D instance)
+        const targetMap = expandedMap || window._maplibre3DInstance;
+        
+        if (targetMap && targetMap.getStyle) {
+            const marker = new maplibregl.Marker({ element: el })
+                .setLngLat([lng, lat])
+                .setPopup(new maplibregl.Popup({ offset: 25, maxWidth: 'none' }).setHTML(popupContent))
+                .addTo(targetMap);
+                
+            window.userLocationMarkersByDay[day].push(marker);
+            marker.togglePopup();
+            targetMap.flyTo({ center: [lng, lat], zoom: 15, essential: true });
+        }
 
     } else if (expandedMap && expandedMap.setView) {
         // --- 2D Map (Leaflet) ---

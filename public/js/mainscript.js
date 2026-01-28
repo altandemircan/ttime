@@ -6590,6 +6590,14 @@ function refresh3DMapData(day) {
     if (window._maplibreRouteMarkers) window._maplibreRouteMarkers.forEach(m => m.remove());
     window._maplibreRouteMarkers = [];
 
+    // Clean up location markers from 3D map
+if (window.userLocationMarkersByDay && window.userLocationMarkersByDay[day]) {
+    window.userLocationMarkersByDay[day].forEach(m => {
+        try { m.remove(); } catch(e) {}
+    });
+    window.userLocationMarkersByDay[day] = [];
+}
+
     ['route-line', 'missing-connectors-layer'].forEach(l => { if(map.getLayer(l)) map.removeLayer(l); });
     ['route-source-dynamic', 'missing-connectors-source'].forEach(s => { if(map.getSource(s)) map.removeSource(s); });
 
