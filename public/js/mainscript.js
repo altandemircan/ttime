@@ -6590,6 +6590,14 @@ function refresh3DMapData(day) {
     if (window._maplibreRouteMarkers) window._maplibreRouteMarkers.forEach(m => m.remove());
     window._maplibreRouteMarkers = [];
 
+    // Clean up location markers from 3D map
+if (window.userLocationMarkersByDay && window.userLocationMarkersByDay[day]) {
+    window.userLocationMarkersByDay[day].forEach(m => {
+        try { m.remove(); } catch(e) {}
+    });
+    window.userLocationMarkersByDay[day] = [];
+}
+
     ['route-line', 'missing-connectors-layer'].forEach(l => { if(map.getLayer(l)) map.removeLayer(l); });
     ['route-source-dynamic', 'missing-connectors-source'].forEach(s => { if(map.getSource(s)) map.removeSource(s); });
 
@@ -7212,51 +7220,98 @@ async function expandMap(containerId, day) {
         }
     };
 
+
     const locBtn = document.createElement('button');
     locBtn.className = 'map-ctrl-btn';
     locBtn.id = `use-my-location-btn-day${day}`;
     locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
-    // Başlangıç durumu: Eğer aktifse butona 'active' class'ı ekle veya farklı ikon göster
-if (window.isLocationActiveByDay[day]) {
-    locBtn.classList.add('active');
-    locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">'; // Maviye boyar
-}
-
-locBtn.onclick = function() {
-    window.isLocationActiveByDay[day] = !window.isLocationActiveByDay[day];
-    const isActive = window.isLocationActiveByDay[day];
-
-    if (isActive) {
+    // Başlangıç durumu
+    if (window.isLocationActiveByDay[day]) {
         locBtn.classList.add('active');
-        // İkonu CSS filter ile mavi yapıyoruz (Veya elinde mavi ikon varsa onu koyabilirsin)
-        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';;
-            if (!document.getElementById('tt-unified-loc-style')) {
-                const s = document.createElement('style');
-                s.id = 'tt-unified-loc-style';
-                s.innerHTML = `@keyframes ttPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; } } @keyframes ttColorCycle { 0% { background-color: #4285F4; } 50% { background-color: #34A853; } 100% { background-color: #4285F4; } } .user-loc-wrapper { position: relative; width: 20px; height: 20px; } .user-loc-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2; animation: ttColorCycle 2s infinite ease-in-out; } .user-loc-ring-1, .user-loc-ring-2 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear; } .user-loc-ring-2 { animation-delay: 1.25s; }`;
-                document.head.appendChild(s);
+        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';
+    }
+
+    locBtn.onclick = function() {
+    const isCurrentlyActive = window.isLocationActiveByDay[day];
+    
+    if (!isCurrentlyActive) {
+        requestLocationPermission().then(async (granted) => {
+            if (granted) {
+                window.isLocationActiveByDay[day] = true;
+                locBtn.classList.add('active');
+                locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';
+                
+                if (!document.getElementById('tt-unified-loc-style')) {
+                    const s = document.createElement('style');
+                    s.id = 'tt-unified-loc-style';
+                    s.innerHTML = `@keyframes ttPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; } } @keyframes ttColorCycle { 0% { background-color: #4285F4; } 50% { background-color: #34A853; } 100% { background-color: #4285F4; } } .user-loc-wrapper { position: relative; width: 20px; height: 20px; } .user-loc-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 2; animation: ttColorCycle 2s infinite ease-in-out; } .user-loc-ring-1, .user-loc-ring-2 { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: rgba(66, 133, 244, 0.6); border-radius: 50%; z-index: 1; animation: ttPulse 2.5s infinite linear; } .user-loc-ring-2 { animation-delay: 1.25s; }`;
+                    document.head.appendChild(s);
+                }
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            let targetMap = expandedMapInstance;
+                            const is3DMapActive = document.getElementById('maplibre-3d-view') && 
+                                                  document.getElementById('maplibre-3d-view').style.display !== 'none';
+                            
+                            if (is3DMapActive && window._maplibre3DInstance) {
+                                targetMap = window._maplibre3DInstance;
+                            }
+                            
+                            window.updateUserLocationMarker(position, day, targetMap);
+                        },
+                        function(error) {
+                            console.warn("Geolocation error:", error);
+                            window.isLocationActiveByDay[day] = false;
+                            locBtn.classList.remove('active');
+                            locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+                            
+                            if (error.code === 1) {
+                                alert("Location permission denied. Enable it in browser settings.");
+                            }
+                        }
+                    );
+                }
+            } else {
+                locBtn.classList.remove('active');
+                locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
             }
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    window.updateUserLocationMarker(expandedMapInstance, day, pos.coords.latitude, pos.coords.longitude, currentLayer, true);
-                }, () => {
-                    window.isLocationActiveByDay[day] = false;
-                    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
-                });
-            }
-       } else {
+        });
+    } else {
+        window.isLocationActiveByDay[day] = false;
         locBtn.classList.remove('active');
         locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
-        window.updateUserLocationMarker(expandedMapInstance, day);
+        
+        if (window.userLocationMarkersByDay && window.userLocationMarkersByDay[day]) {
+            let targetMap = expandedMapInstance;
+            const is3DMapActive = document.getElementById('maplibre-3d-view') && 
+                                  document.getElementById('maplibre-3d-view').style.display !== 'none';
+            
+            if (is3DMapActive && window._maplibre3DInstance) {
+                targetMap = window._maplibre3DInstance;
+            }
+
+            window.userLocationMarkersByDay[day].forEach(marker => {
+                try {
+                    if (targetMap && targetMap.hasLayer && targetMap.hasLayer(marker)) {
+                        targetMap.removeLayer(marker);
+                    }
+                    if (marker.remove) marker.remove();
+                } catch(e) {}
+            });
+            window.userLocationMarkersByDay[day] = [];
+        }
     }
-};
+    };
+
+    controlsDiv.appendChild(locBtn);
 
     controlsDiv.appendChild(zoomInBtn);
     controlsDiv.appendChild(zoomOutBtn);
     controlsDiv.appendChild(compassBtn);
-    controlsDiv.appendChild(locBtn);
 
     const oldBar = document.getElementById(`expanded-route-scale-bar-day${day}`);
     if (oldBar) oldBar.remove();

@@ -522,7 +522,7 @@ function attachClickNearbySearch(map, day, options = {}) {
   }
 
   let __nearbySingleTimer = null;
-  const __nearbySingleDelay = 250; // ✅ 100 yerine 250 yapın
+  const __nearbySingleDelay = 250; 
 
   const clickHandler = function(e) {
       if (__nearbySingleTimer) clearTimeout(__nearbySingleTimer);
@@ -551,14 +551,19 @@ function attachClickNearbySearch(map, day, options = {}) {
               window._nearbyPulseMarker3D = null;
           }
           
-          // Kategorileri gösteri
-          showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants');
+          // --- FIX: EN SON SEÇİLEN KATEGORİYİ KULLAN ---
+          // Eğer kullanıcı daha önce bir kategori seçtiyse (örn: markets), yeni tıklamada da o açılır.
+          // Hiç seçmediyse varsayılan 'restaurants' açılır.
+          const targetCategory = window._lastSelectedCategory || 'restaurants';
+
+          // Kategorileri göster
+          showNearbyPlacesByCategory(lat, lng, map, day, targetCategory);
       }, __nearbySingleDelay);
   };
 
   // Event'i haritaya bağla
   map.on('click', clickHandler);
-  
+   
   map.__ttNearbyClickHandler = clickHandler;
   map.__ttNearbyClickBound = true;
 
