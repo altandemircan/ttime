@@ -23,36 +23,45 @@ app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 
-// --- YEREL ŞEHİR VERİSİ HAZIRLIĞI ---
-const allCities = City.getAllCities();
+// --- YEREL VERİ HAZIRLIĞI ---
+const { City, State } = require("country-state-city");
+
+// Tüm dünyadaki State ve City listesini bir kez belleğe al (Performans için)
+const allLocations = [
+    ...State.getAllStates().map(s => ({ ...s, type: 'state' })),
+    ...City.getAllCities().map(c => ({ ...c, type: 'city' }))
+];
 
 // ============================================================
-// 1. YENİ YEREL ŞEHİR API (SIRALAMA DÜZELTİLDİ - EN ÜSTTE)
+// 1. GÜNCELLENMİŞ YEREL ŞEHİR API (STATE + CITY DESTEKLİ)
 // ============================================================
 app.get('/api/cities', (req, res) => {
     const query = req.query.q ? req.query.q.toLowerCase() : "";
     if (!query) return res.json([]);
 
-    // 1. Önce sadece isme göre filtrele (Ülke, Eyalet kodu karmaşasını at)
-    let results = allCities.filter(city => 
-        city.name.toLowerCase().startsWith(query) // Sadece baş harfi tutanları al
+    // Hem State hem City içinde ara
+    let results = allLocations.filter(loc => 
+        loc.name.toLowerCase().startsWith(query)
     );
 
-    // 2. AKILLI SIRALAMA (Sorunun Çözümü)
+    // AKILLI SIRALAMA
     results.sort((a, b) => {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
 
-        // Kural 1: Tam Eşleşme En Üste (İstanbul yazdıysa İstanbul gelsin, İstanbulluoğlu değil)
+        // 1. Tam Eşleşme (Örn: Istanbul yazınca State olan Istanbul en başa gelsin)
         if (nameA === query && nameB !== query) return -1;
         if (nameB === query && nameA !== query) return 1;
 
-        // Kural 2: Kısa İsim Önceliklidir (Genelde "Adana", "Adana Merkez"den daha önemlidir)
+        // 2. State (İl) her zaman City'den (İlçe) önce gelsin
+        if (a.type === 'state' && b.type === 'city') return -1;
+        if (a.type === 'city' && b.type === 'state') return 1;
+
+        // 3. Kısa isim önceliği
         if (nameA.length !== nameB.length) {
             return nameA.length - nameB.length; 
         }
 
-        // Kural 3: Alfabetik
         return nameA.localeCompare(nameB);
     });
 
