@@ -1,5 +1,5 @@
 // ==========================================
-// MY LOCATION MODULE (FIXED v2)
+// MY LOCATION MODULE (ENHANCED WITH GEOCODING)
 // ==========================================
 
 // 1. Global değişkenleri ve fonksiyonları EN BAŞTA tanımla
@@ -7,9 +7,6 @@ window.userLocationMarkersByDay = window.userLocationMarkersByDay || {};
 window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
 // [FIX] Mainscript bu fonksiyonu arıyor, en başa koyduk ki hata vermesin.
-// Artık iki overload destekliyor:
-// - updateUserLocationMarker(position, day, expandedMap)  ← Eski format
-// - updateUserLocationMarker(expandedMap, day, lat, lng, layer, shouldFetch)  ← mainscript.js format
 window.updateUserLocationMarker = function(arg1, arg2, arg3, arg4, arg5, arg6) {
     // Format 1: position objesi gönderildi (my_location.js arayan)
     if (arg1 && arg1.coords && typeof arg1.coords.latitude === 'number') {
@@ -81,7 +78,241 @@ if (navigator.permissions && navigator.permissions.query) {
     });
 }
 
-// 3. Konum alma fonksiyonu (Buton tetikler)
+// 3. Reverse Geocoding - Nominatim ile adres al
+async function getAddressFromCoordinates(lat, lng) {
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`,
+            {
+                headers: {
+                    'Accept-Language': 'tr'
+                }
+            }
+        );
+        
+        if (!response.ok) throw new Error('Geocoding failed');
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.warn("Geocoding error:", error);
+        return null;
+    }
+}
+
+// 4. Popup HTML oluştur
+function createLocationPopupContent(lat, lng, addressData) {
+    let html = `
+        <div class="location-popup-container">
+            <div class="location-popup-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>Konumunuz</span>
+            </div>
+            <div class="location-popup-content">
+    `;
+
+    if (addressData) {
+        const address = addressData.address || {};
+        
+        // Yakındaki yer adı
+        let placeLabel = null;
+        if (address.poi) {
+            placeLabel = address.poi;
+        } else if (address.building) {
+            placeLabel = address.building;
+        } else if (address.shop || address.amenity) {
+            placeLabel = address.shop || address.amenity;
+        } else if (address.road || address.street) {
+            placeLabel = address.road || address.street;
+        } else if (address.neighbourhood) {
+            placeLabel = address.neighbourhood;
+        } else if (address.suburb) {
+            placeLabel = address.suburb;
+        }
+
+        // Yakın alanlar
+        const nearbyItems = [];
+        if (address.road || address.street) nearbyItems.push(address.road || address.street);
+        if (address.neighbourhood) nearbyItems.push(address.neighbourhood);
+        if (address.suburb) nearbyItems.push(address.suburb);
+        if (address.city) nearbyItems.push(address.city);
+
+        if (placeLabel) {
+            html += `
+                <div class="location-place-name">
+                    <strong>${placeLabel}</strong>
+                </div>
+            `;
+        }
+
+        if (nearbyItems.length > 0) {
+            html += `
+                <div class="location-nearby">
+                    <p class="location-nearby-label">📍 <strong>yakınlarındasınız</strong></p>
+                    <p class="location-nearby-text">${nearbyItems.slice(0, 2).join(', ')}</p>
+                </div>
+            `;
+        }
+
+        // Ülke/Bölge
+        if (address.country) {
+            html += `
+                <div class="location-country">
+                    <small>🌍 ${address.country}</small>
+                </div>
+            `;
+        }
+    }
+
+    // Koordinatlar
+    html += `
+        <div class="location-coords">
+            <small>
+                <code>${lat.toFixed(5)}, ${lng.toFixed(5)}</code>
+            </small>
+        </div>
+    `;
+
+    html += `
+        <div class="location-accuracy">
+            <small>📡 GPS doğruluğu: ~50m</small>
+        </div>
+    `;
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    return html;
+}
+
+// 5. Popup stilleri CSS olarak ekle
+function ensureLocationPopupStyles() {
+    if (document.getElementById('location-popup-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'location-popup-styles';
+    style.innerHTML = `
+        .location-popup-container {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 0;
+            min-width: 220px;
+        }
+
+        .location-popup-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 12px 8px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .location-popup-header svg {
+            flex-shrink: 0;
+            animation: locationPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes locationPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .location-popup-content {
+            padding: 12px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+        }
+
+        .location-place-name {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .location-place-name strong {
+            color: #333;
+            font-size: 15px;
+            display: block;
+            word-break: break-word;
+        }
+
+        .location-nearby {
+            margin: 10px 0;
+            padding: 8px;
+            background: #f5f9ff;
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+        }
+
+        .location-nearby-label {
+            margin: 0 0 4px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .location-nearby-text {
+            margin: 0;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .location-country {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .location-country small {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .location-coords {
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .location-coords code {
+            background: #f5f5f5;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #555;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .location-accuracy {
+            margin-top: 6px;
+            text-align: center;
+            color: #aaa;
+            font-size: 11px;
+        }
+
+        /* Leaflet popup uyumluluğu */
+        .leaflet-popup-content .location-popup-container {
+            margin: -2px -6px -6px -6px;
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
+// 6. Konum alma fonksiyonu (Buton tetikler)
 function getMyLocation(day, expandedMap) {
     if (!navigator.geolocation) {
         alert('Your browser does not support geolocation.');
@@ -103,7 +334,7 @@ function getMyLocation(day, expandedMap) {
             if(btn) btn.style.opacity = "1";
             
             if (error.code === 1) {
-                alert("Please allow location access in your browser settings to use this feature.");
+                alert("Lütfen tarayıcı ayarlarında konum erişimine izin verin.");
             }
         },
         {
@@ -131,9 +362,9 @@ function getMyLocation(day, expandedMap) {
     }, 2000);
 }
 
-// 4. Harita üzerinde konumu gösteren ana fonksiyon
-function showLocationOnMap(position, day, expandedMap) {
-    // A. Eksik parametre kontrolü (Otomatik tamamlama)
+// 7. Harita üzerinde konumu gösteren ana fonksiyon
+async function showLocationOnMap(position, day, expandedMap) {
+    // A. Eksik parametre kontrolü
     if (!position || !position.coords) {
         console.warn("[showLocationOnMap] Invalid position object:", position);
         return;
@@ -175,6 +406,13 @@ function showLocationOnMap(position, day, expandedMap) {
     const lat = position.coords.latitude;
     const lng = position.coords.longitude;
 
+    // Popup stillerini ekle
+    ensureLocationPopupStyles();
+
+    // Adres bilgisini al (async)
+    const addressData = await getAddressFromCoordinates(lat, lng);
+    const popupContent = createLocationPopupContent(lat, lng, addressData);
+
     // D. Harita Tipine Göre Marker Ekleme
     const isMapLibre = !!(expandedMap && expandedMap.addSource); // MapLibre kontrolü
 
@@ -188,10 +426,11 @@ function showLocationOnMap(position, day, expandedMap) {
 
         const marker = new maplibregl.Marker({ element: el })
             .setLngLat([lng, lat])
-            .setPopup(new maplibregl.Popup({ offset: 25 }).setText("You are here!"))
+            .setPopup(new maplibregl.Popup({ offset: 25, maxWidth: 'none' }).setHTML(popupContent))
             .addTo(expandedMap);
             
         window.userLocationMarkersByDay[day].push(marker);
+        marker.togglePopup();
         expandedMap.flyTo({ center: [lng, lat], zoom: 15, essential: true });
 
     } else if (expandedMap && expandedMap.setView) {
@@ -205,7 +444,7 @@ function showLocationOnMap(position, day, expandedMap) {
         });
 
         const marker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(expandedMap);
-        marker.bindPopup("You are here!").openPopup();
+        marker.bindPopup(popupContent, { maxWidth: 280, autoPan: true }).openPopup();
         window.userLocationMarkersByDay[day].push(marker);
         
         expandedMap.setView([lat, lng], 15);
