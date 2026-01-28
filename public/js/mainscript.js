@@ -369,11 +369,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     suggestionsDiv.style.minHeight = 'auto';
     suggestionsDiv.innerHTML = "";
 
-    if (!originalResults || !originalResults.length) {
-        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
-        return;
-    }
-
+  
   const targetTermVariants = createTurkishVariants(manualQuery);
 const normalizedTarget = normalizeText(manualQuery);
 
