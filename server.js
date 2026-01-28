@@ -2,7 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
-const { City } = require('country-state-city'); // <--- BU SATIRI EKLE
+const { City } = require('country-state-city'); // Paketi dahil ettik
 
 // [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
 const BUILD_ID = Date.now().toString();
@@ -26,9 +26,9 @@ app.use(express.urlencoded({ extended: true }));
 // --- YEREL ŞEHİR VERİSİ HAZIRLIĞI ---
 const allCities = City.getAllCities();
 
-// --- API ENDPOINTLERİ (SIRALAMA ÖNEMLİ) ---
-
-// 1. Yeni Yerel Şehir Arama (En üste aldık ki 404'e takılmasın)
+// ============================================================
+// 1. YENİ YEREL ŞEHİR API (SIRALAMA DÜZELTİLDİ - EN ÜSTTE)
+// ============================================================
 app.get('/api/cities', (req, res) => {
     const { q, limit } = req.query;
     if (!q || q.length < 2) return res.json([]);
@@ -45,6 +45,7 @@ app.get('/api/cities', (req, res) => {
             }));
         res.json(results);
     } catch (e) {
+        console.error('[LocalCities Error]', e);
         res.status(500).json({ error: 'Local search failed' });
     }
 });
@@ -403,14 +404,11 @@ app.get('*', (req, res) => {
     const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
     
     // 2. Browser Önbelleğini ÖLDÜREN Headerlar (Kesin Çözüm)
-    // Cache-Control: Asla saklama, her seferinde sunucuya sor.
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
     // 3. ETag ve Last-Modified Başlıklarını SİL
-    // Bu çok kritiktir. Bunu silmezsek browser "Dosya değişti mi?" diye sorar (304), 
-    // biz "Sorma, direkt indir" (200) diyoruz.
     res.removeHeader('ETag');
     res.removeHeader('Last-Modified');
 
@@ -436,4 +434,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Feedback email configured:', !!process.env.FEEDBACK_FROM_EMAIL);
 
-}); 
+});
