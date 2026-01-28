@@ -30,24 +30,34 @@ const allCities = City.getAllCities();
 // 1. YENİ YEREL ŞEHİR API (SIRALAMA DÜZELTİLDİ - EN ÜSTTE)
 // ============================================================
 app.get('/api/cities', (req, res) => {
-    const { q, limit } = req.query;
-    if (!q || q.length < 2) return res.json([]);
-    try {
-        const search = q.toLowerCase();
-        const results = allCities
-            .filter(city => city.name.toLowerCase().includes(search))
-            .slice(0, limit ? parseInt(limit) : 10)
-            .map(city => ({
-                name: city.name,
-                countryCode: city.countryCode,
-                latitude: city.latitude,
-                longitude: city.longitude
-            }));
-        res.json(results);
-    } catch (e) {
-        console.error('[LocalCities Error]', e);
-        res.status(500).json({ error: 'Local search failed' });
-    }
+    const query = req.query.q ? req.query.q.toLowerCase() : "";
+    if (!query) return res.json([]);
+
+    // 1. Önce sadece isme göre filtrele (Ülke, Eyalet kodu karmaşasını at)
+    let results = allCities.filter(city => 
+        city.name.toLowerCase().startsWith(query) // Sadece baş harfi tutanları al
+    );
+
+    // 2. AKILLI SIRALAMA (Sorunun Çözümü)
+    results.sort((a, b) => {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+
+        // Kural 1: Tam Eşleşme En Üste (İstanbul yazdıysa İstanbul gelsin, İstanbulluoğlu değil)
+        if (nameA === query && nameB !== query) return -1;
+        if (nameB === query && nameA !== query) return 1;
+
+        // Kural 2: Kısa İsim Önceliklidir (Genelde "Adana", "Adana Merkez"den daha önemlidir)
+        if (nameA.length !== nameB.length) {
+            return nameA.length - nameB.length; 
+        }
+
+        // Kural 3: Alfabetik
+        return nameA.localeCompare(nameB);
+    });
+
+    // İlk 10 sonucu dön
+    res.json(results.slice(0, 10));
 });
 
 
