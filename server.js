@@ -2,7 +2,6 @@ const fs = require('fs');
 const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
-const { City, State } = require('country-state-city');
 
 // [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
 const BUILD_ID = Date.now().toString();
@@ -29,10 +28,61 @@ const { getSuggestions } = require('./localCities.js');
 app.get('/api/cities', (req, res) => {
     try {
         const query = req.query.q ? req.query.q.trim() : "";
-        const suggestions = getSuggestions(query);
-        res.json(suggestions);
+        console.log(`[API] Original query: "${query}"`);
+        
+        if (!query || query.length < 2) return res.json([]);
+        
+        // Türkçe karakter normalizasyonu
+        const normalizeForSearch = (text) => {
+            if (!text) return '';
+            return text
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // tüm aksanları kaldır
+                .replace(/ı/g, 'i')
+                .replace(/ğ/g, 'g')
+                .replace(/ü/g, 'u')
+                .replace(/ş/g, 's')
+                .replace(/ö/g, 'o')
+                .replace(/ç/g, 'c');
+        };
+        
+        const normalizedQuery = normalizeForSearch(query);
+        console.log(`[API] Normalized for search: "${normalizedQuery}"`);
+        
+        // Tüm veriyi al ve normalize et
+        const allStates = require('country-state-city').State.getAllStates();
+        const allCities = require('country-state-city').City.getAllCities();
+        
+        const allData = [
+            ...allStates.map(s => ({ 
+                ...s, 
+                type: 'state',
+                searchName: normalizeForSearch(s.name)
+            })),
+            ...allCities.map(c => ({ 
+                ...c, 
+                type: 'city',
+                searchName: normalizeForSearch(c.name)
+            }))
+        ];
+        
+        // Filtrele: normalize edilmiş isimde aranan kelime geçiyor mu?
+        const results = allData
+            .filter(item => item.searchName.includes(normalizedQuery))
+            .slice(0, 10)
+            .map(item => ({
+                name: item.name,
+                countryCode: item.countryCode,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                type: item.type
+            }));
+        
+        console.log(`[API] Found ${results.length} results for "${query}"`);
+        res.json(results);
+        
     } catch (err) {
-        console.error("[API] City API Error:", err);
+        console.error("[API] Error:", err);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });

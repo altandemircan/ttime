@@ -647,7 +647,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
    // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
-// ESKİ KODU SİL, YERİNE BUNU KOY:
 chatInput.addEventListener("input", debounce(async function () {
     console.log("=== INPUT DEBUG ===");
     
@@ -672,23 +671,31 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-// Değiştirilecek kısım (satır ~663 civarı):
-let searchText = rawText
-    .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
-    .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
-    .replace(/[^\p{L}\s]/gu, ' ')  // Unicode harf desteği - DÜZELTİLDİ
-    .replace(/\s+/g, ' ')
-    .trim();
-
-// Normalize et
-searchText = normalizeTurkish(searchText);
-
-    // Eğer boşsa, orijinal metni kullan
+    // 2. ÇOK BASİT TEMİZLEME - sadece rakam ve bazı kelimeleri temizle
+    let searchText = rawText
+        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '') // sayı ve gün
+        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel)\b/gi, '') // bazı filler
+        .replace(/[^\p{L}\s]/gu, ' ') // sadece harf ve boşluk
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // Eğer hiç harf kalmadıysa, orijinal metni kullan
     if (!searchText || searchText.length < 2) {
-        searchText = rawText.replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ').trim();
+        searchText = rawText.replace(/[^\p{L}\s]/gu, ' ').trim();
     }
+    
+    // Türkçe karakterleri normalize et (istemci tarafında)
+    searchText = searchText
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // tüm aksanları kaldır
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
 
-    console.log("Searching for:", searchText);
+    console.log("Searching for (normalized):", searchText);
 
     // 3. API'YE SOR
     try {
@@ -706,29 +713,16 @@ searchText = normalizeTurkish(searchText);
                         properties: {
                             name: city.name,
                             city: city.name,
-                            country_code: city.countryCode.toLowerCase(),
-                            formatted: `${city.name}, ${city.countryCode}`,
+                            country_code: (city.countryCode || "").toLowerCase(),
+                            formatted: `${city.name}, ${city.countryCode || ''}`,
                             lat: parseFloat(city.latitude),
                             lon: parseFloat(city.longitude),
-                            result_type: city.type,
+                            result_type: city.type || 'city',
                             place_id: `local-${city.latitude}-${city.longitude}`
                         }
                     })),
                     searchText
                 );
-            } else {
-                // Fallback: basit liste
-                suggestionsDiv.innerHTML = '';
-                cities.forEach(city => {
-                    const div = document.createElement("div");
-                    div.className = "category-area-option";
-                    div.textContent = `${city.name}, ${city.countryCode}`;
-                    div.onclick = () => {
-                        console.log("Selected:", city.name);
-                        // Seçim işlemleri buraya
-                    };
-                    suggestionsDiv.appendChild(div);
-                });
             }
         } else {
             suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
