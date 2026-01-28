@@ -242,32 +242,23 @@ let lastAutocompleteController = null;
 async function geoapifyLocationAutocomplete(query) {
     if (!query || query.length < 1) return [];
     try {
-        // 1. Kendi yerel API'mize (server.js'de oluşturduğumuz) istek atıyoruz
-        let response = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
-        
-        if (!response.ok) {
-            console.error("City API error:", response.status);
-            return [];
-        }
+        // İsteğin nereden geldiğini görmen için log:
+        console.log("Veri yerel veritabanından çekiliyor... Sorgu:", query);
 
+        let response = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
         let data = await response.json();
         
-        // 2. Gelen veriyi renderSuggestions fonksiyonunun beklediği Geoapify formatına çeviriyoruz
-        // (Böylece diğer hiçbir fonksiyonu değiştirmek zorunda kalmıyoruz)
         return data.map(item => ({
             properties: {
                 name: item.name,
                 city: item.name,
                 country_code: item.countryCode ? item.countryCode.toLowerCase() : "",
-                // Listede görünecek metin: "Isparta, TR"
-                formatted: `${item.name}, ${item.countryCode}`, 
+                formatted: `${item.name}, ${item.countryCode}`,
                 lat: parseFloat(item.latitude),
                 lon: parseFloat(item.longitude),
-                // Harita işlemleri için benzersiz bir ID uyduruyoruz
                 place_id: `local-${item.latitude}-${item.longitude}` 
             }
         }));
-
     } catch (e) {
         console.warn("Local City API error:", e);
         return [];
@@ -556,45 +547,41 @@ document.addEventListener("DOMContentLoaded", function() {
 // 4. INPUT EVENT LISTENER
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
-    chatInput.addEventListener("input", debounce(async function () {
+   // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
+chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
     const rawText = this.value.trim();
-    const locationQuery = extractLocationQuery(rawText);
-    
-    // İLK KARAKTERDE: Hemen önceki sonuçları göster
-    if (locationQuery.length === 1 && window.lastResults) {
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(window.lastResults, locationQuery);
-        }
-        return; // API'ye gitme, sadece önceki sonuçları filtrele
-    }
-    
-    if (locationQuery.length < 2) {
-        if (rawText.length < 2) showSuggestions();
+    const suggestionsDiv = document.getElementById("suggestions");
+
+    if (rawText.length === 0) {
+        showSuggestions();
         return;
     }
 
-        let suggestions = [];
-        try {
-            if (window.geoapify && window.geoapify.autocomplete) {
-                suggestions = await window.geoapify.autocomplete(locationQuery);
-            } else if (typeof geoapifyLocationAutocomplete === 'function') {
-                suggestions = await geoapifyLocationAutocomplete(locationQuery);
-            }
-        } catch (err) {
-            if (err.name === "AbortError") return;
-            suggestions = [];
-        }
+    // Arama başlar başlamaz Loading yazısını çakıyoruz
+    if (suggestionsDiv) {
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
+        if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
+    }
 
-        window.lastResults = suggestions;
-        
-        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(suggestions, locationQuery);
-        }
+    const locationQuery = extractLocationQuery(rawText);
+    if (locationQuery.length < 2) return;
 
-    }, 500));
+    let suggestions = await geoapifyLocationAutocomplete(locationQuery);
+    window.lastResults = suggestions;
+    
+    // SONUÇ VARSA LİSTELE, YOKSA "LOADING..." YAZISINI KORU (Zıplamayı önler)
+    if (suggestions && suggestions.length > 0) {
+        renderSuggestions(suggestions, locationQuery);
+    } else {
+        // API boş döndüğünde (anlamsız yazı) div'i silmiyoruz, Loading yazısını tutuyoruz
+        if (suggestionsDiv) {
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
+            if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
+        }
+    }
+}, 400));
 
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
