@@ -240,34 +240,94 @@ let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
 async function geoapifyLocationAutocomplete(query) {
-    if (!query || query.length < 1) return [];
-    try {
-        console.log("Veri yerel veritabanından çekiliyor... Sorgu:", query);
-        let response = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
-        let data = await response.json();
-        
-        return data.map(item => {
-            // Hata almamak için koordinatları zorla sayıya çeviriyoruz
-            const lat = Number(item.latitude);
-            const lon = Number(item.longitude);
-
-            return {
+    // 1. UNESCO (LOCAL) ARAMA - Mevcut listen
+    let unescoResults = [];
+    if (window.UNESCO_DATA) {
+        const q = query.toLowerCase().trim();
+        unescoResults = window.UNESCO_DATA
+            .filter(item => item.name.toLowerCase().includes(q))
+            .map(item => ({
                 properties: {
                     name: item.name,
-                    city: item.name,
-                    country_code: (item.countryCode || "").toLowerCase(),
-                    formatted: `${item.name}, ${item.countryCode || ""}`,
-                    // Eğer çevirme başarısızsa (NaN) haritayı bozmaması için 0 veya null kontrolü
-                    lat: isNaN(lat) ? 0 : lat,
-                    lon: isNaN(lon) ? 0 : lon,
-                    place_id: `local-${lat}-${lon}` 
+                    city: item.name, 
+                    country_code: item.country_code ? item.country_code.toLowerCase() : "", 
+                    formatted: `${item.name} (UNESCO Site)`,
+                    lat: item.lat,
+                    lon: item.lon,
+                    result_type: 'unesco_site',
+                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
                 }
-            };
-        });
-    } catch (e) {
-        console.warn("Local City API error:", e);
-        return [];
+            })).slice(0, 3);
     }
+
+    // 2. [YENİ] ŞEHİR (LOCAL) ARAMA - Senin yeni kurduğun yerel paket
+    let localCityResults = [];
+    try {
+        console.log("Şehirler yerel veritabanından çekiliyor...");
+        const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
+        const localCities = await resLocal.json();
+        localCityResults = localCities.map(item => ({
+            properties: {
+                name: item.name,
+                city: item.name,
+                country_code: (item.countryCode || "").toLowerCase(),
+                formatted: `${item.name}, ${item.countryCode}`,
+                lat: parseFloat(item.latitude),
+                lon: parseFloat(item.longitude),
+                result_type: 'city', // Senin sistemin bunu şehir olarak bilsin
+                place_id: `local-${item.latitude}-${item.longitude}`
+            }
+        }));
+    } catch (e) {
+        console.warn("Yerel şehir API hatası:", e);
+    }
+
+    // 3. API ARAMASI (YEDEK)
+    let apiFeatures = [];
+    // Eğer yerelde (UNESCO + Şehir) yeterli sonuç yoksa Geoapify'a git
+    if (unescoResults.length + localCityResults.length < 5) {
+        try {
+            let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+            let data = await response.json();
+            apiFeatures = data.features || [];
+        } catch (e) {
+            console.warn("Geoapify API hatası:", e);
+        }
+    }
+
+    // 4. BİRLEŞTİRME
+    // Önce UNESCO, sonra Şehirler, en son API sonuçları
+    let combined = [...unescoResults, ...localCityResults, ...apiFeatures];
+
+    // --- Bölge/Şehir tamamlama kodların (Nearby) dokunmadan aynen kalıyor ---
+    const region = combined.find(f => {
+        const t = f.properties.result_type || f.properties.place_type || '';
+        return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
+    });
+
+    if (region) {
+        try {
+            const resNearby = await fetch(
+                `/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=80000`
+            );
+            const nearbyData = await resNearby.json();
+            let nearbyCities = (nearbyData.features || []).filter(f => {
+                const t = f.properties.result_type || f.properties.place_type || '';
+                return ['city', 'town', 'village'].includes(t);
+            });
+            
+            const existingNames = new Set(combined.map(f =>
+                (f.properties.city || f.properties.name || '').toLowerCase()
+            ));
+            
+            nearbyCities = nearbyCities.filter(f =>
+                !existingNames.has((f.properties.city || f.properties.name || '').toLowerCase())
+            );
+            combined = [...combined, ...nearbyCities];
+        } catch (err) {}
+    }
+
+    return combined;
 }
 
 function extractLocationQuery(input) {
