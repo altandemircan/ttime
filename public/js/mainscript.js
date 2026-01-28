@@ -10469,3 +10469,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 }
 
+
+
+console.log("✅ geoapifyLocationAutocomplete loaded:", typeof geoapifyLocationAutocomplete);
+console.log("✅ normalizeText loaded:", typeof normalizeText);
+console.log("✅ extractLocationQuery loaded:", typeof extractLocationQuery);
