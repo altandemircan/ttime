@@ -586,7 +586,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         if (rawText.length < 2) showSuggestions();
         const suggestionsDiv = document.getElementById("suggestions");
         if (!locationQuery && suggestionsDiv) {
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="padding: 10px; color: #999; text-align: center;">Loading suggestions...</div>';
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center;">Loading suggestions...</div>';
         }
         return;
     }
