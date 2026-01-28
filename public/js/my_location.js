@@ -223,40 +223,41 @@ function ensureLocationPopupStyles() {
             padding: 2px;
         }
 
-        /* GREEN STATIC LOCATION MARKER (matching nearby_ai style) */
+        /* GREEN LOCATION PIN MARKER (matching nearby_ai style) */
         .location-marker-green {
             position: relative;
             width: 40px;
-            height: 40px;
+            height: 50px;
             pointer-events: auto;
             z-index: 1000;
+            filter: drop-shadow(0 2px 6px rgba(76, 175, 80, 0.4));
         }
 
         .location-marker-green::before {
             content: '';
             position: absolute;
             left: 50%;
-            top: 50%;
-            width: 24px;
-            height: 24px;
-            transform: translate(-50%, -50%);
+            top: 0;
+            width: 28px;
+            height: 28px;
+            transform: translate(-50%, 0);
             background: linear-gradient(135deg, #4caf50, #81c784);
-            border-radius: 50%;
-            border: 3px solid white;
+            border-radius: 50% 50% 50% 0;
+            border: 2px solid white;
             box-shadow: 
                 0 0 12px rgba(76, 175, 80, 0.6),
-                0 0 24px rgba(76, 175, 80, 0.3),
                 inset 0 2px 4px rgba(255, 255, 255, 0.5);
             z-index: 10;
+            transform: translate(-50%, 0) rotate(-45deg);
         }
 
         .location-marker-green::after {
             content: '';
             position: absolute;
             left: 50%;
-            top: 50%;
-            width: 7px;
-            height: 7px;
+            top: 8px;
+            width: 8px;
+            height: 8px;
             background: white;
             border-radius: 50%;
             transform: translate(-50%, -50%);
@@ -405,9 +406,9 @@ async function showLocationOnMap(position, day, expandedMap) {
         // --- 2D Map (Leaflet) ---
         const userIcon = L.divIcon({
             className: 'location-marker-green', 
-            iconSize: [40, 40],       
-            iconAnchor: [20, 40],     
-            popupAnchor: [0, -40]
+            iconSize: [40, 50],       
+            iconAnchor: [20, 50],     
+            popupAnchor: [0, -50]
         });
 
         const marker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(expandedMap);
