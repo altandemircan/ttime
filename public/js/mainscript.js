@@ -272,7 +272,7 @@ async function geoapifyLocationAutocomplete(query) {
         console.warn("Local City API error:", e);
         return [];
     }
-}}
+}
  
 
 function extractLocationQuery(input) {
