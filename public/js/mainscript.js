@@ -27,10 +27,11 @@ function extractLocationQuery(input) {
     let words = cleaned.split(/\s+/);
     words = words.filter(w => w.length > 2);
     
+    // Büyük harfle başlayan SON kelimeyi al (şehir adı genelde sonda)
     let capitalWords = words.filter(w => /^[A-ZÇĞİÖŞÜ]/.test(w));
     
     if (capitalWords.length > 0) {
-        return capitalWords[0];
+        return capitalWords[capitalWords.length - 1]; // İLK değil, SON
     }
     
     return words.join(" ").trim();
