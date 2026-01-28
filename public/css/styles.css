@@ -6042,8 +6042,6 @@ ease;
     }
 }
 #suggestions { display: flex;}
-#suggestions[hidden] { display: none; }
-
 
 .canonical-preview {
   font-family: system-ui, sans-serif;
