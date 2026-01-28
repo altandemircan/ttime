@@ -595,12 +595,11 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     const rawText = this.value.trim();
     const locationQuery = extractLocationQuery(rawText);
     
-    // İLK KARAKTERDE: Hemen önceki sonuçları göster
-    if (locationQuery.length === 1 && window.lastResults) {
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(window.lastResults, locationQuery);
-        }
-        return; // API'ye gitme, sadece önceki sonuçları filtrele
+    if (locationQuery.length < 1) {
+        // Silerken: loading göster
+        const suggestionsDiv = document.getElementById("suggestions");
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="padding: 10px; color: #999; text-align: center;">Loading suggestions...</div>';
+        return;
     }
     
    if (locationQuery.length < 1) {
