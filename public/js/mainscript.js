@@ -395,22 +395,24 @@ async function geoapifyLocationAutocomplete(query) {
     return combined.slice(0, 12);
 }
  
-
 function extractLocationQuery(input) {
     if (!input) return "";
     
     let cleaned = input;
-    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights|günü|günde)/gi, "");
-    cleaned = cleaned.replace(/\b(for|in|to|at|of|the|a|an|de|du|in|en)\s+/gi, " ");
-    cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     
-    let words = cleaned.split(/\s+/);
-    words = words.filter(w => {
-        const normalized = normalizeText(w);
-        return !IMPROVED_STOP_WORDS.includes(normalized) && normalized.length > 1;
-    });
+    // 1. SİLİNECEK: Sayılar ve gün/ay/saat vb.
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|saat|sene|yıl|hafta|ay|ay|night|nights|günü|günde|saati|saate)/gi, "");
     
-    return words.join(" ").trim();
+    // 2. SİLİNECEK: Fiiller (yap, plan, düzenle, vs)
+    cleaned = cleaned.replace(/\b(plan|yap|düzenle|oluştur|hazırla|bana|bize|bulun|ekle|göster|öner|seyahat|git|gitmek|gel|gelmek|yapma|yapacak)\b/gi, "");
+    
+    // 3. SİLİNECEK: Edatlar ve bağlaçlar
+    cleaned = cleaned.replace(/\b(için|ile|da|de|mi|mı|ve|ya|veya|mi|mi|mı|mı|gibi|daha|çok|az|ne|hangi|kaç)\b/gi, "");
+    
+    // 4. SİLİNECEK: Boşlukları temizle
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
+    
+    return cleaned;
 }
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
