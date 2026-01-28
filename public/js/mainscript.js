@@ -618,33 +618,37 @@ chatInput.addEventListener("input", debounce(async function () {
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    // 1. INPUT VARSA KUTUYU AÇ VE LOADING ÇAK
     if (rawText.length > 0) {
+        // KUTUYU AÇ VE LOADING YAZISINI ÇAK (Hemen, beklemeden)
         suggestionsDiv.removeAttribute('hidden');
-        suggestionsDiv.style.display = 'flex'; // tag-container genellikle flex olur, CSS'ine göre block da yapabilirsin
+        suggestionsDiv.style.display = 'flex'; 
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
     } else {
-        // Input tamamen boşsa varsayılan tagları göster (veya gizle)
-        showSuggestions(); 
+        showSuggestions(); // Input boşsa varsayılanları göster
         return;
     }
 
-    const locationQuery = extractLocationQuery(rawText);
+    // Kelime analizi (Cümle karmaşıksa şehri bulmaya çalış)
+    let locationQuery = extractLocationQuery(rawText);
     
-    // BURASI KRİTİK: Sorgu çok kısaysa "Loading" yazısı kalsın ama API'ye gitmesin.
-    // Eskiden burada 'return' diyip kutuyu kapatıyor olabilirdi.
-    if (locationQuery.length < 2) return; 
+    // Eğer cümle karmaşıksa (örn: "plan 3 antalya"), son kelimeyi de opsiyon olarak al
+    const words = rawText.split(' ');
+    const lastWord = words[words.length - 1];
 
-    // 2. VERİ ÇEKME
     let suggestions = await geoapifyLocationAutocomplete(locationQuery);
+
+    // Eğer extractLocationQuery bir şey bulamadıysa, son kelimeyle bir kez daha dene
+    if ((!suggestions || suggestions.length === 0) && lastWord.length > 2) {
+        console.log("Karmaşık cümle algılandı, son kelime deneniyor:", lastWord);
+        suggestions = await geoapifyLocationAutocomplete(lastWord);
+    }
+
     window.lastResults = suggestions;
     
-    // 3. RENDER ET VEYA LOADING'DE TUT
     if (suggestions && suggestions.length > 0) {
-        // renderSuggestions fonksiyonunun içinde suggestionsDiv.innerHTML = '' olduğundan emin ol
         renderSuggestions(suggestions, locationQuery);
     } else {
-        // Sonuç yoksa bile kutuyu kapatma! Yazıyı "Searching..." veya "Loading..." olarak koru.
+        // Hiçbir şey bulunamadıysa bile Loading yazısı veya "Searching..." kalsın, kutu kapanmasın
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
     }
 }, 400));
