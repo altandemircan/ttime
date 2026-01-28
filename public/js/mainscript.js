@@ -370,15 +370,20 @@ function extractLocationQuery(input) {
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
-        if (el) { el.hidden = false; el.style.removeProperty('display'); }
+        if (el) { 
+            el.hidden = false; 
+            // BURADAKİ el.style.removeProperty('display'); SATIRINI SİLDİM.
+            // Artık input listener'ın eklediği görünürlük ayarını bozmuyor.
+        }
     }
 }
+
 if (typeof hideSuggestionsDiv !== "function") {
     window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
         if (el) { 
             el.hidden = true; 
-            el.style.removeProperty('display');
+            el.style.removeProperty('display'); // Gizlerken stili temizlemekte sorun yok
             if (clear) el.innerHTML = "";
         }
     }
