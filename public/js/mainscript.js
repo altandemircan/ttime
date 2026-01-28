@@ -393,6 +393,10 @@ window.hideSuggestionsDiv = function(clear = false) {
 let currentFocus = -1; // Global focus takibi
 
 function renderSuggestions(originalResults = [], manualQuery = "") {
+    console.log("=== RENDER DEBUG ===");
+    console.log("Manual query:", manualQuery);
+    console.log("Results:", originalResults);
+    
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
     const chatInput = document.getElementById("user-input");
@@ -402,22 +406,40 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
+        console.log("No results to show");
         if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
         return;
     }
 
-    // A. PUANLAMA
-    const targetTerm = manualQuery.toLowerCase().trim();
+    // A. PUANLAMA - Türkçe karakter düzeltmesi ekle
+    const normalizeForCompare = (text) => {
+        if (!text) return '';
+        return text
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // aksanları kaldır
+            .replace(/ı/g, 'i');
+    };
+    
+    const targetTerm = normalizeForCompare(manualQuery);
+    console.log("Normalized target:", targetTerm);
     
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
-        const name = (p.name || "").toLowerCase();
-        const formatted = (p.formatted || "").toLowerCase();
+        const name = p.name || "";
+        const normalizedName = normalizeForCompare(name);
+        const formatted = p.formatted || "";
         const type = (p.result_type || p.place_type || '').toLowerCase();
         
-        // Filtre
-        const containsTarget = name.includes(targetTerm) || formatted.includes(targetTerm);
-        if (!containsTarget) return { item, score: -9999 };
+        console.log(`Comparing: "${name}" -> "${normalizedName}" with "${targetTerm}"`);
+        
+        // Filtre - normalize edilmiş haliyle karşılaştır
+        const containsTarget = normalizedName.includes(targetTerm);
+        if (!containsTarget) {
+            console.log(`  ✗ Does not contain "${targetTerm}"`);
+            return { item, score: -9999 };
+        }
+        
+        console.log(`  ✓ Contains "${targetTerm}"`);
         
         let score = 0;
         
@@ -427,8 +449,15 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         else if (type === 'city') score += 150; 
         else if (type === 'town' || type === 'village') score -= 50; 
 
-        if (name === targetTerm) score += 1500;
-        else if (name.startsWith(targetTerm)) score += 800;
+        // Tam eşleşme (normalize edilmiş)
+        if (normalizedName === targetTerm) {
+            console.log(`  ★ Exact match!`);
+            score += 1500;
+        }
+        else if (normalizedName.startsWith(targetTerm)) {
+            console.log(`  ☆ Starts with`);
+            score += 800;
+        }
 
         if (p.formatted && p.formatted.length < 45) score += 100;
 
@@ -442,6 +471,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         .filter(sr => sr.score > -5000)
         .slice(0, 8)
         .map(sr => sr.item);
+
+    console.log("Final results to show:", finalResults.length);
 
     // B. LİSTELEME VE GÖRSEL
     const seenSuggestions = new Set();
@@ -460,7 +491,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
              LONG_INPUT_NAME = rawName.split(',')[0].trim();
         }
 
-        // 2. GÖRÜNECEK TAM METİN (GENİŞLEYİNCE ÇIKACAK)
+        // 2. GÖRÜNECEK TAM METİN
         const regionParts = [];
         if (props.city && props.city !== LONG_INPUT_NAME) regionParts.push(props.city);
         
@@ -472,11 +503,16 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         if (countryCode) fullDisplayText += ", " + countryCode.toUpperCase() + flag;
         fullDisplayText = fullDisplayText.replace(/^,\s*/, "").trim();
 
-        const normalizedText = fullDisplayText.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (seenSuggestions.has(normalizedText)) return;
+        const normalizedText = normalizeForCompare(fullDisplayText);
+        if (seenSuggestions.has(normalizedText)) {
+            console.log(`Skipping duplicate: ${fullDisplayText}`);
+            return;
+        }
         seenSuggestions.add(normalizedText);
 
-        // 3. GÖRÜNECEK KISA METİN (LİSTEDE DURACAK)
+        console.log(`Adding suggestion: ${fullDisplayText}`);
+
+        // 3. GÖRÜNECEK KISA METİN
         let shortDisplayText = fullDisplayText;
         if (props.result_type === 'unesco_site' && fullDisplayText.length > 35) {
             shortDisplayText = fullDisplayText.substring(0, 32) + "..."; 
@@ -489,7 +525,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         // Başlangıçta KISA halini yaz
         div.textContent = shortDisplayText; 
         
-        // Verileri sakla (Resetlerken lazım olacak)
+        // Verileri sakla
         div.dataset.shortText = shortDisplayText;
         div.dataset.fullText = fullDisplayText;
         div.title = fullDisplayText;
@@ -522,9 +558,11 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.appendChild(badge);
         }
 
-       // 4. TIKLAMA OLAYI (TRIPTIME FORMATI KORUNACAK)
+        // 4. TIKLAMA OLAYI
         div.onclick = () => {
-            // A) GÖRSEL DÜZENLEME
+            console.log("Clicked:", fullDisplayText);
+            
+            // GÖRSEL DÜZENLEME
             Array.from(suggestionsDiv.children).forEach(child => {
                 if (child !== div) child.style.display = 'none';
             });
@@ -534,17 +572,15 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.style.overflow = "visible";
             if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
 
-            // B) GÜN SAYISINI YAKALA
+            // GÜN SAYISINI YAKALA
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // C) INPUTA YAZILACAK FORMAT (İŞTE BURASI DÜZELDİ)
-            // Eskiden: chatInput.value = `${days}-day ${LONG_INPUT_NAME}`; (Kuru format)
-            // Şimdi: Senin sevdiğin format
+            // INPUTA YAZ
             chatInput.value = `Plan a ${days}-day trip to ${LONG_INPUT_NAME}`;
 
-            // D) SİSTEMİ KİLİTLE
+            // SİSTEMİ KİLİTLE
             const finalLocation = {
                 name: LONG_INPUT_NAME,
                 city: props.city || LONG_INPUT_NAME,
@@ -564,7 +600,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             window.__locationPickedFromSuggestions = true;
             window.__programmaticInput = true;
 
-            // E) UI GÜNCELLEME
+            // UI GÜNCELLEME
             if (typeof enableSendButton === "function") enableSendButton();
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
 
@@ -573,10 +609,12 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
         suggestionsDiv.appendChild(div);
     });
+    
     if (suggestionsDiv.children.length > 0) {
+        console.log(`Showing ${suggestionsDiv.children.length} suggestions`);
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     } else {
-        // Eğer filtreleme sonucu liste boşaldıysa kutuyu kapatma, mesaj ver!
+        console.log("No suggestions to show after filtering");
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">No matching results</div>';
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     }
