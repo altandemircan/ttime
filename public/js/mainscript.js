@@ -21,8 +21,12 @@ function normalizeTurkish(text) {
     if (!text) return '';
     return text
         .toLowerCase()
+        // Önce noktalı i'yi düzelt (İ -> i)
+        .normalize('NFD')  // Unicode decomposition: İ -> i + ̇
+        .replace(/[\u0307]/g, '') // noktayı kaldır
+        .normalize('NFC')  // tekrar birleştir
+        // Diğer Türkçe karakterler
         .replace(/ı/g, 'i')
-        .replace(/i̇/g, 'i')  // noktalı i
         .replace(/ğ/g, 'g')
         .replace(/ü/g, 'u')
         .replace(/ş/g, 's')
@@ -32,7 +36,6 @@ function normalizeTurkish(text) {
         .replace(/û/g, 'u')
         .replace(/î/g, 'i');
 }
-
 document.addEventListener("DOMContentLoaded", function() {
     // #about yerine #about-triptime
     if (window.location.hash === "#about-triptime") {

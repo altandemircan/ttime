@@ -29,55 +29,19 @@ const { getSuggestions } = require('./localCities'); // Dosya aynı dizindeyse
 app.get('/api/cities', (req, res) => {
     try {
         const query = req.query.q ? req.query.q.trim() : "";
-        console.log(`[API] Original query: "${query}"`);
+        console.log(`[API] Query: "${query}"`);
         
-        if (!query || query.length < 2) {
-            console.log(`[API] Query too short`);
-            return res.json([]);
-        }
-
-        // TÜRKÇE KARAKTER NORMALİZASYONU - DÜZELTİLMİŞ
-        const normalizeTurkish = (text) => {
-            if (!text) return '';
-            return text
-                .toLowerCase()
-                // Önce noktalı i'yi düzelt (İ -> i)
-                .normalize('NFD')  // Unicode decomposition: İ -> i + ̇
-                .replace(/[\u0307]/g, '') // noktayı kaldır
-                .normalize('NFC')  // tekrar birleştir
-                // Diğer Türkçe karakterler
-                .replace(/ı/g, 'i')
-                .replace(/ğ/g, 'g')
-                .replace(/ü/g, 'u')
-                .replace(/ş/g, 's')
-                .replace(/ö/g, 'o')
-                .replace(/ç/g, 'c')
-                .replace(/â/g, 'a')
-                .replace(/û/g, 'u')
-                .replace(/î/g, 'i');
-        };
-
-        const normalizedQuery = normalizeTurkish(query);
-        console.log(`[API] Normalized query: "${normalizedQuery}"`);
+        if (!query || query.length < 2) return res.json([]);
 
         // TÜM VERİYİ AL
         const allStates = State.getAllStates();
         const allCities = City.getAllCities();
         
-        console.log(`[API] Total states: ${allStates.length}, cities: ${allCities.length}`);
-
-        // NORMALİZE EDİLMİŞ ARAMA - BASİT VERSİYON
         const results = [];
         
-        // State'leri ara
+        // BASİT ARAMA - hem state hem city
         for (const state of allStates) {
-            if (!state.name) continue;
-            
-            const stateNameNorm = normalizeTurkish(state.name);
-            const stateNameLower = state.name.toLowerCase();
-            
-            if (stateNameNorm.includes(normalizedQuery) || 
-                stateNameLower.includes(query.toLowerCase())) {
+            if (state.name && state.name.toLowerCase().includes(query.toLowerCase())) {
                 results.push({
                     name: state.name,
                     countryCode: state.countryCode,
@@ -85,39 +49,24 @@ app.get('/api/cities', (req, res) => {
                     longitude: state.longitude,
                     type: 'state'
                 });
-                
                 if (results.length >= 10) break;
             }
         }
         
-        // Eğer yeterli state bulamadıysak, city'leri de ara
-        if (results.length < 10) {
-            for (const city of allCities) {
-                if (!city.name) continue;
-                
-                const cityNameNorm = normalizeTurkish(city.name);
-                const cityNameLower = city.name.toLowerCase();
-                
-                if (cityNameNorm.includes(normalizedQuery) || 
-                    cityNameLower.includes(query.toLowerCase())) {
-                    results.push({
-                        name: city.name,
-                        countryCode: city.countryCode,
-                        latitude: city.latitude,
-                        longitude: city.longitude,
-                        type: 'city'
-                    });
-                    
-                    if (results.length >= 10) break;
-                }
+        for (const city of allCities) {
+            if (city.name && city.name.toLowerCase().includes(query.toLowerCase())) {
+                results.push({
+                    name: city.name,
+                    countryCode: city.countryCode,
+                    latitude: city.latitude,
+                    longitude: city.longitude,
+                    type: 'city'
+                });
+                if (results.length >= 10) break;
             }
         }
-
-        console.log(`[API] Found ${results.length} results`);
-        if (results.length > 0) {
-            console.log(`[API] Results:`, results.map(r => `${r.name} (${r.type})`));
-        }
         
+        console.log(`[API] Found ${results.length} results`);
         res.json(results);
         
     } catch (err) {
