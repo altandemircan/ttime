@@ -407,7 +407,6 @@ async function geoapifyLocationAutocomplete(query) {
     return combined.slice(0, 12);
 }
  
-
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
 // ============================================================
