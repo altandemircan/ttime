@@ -609,120 +609,93 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 // ============================================================
 // 4. INPUT LISTENER (NİHAİ ÇÖZÜM: TÜRKÇE FIX + AKILLI SIRALAMA)
 // ============================================================
+// ============================================================
+// INPUT LISTENER (RESET - SADE VE GÜÇLÜ VERSİYON)
+// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    // 1. KUTUYU AÇ VE LOADING GÖSTER
+    // 1. KUTUYU AÇ
     if (rawText.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching location...</div>';
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching...</div>';
     } else {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
         showSuggestions(); 
         return;
     }
 
-    // YARDIMCI: Türkçe Uyumlu Küçük Harf Çevirici
-    const safeLower = (str) => {
-        return (str || "").toLocaleLowerCase('tr');
-    };
+    // 2. BASİT TEMİZLİK (Regex Fantezisi YOK)
+    // Sadece sayıları sil, gerisine dokunma.
+    let cleanText = rawText.replace(/[0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // --- 2. HASSAS TEMİZLİK (Unicode \p{L}) ---
-    // Harfleri KORU (İ, ı, ş... dahil), sayı ve sembolleri SİL.
-    let cleanText = rawText
-        .replace(/[0-9]/g, ' ') 
-        .replace(/[^\p{L}\s]/gu, ' ') 
-        .replace(/\s+/g, ' ') 
-        .trim();
-
-    const timeKeywords = ['day', 'days', 'gün', 'gun', 'daily', 'gunluk', 'gece', 'night', 'nights', 'week', 'weeks', 'hafta', 'month', 'months', 'ay', 'year', 'years', 'yil'];
+    // Zaman kelimelerini filtrele
+    const timeKeywords = ['day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 'week', 'weeks', 'hafta', 'year', 'yil'];
     
-    let allWords = cleanText.split(' ');
-    
-    // Filtreleme: 2 harften uzun ve zaman kelimesi olmayanlar
-    const candidates = allWords.filter(w => {
-        return w.length > 2 && !timeKeywords.includes(safeLower(w));
+    // Boşluktan böl ve filtrele
+    let candidates = cleanText.split(' ').filter(w => {
+        return w.length > 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
     });
 
     let foundSuggestions = [];
     let foundQuery = "";
 
-    // --- STRATEJİ 1: Bütün Cümle ---
-    if (candidates.length > 0) {
-        let fullQuery = candidates.join(" ");
-        if (candidates.length > 1) {
-            try {
-                foundSuggestions = await geoapifyLocationAutocomplete(fullQuery);
-                if (foundSuggestions && foundSuggestions.length > 0) {
-                    foundQuery = fullQuery;
+    // 3. ADAYLARI TARA (Sırayla dene, bulursan çık)
+    for (let word of candidates) {
+        try {
+            // API'ye sor
+            let results = await geoapifyLocationAutocomplete(word);
+
+            if (results && results.length > 0) {
+                // Sonuç geldiyse, bu sonuçların içinde aradığımız kelimeye benzer bir şey var mı?
+                // (Backend bazen alakasız şeyler döndürebilir, kontrol edelim)
+                let isValid = results.some(r => {
+                    let name = (r.properties.name || "").toLocaleLowerCase('tr');
+                    let search = word.toLocaleLowerCase('tr');
+                    return name.includes(search) || search.includes(name);
+                });
+
+                if (isValid) {
+                    foundSuggestions = results;
+                    foundQuery = word;
+                    break; // BULDUM! Diğer saçma kelimeleri aramayı bırak.
                 }
-            } catch(e) {}
-        }
-    }
-
-    // --- STRATEJİ 2: Kelime Kelime Tara ---
-    if (!foundSuggestions || foundSuggestions.length === 0) {
-        for (let word of candidates) {
-            try {
-                let results = await geoapifyLocationAutocomplete(word);
-
-                if (results && results.length > 0) {
-                    // --- BINGO KONTROLÜ (Türkçe Uyumlu) ---
-                    // Gelen sonucun içinde aradığımız kelime geçiyor mu?
-                    const firstResult = results[0];
-                    const props = firstResult.properties || {};
-                    
-                    const pName = safeLower(props.name);
-                    const pCity = safeLower(props.city);
-                    const sWord = safeLower(word);
-
-                    if (pName.includes(sWord) || sWord.includes(pName) || pCity.includes(sWord)) {
-                        console.log(`[BINGO] Kelime: ${word} -> Sonuç: ${props.name}`);
-                        foundSuggestions = results;
-                        foundQuery = word;
-                        break; 
-                    }
-                }
-            } catch (e) {
-                console.warn("API Error:", e);
             }
+        } catch (e) {
+            console.warn("Search Err:", e);
         }
     }
 
     window.lastResults = foundSuggestions;
     
-    // --- 3. AKILLI SIRALAMA (İstanbulluoğlu Sorununu Çözer) ---
-    // Backend saçma sıralasa bile, biz Frontend'de düzeltiyoruz.
+    // 4. SONUÇLARI GÖSTER VE SIRALA (İstanbulluoğlu FIX)
     if (foundSuggestions && foundSuggestions.length > 0) {
-        const target = safeLower(foundQuery);
-
+        
+        // --- BURASI ÇOK ÖNEMLİ: Frontend Sıralaması ---
+        const target = foundQuery.toLocaleLowerCase('tr');
+        
         foundSuggestions.sort((a, b) => {
-            const nameA = safeLower(a.properties.name);
-            const nameB = safeLower(b.properties.name);
+            const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
+            const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
 
-            // 1. TAM EŞLEŞME EN ÜSTE ("istanbul" == "istanbul")
-            const exactA = (nameA === target);
-            const exactB = (nameB === target);
-            if (exactA && !exactB) return -1;
-            if (!exactA && exactB) return 1;
+            // 1. Tam Eşleşme (İstanbul == İstanbul) -> En üste
+            if (nameA === target && nameB !== target) return -1;
+            if (nameB === target && nameA !== target) return 1;
 
-            // 2. KISA İSİM ÜSTE ("İstanbul", "İstanbulluoğlu"ndan önce gelir)
-            if (nameA.length !== nameB.length) return nameA.length - nameB.length;
-
-            return 0;
+            // 2. İsim Uzunluğu (Kısa olan orijinal şehirdir: İstanbul < İstanbulluoğlu)
+            return nameA.length - nameB.length;
         });
 
-        // Sıralanmış listeyi ekrana bas
         renderSuggestions(foundSuggestions, foundQuery);
     } else {
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No location found</div>';
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     }
 
-}, 500));
+}, 400));
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
