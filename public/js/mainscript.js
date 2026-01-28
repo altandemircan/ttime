@@ -26,7 +26,8 @@ function extractLocationQuery(input) {
     cleaned = cleaned.replace(/\d+/g, " ");
     
     // day/days/gün vb. sil
-    cleaned = cleaned.replace(/\b(day|days|gün|gun|night|nights|trip|tour|plan|travel|visit)\b/gi, " ");
+    cleaned = cleaned.replace(/\b(day|days|gün|gun|night|nights|trip|tour|plan|travel|visit|for|in|to|at|a|the)\b/gi, " ");
+
     
     // Özel karakterleri sil
     cleaned = cleaned.replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
