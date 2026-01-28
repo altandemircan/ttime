@@ -43,9 +43,39 @@ async function geoapifyLocationAutocomplete(query) {
     }
 }
 
+// ============================================================
+// MEVCUT FONKSİYONU BUL VE BUNUNLA DEĞİŞTİR
+// ============================================================
 function extractLocationQuery(input) {
     if (!input) return "";
-    return input;
+
+    let clean = input.toLowerCase();
+
+    // 1. Gün kalıplarını sil (Örn: "1 day", "3 days", "2-day", "5 gün")
+    // Sayıları ve yanındaki day/gün ifadelerini temizler
+    clean = clean.replace(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|günü|günde)/gi, " ");
+
+    // 2. Gereksiz kelimeleri (Stop Words) sil
+    const stopWords = [
+        "plan", "trip", "tour", "visit", "travel", "journey", "guide",
+        "create", "make", "generate", "build", "please", "show", "give",
+        "for", "in", "to", "at", "on", "from", "with", "about", "of",
+        "a", "an", "the", "my",
+        "gezi", "tatil", "seyahat", "tur", "rota", "hakkında", "ile", "için",
+        "yap", "gitmek", "istiyorum", "bana", "bir"
+    ];
+
+    stopWords.forEach(word => {
+        // Kelimenin tam eşleşmesini bulup siler (örneğin "in" silinirken "india" bozulmaz)
+        const regex = new RegExp(`\\b${word}\\b`, "gi");
+        clean = clean.replace(regex, " ");
+    });
+
+    // 3. Noktalama işaretlerini ve çift boşlukları temizle
+    clean = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ");
+    clean = clean.replace(/\s+/g, " ").trim();
+
+    return clean;
 }
 
 
