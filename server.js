@@ -23,54 +23,16 @@ app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 
-// Tüm dünyadaki State ve City listesini bir kez belleğe al (Performans için)
-const { getSuggestions } = require('./localCities'); // Dosya aynı dizindeyse
-// ROTA İÇİNE:
+// localCities.js'yi kullan
+const { getSuggestions } = require('./localCities.js');
+
 app.get('/api/cities', (req, res) => {
     try {
         const query = req.query.q ? req.query.q.trim() : "";
-        console.log(`[API] Query: "${query}"`);
-        
-        if (!query || query.length < 2) return res.json([]);
-
-        // TÜM VERİYİ AL
-        const allStates = State.getAllStates();
-        const allCities = City.getAllCities();
-        
-        const results = [];
-        
-        // BASİT ARAMA - hem state hem city
-        for (const state of allStates) {
-            if (state.name && state.name.toLowerCase().includes(query.toLowerCase())) {
-                results.push({
-                    name: state.name,
-                    countryCode: state.countryCode,
-                    latitude: state.latitude,
-                    longitude: state.longitude,
-                    type: 'state'
-                });
-                if (results.length >= 10) break;
-            }
-        }
-        
-        for (const city of allCities) {
-            if (city.name && city.name.toLowerCase().includes(query.toLowerCase())) {
-                results.push({
-                    name: city.name,
-                    countryCode: city.countryCode,
-                    latitude: city.latitude,
-                    longitude: city.longitude,
-                    type: 'city'
-                });
-                if (results.length >= 10) break;
-            }
-        }
-        
-        console.log(`[API] Found ${results.length} results`);
-        res.json(results);
-        
+        const suggestions = getSuggestions(query);
+        res.json(suggestions);
     } catch (err) {
-        console.error("[API] Error:", err);
+        console.error("[API] City API Error:", err);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
