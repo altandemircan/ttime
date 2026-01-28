@@ -356,8 +356,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     if (!suggestionsDiv || !chatInput) return;
     
     // Eğer sonuç yoksa, boş div göster (hiç gizleme)
-    if (!originalResults || originalResults.length === 0) {
-        suggestionsDiv.innerHTML = "";
+      if (!originalResults || originalResults.length === 0) {
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="padding: 10px; color: #999; text-align: center;">Loading suggestions...</div>';
         return;
     }
     
