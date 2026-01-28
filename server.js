@@ -336,20 +336,22 @@ app.get('/test-root', (req, res) => {
   res.json({ message: 'Root test OK' });
 });
 
- 
+
 app.use(express.static(
   path.join(__dirname, 'public'),
   {
     index: false,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html') || filePath.endsWith('.js')) {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store');
       } else {
+        // CSS / JS / image
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       }
     }
   }
 ));
+
 // 7. API 404 yakalayıcı (yalnızca /api altı için – feedbackRoute vs. sonrası)
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'not_found' });

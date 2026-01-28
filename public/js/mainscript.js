@@ -18,111 +18,6 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 
 
 
-
-// ============================================================
-// 1. TURKISH CHARACTER NORMALIZATION
-// ============================================================
-function normalizeText(str) {
-    if (!str) return "";
-    return str
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim();
-}
-
-async function geoapifyLocationAutocomplete(query) {
-    if (!query || query.length < 1) return [];
-    try {
-        let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
-        let data = await response.json();
-        return data.features || [];
-    } catch (e) {
-        console.warn("API error:", e);
-        return [];
-    }
-}
-
-// ============================================================
-// MEVCUT FONKSİYONU BUL VE BUNUNLA DEĞİŞTİR
-// ============================================================
-// ============================================================
-// 1. EXTRACT LOCATION QUERY (GÜNCELLENMİŞ VERSİYON)
-// ============================================================
-// ============================================================
-// 1. EXTRACT LOCATION QUERY (DÜZELTİLMİŞ HALİ)
-// ============================================================
-function extractLocationQuery(input) {
-    if (!input) return "";
-
-    let clean = input.toLowerCase();
-
-    // 1. Gün kalıplarını sil (Örn: "1 day", "3 days", "2-day", "5 gün")
-    clean = clean.replace(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|günü|günde)/gi, " ");
-
-    // 2. Gereksiz kelimeleri (Stop Words) sil
-    const stopWords = [
-        "plan", "trip", "tour", "visit", "travel", "journey", "guide",
-        "create", "make", "generate", "build", "please", "show", "give",
-        "for", "in", "to", "at", "on", "from", "with", "about", "of",
-        "a", "an", "the", "my",
-        "gezi", "tatil", "seyahat", "tur", "rota", "hakkında", "ile", "için",
-        "yap", "gitmek", "istiyorum", "bana", "bir"
-    ];
-
-    stopWords.forEach(word => {
-        // Kelimenin tam eşleşmesini bulup siler (örn: "in" silinirken "india" bozulmaz)
-        const regex = new RegExp(`\\b${word}\\b`, "gi");
-        clean = clean.replace(regex, " ");
-    });
-
-    // 3. Noktalama işaretlerini ve çift boşlukları temizle
-    clean = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ");
-    clean = clean.replace(/\s+/g, " ").trim();
-
-    return clean;
-}
-// ============================================================
-// 2. TURKISH CHARACTER VARIANTS
-// ============================================================
-function createTurkishVariants(text) {
-    if (!text) return [];
-    const variants = new Set();
-    variants.add(text.toLowerCase());
-    variants.add(text);
-    
-    const turkishToAscii = {
-        'ç': 'c', 'Ç': 'c',
-        'ğ': 'g', 'Ğ': 'g',
-        'ı': 'i', 'İ': 'i',
-        'ö': 'o', 'Ö': 'o',
-        'ş': 's', 'Ş': 's',
-        'ü': 'u', 'Ü': 'u'
-    };
-    
-    let ascii = text;
-    for (const [tr, en] of Object.entries(turkishToAscii)) {
-        ascii = ascii.replace(new RegExp(tr, 'g'), en);
-    }
-    
-    variants.add(ascii.toLowerCase());
-    variants.add(ascii);
-    return Array.from(variants);
-}
-
-// ============================================================
-// 3. IMPROVED STOP WORDS
-// ============================================================
-const IMPROVED_STOP_WORDS = [
-    "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", 
-    "the", "with", "and", "&", "day", "days", "create", "make", "build", "generate",
-    "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", 
-    "rota", "hakkında", "ile", "gün", "gündü", "günü", "günde", "da", "de", 
-    "daki", "deki", "için", "üzere", "kadar", "var", "mi", "mı"
-];
-
-
-
 document.addEventListener("DOMContentLoaded", function() {
     // #about yerine #about-triptime
     if (window.location.hash === "#about-triptime") {
@@ -202,7 +97,7 @@ function countryFlag(iso2) {
 function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
-    // el.hidden = true;  ← SİL
+    el.hidden = true;
     el.style.removeProperty('display');
     if (!el.getAttribute('style')) el.removeAttribute('style');
     if (clear) el.innerHTML = "";
@@ -211,7 +106,7 @@ function hideSuggestionsDiv(clear = false) {
 function showSuggestionsDiv() {
     const el = document.getElementById('suggestions');
     if (!el) return;
-    // el.hidden = false;  ← SİL
+    el.hidden = false;
     el.style.removeProperty('display');
     if (!el.getAttribute('style')) el.removeAttribute('style');
 }
@@ -344,25 +239,122 @@ function showSuggestions() {
 let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
+async function geoapifyLocationAutocomplete(query) {
+    // 1. UNESCO (LOCAL) ARAMA - Evrensel
+    let unescoResults = [];
+    if (window.UNESCO_DATA) {
+        const q = query.toLowerCase().trim();
+        unescoResults = window.UNESCO_DATA
+            .filter(item => item.name.toLowerCase().includes(q))
+            .map(item => ({
+                properties: {
+                    name: item.name,
+                    city: item.name, 
+                    // Elle "Turkey" yazmak yok. Veri neyse o.
+                    country_code: item.country_code ? item.country_code.toLowerCase() : "", 
+                    formatted: `${item.name} (UNESCO Site)`, // Ülke kodunu bayrak halleder
+                    lat: item.lat,
+                    lon: item.lon,
+                    result_type: 'unesco_site', // Tek kriterimiz bu etiket
+                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
+                }
+            })).slice(0, 3);
+    }
 
+    // 2. API ARAMASI
+    let apiFeatures = [];
+    try {
+        let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+        let data = await response.json();
+        apiFeatures = data.features || [];
+        
+        // Yedek deneme
+        if (!apiFeatures.length) {
+            response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}`);
+            data = await response.json();
+            apiFeatures = data.features || [];
+        }
+    } catch (e) {
+        console.warn("API hatası:", e);
+    }
+
+    // 3. BİRLEŞTİRME
+    let combined = [...unescoResults, ...apiFeatures];
+
+    // ... (Bölge/Şehir tamamlama kodların aynen kalıyor) ...
+    const region = combined.find(f => {
+        const t = f.properties.result_type || f.properties.place_type || '';
+        return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
+    });
+
+    if (region) {
+        try {
+            const resNearby = await fetch(
+                `/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=80000`
+            );
+            const nearbyData = await resNearby.json();
+            let nearbyCities = (nearbyData.features || []).filter(f => {
+                const t = f.properties.result_type || f.properties.place_type || '';
+                return ['city', 'town', 'village'].includes(t);
+            });
+            
+            const existingNames = new Set(combined.map(f =>
+                (f.properties.city || f.properties.name || '').toLowerCase()
+            ));
+            
+            nearbyCities = nearbyCities.filter(f =>
+                !existingNames.has((f.properties.city || f.properties.name || '').toLowerCase())
+            );
+            combined = [...combined, ...nearbyCities];
+        } catch (err) {}
+    }
+
+    return combined;
+}
+ 
+
+function extractLocationQuery(input) {
+    if (!input) return "";
+    
+    // Orijinal inputu al
+    let cleaned = input; 
+    
+    // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
+    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
+    cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
+    
+    // Özel karakterleri temizle
+    cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
+    
+    // Gereksiz kelimeleri (stop words) temizle
+    const stopWords = [
+        "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
+        "create", "make", "build", "generate", "show", "give", "please", 
+        "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
+        // [FIX] Zaman birimleri stop words'e eklendi
+        "day", "days", "gün", "gun", "night", "nights"
+    ];
+    
+    // Kelimeleri ayır ve stop word'leri temizle
+    let words = cleaned.split(/\s+/);
+    words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
+    
+    return words.join(" ").trim();
+}
 // ============================================================
 // 2. GÖRÜNÜM YARDIMCILARI
 // ============================================================
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
-        if (el) { 
-            // el.hidden = false;  ← SİL
-            el.style.removeProperty('display'); 
-        }
+        if (el) { el.hidden = false; el.style.removeProperty('display'); }
     }
 }
-
 if (typeof hideSuggestionsDiv !== "function") {
     window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
         if (el) { 
-            // el.hidden = true;  ← SİL
+            el.hidden = true; 
             el.style.removeProperty('display');
             if (clear) el.innerHTML = "";
         }
@@ -386,44 +378,35 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-  const targetTermVariants = createTurkishVariants(manualQuery);
-const normalizedTarget = normalizeText(manualQuery);
+    // A. PUANLAMA
+    const targetTerm = manualQuery.toLowerCase().trim();
+    
+    const scoredResults = originalResults.map(item => {
+        const p = item.properties || {};
+        const name = (p.name || "").toLowerCase();
+        const formatted = (p.formatted || "").toLowerCase();
+        const type = (p.result_type || p.place_type || '').toLowerCase();
+        
+        // Filtre
+        const containsTarget = name.includes(targetTerm) || formatted.includes(targetTerm);
+        if (!containsTarget) return { item, score: -9999 };
+        
+        let score = 0;
+        
+        // Puanlama Kuralları
+        if (type === 'unesco_site') score += 50000; 
+        else if (type === 'amenity' || type === 'tourism') score += 500; 
+        else if (type === 'city') score += 150; 
+        else if (type === 'town' || type === 'village') score -= 50; 
 
-const scoredResults = originalResults.map(item => {
-    const p = item.properties || {};
-    const name = p.name || "";
-    const formatted = p.formatted || "";
-    const type = (p.result_type || p.place_type || "").toLowerCase();
-    
-    const nameNorm = normalizeText(name);
-    const formattedNorm = normalizeText(formatted);
-    
-    const containsTarget = targetTermVariants.some(v => 
-        nameNorm.includes(normalizeText(v)) || 
-        formattedNorm.includes(normalizeText(v))
-    );
-    
-    if (!containsTarget && normalizeText(manualQuery).length > 0) {
-        return { item, score: -9999 };
-    }
-    
-    let score = 0;
-    
-    if (type === 'unesco_site') score += 50000;
-    else if (type === 'city') score += 1500;
-    else if (type === 'town') score += 800;
-    else if (type === 'village') score += 500;
-    else if (type === 'county' || type === 'district') score += 600;
-    
-    if (nameNorm === normalizedTarget) score += 2000;
-    else if (nameNorm.startsWith(normalizedTarget)) score += 1200;
-    else if (nameNorm.includes(normalizedTarget)) score += 600;
-    
-    if (formatted.length < 40) score += 200;
-    if (formatted.length < 25) score += 100;
-    
-    return { item, score };
-});
+        if (name === targetTerm) score += 1500;
+        else if (name.startsWith(targetTerm)) score += 800;
+
+        if (p.formatted && p.formatted.length < 45) score += 100;
+
+        return { item, score };
+    });
+
     // Sırala
     scoredResults.sort((a, b) => b.score - a.score);
 
@@ -564,6 +547,8 @@ const scoredResults = originalResults.map(item => {
     });
     if (suggestionsDiv.children.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+    } else {
+        if(typeof hideSuggestionsDiv === "function") hideSuggestionsDiv(true);
     }
 }
 
@@ -606,34 +591,27 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 // ============================================================
-// 4. INPUT EVENT LISTENER (DÜZELTİLMİŞ HALİ)
+// 4. INPUT EVENT LISTENER
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
-        if (window.__programmaticInput) return;
+    if (window.__programmaticInput) return;
 
-        const rawText = this.value.trim();
-        const suggestionsDiv = document.getElementById("suggestions");
-
-        // 1. Input tamamen boşsa varsayılan önerileri göster
-        if (rawText.length === 0) {
-            if (typeof showSuggestions === 'function') showSuggestions();
-            return;
+    const rawText = this.value.trim();
+    const locationQuery = extractLocationQuery(rawText);
+    
+    // İLK KARAKTERDE: Hemen önceki sonuçları göster
+    if (locationQuery.length === 1 && window.lastResults) {
+        if (typeof renderSuggestions === 'function') {
+            renderSuggestions(window.lastResults, locationQuery);
         }
-
-        // 2. Arama başlar başlamaz "Loading..." yazısını bas (Zıplamayı önler)
-        if (suggestionsDiv) {
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
-            if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
-        }
-
-        // 3. Metni temizle (trip for antalya -> antalya)
-        const locationQuery = extractLocationQuery(rawText);
-        
-        // Sorgu çok kısaysa API'ye gitme ama Loading yazısı kalsın
-        if (locationQuery.length < 2) {
-            return;
-        }
+        return; // API'ye gitme, sadece önceki sonuçları filtrele
+    }
+    
+    if (locationQuery.length < 2) {
+        if (rawText.length < 2) showSuggestions();
+        return;
+    }
 
         let suggestions = [];
         try {
@@ -643,42 +621,35 @@ if (typeof chatInput !== 'undefined' && chatInput) {
                 suggestions = await geoapifyLocationAutocomplete(locationQuery);
             }
         } catch (err) {
+            if (err.name === "AbortError") return;
             suggestions = [];
         }
 
         window.lastResults = suggestions;
         
-        // 4. SONUÇ VARSA LİSTELE, YOKSA "LOADING..." YAZISINI KORU
-        // renderSuggestions fonksiyonu boş liste gelince kutuyu kapattığı için
-        // boş durumda onu çağırmayıp manuel olarak loading yazısını bırakıyoruz.
-        if (suggestions && suggestions.length > 0) {
-            if (typeof renderSuggestions === 'function') {
-                renderSuggestions(suggestions, locationQuery);
-            }
-        } else {
-            // Sonuç yoksa kutuyu kapatma, "Loading suggestions..." olarak bırak.
-            // Böylece tasarım zıplamaz.
-            if (suggestionsDiv) {
-                suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
-                if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
-            }
+        // Temizlenmiş sorguyu (locationQuery) RENDER'a gönder
+        if (typeof renderSuggestions === 'function') {
+            renderSuggestions(suggestions, locationQuery);
         }
 
-    }, 400));
+    }, 500));
 
-    // Focus ve Click olaylarını bağla
+    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
             renderSuggestions(window.lastResults, currentQuery);
         } else {
-             if (typeof showSuggestions === 'function') showSuggestions();
+             showSuggestions();
         }
     };
 
     chatInput.addEventListener("focus", showSuggestionsLogic);
+    
+    // [FIX] Inputa tıklandığında da listenin açılmasını sağla
     chatInput.addEventListener("click", showSuggestionsLogic);
 }
+
 
 // Global Değişkenler ve Element Seçimleri
 const chatBox = document.getElementById("chat-box");
@@ -1213,11 +1184,10 @@ function sendMessage() {
 
     // 2. Gereksiz Kelimeleri Sil
     const stopWords = [
-    "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
-    "create", "make", "build", "generate", "show", "give", "please", 
-    "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
-    "day", "days", "gün", "gun", "night", "nights", "and", "or", "is", "am", "are"
-];
+        "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
+        "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
+        "hakkında", "ile", "gün", "day", "days"
+    ];
     stopWords.forEach(w => {
         text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
     });
@@ -10167,6 +10137,18 @@ window.TT_SVG_ICONS = {
 // })();
 
 
+
+(function(){
+  if (!document.getElementById('suggestions-hidden-style')) {
+    const st = document.createElement('style');
+    st.id = 'suggestions-hidden-style';
+    st.textContent = '#suggestions.hidden{display:none;}';
+    document.head.appendChild(st);
+  }
+})();
+
+
+
 function resetDayAction(day, confirmationContainerId) {
   const d = parseInt(day, 10);
   const cid = `route-map-day${d}`;
@@ -10502,8 +10484,3 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 }
 
-
-
-console.log("✅ geoapifyLocationAutocomplete loaded:", typeof geoapifyLocationAutocomplete);
-console.log("✅ normalizeText loaded:", typeof normalizeText);
-console.log("✅ extractLocationQuery loaded:", typeof extractLocationQuery);
