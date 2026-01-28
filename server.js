@@ -31,9 +31,9 @@ app.get('/api/cities', (req, res) => {
         const query = req.query.q ? req.query.q.toLowerCase() : "";
         if (!query) return res.json([]);
 
-        // Tüm dünyadaki state'leri çek
+        // Tüm dünyadaki state'leri çek - includes kullan
         const allStates = State.getAllStates()
-            .filter(s => s.name.toLowerCase().includes(query))
+            .filter(s => s.name.toLowerCase().includes(query)) // startsWith yerine includes
             .map(s => ({
                 name: s.name,
                 countryCode: s.countryCode,
@@ -42,9 +42,9 @@ app.get('/api/cities', (req, res) => {
                 type: 'state'
             }));
 
-        // Tüm dünyadaki city'leri çek
+        // Tüm dünyadaki city'leri çek - includes kullan
         const allCities = City.getAllCities()
-            .filter(c => c.name.toLowerCase().includes(query))
+            .filter(c => c.name.toLowerCase().includes(query)) // startsWith yerine includes
             .map(c => ({
                 name: c.name,
                 countryCode: c.countryCode,

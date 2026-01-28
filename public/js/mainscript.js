@@ -607,21 +607,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
    // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
-// ============================================================
-// 4. INPUT LISTENER (TÜRKÇE KARAKTER DOSTU & GARANTİ ARAMA)
-// ============================================================
-// ============================================================
-// 4. INPUT LISTENER (CRASH KORUMALI & TÜRKÇE DOSTU)
-// ============================================================
-// ============================================================
-// 4. INPUT LISTENER (NİHAİ ÇÖZÜM: TÜRKÇE FIX + AKILLI SIRALAMA)
-// ============================================================
-// ============================================================
-// INPUT LISTENER (RESET - SADE VE GÜÇLÜ VERSİYON)
-// ============================================================
-// ============================================================
-// 4. INPUT LISTENER (AKILLI FİLTRE & ÇÖPÇÜ MODU)
-// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
@@ -638,49 +623,56 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // 2. TEMİZLİK (Sadece Sayıları Sil)
-    // Regex ile harfleri bozmayalım. Sadece rakamları uçuruyoruz.
-    let cleanText = rawText.replace(/[0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+    // 2. DAHA İYİ TEMİZLİK - sadece rakam ve noktalama temizle
+    // Türkçe karakterleri de koruyarak
+    let cleanText = rawText
+        .replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?]/g, ' ') // sadece rakam ve noktalama
+        .replace(/\s+/g, ' ')
+        .trim();
 
-    // Yasaklı kelimeler (Zaman bildirenler)
-    const timeKeywords = ['day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 'week', 'weeks', 'hafta', 'year', 'yil', 'ay', 'month'];
+    // 3. Türkçe stop words
+    const timeKeywords = [
+        'day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 
+        'week', 'weeks', 'hafta', 'year', 'yil', 'ay', 'month',
+        // Ek filler
+        'plan', 'trip', 'tour', 'itinerary', 'visit', 'travel'
+    ];
     
-    // Kelimelere ayır
+    // Kelimelere ayır - Türkçe karakterler korunsun
     let candidates = cleanText.split(' ').filter(w => {
-        // 2 harften uzun olsun ve zaman kelimesi olmasın
-        return w.length > 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
+        // En az 2 karakter ve stop word olmasın
+        return w.length >= 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
     });
 
     let foundSuggestions = [];
     let foundQuery = "";
 
-    // 3. ADAYLARI TARA
+    // 4. ADAYLARI TARA
     for (let word of candidates) {
         try {
-            // API'ye sor
+            // Eğer word Türkçe karakter içeriyorsa normalize et
+            const searchWord = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            
             let results = await geoapifyLocationAutocomplete(word);
 
             if (results && results.length > 0) {
-                // --- GÜMRÜK KAPISI (ÇÖP AYIKLAMA) ---
-                // Gelen sonuçların içinde, aradığımız kelime GERÇEKTEN geçiyor mu?
-                // Geçmiyorsa sunucu saçmalıyordur (Sapanca, Ordu vb.), onları diziye alma!
-                
-                const searchLower = word.toLocaleLowerCase('tr');
-
+                // Sonuçları filtrele
                 const validResults = results.filter(item => {
                     const itemName = (item.properties.name || "").toLocaleLowerCase('tr');
                     const itemCity = (item.properties.city || "").toLocaleLowerCase('tr');
                     
-                    // KURAL: Sonuç isminin içinde aradığımız kelime geçmek ZORUNDA.
-                    // Örn: Aranan "İstanbul". Sonuç "Sapanca". Geçiyor mu? HAYIR. -> ÇÖP.
-                    // Örn: Aranan "İstanbul". Sonuç "İstanbulluoğlu". Geçiyor mu? EVET. -> GEÇER.
-                    return itemName.includes(searchLower) || itemCity.includes(searchLower);
+                    // Türkçe normalize edilmiş karşılaştırma
+                    const normalizedItem = itemName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    
+                    return itemName.includes(word.toLocaleLowerCase('tr')) || 
+                           normalizedItem.includes(searchWord) ||
+                           itemCity.includes(word.toLocaleLowerCase('tr'));
                 });
 
                 if (validResults.length > 0) {
                     foundSuggestions = validResults;
                     foundQuery = word;
-                    break; // Geçerli bir şeyler bulduk, döngüyü kır.
+                    break;
                 }
             }
         } catch (e) {
@@ -690,28 +682,34 @@ chatInput.addEventListener("input", debounce(async function () {
 
     window.lastResults = foundSuggestions;
     
-    // 4. SIRALAMA VE GÖSTERME
+    // 5. SONUÇLARI GÖSTER
     if (foundSuggestions && foundSuggestions.length > 0) {
-        
         const target = foundQuery.toLocaleLowerCase('tr');
         
+        // Türkçe karakterleri normalize ederek sırala
         foundSuggestions.sort((a, b) => {
             const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
             const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
+            
+            // Normalize edilmiş isimler
+            const normA = nameA.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const normB = nameB.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const normTarget = target.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-            // KRİTER 1: Tam Eşleşme Kraldır ("istanbul" == "istanbul")
-            const isExactA = nameA === target;
-            const isExactB = nameB === target;
-            if (isExactA && !isExactB) return -1; // A üste
-            if (!isExactA && isExactB) return 1;  // B üste
+            // Tam eşleşme
+            const isExactA = normA === normTarget;
+            const isExactB = normB === normTarget;
+            if (isExactA && !isExactB) return -1;
+            if (!isExactA && isExactB) return 1;
 
-            // KRİTER 2: Kısa İsim Üste ("İstanbul" < "İstanbulluoğlu")
-            // Şehir isimleri genelde mahalle isimlerinden kısadır.
-            if (nameA.length !== nameB.length) {
-                return nameA.length - nameB.length;
-            }
+            // startsWith
+            const startsA = normA.startsWith(normTarget);
+            const startsB = normB.startsWith(normTarget);
+            if (startsA && !startsB) return -1;
+            if (!startsA && startsB) return 1;
 
-            return 0; // Eşitse dokunma
+            // İsim uzunluğu
+            return nameA.length - nameB.length;
         });
 
         renderSuggestions(foundSuggestions, foundQuery);
@@ -721,7 +719,6 @@ chatInput.addEventListener("input", debounce(async function () {
     }
 
 }, 400));
-
 
 
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
