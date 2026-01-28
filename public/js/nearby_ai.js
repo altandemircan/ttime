@@ -1594,6 +1594,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 window._categoryCacheData = window._categoryCacheData || {};
 
 // GÜNCELLENMİŞ VE DÜZELTİLMİŞ FONKSİYON
+// GÜNCELLENMİŞ VE DÜZELTİLMİŞ FONKSİYON (SVG İKONLU)
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants', radiusOverride = null) {
     window._lastSelectedCategory = categoryType;
 
@@ -1629,37 +1630,37 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const country = "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-    // Kategori Yapılandırması
+    // Kategori Yapılandırması (İkon Yolları Burada Tanımlı)
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
             color: '#FF5252',
-            iconUrl: '/img/restaurant_icon.svg',
+            iconUrl: 'img/restaurant_icon.svg',
             title: 'Restaurants', layerPrefix: 'restaurant'
         },
         'hotels': {
             apiCategories: 'accommodation',
             color: '#2196F3',
-            iconUrl: '/img/accommodation_icon.svg',
+            iconUrl: 'img/accommodation_icon.svg',
             title: 'Hotels', layerPrefix: 'hotel'
         },
         'markets': {
             apiCategories: 'commercial.supermarket,commercial.convenience,commercial.clothing,commercial.shopping_mall',
             color: '#4CAF50',
-            iconUrl: '/img/market_icon.svg',
+            iconUrl: 'img/market_icon.svg',
             title: 'Markets', layerPrefix: 'market'
         },
         'entertainment': {
             apiCategories: 'entertainment,leisure',
             color: '#FF9800',
-            iconUrl: '/img/entertainment_icon.svg',
+            iconUrl: 'img/entertainment_icon.svg',
             title: 'Entertainment', layerPrefix: 'entertainment'
         }
     };
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // Popup HTML oluşturma
+    // Popup HTML oluşturma (Tıklanan Nokta Kısmı)
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -1686,24 +1687,29 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-    // Tab oluşturma
+    // --- GÜNCELLENEN KISIM: TAB OLUŞTURMA (SVG İKONLU) ---
     let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
-    const icons = { restaurants: "🍽️", hotels: "🏨", markets: "🛒", entertainment: "🎭" };
+    
     Object.keys(categoryConfig).forEach(key => {
         const tab = categoryConfig[key];
         const isActive = key === categoryType;
+        
+        // Aktif değilse gri yap, aktifse orijinal rengi göster
+        const iconFilter = isActive ? '' : 'filter: grayscale(100%) opacity(0.6);';
+        
         tabsHtml += `
             <button class="category-tab ${isActive ? 'active' : ''}" data-tab="${key}"
                     style="flex: 1; padding: 10px 6px; background: ${isActive ? '#f0f7ff' : 'transparent'}; 
                            border: none; border-bottom: 2px solid ${isActive ? '#1976d2' : 'transparent'}; 
                            cursor: pointer; font-size: 12px; color: ${isActive ? '#1976d2' : '#666'}; 
                            display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <div style="font-size: 16px;">${icons[key] || "📍"}</div>
+                <img src="${tab.iconUrl}" alt="${tab.title}" style="width: 22px; height: 22px; ${iconFilter}">
                 <div style="font-weight: ${isActive ? '600' : '500'}; white-space: nowrap;">${tab.title}</div>
             </button>
         `;
     });
     tabsHtml += '</div>';
+    // -----------------------------------------------------
 
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
@@ -1741,11 +1747,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             if (window._lastSelectedCategory === tabId) return;
+            // UI Update
             document.querySelectorAll('.category-tab').forEach(t => {
-                t.style.background = t.dataset.tab === tabId ? '#f0f7ff' : 'transparent';
-                t.style.borderBottomColor = t.dataset.tab === tabId ? '#1976d2' : 'transparent';
-                t.style.color = t.dataset.tab === tabId ? '#1976d2' : '#666';
-                t.style.fontWeight = t.dataset.tab === tabId ? '600' : '500';
+                const isSelected = t.dataset.tab === tabId;
+                t.style.background = isSelected ? '#f0f7ff' : 'transparent';
+                t.style.borderBottomColor = isSelected ? '#1976d2' : 'transparent';
+                t.style.color = isSelected ? '#1976d2' : '#666';
+                t.style.fontWeight = isSelected ? '600' : '500';
+                
+                // İkon rengini güncelle (Seçiliyse renkli, değilse gri)
+                const img = t.querySelector('img');
+                if (img) {
+                    img.style.filter = isSelected ? '' : 'grayscale(100%) opacity(0.6)';
+                }
             });
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
@@ -1872,7 +1886,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const countBadge = document.querySelector('.category-count');
         if (countBadge) countBadge.textContent = topPlaces.length;
 
-        // --- DAİRE ÇİZİMİ (ARTIK LİSTEDEN BAĞIMSIZ) ---
+        // --- DAİRE ÇİZİMİ ---
         if (maxDistance > 0) {
             const circleColor = '#1976d2';
             const radiusMeters = Math.ceil(maxDistance);
@@ -1883,19 +1897,17 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
 
                 map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
 
-                // 1. FILL LAYER
                 map.addLayer({
                     id: circleId + '-layer',
                     type: 'fill',
                     source: circleId,
                     paint: {
                         'fill-color': circleColor,
-                        'fill-opacity': 0.2, // Şeffaflık artırıldı
+                        'fill-opacity': 0.2, 
                         'fill-outline-color': circleColor
                     }
                 });
 
-                // 2. LINE LAYER (ÇERÇEVE)
                 map.addLayer({
                     id: circleId + '-stroke',
                     type: 'line',
@@ -2000,8 +2012,18 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const marker = new maplibregl.Marker({ element: el }).setLngLat([pLng, pLat]).setPopup(popup).addTo(map);
                 el.addEventListener('click', (e) => { 
                     e.stopPropagation(); 
+                    const currentPopup = marker.getPopup();
+                    if (window._active3DPopup && window._active3DPopup !== currentPopup) {
+                        window._active3DPopup.remove();
+                    }
                     map.flyTo({ center: [pLng, pLat], zoom: Math.max(map.getZoom(), 16), speed: 0.8, curve: 1, essential: true, offset: [0, 100] });
-                    if (!marker.getPopup().isOpen()) marker.togglePopup();
+                    if (!marker.getPopup().isOpen()) {
+                        marker.togglePopup();
+                        window._active3DPopup = marker.getPopup();
+                    } else {
+                        marker.togglePopup();
+                        window._active3DPopup = null;
+                    }
                 });
                 window[marker3DKey].push(marker);
             } else {
