@@ -355,6 +355,13 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     
     if (!suggestionsDiv || !chatInput) return;
     
+    // LOADING STATE EKLE
+    if (!originalResults || originalResults.length === 0) {
+        suggestionsDiv.innerHTML = '<div style="padding: 10px; text-align: center; color: #999;">Loading...</div>';
+        suggestionsDiv.style.display = 'block';
+        return;
+    }
+    
     suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
@@ -601,12 +608,8 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         return; // API'ye gitme, sadece önceki sonuçları filtrele
     }
     
-if (locationQuery.length < 1) {
-    if (window.lastResults && window.lastResults.length) {
-        renderSuggestions(window.lastResults, "");
-    } else {
-        showSuggestions();
-    }
+   if (locationQuery.length < 1) {
+    showSuggestions();
     return;
 }
 
