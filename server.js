@@ -22,6 +22,34 @@ const app = express();
 app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+
+// --- YEREL ŞEHİR VERİSİ HAZIRLIĞI ---
+const allCities = City.getAllCities();
+
+// --- API ENDPOINTLERİ (SIRALAMA ÖNEMLİ) ---
+
+// 1. Yeni Yerel Şehir Arama (En üste aldık ki 404'e takılmasın)
+app.get('/api/cities', (req, res) => {
+    const { q, limit } = req.query;
+    if (!q || q.length < 2) return res.json([]);
+    try {
+        const search = q.toLowerCase();
+        const results = allCities
+            .filter(city => city.name.toLowerCase().includes(search))
+            .slice(0, limit ? parseInt(limit) : 10)
+            .map(city => ({
+                name: city.name,
+                countryCode: city.countryCode,
+                latitude: city.latitude,
+                longitude: city.longitude
+            }));
+        res.json(results);
+    } catch (e) {
+        res.status(500).json({ error: 'Local search failed' });
+    }
+});
+
+
 // 2. Feedback Route
 const feedbackRoute = require('./feedbackRoute');
 app.use('/api', feedbackRoute);
@@ -46,8 +74,7 @@ const photogetProxy = require('./photoget-proxy');
 app.use('/photoget-proxy', photogetProxy);
 
 const geoapify = require('./geoapify.js');
-const localCities = require('./localCities.js');
-// --- YENİ: /api/geoapify/nearby-cities endpoint’i ---
+
 app.get('/api/geoapify/nearby-cities', async (req, res) => {
   try {
     const { lat, lon, radius, limit } = req.query;
@@ -130,17 +157,7 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
   }
 });
 
-// Yerel şehir veritabanı endpoint'i
-app.get('/api/cities', (req, res) => {
-    const { q, limit } = req.query;
-    try {
-        const results = localCities.searchCities(q, limit ? parseInt(limit) : 10);
-        res.json(results);
-    } catch (e) {
-        console.error('[LocalCities Error]', e);
-        res.status(500).json({ error: 'Local search failed' });
-    }
-});
+
 
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
