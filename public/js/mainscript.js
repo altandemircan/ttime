@@ -612,6 +612,9 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 // ============================================================
 // INPUT LISTENER (RESET - SADE VE GÜÇLÜ VERSİYON)
 // ============================================================
+// ============================================================
+// 4. INPUT LISTENER (AKILLI FİLTRE & ÇÖPÇÜ MODU)
+// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
@@ -628,65 +631,80 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // 2. BASİT TEMİZLİK (Regex Fantezisi YOK)
-    // Sadece sayıları sil, gerisine dokunma.
+    // 2. TEMİZLİK (Sadece Sayıları Sil)
+    // Regex ile harfleri bozmayalım. Sadece rakamları uçuruyoruz.
     let cleanText = rawText.replace(/[0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // Zaman kelimelerini filtrele
-    const timeKeywords = ['day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 'week', 'weeks', 'hafta', 'year', 'yil'];
+    // Yasaklı kelimeler (Zaman bildirenler)
+    const timeKeywords = ['day', 'days', 'gün', 'gun', 'night', 'nights', 'gece', 'week', 'weeks', 'hafta', 'year', 'yil', 'ay', 'month'];
     
-    // Boşluktan böl ve filtrele
+    // Kelimelere ayır
     let candidates = cleanText.split(' ').filter(w => {
+        // 2 harften uzun olsun ve zaman kelimesi olmasın
         return w.length > 2 && !timeKeywords.includes(w.toLocaleLowerCase('tr'));
     });
 
     let foundSuggestions = [];
     let foundQuery = "";
 
-    // 3. ADAYLARI TARA (Sırayla dene, bulursan çık)
+    // 3. ADAYLARI TARA
     for (let word of candidates) {
         try {
             // API'ye sor
             let results = await geoapifyLocationAutocomplete(word);
 
             if (results && results.length > 0) {
-                // Sonuç geldiyse, bu sonuçların içinde aradığımız kelimeye benzer bir şey var mı?
-                // (Backend bazen alakasız şeyler döndürebilir, kontrol edelim)
-                let isValid = results.some(r => {
-                    let name = (r.properties.name || "").toLocaleLowerCase('tr');
-                    let search = word.toLocaleLowerCase('tr');
-                    return name.includes(search) || search.includes(name);
+                // --- GÜMRÜK KAPISI (ÇÖP AYIKLAMA) ---
+                // Gelen sonuçların içinde, aradığımız kelime GERÇEKTEN geçiyor mu?
+                // Geçmiyorsa sunucu saçmalıyordur (Sapanca, Ordu vb.), onları diziye alma!
+                
+                const searchLower = word.toLocaleLowerCase('tr');
+
+                const validResults = results.filter(item => {
+                    const itemName = (item.properties.name || "").toLocaleLowerCase('tr');
+                    const itemCity = (item.properties.city || "").toLocaleLowerCase('tr');
+                    
+                    // KURAL: Sonuç isminin içinde aradığımız kelime geçmek ZORUNDA.
+                    // Örn: Aranan "İstanbul". Sonuç "Sapanca". Geçiyor mu? HAYIR. -> ÇÖP.
+                    // Örn: Aranan "İstanbul". Sonuç "İstanbulluoğlu". Geçiyor mu? EVET. -> GEÇER.
+                    return itemName.includes(searchLower) || itemCity.includes(searchLower);
                 });
 
-                if (isValid) {
-                    foundSuggestions = results;
+                if (validResults.length > 0) {
+                    foundSuggestions = validResults;
                     foundQuery = word;
-                    break; // BULDUM! Diğer saçma kelimeleri aramayı bırak.
+                    break; // Geçerli bir şeyler bulduk, döngüyü kır.
                 }
             }
         } catch (e) {
-            console.warn("Search Err:", e);
+            console.warn("Search API Error:", e);
         }
     }
 
     window.lastResults = foundSuggestions;
     
-    // 4. SONUÇLARI GÖSTER VE SIRALA (İstanbulluoğlu FIX)
+    // 4. SIRALAMA VE GÖSTERME
     if (foundSuggestions && foundSuggestions.length > 0) {
         
-        // --- BURASI ÇOK ÖNEMLİ: Frontend Sıralaması ---
         const target = foundQuery.toLocaleLowerCase('tr');
         
         foundSuggestions.sort((a, b) => {
             const nameA = (a.properties.name || "").toLocaleLowerCase('tr');
             const nameB = (b.properties.name || "").toLocaleLowerCase('tr');
 
-            // 1. Tam Eşleşme (İstanbul == İstanbul) -> En üste
-            if (nameA === target && nameB !== target) return -1;
-            if (nameB === target && nameA !== target) return 1;
+            // KRİTER 1: Tam Eşleşme Kraldır ("istanbul" == "istanbul")
+            const isExactA = nameA === target;
+            const isExactB = nameB === target;
+            if (isExactA && !isExactB) return -1; // A üste
+            if (!isExactA && isExactB) return 1;  // B üste
 
-            // 2. İsim Uzunluğu (Kısa olan orijinal şehirdir: İstanbul < İstanbulluoğlu)
-            return nameA.length - nameB.length;
+            // KRİTER 2: Kısa İsim Üste ("İstanbul" < "İstanbulluoğlu")
+            // Şehir isimleri genelde mahalle isimlerinden kısadır.
+            if (nameA.length !== nameB.length) {
+                return nameA.length - nameB.length;
+            }
+
+            return 0; // Eşitse dokunma
         });
 
         renderSuggestions(foundSuggestions, foundQuery);
@@ -696,6 +714,9 @@ chatInput.addEventListener("input", debounce(async function () {
     }
 
 }, 400));
+
+
+
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
