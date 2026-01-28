@@ -242,29 +242,33 @@ let lastAutocompleteController = null;
 async function geoapifyLocationAutocomplete(query) {
     if (!query || query.length < 1) return [];
     try {
-        // İsteğin nereden geldiğini görmen için log:
         console.log("Veri yerel veritabanından çekiliyor... Sorgu:", query);
-
         let response = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
         let data = await response.json();
         
-        return data.map(item => ({
-            properties: {
-                name: item.name,
-                city: item.name,
-                country_code: item.countryCode ? item.countryCode.toLowerCase() : "",
-                formatted: `${item.name}, ${item.countryCode}`,
-                lat: parseFloat(item.latitude),
-                lon: parseFloat(item.longitude),
-                place_id: `local-${item.latitude}-${item.longitude}` 
-            }
-        }));
+        return data.map(item => {
+            // Hata almamak için koordinatları zorla sayıya çeviriyoruz
+            const lat = Number(item.latitude);
+            const lon = Number(item.longitude);
+
+            return {
+                properties: {
+                    name: item.name,
+                    city: item.name,
+                    country_code: (item.countryCode || "").toLowerCase(),
+                    formatted: `${item.name}, ${item.countryCode || ""}`,
+                    // Eğer çevirme başarısızsa (NaN) haritayı bozmaması için 0 veya null kontrolü
+                    lat: isNaN(lat) ? 0 : lat,
+                    lon: isNaN(lon) ? 0 : lon,
+                    place_id: `local-${lat}-${lon}` 
+                }
+            };
+        });
     } catch (e) {
         console.warn("Local City API error:", e);
         return [];
     }
 }
- 
 
 function extractLocationQuery(input) {
     if (!input) return "";
