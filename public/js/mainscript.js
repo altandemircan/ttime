@@ -169,7 +169,7 @@ function countryFlag(iso2) {
 function hideSuggestionsDiv(clear = false) {
     const el = document.getElementById('suggestions');
     if (!el) return;
-    el.hidden = true;
+    // el.hidden = true;  ← SİL
     el.style.removeProperty('display');
     if (!el.getAttribute('style')) el.removeAttribute('style');
     if (clear) el.innerHTML = "";
@@ -178,7 +178,7 @@ function hideSuggestionsDiv(clear = false) {
 function showSuggestionsDiv() {
     const el = document.getElementById('suggestions');
     if (!el) return;
-    el.hidden = false;
+    // el.hidden = false;  ← SİL
     el.style.removeProperty('display');
     if (!el.getAttribute('style')) el.removeAttribute('style');
 }
@@ -318,14 +318,18 @@ let lastAutocompleteController = null;
 if (typeof showSuggestionsDiv !== "function") {
     window.showSuggestionsDiv = function() {
         const el = document.getElementById('suggestions');
-        if (el) { el.hidden = false; el.style.removeProperty('display'); }
+        if (el) { 
+            // el.hidden = false;  ← SİL
+            el.style.removeProperty('display'); 
+        }
     }
 }
+
 if (typeof hideSuggestionsDiv !== "function") {
     window.hideSuggestionsDiv = function(clear = false) {
         const el = document.getElementById('suggestions');
         if (el) { 
-            el.hidden = true; 
+            // el.hidden = true;  ← SİL
             el.style.removeProperty('display');
             if (clear) el.innerHTML = "";
         }
