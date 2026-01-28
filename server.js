@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
 
+
 // [YENİ] Sunucu her başladığında benzersiz bir versiyon ID'si oluşturur.
 const BUILD_ID = Date.now().toString();
 
@@ -62,6 +63,8 @@ app.get('/api/geoapify/nearby-cities', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+
 
 // --- EKLENEN ENDPOINT --- //
 app.get('/api/geoapify/geocode', async (req, res) => {
@@ -156,6 +159,17 @@ app.get('/api/geoapify/places', async (req, res) => {
 });
 
 
+const localCities = require('./localCities.js');
+app.get('/api/cities', (req, res) => {
+    const { q, limit } = req.query;
+    try {
+        const results = localCities.searchCities(q, limit ? parseInt(limit) : 10);
+        res.json(results);
+    } catch (e) {
+        console.error('[LocalCities Error]', e);
+        res.status(500).json({ error: 'Local search failed' });
+    }
+});
 
 app.post('/api/elevation', async (req, res) => {
     // locations parametresi array mi string mi kontrolü
