@@ -612,46 +612,59 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
    // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
+// 4. INPUT EVENT LISTENER (ZIPLAMA YOK, AKILLI ARAMA VAR)
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
+    // 1. KUTUYU ZORLA AÇ VE LOADING'İ ÇAK (Input boş değilse)
     if (rawText.length > 0) {
-        // KUTUYU AÇ VE LOADING YAZISINI ÇAK (Hemen, beklemeden)
         suggestionsDiv.removeAttribute('hidden');
-        suggestionsDiv.style.display = 'flex'; 
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
+        suggestionsDiv.style.display = 'block'; // Flex değil Block yaparak satırı kaplamasını sağla
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Loading suggestions...</div>';
     } else {
-        showSuggestions(); // Input boşsa varsayılanları göster
+        showSuggestions(); // Input boşsa varsayılanları getir
         return;
     }
 
-    // Kelime analizi (Cümle karmaşıksa şehri bulmaya çalış)
+    // 2. AKILLI SORGULAMA MANTIĞI
+    // Önce normal fonksiyonunla dene
     let locationQuery = extractLocationQuery(rawText);
-    
-    // Eğer cümle karmaşıksa (örn: "plan 3 antalya"), son kelimeyi de opsiyon olarak al
-    const words = rawText.split(' ');
-    const lastWord = words[words.length - 1];
+    if (locationQuery.length < 2) return; // Çok kısaysa API'ye gitme ama Loading kalsın
 
     let suggestions = await geoapifyLocationAutocomplete(locationQuery);
 
-    // Eğer extractLocationQuery bir şey bulamadıysa, son kelimeyle bir kez daha dene
-    if ((!suggestions || suggestions.length === 0) && lastWord.length > 2) {
-        console.log("Karmaşık cümle algılandı, son kelime deneniyor:", lastWord);
-        suggestions = await geoapifyLocationAutocomplete(lastWord);
+    // 3. KURTARMA OPERASYONU (Eğer sonuç yoksa)
+    // Örn: "szdfsafasf 1 day antalya" yazıldıysa ve sonuç yoksa...
+    if (!suggestions || suggestions.length === 0) {
+        // Cümleyi parçala: ["szdfsafasf", "1", "day", "antalya"]
+        const words = rawText.split(' ').filter(w => w.length > 2 && isNaN(w)); 
+        
+        // Sondan başa doğru kelimeleri dene (Genelde şehir sondadır)
+        if (words.length > 0) {
+            const lastWord = words[words.length - 1]; // "antalya"
+            
+            // Eğer son kelime, ilk aradığımız şeyden farklıysa onu dene
+            if (lastWord.toLowerCase() !== locationQuery.toLowerCase()) {
+                console.log("Karmaşık cümle, son kelime deneniyor:", lastWord);
+                suggestions = await geoapifyLocationAutocomplete(lastWord);
+            }
+        }
     }
 
     window.lastResults = suggestions;
     
+    // 4. SONUÇ GÖSTERME VEYA LOADING SABİTLEME
     if (suggestions && suggestions.length > 0) {
         renderSuggestions(suggestions, locationQuery);
     } else {
-        // Hiçbir şey bulunamadıysa bile Loading yazısı veya "Searching..." kalsın, kutu kapanmasın
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 10px; pointer-events: none;">Loading suggestions...</div>';
+        // Sonuç HALA yoksa kutuyu kapatma! Kullanıcı görsün.
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching...</div>';
     }
 }, 400));
+
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
