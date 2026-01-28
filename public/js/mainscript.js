@@ -606,6 +606,9 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 // ============================================================
 // 4. INPUT LISTENER (CRASH KORUMALI & TÜRKÇE DOSTU)
 // ============================================================
+// ============================================================
+// 4. INPUT LISTENER (NİHAİ ÇÖZÜM: TÜRKÇE FIX + AKILLI SIRALAMA)
+// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
@@ -622,27 +625,27 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // --- 2. HASSAS TEMİZLİK (Unicode \p{L} Teknolojisi) ---
-    // Harfleri KORU, sayı ve sembolleri SİL.
+    // YARDIMCI: Türkçe Uyumlu Küçük Harf Çevirici
+    const safeLower = (str) => {
+        return (str || "").toLocaleLowerCase('tr');
+    };
+
+    // --- 2. HASSAS TEMİZLİK (Unicode \p{L}) ---
+    // Harfleri KORU (İ, ı, ş... dahil), sayı ve sembolleri SİL.
     let cleanText = rawText
         .replace(/[0-9]/g, ' ') 
         .replace(/[^\p{L}\s]/gu, ' ') 
         .replace(/\s+/g, ' ') 
         .trim();
 
-    // Yasaklı zaman kelimeleri
     const timeKeywords = ['day', 'days', 'gün', 'gun', 'daily', 'gunluk', 'gece', 'night', 'nights', 'week', 'weeks', 'hafta', 'month', 'months', 'ay', 'year', 'years', 'yil'];
     
-    // Kelimelere ayır
     let allWords = cleanText.split(' ');
     
-    // Filtreleme
+    // Filtreleme: 2 harften uzun ve zaman kelimesi olmayanlar
     const candidates = allWords.filter(w => {
-        return w.length > 2 && !timeKeywords.includes(w.toLowerCase());
+        return w.length > 2 && !timeKeywords.includes(safeLower(w));
     });
-
-    console.log("[CleanText]:", cleanText);
-    console.log("[Adaylar]:", candidates);
 
     let foundSuggestions = [];
     let foundQuery = "";
@@ -656,52 +659,63 @@ chatInput.addEventListener("input", debounce(async function () {
                 if (foundSuggestions && foundSuggestions.length > 0) {
                     foundQuery = fullQuery;
                 }
-            } catch(e) { console.warn("Full query error:", e); }
+            } catch(e) {}
         }
     }
 
     // --- STRATEJİ 2: Kelime Kelime Tara ---
     if (!foundSuggestions || foundSuggestions.length === 0) {
         for (let word of candidates) {
-            console.log(`[LocationHunter] Taranıyor: ${word}`);
-            
             try {
                 let results = await geoapifyLocationAutocomplete(word);
 
                 if (results && results.length > 0) {
-                    // --- HATA DÜZELTME BURADA ---
-                    // Özelliklerin var olup olmadığını kontrol ederek alıyoruz (Safe Access)
-                    const props = results[0].properties || {};
-                    const matchName = (props.name || "").toLowerCase();
-                    const matchCity = (props.city || "").toLowerCase(); // Burası patlıyordu, düzeldi.
-                    const matchCountry = (props.country || "").toLowerCase();
+                    // --- BINGO KONTROLÜ (Türkçe Uyumlu) ---
+                    // Gelen sonucun içinde aradığımız kelime geçiyor mu?
+                    const firstResult = results[0];
+                    const props = firstResult.properties || {};
                     
-                    const searchedWord = word.toLocaleLowerCase('tr'); 
+                    const pName = safeLower(props.name);
+                    const pCity = safeLower(props.city);
+                    const sWord = safeLower(word);
 
-                    // Doğrulama: Bulunan sonuç aradığımız kelimeyi içeriyor mu?
-                    if (matchName.includes(searchedWord) || 
-                        searchedWord.includes(matchName) || 
-                        matchCity.includes(searchedWord) ||
-                        matchCountry.includes(searchedWord)) {
-                        
-                        console.log(`[LocationHunter] BINGO: ${word}`);
+                    if (pName.includes(sWord) || sWord.includes(pName) || pCity.includes(sWord)) {
+                        console.log(`[BINGO] Kelime: ${word} -> Sonuç: ${props.name}`);
                         foundSuggestions = results;
                         foundQuery = word;
                         break; 
-                    } else {
-                        console.log(`[LocationHunter] Reddedildi: ${word} -> Bulunan: ${props.formatted}`);
                     }
                 }
             } catch (e) {
-                console.warn(`Word search error (${word}):`, e);
+                console.warn("API Error:", e);
             }
         }
     }
 
     window.lastResults = foundSuggestions;
     
-    // --- SONUÇ GÖSTERME ---
+    // --- 3. AKILLI SIRALAMA (İstanbulluoğlu Sorununu Çözer) ---
+    // Backend saçma sıralasa bile, biz Frontend'de düzeltiyoruz.
     if (foundSuggestions && foundSuggestions.length > 0) {
+        const target = safeLower(foundQuery);
+
+        foundSuggestions.sort((a, b) => {
+            const nameA = safeLower(a.properties.name);
+            const nameB = safeLower(b.properties.name);
+
+            // 1. TAM EŞLEŞME EN ÜSTE ("istanbul" == "istanbul")
+            const exactA = (nameA === target);
+            const exactB = (nameB === target);
+            if (exactA && !exactB) return -1;
+            if (!exactA && exactB) return 1;
+
+            // 2. KISA İSİM ÜSTE ("İstanbul", "İstanbulluoğlu"ndan önce gelir)
+            if (nameA.length !== nameB.length) return nameA.length - nameB.length;
+
+            return 0;
+        });
+
+        // Sıralanmış listeyi ekrana bas
         renderSuggestions(foundSuggestions, foundQuery);
     } else {
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No location found</div>';
