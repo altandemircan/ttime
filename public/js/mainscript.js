@@ -604,76 +604,89 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 // 4. INPUT EVENT LISTENER (ZIPLAMA YOK, AKILLI ARAMA VAR)
 // 4. INPUT EVENT LISTENER (AKILLI FALLBACK MODU)
 // 4. INPUT EVENT LISTENER (KESİN ÇÖZÜM: Sorgu Güncellemesi Eklendi)
+// ============================================================
+// 4. INPUT LISTENER (ÇÖP AYIKLAYICI VE ŞEHİR AVCISI)
+// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    // 1. KUTUYU AÇ
+    // 1. KUTUYU AÇ VE LOADING ÇAK
     if (rawText.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Loading suggestions...</div>';
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching city...</div>';
     } else {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
         showSuggestions(); 
         return;
     }
 
-    // 2. İLK ARAMA DENEMESİ
-    let locationQuery = extractLocationQuery(rawText);
-    
-    // Sorgu çok kısaysa API'yi yorma ama Loading kalsın
-    if (locationQuery.length < 2) return; 
+    // --- TEMİZLİK OPERASYONU ---
+    // Sayıları ve bilinen gün/zaman ifadelerini (TR/EN) cümleden atıyoruz.
+    // Amacımız geriye sadece potansiyel yer isimleri ve anlamsız kelimelerin kalması.
+    let cleanText = rawText
+        .replace(/[0-9]+/g, '') // Sayıları sil
+        .replace(/\b(day|days|gün|gun|gece|night|nights|week|weeks|hafta)\b/gi, '') // Zaman birimlerini sil
+        .replace(/[^\w\s\u00C0-\u017F-]/g, ' ') // Noktalama işaretlerini sil (Unicode karakterleri ve tire hariç)
+        .trim();
 
-    let suggestions = await geoapifyLocationAutocomplete(locationQuery);
+    // Kelimeleri diziye çevir (örn: ["szdfsafasf", "antalya", "da"])
+    // 2 harften kısa kelimeleri at (ve, in, at vb. elensin)
+    const candidates = cleanText.split(/\s+/).filter(w => w.length > 2);
 
-    // 3. KURTARMA OPERASYONU (Fallback)
-    if (!suggestions || suggestions.length === 0) {
-        const words = rawText.split(/\s+/).filter(w => w.length > 2 && isNaN(w)); 
-        
-        if (words.length > 0) {
-            // A) SON KELİME
-            const lastWord = words[words.length - 1];
-            if (lastWord.toLowerCase() !== locationQuery.toLowerCase()) {
-                console.log("Fallback 1 (Son Kelime):", lastWord);
-                let fallbackSuggestions = await geoapifyLocationAutocomplete(lastWord);
-                
-                // EĞER SONUÇ BULUNDUYSA:
-                if (fallbackSuggestions && fallbackSuggestions.length > 0) {
-                    suggestions = fallbackSuggestions;
-                    locationQuery = lastWord; // <--- İŞTE ÇÖZÜM: Sorguyu da güncelle!
-                }
-            }
+    let foundSuggestions = [];
+    let foundQuery = "";
 
-            // B) İLK KELİME (Hala sonuç yoksa)
-            if ((!suggestions || suggestions.length === 0) && words.length > 1) {
-                const firstWord = words[0];
-                if (firstWord.toLowerCase() !== lastWord.toLowerCase()) {
-                    console.log("Fallback 2 (İlk Kelime):", firstWord);
-                    let fallbackSuggestions = await geoapifyLocationAutocomplete(firstWord);
-                    
-                    if (fallbackSuggestions && fallbackSuggestions.length > 0) {
-                        suggestions = fallbackSuggestions;
-                        locationQuery = firstWord; // <--- ÇÖZÜM: Sorguyu güncelle!
-                    }
-                }
+    // --- STRATEJİ 1: Önce temiz halini bütün olarak dene ---
+    // (Örn: "New York" yazdıysa bozulmasın diye)
+    if (candidates.length > 0) {
+        let fullQuery = candidates.join(" ");
+        foundSuggestions = await geoapifyLocationAutocomplete(fullQuery);
+        if (foundSuggestions && foundSuggestions.length > 0) {
+            foundQuery = fullQuery;
+        }
+    }
+
+    // --- STRATEJİ 2: Bütün hali bulunamadıysa, SONDAN BAŞA TEK TEK DENE ---
+    // Genelde şehirler cümlenin sonunda olur ("Trip to Antalya").
+    if (!foundSuggestions || foundSuggestions.length === 0) {
+        // Döngü: Sondan başa doğru kelimeleri API'ye sor
+        for (let i = candidates.length - 1; i >= 0; i--) {
+            const word = candidates[i];
+            
+            // Gereksiz API çağrısını önlemek için basit kontrol
+            if (word.length < 3) continue; 
+
+            // API'ye sor: "Bu kelime şehir mi?"
+            console.log(`[CityHunter] Deneniyor: ${word}`);
+            let results = await geoapifyLocationAutocomplete(word);
+
+            if (results && results.length > 0) {
+                // BINGO! Şehri bulduk.
+                console.log(`[CityHunter] Bulundu: ${word}`);
+                foundSuggestions = results;
+                foundQuery = word; // Rendering için sorguyu güncelle
+                break; // İlk bulduğunda döngüyü kır, diğerlerine bakma
             }
         }
     }
 
-    window.lastResults = suggestions;
+    window.lastResults = foundSuggestions;
     
-    // 4. SONUÇLARI GÖSTER
-    if (suggestions && suggestions.length > 0) {
-        // Artık renderSuggestions'a doğru sorguyu (locationQuery) gönderiyoruz.
-        // Böylece "Antalya" sonucu "Antalya" sorgusuyla eşleşip ekrana basılacak.
-        renderSuggestions(suggestions, locationQuery);
+    // --- SONUÇ GÖSTERME ---
+    if (foundSuggestions && foundSuggestions.length > 0) {
+        // renderSuggestions'a bulduğumuz TEMİZ kelimeyi (foundQuery) gönderiyoruz.
+        // Böylece "szdfsafasf..." içinde kaybolmuyor.
+        renderSuggestions(foundSuggestions, foundQuery);
     } else {
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No matching results</div>';
+        // Hâlâ sonuç yoksa
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No city found</div>';
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
     }
-}, 400));
+
+}, 500)); // Debounce süresini biraz artırdım (500ms) ki kullanıcı yazarken API bombarlanmasın
 
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
     const showSuggestionsLogic = function() {
