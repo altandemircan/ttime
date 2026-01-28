@@ -45,7 +45,20 @@ async function geoapifyLocationAutocomplete(query) {
 
 function extractLocationQuery(input) {
     if (!input) return "";
-    return input;
+    
+    let text = input.toLowerCase();
+    text = text.replace(/\d+/g, " ");
+    text = text.replace(/\b(day|days|gün|night|nights|saat|ay|yıl|hafta)\b/gi, " ");
+    text = text.replace(/\s+/g, " ").trim();
+    
+    let words = text.split(/\s+/).filter(w => w.length > 1);
+    const filler = ["for", "in", "to", "at", "is", "am", "are", "be", "trip", "tour", "plan", "travel", "visit", "and", "or", "the", "a", "of", "with"];
+    words = words.filter(w => !filler.includes(w));
+    
+    if (words.length > 0) {
+        return words.sort((a, b) => b.length - a.length)[0];
+    }
+    return "";
 }
 
 
