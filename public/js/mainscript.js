@@ -603,13 +603,16 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 // ============================================================
 // 4. INPUT LISTENER (ÇÖP AYIKLAYICI VE KONUM AVCISI)
 // ============================================================
+// ============================================================
+// 4. INPUT LISTENER (UNICODE DOSTU & TAM TARAMA MODU)
+// ============================================================
 chatInput.addEventListener("input", debounce(async function () {
     if (window.__programmaticInput) return;
 
     const rawText = this.value.trim();
     const suggestionsDiv = document.getElementById("suggestions");
 
-    // 1. KUTUYU AÇ VE LOADING ÇAK
+    // 1. KUTUYU AÇ VE LOADING GÖSTER
     if (rawText.length > 0) {
         if(typeof showSuggestionsDiv === "function") showSuggestionsDiv();
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">Searching location...</div>';
@@ -619,44 +622,56 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // --- TEMİZLİK OPERASYONU ---
-    // Sayıları ve bilinen gün/zaman ifadelerini (TR/EN) cümleden atıyoruz.
+    // --- 2. GÜVENLİ TEMİZLİK (Regex whitelist yerine blacklist kullanıyoruz) ---
+    // Harflere (İ, ş, ğ, Ç, ö, ü dahil) DOKUNMUYORUZ. 
+    // Sadece sayıları ve noktalama işaretlerini siliyoruz.
     let cleanText = rawText
-        .replace(/[0-9]+/g, '') // Sayıları sil
-        .replace(/\b(day|days|gün|gun|gece|night|nights|week|weeks|hafta)\b/gi, '') // Zaman birimlerini sil
-        .replace(/[^\w\s\u00C0-\u017F-]/g, ' ') // Noktalama işaretlerini sil (Unicode karakterleri ve tire hariç)
-        .trim();
+        .replace(/[0-9]/g, ' ') // Sayıları boşluk yap
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'|\[\]<>]/g, ' ') // Noktalamaları boşluk yap
+        .replace(/\s+/g, ' '); // Çift boşlukları tek yap
 
-    // Kelimeleri diziye çevir (2 harften kısa kelimeleri at)
-    const candidates = cleanText.split(/\s+/).filter(w => w.length > 2);
+    // Zaman belirten kelimeleri temizle (TR/EN)
+    const timeKeywords = ['day', 'days', 'gün', 'gun', 'daily', 'gunluk', 'gece', 'night', 'nights', 'week', 'weeks', 'hafta', 'month', 'months', 'ay', 'year', 'years', 'yil'];
+    
+    // Kelimelere ayır ve filtrele
+    let allWords = cleanText.split(' ');
+    
+    // Anlamsız kısa kelimeleri ve zaman kelimelerini at
+    // candidates = ["İstanbul", "aispdkjasmd"] gibi kalacak
+    const candidates = allWords.filter(w => {
+        return w.length > 2 && !timeKeywords.includes(w.toLowerCase());
+    });
 
     let foundSuggestions = [];
     let foundQuery = "";
 
-    // --- STRATEJİ 1: Önce temiz halini bütün olarak dene ---
+    // --- STRATEJİ 1: Önce temiz halini bütün olarak dene (Örn: "New York") ---
     if (candidates.length > 0) {
         let fullQuery = candidates.join(" ");
-        foundSuggestions = await geoapifyLocationAutocomplete(fullQuery);
-        if (foundSuggestions && foundSuggestions.length > 0) {
-            foundQuery = fullQuery;
+        // Eğer tek kelimeyse aşağıda zaten denenecek, API'yi yorma
+        if (candidates.length > 1) {
+            foundSuggestions = await geoapifyLocationAutocomplete(fullQuery);
+            if (foundSuggestions && foundSuggestions.length > 0) {
+                foundQuery = fullQuery;
+            }
         }
     }
 
-    // --- STRATEJİ 2: Bütün hali bulunamadıysa, SONDAN BAŞA TEK TEK DENE ---
+    // --- STRATEJİ 2: Bütün hali tutmadıysa, KELİME KELİME TARA ---
+    // Sıranın önemi yok. İçinde geçerli şehir olan ilk kelimeyi kap.
     if (!foundSuggestions || foundSuggestions.length === 0) {
-        for (let i = candidates.length - 1; i >= 0; i--) {
-            const word = candidates[i];
-            
+        for (let word of candidates) {
+            // Gereksiz denemeleri atla
             if (word.length < 3) continue; 
 
-            console.log(`[LocationHunter] Deneniyor: ${word}`);
+            console.log(`[LocationHunter] Taranıyor: ${word}`);
             let results = await geoapifyLocationAutocomplete(word);
 
             if (results && results.length > 0) {
-                console.log(`[LocationHunter] Bulundu: ${word}`);
+                console.log(`[LocationHunter] Yakalandı: ${word}`);
                 foundSuggestions = results;
-                foundQuery = word; // Rendering için sorguyu güncelle
-                break; // İlk bulduğunda döngüyü kır
+                foundQuery = word;
+                break; // Bulduğumuz an döngüyü bitir. (İstanbul bulunduysa aispdkjasmd'ye bakma)
             }
         }
     }
@@ -665,7 +680,7 @@ chatInput.addEventListener("input", debounce(async function () {
     
     // --- SONUÇ GÖSTERME ---
     if (foundSuggestions && foundSuggestions.length > 0) {
-        // Bulunan temiz sorgu kelimesiyle (foundQuery) render et
+        // Doğru kelimeyle (foundQuery) render et ki eşleşme hatası olmasın
         renderSuggestions(foundSuggestions, foundQuery);
     } else {
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; width: 100%; padding: 12px; pointer-events: none;">No location found</div>';
