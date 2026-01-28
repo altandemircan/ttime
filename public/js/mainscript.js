@@ -577,19 +577,30 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
-    if (window.__programmaticInput) return;
+        if (window.__programmaticInput) return;
 
-    const rawText = this.value.trim();
-    const locationQuery = extractLocationQuery(rawText);
-    
-    if (locationQuery.length < 2) {
-        if (rawText.length < 2) showSuggestions();
+        const rawText = this.value.trim();
         const suggestionsDiv = document.getElementById("suggestions");
-        if (!locationQuery && suggestionsDiv) {
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center;">Loading suggestions...</div>';
+
+        // 1. Input tamamen boşsa varsayılan önerileri (2 days in Antalya vs.) göster
+        if (rawText.length === 0) {
+            showSuggestions();
+            return;
         }
-        return;
-    }
+
+        // 2. Input doluysa, API yanıt verene kadar HEMEN "Loading..." yazısını bas.
+        // Bu sayede kutu asla kapanmaz ve chat ekranı zıplama yapmaz.
+        if (suggestionsDiv) {
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
+            if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
+        }
+
+        const locationQuery = extractLocationQuery(rawText);
+        
+        // 3. Sorgu çok kısaysa API'ye gitme ama "Loading..." yazısı ekranda kalsın
+        if (locationQuery.length < 2) {
+            return;
+        }
 
         let suggestions = [];
         try {
@@ -605,13 +616,24 @@ if (typeof chatInput !== 'undefined' && chatInput) {
 
         window.lastResults = suggestions;
         
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(suggestions, locationQuery);
+        // 4. Sonuç varsa listele, YOKSA (anlamsız yazı) "Loading..." yazısını koru.
+        if (suggestions && suggestions.length > 0) {
+            if (typeof renderSuggestions === 'function') {
+                renderSuggestions(suggestions, locationQuery);
+            }
+        } else {
+            // Anlamsız yazı girildiğinde sonuç [ ] döner.
+            // Bu durumda kutuyu gizlemek yerine (zıplamayı önlemek için)
+            // Loading yazısını tekrar set ediyoruz veya koruyoruz.
+            if (suggestionsDiv) {
+                suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; pointer-events: none;">Loading suggestions...</div>';
+                if (typeof showSuggestionsDiv === 'function') showSuggestionsDiv();
+            }
         }
 
     }, 400));
 
-    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
+    // Focus ve Click mantığı aynen kalabilir
     const showSuggestionsLogic = function() {
         if (window.lastResults && window.lastResults.length) {
             const currentQuery = extractLocationQuery(this.value);
@@ -622,8 +644,6 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     };
 
     chatInput.addEventListener("focus", showSuggestionsLogic);
-    
-    // [FIX] Inputa tıklandığında da listenin açılmasını sağla
     chatInput.addEventListener("click", showSuggestionsLogic);
 }
 
