@@ -171,7 +171,7 @@ function ensureLocationPopupStyles() {
             font-weight: 500;
             color: #999;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+           
             margin-bottom: 6px;
         }
 
