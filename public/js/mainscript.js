@@ -16,7 +16,22 @@ window.__locationPickedFromSuggestions = false;
 window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
-
+// Türkçe karakter normalizasyon fonksiyonu
+function normalizeTurkish(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .replace(/ı/g, 'i')
+        .replace(/i̇/g, 'i')  // noktalı i
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/â/g, 'a')
+        .replace(/û/g, 'u')
+        .replace(/î/g, 'i');
+}
 
 document.addEventListener("DOMContentLoaded", function() {
     // #about yerine #about-triptime
@@ -43,21 +58,7 @@ window.addEventListener('hashchange', function() {
         }
     }
 });
-// Türkçe karakterleri normalize eden yardımcı fonksiyon
-function normalizeTurkish(text) {
-    if (!text) return '';
-    return text
-        .toLowerCase()
-        .replace(/ı/g, 'i')
-        .replace(/ğ/g, 'g')
-        .replace(/ü/g, 'u')
-        .replace(/ş/g, 's')
-        .replace(/ö/g, 'o')
-        .replace(/ç/g, 'c')
-        .replace(/â/g, 'a')
-        .replace(/û/g, 'u')
-        .replace(/î/g, 'i');
-}
+
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Dünya yarıçapı metre cinsinden
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -264,7 +265,7 @@ async function geoapifyLocationAutocomplete(query) {
         console.log("Şehirler yerel veritabanından çekiliyor...");
         const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
         // mainscript.js içinde bul ve değiştir:
-        
+
 // mainscript.js içinde bul ve değiştir:
 const localCities = await resLocal.json();
 
@@ -646,14 +647,24 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // 2. BASİT TEMİZLEME
-    // Sadece "2 days", "3 gün" gibi ifadeleri temizle
-    let searchText = rawText
-        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
-        .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
-        .replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+    // Değiştirilecek kısım (satır ~663 civarı):
+let searchText = rawText
+    .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
+    .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
+    .replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// YERİNE BUNU KOY:
+let searchText = rawText
+    .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
+    .replace(/\b(?:plan|trip|tour|itinerary)\b/gi, '')
+    .replace(/[^\p{L}\s]/gu, ' ')  // Unicode harf desteği
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Normalize et
+searchText = normalizeTurkish(searchText);
 
     // Eğer boşsa, orijinal metni kullan
     if (!searchText || searchText.length < 2) {

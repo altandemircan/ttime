@@ -28,20 +28,21 @@ const { getSuggestions } = require('./localCities'); // Dosya aynı dizindeyse
 // ROTA İÇİNE:
 app.get('/api/cities', (req, res) => {
     try {
-        const query = req.query.q ? req.query.q.toLowerCase().trim() : "";
-        console.log(`[API] Searching for: "${query}"`);
+        const query = req.query.q ? req.query.q.trim() : "";
+        console.log(`[API] Original query: "${query}"`);
         
         if (!query || query.length < 2) {
             console.log(`[API] Query too short`);
             return res.json([]);
         }
 
-        // TÜRKÇE KARAKTER DESTEĞİ
+        // TÜRKÇE KARAKTER NORMALİZASYONU
         const normalizeTurkish = (text) => {
             if (!text) return '';
             return text
                 .toLowerCase()
                 .replace(/ı/g, 'i')
+                .replace(/i̇/g, 'i')  // noktalı i (İ'nin lowercase'i)
                 .replace(/ğ/g, 'g')
                 .replace(/ü/g, 'u')
                 .replace(/ş/g, 's')
@@ -53,84 +54,45 @@ app.get('/api/cities', (req, res) => {
         };
 
         const normalizedQuery = normalizeTurkish(query);
-        
-        // TÜM STATE'LERİ AL
+        console.log(`[API] Normalized query: "${normalizedQuery}"`);
+
+        // TÜM VERİYİ AL
         const allStates = State.getAllStates();
-        console.log(`[API] Total states: ${allStates.length}`);
-        
-        // TÜM ŞEHİRLERİ AL
         const allCities = City.getAllCities();
-        console.log(`[API] Total cities: ${allCities.length}`);
-
-        // FİLTRELEME - Türkçe karakter desteği ile
-        const filteredStates = allStates.filter(state => {
-            const name = state.name.toLowerCase();
-            const normalizedName = normalizeTurkish(name);
-            
-            return name.includes(query) || 
-                   normalizedName.includes(normalizedQuery) ||
-                   name.includes(normalizedQuery);
-        });
-
-        const filteredCities = allCities.filter(city => {
-            const name = city.name.toLowerCase();
-            const normalizedName = normalizeTurkish(name);
-            
-            return name.includes(query) || 
-                   normalizedName.includes(normalizedQuery) ||
-                   name.includes(normalizedQuery);
-        });
-
-        console.log(`[API] Found ${filteredStates.length} states, ${filteredCities.length} cities`);
-
-        // BİRLEŞTİR
-        const combined = [
-            ...filteredStates.map(s => ({
-                name: s.name,
-                countryCode: s.countryCode,
-                latitude: s.latitude,
-                longitude: s.longitude,
-                type: 'state'
-            })),
-            ...filteredCities.map(c => ({
-                name: c.name,
-                countryCode: c.countryCode,
-                latitude: c.latitude,
-                longitude: c.longitude,
-                type: 'city'
-            }))
+        
+        const allData = [
+            ...allStates.map(s => ({ ...s, type: 'state' })),
+            ...allCities.map(c => ({ ...c, type: 'city' }))
         ];
 
-        // SIRALAMA: tam eşleşme > startsWith > diğer
-        combined.sort((a, b) => {
-            const aName = a.name.toLowerCase();
-            const bName = b.name.toLowerCase();
-            
-            // Tam eşleşme (case insensitive)
-            if (aName === query && bName !== query) return -1;
-            if (aName !== query && bName === query) return 1;
-            
-            // startsWith
-            const aStarts = aName.startsWith(query);
-            const bStarts = bName.startsWith(query);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            
-            // Türkçe normalize edilmiş karşılaştırma
-            const aNorm = normalizeTurkish(aName);
-            const bNorm = normalizeTurkish(bName);
-            const qNorm = normalizeTurkish(query);
-            
-            if (aNorm.includes(qNorm) && !bNorm.includes(qNorm)) return -1;
-            if (!aNorm.includes(qNorm) && bNorm.includes(qNorm)) return 1;
-            
-            return 0;
-        });
+        console.log(`[API] Total data: ${allData.length} items`);
 
-        const results = combined.slice(0, 10);
-        
-        console.log(`[API] Returning ${results.length} results:`);
-        results.forEach(r => console.log(`  - ${r.name} (${r.type})`));
+        // NORMALİZE EDİLMİŞ ARAMA
+        const results = allData
+            .filter(item => {
+                if (!item.name) return false;
+                
+                const itemName = item.name.toLowerCase();
+                const normalizedItemName = normalizeTurkish(itemName);
+                
+                // 3 şekilde kontrol et:
+                return itemName.includes(query.toLowerCase()) ||      // orijinal
+                       normalizedItemName.includes(normalizedQuery) || // normalize edilmiş
+                       itemName.includes(normalizedQuery);             // normalize query ile
+            })
+            .slice(0, 10)
+            .map(item => ({
+                name: item.name,
+                countryCode: item.countryCode,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                type: item.type
+            }));
+
+        console.log(`[API] Found ${results.length} results`);
+        if (results.length > 0) {
+            console.log(`[API] Results:`, results.map(r => r.name));
+        }
         
         res.json(results);
         
