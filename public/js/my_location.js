@@ -255,7 +255,7 @@ function ensureLocationPopupStyles() {
             content: '';
             position: absolute;
             left: 50%;
-            top: 8px;
+            top: 16px;
             width: 8px;
             height: 8px;
             background: white;
