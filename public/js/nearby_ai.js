@@ -1593,8 +1593,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
 // Cache for category data
 window._categoryCacheData = window._categoryCacheData || {};
 
-// GÜNCELLENMİŞ VE DÜZELTİLMİŞ FONKSİYON
-// GÜNCELLENMİŞ VE DÜZELTİLMİŞ FONKSİYON (SVG İKONLU)
+// GÜNCELLENMİŞ showNearbyPlacesByCategory (Daire Temizliği Fix)
 async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 'restaurants', radiusOverride = null) {
     window._lastSelectedCategory = categoryType;
 
@@ -1630,7 +1629,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     const country = "Turkey";
     const locationContext = `${currentCityName}, ${country}`;
     
-    // Kategori Yapılandırması (İkon Yolları Burada Tanımlı)
+    // Kategori Yapılandırması
     const categoryConfig = {
         'restaurants': {
             apiCategories: 'catering.restaurant,catering.cafe,catering.bar,catering.fast_food,catering.pub',
@@ -1660,7 +1659,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
     
     const config = categoryConfig[categoryType] || categoryConfig.restaurants;
     
-    // Popup HTML oluşturma (Tıklanan Nokta Kısmı)
+    // Popup HTML oluşturma
     const addPointSection = `
         <div class="add-point-section" style="margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 16px;">
             <div class="point-item" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
@@ -1687,13 +1686,12 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         </div>
     `;
 
-    // --- GÜNCELLENEN KISIM: TAB OLUŞTURMA (SVG İKONLU) ---
+    // Tab oluşturma
     let tabsHtml = '<div class="category-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;">';
     
     Object.keys(categoryConfig).forEach(key => {
         const tab = categoryConfig[key];
         const isActive = key === categoryType;
-        
         // Aktif değilse gri yap, aktifse orijinal rengi göster
         const iconFilter = isActive ? '' : 'filter: grayscale(100%) opacity(0.6);';
         
@@ -1709,7 +1707,6 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         `;
     });
     tabsHtml += '</div>';
-    // -----------------------------------------------------
 
     const categorySection = `
         <div class="category-section" style="margin-bottom: 16px;">
@@ -1754,12 +1751,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 t.style.borderBottomColor = isSelected ? '#1976d2' : 'transparent';
                 t.style.color = isSelected ? '#1976d2' : '#666';
                 t.style.fontWeight = isSelected ? '600' : '500';
-                
-                // İkon rengini güncelle (Seçiliyse renkli, değilse gri)
                 const img = t.querySelector('img');
-                if (img) {
-                    img.style.filter = isSelected ? '' : 'grayscale(100%) opacity(0.6)';
-                }
+                if (img) img.style.filter = isSelected ? '' : 'grayscale(100%) opacity(0.6)';
             });
             showNearbyPlacesByCategory(lat, lng, map, day, tabId);
         });
@@ -1776,6 +1769,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         document.head.appendChild(style);
     }
 
+    // --- GENEL TEMİZLİK ---
     clearAllCategoryMarkers(map);
 
     // Pulse Marker Temizlik
@@ -1823,7 +1817,26 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         window._nearbyPulseMarker = L.marker([lat, lng], { icon: pulseIcon, interactive: false }).addTo(map);
     }
 
-    // Layer Temizliği
+    // --- ESKİ KATMANLARI VE DAİRELERİ TEMİZLE (KRİTİK GÜNCELLEME) ---
+    // 1. Önce eski ID ile 3D daireyi temizle
+    if (window._categoryRadiusCircle3D) {
+        const oldId = window._categoryRadiusCircle3D;
+        const targetMap = (map && map.getLayer) ? map : window._maplibre3DInstance;
+        if (targetMap && targetMap.getLayer) {
+            try {
+                if (targetMap.getLayer(oldId + '-layer')) targetMap.removeLayer(oldId + '-layer');
+                if (targetMap.getLayer(oldId + '-stroke')) targetMap.removeLayer(oldId + '-stroke');
+                if (targetMap.getSource(oldId)) targetMap.removeSource(oldId);
+            } catch(e) {}
+        }
+        window._categoryRadiusCircle3D = null;
+    }
+    // 2. 2D daireyi temizle
+    if (window._categoryRadiusCircle) {
+        try { window._categoryRadiusCircle.remove(); } catch(e) {}
+        window._categoryRadiusCircle = null;
+    }
+
     const layerKey = `__${config.layerPrefix}Layers`;
     const marker3DKey = `_${config.layerPrefix}3DMarkers`;
     const layer3DKey = `_${config.layerPrefix}3DLayers`;
@@ -1886,60 +1899,65 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const countBadge = document.querySelector('.category-count');
         if (countBadge) countBadge.textContent = topPlaces.length;
 
-        // --- DAİRE ÇİZİMİ ---
-        if (maxDistance > 0) {
-            const circleColor = '#1976d2';
-            const radiusMeters = Math.ceil(maxDistance);
-
-            if (isMapLibre) {
-                const circleId = `category-radius-${categoryType}-${Date.now()}`;
-                const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
-
-                map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
-
-                map.addLayer({
-                    id: circleId + '-layer',
-                    type: 'fill',
-                    source: circleId,
-                    paint: {
-                        'fill-color': circleColor,
-                        'fill-opacity': 0.2, 
-                        'fill-outline-color': circleColor
-                    }
-                });
-
-                map.addLayer({
-                    id: circleId + '-stroke',
-                    type: 'line',
-                    source: circleId,
-                    paint: {
-                        'line-color': circleColor,
-                        'line-width': 2,
-                        'line-opacity': 0.8,
-                        'line-dasharray': [2, 4]
-                    }
-                });
-
-                window._categoryRadiusCircle3D = circleId;
-
-            } else {
-                window._categoryRadiusCircle = L.circle([lat, lng], {
-                    radius: radiusMeters,
-                    color: circleColor,
-                    weight: 1,
-                    opacity: 0.6,
-                    fillColor: circleColor,
-                    fillOpacity: 0.1,
-                    dashArray: "5, 10",
-                    className: `category-radius-circle`
-                }).addTo(map);
-            }
-        }
-
-        // SIDEBAR LİSTESİ DOLDURMA
+        // SIDEBAR LİSTESİ
         const itemsContainer = document.querySelector('.category-items-container');
         if (itemsContainer) {
             itemsContainer.innerHTML = '';
+            
+            // --- DAİRE ÇİZİMİ (ARTIK BURADA - LİSTE DOLARKEN) ---
+            // Bu sayede "Liste var mı?" kontrolünden hemen sonra çizilir
+            if (maxDistance > 0) {
+                const circleColor = '#1976d2';
+                const radiusMeters = Math.ceil(maxDistance);
+
+                if (isMapLibre) {
+                    const circleId = `category-radius-${categoryType}-${Date.now()}`;
+                    const circleGeoJSON = createCircleGeoJSON(lat, lng, radiusMeters);
+
+                    map.addSource(circleId, { type: 'geojson', data: circleGeoJSON });
+
+                    // 1. FILL LAYER
+                    map.addLayer({
+                        id: circleId + '-layer',
+                        type: 'fill',
+                        source: circleId,
+                        paint: {
+                            'fill-color': circleColor,
+                            'fill-opacity': 0.2, 
+                            'fill-outline-color': circleColor
+                        }
+                    });
+
+                    // 2. LINE LAYER
+                    map.addLayer({
+                        id: circleId + '-stroke',
+                        type: 'line',
+                        source: circleId,
+                        paint: {
+                            'line-color': circleColor,
+                            'line-width': 2,
+                            'line-opacity': 0.8,
+                            'line-dasharray': [2, 4]
+                        }
+                    });
+
+                    window._categoryRadiusCircle3D = circleId;
+
+                } else {
+                    window._categoryRadiusCircle = L.circle([lat, lng], {
+                        radius: radiusMeters,
+                        color: circleColor,
+                        weight: 1,
+                        opacity: 0.6,
+                        fillColor: circleColor,
+                        fillOpacity: 0.1,
+                        dashArray: "5, 10",
+                        className: `category-radius-circle`
+                    }).addTo(map);
+                }
+            }
+
+            // Liste Elemanlarını Ekle
             topPlaces.forEach((placeData, idx) => {
                 const f = placeData.feature;
                 const distance = placeData.distance;
