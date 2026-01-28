@@ -344,7 +344,6 @@ async function geoapifyLocationAutocomplete(query) {
     let apiFeatures = [];
     try {
         let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
-
         let data = await response.json();
         apiFeatures = data.features || [];
         
@@ -352,8 +351,6 @@ async function geoapifyLocationAutocomplete(query) {
             for (const variant of queryVariants) {
                 if (variant === query) continue;
                 response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(variant)}&limit=15`);
-
-
                 data = await response.json();
                 apiFeatures = [...apiFeatures, ...(data.features || [])];
                 if (apiFeatures.length >= 15) break;
