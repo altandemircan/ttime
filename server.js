@@ -46,7 +46,7 @@ const photogetProxy = require('./photoget-proxy');
 app.use('/photoget-proxy', photogetProxy);
 
 const geoapify = require('./geoapify.js');
-
+const localCities = require('./localCities.js');
 // --- YENİ: /api/geoapify/nearby-cities endpoint’i ---
 app.get('/api/geoapify/nearby-cities', async (req, res) => {
   try {
@@ -130,6 +130,18 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
   }
 });
 
+// Yerel şehir veritabanı endpoint'i
+app.get('/api/cities', (req, res) => {
+    const { q, limit } = req.query;
+    try {
+        const results = localCities.searchCities(q, limit ? parseInt(limit) : 10);
+        res.json(results);
+    } catch (e) {
+        console.error('[LocalCities Error]', e);
+        res.status(500).json({ error: 'Local search failed' });
+    }
+});
+
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
   const { q, limit } = req.query;
@@ -159,17 +171,6 @@ app.get('/api/geoapify/places', async (req, res) => {
 });
 
 
-const localCities = require('./localCities.js');
-app.get('/api/cities', (req, res) => {
-    const { q, limit } = req.query;
-    try {
-        const results = localCities.searchCities(q, limit ? parseInt(limit) : 10);
-        res.json(results);
-    } catch (e) {
-        console.error('[LocalCities Error]', e);
-        res.status(500).json({ error: 'Local search failed' });
-    }
-});
 
 app.post('/api/elevation', async (req, res) => {
     // locations parametresi array mi string mi kontrolü
