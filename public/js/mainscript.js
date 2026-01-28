@@ -601,10 +601,10 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         return; // API'ye gitme, sadece önceki sonuçları filtrele
     }
     
-    if (locationQuery.length < 2) {
-        if (rawText.length < 2) showSuggestions();
-        return;
-    }
+   if (locationQuery.length < 1) {
+    showSuggestions();
+    return;
+}
 
         let suggestions = [];
         try {
