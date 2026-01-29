@@ -5,16 +5,10 @@
   <title>OpenFreeMap – Single Map</title>
 
   <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
   <!-- MapLibre -->
-  <link
-    href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"
-    rel="stylesheet"
-  >
+  <link href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css" rel="stylesheet">
 
   <style>
     html, body {
@@ -51,16 +45,35 @@
 
   const map = L.map('map').setView([lat, lon], zoom);
 
-  fetch('https://tiles.openfreemap.org/styles/bright')
-    .then(res => res.json())
-    .then(style => {
-      L.maplibreGL({
-        style: style,
-        interactive: true
-      }).addTo(map);
-    });
+  map.whenReady(() => {
+    // Stil/tile haritasını ekle
+    fetch('https://tiles.openfreemap.org/styles/bright')
+      .then(res => res.json())
+      .then(style => {
+        L.maplibreGL({
+          style: style,
+          interactive: true
+        }).addTo(map);
+      });
 
-  L.marker([lat, lon]).addTo(map);
+    // Kırmızı marker: 
+    const redMarkerHtml = `
+      <div style="
+        background:#d32f2f; width:32px; height:32px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+          <div style="width:8px; height:8px; background:#fff; border-radius:50%;"></div>
+      </div>
+    `;
+    L.marker([lat, lon], {
+      icon: L.divIcon({
+        html: redMarkerHtml,
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      })
+    }).addTo(map);
+  });
 </script>
 
 </body>
