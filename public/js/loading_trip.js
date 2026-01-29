@@ -173,7 +173,7 @@ function addMessage(text, className) {
         profileElem.textContent = "🧑";
     } else {
         profileElem = document.createElement("img");
-        profileElem.src = "img/avatar_aiio.png";
+        profileElem.src = "img/mira_profile.png";
         profileElem.className = "profile-img";
     }
 

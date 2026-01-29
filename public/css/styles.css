@@ -588,19 +588,36 @@ ease;
     width: 16px;
     height: 16px;
 }
+
 .category-area-option {
+    padding: 8px 16px;
+    cursor: pointer;
     display: flex;
+    align-items: center;    
     flex-shrink: 0;
-    align-items: center;
     justify-content: center;
-    padding: 5px 10px;
     border: 1px solid #ddd;
     border-radius: 10px;
     background: rgb(250 247 255 / 90%);
-    cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.85rem;
 }
+.category-area-option.selected-suggestion {
+    background: #e6f4ff;
+    font-weight: bold;
+}
+.close-suggestion {
+    margin-left: auto;
+    color: #888;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 6px;
+}
+.category-area-option:hover {
+    background: #f1f1f1;
+}
+
+
 
 .category-area-option:hover {
     background-color: rgb(255 255 255 / 20%);
@@ -622,6 +639,18 @@ ease;
         150,
         0.2
     ); /* Slightly darker when clicked */
+}
+
+.custom-marker-icon {
+    background: #d32f2f;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 /* İlk dalga (daha küçük ve hızlı) */
@@ -4901,39 +4930,7 @@ right: 30px;
     z-index: 10;
     display: flex !important;
 }
-.category-area-option {
-    padding: 8px 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-}
-.category-area-option.selected-suggestion {
-    background: #e6f4ff;
-    font-weight: bold;
-}
-.close-suggestion {
-    margin-left: auto;
-    color: #888;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 0 6px;
-}
-.category-area-option:hover {
-    background: #f1f1f1;
-}
 
-
-.custom-marker-icon {
-    background: #d32f2f;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
 
 .numbered-marker {
     width: 100%;
@@ -6041,8 +6038,8 @@ ease;
         color: #cbd5e1;
     }
 }
+#suggestions { display: flex;}
 
-#suggestions.hidden { display: none; }
 .canonical-preview {
   font-family: system-ui, sans-serif;
   font-size: 13px;

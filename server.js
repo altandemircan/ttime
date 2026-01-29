@@ -21,6 +21,72 @@ const app = express();
 app.use(express.json({ limit: '6mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+
+// localCities.js'yi kullan
+const { getSuggestions } = require('./localCities.js');
+
+app.get('/api/cities', (req, res) => {
+    try {
+        const query = req.query.q ? req.query.q.trim() : "";
+        console.log(`[API] Original query: "${query}"`);
+        
+        if (!query || query.length < 2) return res.json([]);
+        
+        // Türkçe karakter normalizasyonu
+        const normalizeForSearch = (text) => {
+            if (!text) return '';
+            return text
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // tüm aksanları kaldır
+                .replace(/ı/g, 'i')
+                .replace(/ğ/g, 'g')
+                .replace(/ü/g, 'u')
+                .replace(/ş/g, 's')
+                .replace(/ö/g, 'o')
+                .replace(/ç/g, 'c');
+        };
+        
+        const normalizedQuery = normalizeForSearch(query);
+        console.log(`[API] Normalized for search: "${normalizedQuery}"`);
+        
+        // Tüm veriyi al ve normalize et
+        const allStates = require('country-state-city').State.getAllStates();
+        const allCities = require('country-state-city').City.getAllCities();
+        
+        const allData = [
+            ...allStates.map(s => ({ 
+                ...s, 
+                type: 'state',
+                searchName: normalizeForSearch(s.name)
+            })),
+            ...allCities.map(c => ({ 
+                ...c, 
+                type: 'city',
+                searchName: normalizeForSearch(c.name)
+            }))
+        ];
+        
+        // Filtrele: normalize edilmiş isimde aranan kelime geçiyor mu?
+        const results = allData
+            .filter(item => item.searchName.includes(normalizedQuery))
+            .slice(0, 10)
+            .map(item => ({
+                name: item.name,
+                countryCode: item.countryCode,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                type: item.type
+            }));
+        
+        console.log(`[API] Found ${results.length} results for "${query}"`);
+        res.json(results);
+        
+    } catch (err) {
+        console.error("[API] Error:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 // 2. Feedback Route
 const feedbackRoute = require('./feedbackRoute');
 app.use('/api', feedbackRoute);
@@ -46,7 +112,6 @@ app.use('/photoget-proxy', photogetProxy);
 
 const geoapify = require('./geoapify.js');
 
-// --- YENİ: /api/geoapify/nearby-cities endpoint’i ---
 app.get('/api/geoapify/nearby-cities', async (req, res) => {
   try {
     const { lat, lon, radius, limit } = req.query;
@@ -62,6 +127,8 @@ app.get('/api/geoapify/nearby-cities', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+
 
 // --- EKLENEN ENDPOINT --- //
 app.get('/api/geoapify/geocode', async (req, res) => {
@@ -126,6 +193,8 @@ app.get('/api/tile/:z/:x/:y.png', async (req, res) => {
     res.status(500).send('Internal proxy error');
   }
 });
+
+
 
 // Autocomplete endpoint
 app.get('/api/geoapify/autocomplete', async (req, res) => {
@@ -371,14 +440,11 @@ app.get('*', (req, res) => {
     const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
     
     // 2. Browser Önbelleğini ÖLDÜREN Headerlar (Kesin Çözüm)
-    // Cache-Control: Asla saklama, her seferinde sunucuya sor.
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
     // 3. ETag ve Last-Modified Başlıklarını SİL
-    // Bu çok kritiktir. Bunu silmezsek browser "Dosya değişti mi?" diye sorar (304), 
-    // biz "Sorma, direkt indir" (200) diyoruz.
     res.removeHeader('ETag');
     res.removeHeader('Last-Modified');
 
@@ -404,4 +470,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Feedback email configured:', !!process.env.FEEDBACK_FROM_EMAIL);
 
-}); 
+});
