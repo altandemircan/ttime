@@ -4152,10 +4152,53 @@ function attachMapClickAddMode(day) {
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
 
+
+
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
+    // 1. ÖNCE CSS FIX'İ ENJEKTE ET (Sayfada yoksa ekler)
+    if (!document.getElementById('tt-marker-fix-style')) {
+        const style = document.createElement('style');
+        style.id = 'tt-marker-fix-style';
+        style.textContent = `
+            /* Wrapper'ı (Kapsayıcı) Flex Yapıp İçeriği Ortalıyoruz */
+            .leaflet-marker-icon.tt-static-marker-icon {
+                background: transparent !important;
+                border: none !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* Kırmızı Topun Tüm Dış Etkenlerden Arındırılması */
+            .leaflet-marker-icon.tt-static-marker-icon .custom-marker-outer {
+                width: 32px !important;
+                height: 32px !important;
+                /* Styles.css'den gelen absolute pozisyonu iptal et: */
+                position: static !important; 
+                transform: none !important;
+                margin: 0 !important;
+                left: auto !important;
+                top: auto !important;
+                
+                /* Görünüm Ayarları */
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border-radius: 50%;
+                font-size: 14px !important;
+                line-height: 1 !important;
+                background: #d32f2f; /* Renk garantisi */
+                color: #fff;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. TEMİZLİK
     window._leafletMaps = window._leafletMaps || {};
-    
-    // 1. TEMİZLİK (Eski haritayı sil)
     if (window._leafletMaps[mapId]) {
         try { 
             if (window._leafletMaps[mapId].getContainer()) {
@@ -4168,7 +4211,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // 2. KAP AYARLARI
+    // 3. KAP AYARLARI
     el.innerHTML = '';
     el.style.width = '100%';
     el.style.height = '250px';
@@ -4176,14 +4219,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     el.style.borderRadius = '8px';
     el.style.overflow = 'hidden';
 
-    // Leaflet Kontrolü
     if (typeof L === 'undefined') {
-        el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading...</div>';
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading map...</div>';
         setTimeout(() => createLeafletMapForItem(mapId, lat, lon, name, number, day), 100);
         return;
     }
 
-    // 3. HARİTA OLUŞTUR
+    // 4. HARİTA OLUŞTURMA
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
@@ -4201,38 +4243,30 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         inertia: false
     });
 
-    // 4. TILE LAYER
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
     if (typeof L.maplibreGL === 'function') {
-        L.maplibreGL({ style: openFreeMapStyle, attribution: '', interactive: false }).addTo(map);
+        L.maplibreGL({
+            style: openFreeMapStyle,
+            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
+            interactive: false
+        }).addTo(map);
     } else {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 16, interactive: false }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 16,
+            attribution: '© OpenStreetMap contributors',
+            interactive: false
+        }).addTo(map);
     }
 
-    // 5. MARKER (STYLES.CSS İLE TAM UYUMLU AYAR)
-    // CSS'te: width: 24px + border: 2px + border: 2px = 28px TOTAL.
-    
-    const fallbackHtml = `
-      <div class="custom-marker-outer red" style="
-          /* Harici CSS'teki marginleri sıfırla ki Leaflet'in hesabı şaşmasın */
-          margin: 0 !important; 
-          /* Flexbox ile içindeki rakamı ortala */
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-      ">
-        <span class="custom-marker-label">${number}</span>
-      </div>
-    `;
+    // 5. MARKER OLUŞTURMA (Artık CSS Class'a güveniyoruz)
+    // HTML içinde stil yazmıyoruz, yukarıdaki CSS halledecek.
+    const cleanHtml = `<div class="custom-marker-outer red">${number}</div>`;
     
     const icon = L.divIcon({ 
-        html: fallbackHtml, 
-        className: "tt-static-marker-icon", 
-        
-        // --- İŞTE ÇÖZÜM BURASI ---
-        iconSize: [28, 28],   // CSS'teki gerçek toplam boyut
-        iconAnchor: [14, 14]  // Tam orta nokta (28 / 2 = 14)
-        // -------------------------
+        html: cleanHtml, 
+        className: "tt-static-marker-icon", // Yukarıda tanımladığımız özel sınıf
+        iconSize: [32, 32],
+        iconAnchor: [16, 16] // Tam merkez
     });
     
     const marker = L.marker([lat, lon], { 
@@ -4240,20 +4274,20 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         interactive: true 
     }).addTo(map);
     
-    // Popup Ayarı (Marker'ın tam tepesi)
+    // Popup Ayarı (Tam ortada ve markerın hemen üstünde)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -16] // 14px yarıçap + 2px boşluk
+        offset: [0, -18] 
     }).openPopup();
 
-    // 6. GÜNCELLEME
+    // 6. FİNAL GÜNCELLEME
     setTimeout(function() { 
-        if (map && map.getContainer()) {
+        if (map && map.getContainer() && document.getElementById(mapId)) {
             try {
                 map.invalidateSize();
                 map.setView([lat, lon], 16, { animate: false });
                 marker.openPopup();
-                if(marker._popup) {
+                if (marker._popup) {
                     marker._popup._updateLayout();
                     marker._popup._adjustPan();
                 }
@@ -4261,19 +4295,95 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         }
     }, 150);
     
-    // Popup kapandığında tekrar aç
     marker.on('popupclose', function() {
-        setTimeout(() => { if (map && map.getContainer()) marker.openPopup(); }, 100);
+        setTimeout(() => {
+            if (map && map.getContainer()) marker.openPopup();
+        }, 100);
     });
     
     window._leafletMaps[mapId] = map;
     
-    // CSS Etkileşim Ayarları
-    map.getContainer().style.pointerEvents = 'none';
-    if (marker._icon) marker._icon.style.pointerEvents = 'auto';
-    if (marker._icon) marker._icon.style.cursor = 'pointer';
+    const mapContainer = map.getContainer();
+    mapContainer.style.pointerEvents = 'none';
+    mapContainer.style.cursor = 'default';
+    
+    if (marker._icon) {
+        marker._icon.style.pointerEvents = 'auto';
+        marker._icon.style.cursor = 'pointer';
+    }
 }
 
+// // CSS ekle:
+// (function addStaticMapCSS() {
+//     const styleId = 'tt-static-map-css-fixed';
+//     if (document.getElementById(styleId)) return;
+    
+//     const style = document.createElement('style');
+//     style.id = styleId;
+//     style.textContent = `
+//         /* Tek item haritaları için - harita interaktif değil */
+//         .cart-item .leaflet-map .leaflet-container,
+//         .cart-item .leaflet-map .leaflet-pane,
+//         .cart-item .leaflet-map .leaflet-control-container {
+//             pointer-events: none !important;
+//             cursor: default !important;
+//             user-select: none !important;
+//         }
+
+
+//         /* Marker ve popup hariç - onlar tıklanabilir kalsın */
+//         .cart-item .leaflet-map .leaflet-marker-icon,
+//         .cart-item .leaflet-map .leaflet-popup,
+//         .cart-item .leaflet-map .leaflet-popup-content-wrapper,
+//         .cart-item .leaflet-map .leaflet-popup-tip,
+//         .cart-item .leaflet-map .leaflet-popup-close-button {
+//             pointer-events: auto !important;
+//             cursor: pointer !important;
+//         }
+        
+//         /* Popup stili - daha belirgin olsun */
+//         .cart-item .leaflet-map .leaflet-popup-content-wrapper {
+//             background: white;
+//             border-radius: 8px;
+//             box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+//             padding: 8px 12px;
+//             border: 1px solid #ddd;
+//         }
+        
+//         .cart-item .leaflet-map .leaflet-popup-content {
+//             margin: 8px;
+//             line-height: 1.4;
+//             font-weight: 600;
+//             color: #333;
+//         }
+        
+//         .cart-item .leaflet-map .leaflet-popup-tip {
+//             background: white;
+//             box-shadow: -2px 2px 5px rgba(0,0,0,0.1);
+//         }
+        
+//         /* Harita üzerindeki kontrolleri gizle */
+//         .cart-item .leaflet-map .leaflet-control-attribution,
+//         .cart-item .leaflet-map .leaflet-control-zoom {
+//             display: none !important;
+//         }
+        
+//         /* Harita container'ı */
+//         .cart-item .leaflet-map {
+//             border-radius: 8px;
+//             overflow: hidden;
+          
+//         }
+        
+//         /* Marker stili - eski boyutta */
+//         .tt-static-marker {
+//             pointer-events: auto !important;
+//             cursor: pointer !important;
+//         }
+//     `;
+//     document.head.appendChild(style);
+// })();
+// Ayrıca toggleContent fonksiyonunu da güncelleyin:
 
 function toggleContent(arrowIcon) {
     const cartItem = arrowIcon.closest('.cart-item');
@@ -4329,75 +4439,75 @@ function toggleContent(arrowIcon) {
         }
     }
 }
-// (function forceLeafletCssFix() {
-//     const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
-//     if (document.getElementById(styleId)) return;
+(function forceLeafletCssFix() {
+    const styleId = 'tt-leaflet-fix-v5'; // Versiyonu güncelledik
+    if (document.getElementById(styleId)) return;
     
-//     const style = document.createElement('style');
-//     style.id = styleId;
-//     style.innerHTML = `
-//          /* 1. Zoom/Pan animasyonlarını sadece route-map VE expanded-map dışındaki haritalarda kapat */
-//         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
-//         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
-//         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
-//         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-shadow, 
-//         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
-//         .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
-//             transition: none !important;
-//             transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
-//         }
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = `
+         /* 1. Zoom/Pan animasyonlarını sadece route-map VE expanded-map dışındaki haritalarda kapat */
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-pane, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-icon, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-marker-shadow, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-tile-container, 
+        .leaflet-container:not(.expanded-map):not(.route-map) .leaflet-zoom-animated {
+            transition: none !important;
+            transform-origin: 0 0 !important; /* KRİTİK DÜZELTME: Sol üst referans alınmalı */
+        }
         
-//         /* 2. Resimlerin animasyonunu sadece route-map VE expanded-map dışındaki haritalarda engelle */
-//         .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
-//             max-width: none !important;
-//             width: 256px !important;
-//             height: 256px !important;
-//             transition: none !important; 
-//         }
-//         /* 3. İmleç Ayarları */
-//         .expanded-map.leaflet-container,
-//         .expanded-map .leaflet-grab,
-//         .expanded-map .leaflet-interactive {
-//             cursor: grab !important;
-//         }
-//         .expanded-map.leaflet-container:active,
-//         .expanded-map .leaflet-grab:active {
-//             cursor: grabbing !important;
-//         }
+        /* 2. Resimlerin animasyonunu sadece route-map VE expanded-map dışındaki haritalarda engelle */
+        .leaflet-container:not(.expanded-map):not(.route-map) img.leaflet-tile {
+            max-width: none !important;
+            width: 256px !important;
+            height: 256px !important;
+            transition: none !important; 
+        }
+        /* 3. İmleç Ayarları */
+        .expanded-map.leaflet-container,
+        .expanded-map .leaflet-grab,
+        .expanded-map .leaflet-interactive {
+            cursor: grab !important;
+        }
+        .expanded-map.leaflet-container:active,
+        .expanded-map .leaflet-grab:active {
+            cursor: grabbing !important;
+        }
         
-//         /* Markerlar için pointer */
-//         .expanded-map .leaflet-marker-icon,
-//         .expanded-map .leaflet-popup-close-button,
-//         .expanded-map a {
-//             cursor: pointer !important;
-//         }
+        /* Markerlar için pointer */
+        .expanded-map .leaflet-marker-icon,
+        .expanded-map .leaflet-popup-close-button,
+        .expanded-map a {
+            cursor: pointer !important;
+        }
 
-//         /* 4. Tıklama/Etkileşim Sorunları */
-//         .leaflet-pane { 
-//             pointer-events: auto; 
-//         }
-//         .leaflet-tile-pane {
-//             z-index: 200; 
-//         }
+        /* 4. Tıklama/Etkileşim Sorunları */
+        .leaflet-pane { 
+            pointer-events: auto; 
+        }
+        .leaflet-tile-pane {
+            z-index: 200; 
+        }
         
-//         /* 5. Custom Marker Animasyonu */
-//         .custom-marker-outer {
-//     transition: transform 0.1s ease !important;
-//     will-change: auto;
-//     display: flex;
-//     align-items: center;
-//     justify-content: center;
-//     width: 24px;
-//     height: 24px;
-// }
+        /* 5. Custom Marker Animasyonu */
+        .custom-marker-outer {
+    transition: transform 0.1s ease !important;
+    will-change: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
 
-//         /* 6. Mobil Performans İyileştirmesi */
-//         .leaflet-container {
-//             touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
-//         }
-//     `;
-//     document.head.appendChild(style);
-// })();
+        /* 6. Mobil Performans İyileştirmesi */
+        .leaflet-container {
+            touch-action: none; /* Tarayıcının varsayılan zoom'unu engelle */
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 
 
@@ -7318,14 +7428,6 @@ async function expandMap(containerId, day) {
     scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
     scaleBarDiv.style.display = "block";
 
-    // ✅ Loading spinner
-scaleBarDiv.innerHTML = `<div class="scale-bar-track loading"></div>`;
-
-// Modal göster
-if (typeof window.showScaleBarLoadingModal === 'function') {
-  window.showScaleBarLoadingModal();
-}
-
     const panelDiv = document.createElement('div');
     panelDiv.className = 'expanded-map-panel';
     panelDiv.appendChild(headerDiv);
@@ -7778,6 +7880,41 @@ function updateExpandedMap(expandedMap, day) {
     }
 }
  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
  function restoreMap(containerId, day) {
 
@@ -9611,6 +9748,7 @@ window.setTravelMode = async function(mode, day) {
 
   setTimeout(() => {
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
+  // SAF ROUTE KONTROLÜ: Geojson ve summary var mı?
   const geojson = window.lastRouteGeojsons?.[`route-map-day${d}`];
   const summary = window.lastRouteSummaries?.[`route-map-day${d}`];
   if (scaleBarDiv && geojson && summary && summary.distance > 0) {
@@ -9618,13 +9756,10 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
-    scaleBarDiv.innerHTML = `<div class="scale-bar-track loading"></div>`;
-    // Modal göster
-    if (typeof window.showScaleBarLoadingModal === 'function') {
-      window.showScaleBarLoadingModal();
-    }
+scaleBarDiv.innerHTML = '<div class="spinner"></div>';
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
+  // Havresine fallback veya başka bir şey YOK!
 }, 300);
 
 
@@ -9678,7 +9813,8 @@ function cleanupLegacyTravelMode() {
     window.initTravelModeControl = () => {};
   } catch (_) {}
 }
-
+// Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
+// Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
 
   const setId = `tt-travel-mode-set-day${day}`;
@@ -9696,6 +9832,9 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   // --- 2. KONUM KONTROLÜ ---
   const isInTurkey = areAllPointsInTurkey(realPoints);
 
+  // --- 3. MOD SEÇİM MANTIĞI ---
+  // Rota oluşup oluşmadığına (hasRealRoute) bakmaksızın, 
+  // eğer nokta Türkiye dışındaysa "FLY MODE", içindeyse standart butonları göster.
   
   if (!isInTurkey) {
     // --- TURKEY DIŞI: FLY MODE ---
@@ -10353,3 +10492,4 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 10);
     }
 }
+
