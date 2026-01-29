@@ -7325,9 +7325,6 @@ async function expandMap(containerId, day) {
     panelDiv.appendChild(controlsDiv);
     panelDiv.appendChild(scaleBarDiv);
 
-    scaleBarDiv.innerHTML = `<div class="tt-scale-loader"><span class="spinner"></span> Loading elevation...</div>`;
-
-
     expandedContainer.appendChild(panelDiv);
 
     const closeBtn = document.createElement('button');

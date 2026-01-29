@@ -384,9 +384,6 @@ if (Array.isArray(markers)) {
     track.style.position = 'relative';
     track.appendChild(elevationLabels);
     
-setTimeout(() => {
-  renderRouteScaleBar(container, ...);
-}, 60);
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
@@ -497,25 +494,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
     container.innerHTML = `
-      <div class="scale-bar-track">
-        <div class="elevation-placeholder" style="
-          width: 100%;
-          height: 220px;
-          border-radius: 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #6c757d;
-          font-size: 14px;
-        ">
-          <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
-            <div class="spinner"></div>
-            <div>Loading elevation</div>
-          </div>
-        </div>
+  <div class="scale-bar-track">
+    <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
+      <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
+        <div class="spinner"></div>
+        <div>Loading elevation</div>
       </div>
-    `;
+    </div>
+  </div>
+`;
     track = container.querySelector('.scale-bar-track');
   }
 
