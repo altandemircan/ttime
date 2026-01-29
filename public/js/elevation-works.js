@@ -476,7 +476,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         }
       </style>
     `;
-    return;
+    // return; ← BURASI KALDIRMA, devamet etsin!
   }
 
   // Koordinat kontrolü (Tekrar)
@@ -499,13 +499,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // Loading UI
-// Loading UI
 let track = container.querySelector('.scale-bar-track');
 if (!track) {
   container.innerHTML = `
     <div class="scale-bar-track loading">
       <div class="tt-scale-loader" style="display: flex !important;">
-        <div class="spinner"></div>
+        <div class="spinner" style="display: inline-block !important;"></div>
         <div>Loading elevation</div>
       </div>
     </div>
