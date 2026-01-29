@@ -389,7 +389,12 @@ if (Array.isArray(markers)) {
 function renderRouteScaleBar(container, totalKm, markers) {
   // === MODAL LOADING SPINNER HELPER ===
   window.showScaleBarLoadingModal = function() {
+    // Eğer zaten gösteriliyorsa, tekrar gösterme
     let spinner = document.getElementById('tt-scale-bar-inline-spinner');
+    if (spinner && !spinner.classList.contains('hidden')) {
+      return; // Zaten açık, tekrar yapma
+    }
+    
     if (!spinner) {
       spinner = document.createElement('div');
       spinner.id = 'tt-scale-bar-inline-spinner';
@@ -904,11 +909,11 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
 
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          // Modal'ı 300ms sonra gizle
+          // Modal'ı daha uzun göster - yanıp sönmeyi engelle
           setTimeout(() => {
             hideLoadingModal();
             track.classList.remove('loading');
-          }, 300);
+          }, 800);
       });
 
       if (typeof day !== "undefined") {
