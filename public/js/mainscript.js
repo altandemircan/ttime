@@ -4229,27 +4229,30 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         }).addTo(map);
     }
 
-    // 5. CREATE MARKER (Fixed Alignment & ClassName Error)
-    // 5. CREATE MARKER (TAM ORTALI & DÜZELTİLMİŞ)
+   // 5. CREATE MARKER (KESİN ORTALAMA - FINAL FIX)
     const fallbackHtml = `
       <div class="custom-marker-outer red" style="
-          transform: scale(1);
-          display: flex; 
-          align-items: center; 
-          justify-content: center;
-          width: 32px;       /* Genişlik sabitlendi */
-          height: 32px;      /* Yükseklik sabitlendi */
-          margin: 0;         /* Marginler sıfırlandı */
+          width: 32px !important;
+          height: 32px !important;
+          box-sizing: border-box !important; /* Kenarlıkları boyuta dahil et */
+          margin: 0 !important;
+          padding: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 50%;
+          transform: none !important; /* Olası dış CSS müdahalesini engelle */
       ">
         <span class="custom-marker-label" style="line-height: 1;">${number}</span>
       </div>
     `;
     
+    // Icon tanımları
     const icon = L.divIcon({ 
         html: fallbackHtml, 
-        className: "tt-static-marker-icon", // Leaflet'in varsayılan stilini ezmek için
-        iconSize: [32, 32],   // İkonun kapladığı toplam alan
-        iconAnchor: [16, 16]  // [X, Y] -> 32'nin yarısı 16 (Tam orta nokta)
+        className: "tt-static-marker-icon", // Leaflet'in kendi stilini temiz tutar
+        iconSize: [32, 32],   // Leaflet'e 32x32 bir alan ayır diyoruz
+        iconAnchor: [16, 16]  // Tam orta nokta (32'nin yarısı)
     });
     
     const marker = L.marker([lat, lon], { 
@@ -4257,10 +4260,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         interactive: true 
     }).addTo(map);
     
-    // Popup Ayarı (Tam ortada ve 20px yukarıda)
+    // Popup Ayarı (Tam ortada ve markerın hemen üstünde)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -20] // X: 0 (Yatayda tam orta), Y: -20 (Dikeyde yukarı)
+        offset: [0, -18] // Yuvarlağın tepesine denk gelecek şekilde ayarlandı
     }).openPopup();
 
     // 6. FINALIZE (Safe Timeout)
