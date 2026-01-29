@@ -4174,6 +4174,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
                 transform: none !important;
                 left: auto !important;
                 top: auto !important;
+            font-weight:500;
                 
                 /* Boyutları CSS dosyanızdaki (24px + border) ile eşleşecek şekilde serbest bırakıyoruz */
                 flex-shrink: 0 !important;
