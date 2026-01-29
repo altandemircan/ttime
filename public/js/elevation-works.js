@@ -497,9 +497,23 @@ if (!track) {
     <div class="scale-bar-track">
       <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
         <div class="elev-animation">
-          <div class="spinner"></div>
+          <div class="spinner" style="
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #8a4af3;
+            border-radius: 50%;
+            animation: spinnerAnim 0.8s linear infinite;
+          "></div>
           <div>Loading elevation</div>
         </div>
+        <style>
+          @keyframes spinnerAnim {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
       </div>
     </div>
   `;
