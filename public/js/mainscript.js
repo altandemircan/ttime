@@ -10488,8 +10488,8 @@ function drawCurvedLine(map, pointA, pointB, options = {}) {
 document.addEventListener("DOMContentLoaded", function() {
     const inputEl = document.getElementById("user-input");
     if (inputEl) {
-        inputEl.setAttribute("maxlength", "30"); // 61. karakteri yazmayı engeller
-        inputEl.setAttribute("placeholder", "Enter destination & duration (Max 30 chars)"); // İsterseniz placeholder'ı da güncelleyin
+        inputEl.setAttribute("maxlength", "50"); // 61. karakteri yazmayı engeller
+        inputEl.setAttribute("placeholder", "Enter destination & duration (Max 50 chars)"); // İsterseniz placeholder'ı da güncelleyin
     }
 });
 
