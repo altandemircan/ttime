@@ -615,16 +615,20 @@ if (document.readyState === 'loading') {
     setTimeout(activateDefaultCameraIcons, 100);
 }
 
-
-// Yeni step'ler eklendiğinde de aktif et
+const chatContainer = document.getElementById('chat-container') || document.body;
 observer.observe(chatContainer, { 
     childList: true, 
-    subtree: true,
-    callback: function() {
-        setTimeout(activateDefaultCameraIcons, 50);
-    }
+    subtree: true
 });
 
+// Kamera ikonları için ayrı observer
+const iconObserver = new MutationObserver(function() {
+    setTimeout(activateDefaultCameraIcons, 50);
+});
+iconObserver.observe(chatContainer, { 
+    childList: true, 
+    subtree: true 
+});
 
 
 
