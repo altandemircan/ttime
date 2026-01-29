@@ -252,7 +252,7 @@ function injectDropdownStyles() {
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            background: #f5f5f5;
+            background: #ccf0fb;
             border: 1px solid transparent;
         }
 
