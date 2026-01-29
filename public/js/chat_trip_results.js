@@ -153,6 +153,21 @@ function generateStepHtml(step, day, category, idx = 0) {
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
+        /* === ITEM ACTION BAR === */
+        .item_action {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+
+        .item_action .change {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
         /* === BÜTÜNLEŞİK AKSİYON GRUBU === */
         .trip-action-group {
             display: inline-flex;
@@ -164,6 +179,7 @@ function injectDropdownStyles() {
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
             margin-left: auto;
+            flex-shrink: 0;
         }
 
         .trip-action-group:hover {
@@ -235,6 +251,32 @@ function injectDropdownStyles() {
         }
         .trip-action-group .action-btn.btn-remove:hover {
             background-color: #ffe8e6;
+        }
+
+        @media (max-width: 600px) {
+            .trip-action-group select {
+                padding: 8px 8px 8px 8px;
+                font-size: 0.75rem;
+                min-width: auto;
+            }
+
+            .trip-action-group select option {
+                padding: 4px;
+            }
+
+            .trip-action-group .action-btn {
+                padding: 8px 8px;
+                font-size: 0.7rem;
+            }
+
+            .trip-action-group .action-btn span {
+                display: none;
+            }
+
+            .trip-action-group .action-btn img,
+            .trip-action-group .action-btn svg {
+                margin: 0;
+            }
         }
 
         @media (prefers-color-scheme: dark) {
