@@ -212,118 +212,104 @@ async function renderFavoritePlacesPanel() {
 
     const favList = window.favTrips || [];
     if (favList.length === 0) {
-        favPanel.innerHTML = `
-            <div style="text-align:center; padding: 40px 20px; color:#888;">
-                <p>No saved places yet.</p>
-            </div>`;
+        favPanel.innerHTML = `<div style="text-align:center;padding:20px;color:#999;">No favorite places yet.</div>`;
         return;
     }
 
-    // Şehirlere göre grupla (Mevcut fonksiyonun varsa onu kullan, yoksa buradaki çalışır)
     const grouped = groupFavoritesByCountryCity(favList);
 
     Object.entries(grouped).forEach(([locationKey, places]) => {
         // Şehir Başlığı
-        const header = document.createElement("h3");
-        header.style = "margin: 20px 0 10px 0; color:#333; font-size:16px; border-bottom:1px solid #eee; padding-bottom:5px;";
-        header.textContent = locationKey;
-        favPanel.appendChild(header);
+        const groupDiv = document.createElement("div");
+        groupDiv.className = "fav-place-group";
+        groupDiv.innerHTML = `<h3 style="margin-bottom:10px; color:#6c3fc2;">${locationKey}</h3>`;
 
-        // Liste
         const ul = document.createElement("ul");
-        ul.style = "list-style: none; padding: 0; margin: 0;";
+        ul.style = "list-style: none; padding: 0px; margin: 0px;";
 
         places.forEach((place) => {
             // --- MESAFE KONTROLÜ ---
-            // isPlaceAddableToCurrentTrip fonksiyonunun yukarıda tanımlı olduğunu varsayıyoruz
+            // isPlaceAddableToCurrentTrip fonksiyonu önceki cevaptaki gibi olmalı
             const check = typeof isPlaceAddableToCurrentTrip === 'function' 
                           ? isPlaceAddableToCurrentTrip(place.lat, place.lon) 
                           : { canAdd: true, reason: "" };
 
             const li = document.createElement("li");
-            
-            // HTML Yapısı - Senin cart-item yapına benzer sadeleştirilmiş kart
-            li.innerHTML = `
-                <div class="fav-native-card">
-                    
-                    <div class="fav-card-header">
-                        <img src="${place.image || 'img/default_place.jpg'}" class="fav-card-img" onerror="this.src='img/default_place.jpg'">
-                        <div class="fav-card-info">
-                            <p class="fav-card-title">${place.name}</p>
-                            <span class="fav-card-cat">${place.category || 'Place'}</span>
-                        </div>
-                    </div>
+            li.className = "fav-item";
+            // Orijinal CSS inline stillerin:
+            li.style = "margin-bottom: 12px; background: rgb(248, 249, 250); border-radius: 12px; box-shadow: rgb(227, 227, 227) 0px 1px 6px; padding: 9px 12px; display: flex; align-items: center; gap: 16px; min-width: 0px;";
 
-                    <div class="fav-card-actions">
-                        
-                        <button class="fav-btn-secondary ${!check.canAdd ? 'disabled' : ''}" id="btn-add-${place.lat}">
-                            ${!check.canAdd ? '🚫 Too far to add' : 'Add to current plan'}
-                        </button>
+            // GÖRSEL (Solda)
+            const imgDiv = document.createElement("div");
+            imgDiv.style = "width: 42px; height: 42px;";
+            imgDiv.innerHTML = `<img src="${place.image || 'img/placeholder.png'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
 
-                        <button class="fav-btn-primary" id="btn-new-${place.lat}">
-                            Start new plan here
-                        </button>
-
-                        <button class="fav-remove-link" id="btn-rem-${place.lat}">
-                            Remove place
-                        </button>
-
-                    </div>
-                </div>
+            // BİLGİ (Ortada)
+            const infoDiv = document.createElement("div");
+            infoDiv.style = "flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; gap: 2px;";
+            infoDiv.innerHTML = `
+                <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
+                <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;">${place.category || 'Place'}</span>
             `;
 
-            // EVENT LISTENERS (HTML string içinde onclick kullanmak yerine buradan bağlıyoruz)
-            
-            // ADD TO CURRENT
-            const addBtn = li.querySelector(`#btn-add-${place.lat.toString().replace('.','-')}`); // ID selector hack
-            // querySelector ID'de nokta sıkıntı çıkarabilir, bu yüzden direkt element üzerinden gidelim:
-            const buttons = li.querySelectorAll('button');
-            const btnAdd = buttons[0];
-            const btnNew = buttons[1];
-            const btnRem = buttons[2];
+            // BUTONLAR (Sağda - Yan Yana 3 tane)
+            const btnDiv = document.createElement("div");
+            btnDiv.style = "display: flex; flex-direction: row; align-items: center; gap: 6px;";
 
+            // 1. BUTON: START NEW (▶)
+            const startBtn = document.createElement("button");
+            startBtn.className = "fav-action-btn btn-fav-start";
+            startBtn.title = "Start New Trip Plan";
+            startBtn.innerHTML = "▶"; // Play ikonu
+            startBtn.onclick = () => startNewTripWithPlace(place);
+
+            // 2. BUTON: ADD TO CURRENT (+)
+            const addBtn = document.createElement("button");
+            addBtn.className = `fav-action-btn btn-fav-add ${!check.canAdd ? 'disabled' : ''}`;
+            addBtn.title = check.canAdd ? "Add to Current Trip" : `Cannot add: ${check.reason}`;
+            addBtn.innerHTML = "+";
+            
             if (check.canAdd) {
-                btnAdd.onclick = function() {
+                addBtn.onclick = () => {
                     if (typeof addToCart === "function") {
                         addToCart(
-                            place.name,
-                            place.image,
-                            window.currentDay || 1,
-                            place.category,
-                            place.address || "",
-                            null, null, place.opening_hours || "",
-                            null,
-                            place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
-                            place.website || ""
+                            place.name, place.image, window.currentDay || 1, place.category,
+                            place.address || "", null, null, place.opening_hours || "", null,
+                            { lat: Number(place.lat), lng: Number(place.lon) }, place.website || ""
                         );
-                        if (typeof updateCart === "function") updateCart();
-                        renderFavoritePlacesPanel(); // Paneli yenile (belki mesafe durumu değişir)
                     }
+                    if (typeof updateCart === "function") updateCart();
+                    renderFavoritePlacesPanel(); // State güncellemek için
                 };
-            } else {
-                btnAdd.title = check.reason; // Mouse üzerine gelince sebep yazar
             }
 
-            // START NEW TRIP
-            btnNew.onclick = function() {
-                startNewTripWithPlace(place);
-            };
-
-            // REMOVE
-            btnRem.onclick = function() {
-                 const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
+            // 3. BUTON: REMOVE (–)
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "fav-action-btn btn-fav-remove";
+            removeBtn.title = "Remove from favorites";
+            removeBtn.innerHTML = "–";
+            removeBtn.onclick = () => {
+                const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
                 if (delIdx > -1) {
                     window.favTrips.splice(delIdx, 1);
                     saveFavTrips();
-                    renderFavoritePlacesPanel(); 
-                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals(); 
+                    renderFavoritePlacesPanel();
+                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
                 }
             };
 
+            btnDiv.appendChild(startBtn);
+            btnDiv.appendChild(addBtn);
+            btnDiv.appendChild(removeBtn);
+
+            li.appendChild(imgDiv);
+            li.appendChild(infoDiv);
+            li.appendChild(btnDiv);
             ul.appendChild(li);
         });
-
-        favPanel.appendChild(ul);
+        
+        groupDiv.appendChild(ul);
+        favPanel.appendChild(groupDiv);
     });
 }
 
@@ -583,6 +569,45 @@ async function startNewTripWithPlace(place) {
         .fav-remove-link:hover {
             color: #b71c1c;
         }
+    `;
+    document.head.appendChild(style);
+})();
+
+(function addCompactStyles() {
+    const styleId = 'fav-compact-styles';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+        /* Ortak Buton Stili (Senin orijinal stiline sadık) */
+        .fav-action-btn {
+            width: 32px; height: 32px; 
+            border: none; border-radius: 50%; 
+            font-size: 18px; font-weight: bold; 
+            cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+
+        /* 1. Yeni Gezi Başlat (Yeşil veya Mor - Play İkonu) */
+        .btn-fav-start { background: #e8f5e9; color: #2e7d32; font-size: 14px; }
+        .btn-fav-start:hover { background: #c8e6c9; }
+
+        /* 2. Mevcut Geziye Ekle (Mavi - Senin orijinalin) */
+        .btn-fav-add { background: #1976d2; color: #fff; }
+        .btn-fav-add:hover { background: #1565c0; }
+
+        /* 2.1 Disabled Durumu (Mesafe Engeli) */
+        .btn-fav-add.disabled {
+            background: #e0e0e0 !important;
+            color: #9e9e9e !important;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        /* 3. Sil (Kırmızı - Senin orijinalin) */
+        .btn-fav-remove { background: #ffecec; color: #d32f2f; }
+        .btn-fav-remove:hover { background: #ffcdd2; }
     `;
     document.head.appendChild(style);
 })();
