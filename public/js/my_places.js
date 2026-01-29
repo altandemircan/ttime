@@ -212,70 +212,78 @@ async function renderFavoritePlacesPanel() {
 
     const favList = window.favTrips || [];
     if (favList.length === 0) {
-        favPanel.innerHTML = `<div class="mytrips-empty">No favorite places yet.<br>Add places to favorites to see them here!</div>`;
+        favPanel.innerHTML = `
+            <div style="text-align:center; padding: 40px 20px; color:#888;">
+                <p>No saved places yet.</p>
+            </div>`;
         return;
     }
 
+    // Şehirlere göre grupla (Mevcut fonksiyonun varsa onu kullan, yoksa buradaki çalışır)
     const grouped = groupFavoritesByCountryCity(favList);
 
     Object.entries(grouped).forEach(([locationKey, places]) => {
-        const section = document.createElement("div");
-        section.className = "fav-place-group";
-        section.innerHTML = `<h3 style="margin-bottom:10px; color:#6c3fc2;">${locationKey}</h3>`;
+        // Şehir Başlığı
+        const header = document.createElement("h3");
+        header.style = "margin: 20px 0 10px 0; color:#333; font-size:16px; border-bottom:1px solid #eee; padding-bottom:5px;";
+        header.textContent = locationKey;
+        favPanel.appendChild(header);
 
+        // Liste
         const ul = document.createElement("ul");
-        ul.style = "list-style:none;padding:0;margin:0;";
+        ul.style = "list-style: none; padding: 0; margin: 0;";
 
-        places.forEach((place, i) => {
-            // --- 1. MESAFE KONTROLÜ ---
-            const check = isPlaceAddableToCurrentTrip(place.lat, place.lon);
-            const isDimmed = !check.canAdd; // Uzaksa hafif soluk yap
+        places.forEach((place) => {
+            // --- MESAFE KONTROLÜ ---
+            // isPlaceAddableToCurrentTrip fonksiyonunun yukarıda tanımlı olduğunu varsayıyoruz
+            const check = typeof isPlaceAddableToCurrentTrip === 'function' 
+                          ? isPlaceAddableToCurrentTrip(place.lat, place.lon) 
+                          : { canAdd: true, reason: "" };
 
             const li = document.createElement("li");
-            li.className = `fav-item ${isDimmed ? 'dimmed' : ''}`;
-            // Stilini CSS class'ına taşıdık ama inline override gerekebilir
-            li.style = "margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;";
-
-            const imgDiv = document.createElement("div");
-            imgDiv.style = "width:42px;height:42px;";
-            const img = document.createElement("img");
-            img.src = place.image || "img/placeholder.png";
-            img.alt = place.name || "";
-            img.style = "width:100%;height:100%;object-fit:cover;border-radius:8px;";
-            imgDiv.appendChild(img);
-
-            const infoDiv = document.createElement("div");
-            infoDiv.style = "flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;";
             
-            // Eğer eklenemiyorsa altına küçük uyarı ekle
-            const warningHtml = isDimmed ? `<span class="dist-warning">⚠️ ${check.reason}</span>` : '';
+            // HTML Yapısı - Senin cart-item yapına benzer sadeleştirilmiş kart
+            li.innerHTML = `
+                <div class="fav-native-card">
+                    
+                    <div class="fav-card-header">
+                        <img src="${place.image || 'img/default_place.jpg'}" class="fav-card-img" onerror="this.src='img/default_place.jpg'">
+                        <div class="fav-card-info">
+                            <p class="fav-card-title">${place.name}</p>
+                            <span class="fav-card-cat">${place.category || 'Place'}</span>
+                        </div>
+                    </div>
 
-            infoDiv.innerHTML = `
-                <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
-                <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
-                ${warningHtml}
+                    <div class="fav-card-actions">
+                        
+                        <button class="fav-btn-secondary ${!check.canAdd ? 'disabled' : ''}" id="btn-add-${place.lat}">
+                            ${!check.canAdd ? '🚫 Too far to add' : 'Add to current plan'}
+                        </button>
+
+                        <button class="fav-btn-primary" id="btn-new-${place.lat}">
+                            Start new plan here
+                        </button>
+
+                        <button class="fav-remove-link" id="btn-rem-${place.lat}">
+                            Remove place
+                        </button>
+
+                    </div>
+                </div>
             `;
 
-            const btnDiv = document.createElement("div");
-            btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:6px;";
-
-            // --- BUTON 1: START NEW TRIP (Roket) ---
-            const startBtn = document.createElement("button");
-            startBtn.className = "fav-action-btn btn-start-new";
-            startBtn.title = "Start a NEW trip with this place";
-            startBtn.innerHTML = "🚀"; // Veya bir SVG ikon
-            startBtn.onclick = function() {
-                startNewTripWithPlace(place);
-            };
-
-            // --- BUTON 2: ADD TO CURRENT (+) ---
-            const addBtn = document.createElement("button");
-            addBtn.className = `fav-action-btn btn-add-current ${isDimmed ? 'disabled' : ''}`;
-            addBtn.title = isDimmed ? `Cannot add: ${check.reason}` : "Add to CURRENT trip";
-            addBtn.innerHTML = "+";
+            // EVENT LISTENERS (HTML string içinde onclick kullanmak yerine buradan bağlıyoruz)
             
-            if (!isDimmed) {
-                addBtn.onclick = function() {
+            // ADD TO CURRENT
+            const addBtn = li.querySelector(`#btn-add-${place.lat.toString().replace('.','-')}`); // ID selector hack
+            // querySelector ID'de nokta sıkıntı çıkarabilir, bu yüzden direkt element üzerinden gidelim:
+            const buttons = li.querySelectorAll('button');
+            const btnAdd = buttons[0];
+            const btnNew = buttons[1];
+            const btnRem = buttons[2];
+
+            if (check.canAdd) {
+                btnAdd.onclick = function() {
                     if (typeof addToCart === "function") {
                         addToCart(
                             place.name,
@@ -288,44 +296,34 @@ async function renderFavoritePlacesPanel() {
                             place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
                             place.website || ""
                         );
+                        if (typeof updateCart === "function") updateCart();
+                        renderFavoritePlacesPanel(); // Paneli yenile (belki mesafe durumu değişir)
                     }
-                    if (typeof updateCart === "function") updateCart();
-                    
-                    // Ekledikten sonra paneli tekrar render et (Mesafe kontrolünü güncellemek için)
-                    renderFavoritePlacesPanel();
                 };
+            } else {
+                btnAdd.title = check.reason; // Mouse üzerine gelince sebep yazar
             }
 
-            // --- BUTON 3: REMOVE (-) ---
-            const removeBtn = document.createElement("button");
-            removeBtn.className = "fav-action-btn btn-remove-fav";
-            removeBtn.title = "Remove from favorites";
-            removeBtn.innerHTML = "–"; // &minus;
-            
-            removeBtn.onclick = function() {
-                const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
+            // START NEW TRIP
+            btnNew.onclick = function() {
+                startNewTripWithPlace(place);
+            };
+
+            // REMOVE
+            btnRem.onclick = function() {
+                 const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
                 if (delIdx > -1) {
                     window.favTrips.splice(delIdx, 1);
                     saveFavTrips();
                     renderFavoritePlacesPanel(); 
-                    updateAllFavVisuals(); 
+                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals(); 
                 }
             };
-
-            // Butonları ekle
-            btnDiv.appendChild(startBtn); // Yeni gezi
-            btnDiv.appendChild(addBtn);   // Mevcut geziye ekle
-            btnDiv.appendChild(removeBtn); // Sil
-
-            li.appendChild(imgDiv);
-            li.appendChild(infoDiv);
-            li.appendChild(btnDiv);
 
             ul.appendChild(li);
         });
 
-        section.appendChild(ul);
-        favPanel.appendChild(section);
+        favPanel.appendChild(ul);
     });
 }
 
@@ -460,3 +458,131 @@ async function startNewTripWithPlace(place) {
         if (typeof showToast === 'function') showToast("New trip started!", "success");
     }
 }
+
+(function addMyPlacesNativeStyles() {
+    const styleId = 'my-places-native-styles';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+        /* Panel içindeki kart yapısı */
+        .fav-native-card {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+        }
+
+        /* Üst kısım: Resim ve Bilgi */
+        .fav-card-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        /* Resim (Senin cart-image class'ına benzer) */
+        .fav-card-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        /* Başlık ve Kategori */
+        .fav-card-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .fav-card-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .fav-card-cat {
+            font-size: 12px;
+            color: #666;
+            background: #f5f5f5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+
+        /* Aksiyon Butonları Alanı */
+        .fav-card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 10px;
+        }
+
+        /* Senin butonlarını taklit eden butonlar */
+        .fav-btn-primary, .fav-btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid transparent;
+            width: 100%;
+        }
+
+        /* Start New Trip (Mor/Mavi ton - Senin ana rengin) */
+        .fav-btn-primary {
+            background: #f0f4ff; /* Hafif mavi arka plan */
+            color: #1976d2;
+            border: 1px solid #e3e8ff;
+        }
+        .fav-btn-primary:hover {
+            background: #e3e8ff;
+        }
+
+        /* Add to Trip (Yeşilimsi veya koyu vurgu) */
+        .fav-btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+        .fav-btn-secondary:hover {
+            background: #000;
+        }
+
+        /* Disabled Durumu */
+        .fav-btn-secondary.disabled {
+            background: #eee;
+            color: #999;
+            cursor: not-allowed;
+            border: 1px solid #ddd;
+        }
+
+        /* Remove Butonu (Senin remove-btn class'ınla uyumlu) */
+        .fav-remove-link {
+            font-size: 12px;
+            color: #d32f2f;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            align-self: center; /* Ortala */
+        }
+        .fav-remove-link:hover {
+            color: #b71c1c;
+        }
+    `;
+    document.head.appendChild(style);
+})();
