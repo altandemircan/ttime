@@ -4404,7 +4404,9 @@ function toggleContent(arrowIcon) {
             const lat = parseFloat(latStr);
             const lon = parseFloat(lonStr);
             const name = item.querySelector('.toggle-title') ? item.querySelector('.toggle-title').textContent : "Place";
-            const number = item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1;
+            
+            // DEĞİŞİKLİK: Önce günlük indexi (data-daily-index) kontrol et, yoksa eskiye dön
+            const number = item.getAttribute('data-daily-index') || (item.dataset.index ? (parseInt(item.dataset.index, 10) + 1) : 1);
 
             createLeafletMapForItem(mapId, lat, lon, name, number);
         }
@@ -4779,6 +4781,9 @@ if (aiInfoSection) {
             }
 
             li.dataset.index = currIdx;
+            // YENİ EKLENEN SATIR: Günlük sıra numarasını (markerLabel) elemente kaydet
+            li.setAttribute("data-daily-index", markerLabel); 
+
             if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
                 li.setAttribute("data-lat", item.location.lat);
                 li.setAttribute("data-lon", item.location.lng);
@@ -6747,18 +6752,6 @@ if (window.userLocationMarkersByDay && window.userLocationMarkersByDay[day]) {
     // ============================================================
     // --- 4. MARKER OLUŞTURMA (DOĞRU YÖNTEM) ---
     // ============================================================
-    
-    function findCartIndexByDayPosition(dayNum, positionIdx) {
-        let n = 0;
-        for (let i = 0; i < window.cart.length; i++) {
-            const it = window.cart[i];
-            if (it.day == dayNum && it.location && !isNaN(it.location.lat) && !isNaN(it.location.lng)) {
-                if (n === positionIdx) return i;
-                n++;
-            }
-        }
-        return -1;
-    }
 
     function resetAll3DMarkersState() {
         window._maplibreRouteMarkers.forEach(m => {
@@ -9296,11 +9289,6 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
     try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
   }
 }
-
-
-
-
-
 
 
 
