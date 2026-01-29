@@ -497,24 +497,48 @@ if (!track) {
     <div class="scale-bar-track">
       <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
         <div class="elev-animation">
-          <svg width="40" height="40" viewBox="0 0 100 100" style="display:inline-block;margin-right:8px;animation:elevPulse 2s ease-in-out infinite;">
-            <!-- Sol dağ (aşağıda başlar) -->
-            <path d="M 10 70 L 30 40 L 45 55 L 60 35 L 80 65 L 100 50 L 100 100 L 0 100 Z" fill="#8a4af3" opacity="0.8"/>
-            <!-- Sağ dağ (daha yüksek) -->
-            <path d="M 15 80 L 35 50 L 50 65 L 65 45 L 85 75 L 100 60" stroke="#8a4af3" stroke-width="3" fill="none" opacity="0.6"/>
-            <!-- İleri geri oyan highlight line -->
-            <line x1="20" y1="75" x2="85" y2="55" stroke="#4a9eff" stroke-width="2" opacity="0" style="animation:elevLine 1.5s ease-in-out infinite;"/>
+          <svg width="50" height="50" viewBox="0 0 100 100" style="display:inline-block;">
+            <defs>
+              <style>
+                @keyframes drawMountain {
+                  0% {
+                    stroke-dashoffset: 300;
+                  }
+                  100% {
+                    stroke-dashoffset: 0;
+                  }
+                }
+                .mountain-line {
+                  stroke: #8a4af3;
+                  stroke-width: 2.5;
+                  fill: none;
+                  stroke-linecap: round;
+                  stroke-linejoin: round;
+                  stroke-dasharray: 300;
+                  animation: drawMountain 3s ease-in-out infinite;
+                }
+              </style>
+            </defs>
+            <!-- Zikzaklı dağ çiziliyor gibi animasyon -->
+            <path class="mountain-line" d="M 15 75 L 30 45 L 50 65 L 70 35 L 85 70 L 95 50" />
+            <!-- Ufuk çizgisi -->
+            <line x1="10" y1="80" x2="90" y2="80" stroke="#d0d0d0" stroke-width="1.5" opacity="0.6"/>
           </svg>
-          <div>Loading elevation</div>
+          <div style="margin-left: 12px; font-weight: 600;">Loading elevation</div>
         </div>
         <style>
-          @keyframes elevPulse {
-            0%, 100% { opacity: 0.7; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.08); }
-          }
-          @keyframes elevLine {
-            0%, 100% { opacity: 0; y: 0; }
-            50% { opacity: 0.8; y: -5px; }
+          @keyframes drawMountain {
+            0% {
+              stroke-dashoffset: 300;
+              opacity: 0.4;
+            }
+            50% {
+              opacity: 1;
+            }
+            100% {
+              stroke-dashoffset: 0;
+              opacity: 0.7;
+            }
           }
         </style>
       </div>
