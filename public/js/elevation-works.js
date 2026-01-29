@@ -466,7 +466,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
   delete container._elevationDataFull;
 
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-    container.innerHTML = '<div class="spinner"></div>';
+    // Sadece modal spinner göster, scalebar'ı dokunma
+    if (typeof window.showScaleBarLoading === 'function') {
+      window.showScaleBarLoading(container, 'Loading elevation...');
+    }
     return;
   }
 
