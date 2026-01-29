@@ -5754,11 +5754,6 @@ ease;
 .leaflet-attribution-flag {
     display: none !important;
 }
-.leaflet-popup-pane {
-    z-index: 700;
-
-    margin-top: 4px;
-}
 
 
 .leaflet-popup.drag-hint-popup {
