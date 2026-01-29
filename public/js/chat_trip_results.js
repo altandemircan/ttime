@@ -225,6 +225,7 @@ function injectDropdownStyles() {
         /* İkonu Beyaz Yapmak İçin Filtre */
         .trip-action-group .action-btn.btn-add img {
             filter: brightness(0) invert(1);
+        margin-right:0px;
         }
 
         /* --- REMOVE MODU (Kırmızı Tasarım) --- */
