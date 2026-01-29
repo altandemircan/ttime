@@ -4463,6 +4463,7 @@ function toggleContent(arrowIcon) {
         /* 4. Tıklama/Etkileşim Sorunları */
         .leaflet-pane { 
             pointer-events: auto; 
+            bottom:20px;
         }
         .leaflet-tile-pane {
             z-index: 200; 
