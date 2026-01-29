@@ -6296,7 +6296,10 @@ border-bottom:1px solid #ddd;
 
 
       @keyframes ttspin{to{transform:rotate(360deg)}}
-      .scale-bar-track{position:relative}
+      .scale-bar-track{
+        position: relative;
+        min-height: 200px;
+      }
 
 
   .scale-bar-track {
@@ -6325,8 +6328,7 @@ border-bottom:1px solid #ddd;
     position: absolute;
     left: 0;    
     width: 100%;
-    height: 220px !important;
-    min-height: 220px;
+    height: 150px;
     pointer-events: none;
     z-index: -1;
     background:#ffffff;
