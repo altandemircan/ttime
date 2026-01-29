@@ -22,9 +22,10 @@
       cursor: default !important;
       pointer-events: none !important;
     }
-    /* MARKER KESİN ÜSTTE */
+    /* MARKER KESİN ÜSTTE VE TAM ORTADA */
     .leaflet-marker-icon {
       z-index: 9999 !important;
+      transform: translate(-50%, -50%) !important;
     }
   </style>
 </head>
@@ -41,42 +42,49 @@
   }
   const lat = parseFloat(getParam("lat")) || 41.01;
   const lon = parseFloat(getParam("lon")) || 29.00;
-  const zoom = 16; // Yakın zoom
+  const zoom = 16;
 
-  // SADECE GÖRÜNTÜ HARİTASI - TÜM İNTERAKTİVİTE KAPALI
+  // SADECE GÖRÜNTÜ HARİTASI
   const map = L.map('map', { 
     zoomControl: false,
     attributionControl: false,
-    dragging: false,        // SÜRÜKLEME YOK
-    touchZoom: false,       // DOKUNMA ZOOM YOK
-    scrollWheelZoom: false, // FARE TEKERİ ZOOM YOK
-    doubleClickZoom: false, // ÇİFT TIK ZOOM YOK
-    boxZoom: false,         // KUTU ZOOM YOK
-    keyboard: false,        // KLAVYE YOK
-    tap: false,             // DOKUNMA YOK
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    tap: false,
     zoomSnap: 0,
     zoomDelta: 0
   }).setView([lat, lon], zoom);
 
-  // HARİTA KATMANI - SADECE GÖRÜNTÜ
+  // HARİTA KATMANI
   fetch('https://tiles.openfreemap.org/styles/bright')
     .then(res => res.json())
     .then(style => {
       L.maplibreGL({
         style: style,
-        interactive: false // İNTERAKTİF DEĞİL
+        interactive: false
       }).addTo(map);
 
-      // KIRMIZI MARKER - SADECE GÖRÜNTÜ
+      // 24px KIRMIZI MARKER - TAM ORTADA
       const redMarkerHtml = `
         <div style="
           background:#d32f2f;
-          width:24px; height:24px; border-radius:50%;
-          display:flex; align-items:center; justify-content:center;
-          border:1px solid #fff; 
-          box-shadow:0 2px 5px rgba(0,0,0,0.3);
-          position:relative;">
-            <div style="width:8px; height:8px; background:#fff; border-radius:50%;"></div>
+          width:24px; 
+          height:24px; 
+          border-radius:50%;
+          display:flex; 
+          align-items:center; 
+          justify-content:center;
+          border:2px solid #fff; 
+          box-shadow:0 1px 3px rgba(0,0,0,0.2);
+          position:absolute;
+          top:50%;
+          left:50%;
+          transform:translate(-50%, -50%);">
+            <div style="width:6px; height:6px; background:#fff; border-radius:50%;"></div>
         </div>
       `;
       
@@ -84,26 +92,28 @@
         icon: L.divIcon({
           html: redMarkerHtml,
           className: '',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
+          iconSize: [24, 24],
+          iconAnchor: [12, 12], // TAM ORTA
+          popupAnchor: [0, -12]
         }),
-        interactive: false // MARKER DA İNTERAKTİF DEĞİL
+        interactive: false
       }).addTo(map);
 
-      // BOYUT AYARI - SADECE BİR KEZ
-      setTimeout(() => map.invalidateSize(false), 100);
+      setTimeout(() => {
+        map.invalidateSize(false);
+        // EK KONTROL: MARKER'I TEKRAR ORTALA
+        map.setView([lat, lon], zoom, {animate: false});
+      }, 100);
       
-      // TÜM OLAYLARI ENGELLE
-      map.off(); // Tüm event listener'ları kaldır
+      map.off();
       
     }).catch(err => {
-      console.log('Map loaded (static view)');
+      console.log('Map loaded');
     });
 
-  // EKSTRA GÜVENLİK: TÜM KULLANICI ETKİLEŞİMLERİNİ ENGELLE
+  // ETKİLEŞİM YOK
   document.addEventListener('wheel', e => e.preventDefault(), { passive: false });
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  document.addEventListener('click', e => e.preventDefault());
 </script>
 </body>
 </html>
