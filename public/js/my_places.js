@@ -65,7 +65,7 @@ function saveFavTrips() {
             font-size: 0.8rem; 
             font-weight: 600; 
             color: #718096;
-            background: #edf2f7; 
+            background: #ffffff; 
             padding: 2px 8px; 
             border-radius: 12px;
             border: 1px solid #e2e8f0;
@@ -85,8 +85,14 @@ function saveFavTrips() {
         
         /* AÇIK DURUM (OPEN) */
         .mp-group.open .mp-group-header {
-            background: #fff;
-            border-bottom: 1px solid #e2e8f0;
+           border-bottom: 1px solid #e2e8f0;
+    background: #eeefef;
+    color: #333333;
+    padding: 10px 10px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 6px;
+    margin-bottom: 10px;
         }
         
         .mp-group.open .mp-arrow { 
