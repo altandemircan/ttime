@@ -7321,8 +7321,8 @@ async function expandMap(containerId, day) {
     // ✅ Loading spinner
 scaleBarDiv.innerHTML = `
   <div class="scale-bar-track loading">
-    <div class="tt-scale-loader" style="display: flex !important;">
-      <div class="spinner" style="display: inline-block !important;"></div>
+    <div class="tt-scale-loader">
+      <div class="spinner"></div>
       <div>Loading elevation</div>
     </div>
   </div>
@@ -9621,9 +9621,17 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
+    // ✅ Spinner göster
+    scaleBarDiv.innerHTML = `
+      <div class="scale-bar-track loading">
+        <div class="tt-scale-loader">
+          <div class="spinner"></div>
+          <div>Loading elevation</div>
+        </div>
+      </div>
+    `;
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
-  // Havresine fallback veya başka bir şey YOK!
 }, 300);
 
 
@@ -10352,4 +10360,3 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 10);
     }
 }
-
