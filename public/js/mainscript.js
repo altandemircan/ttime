@@ -4230,18 +4230,26 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     }
 
     // 5. CREATE MARKER (Fixed Alignment & ClassName Error)
+    // 5. CREATE MARKER (TAM ORTALI & DÜZELTİLMİŞ)
     const fallbackHtml = `
-      <div class="custom-marker-outer red" style="transform: scale(1); display:flex; align-items:center; justify-content:center;">
-        <span class="custom-marker-label">${number}</span>
+      <div class="custom-marker-outer red" style="
+          transform: scale(1);
+          display: flex; 
+          align-items: center; 
+          justify-content: center;
+          width: 32px;       /* Genişlik sabitlendi */
+          height: 32px;      /* Yükseklik sabitlendi */
+          margin: 0;         /* Marginler sıfırlandı */
+      ">
+        <span class="custom-marker-label" style="line-height: 1;">${number}</span>
       </div>
     `;
     
-    // FIX: className must not be empty string to avoid DomUtil error
     const icon = L.divIcon({ 
         html: fallbackHtml, 
-        className: "tt-static-marker-icon", 
-        iconSize: [32, 32], 
-        iconAnchor: [16, 16] // Exact center
+        className: "tt-static-marker-icon", // Leaflet'in varsayılan stilini ezmek için
+        iconSize: [32, 32],   // İkonun kapladığı toplam alan
+        iconAnchor: [16, 16]  // [X, Y] -> 32'nin yarısı 16 (Tam orta nokta)
     });
     
     const marker = L.marker([lat, lon], { 
@@ -4249,10 +4257,10 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         interactive: true 
     }).addTo(map);
     
-    // FIX: Adjusted offset to center popup correctly
+    // Popup Ayarı (Tam ortada ve 20px yukarıda)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -20] 
+        offset: [0, -20] // X: 0 (Yatayda tam orta), Y: -20 (Dikeyde yukarı)
     }).openPopup();
 
     // 6. FINALIZE (Safe Timeout)
