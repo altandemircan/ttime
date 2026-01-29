@@ -1,202 +1,33 @@
 // ======================================================
-// my_places.js - SMART TITLES & ACCORDION
+// my_places.js - MODERN, STYLE.CSS UYUMLU FAVORİLER
 // ======================================================
-
 window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
 
 function saveFavTrips() {
     localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
 }
 
-// ------------------------------------------------------
-// 1. CSS: Akordiyon ve Kart Tasarımı
-// ------------------------------------------------------
-(function addSafeStyles() {
-    const styleId = 'mp-accordion-final';
-    if (document.getElementById(styleId)) return;
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-        /* --- GRUP (AKORDİYON) --- */
-        .mp-group {
-            margin-bottom: 12px;
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: all 0.2s;
-        }
-
-        /* Başlık Kısmı */
-        .mp-group-header {
-            padding: 14px 16px;
-            background: #f8f9fa;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            user-select: none;
-            border-bottom: 1px solid transparent;
-        }
-        .mp-group-header:hover { background: #f1f3f5; }
-
-        /* Başlık Yazısı */
-        .mp-group-title {
-            font-size: 15px; font-weight: 600; color: #6c3fc2;
-            display: flex; align-items: center; gap: 10px;
-        }
-        
-        /* Sayı Rozeti */
-        .mp-badge {
-            font-size: 11px; font-weight: 500; color: #555;
-            background: #e9ecef; padding: 2px 8px; border-radius: 12px;
-        }
-
-        /* Ok İkonu */
-        .mp-arrow {
-            font-size: 12px; color: #999;
-            transition: transform 0.3s ease;
-        }
-        
-        /* AÇIK DURUM (OPEN) */
-        .mp-group.open .mp-group-header {
-            background: #fff;
-            border-bottom: 1px solid #eee;
-        }
-        .mp-group.open .mp-arrow { transform: rotate(180deg); }
-        
-        /* İçerik Alanı (Animasyonlu) */
-        .mp-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-out;
-            background: #fff;
-        }
-        .mp-group.open .mp-content {
-            max-height: 3000px; /* İçerik uzarsa kesilmesin */
-            transition: max-height 0.5s ease-in;
-        }
-
-        .mp-list-wrap { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
-
-        /* --- KART YAPISI --- */
-        .mp-card {
-            background: #fff; border: 1px solid #eee; border-radius: 10px;
-            display: flex; flex-direction: column;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-        }
-
-        .mp-head {
-            display: flex; padding: 10px; gap: 12px; align-items: center;
-            border-bottom: 1px solid #f9f9f9; position: relative;
-        }
-        .mp-img-box {
-            width: 48px; height: 48px; flex-shrink: 0; border-radius: 6px; 
-            overflow: hidden; background: #eee;
-        }
-        .mp-img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .mp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-        .mp-name { font-size: 14px; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mp-sub { font-size: 11px; color: #777; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; width: max-content; }
-
-        /* Silme İkonu (X) */
-        .mp-del {
-            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-            color: #ccc; cursor: pointer; border-radius: 4px; font-size: 16px;
-        }
-        .mp-del:hover { background: #ffebee; color: #d32f2f; }
-
-        /* Alt Butonlar */
-        .mp-acts { display: flex; background: #fafafa; border-radius: 0 0 10px 10px; overflow: hidden; }
-        .mp-btn {
-            flex: 1; border: none; background: transparent; padding: 10px 4px;
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 2px; color: #555; transition: background 0.2s;
-        }
-        .mp-btn-start { border-right: 1px solid #eee; color: #6c3fc2; }
-        .mp-btn-start:hover { background: #f3e5f5; }
-        .mp-btn-add { color: #1976d2; }
-        .mp-btn-add:hover { background: #e3f2fd; }
-        .mp-btn-dis { background: #f5f5f5 !important; color: #ccc !important; cursor: not-allowed; }
-
-        .mp-hint-ok { font-size: 10px; color: #66bb6a; }
-        .mp-hint-no { font-size: 10px; color: #ef5350; }
-
-        /* MODAL */
-        .mp-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 10000;
-            display: none; align-items: center; justify-content: center;
-        }
-        .mp-modal {
-            background: #fff; width: 260px; padding: 20px;
-            border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;
-        }
-        .mp-days { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; max-height: 250px; overflow-y: auto; }
-        .mp-day-row {
-            background: #f8f9fa; border: 1px solid #eee; padding: 10px;
-            border-radius: 6px; cursor: pointer; text-align: left; transition: 0.2s; font-size: 13px;
-        }
-        .mp-day-row:hover { background: #e3f2fd; border-color: #90caf9; }
-    `;
-    document.head.appendChild(style);
-})();
-
-// ------------------------------------------------------
-// 2. MANTIK FONKSİYONLARI
-// ------------------------------------------------------
-
-// "Unknown Country" sorununu çözen fonksiyon
+// GRUP & LOKASYON TEMİZLEYİCİ
 function getCleanLocationName(place) {
-    // 1. Veride açıkça varsa kullan
-    let city = place.city;
-    let country = place.country;
-
-    // 2. Yoksa adresten çıkarmaya çalış
+    let city = place.city, country = place.country;
     if (!city && place.address) {
         const parts = place.address.split(',').map(s => s.trim());
-        
-        // Genellikle son parça ülkedir
         if (parts.length > 0) {
             const last = parts[parts.length - 1];
-            // Eğer sayı içermiyorsa ülke varsayalım
-            if (!/\d/.test(last)) {
-                country = last;
-            }
+            if (!/\d/.test(last)) country = last;
         }
-        
-        // Genellikle sondan bir önceki şehirdir
         if (parts.length > 1) {
             const secondLast = parts[parts.length - 2];
-            // Posta kodu temizle (Örn: "07050 Antalya" -> "Antalya")
             city = secondLast.replace(/[0-9]/g, '').trim();
-        } else {
-            // Tek parça varsa şehirdir
-            city = parts[0];
-        }
+        } else city = parts[0];
     }
-
-    // 3. Temizleme ve Birleştirme
-    // "Unknown" kelimesi geçiyorsa o veriyi yok say
     if (city && city.toLowerCase().includes('unknown')) city = "";
     if (country && country.toLowerCase().includes('unknown')) country = "";
-
-    // 4. Sonuç Döndürme
-    if (city && country && city !== country) {
-        return `${city}, ${country}`;
-    } else if (city) {
-        return city; // Sadece şehir (Antalya)
-    } else if (country) {
-        return country;
-    } else {
-        return "Saved Places"; // Hiçbir şey bulunamazsa
-    }
+    if (city && country && city !== country) return `${city}, ${country}`;
+    if (city) return city;
+    if (country) return country;
+    return "Saved Places";
 }
-
-// Gruplama
 function groupFavoritesClean(list) {
     const groups = {};
     list.forEach(item => {
@@ -206,31 +37,30 @@ function groupFavoritesClean(list) {
     });
     return groups;
 }
-
-// Mesafe Kontrol
+// Mesafe kontrol
 function checkDist(lat, lon) {
     if (!window.cart || window.cart.length === 0) return { ok: true, msg: "" };
     const valid = window.cart.filter(i => i.location && i.location.lat && i._type !== 'placeholder');
     if (valid.length === 0) return { ok: true, msg: "" };
-    
     const last = valid[valid.length - 1];
     if (typeof haversine !== 'function') return { ok: true, msg: "" };
-
     const m = haversine(Number(last.location.lat), Number(last.location.lng), Number(lat), Number(lon));
     const km = (m / 1000).toFixed(0);
-    
     if (m > 600000) return { ok: false, msg: `${km}km (Too far)` };
     return { ok: true, msg: `${km}km away` };
 }
 
-// Modal Toggle
+// ------ Modern Akordiyon Komponentleri
+window.toggleFavAccordion = function(header) {
+    const parent = header.closest('.fav-accordion');
+    parent.classList.toggle('open');
+};
 function openDayModal(callback) {
     let max = 1;
     if (window.cart && window.cart.length > 0) {
         max = Math.max(...window.cart.map(i => i.dailyIndex || 1));
     }
     if (max <= 1) { callback(1); return; }
-
     let el = document.getElementById('mp-modal-ov');
     if (!el) {
         el = document.createElement('div');
@@ -260,15 +90,7 @@ function openDayModal(callback) {
     el.style.display = 'flex';
 }
 
-// Akordiyon Tıklama İşleyicisi
-window.toggleMpGroup = function(header) {
-    const parent = header.parentElement;
-    parent.classList.toggle('open');
-};
-
-// ------------------------------------------------------
-// 3. RENDER (HTML OLUŞTURMA)
-// ------------------------------------------------------
+// --------- MAIN RENDER ---------
 async function renderFavoritePlacesPanel() {
     const panel = document.getElementById("favorite-places-panel");
     if (!panel) return;
@@ -276,64 +98,107 @@ async function renderFavoritePlacesPanel() {
 
     const list = window.favTrips || [];
     if (list.length === 0) {
-        panel.innerHTML = `<div style="text-align:center;padding:30px;color:#999;">No saved places.</div>`;
+        panel.innerHTML = `<div class="mytrips-empty">No saved places.</div>`;
         return;
     }
 
     const groups = groupFavoritesClean(list);
 
-    // Grupları Dön
     Object.entries(groups).forEach(([key, items], idx) => {
-        // Ana Kutu
-        const group = document.createElement("div");
-        group.className = "mp-group";
-        if (idx === 0) group.classList.add('open'); // Sadece ilki açık gelsin
+        // Akordiyon (Başlığı ve içeriği)
+        const accordion = document.createElement("div");
+        accordion.className = "fav-accordion" + (idx === 0 ? " open" : "");
+        accordion.style.marginBottom = '22px';
 
-        // Başlık
-        const head = document.createElement("div");
-        head.className = "mp-group-header";
-        head.onclick = function() { toggleMpGroup(this); };
-        head.innerHTML = `
-            <div class="mp-group-title">
-                ${key} <span class="mp-badge">${items.length}</span>
-            </div>
-            <div class="mp-arrow">▼</div>
+        // ---------- Grup başlığı
+        // Style.css'den: .sidebar_title .section-title gibi
+        const header = document.createElement("div");
+        header.className = "sidebar_title day-header"; // Gün başlığı gibi dursun
+        header.style.cursor = "pointer";
+        header.onclick = function() { toggleFavAccordion(this); };
+        header.innerHTML = `
+            <span class="title-container" style="font-weight:700;font-size:1.2em;color:#8a4af3;">
+                <img src="img/pin.webp" style="width:18px;height:18px;vertical-align:middle;margin-right:5px;"> 
+                ${key || 'Favorite Places'} 
+                <span class="mp-badge" style="color:#7b5dbb;background:#f5f3fe;font-size:0.92em;margin-left:10px;">${items.length}</span>
+            </span>
+            <button class="arrow" style="background:none;border:none;padding:0 3px 0 8px;">
+                <img src="img/arrow-down.svg" 
+                    style="width:22px;height:22px;transition:transform 0.3s;"
+                >
+            </button>
         `;
 
-        // İçerik Alanı
+        // ------------ İçerik Alanı (collapsible)
         const content = document.createElement("div");
-        content.className = "mp-content";
-        const wrapper = document.createElement("div");
-        wrapper.className = "mp-list-wrap";
+        content.className = "fav-accordion-content";
+        content.style.overflow = "hidden";
+        content.style.maxHeight = idx === 0 ? "10000px" : "0";
+        content.style.transition = "max-height 0.45s cubic-bezier(.4,0,.2,1)";
 
-        // Kartlar
+        // Items container
+        const wrapper = document.createElement("div");
+        wrapper.className = "mytrips-trip-list";
+        wrapper.style.padding = "8px 0 0 0";
+
+        // -- Her kart için .travel-item ve alt detaylar
         items.forEach(place => {
             const st = checkDist(place.lat, place.lon);
-            
+
+            // Kart
             const card = document.createElement("div");
-            card.className = "mp-card";
-            
-            // Kart Üstü
-            card.innerHTML = `
-                <div class="mp-head">
-                    <div class="mp-img-box">
-                        <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
-                    </div>
-                    <div class="mp-info">
-                        <div class="mp-name" title="${place.name}">${place.name}</div>
-                        <div class="mp-sub">${place.category || 'Place'}</div>
-                    </div>
-                </div>
+            card.className = "travel-item cart-item";
+            card.style.marginBottom = "12px";
+            card.style.border = "1.5px solid #f5ecff";
+            card.style.boxShadow = "0 2px 8px rgba(149, 157, 165, 0.07)";
+            card.style.borderRadius = "14px";
+            card.style.position = "relative";
+            card.style.overflow = "visible";
+
+            // Sol görsel
+            const imgBox = document.createElement("div");
+            imgBox.style.width = "60px";
+            imgBox.style.height = "40px";
+            imgBox.style.marginRight = "20px";
+            imgBox.style.flexShrink = "0";
+            imgBox.style.display = "flex";
+            imgBox.style.alignItems = "center";
+            imgBox.style.justifyContent = "center";
+            const img = document.createElement("img");
+            img.src = place.image || 'img/placeholder.png';
+            img.onerror = function(e){ this.onerror = null; this.src='img/default_place.jpg'; };
+            img.style.width = "100%"; img.style.height = "100%";
+            img.style.borderRadius = "8px";
+            img.style.objectFit = "cover";
+            imgBox.appendChild(img);
+
+            // Ana bilgi
+            const info = document.createElement("div");
+            info.className = "item-info";
+            info.style.display = "flex";
+            info.style.flexDirection = "column";
+            info.innerHTML = `
+                <span class="trip-title" style="font-size:1.08em;font-weight:700;color:#272727;">
+                    ${place.name}
+                </span>
+                <span class="item-distance" style="margin-bottom:4px;font-size:0.92em;color:#7c6dc4;">
+                    ${(place.category || 'Place')}
+                </span>
+                <span class="address" style="font-size:0.9em;color:#777;">
+                    ${place.address || ''}
+                </span>
             `;
-            
-            // Silme Butonu
-            const del = document.createElement("div");
-            del.className = "mp-del";
-            del.innerHTML = "✕";
+
+            // (X) sil tuşu
+            const del = document.createElement("button");
+            del.className = "remove-btn";
+            del.setAttribute("title", "Remove from favorites");
+            del.style.position = "absolute"; del.style.top = "9px"; del.style.right = "9px";
+            del.innerHTML = `<img src="img/trash.svg" style="width: 18px; height: 18px;">`;
             del.onclick = (e) => {
                 e.stopPropagation();
-                if(confirm(`Remove "${place.name}"?`)) {
-                     const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
+                if (confirm(`Remove "${place.name}"?`)) {
+                    const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
                     if (delIdx > -1) {
                         window.favTrips.splice(delIdx, 1);
                         saveFavTrips();
@@ -342,27 +207,31 @@ async function renderFavoritePlacesPanel() {
                     }
                 }
             };
-            card.querySelector('.mp-head').appendChild(del);
 
-            // Alt Butonlar
-            const acts = document.createElement("div");
-            acts.className = "mp-acts";
+            // Alt düğmeler (.item-actions, .add-favorite-btn/.see-details-btn)
+            const actions = document.createElement("div");
+            actions.className = "item-actions";
+            actions.style.marginTop = "0px";
+            actions.style.gap = "7px";
+            actions.style.display = "flex";
 
             // Start New
             const b1 = document.createElement("button");
-            b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<span>▶ Start New</span>`;
+            b1.className = "add-favorite-btn";
+            b1.innerHTML = `<img src="img/lightning-bolt.svg" style="width:16px;margin-right:3px;"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
             // Add Trip
             const b2 = document.createElement("button");
-            b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
-            b2.innerHTML = `<span>+ Add Trip</span> <span class="${st.ok ? 'mp-hint-ok' : 'mp-hint-no'}">${st.msg}</span>`;
-            
+            b2.className = st.ok ? "see-details-btn" : "see-details-btn";
+            b2.style.background = !st.ok ? "#f3f3f3":"";
+            b2.style.color = !st.ok ? "#b2b2b2":"";
+            b2.style.cursor = !st.ok ? "not-allowed":"pointer";
+            b2.innerHTML = `<img src="img/plus.svg" style="width:16px;margin-right:2px;opacity:0.8;">&nbsp;Add Trip <small style="font-weight:500;padding-left:7px;">${st.msg}</small>`;
             if (st.ok) {
                 b2.onclick = () => {
                     openDayModal((d) => {
-                         if (typeof addToCart === "function") {
+                        if (typeof addToCart === "function") {
                             addToCart(
                                 place.name, place.image, d, place.category,
                                 place.address || "", null, null, place.opening_hours || "", null,
@@ -374,19 +243,34 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.title = "Too far";
+                b2.onclick = null;
             }
+            actions.appendChild(b1);
+            actions.appendChild(b2);
 
-            acts.appendChild(b1);
-            acts.appendChild(b2);
-            card.appendChild(acts);
-            
+            // Kart birleştir
+            card.appendChild(imgBox);
+            card.appendChild(info);
+            card.appendChild(del);
+            card.appendChild(actions);
+
             wrapper.appendChild(card);
         });
 
+        // Akordiyon içerik kısmı
         content.appendChild(wrapper);
-        group.appendChild(head);
-        group.appendChild(content);
-        panel.appendChild(group);
+
+        // Akordiyon toggle arrow animasyonu
+        header.querySelector(".arrow img").style.transform = idx === 0 ? "rotate(90deg)" : "rotate(0deg)";
+        accordion.dataset.open = idx === 0 ? "1" : "0";
+        header.addEventListener('click', function() {
+            const open = accordion.classList.toggle('open');
+            content.style.maxHeight = open ? "10000px" : "0";
+            header.querySelector(".arrow img").style.transform = open ? "rotate(90deg)" : "rotate(0deg)";
+        });
+
+        accordion.appendChild(header);
+        accordion.appendChild(content);
+        panel.appendChild(accordion);
     });
 }
