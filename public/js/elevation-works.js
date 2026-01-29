@@ -1141,18 +1141,19 @@ function setupScaleBarInteraction(day, map) {
 
 
 // Helper: Selection eventlerini bağla
+// Helper: Selection eventlerini bağla
 function setupScaleBarEvents(track, selDiv) {
   // Önceki eventleri temizle
   window.removeEventListener('mousemove', window.__sb_onMouseMove);
   window.removeEventListener('mouseup', window.__sb_onMouseUp);
   window.removeEventListener('touchmove', window.__sb_onMouseMove); 
-  window.removeEventListener('touchend', window.__sb_onMouseUp);   
+  window.removeEventListener('touchend', window.__sb_onMouseUp);    
 
   // Yeni eventleri ekle
   window.addEventListener('mousemove', window.__sb_onMouseMove);
   window.addEventListener('mouseup', window.__sb_onMouseUp);
   window.addEventListener('touchmove', window.__sb_onMouseMove, { passive: false }); 
-  window.addEventListener('touchend', window.__sb_onMouseUp);     
+  window.addEventListener('touchend', window.__sb_onMouseUp);      
 
   // Mouse Down
   track.addEventListener('mousedown', function(e) {
@@ -1162,7 +1163,10 @@ function setupScaleBarEvents(track, selDiv) {
     window.__scaleBarDragSelDiv = selDiv;
     selDiv.style.left = `${window.__scaleBarDrag.startX}px`;
     selDiv.style.width = `0px`;
-    selDiv.style.display = 'block';
+    
+    // --- DÜZELTME: Buradaki 'display: block' satırını KALDIRDIK. ---
+    // Artık tıklar tıklamaz mor çizgi çıkmayacak. 
+    // Sadece sürüklerseniz yukarıdaki mousemove içinde açılacak.
   });
 
   // Mobil Long Press
@@ -1176,7 +1180,7 @@ function setupScaleBarEvents(track, selDiv) {
         window.__scaleBarDragSelDiv = selDiv;
         selDiv.style.left = `${x}px`;
         selDiv.style.width = `0px`;
-        selDiv.style.display = 'block';
+        selDiv.style.display = 'block'; // Mobilde long press olduğu için burada kalabilir, görsel geri bildirim şart.
         if (navigator.vibrate) navigator.vibrate(40);
     }, 600);
   }, { passive: true });
@@ -1195,7 +1199,6 @@ function setupScaleBarEvents(track, selDiv) {
       }
   });
 }
-
 
   // 3) Override updateRouteStatsUI to also include ascent/descent and new icons
 window.updateRouteStatsUI = function(day) {
@@ -2346,6 +2349,12 @@ window.__sb_onMouseMove = function(e) {
   if (e.type === 'touchmove' && e.cancelable) {
       e.preventDefault(); 
   }
+
+  // --- DÜZELTME BAŞLANGICI: Sürükleme anında görünür yap ---
+  if (window.__scaleBarDragSelDiv.style.display !== 'block') {
+      window.__scaleBarDragSelDiv.style.display = 'block';
+  }
+  // --- DÜZELTME BİTİŞİ ---
 
   const rect = window.__scaleBarDragTrack.getBoundingClientRect();
   const clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
