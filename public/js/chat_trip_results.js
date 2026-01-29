@@ -150,7 +150,6 @@ function generateStepHtml(step, day, category, idx = 0) {
 }
 
 // 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ
-// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
@@ -239,6 +238,44 @@ function injectDropdownStyles() {
             background-color: #ffe8e6;
         }
 
+        /* === KAMERA/HARİTA İKON STİLLERİ === */
+        .item_action .change {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item_action .change span {
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: #f5f5f5;
+            border: 1px solid transparent;
+        }
+
+        .item_action .change span:hover {
+            background: #e9e9e9;
+            transform: translateY(-1px);
+        }
+
+        .item_action .change span.active {
+            background: #8a4af3 !important;
+            border-color: #8a4af3 !important;
+        }
+
+        .item_action .change span.active img {
+            filter: brightness(0) invert(1) !important;
+        }
+
+        .item_action .change img {
+            width: 20px;
+            height: 20px;
+            transition: filter 0.2s;
+        }
+
         @media (prefers-color-scheme: dark) {
             .trip-action-group {
                 background: #2a2a2a;
@@ -252,32 +289,44 @@ function injectDropdownStyles() {
                 background-color: #8a4af3; 
                 color: white;
             }
-             .trip-action-group .action-btn.btn-remove {
+            .trip-action-group .action-btn.btn-remove {
                 background-color: #3e2a2a;
                 color: #ef5350;
                 border-left-color: #444;
             }
+            
+            .item_action .change span {
+                background: #2a2a2a;
+                border-color: #444;
+            }
+            .item_action .change span:hover {
+                background: #333;
+            }
+            .item_action .change span.active {
+                background: #8a4af3 !important;
+                border-color: #8a4af3 !important;
+            }
         }
 
+        /* === HARİTA IFRAME STİLLERİ === */
         iframe.leaflet-mini-map {
-    display: block !important;
-    pointer-events: none !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-}
+            display: block !important;
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
 
-/* MARKER HER ZAMAN ÜSTTE */
-.leaflet-marker-icon {
-    z-index: 9999 !important;
-}
+        .leaflet-marker-icon {
+            z-index: 9999 !important;
+        }
 
-/* TIKLAMA/SÜRÜKLEME YOK */
-.steps .visual iframe {
-    cursor: default !important;
-}
+        .steps .visual iframe {
+            cursor: default !important;
+        }
     `;
     document.head.appendChild(style);
 }
+
 // CSS'i Yükle
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', injectDropdownStyles);
@@ -435,6 +484,119 @@ document.addEventListener('click', function(e) {
     }
 });
 
+
+window.showMap = function(element) {
+    const stepsElement = element.closest('.steps');
+    const visualDiv = stepsElement.querySelector('.visual');
+    const image = visualDiv.querySelector('img.check');
+    const changeContainer = stepsElement.querySelector('.item_action .change');
+    
+    // Diğer elementleri gizle
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = 'none'; });  
+    
+    const lat = parseFloat(stepsElement.getAttribute('data-lat'));
+    const lon = parseFloat(stepsElement.getAttribute('data-lon'));
+    
+    if (!isNaN(lat) && !isNaN(lon)) {
+        // Eski iframe'i kaldır
+        const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+        if (oldIframe) oldIframe.remove();
+        if (image) image.style.display = "none";
+        
+        // Yeni iframe oluştur
+        const iframe = document.createElement('iframe');
+        iframe.className = 'leaflet-mini-map';
+        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}`;
+        iframe.width = "100%";
+        iframe.height = "235";
+        iframe.frameBorder = "0";
+        iframe.style.border = "0";
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        visualDiv.appendChild(iframe);
+        
+        // Aktif ikonları ayarla
+        if (changeContainer) {
+            const mapIcon = changeContainer.querySelector('span:nth-child(2)'); // Harita ikonu
+            const cameraIcon = changeContainer.querySelector('span:nth-child(1)'); // Kamera ikonu
+            
+            // Harita ikonunu aktif yap
+            if (mapIcon) mapIcon.classList.add('active');
+            // Kamera ikonunu pasif yap
+            if (cameraIcon) cameraIcon.classList.remove('active');
+        }
+    } else {
+        alert("Location not found.");
+    }
+};
+
+window.showImage = function(element) {
+    const stepsElement = element.closest('.steps');
+    const visualDiv = stepsElement.querySelector('.visual');
+    const image = visualDiv.querySelector('img.check');
+    const changeContainer = stepsElement.querySelector('.item_action .change');
+    
+    // Eski iframe'i kaldır
+    const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+    if (iframe) iframe.remove();
+    if (image) image.style.display = '';
+
+    // TAG, FAV ve CATS bölümlerini GERİ GETİR
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.cats').forEach(el => {
+        el.style.display = '';
+    });
+    
+    // Aktif ikonları ayarla
+    if (changeContainer) {
+        const mapIcon = changeContainer.querySelector('span:nth-child(2)'); // Harita ikonu
+        const cameraIcon = changeContainer.querySelector('span:nth-child(1)'); // Kamera ikonu
+        
+        // Kamera ikonunu aktif yap
+        if (cameraIcon) cameraIcon.classList.add('active');
+        // Harita ikonunu pasif yap
+        if (mapIcon) mapIcon.classList.remove('active');
+    }
+};
+
+// Sayfa yüklendiğinde tüm kamera ikonlarını aktif yap
+function activateDefaultCameraIcons() {
+    document.querySelectorAll('.steps').forEach(step => {
+        const changeContainer = step.querySelector('.item_action .change');
+        if (changeContainer) {
+            const cameraIcon = changeContainer.querySelector('span:nth-child(1)');
+            if (cameraIcon && !cameraIcon.classList.contains('active')) {
+                cameraIcon.classList.add('active');
+            }
+        }
+    });
+}
+
+// CSS yüklendikten sonra çalıştır
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(activateDefaultCameraIcons, 100);
+    });
+} else {
+    setTimeout(activateDefaultCameraIcons, 100);
+}
+
+// Yeni step'ler eklendiğinde de aktif et
+observer.observe(chatContainer, { 
+    childList: true, 
+    subtree: true,
+    callback: function() {
+        setTimeout(activateDefaultCameraIcons, 50);
+    }
+});
+
 // Dropdown değiştiğinde kontrol et
 document.addEventListener('change', function(e) {
     if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
@@ -451,3 +613,6 @@ observer.observe(chatContainer, { childList: true, subtree: true });
 
 // İlk yüklemede çalıştır
 updateAllChatButtons();
+
+
+
