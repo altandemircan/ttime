@@ -2346,112 +2346,55 @@ function addChatResultsToCart() {
         }
     });
 }
-// 1️⃣ window.showMap Fonksiyonunu Güncelle (Kırmızı Markerlı)
-// 1️⃣ window.showMap - Sadece Kırmızı Marker Özelliği Eklendi (Boyutlar Orjinal)
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
-
-    // Görsel öğeleri gizle (Orjinal koddaki gibi)
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = 'none'; });  
-
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
-
     if (!isNaN(lat) && !isNaN(lon)) {
-        // Eski iframe varsa kaldır
+        // Eski iframe'i kaldır (DÜZELTME: class ismi aynı olmalı!)
         const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
         if (oldIframe) oldIframe.remove();
-        
-        // Daha önce açılmış harita div'i varsa temizle
-        const oldMap = visualDiv.querySelector('.embedded-step-map');
-        if (oldMap) oldMap.remove();
-
         if (image) image.style.display = "none";
-
-        // Yeni Harita Div'i (Orjinal Iframe boyutlarına sadık kalarak)
-        const mapDiv = document.createElement('div');
-        mapDiv.className = 'embedded-step-map';
-        mapDiv.style.width = "100%";
-        mapDiv.style.height = "235px"; // Iframe'in orjinal yüksekliği
-        mapDiv.style.border = "0";     // Iframe'in orjinal border ayarı
-        visualDiv.appendChild(mapDiv);
-
-        // Leaflet Başlatma
-        if (typeof L !== 'undefined') {
-            const map = L.map(mapDiv, {
-                center: [lat, lon],
-                zoom: 15,
-                zoomControl: false,
-                attributionControl: false
-            });
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19
-            }).addTo(map);
-
-            // === İSTEDİĞİN KIRMIZI YUVARLAK MARKER ===
-            const redMarkerHtml = `
-                <div class="custom-marker-outer red" style="
-                    background-color: #d32f2f; 
-                    color: white; 
-                    width: 32px; 
-                    height: 32px; 
-                    border-radius: 50%; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    border: 2px solid white; 
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                    <div style="width: 8px; height: 8px; background: white; border-radius: 50%;"></div>
-                </div>
-            `;
-            
-            const icon = L.divIcon({ 
-                html: redMarkerHtml, 
-                className: "", 
-                iconSize: [32, 32], 
-                iconAnchor: [16, 16] 
-            });
-
-            L.marker([lat, lon], { icon: icon }).addTo(map);
-
-            // Harita render hatasını önlemek için ufak bir tetikleme
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
-        } else {
-            // Leaflet yüklenmemişse fallback
-            mapDiv.innerHTML = "Map Library Missing";
-        }
-
+        // Yeni iframe oluştur
+        const iframe = document.createElement('iframe');
+        iframe.className = 'leaflet-mini-map';
+        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}`;
+        iframe.width = "100%";
+        iframe.height = "235";
+        iframe.frameBorder = "0";
+        iframe.style.border = "0";
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        visualDiv.appendChild(iframe);
     } else {
         alert("Location not found.");
     }
 };
 
-// 2️⃣ window.showImage - Kapatma Fonksiyonu (Değişmedi, sadece yeni div'i temizliyor)
 window.showImage = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
-    
+    // DÜZELTME: Doğru class ile iframe'i kaldır!
     const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
     if (iframe) iframe.remove();
-
-    const embeddedMap = visualDiv.querySelector('.embedded-step-map');
-    if (embeddedMap) embeddedMap.remove();
-
     if (image) image.style.display = '';
 
-    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = ''; });
-    stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = ''; });
-    stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = ''; });
-    stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = ''; });
+    // TAG, FAV ve CATS bölümlerini GERİ GETİR
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.cats').forEach(el => {
+        el.style.display = '';
+    });
 };
     // --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
 function addActive(x) {
