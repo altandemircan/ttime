@@ -6016,9 +6016,14 @@ function addNumberedMarkers(map, points) {
 
         // Marker'ı oluştur
         const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
-        marker.bindPopup(`<b>${label}</b>`);
+        
+        // --- DÜZELTME BURADA YAPILDI (offset eklendi) ---
+        marker.bindPopup(`<b>${label}</b>`, {
+            offset: [0, -20]  // Baloncuğu 20px yukarı taşır
+        });
+        // ------------------------------------------------
 
-        // --- İŞTE ÇALIŞAN KOD BURAYA EKLENDİ ---
+        // Tıklama olayları
         marker.on('click', function() {
             // Haritayı bu noktaya ortala (Zoom seviyesini koru)
             map.flyTo([item.lat, item.lng], map.getZoom(), {
@@ -6028,7 +6033,6 @@ function addNumberedMarkers(map, points) {
             // Popup'ı açmayı garantile
             marker.openPopup();
         });
-        // ----------------------------------------
     });
 }
 
