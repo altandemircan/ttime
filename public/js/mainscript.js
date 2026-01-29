@@ -9146,11 +9146,14 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
         scaleBarDiv.innerHTML = '<div class="spinner"></div>';
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
         
-        const track = scaleBarDiv.querySelector('.scale-bar-track');
-        if (track) {
-          const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-          createScaleElements(track, width, totalKm, 0, markerPositions);
-        }
+        renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
+const track = scaleBarDiv.querySelector('.scale-bar-track');
+if (track) {
+  setTimeout(() => {
+    const w = Math.max(200, Math.round(track.getBoundingClientRect().width));
+    createScaleElements(track, w, totalKm, 0, markerPositions);
+  }, 70); // veya requestAnimationFrame ile 2 kez çağır!
+}
       } else if (scaleBarDiv) {
         scaleBarDiv.innerHTML = '<div class="spinner"></div>';
       }
