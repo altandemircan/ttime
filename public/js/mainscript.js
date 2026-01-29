@@ -4152,7 +4152,6 @@ function attachMapClickAddMode(day) {
   map.on('zoomstart', function() { if (__singleClickTimer) clearTimeout(__singleClickTimer); });
 }
 
-
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
@@ -4218,25 +4217,36 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         }).addTo(map);
     }
 
-    // 5. MARKER (ORTALAMA DÜZELTMESİ YAPILDI)
-    // Wrapper 32px, Daire 24px. Fark 8px. Ortalamak için her yerden 4px margin veriyoruz.
+    // 5. MARKER (KESİN ÇÖZÜM)
+    // CSS dosyanızda ikon boyutu 24px olarak ayarlı.
+    // Biz de Leaflet'e ikonun 24px olduğunu söylüyoruz (32px değil).
+    // Böylece Leaflet 24px'lik bir alan ayırıp tam ortasını (12. pikseli) haritaya koyacak.
+    
     const fallbackHtml = `
       <div class="custom-marker-outer red" style="
-          transform: scale(1); 
-          margin: 4px !important;  /* 8px yerine 4px yaparak tam ortaladık */
-          display: flex; 
-          align-items: center; 
-          justify-content: center;
+          width: 24px !important;
+          height: 24px !important;
+          box-sizing: border-box !important; /* Kenarlıkları boyuta dahil et */
+          margin: 0 !important;
+          padding: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 50%;
+          transform: none !important;
+          border: 2px solid #fff !important; 
+          font-size: 13px !important;
       ">
-        <span class="custom-marker-label">${number}</span>
+        <span class="custom-marker-label" style="line-height: 1;">${number}</span>
       </div>
     `;
     
     const icon = L.divIcon({ 
         html: fallbackHtml, 
-        className: "", 
-        iconSize: [32, 32], 
-        iconAnchor: [16, 16] // Tam merkez
+        className: "tt-static-marker-icon", 
+        // İŞTE SİHİRLİ DOKUNUŞ BURADA:
+        iconSize: [24, 24],   // CSS boyutuyla birebir aynı (32 değil!)
+        iconAnchor: [12, 12]  // Tam orta nokta (24'ün yarısı)
     });
     
     const marker = L.marker([lat, lon], { 
@@ -4245,10 +4255,9 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     }).addTo(map);
     
     // Popup Ayarı (Tam ortada ve markerın hemen üstünde)
-    // Offset Y: -14 (Dairenin tepesi yaklaşık 4px aşağıda + 10px boşluk)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -14] 
+        offset: [0, -14] // 12px yarıçap + 2px boşluk
     }).openPopup();
 
     // 6. GÜNCELLEME VE ODAKLAMA
