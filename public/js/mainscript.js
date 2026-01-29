@@ -9185,7 +9185,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
             if (marker.dragging && marker.dragging.enable) marker.dragging.enable();
             activateMarkerUI(marker);
             showDragArrows(marker);
-            // showTransientDragHint(marker, expandedMap, 'Drag to reposition'); // İsteğe bağlı
+            showTransientDragHint(marker, expandedMap, 'Drag to reposition'); // İsteğe bağlı
             marker.openPopup();
             
             const box = marker.getElement()?.querySelector('.custom-marker-place-name');
