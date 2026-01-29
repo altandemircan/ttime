@@ -4252,7 +4252,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // FIX: Adjusted offset to center popup correctly
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -12] 
+        offset: [0, -20] 
     }).openPopup();
 
     // 6. FINALIZE (Safe Timeout)
