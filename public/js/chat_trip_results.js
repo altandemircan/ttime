@@ -298,6 +298,64 @@ function injectDropdownStyles() {
                 border-left-color: #444;
             }
         }
+
+        /* === MOBİL FULL-SCREEN GÜN KAYDIRMASI === */
+        @media (max-width: 768px) {
+            .accordion-list {
+                scroll-snap-type: y mandatory;
+                scroll-behavior: smooth;
+                height: 100vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+            }
+
+            .day-item {
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+                min-height: 100vh;
+                max-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .accordion-container {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .accordion-label {
+                flex-shrink: 0;
+                z-index: 10;
+            }
+
+            .accordion-content {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
+            .day-steps {
+                min-height: 100%;
+            }
+
+            .splide {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .splide__track {
+                flex: 1;
+                display: flex;
+                align-items: center;
+            }
+
+            .splide__list {
+                width: 100%;
+                height: auto;
+            }
+        }
     `;
     document.head.appendChild(style);
 }
@@ -308,6 +366,34 @@ if (document.readyState === 'loading') {
 } else {
     injectDropdownStyles();
 }
+
+// === MOBİL FULL-SCREEN GÜNLER İÇİN SPLIDE OPTİMİZASYONU ===
+(function initMobileFullScreenDays() {
+    'use strict';
+
+    function initSplideForMobile() {
+        const isMobile = window.innerWidth <= 768;
+        
+        setTimeout(() => {
+            document.querySelectorAll('.splide').forEach(slider => {
+                if (slider._splideInstance) {
+                    const instance = slider._splideInstance;
+                    if (isMobile) {
+                        instance.options.perPage = 1;
+                        instance.options.gap = 0;
+                        instance.options.arrows = false;
+                        instance.options.pagination = false;
+                        instance.refresh();
+                    }
+                }
+            });
+        }, 100);
+    }
+
+    document.addEventListener('DOMContentLoaded', initSplideForMobile);
+    window.addEventListener('resize', initSplideForMobile);
+
+})();
 
 
 // ==========================================================
