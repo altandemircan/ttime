@@ -467,7 +467,15 @@ function renderRouteScaleBar(container, totalKm, markers) {
   delete container._elevationDataFull;
 
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-    container.innerHTML = '<div class="spinner"></div>';
+    container.innerHTML = `
+      <div class="spinner" style="width: 32px; height: 32px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; margin: 20px auto; animation: spinLoader 1s linear infinite;"></div>
+      <style id="spinner-loader-style">
+        @keyframes spinLoader {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
+    `;
     return;
   }
 
