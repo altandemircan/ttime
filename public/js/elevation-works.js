@@ -495,14 +495,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   delete container._elevationDataFull;
 
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
-    container.innerHTML = `
-      <div class="scale-bar-track loading">
-        <div class="tt-scale-loader">
-          <div class="spinner"></div>
-          <div>Loading elevation</div>
-        </div>
-      </div>
-    `;
+    container.innerHTML = `<div class="scale-bar-track loading"></div>`;
   }
 
   // Koordinat kontrolü (Tekrar)
@@ -527,21 +520,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
   // Loading UI
 let track = container.querySelector('.scale-bar-track');
 if (!track) {
-  // GEÇIŞ: Önce placeholder ekle
-  container.innerHTML = `
-    <div class="scale-bar-track loading">
-      <div class="tt-scale-loader">
-        <div class="spinner"></div>
-        <div>Loading elevation</div>
-      </div>
-    </div>
-  `;
+  container.innerHTML = `<div class="scale-bar-track loading"></div>`;
   track = container.querySelector('.scale-bar-track');
-  
-  // 100ms sonra DOM'a yerleşsin diye
-  setTimeout(() => {
-    console.log("✅ Spinner gösterilmeli:", track.querySelector('.spinner'));
-  }, 100);
 }
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);

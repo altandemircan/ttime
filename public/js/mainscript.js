@@ -7319,18 +7319,11 @@ async function expandMap(containerId, day) {
     scaleBarDiv.style.display = "block";
 
     // ✅ Loading spinner
-scaleBarDiv.innerHTML = `
-  <div class="scale-bar-track loading">
-    <div class="tt-scale-loader">
-      <div class="spinner"></div>
-      <div>Loading elevation</div>
-    </div>
-  </div>
-`;
+scaleBarDiv.innerHTML = `<div class="scale-bar-track loading"></div>`;
 
-// Modal göster (elevation-works.js içinde tanımlı)
-if (typeof showScaleBarLoadingModal === 'function') {
-  showScaleBarLoadingModal();
+// Modal göster
+if (typeof window.showScaleBarLoadingModal === 'function') {
+  window.showScaleBarLoadingModal();
 }
 
     const panelDiv = document.createElement('div');
@@ -9625,14 +9618,7 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
-    scaleBarDiv.innerHTML = `
-      <div class="scale-bar-track loading">
-        <div class="tt-scale-loader">
-          <div class="spinner"></div>
-          <div>Loading elevation</div>
-        </div>
-      </div>
-    `;
+    scaleBarDiv.innerHTML = `<div class="scale-bar-track loading"></div>`;
     // Modal göster
     if (typeof window.showScaleBarLoadingModal === 'function') {
       window.showScaleBarLoadingModal();
