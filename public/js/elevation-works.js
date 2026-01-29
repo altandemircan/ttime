@@ -387,7 +387,35 @@ if (Array.isArray(markers)) {
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
-  // 1. CSS GÜVENLİK KİLİDİ
+  // === MODAL LOADING SPINNER HELPER ===
+  window.showScaleBarLoadingModal = function() {
+    let modal = document.getElementById('tt-scale-bar-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'tt-scale-bar-modal';
+      modal.className = 'scale-bar-loading-modal';
+      modal.innerHTML = `
+        <div class="modal-spinner-content">
+          <div class="spinner"></div>
+          <p>Loading elevation data...</p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+    modal.classList.remove('hidden');
+  };
+
+  window.hideScaleBarLoadingModal = function() {
+    const modal = document.getElementById('tt-scale-bar-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  };
+
+  const showLoadingModal = window.showScaleBarLoadingModal;
+  const hideLoadingModal = window.hideScaleBarLoadingModal;
+
+  // === ÖNCESİ CSS KİLİDİ ===
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
@@ -499,6 +527,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   // Loading UI
 let track = container.querySelector('.scale-bar-track');
 if (!track) {
+  // GEÇIŞ: Önce placeholder ekle
   container.innerHTML = `
     <div class="scale-bar-track loading">
       <div class="tt-scale-loader">
@@ -508,7 +537,11 @@ if (!track) {
     </div>
   `;
   track = container.querySelector('.scale-bar-track');
-  console.log("✅ Track oluşturuldu, spinner var mı?", track.querySelector('.spinner'));
+  
+  // 100ms sonra DOM'a yerleşsin diye
+  setTimeout(() => {
+    console.log("✅ Spinner gösterilmeli:", track.querySelector('.spinner'));
+  }, 100);
 }
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
@@ -554,6 +587,9 @@ if (!track) {
   container._elevSamples = samples.slice();
   container._elevStartKm = 0;
   container._elevKmSpan = totalKm;
+
+  // === MODAL SPINNER GÖSTER ===
+  showLoadingModal();
 
   (async () => {
     try {
@@ -890,12 +926,11 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
 
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          // Spinner'ı 500ms sonra sakla
+          // Modal'ı 300ms sonra gizle
           setTimeout(() => {
-            const loader = track.querySelector('.tt-scale-loader');
-            if (loader) loader.style.display = 'none';
+            hideLoadingModal();
             track.classList.remove('loading');
-          }, 500);
+          }, 300);
       });
 
       if (typeof day !== "undefined") {
@@ -911,6 +946,7 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       }
      } catch (err) {
   console.warn("Elevation fetch error:", err);
+  hideLoadingModal();
   
   // FALLBACK: YAPAY ELEVATION DATA OLUŞTUR
   const fallbackSmooth = [];

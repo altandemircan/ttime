@@ -7328,6 +7328,11 @@ scaleBarDiv.innerHTML = `
   </div>
 `;
 
+// Modal göster (elevation-works.js içinde tanımlı)
+if (typeof showScaleBarLoadingModal === 'function') {
+  showScaleBarLoadingModal();
+}
+
     const panelDiv = document.createElement('div');
     panelDiv.className = 'expanded-map-panel';
     panelDiv.appendChild(headerDiv);
@@ -9613,7 +9618,6 @@ window.setTravelMode = async function(mode, day) {
 
   setTimeout(() => {
   const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${d}`);
-  // SAF ROUTE KONTROLÜ: Geojson ve summary var mı?
   const geojson = window.lastRouteGeojsons?.[`route-map-day${d}`];
   const summary = window.lastRouteSummaries?.[`route-map-day${d}`];
   if (scaleBarDiv && geojson && summary && summary.distance > 0) {
@@ -9621,7 +9625,6 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
-    // ✅ Spinner göster
     scaleBarDiv.innerHTML = `
       <div class="scale-bar-track loading">
         <div class="tt-scale-loader">
@@ -9630,6 +9633,10 @@ window.setTravelMode = async function(mode, day) {
         </div>
       </div>
     `;
+    // Modal göster
+    if (typeof window.showScaleBarLoadingModal === 'function') {
+      window.showScaleBarLoadingModal();
+    }
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
 }, 300);
