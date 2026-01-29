@@ -6296,7 +6296,9 @@ border-bottom:1px solid #ddd;
 
 
       @keyframes ttspin{to{transform:rotate(360deg)}}
-      .scale-bar-track{position:relative}
+      .scale-bar-track{position:relative;
+  transition: all 0.3s ease !important;
+}
 
 
   .scale-bar-track {
