@@ -637,9 +637,7 @@ try {
       });
       // ----------------------------------------
 
-      const placeholder = track.querySelector('.elevation-placeholder');
-      const oldLoader = track.querySelector('.tt-scale-loader');
-      if (oldLoader) oldLoader.remove(); 
+     
       
       const selDiv = document.createElement('div');
       selDiv.className = 'scale-bar-selection';
