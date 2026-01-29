@@ -1776,8 +1776,17 @@ else {
 
   const existingTooltip = track.querySelector('.tt-elev-tooltip');
   const existingLine = track.querySelector('.scale-bar-vertical-line');
-  if (existingLine) track.appendChild(existingLine);
-  if (existingTooltip) track.appendChild(existingTooltip);
+  
+  // --- DÜZELTME: Siyah çizgi ve tooltip'i başlangıçta GİZLE ---
+  if (existingLine) {
+      existingLine.style.display = 'none'; // <-- Siyah çizgi kaybolsun
+      track.appendChild(existingLine);
+  }
+  if (existingTooltip) {
+      existingTooltip.style.display = 'none'; // <-- Tooltip kaybolsun
+      track.appendChild(existingTooltip);
+  }
+  // -------------------------------------------------------------
 
   const gridG = document.createElementNS(svgNS, 'g');
   gridG.setAttribute('class','tt-elev-grid');
