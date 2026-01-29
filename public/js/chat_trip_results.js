@@ -153,7 +153,7 @@ function generateStepHtml(step, day, category, idx = 0) {
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        /* === BÜTÜNLEŞİK AKSİYON GRUBU === */
+        /* === AKSİYON GRUBU === */
         .trip-action-group {
             display: inline-flex;
             align-items: center;
@@ -161,37 +161,10 @@ function injectDropdownStyles() {
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
             margin-left: auto;
         }
 
-        .trip-action-group:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-color: #d0d0d0;
-        }
-
-        /* Dropdown Stili */
-        .trip-action-group select {
-            appearance: none;
-            -webkit-appearance: none;
-            border: none;
-            background-color: transparent;
-            padding: 8px 6px 8px 12px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #333;
-            cursor: pointer;
-            outline: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0px center;
-            padding-right: 16px;
-            margin-right: 4px;
-            font-family: inherit;
-        }
-
-        /* Buton Stili */
+        /* Buton Genel */
         .trip-action-group .action-btn {
             border: none;
             padding: 8px 12px;
@@ -201,46 +174,50 @@ function injectDropdownStyles() {
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s;
-            outline: none;
             height: 100%;
-            font-family: inherit;
+            transition: all 0.2s;
         }
 
+        /* --- ADD BUTONU (MOR + BEYAZ İKON) --- */
         .trip-action-group .action-btn.btn-add {
             background-color: #8a4af3;
             color: #ffffff;
-            border-left: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .trip-action-group .action-btn.btn-add .btn-icon {
+            stroke: #ffffff; /* SVG ikonu beyaz yap */
         }
 
+        .trip-action-group .action-btn.btn-add:hover {
+            background-color: #7b42db;
+        }
+
+        /* --- REMOVE BUTONU (KIRMIZIMSI) --- */
         .trip-action-group .action-btn.btn-remove {
             background-color: #fff1f0;
             color: #dc3545;
             border-left: 1px solid #eee;
         }
 
-        /* === DÜŞÜK ÇÖZÜNÜRLÜK AYARI (Mobil) === */
+        /* --- MOBİL AYARLAR (480px Altı) --- */
         @media (max-width: 480px) {
             .trip-action-group .btn-text {
-                display: none; /* Yazıyı gizle */
+                display: none; /* "Add" ve "Remove" yazılarını gizle */
             }
             .trip-action-group .action-btn {
-                padding: 8px 10px; /* Butonu daralt */
+                padding: 8px 10px;
                 gap: 0;
             }
-            .trip-action-group select {
-                padding-left: 8px;
-                font-size: 0.8rem;
+            .trip-action-group .btn-icon {
+                width: 16px;
+                height: 16px;
             }
         }
 
+        /* Dark Mode */
         @media (prefers-color-scheme: dark) {
             .trip-action-group { background: #2a2a2a; border-color: #444; }
-            .trip-action-group select { 
-                color: #e0e0e0; 
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            }
-            .trip-action-group .action-btn.btn-remove { background-color: #3e2a2a; color: #ef5350; border-left-color: #444; }
+            .trip-action-group .action-btn.btn-remove { background-color: #3e2a2a; color: #ef5350; }
         }
     `;
     document.head.appendChild(style);
@@ -306,26 +283,38 @@ function updateAllChatButtons() {
     steps.forEach(step => {
         const dropdown = step.querySelector('.day-select-dropdown-premium');
         const btn = step.querySelector('.addtotrip-toggle');
+        
         if (!dropdown || !btn) return;
 
-        // ... (mevcut data-lat, data-lon vs. kodların)
+        const lat = parseFloat(step.getAttribute('data-lat'));
+        const lon = parseFloat(step.getAttribute('data-lon'));
+        const name = step.querySelector('.title')?.textContent.trim();
+        const selectedDay = parseInt(dropdown.value);
+        
+        // HATAYI BURADA ÇÖZÜYORUZ: Değişkeni tanımla
+        const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
 
         if (isAdded) {
+            // REMOVE MODU
             if (!btn.classList.contains('btn-remove')) {
                 btn.className = 'action-btn btn-remove addtotrip-toggle';
                 btn.innerHTML = `
                     <span class="btn-text">Remove</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>`;
             }
         } else {
+            // ADD MODU
             if (!btn.classList.contains('btn-add')) {
                 btn.className = 'action-btn btn-add addtotrip-toggle';
                 btn.innerHTML = `
                     <span class="btn-text">Add</span>
-                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px; filter: brightness(0) invert(1);">`;
+                    <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>`;
             }
         }
     });
