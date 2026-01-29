@@ -4153,52 +4153,10 @@ function attachMapClickAddMode(day) {
 }
 
 
-
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
-    // 1. ÖNCE CSS FIX'İ ENJEKTE ET (Sayfada yoksa ekler)
-    if (!document.getElementById('tt-marker-fix-style')) {
-        const style = document.createElement('style');
-        style.id = 'tt-marker-fix-style';
-        style.textContent = `
-            /* Wrapper'ı (Kapsayıcı) Flex Yapıp İçeriği Ortalıyoruz */
-            .leaflet-marker-icon.tt-static-marker-icon {
-                background: transparent !important;
-                border: none !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-
-            /* Kırmızı Topun Tüm Dış Etkenlerden Arındırılması */
-            .leaflet-marker-icon.tt-static-marker-icon .custom-marker-outer {
-                width: 32px !important;
-                height: 32px !important;
-                /* Styles.css'den gelen absolute pozisyonu iptal et: */
-                position: static !important; 
-                transform: none !important;
-                margin: 0 !important;
-                left: auto !important;
-                top: auto !important;
-                
-                /* Görünüm Ayarları */
-                box-sizing: border-box !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                border-radius: 50%;
-                font-size: 14px !important;
-                line-height: 1 !important;
-                background: #d32f2f; /* Renk garantisi */
-                color: #fff;
-                border: 2px solid #fff;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // 2. TEMİZLİK
     window._leafletMaps = window._leafletMaps || {};
+    
+    // 1. TEMİZLİK
     if (window._leafletMaps[mapId]) {
         try { 
             if (window._leafletMaps[mapId].getContainer()) {
@@ -4211,7 +4169,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // 3. KAP AYARLARI
+    // 2. KAP AYARLARI
     el.innerHTML = '';
     el.style.width = '100%';
     el.style.height = '250px';
@@ -4219,13 +4177,14 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     el.style.borderRadius = '8px';
     el.style.overflow = 'hidden';
 
+    // Leaflet kontrolü
     if (typeof L === 'undefined') {
         el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading map...</div>';
         setTimeout(() => createLeafletMapForItem(mapId, lat, lon, name, number, day), 100);
         return;
     }
 
-    // 4. HARİTA OLUŞTURMA
+    // 3. HARİTA OLUŞTUR
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
@@ -4243,29 +4202,40 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         inertia: false
     });
 
+    // 4. TILE LAYER
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
     if (typeof L.maplibreGL === 'function') {
         L.maplibreGL({
             style: openFreeMapStyle,
-            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
+            attribution: '&copy; OpenFreeMap',
             interactive: false
         }).addTo(map);
     } else {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 16,
-            attribution: '© OpenStreetMap contributors',
+            attribution: '© OpenStreetMap',
             interactive: false
         }).addTo(map);
     }
 
-    // 5. MARKER OLUŞTURMA (Artık CSS Class'a güveniyoruz)
-    // HTML içinde stil yazmıyoruz, yukarıdaki CSS halledecek.
-    const cleanHtml = `<div class="custom-marker-outer red">${number}</div>`;
+    // 5. MARKER (ORTALAMA DÜZELTMESİ YAPILDI)
+    // Wrapper 32px, Daire 24px. Fark 8px. Ortalamak için her yerden 4px margin veriyoruz.
+    const fallbackHtml = `
+      <div class="custom-marker-outer red" style="
+          transform: scale(1); 
+          margin: 4px !important;  /* 8px yerine 4px yaparak tam ortaladık */
+          display: flex; 
+          align-items: center; 
+          justify-content: center;
+      ">
+        <span class="custom-marker-label">${number}</span>
+      </div>
+    `;
     
     const icon = L.divIcon({ 
-        html: cleanHtml, 
-        className: "tt-static-marker-icon", // Yukarıda tanımladığımız özel sınıf
-        iconSize: [32, 32],
+        html: fallbackHtml, 
+        className: "", 
+        iconSize: [32, 32], 
         iconAnchor: [16, 16] // Tam merkez
     });
     
@@ -4275,12 +4245,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     }).addTo(map);
     
     // Popup Ayarı (Tam ortada ve markerın hemen üstünde)
+    // Offset Y: -14 (Dairenin tepesi yaklaşık 4px aşağıda + 10px boşluk)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -18] 
+        offset: [0, -14] 
     }).openPopup();
 
-    // 6. FİNAL GÜNCELLEME
+    // 6. GÜNCELLEME VE ODAKLAMA
     setTimeout(function() { 
         if (map && map.getContainer() && document.getElementById(mapId)) {
             try {
@@ -4384,6 +4355,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
 //     document.head.appendChild(style);
 // })();
 // Ayrıca toggleContent fonksiyonunu da güncelleyin:
+
 function toggleContent(arrowIcon) {
     const cartItem = arrowIcon.closest('.cart-item');
     if (!cartItem) return;
