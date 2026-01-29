@@ -6270,7 +6270,8 @@ border-bottom:1px solid #ddd;
 
 
 .elev-animation .spinner,
-.tt-scale-loader .spinner {
+.tt-scale-loader .spinner,
+.elevation-placeholder .spinner {
     width: 20px !important;
     height: 20px !important;
     min-width: 20px !important;
