@@ -627,11 +627,6 @@ observer.observe(chatContainer, {
 
 
 
-const chatContainer = document.getElementById('chat-container') || document.body;
-observer.observe(chatContainer, { childList: true, subtree: true });
-
-// İlk yüklemede çalıştır
-updateAllChatButtons();
 
 
 
