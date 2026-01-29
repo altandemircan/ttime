@@ -600,19 +600,25 @@ window.showImage = function(element) {
 };
 
 
-// Sayfa yüklendiğinde tüm kamera ikonlarını aktif yap
+// Sayfa yüklendiğinde sadece harita görünümünde olmayan step'lerde kamera ikonunu aktif yap
 function activateDefaultCameraIcons() {
     document.querySelectorAll('.steps').forEach(step => {
         const changeContainer = step.querySelector('.item_action .change');
-        if (changeContainer) {
+        const visualDiv = step.querySelector('.visual');
+        const hasMapIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+        
+        if (changeContainer && !hasMapIframe) {
             const cameraIcon = changeContainer.querySelector('span:nth-child(1)');
-            if (cameraIcon && !cameraIcon.classList.contains('active')) {
+            const mapIcon = changeContainer.querySelector('span:nth-child(2)');
+            
+            if (cameraIcon && mapIcon) {
+                // Harita iframe'i yoksa kamera aktif olsun
                 cameraIcon.classList.add('active');
+                mapIcon.classList.remove('active');
             }
         }
     });
 }
-
 // CSS yüklendikten sonra çalıştır
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
@@ -627,17 +633,6 @@ observer.observe(chatContainer, {
     childList: true, 
     subtree: true
 });
-
-// Kamera ikonları için ayrı observer
-const iconObserver = new MutationObserver(function() {
-    setTimeout(activateDefaultCameraIcons, 50);
-});
-iconObserver.observe(chatContainer, { 
-    childList: true, 
-    subtree: true 
-});
-
-
 
 
 
