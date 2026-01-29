@@ -389,26 +389,24 @@ if (Array.isArray(markers)) {
 function renderRouteScaleBar(container, totalKm, markers) {
   // === MODAL LOADING SPINNER HELPER ===
   window.showScaleBarLoadingModal = function() {
-    let modal = document.getElementById('tt-scale-bar-modal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'tt-scale-bar-modal';
-      modal.className = 'scale-bar-loading-modal';
-      modal.innerHTML = `
-        <div class="modal-spinner-content">
-          <div class="spinner"></div>
-          <p>Loading elevation data...</p>
-        </div>
+    let spinner = document.getElementById('tt-scale-bar-inline-spinner');
+    if (!spinner) {
+      spinner = document.createElement('div');
+      spinner.id = 'tt-scale-bar-inline-spinner';
+      spinner.className = 'scale-bar-inline-spinner';
+      spinner.innerHTML = `
+        <div class="spinner"></div>
+        <p>Loading elevation...</p>
       `;
-      document.body.appendChild(modal);
+      document.body.appendChild(spinner);
     }
-    modal.classList.remove('hidden');
+    spinner.classList.remove('hidden');
   };
 
   window.hideScaleBarLoadingModal = function() {
-    const modal = document.getElementById('tt-scale-bar-modal');
-    if (modal) {
-      modal.classList.add('hidden');
+    const spinner = document.getElementById('tt-scale-bar-inline-spinner');
+    if (spinner) {
+      spinner.classList.add('hidden');
     }
   };
 
