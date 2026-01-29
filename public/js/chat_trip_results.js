@@ -259,29 +259,22 @@ function injectDropdownStyles() {
             }
         }
 
-        /* === MARKER KESİNLİKLE ÜSTTE KALSIN === */
-        .leaflet-mini-map {
-            position: relative !important;
-        }
-
-        .leaflet-marker-icon {
-            z-index: 9999 !important;
-            transform: none !important;
-        }
-
-        /* Harita iframe'i için */
         iframe.leaflet-mini-map {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
+    display: block !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
 
-        /* Harita iframe'i için ek güvenlik */
-        .steps .visual iframe.leaflet-mini-map {
-            min-height: 235px;
-            max-height: 235px;
-            height: 235px !important;
-        }
+/* MARKER HER ZAMAN ÜSTTE */
+.leaflet-marker-icon {
+    z-index: 9999 !important;
+}
+
+/* TIKLAMA/SÜRÜKLEME YOK */
+.steps .visual iframe {
+    cursor: default !important;
+}
     `;
     document.head.appendChild(style);
 }
