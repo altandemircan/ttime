@@ -497,50 +497,9 @@ if (!track) {
     <div class="scale-bar-track">
       <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
         <div class="elev-animation">
-          <svg width="50" height="50" viewBox="0 0 100 100" style="display:inline-block;">
-            <defs>
-              <style>
-                @keyframes drawMountain {
-                  0% {
-                    stroke-dashoffset: 300;
-                  }
-                  100% {
-                    stroke-dashoffset: 0;
-                  }
-                }
-                .mountain-line {
-                  stroke: #8a4af3;
-                  stroke-width: 2.5;
-                  fill: none;
-                  stroke-linecap: round;
-                  stroke-linejoin: round;
-                  stroke-dasharray: 300;
-                  animation: drawMountain 3s ease-in-out infinite;
-                }
-              </style>
-            </defs>
-            <!-- Zikzaklı dağ çiziliyor gibi animasyon -->
-            <path class="mountain-line" d="M 15 75 L 30 45 L 50 65 L 70 35 L 85 70 L 95 50" />
-            <!-- Ufuk çizgisi -->
-            <line x1="10" y1="80" x2="90" y2="80" stroke="#d0d0d0" stroke-width="1.5" opacity="0.6"/>
-          </svg>
-          <div style="margin-left: 12px; font-weight: 600;">Loading elevation</div>
+          <div class="spinner"></div>
+          <div>Loading elevation</div>
         </div>
-        <style>
-          @keyframes drawMountain {
-            0% {
-              stroke-dashoffset: 300;
-              opacity: 0.4;
-            }
-            50% {
-              opacity: 1;
-            }
-            100% {
-              stroke-dashoffset: 0;
-              opacity: 0.7;
-            }
-          }
-        </style>
       </div>
     </div>
   `;
