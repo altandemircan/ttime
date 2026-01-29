@@ -892,8 +892,11 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
 
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
+          // Spinner'ı 500ms sonra sakla (veri yüklendikten sonra)
+          setTimeout(() => {
+            window.hideScaleBarLoading?.(container);
+            track.classList.remove('loading');
+          }, 500);
       });
 
       if (typeof day !== "undefined") {
