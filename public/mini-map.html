@@ -12,10 +12,11 @@
       padding: 0;
     }
     #map {
-      width: 100%;
-      height: 100%;
-      border-radius: 15px;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
     }
+    /* KESİNLİKLE başka bir şey ekleme!  Sadece bu style block. */
   </style>
 </head>
 <body>
@@ -24,6 +25,7 @@
 <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
 <script>
+  // Parametre oku
   function getParam(name) {
     const url = new URL(window.location.href);
     return url.searchParams.get(name);
@@ -32,11 +34,11 @@
   const lon = parseFloat(getParam("lon")) || 29.00;
   const zoom = 14;
 
-  const map = L.map('map', { zoomControl: false }).setView([lat, lon], zoom);
+  // Haritayı oluştur
+  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([lat, lon], zoom);
 
-  // Sadece harita hazır olunca layer ve marker ekle
+  // Maplibre vektör katmanı ekle
   map.whenReady(() => {
-    // OpenFreeMap stilini MaplibreGL katmanıyla ekle
     fetch('https://tiles.openfreemap.org/styles/bright')
       .then(res => res.json())
       .then(style => {
@@ -44,28 +46,29 @@
           style: style,
           interactive: true
         }).addTo(map);
+
+        // Custom kırmızı marker ekle
+        const redMarkerHtml = `
+          <div style="
+            background:#d32f2f;
+            width:32px; height:32px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+              <div style="width:8px; height:8px; background:#fff; border-radius:50%;"></div>
+          </div>
+        `;
+        L.marker([lat, lon], {
+          icon: L.divIcon({
+            html: redMarkerHtml,
+            className: '', // kesinlikle class ekleme!
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(map);
+
+        // Boyut düzeltmesi (özellikle iframe için/garantiye almak için)
+        setTimeout(() => map.invalidateSize(), 200);
       });
-
-    // Kırmızı yuvarlak marker
-    const redMarkerHtml = `
-      <div style="
-        background:#d32f2f;
-        width:32px; height:32px; border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
-          <div style="width:8px; height:8px; background:#fff; border-radius:50%;"></div>
-      </div>
-    `;
-    L.marker([lat, lon], {
-      icon: L.divIcon({
-        html: redMarkerHtml,
-        className: '',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-      })
-    }).addTo(map);
-
-    setTimeout(() => map.invalidateSize(), 150); // KÜÇÜK IFRAME'de garanti için
   });
 </script>
 </body>
