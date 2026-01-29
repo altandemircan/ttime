@@ -183,7 +183,7 @@ function injectDropdownStyles() {
             background-repeat: no-repeat;
             background-position: right 0px center;
             padding-right: 16px;
-            margin-right: 4px;
+           
             font-family: inherit;
         }
 
