@@ -322,6 +322,7 @@ function injectDropdownStyles() {
 
         .steps .visual iframe {
             cursor: default !important;
+            border-radius: 15px 15px 0 0;
         }
     `;
     document.head.appendChild(style);
