@@ -374,32 +374,32 @@ async function sendAIChatMessage(userMessage) {
     chatHistory.push({ role: "user", content: userMessage });
     saveCurrentChat();
 
-// --- 7. MESAJ GÖNDERME İÇİNDE (Güncellenmiş Bölüm) ---
+    // --- 7. MESAJ GÖNDERME İÇİNDE (Güncellenmiş Bölüm) ---
 
-// AI MESAJ KUTUSU OLUŞTUR
-const aiDiv = document.createElement('div');
-aiDiv.className = 'chat-message ai-message';
+    // AI MESAJ KUTUSU OLUŞTUR
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-message ai-message';
 
-// Video yerine doğrudan img elementi oluşturuyoruz
-const aiImg = document.createElement('img');
-aiImg.src = '/img/mira_profile.png'; // Profil resmi yolu
-aiImg.style.width = '32px';
-aiImg.style.borderRadius = '50%';
-aiImg.alt = 'Mira AI';
+    // Video yerine doğrudan img elementi oluşturuyoruz
+    const aiImg = document.createElement('img');
+    aiImg.src = '/img/mira_profile.png'; // Profil resmi yolu
+    aiImg.style.width = '32px';
+    aiImg.style.borderRadius = '50%';
+    aiImg.alt = 'Mira AI';
 
-const aiContent = document.createElement('div');
-aiContent.innerHTML = '<span class="typing">...</span>';
+    const aiContent = document.createElement('div');
+    aiContent.innerHTML = '<span class="typing">...</span>';
 
-const contentContainer = document.createElement('div');
-contentContainer.style.display = 'flex';
-contentContainer.style.flexDirection = 'column';
-contentContainer.style.flex = '1';
+    const contentContainer = document.createElement('div');
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+    contentContainer.style.flex = '1';
 
-contentContainer.appendChild(aiContent);
-aiDiv.appendChild(aiImg); // Artık img ekleniyor
-aiDiv.appendChild(contentContainer);
-messagesDiv.appendChild(aiDiv);
-messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    contentContainer.appendChild(aiContent);
+    aiDiv.appendChild(aiImg); // Artık img ekleniyor
+    aiDiv.appendChild(contentContainer);
+    messagesDiv.appendChild(aiDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     // STREAM BAŞLASIN
     let hasError = false;
