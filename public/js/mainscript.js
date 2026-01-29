@@ -4155,24 +4155,63 @@ function attachMapClickAddMode(day) {
 
 
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
+    // 1. ÖNCE CSS FIX'İ ENJEKTE ET (Sayfada yoksa ekler)
+    if (!document.getElementById('tt-marker-fix-style')) {
+        const style = document.createElement('style');
+        style.id = 'tt-marker-fix-style';
+        style.textContent = `
+            /* Wrapper'ı (Kapsayıcı) Flex Yapıp İçeriği Ortalıyoruz */
+            .leaflet-marker-icon.tt-static-marker-icon {
+                background: transparent !important;
+                border: none !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* Kırmızı Topun Tüm Dış Etkenlerden Arındırılması */
+            .leaflet-marker-icon.tt-static-marker-icon .custom-marker-outer {
+                width: 32px !important;
+                height: 32px !important;
+                /* Styles.css'den gelen absolute pozisyonu iptal et: */
+                position: static !important; 
+                transform: none !important;
+                margin: 0 !important;
+                left: auto !important;
+                top: auto !important;
+                
+                /* Görünüm Ayarları */
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border-radius: 50%;
+                font-size: 14px !important;
+                line-height: 1 !important;
+                background: #d32f2f; /* Renk garantisi */
+                color: #fff;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. TEMİZLİK
     window._leafletMaps = window._leafletMaps || {};
-    
-    // 1. TEMİZLİK: Varsa eski haritayı sil
     if (window._leafletMaps[mapId]) {
         try { 
             if (window._leafletMaps[mapId].getContainer()) {
                 window._leafletMaps[mapId].remove(); 
             }
-        } catch(e) {
-            console.warn("Map cleanup warning:", e);
-        }
+        } catch(e) {}
         delete window._leafletMaps[mapId];
     }
 
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // 2. KAP SIFIRLAMA
+    // 3. KAP AYARLARI
     el.innerHTML = '';
     el.style.width = '100%';
     el.style.height = '250px';
@@ -4180,14 +4219,13 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     el.style.borderRadius = '8px';
     el.style.overflow = 'hidden';
 
-    // Leaflet yüklü mü kontrolü
     if (typeof L === 'undefined') {
         el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading map...</div>';
         setTimeout(() => createLeafletMapForItem(mapId, lat, lon, name, number, day), 100);
         return;
     }
 
-    // 3. HARİTAYI OLUŞTUR (Etkileşim kapalı)
+    // 4. HARİTA OLUŞTURMA
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
@@ -4205,7 +4243,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         inertia: false
     });
 
-    // 4. TILE LAYER EKLE
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
     if (typeof L.maplibreGL === 'function') {
         L.maplibreGL({
@@ -4221,30 +4258,15 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         }).addTo(map);
     }
 
-    // 5. MARKER OLUŞTUR (KESİN ÇÖZÜM: STYLE override)
-    // CSS dosyasındaki 24px'i ezmek için width/height 32px !important yapıyoruz.
-    const fallbackHtml = `
-      <div class="custom-marker-outer red" style="
-          width: 32px !important;
-          height: 32px !important;
-          box-sizing: border-box !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          border-radius: 50%;
-          transform: none !important;
-      ">
-        <span class="custom-marker-label" style="line-height: 1; font-size:14px;">${number}</span>
-      </div>
-    `;
+    // 5. MARKER OLUŞTURMA (Artık CSS Class'a güveniyoruz)
+    // HTML içinde stil yazmıyoruz, yukarıdaki CSS halledecek.
+    const cleanHtml = `<div class="custom-marker-outer red">${number}</div>`;
     
     const icon = L.divIcon({ 
-        html: fallbackHtml, 
-        className: "tt-static-marker-icon", 
-        iconSize: [32, 32],   // Leaflet'e 32x32 alan ayır diyoruz
-        iconAnchor: [16, 16]  // Tam orta nokta (32'nin yarısı)
+        html: cleanHtml, 
+        className: "tt-static-marker-icon", // Yukarıda tanımladığımız özel sınıf
+        iconSize: [32, 32],
+        iconAnchor: [16, 16] // Tam merkez
     });
     
     const marker = L.marker([lat, lon], { 
@@ -4252,31 +4274,27 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         interactive: true 
     }).addTo(map);
     
-    // Popup Ayarı (Marker'ın tam tepesine hizalı)
+    // Popup Ayarı (Tam ortada ve markerın hemen üstünde)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
         offset: [0, -18] 
     }).openPopup();
 
-    // 6. HARİTAYI GÜNCELLE VE ORTALA
+    // 6. FİNAL GÜNCELLEME
     setTimeout(function() { 
         if (map && map.getContainer() && document.getElementById(mapId)) {
             try {
                 map.invalidateSize();
                 map.setView([lat, lon], 16, { animate: false });
                 marker.openPopup();
-                
                 if (marker._popup) {
                     marker._popup._updateLayout();
                     marker._popup._adjustPan();
                 }
-            } catch (err) {
-                // Hata yutulabilir
-            }
+            } catch (err) {}
         }
     }, 150);
     
-    // Popup kapandığında tekrar açılmasını sağla (sabit görünüm için)
     marker.on('popupclose', function() {
         setTimeout(() => {
             if (map && map.getContainer()) marker.openPopup();
@@ -4285,7 +4303,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     
     window._leafletMaps[mapId] = map;
     
-    // CSS ile etkileşimi yönet
     const mapContainer = map.getContainer();
     mapContainer.style.pointerEvents = 'none';
     mapContainer.style.cursor = 'default';
