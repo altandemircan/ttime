@@ -806,14 +806,50 @@ chatInput.addEventListener("input", debounce(async function () {
 
 
     // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
-    const showSuggestionsLogic = function() {
-        if (window.lastResults && window.lastResults.length) {
-            const currentQuery = extractLocationQuery(this.value);
-            renderSuggestions(window.lastResults, currentQuery);
-        } else {
-             showSuggestions();
-        }
-    };
+    // [FIX] Ortak mantığı bir fonksiyona alıp hem focus hem click olayında kullanıyoruz
+const showSuggestionsLogic = function() {
+    const currentValue = this.value.trim();
+    
+    // EĞER INPUT BOŞSA default önerileri göster
+    if (!currentValue || currentValue.length === 0) {
+        showSuggestions();
+        return;
+    }
+    
+    // EĞER INPUT DOLUYSA ve daha önce sonuçlar varsa onları göster
+    if (window.lastResults && window.lastResults.length) {
+        const currentQuery = extractLocationQuery(this.value);
+        renderSuggestions(window.lastResults, currentQuery);
+    } else {
+        // Eğer sonuç yoksa, şu anki değerle arama yap
+        const searchText = currentValue.toLowerCase();
+        fetch(`/api/cities?q=${encodeURIComponent(searchText)}`)
+            .then(r => r.json())
+            .then(cities => {
+                if (cities && cities.length > 0) {
+                    window.lastResults = cities.map(city => ({
+                        properties: {
+                            name: city.name,
+                            city: city.name,
+                            country_code: (city.countryCode || "").toLowerCase(),
+                            formatted: `${city.name}, ${city.countryCode || ''}`,
+                            lat: parseFloat(city.latitude),
+                            lon: parseFloat(city.longitude),
+                            result_type: city.type || 'city',
+                            place_id: `local-${city.latitude}-${city.longitude}`
+                        }
+                    }));
+                    renderSuggestions(window.lastResults, searchText);
+                } else {
+                    // Hiç sonuç yoksa, inputu temizle ve default göster
+                    showSuggestions();
+                }
+            })
+            .catch(() => {
+                showSuggestions();
+            });
+    }
+};
 
     chatInput.addEventListener("focus", showSuggestionsLogic);
     
