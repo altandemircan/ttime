@@ -710,44 +710,74 @@ chatInput.addEventListener("input", debounce(async function () {
     }
 
     // 2. KELİMELERE AYIR ve TEMİZLE
-    let words = rawText
+    let cleanedText = rawText
         .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '') // sayı ve gün
-        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at)\b/gi, '') // filler
-        .replace(/[^a-zA-ZÇĞİÖŞÜçğıöşü\s]/g, ' ') // sadece harf
+        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at|a|an|the)\b/gi, '') // filler
+        .replace(/[^a-zA-Z\s]/g, ' ') // sadece harf ve boşluk
         .replace(/\s+/g, ' ')
-        .trim()
-        .split(' ')
-        .filter(word => word.length >= 3); // 3 harften uzun kelimeler
+        .trim();
     
-    console.log("Words to search:", words);
+    // 3. POTANSİYEL ŞEHİR İSİMLERİNİ BUL
+    const words = cleanedText.split(' ').filter(w => w.length >= 2);
+    console.log("Words:", words);
     
     let foundResults = [];
     let foundQuery = "";
     
-    // 3. HER KELİME İÇİN API'YE SOR (en uzun kelimeden başla)
-    words.sort((a, b) => b.length - a.length); // en uzun önce
-    
-    for (let word of words) {
-        try {
-            // Küçük harfe çevir
-            const searchWord = word.toLowerCase();
-            console.log(`Trying word: "${searchWord}"`);
-            
-            const response = await fetch(`/api/cities?q=${encodeURIComponent(searchWord)}`);
-            const cities = await response.json();
-            
-            if (cities && cities.length > 0) {
-                console.log(`Found ${cities.length} results for "${searchWord}"`);
-                foundResults = cities;
-                foundQuery = searchWord;
-                break; // İlk bulduğunda dur
+    // 4. ÇOKLU KELİME KOMBİNASYONLARINI DENE
+    // Önce tüm kelimeleri birleştirerek dene: "new york"
+    if (words.length >= 2) {
+        for (let i = 0; i <= words.length - 2; i++) {
+            for (let j = 2; j <= Math.min(3, words.length - i); j++) {
+                const phrase = words.slice(i, i + j).join(' ');
+                if (phrase.length >= 3) {
+                    console.log(`Trying phrase: "${phrase}"`);
+                    
+                    try {
+                        const response = await fetch(`/api/cities?q=${encodeURIComponent(phrase.toLowerCase())}`);
+                        const cities = await response.json();
+                        
+                        if (cities && cities.length > 0) {
+                            console.log(`Found ${cities.length} results for "${phrase}"`);
+                            foundResults = cities;
+                            foundQuery = phrase.toLowerCase();
+                            break;
+                        }
+                    } catch (error) {
+                        console.error("Search error:", error);
+                    }
+                }
             }
-        } catch (error) {
-            console.error("Search error for word:", word, error);
+            if (foundResults.length > 0) break;
         }
     }
     
-    // 4. SONUÇLARI GÖSTER
+    // 5. TEK KELİME ARAMASI (fallback)
+    if (foundResults.length === 0) {
+        // En uzun kelimeden başla
+        words.sort((a, b) => b.length - a.length);
+        
+        for (let word of words) {
+            try {
+                const searchWord = word.toLowerCase();
+                console.log(`Trying single word: "${searchWord}"`);
+                
+                const response = await fetch(`/api/cities?q=${encodeURIComponent(searchWord)}`);
+                const cities = await response.json();
+                
+                if (cities && cities.length > 0) {
+                    console.log(`Found ${cities.length} results for "${searchWord}"`);
+                    foundResults = cities;
+                    foundQuery = searchWord;
+                    break;
+                }
+            } catch (error) {
+                console.error("Search error:", error);
+            }
+        }
+    }
+    
+    // 6. SONUÇLARI GÖSTER
     if (foundResults.length > 0) {
         console.log("Showing results for:", foundQuery);
         
@@ -769,7 +799,7 @@ chatInput.addEventListener("input", debounce(async function () {
             );
         }
     } else {
-        console.log("No results found for any word");
+        console.log("No results found");
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
     }
 }, 400));
