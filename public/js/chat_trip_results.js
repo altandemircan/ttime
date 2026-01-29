@@ -127,13 +127,13 @@ function generateStepHtml(step, day, category, idx = 0) {
 
         <div class="item_action">
             <div class="change">
-                <span onclick="window.showImage && window.showImage(this)">
-                    <img src="img/camera_icon.svg">
-                </span>
-                <span onclick="window.showMap && window.showMap(this)">
-                    <img src="img/map_icon.svg">
-                </span>
-            </div>
+    <span onclick="window.showImage && window.showImage(this)" class="active">
+        <img src="img/camera_icon.svg">
+    </span>
+    <span onclick="window.showMap && window.showMap(this)">
+        <img src="img/map_icon.svg">
+    </span>
+</div>
             
             <div class="trip-action-group">
                 <select class="day-select-dropdown-premium">
