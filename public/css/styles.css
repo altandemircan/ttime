@@ -4948,15 +4948,22 @@ right: 30px;
   100% { transform: rotate(360deg);}
 }
 .custom-marker-outer {
-  width:24px;height:24px;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  border:2px solid #fff;
-  box-shadow:0 2px 8px rgba(0,0,0,0.2);
-  position:relative;
-  transition:background 0.2s, box-shadow 0.18s;
+  width: 32px !important;       /* 24px yerine 32px */
+  height: 32px !important;      /* 24px yerine 32px */
+  box-sizing: border-box !important; /* Çerçeveyi boyuta dahil et */
+  margin: 0 !important;         /* Dış boşlukları sıfırla */
+  
+  /* Diğer özellikler kalabilir */
+  border-radius: 50%;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: relative;
+  transition: background 0.2s, box-shadow 0.18s;
   background: #d32f2f;
-      color: #fff;
+  color: #fff;
 }
 .custom-marker-outer.spin {
   animation: spin-marker-bg 0.7s linear infinite;
