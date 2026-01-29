@@ -183,7 +183,7 @@ function injectDropdownStyles() {
             background-repeat: no-repeat;
             background-position: right 0px center;
             padding-right: 16px;
-           
+            margin-right: 4px;
             font-family: inherit;
         }
 
@@ -194,7 +194,7 @@ function injectDropdownStyles() {
         /* Buton Stili (Temel) */
         .trip-action-group .action-btn {
             border: none;
-            padding: 8px 14px;
+            padding: 8px 10px;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
