@@ -4230,28 +4230,31 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     // ------------------------------------------------
 
     // MARKER EKLE - ESKİ BOYUTLARDA (24px)
-    const fallbackHtml = `
-  <div class="custom-marker-outer red" style="transform: scale(1); margin-left:8px; display:flex; align-items:center; justify-content:center;">
+// 1. margin-left:8px kaldırıldı.
+const fallbackHtml = `
+  <div class="custom-marker-outer red" style="transform: scale(1); display:flex; align-items:center; justify-content:center;">
     <span class="custom-marker-label">${number}</span>
   </div>
 `;
+
+// İkon ayarları (Aynı kalabilir veya iconAnchor ile oynanabilir ama margin kalkınca düzelir)
 const icon = L.divIcon({ 
     html: fallbackHtml, 
     className: "", 
     iconSize: [32, 32], 
-    iconAnchor: [16, 16] // Tam matematiksel merkez
+    iconAnchor: [16, 16] // Tam merkez
 });
     
-    // Marker ekle - interaktif OLSUN ki popup açılabilsin
-    const marker = L.marker([lat, lon], { 
-        icon: icon,
-        interactive: true // Marker tıklanabilir olsun
-    }).addTo(map);
+// Marker ekle
+const marker = L.marker([lat, lon], { 
+    icon: icon,
+    interactive: true 
+}).addTo(map);
     
-    // Popup ekle - tıklanmış gibi açık dursun
+// 2. Popup offset ayarı [0, -16] yapılarak tam ortalanır (-2 yerine 0)
 marker.bindPopup(`<b>${name || 'Point'}</b>`, {
     closeButton: false,
-    offset: [-2, -16] // X:0 (Yatayda tam orta), Y:-16 (İkonun tam tepesi)
+    offset: [0, -12] // X:0 (Tam orta), Y:-12 (Hafif yukarı)
 }).openPopup();
 
     // Harita boyutunu düzelt ve popup'ın görünmesini sağla
