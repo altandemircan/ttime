@@ -43,10 +43,8 @@
   const lon = parseFloat(getParam("lon")) || 29.00;
   const zoom = 14;
 
-  const map = L.map('map').setView([lat, lon], zoom);
-
+   const map = L.map('map').setView([lat, lon], zoom);
   map.whenReady(() => {
-    // Stil/tile haritasını ekle
     fetch('https://tiles.openfreemap.org/styles/bright')
       .then(res => res.json())
       .then(style => {
@@ -54,15 +52,15 @@
           style: style,
           interactive: true
         }).addTo(map);
+
+        // Boyut değişimi, iframe grid, geç yükleme gibi durumlarda düzeltme:
+        setTimeout(() => map.invalidateSize(), 120);
       });
 
-    // Kırmızı marker: 
     const redMarkerHtml = `
       <div style="
-        background:#d32f2f; width:32px; height:32px; border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
-          <div style="width:8px; height:8px; background:#fff; border-radius:50%;"></div>
+        background:#d32f2f; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+        <div style="width:8px; height:8px; background:#fff; border-radius:50%;"></div>
       </div>
     `;
     L.marker([lat, lon], {
