@@ -21,7 +21,7 @@ function saveFavTrips() {
         .mp-group {
             margin-bottom: 16px;
             background: #fff;
-            border: 1px solid #e2e8f0;
+          
             border-radius: 12px;
             overflow: hidden;
             box-shadow: rgba(149, 157, 165, 0.08) 0px 4px 12px;
@@ -113,7 +113,7 @@ function saveFavTrips() {
         }
 
         .mp-list-wrap { 
-            padding: 12px; 
+            padding: 12px 0; 
             display: flex; 
             flex-direction: column; 
             gap: 12px; 
