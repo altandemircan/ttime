@@ -2111,14 +2111,14 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
     return { lat: last[1], lng: last[0] };
   }
 
-  window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm=null, eKm=null){
+window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm=null, eKm=null){
     const tr = trackOf(c); 
     if (!tr) return;
 
-    // 1. Alttaki eski grafiğin olaylarını kapat (Pointer events)
+    // 1. Alttaki eski grafiğin olaylarını kapat
     tr.style.pointerEvents = 'none';
 
-    // 2. Eski tooltip ve çizgiyi gizle
+    // 2. Eski tooltip ve çizgileri gizle
     const oldTooltip = tr.querySelector('.tt-elev-tooltip');
     const oldLine = tr.querySelector('.scale-bar-vertical-line');
     if (oldTooltip) oldTooltip.style.display = 'none';
@@ -2153,7 +2153,7 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
 
     // --- MOUSE HAREKET MANTIĞI ---
     const handleMove = function(e) {
-        e.stopPropagation(); // KRİTİK: Olayın alta geçmesini engelle (Tam rota sorununu çözer)
+        e.stopPropagation(); 
 
         // Sadece segment bilgileri varsa marker oynat
         if (day !== null && sKm !== null && eKm !== null) {
@@ -2169,6 +2169,13 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
             if (e.touches && e.touches.length) clientX = e.touches[0].clientX;
 
             let x = clientX - rect.left;
+            
+            // Sınırların dışına taşmayı engelle
+            if (x < 0 || x > rect.width) {
+                 if (lineEl) lineEl.style.display = 'none';
+                 return;
+            }
+
             x = Math.max(0, Math.min(x, rect.width));
             
             const ratio = x / rect.width;
@@ -2198,20 +2205,27 @@ window.showScaleBarLoading?.(container, 'Loading segment elevation...', day, sta
         }
     };
 
+    // --- GİZLEME MANTIĞI (ÖNEMLİ) ---
+    const hideLine = function(e) {
+         if(e) e.stopPropagation();
+         const lineEl = placeholder.querySelector('.loader-vertical-line');
+         if (lineEl) lineEl.style.display = 'none';
+    };
+
+    // Hareket olayları
     placeholder.onmousemove = handleMove;
     placeholder.ontouchmove = handleMove;
 
-    // Tıklamaların da alta geçmesini engelle
+    // Çıkış olayları (Mouse çıkınca VEYA Parmak kalkınca)
+    placeholder.onmouseleave = hideLine;
+    placeholder.ontouchend = hideLine;      // <-- EKLENDİ
+    placeholder.ontouchcancel = hideLine;   // <-- EKLENDİ
+
+    // Tıklamaların alta geçmesini engelle
     const stopOnly = (e) => e.stopPropagation();
     placeholder.onmousedown = stopOnly;
     placeholder.onmouseup = stopOnly;
     placeholder.onclick = stopOnly;
-    
-    placeholder.onmouseleave = function(e) {
-         e.stopPropagation();
-         const lineEl = placeholder.querySelector('.loader-vertical-line');
-         if (lineEl) lineEl.style.display = 'none';
-    };
   };
 
   window.updateScaleBarLoadingText = function(c, t){
