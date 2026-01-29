@@ -384,9 +384,9 @@ if (Array.isArray(markers)) {
     track.style.position = 'relative';
     track.appendChild(elevationLabels);
     
-    setTimeout(() => {
-      renderRouteScaleBar(container, ...);
-    }, 60); // 60-100 ms yeterli (veya requestAnimationFrame ile 1 cycle beklet)!
+setTimeout(() => {
+  renderRouteScaleBar(container, ...);
+}, 60);
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
