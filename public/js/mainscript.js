@@ -4153,14 +4153,40 @@ function attachMapClickAddMode(day) {
 }
 
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
+    // 1. ÖZEL CSS ENJEKSİYONU (Bu kısım marker'ı zorla ortalar)
+    if (!document.getElementById('tt-leaflet-fix')) {
+        const style = document.createElement('style');
+        style.id = 'tt-leaflet-fix';
+        style.textContent = `
+            /* Leaflet'in oluşturduğu dış kutuyu Flexbox yapıyoruz */
+            .leaflet-marker-icon.tt-fix-center {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: transparent !important;
+                border: none !important;
+            }
+            
+            /* İçindeki kırmızı topun dış etkenlerden etkilenmesini önlüyoruz */
+            .leaflet-marker-icon.tt-fix-center .custom-marker-outer {
+                margin: 0 !important;
+                position: static !important;
+                transform: none !important;
+                left: auto !important;
+                top: auto !important;
+                
+                /* Boyutları CSS dosyanızdaki (24px + border) ile eşleşecek şekilde serbest bırakıyoruz */
+                flex-shrink: 0 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. TEMİZLİK
     window._leafletMaps = window._leafletMaps || {};
-    
-    // 1. TEMİZLİK
     if (window._leafletMaps[mapId]) {
         try { 
-            if (window._leafletMaps[mapId].getContainer()) {
-                window._leafletMaps[mapId].remove(); 
-            }
+            if (window._leafletMaps[mapId].getContainer()) window._leafletMaps[mapId].remove(); 
         } catch(e) {}
         delete window._leafletMaps[mapId];
     }
@@ -4168,7 +4194,7 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // 2. KAP AYARLARI
+    // 3. KAP AYARLARI
     el.innerHTML = '';
     el.style.width = '100%';
     el.style.height = '250px';
@@ -4176,74 +4202,40 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     el.style.borderRadius = '8px';
     el.style.overflow = 'hidden';
 
-    // Leaflet kontrolü
     if (typeof L === 'undefined') {
-        el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading map...</div>';
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading...</div>';
         setTimeout(() => createLeafletMapForItem(mapId, lat, lon, name, number, day), 100);
         return;
     }
 
-    // 3. HARİTA OLUŞTUR
+    // 4. HARİTA OLUŞTUR
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
         scrollWheelZoom: false,
         dragging: false,
-        touchZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
         zoomControl: false,
         attributionControl: false,
         fadeAnimation: false,
-        zoomAnimation: false,
-        markerZoomAnimation: false,
-        inertia: false
+        markerZoomAnimation: false
     });
 
-    // 4. TILE LAYER
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
     if (typeof L.maplibreGL === 'function') {
-        L.maplibreGL({
-            style: openFreeMapStyle,
-            attribution: '&copy; OpenFreeMap',
-            interactive: false
-        }).addTo(map);
+        L.maplibreGL({ style: openFreeMapStyle, attribution: '', interactive: false }).addTo(map);
     } else {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 16,
-            attribution: '© OpenStreetMap',
-            interactive: false
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 16, interactive: false }).addTo(map);
     }
 
-    // 5. MARKER (POZİSYON FIX)
-    // CSS'te: width: 24px + border: 2px = Toplam 28px kaplar.
-    // Leaflet'e 28px yer açıp, çapasını (anchor) tam ortaya (14, 14) koyuyoruz.
-    
-    const fallbackHtml = `
-      <div class="custom-marker-outer red" style="
-          /* Styles.css özelliklerini koru ama marginleri sıfırla */
-          margin: 0 !important;
-          transform: none !important;
-          position: static !important;
-          /* Flex ortalama garantisi */
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-      ">
-        <span class="custom-marker-label" style="line-height: 1;">${number}</span>
-      </div>
-    `;
+    // 5. MARKER (FLEX FIX UYGULANDI)
+    // Dış kutuyu 28px yapıyoruz (CSS'teki 24px + 2px border + 2px border = 28px)
+    const fallbackHtml = `<div class="custom-marker-outer red">${number}</div>`;
     
     const icon = L.divIcon({ 
         html: fallbackHtml, 
-        className: "tt-static-marker-icon", 
-        
-        // --- KRİTİK AYAR BURASI ---
-        iconSize: [28, 28],   // 24px + 4px border = 28px (Gerçek boyut)
-        iconAnchor: [14, 14]  // 28'in yarısı = 14 (Tam merkez)
-        // --------------------------
+        className: "tt-fix-center", // Yukarıdaki CSS bu class'a etki edecek
+        iconSize: [28, 28],         // Dış kutu boyutu
+        iconAnchor: [14, 14]        // Tam merkez (28/2 = 14)
     });
     
     const marker = L.marker([lat, lon], { 
@@ -4251,43 +4243,26 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         interactive: true 
     }).addTo(map);
     
-    // Popup Ayarı
+    // Popup Ayarı (Tam marker'ın tepesinde)
     marker.bindPopup(`<b>${name || 'Point'}</b>`, {
         closeButton: false,
-        offset: [0, -16] // Marker tepesine hizala
+        offset: [0, -16] 
     }).openPopup();
 
     // 6. GÜNCELLEME
     setTimeout(function() { 
-        if (map && map.getContainer() && document.getElementById(mapId)) {
-            try {
-                map.invalidateSize();
-                map.setView([lat, lon], 16, { animate: false });
-                marker.openPopup();
-                if (marker._popup) {
-                    marker._popup._updateLayout();
-                    marker._popup._adjustPan();
-                }
-            } catch (err) {}
+        if (map && map.getContainer()) {
+            map.invalidateSize();
+            map.setView([lat, lon], 16, { animate: false });
+            marker.openPopup();
         }
     }, 150);
     
-    marker.on('popupclose', function() {
-        setTimeout(() => {
-            if (map && map.getContainer()) marker.openPopup();
-        }, 100);
-    });
-    
+    marker.on('popupclose', () => setTimeout(() => map && marker.openPopup(), 100));
     window._leafletMaps[mapId] = map;
     
-    const mapContainer = map.getContainer();
-    mapContainer.style.pointerEvents = 'none';
-    mapContainer.style.cursor = 'default';
-    
-    if (marker._icon) {
-        marker._icon.style.pointerEvents = 'auto';
-        marker._icon.style.cursor = 'pointer';
-    }
+    map.getContainer().style.pointerEvents = 'none';
+    if (marker._icon) marker._icon.style.pointerEvents = 'auto';
 }
 
 // // CSS ekle:
