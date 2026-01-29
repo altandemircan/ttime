@@ -496,8 +496,8 @@ if (!track) {
   container.innerHTML = `
     <div class="scale-bar-track">
       <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
-        <div class="tt-scale-loader">
-          <div class="spinner"></div>
+        <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; background: #f8f8f8; border-radius: 10px; padding: 10px 13px; font-size: 12px; color: #8a4af3; font-weight: 700;">
+          <div class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #8a4af3; border-radius: 50%; animation: spinnerAnim 0.8s linear infinite;"></div>
           <div>Loading elevation</div>
         </div>
       </div>
@@ -505,25 +505,11 @@ if (!track) {
   `;
   track = container.querySelector('.scale-bar-track');
   
-  // Animasyon kodu document'e ekle (innerHTML dışında)
+  // CSS'yi ekle (eğer yoksa)
   if (!document.getElementById('spinner-anim-css')) {
     const style = document.createElement('style');
     style.id = 'spinner-anim-css';
-    style.innerHTML = `
-      .tt-scale-loader .spinner {
-        display: inline-block;
-        width: 20px !important;
-        height: 20px !important;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #8a4af3;
-        border-radius: 50%;
-        animation: spinnerAnim 0.8s linear infinite;
-      }
-      @keyframes spinnerAnim {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
+    style.innerHTML = `@keyframes spinnerAnim { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
     document.head.appendChild(style);
   }
 }
