@@ -306,32 +306,26 @@ function updateAllChatButtons() {
     steps.forEach(step => {
         const dropdown = step.querySelector('.day-select-dropdown-premium');
         const btn = step.querySelector('.addtotrip-toggle');
-        
         if (!dropdown || !btn) return;
 
-        const lat = parseFloat(step.getAttribute('data-lat'));
-        const lon = parseFloat(step.getAttribute('data-lon'));
-        const name = step.querySelector('.title')?.textContent.trim();
-        const selectedDay = parseInt(dropdown.value);
-        
-        const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
+        // ... (mevcut data-lat, data-lon vs. kodların)
 
         if (isAdded) {
-    if (!btn.classList.contains('btn-remove')) {
-        btn.className = 'action-btn btn-remove addtotrip-toggle';
-        btn.innerHTML = `
-            <span class="btn-text">Remove</span>
-            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>`;
-    }
-} else {
-            // ADD MODUNA GEÇ
+            if (!btn.classList.contains('btn-remove')) {
+                btn.className = 'action-btn btn-remove addtotrip-toggle';
+                btn.innerHTML = `
+                    <span class="btn-text">Remove</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>`;
+            }
+        } else {
             if (!btn.classList.contains('btn-add')) {
                 btn.className = 'action-btn btn-add addtotrip-toggle';
-                btn.innerHTML = `<span>Add</span>
-                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px;">`;
+                btn.innerHTML = `
+                    <span class="btn-text">Add</span>
+                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px; filter: brightness(0) invert(1);">`;
             }
         }
     });
