@@ -9611,7 +9611,6 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
-scaleBarDiv.innerHTML = '<div class="spinner"></div>';
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
   // Havresine fallback veya başka bir şey YOK!
@@ -9668,8 +9667,7 @@ function cleanupLegacyTravelMode() {
     window.initTravelModeControl = () => {};
   } catch (_) {}
 }
-// Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
-// Helper: ensure travel mode set is placed between the map and stats (visible above Mesafe/Süre)
+
 function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
 
   const setId = `tt-travel-mode-set-day${day}`;
@@ -9687,9 +9685,6 @@ function ensureDayTravelModeSet(day, routeMapEl, controlsWrapperEl) {
   // --- 2. KONUM KONTROLÜ ---
   const isInTurkey = areAllPointsInTurkey(realPoints);
 
-  // --- 3. MOD SEÇİM MANTIĞI ---
-  // Rota oluşup oluşmadığına (hasRealRoute) bakmaksızın, 
-  // eğer nokta Türkiye dışındaysa "FLY MODE", içindeyse standart butonları göster.
   
   if (!isInTurkey) {
     // --- TURKEY DIŞI: FLY MODE ---
