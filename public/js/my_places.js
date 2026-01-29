@@ -9,7 +9,7 @@ function saveFavTrips() {
 }
 
 // ------------------------------------------------------
-// 1. CSS: Akordiyon ve Kart Tasarımı (styles.css ile uyumlu)
+// 1. CSS: updateCart tasarımına uygun hale getirilmiş
 // ------------------------------------------------------
 (function addSafeStyles() {
     const styleId = 'mp-accordion-final';
@@ -112,15 +112,14 @@ function saveFavTrips() {
             gap: 12px; 
         }
 
-        /* --- KART YAPISI --- */
+        /* --- KART YAPISI (updateCart tasarımına benzer) --- */
         .mp-card {
             background: #fff; 
             border: 1px solid #e2e8f0; 
             border-radius: 10px;
-            display: flex; 
-            flex-direction: column;
             box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
             transition: all 0.3s ease;
+            overflow: hidden;
         }
 
         .mp-card:hover {
@@ -129,18 +128,20 @@ function saveFavTrips() {
             transform: translateY(-2px);
         }
 
-        .mp-head {
+        .mp-card-head {
             display: flex; 
             padding: 12px; 
             gap: 12px; 
             align-items: center;
             border-bottom: 1px solid #f9f9f9; 
             position: relative;
+            background: #fff;
         }
         
+        /* Resim kutusu - updateCart'taki cart-image gibi */
         .mp-img-box {
-            width: 56px; 
-            height: 56px; 
+            width: 60px; 
+            height: 40px; 
             flex-shrink: 0; 
             border-radius: 8px; 
             overflow: hidden; 
@@ -180,7 +181,7 @@ function saveFavTrips() {
             font-weight: 500;
         }
 
-        /* Silme İkonu (X) */
+        /* Silme Butonu - updateCart'taki remove-btn gibi */
         .mp-del {
             width: 28px; 
             height: 28px; 
@@ -201,7 +202,7 @@ function saveFavTrips() {
             color: #ff4444; 
         }
 
-        /* Alt Butonlar */
+        /* Alt Butonlar - updateCart'taki butonlara benzer */
         .mp-acts { 
             display: flex; 
             background: #fafafa; 
@@ -214,16 +215,15 @@ function saveFavTrips() {
             flex: 1; 
             border: none; 
             background: transparent; 
-            padding: 10px 4px;
+            padding: 10px;
             font-size: 0.85rem; 
             font-weight: 600; 
             cursor: pointer;
             display: flex; 
-            flex-direction: column; 
             align-items: center; 
             justify-content: center;
-            gap: 4px; 
-            color: #555; 
+            gap: 6px; 
+            color: #1e293b; 
             transition: all 0.2s ease;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
@@ -235,7 +235,6 @@ function saveFavTrips() {
         
         .mp-btn-start:hover { 
             background: #faf8ff; 
-            color: #8a4af3;
         }
         
         .mp-btn-add { 
@@ -244,7 +243,6 @@ function saveFavTrips() {
         
         .mp-btn-add:hover { 
             background: #eaf5f9; 
-            color: #02aee4;
         }
         
         .mp-btn-dis { 
@@ -437,7 +435,7 @@ window.toggleMpGroup = function(header) {
 };
 
 // ------------------------------------------------------
-// 3. RENDER (HTML OLUŞTURMA)
+// 3. RENDER (updateCart benzeri HTML oluşturma)
 // ------------------------------------------------------
 async function renderFavoritePlacesPanel() {
     const panel = document.getElementById("favorite-places-panel");
@@ -472,14 +470,15 @@ async function renderFavoritePlacesPanel() {
         const wrapper = document.createElement("div");
         wrapper.className = "mp-list-wrap";
 
-        items.forEach(place => {
+        items.forEach((place, placeIndex) => {
             const st = checkDist(place.lat, place.lon);
             
             const card = document.createElement("div");
             card.className = "mp-card";
             
+            // updateCart'taki item yapısına benzer şekilde oluştur
             card.innerHTML = `
-                <div class="mp-head">
+                <div class="mp-card-head">
                     <div class="mp-img-box">
                         <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
                     </div>
@@ -490,6 +489,7 @@ async function renderFavoritePlacesPanel() {
                 </div>
             `;
             
+            // Silme butonu - updateCart'taki gibi
             const del = document.createElement("div");
             del.className = "mp-del";
             del.innerHTML = "✕";
@@ -505,19 +505,22 @@ async function renderFavoritePlacesPanel() {
                     }
                 }
             };
-            card.querySelector('.mp-head').appendChild(del);
+            card.querySelector('.mp-card-head').appendChild(del);
 
+            // Alt butonlar - updateCart'taki butonlara benzer
             const acts = document.createElement("div");
             acts.className = "mp-acts";
 
+            // Start New Trip butonu
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<span>▶ Start New</span>`;
+            b1.innerHTML = `<img src="img/start_icon.svg" style="width:16px;height:16px;"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
+            // Add to Trip butonu
             const b2 = document.createElement("button");
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
-            b2.innerHTML = `<span>+ Add Trip</span> <span class="${st.ok ? 'mp-hint-ok' : 'mp-hint-no'}">${st.msg}</span>`;
+            b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip`;
             
             if (st.ok) {
                 b2.onclick = () => {
@@ -535,6 +538,7 @@ async function renderFavoritePlacesPanel() {
                 };
             } else {
                 b2.title = "Too far";
+                b2.innerHTML += `<span class="${st.ok ? 'mp-hint-ok' : 'mp-hint-no'}">${st.msg}</span>`;
             }
 
             acts.appendChild(b1);
