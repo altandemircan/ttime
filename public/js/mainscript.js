@@ -7833,41 +7833,6 @@ function updateExpandedMap(expandedMap, day) {
 }
  
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
  function restoreMap(containerId, day) {
 
     // --- YENİ EKLENEN: Harita kapanınca Header'ı geri getir (Temizlik) ---
