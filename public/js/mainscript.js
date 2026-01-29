@@ -4164,16 +4164,23 @@ function getPurpleRestaurantMarkerHtml(label) {
 function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     window._leafletMaps = window._leafletMaps || {};
     
-    // Eski harita varsa temizle
+    // 1. CLEANUP: Safely remove existing map instance if it exists
     if (window._leafletMaps[mapId]) {
-        try { window._leafletMaps[mapId].remove(); } catch(e){}
+        try { 
+            // Check if map container still exists before removing
+            if (window._leafletMaps[mapId].getContainer()) {
+                window._leafletMaps[mapId].remove(); 
+            }
+        } catch(e) {
+            console.warn("Map cleanup warning:", e);
+        }
         delete window._leafletMaps[mapId];
     }
 
     const el = document.getElementById(mapId);
     if (!el) return;
 
-    // Harita container'ını temizle ve boyutunu ayarla
+    // 2. RESET CONTAINER
     el.innerHTML = '';
     el.style.width = '100%';
     el.style.height = '250px';
@@ -4181,121 +4188,106 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
     el.style.borderRadius = '8px';
     el.style.overflow = 'hidden';
 
-    // Leaflet kütüphanesi yüklü mü kontrol et
+    // Leaflet check
     if (typeof L === 'undefined') {
         el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Loading map...</div>';
         setTimeout(() => createLeafletMapForItem(mapId, lat, lon, name, number, day), 100);
         return;
     }
 
-    // HARİTA OLUŞTUR - INTERAKTİF ÖZELLİKLER KAPALI
+    // 3. CREATE MAP (Interactive features disabled)
     var map = L.map(mapId, {
         center: [lat, lon],
         zoom: 16,
-        // TÜM INTERAKTİF ÖZELLİKLER KAPALI
         scrollWheelZoom: false,
         dragging: false,
         touchZoom: false,
         doubleClickZoom: false,
         boxZoom: false,
         keyboard: false,
-        zoomControl: false, // Zoom kontrolleri gizli
-        attributionControl: false, // Attribution gizli
-        
-        // Animasyonlar kapalı
+        zoomControl: false,
+        attributionControl: false,
         fadeAnimation: false,
         zoomAnimation: false,
         markerZoomAnimation: false,
         inertia: false
     });
 
-    // --- TILE LAYER EKLE (OpenFreeMap veya OSM) ---
+    // 4. ADD TILE LAYER
     const openFreeMapStyle = 'https://tiles.openfreemap.org/styles/bright';
-
     if (typeof L.maplibreGL === 'function') {
-        // MapLibreGL kullan
         L.maplibreGL({
             style: openFreeMapStyle,
-            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> contributors',
+            attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>',
             interactive: false
         }).addTo(map);
     } else {
-        // OSM fallback
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 16,
             attribution: '© OpenStreetMap contributors',
             interactive: false
         }).addTo(map);
     }
-    // ------------------------------------------------
 
-    // MARKER EKLE - ESKİ BOYUTLARDA (24px)
-// 1. margin-left:8px kaldırıldı.
-const fallbackHtml = `
-  <div class="custom-marker-outer red" style="transform: scale(1); display:flex; align-items:center; justify-content:center;">
-    <span class="custom-marker-label">${number}</span>
-  </div>
-`;
+    // 5. CREATE MARKER (Fixed Alignment & ClassName Error)
+    const fallbackHtml = `
+      <div class="custom-marker-outer red" style="transform: scale(1); display:flex; align-items:center; justify-content:center;">
+        <span class="custom-marker-label">${number}</span>
+      </div>
+    `;
+    
+    // FIX: className must not be empty string to avoid DomUtil error
+    const icon = L.divIcon({ 
+        html: fallbackHtml, 
+        className: "tt-static-marker-icon", 
+        iconSize: [32, 32], 
+        iconAnchor: [16, 16] // Exact center
+    });
+    
+    const marker = L.marker([lat, lon], { 
+        icon: icon,
+        interactive: true 
+    }).addTo(map);
+    
+    // FIX: Adjusted offset to center popup correctly
+    marker.bindPopup(`<b>${name || 'Point'}</b>`, {
+        closeButton: false,
+        offset: [0, -12] 
+    }).openPopup();
 
-// İkon ayarları (Aynı kalabilir veya iconAnchor ile oynanabilir ama margin kalkınca düzelir)
-const icon = L.divIcon({ 
-    html: fallbackHtml, 
-    className: "", 
-    iconSize: [32, 32], 
-    iconAnchor: [16, 16] // Tam merkez
-});
-    
-// Marker ekle
-const marker = L.marker([lat, lon], { 
-    icon: icon,
-    interactive: true 
-}).addTo(map);
-    
-// 2. Popup offset ayarı [0, -16] yapılarak tam ortalanır (-2 yerine 0)
-marker.bindPopup(`<b>${name || 'Point'}</b>`, {
-    closeButton: false,
-    offset: [0, -12] // X:0 (Tam orta), Y:-12 (Hafif yukarı)
-}).openPopup();
-
-    // Harita boyutunu düzelt ve popup'ın görünmesini sağla
-   setTimeout(function() { 
-        // FIX: Check if map and container exist before invalidating size
-        if (map && map.getContainer() && map.getContainer().isConnected) {
-            map.invalidateSize();
-        }
-    
-        // MARKER'I ORTALA
-        if (map) {
-             map.setView([lat, lon], 16, {
-                animate: false // Animasyon yok
-            });
-        }
-    
-        // Popup'ı aç (zaten açık ama güvence için)
-        marker.openPopup();
-    
-        // EKSTRA: Popup'ı da ortalamak için
-        if (marker._popup) {
-            marker._popup._updateLayout();
-            marker._popup._adjustPan();
+    // 6. FINALIZE (Safe Timeout)
+    setTimeout(function() { 
+        // Check if map is still valid and attached to DOM
+        if (map && map.getContainer() && document.getElementById(mapId)) {
+            try {
+                map.invalidateSize();
+                map.setView([lat, lon], 16, { animate: false });
+                marker.openPopup();
+                
+                if (marker._popup) {
+                    marker._popup._updateLayout();
+                    marker._popup._adjustPan();
+                }
+            } catch (err) {
+                // Map might be destroyed by user action, ignore
+            }
         }
     }, 150);
     
-    // Popup'ın otomatik kapanmasını engelle
+    // Popup persistence
     marker.on('popupclose', function() {
         setTimeout(() => {
-            marker.openPopup();
+            if (map && map.getContainer()) marker.openPopup();
         }, 100);
     });
     
     window._leafletMaps[mapId] = map;
     
-    // CSS ile harita interaktifliğini kapat, ama marker'a dokunma
+    // Disable interactions via CSS
     const mapContainer = map.getContainer();
     mapContainer.style.pointerEvents = 'none';
     mapContainer.style.cursor = 'default';
     
-    // Marker'ın tıklanabilir kalması için
     if (marker._icon) {
         marker._icon.style.pointerEvents = 'auto';
         marker._icon.style.cursor = 'pointer';
