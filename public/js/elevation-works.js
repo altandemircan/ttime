@@ -492,33 +492,26 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   // Loading UI
   let track = container.querySelector('.scale-bar-track');
-  if (!track) {
- container.innerHTML = `
-  <div class="scale-bar-track">
-    <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="
-          width: 30px;
-          height: 30px;
-          border: 4px solid #e0e0e0;
-          border-top: 4px solid #1976d2;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        "></div>
-        <div>Loading elevation</div>
+if (!track) {
+  container.innerHTML = `
+    <div class="scale-bar-track">
+      <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
+        <div class="elev-animation">
+          <div style="
+            width: 30px;
+            height: 30px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          "></div>
+          <div>Loading elevation</div>
+        </div>
       </div>
-      <style>
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
     </div>
-  </div>
-`;
-    track = container.querySelector('.scale-bar-track');
-  }
-
+  `;
+  track = container.querySelector('.scale-bar-track');
+}
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
 
