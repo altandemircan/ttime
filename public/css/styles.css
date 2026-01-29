@@ -5725,7 +5725,7 @@ ease;
 .maplibregl-ctrl-bottom-right {
     display: none;
 }
-.route-controls-bar .leaflet-touch .leaflet-control-attribution {
+/*.route-controls-bar .leaflet-touch .leaflet-control-attribution {
     width: max-content;
     bottom: 0px !important;
     right: 2px !important;
@@ -5734,7 +5734,7 @@ ease;
     font-weight: 400;
 }
 
-
+*/
 .leaflet-control-attribution  {
        position: absolute !important;
     bottom: 32px !important;
