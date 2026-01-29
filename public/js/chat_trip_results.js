@@ -191,10 +191,14 @@ function injectDropdownStyles() {
             font-family: inherit;
         }
 
-        /* Buton Stili */
+        .trip-action-group select:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* Buton Stili (Temel) */
         .trip-action-group .action-btn {
             border: none;
-            padding: 8px 12px;
+            padding: 8px 10px;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -207,40 +211,50 @@ function injectDropdownStyles() {
             font-family: inherit;
         }
 
+        /* --- ADD MODU (MOR TASARIM) --- */
         .trip-action-group .action-btn.btn-add {
             background-color: #8a4af3;
             color: #ffffff;
             border-left: 1px solid rgba(255,255,255,0.2);
         }
+        
+        .trip-action-group .action-btn.btn-add:hover {
+            background-color: #7b42db;
+        }
 
+        /* İkonu Beyaz Yapmak İçin Filtre */
+        .trip-action-group .action-btn.btn-add img {
+            filter: brightness(0) invert(1);
+        }
+
+        /* --- REMOVE MODU (Kırmızı Tasarım) --- */
         .trip-action-group .action-btn.btn-remove {
             background-color: #fff1f0;
             color: #dc3545;
             border-left: 1px solid #eee;
         }
-
-        /* === DÜŞÜK ÇÖZÜNÜRLÜK AYARI (Mobil) === */
-        @media (max-width: 480px) {
-            .trip-action-group .btn-text {
-                display: none; /* Yazıyı gizle */
-            }
-            .trip-action-group .action-btn {
-                padding: 8px 10px; /* Butonu daralt */
-                gap: 0;
-            }
-            .trip-action-group select {
-                padding-left: 8px;
-                font-size: 0.8rem;
-            }
+        .trip-action-group .action-btn.btn-remove:hover {
+            background-color: #ffe8e6;
         }
 
         @media (prefers-color-scheme: dark) {
-            .trip-action-group { background: #2a2a2a; border-color: #444; }
-            .trip-action-group select { 
-                color: #e0e0e0; 
+            .trip-action-group {
+                background: #2a2a2a;
+                border-color: #444;
+            }
+            .trip-action-group select {
+                color: #e0e0e0;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             }
-            .trip-action-group .action-btn.btn-remove { background-color: #3e2a2a; color: #ef5350; border-left-color: #444; }
+            .trip-action-group .action-btn.btn-add {
+                background-color: #8a4af3; 
+                color: white;
+            }
+             .trip-action-group .action-btn.btn-remove {
+                background-color: #3e2a2a;
+                color: #ef5350;
+                border-left-color: #444;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -306,26 +320,32 @@ function updateAllChatButtons() {
     steps.forEach(step => {
         const dropdown = step.querySelector('.day-select-dropdown-premium');
         const btn = step.querySelector('.addtotrip-toggle');
+        
         if (!dropdown || !btn) return;
 
-        // ... (mevcut data-lat, data-lon vs. kodların)
+        const lat = parseFloat(step.getAttribute('data-lat'));
+        const lon = parseFloat(step.getAttribute('data-lon'));
+        const name = step.querySelector('.title')?.textContent.trim();
+        const selectedDay = parseInt(dropdown.value);
+        
+        const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
 
         if (isAdded) {
-            if (!btn.classList.contains('btn-remove')) {
-                btn.className = 'action-btn btn-remove addtotrip-toggle';
-                btn.innerHTML = `
-                    <span class="btn-text">Remove</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>`;
-            }
-        } else {
+    if (!btn.classList.contains('btn-remove')) {
+        btn.className = 'action-btn btn-remove addtotrip-toggle';
+        btn.innerHTML = `
+            <span class="btn-text">Remove</span>
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>`;
+    }
+} else {
+            // ADD MODUNA GEÇ
             if (!btn.classList.contains('btn-add')) {
                 btn.className = 'action-btn btn-add addtotrip-toggle';
-                btn.innerHTML = `
-                    <span class="btn-text">Add</span>
-                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px; filter: brightness(0) invert(1);">`;
+                btn.innerHTML = `<span>Add</span>
+                    <img src="img/addtotrip-icon.svg" style="width:14px; height:14px;">`;
             }
         }
     });
