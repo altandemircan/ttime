@@ -1,368 +1,33 @@
 // ======================================================
-// my_places.js - SMART TITLES & ACCORDION
+// my_places.js - MODERN, STYLE.CSS UYUMLU FAVORİLER
 // ======================================================
-
 window.favTrips = JSON.parse(localStorage.getItem('favTrips') || '[]');
 
 function saveFavTrips() {
     localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
 }
 
-// ------------------------------------------------------
-// 1. CSS: Akordiyon ve Kart Tasarımı (styles.css ile uyumlu)
-// ------------------------------------------------------
-(function addSafeStyles() {
-    const styleId = 'mp-accordion-final';
-    if (document.getElementById(styleId)) return;
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-        /* --- GRUP (AKORDİYON) --- */
-        .mp-group {
-            margin-bottom: 16px;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
-            transition: all 0.3s ease;
-        }
-
-        .mp-group:hover {
-            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-            border-color: #8a4af3;
-        }
-
-        /* Başlık Kısmı */
-        .mp-group-header {
-            padding: 14px 16px;
-            background: #faf8ff;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            user-select: none;
-            border-bottom: 1px solid transparent;
-            font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        .mp-group-header:hover { 
-            background: #f1e9ff; 
-        }
-
-        /* Başlık Yazısı */
-        .mp-group-title {
-            font-size: 0.95rem; 
-            font-weight: 600; 
-            color: #8a4af3;
-            display: flex; 
-            align-items: center; 
-            gap: 10px;
-        }
-        
-        /* Sayı Rozeti */
-        .mp-badge {
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: #ffffff;
-            background: #8a4af3; 
-            padding: 2px 8px; 
-            border-radius: 12px;
-        }
-
-        /* Ok İkonu */
-        .mp-arrow {
-            font-size: 0.9rem; 
-            color: #8a4af3;
-            transition: transform 0.3s ease;
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        /* AÇIK DURUM (OPEN) */
-        .mp-group.open .mp-group-header {
-            background: #fff;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .mp-group.open .mp-arrow { 
-            transform: rotate(180deg); 
-        }
-        
-        /* İçerik Alanı (Animasyonlu) */
-        .mp-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-out;
-            background: #fff;
-        }
-        
-        .mp-group.open .mp-content {
-            max-height: 3000px;
-            transition: max-height 0.5s ease-in;
-        }
-
-        .mp-list-wrap { 
-            padding: 12px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-        }
-
-        /* --- KART YAPISI --- */
-        .mp-card {
-            background: #fff; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 10px;
-            display: flex; 
-            flex-direction: column;
-            box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
-            transition: all 0.3s ease;
-        }
-
-        .mp-card:hover {
-            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-            border-color: #8a4af3;
-            transform: translateY(-2px);
-        }
-
-        .mp-head {
-            display: flex; 
-            padding: 12px; 
-            gap: 12px; 
-            align-items: center;
-            border-bottom: 1px solid #f9f9f9; 
-            position: relative;
-        }
-        
-        .mp-img-box {
-            width: 56px; 
-            height: 56px; 
-            flex-shrink: 0; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            background: #f5f5f5;
-        }
-        
-        .mp-img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-        }
-        
-        .mp-info { 
-            flex: 1; 
-            min-width: 0; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 4px; 
-        }
-        
-        .mp-name { 
-            font-size: 0.95rem; 
-            font-weight: 600; 
-            color: #1e293b; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            white-space: nowrap; 
-        }
-        
-        .mp-sub { 
-            font-size: 0.8rem; 
-            color: #8a4af3; 
-            background: #faf8ff; 
-            padding: 3px 8px; 
-            border-radius: 6px; 
-            width: max-content; 
-            font-weight: 500;
-        }
-
-        /* Silme İkonu (X) */
-        .mp-del {
-            width: 28px; 
-            height: 28px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            color: #959595; 
-            cursor: pointer; 
-            border-radius: 6px; 
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            background: #f8f9fa;
-        }
-        
-        .mp-del:hover { 
-            background: #ffebee; 
-            color: #ff4444; 
-        }
-
-        /* Alt Butonlar */
-        .mp-acts { 
-            display: flex; 
-            background: #fafafa; 
-            border-radius: 0 0 10px 10px; 
-            overflow: hidden; 
-            border-top: 1px solid #f0f0f0;
-        }
-        
-        .mp-btn {
-            flex: 1; 
-            border: none; 
-            background: transparent; 
-            padding: 10px 4px;
-            font-size: 0.85rem; 
-            font-weight: 600; 
-            cursor: pointer;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            gap: 4px; 
-            color: #555; 
-            transition: all 0.2s ease;
-            font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        .mp-btn-start { 
-            border-right: 1px solid #f0f0f0; 
-            color: #8a4af3; 
-        }
-        
-        .mp-btn-start:hover { 
-            background: #faf8ff; 
-            color: #8a4af3;
-        }
-        
-        .mp-btn-add { 
-            color: #02aee4; 
-        }
-        
-        .mp-btn-add:hover { 
-            background: #eaf5f9; 
-            color: #02aee4;
-        }
-        
-        .mp-btn-dis { 
-            background: #f5f5f5 !important; 
-            color: #ccc !important; 
-            cursor: not-allowed; 
-        }
-
-        .mp-hint-ok { 
-            font-size: 0.75rem; 
-            color: #5cae5c; 
-            font-weight: 500;
-        }
-        
-        .mp-hint-no { 
-            font-size: 0.75rem; 
-            color: #ff4444; 
-            font-weight: 500;
-        }
-
-        /* MODAL */
-        .mp-overlay {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.5); 
-            z-index: 10000;
-            display: none; 
-            align-items: center; 
-            justify-content: center;
-            backdrop-filter: blur(2px);
-        }
-        
-        .mp-modal {
-            background: #fff; 
-            width: 280px; 
-            padding: 24px;
-            border-radius: 15px; 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15); 
-            text-align: center;
-            font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        .mp-days { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-            margin-top: 20px; 
-            max-height: 250px; 
-            overflow-y: auto; 
-        }
-        
-        .mp-day-row {
-            background: #faf8ff; 
-            border: 1px solid #e2e8f0; 
-            padding: 12px;
-            border-radius: 8px; 
-            cursor: pointer; 
-            text-align: left; 
-            transition: 0.2s; 
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #1e293b;
-        }
-        
-        .mp-day-row:hover { 
-            background: #f1e9ff; 
-            border-color: #8a4af3; 
-            transform: translateY(-1px);
-        }
-    `;
-    document.head.appendChild(style);
-})();
-
-// ------------------------------------------------------
-// 2. MANTIK FONKSİYONLARI (Aynı kalacak)
-// ------------------------------------------------------
-
-// "Unknown Country" sorununu çözen fonksiyon
+// GRUP & LOKASYON TEMİZLEYİCİ
 function getCleanLocationName(place) {
-    let city = place.city;
-    let country = place.country;
-
+    let city = place.city, country = place.country;
     if (!city && place.address) {
         const parts = place.address.split(',').map(s => s.trim());
-        
         if (parts.length > 0) {
             const last = parts[parts.length - 1];
-            if (!/\d/.test(last)) {
-                country = last;
-            }
+            if (!/\d/.test(last)) country = last;
         }
-        
         if (parts.length > 1) {
             const secondLast = parts[parts.length - 2];
             city = secondLast.replace(/[0-9]/g, '').trim();
-        } else {
-            city = parts[0];
-        }
+        } else city = parts[0];
     }
-
     if (city && city.toLowerCase().includes('unknown')) city = "";
     if (country && country.toLowerCase().includes('unknown')) country = "";
-
-    if (city && country && city !== country) {
-        return `${city}, ${country}`;
-    } else if (city) {
-        return city;
-    } else if (country) {
-        return country;
-    } else {
-        return "Saved Places";
-    }
+    if (city && country && city !== country) return `${city}, ${country}`;
+    if (city) return city;
+    if (country) return country;
+    return "Saved Places";
 }
-
-// Gruplama
 function groupFavoritesClean(list) {
     const groups = {};
     list.forEach(item => {
@@ -372,31 +37,30 @@ function groupFavoritesClean(list) {
     });
     return groups;
 }
-
-// Mesafe Kontrol
+// Mesafe kontrol
 function checkDist(lat, lon) {
     if (!window.cart || window.cart.length === 0) return { ok: true, msg: "" };
     const valid = window.cart.filter(i => i.location && i.location.lat && i._type !== 'placeholder');
     if (valid.length === 0) return { ok: true, msg: "" };
-    
     const last = valid[valid.length - 1];
     if (typeof haversine !== 'function') return { ok: true, msg: "" };
-
     const m = haversine(Number(last.location.lat), Number(last.location.lng), Number(lat), Number(lon));
     const km = (m / 1000).toFixed(0);
-    
     if (m > 600000) return { ok: false, msg: `${km}km (Too far)` };
     return { ok: true, msg: `${km}km away` };
 }
 
-// Modal Toggle
+// ------ Modern Akordiyon Komponentleri
+window.toggleFavAccordion = function(header) {
+    const parent = header.closest('.fav-accordion');
+    parent.classList.toggle('open');
+};
 function openDayModal(callback) {
     let max = 1;
     if (window.cart && window.cart.length > 0) {
         max = Math.max(...window.cart.map(i => i.dailyIndex || 1));
     }
     if (max <= 1) { callback(1); return; }
-
     let el = document.getElementById('mp-modal-ov');
     if (!el) {
         el = document.createElement('div');
@@ -404,14 +68,10 @@ function openDayModal(callback) {
         el.className = 'mp-overlay';
         el.innerHTML = `
             <div class="mp-modal">
-                <h3 style="margin:0; font-size:16px; font-weight:600; color:#1e293b; margin-bottom:20px;">Add to which day?</h3>
+                <h3 style="margin:0; font-size:16px;">Add to which day?</h3>
                 <div class="mp-days" id="mp-days-list"></div>
                 <button onclick="document.getElementById('mp-modal-ov').style.display='none'" 
-                    style="margin-top:20px; border:none; background:none; color:#959595; cursor:pointer; font-size:0.9rem; padding:8px 16px; border-radius:8px; transition:0.2s;" 
-                    onmouseover="this.style.background='#f5f5f5'" 
-                    onmouseout="this.style.background='transparent'">
-                    Cancel
-                </button>
+                    style="margin-top:15px; border:none; background:none; color:#999; cursor:pointer;">Cancel</button>
             </div>`;
         document.body.appendChild(el);
     }
@@ -430,15 +90,7 @@ function openDayModal(callback) {
     el.style.display = 'flex';
 }
 
-// Akordiyon Tıklama İşleyicisi
-window.toggleMpGroup = function(header) {
-    const parent = header.parentElement;
-    parent.classList.toggle('open');
-};
-
-// ------------------------------------------------------
-// 3. RENDER (HTML OLUŞTURMA)
-// ------------------------------------------------------
+// --------- MAIN RENDER ---------
 async function renderFavoritePlacesPanel() {
     const panel = document.getElementById("favorite-places-panel");
     panel.innerHTML = "";
