@@ -510,7 +510,6 @@ if (document.readyState === 'loading') {
     observer.observe(chatContainer, { childList: true, subtree: true });
 }
 
-// Harita ve kamera fonksiyonları
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
@@ -521,7 +520,7 @@ window.showMap = function(element) {
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
-    stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = 'none'; });  
+    stepsElement.querySelectorAll('.info-icon-wrapper').forEach(el => { el.style.display = 'none'; });
     
     const lat = parseFloat(stepsElement.getAttribute('data-lat'));
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
@@ -540,18 +539,21 @@ window.showMap = function(element) {
         iframe.height = "235";
         iframe.frameBorder = "0";
         iframe.style.border = "0";
+        iframe.style.pointerEvents = "none";
         iframe.sandbox = "allow-scripts allow-same-origin";
         visualDiv.appendChild(iframe);
         
-        // Aktif ikonları ayarla
+        // Aktif ikonları ayarla - SADECE HARİTA İKONU AKTİF
         if (changeContainer) {
             const mapIcon = changeContainer.querySelector('span:nth-child(2)'); // Harita ikonu
             const cameraIcon = changeContainer.querySelector('span:nth-child(1)'); // Kamera ikonu
             
-            // Harita ikonunu aktif yap
-            if (mapIcon) mapIcon.classList.add('active');
-            // Kamera ikonunu pasif yap
+            // Önce hepsini temizle
             if (cameraIcon) cameraIcon.classList.remove('active');
+            if (mapIcon) mapIcon.classList.remove('active');
+            
+            // Sadece harita ikonunu aktif yap
+            if (mapIcon) mapIcon.classList.add('active');
         }
     } else {
         alert("Location not found.");
@@ -579,16 +581,21 @@ window.showImage = function(element) {
     stepsElement.querySelectorAll('.cats').forEach(el => {
         el.style.display = '';
     });
+    stepsElement.querySelectorAll('.info-icon-wrapper').forEach(el => {
+        el.style.display = '';
+    });
     
-    // Aktif ikonları ayarla
+    // Aktif ikonları ayarla - SADECE KAMERA İKONU AKTİF
     if (changeContainer) {
         const mapIcon = changeContainer.querySelector('span:nth-child(2)'); // Harita ikonu
         const cameraIcon = changeContainer.querySelector('span:nth-child(1)'); // Kamera ikonu
         
-        // Kamera ikonunu aktif yap
-        if (cameraIcon) cameraIcon.classList.add('active');
-        // Harita ikonunu pasif yap
+        // Önce hepsini temizle
+        if (cameraIcon) cameraIcon.classList.remove('active');
         if (mapIcon) mapIcon.classList.remove('active');
+        
+        // Sadece kamera ikonunu aktif yap
+        if (cameraIcon) cameraIcon.classList.add('active');
     }
 };
 
