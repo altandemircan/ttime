@@ -99,7 +99,16 @@ function generateStepHtml(step, day, category, idx = 0) {
 
         <div class="info day_cats item-info-view">
    
-            <div class="title" title="${name}">${name}</div>
+            <div class="title" title="${name}">
+                ${name}
+                ${website ? `<a href="${website}" target="_blank" style="display: inline-block; margin-left: 6px; vertical-align: middle;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #8a4af3;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        <path d="M2 12h20"></path>
+                    </svg>
+                </a>` : ''}
+            </div>
             
             <div class="address">
                 <img src="img/address_icon.svg">
@@ -124,11 +133,6 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <span onclick="window.showMap && window.showMap(this)">
                     <img src="img/map_icon.svg">
                 </span>
-                ${website ? `
-                <span onclick="window.open('${website}', '_blank')">
-                    <img src="img/website_link.svg" title="${website}">
-                </span>
-                ` : ''}
             </div>
             
             <div class="trip-action-group">
@@ -145,7 +149,7 @@ function generateStepHtml(step, day, category, idx = 0) {
     </div>`;
 }
 
-// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ (RENK GÜNCELLENDİ)
+// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
@@ -209,13 +213,13 @@ function injectDropdownStyles() {
 
         /* --- ADD MODU (MOR TASARIM) --- */
         .trip-action-group .action-btn.btn-add {
-            background-color: #8a4af3; /* İSTENİLEN RENK */
-            color: #ffffff;            /* BEYAZ YAZI */
-            border-left: 1px solid rgba(255,255,255,0.2); /* Hafif ayraç */
+            background-color: #8a4af3;
+            color: #ffffff;
+            border-left: 1px solid rgba(255,255,255,0.2);
         }
         
         .trip-action-group .action-btn.btn-add:hover {
-            background-color: #7b42db; /* Hover: Hafif koyu mor */
+            background-color: #7b42db;
         }
 
         /* İkonu Beyaz Yapmak İçin Filtre */
@@ -242,7 +246,6 @@ function injectDropdownStyles() {
                 color: #e0e0e0;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             }
-            /* Dark modda Add butonu parlak kalsın veya hafif koyulabilir */
             .trip-action-group .action-btn.btn-add {
                 background-color: #8a4af3; 
                 color: white;
