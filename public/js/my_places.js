@@ -441,112 +441,81 @@ window.toggleMpGroup = function(header) {
 // ------------------------------------------------------
 async function renderFavoritePlacesPanel() {
     const panel = document.getElementById("favorite-places-panel");
-    if (!panel) return;
     panel.innerHTML = "";
 
     const list = window.favTrips || [];
     if (list.length === 0) {
-        panel.innerHTML = `<div style="text-align:center;padding:30px;color:#959595;font-size:0.9rem;background:#faf8ff;border-radius:10px;margin:20px 0;">No saved places yet.</div>`;
+        panel.innerHTML = `<div class="mytrips-empty">No saved places.</div>`;
         return;
     }
-
     const groups = groupFavoritesClean(list);
 
     Object.entries(groups).forEach(([key, items], idx) => {
-        const group = document.createElement("div");
-        group.className = "mp-group";
-        if (idx === 0) group.classList.add('open');
-
-        const head = document.createElement("div");
-        head.className = "mp-group-header";
-        head.onclick = function() { toggleMpGroup(this); };
-        head.innerHTML = `
-            <div class="mp-group-title">
-                ${key} <span class="mp-badge">${items.length}</span>
-            </div>
-            <div class="mp-arrow">▼</div>
+        // ---- Başlık kutusu
+        const groupBox = document.createElement("div");
+        groupBox.style.marginBottom = "30px";
+        
+        // Gün başlığı
+        const dayHeader = document.createElement("div");
+        dayHeader.className = "day-header";
+        dayHeader.innerHTML = `
+            <span class="title-container" style="font-size:1.2rem;">
+              ${key}
+            </span>
         `;
 
-        const content = document.createElement("div");
-        content.className = "mp-content";
-        const wrapper = document.createElement("div");
-        wrapper.className = "mp-list-wrap";
+        // + Altındaki Liste (her biri = modern travel-item)
+        const ul = document.createElement("ul");
+        ul.className = "day-list"; // veya "accordion-list day-list" gibi birleştir
+        
+        items.forEach((place, i) => {
+            const li = document.createElement("li");
+            li.className = "travel-item"; // radius, shadow, bg hazır geliyor
 
-        items.forEach(place => {
-            const st = checkDist(place.lat, place.lon);
-            
-            const card = document.createElement("div");
-            card.className = "mp-card";
-            
-            card.innerHTML = `
-                <div class="mp-head">
-                    <div class="mp-img-box">
-                        <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
-                    </div>
-                    <div class="mp-info">
-                        <div class="mp-name" title="${place.name}">${place.name}</div>
-                        <div class="mp-sub">${place.category || 'Place'}</div>
-                    </div>
-                </div>
-            `;
-            
-            const del = document.createElement("div");
-            del.className = "mp-del";
-            del.innerHTML = "✕";
-            del.onclick = (e) => {
-                e.stopPropagation();
-                if(confirm(`Remove "${place.name}"?`)) {
-                    const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
-                    if (delIdx > -1) {
-                        window.favTrips.splice(delIdx, 1);
-                        saveFavTrips();
-                        renderFavoritePlacesPanel();
-                        if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
-                    }
-                }
-            };
-            card.querySelector('.mp-head').appendChild(del);
+            // Numara yuvarlak
+            const marker = `
+              <span class="custom-marker-outer" style="background:#d32f2f;width:34px;height:34px;box-shadow:0 2px 8px #0001;">
+                <span class="custom-marker-label" style="font-size:1.12em;">${i+1}</span>
+              </span>`;
 
-            const acts = document.createElement("div");
-            acts.className = "mp-acts";
+            // Kategori ikonu
+            const categoryIcon = place.icon ? `<img src="${place.icon}" class="category-icon" />` : "";
 
-            const b1 = document.createElement("button");
-            b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<span>▶ Start New</span>`;
-            b1.onclick = () => startNewTripWithPlace(place);
+            // Sol küçük foto
+            const img = `<img src="${place.image||'img/placeholder.png'}" class="cart-item" style="margin-right:0;width:48px;height:48px;border-radius:11px;object-fit:cover;">`;
 
-            const b2 = document.createElement("button");
-            b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
-            b2.innerHTML = `<span>+ Add Trip</span> <span class="${st.ok ? 'mp-hint-ok' : 'mp-hint-no'}">${st.msg}</span>`;
-            
-            if (st.ok) {
-                b2.onclick = () => {
-                    openDayModal((d) => {
-                        if (typeof addToCart === "function") {
-                            addToCart(
-                                place.name, place.image, d, place.category,
-                                place.address || "", null, null, place.opening_hours || "", null,
-                                { lat: Number(place.lat), lng: Number(place.lon) }, place.website || ""
-                            );
-                            if (typeof updateCart === "function") updateCart();
-                            renderFavoritePlacesPanel();
-                        }
-                    });
-                };
-            } else {
-                b2.title = "Too far";
+            // Sağ ok
+            const arrow = `<span class="arrow" style="margin-left:auto;"><img src="img/arrow-right.svg" style="width:20px;height:20px;opacity:0.45;"></span>`;
+
+            // Mesafe barı (altı)
+            let distanceRow = '';
+            if (place.distanceKm && place.durationMin) {
+                distanceRow = `
+                  <div class="distance-label" style="font-size:0.95em;color:#888;margin-top:8px;display:flex;gap:18px;align-items:center;">
+                      <img src="img/bike.svg" style="width:18px;height:18px;opacity:0.55;"> 
+                      ${place.distanceKm} km • ${place.durationMin} min
+                  </div>
+                `;
             }
 
-            acts.appendChild(b1);
-            acts.appendChild(b2);
-            card.appendChild(acts);
-            
-            wrapper.appendChild(card);
+            li.innerHTML = `
+              <div class="cart-item" style="gap:15px;align-items:center;">
+                ${marker}
+                ${img}
+                <span class="trip-title" style="font-weight:700;font-size:1.1em;color:#355;">
+                  ${categoryIcon}
+                  ${place.name}
+                </span>
+                ${arrow}
+              </div>
+              ${distanceRow}
+            `.replace(/\s{2,}/g, " "); // fazla whitespace sil
+
+            ul.appendChild(li);
         });
 
-        content.appendChild(wrapper);
-        group.appendChild(head);
-        group.appendChild(content);
-        panel.appendChild(group);
+        groupBox.appendChild(dayHeader);
+        groupBox.appendChild(ul);
+        panel.appendChild(groupBox);
     });
 }
