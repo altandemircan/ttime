@@ -2346,59 +2346,7 @@ function addChatResultsToCart() {
         }
     });
 }
-window.showMap = function(element) {
-    const stepsElement = element.closest('.steps');
-    const visualDiv = stepsElement.querySelector('.visual');
-    const image = visualDiv.querySelector('img.check');
-    
-    // Diğer elementleri gizle
-    ['geoapify-tags-section', 'fav-heart', 'cats', 'info-icon-wrapper', '.visual.img'].forEach(selector => {
-        stepsElement.querySelectorAll(selector).forEach(el => el.style.display = 'none');
-    });
-    
-    const lat = parseFloat(stepsElement.getAttribute('data-lat'));
-    const lon = parseFloat(stepsElement.getAttribute('data-lon'));
-    
-    if (!isNaN(lat) && !isNaN(lon)) {
-        // Eski iframe'i kaldır
-        const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
-        if (oldIframe) oldIframe.remove();
-        if (image) image.style.display = "none";
-        
-        // SADECE GÖRÜNTÜ IFRAME'I
-        const iframe = document.createElement('iframe');
-        iframe.className = 'leaflet-mini-map';
-        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}`;
-        iframe.width = "100%";
-        iframe.height = "235";
-        iframe.frameBorder = "0";
-        iframe.style.border = "0";
-        iframe.style.pointerEvents = "none"; // TIKLAMA YOK
-        iframe.sandbox = "allow-scripts allow-same-origin";
-        visualDiv.appendChild(iframe);
-    }
-};
 
-window.showImage = function(element) {
-    const stepsElement = element.closest('.steps');
-    const visualDiv = stepsElement.querySelector('.visual');
-    const image = visualDiv.querySelector('img.check');
-    // DÜZELTME: Doğru class ile iframe'i kaldır!
-    const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
-    if (iframe) iframe.remove();
-    if (image) image.style.display = '';
-
-    // TAG, FAV ve CATS bölümlerini GERİ GETİR
-    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
-        el.style.display = '';
-    });
-    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
-        el.style.display = '';
-    });
-    stepsElement.querySelectorAll('.cats').forEach(el => {
-        el.style.display = '';
-    });
-};
     // --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
 function addActive(x) {
     if (!x) return false;
