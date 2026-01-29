@@ -9,7 +9,7 @@ function saveFavTrips() {
 }
 
 // ------------------------------------------------------
-// 1. CSS: updateCart tasarımına uygun hale getirilmiş
+// 1. CSS: Yumuşak renkler, yan yana butonlar
 // ------------------------------------------------------
 (function addSafeStyles() {
     const styleId = 'mp-accordion-final';
@@ -24,37 +24,37 @@ function saveFavTrips() {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
+            box-shadow: rgba(149, 157, 165, 0.08) 0px 4px 12px;
             transition: all 0.3s ease;
         }
 
         .mp-group:hover {
-            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-            border-color: #8a4af3;
+            box-shadow: rgba(149, 157, 165, 0.12) 0px 6px 16px;
+            border-color: #e2e8f0;
         }
 
         /* Başlık Kısmı */
         .mp-group-header {
             padding: 14px 16px;
-            background: #faf8ff;
+            background: #fafafc;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
             user-select: none;
-            border-bottom: 1px solid transparent;
+            border-bottom: 1px solid #f0f2f5;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         
         .mp-group-header:hover { 
-            background: #f1e9ff; 
+            background: #f5f7fa; 
         }
 
         /* Başlık Yazısı */
         .mp-group-title {
             font-size: 0.95rem; 
             font-weight: 600; 
-            color: #8a4af3;
+            color: #4a5568;
             display: flex; 
             align-items: center; 
             gap: 10px;
@@ -64,16 +64,17 @@ function saveFavTrips() {
         .mp-badge {
             font-size: 0.8rem; 
             font-weight: 600; 
-            color: #ffffff;
-            background: #8a4af3; 
+            color: #718096;
+            background: #edf2f7; 
             padding: 2px 8px; 
             border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
 
         /* Ok İkonu */
         .mp-arrow {
             font-size: 0.9rem; 
-            color: #8a4af3;
+            color: #a0aec0;
             transition: transform 0.3s ease;
             width: 16px;
             height: 16px;
@@ -112,40 +113,40 @@ function saveFavTrips() {
             gap: 12px; 
         }
 
-        /* --- KART YAPISI (updateCart tasarımına benzer) --- */
+        /* --- KART YAPISI --- */
         .mp-card {
             background: #fff; 
             border: 1px solid #e2e8f0; 
             border-radius: 10px;
-            box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
+            box-shadow: rgba(149, 157, 165, 0.05) 0px 2px 8px;
             transition: all 0.3s ease;
             overflow: hidden;
         }
 
         .mp-card:hover {
-            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-            border-color: #8a4af3;
-            transform: translateY(-2px);
+            box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
+            border-color: #d0d7e2;
         }
 
+        /* Kart Üst Kısmı */
         .mp-card-head {
             display: flex; 
             padding: 12px; 
             gap: 12px; 
-            align-items: center;
-            border-bottom: 1px solid #f9f9f9; 
+            align-items: flex-start;
             position: relative;
             background: #fff;
         }
         
-        /* Resim kutusu - updateCart'taki cart-image gibi */
+        /* Resim kutusu */
         .mp-img-box {
-            width: 60px; 
+            width: 56px; 
             height: 40px; 
             flex-shrink: 0; 
             border-radius: 8px; 
             overflow: hidden; 
-            background: #f5f5f5;
+            background: #f7f9fc;
+            border: 1px solid #edf2f7;
         }
         
         .mp-img { 
@@ -159,55 +160,62 @@ function saveFavTrips() {
             min-width: 0; 
             display: flex; 
             flex-direction: column; 
-            gap: 4px; 
+            gap: 6px; 
         }
         
         .mp-name { 
             font-size: 0.95rem; 
             font-weight: 600; 
-            color: #1e293b; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            white-space: nowrap; 
+            color: #2d3748; 
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
         
-        /* Kategori etiketi - cats sınıfını kullan */
+        /* Kategori etiketi */
         .mp-cats {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #faf8ff;
-            color: #8a4af3;
-            padding: 4px 8px;
+            background: #f8fafc;
+            color: #4a5568;
+            padding: 4px 10px;
             border-radius: 6px;
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 500;
             border: 1px solid #e2e8f0;
+            width: fit-content;
         }
         
         .mp-cats img {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
+            opacity: 0.7;
         }
 
-        /* Favori butonu - updateCart'taki gibi */
+        /* Favori butonu - SAĞDA */
         .mp-fav-btn {
-            width: 28px;
-            height: 28px;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            border-radius: 6px;
-            background: #f8f9fa;
+            border-radius: 8px;
+            background: #f8fafc;
             border: 1px solid #e2e8f0;
             transition: all 0.2s ease;
-            margin-left: 8px;
         }
         
         .mp-fav-btn:hover {
-            background: #f1e9ff;
-            border-color: #8a4af3;
+            background: #f1f5f9;
+            border-color: #cbd5e0;
         }
         
         .mp-fav-btn img {
@@ -215,13 +223,13 @@ function saveFavTrips() {
             height: 16px;
         }
 
-        /* Alt Butonlar - KOYU RENKLİ */
+        /* Alt Butonlar - YAN YANA, AYNI BOYUT */
         .mp-acts { 
             display: flex; 
-            background: #fafafa; 
+            background: #fafcfd; 
             border-radius: 0 0 10px 10px; 
             overflow: hidden; 
-            border-top: 1px solid #f0f0f0;
+            border-top: 1px solid #edf2f7;
         }
         
         .mp-btn {
@@ -235,47 +243,63 @@ function saveFavTrips() {
             align-items: center; 
             justify-content: center;
             gap: 6px; 
-            color: #ffffff; 
+            color: #4a5568; 
             transition: all 0.2s ease;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: transparent;
         }
         
-        /* KOYU MOR buton */
+        /* YUMUŞAK MOR buton */
         .mp-btn-start { 
-            background: #8a4af3; 
-            border-right: 1px solid rgba(255,255,255,0.2); 
+            background: #f5f3ff; 
+            border-right: 1px solid #edf2f7; 
+            color: #7c3aed;
         }
         
         .mp-btn-start:hover { 
-            background: #7a3ae3; 
+            background: #ede9fe; 
+            color: #6d28d9;
         }
         
-        /* KOYU MAVİ buton */
+        /* YUMUŞAK MAVİ buton */
         .mp-btn-add { 
-            background: #02aee4; 
+            background: #eff6ff; 
+            color: #3b82f6;
         }
         
         .mp-btn-add:hover { 
-            background: #029ed4; 
+            background: #dbeafe; 
+            color: #2563eb;
         }
         
         .mp-btn-dis { 
-            background: #cccccc !important; 
-            color: #888888 !important; 
+            background: #f7fafc !important; 
+            color: #a0aec0 !important; 
             cursor: not-allowed; 
         }
 
         .mp-hint-ok { 
             font-size: 0.75rem; 
-            color: #ffffff;
-            opacity: 0.9;
+            color: #48bb78;
             margin-left: 4px;
+            font-weight: 500;
         }
         
         .mp-hint-no { 
             font-size: 0.75rem; 
-            color: #ffcccc; 
+            color: #f56565; 
             margin-left: 4px;
+            font-weight: 500;
+        }
+
+        /* Mesafe bilgisi */
+        .mp-distance-info {
+            font-size: 0.75rem;
+            color: #718096;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         /* MODAL */
@@ -285,7 +309,7 @@ function saveFavTrips() {
             left: 0; 
             width: 100%; 
             height: 100%;
-            background: rgba(0,0,0,0.5); 
+            background: rgba(0,0,0,0.4); 
             z-index: 10000;
             display: none; 
             align-items: center; 
@@ -297,8 +321,8 @@ function saveFavTrips() {
             background: #fff; 
             width: 280px; 
             padding: 24px;
-            border-radius: 15px; 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15); 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1); 
             text-align: center;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
@@ -313,7 +337,7 @@ function saveFavTrips() {
         }
         
         .mp-day-row {
-            background: #faf8ff; 
+            background: #f8fafc; 
             border: 1px solid #e2e8f0; 
             padding: 12px;
             border-radius: 8px; 
@@ -322,20 +346,19 @@ function saveFavTrips() {
             transition: 0.2s; 
             font-size: 0.9rem;
             font-weight: 500;
-            color: #1e293b;
+            color: #4a5568;
         }
         
         .mp-day-row:hover { 
-            background: #f1e9ff; 
-            border-color: #8a4af3; 
-            transform: translateY(-1px);
+            background: #edf2f7; 
+            border-color: #cbd5e0; 
         }
     `;
     document.head.appendChild(style);
 })();
 
 // ------------------------------------------------------
-// 2. MANTIK FONKSİYONLARI (Aynı kalacak)
+// 2. MANTIK FONKSİYONLARI
 // ------------------------------------------------------
 
 // "Unknown Country" sorununu çözen fonksiyon
@@ -417,12 +440,12 @@ function openDayModal(callback) {
         el.className = 'mp-overlay';
         el.innerHTML = `
             <div class="mp-modal">
-                <h3 style="margin:0; font-size:16px; font-weight:600; color:#1e293b; margin-bottom:20px;">Add to which day?</h3>
+                <h3 style="margin:0; font-size:16px; font-weight:600; color:#2d3748; margin-bottom:20px;">Add to which day?</h3>
                 <div class="mp-days" id="mp-days-list"></div>
                 <button onclick="document.getElementById('mp-modal-ov').style.display='none'" 
-                    style="margin-top:20px; border:none; background:none; color:#959595; cursor:pointer; font-size:0.9rem; padding:8px 16px; border-radius:8px; transition:0.2s;" 
-                    onmouseover="this.style.background='#f5f5f5'" 
-                    onmouseout="this.style.background='transparent'">
+                    style="margin-top:20px; border:none; background:#f7fafc; color:#718096; cursor:pointer; font-size:0.9rem; padding:8px 16px; border-radius:8px; transition:0.2s;" 
+                    onmouseover="this.style.background='#edf2f7'" 
+                    onmouseout="this.style.background='#f7fafc'">
                     Cancel
                 </button>
             </div>`;
@@ -467,7 +490,7 @@ function getCategoryIcon(category) {
 }
 
 // ------------------------------------------------------
-// 3. RENDER (updateCart benzeri HTML oluşturma)
+// 3. RENDER - Yumuşak renkler, yan yana butonlar
 // ------------------------------------------------------
 async function renderFavoritePlacesPanel() {
     const panel = document.getElementById("favorite-places-panel");
@@ -476,7 +499,7 @@ async function renderFavoritePlacesPanel() {
 
     const list = window.favTrips || [];
     if (list.length === 0) {
-        panel.innerHTML = `<div style="text-align:center;padding:30px;color:#959595;font-size:0.9rem;background:#faf8ff;border-radius:10px;margin:20px 0;">No saved places yet.</div>`;
+        panel.innerHTML = `<div style="text-align:center;padding:30px;color:#a0aec0;font-size:0.9rem;background:#f8fafc;border-radius:10px;margin:20px 0;border:1px dashed #e2e8f0;">No saved places yet.</div>`;
         return;
     }
 
@@ -509,7 +532,7 @@ async function renderFavoritePlacesPanel() {
             const card = document.createElement("div");
             card.className = "mp-card";
             
-            // updateCart'taki item yapısına benzer şekilde oluştur
+            // Kart oluştur
             card.innerHTML = `
                 <div class="mp-card-head">
                     <div class="mp-img-box">
@@ -521,11 +544,12 @@ async function renderFavoritePlacesPanel() {
                             <img src="${getCategoryIcon(place.category)}" alt="${place.category}">
                             ${place.category || 'Place'}
                         </div>
+                        ${st.msg ? `<div class="mp-distance-info">📍 ${st.msg}</div>` : ''}
                     </div>
                 </div>
             `;
             
-            // Favori butonu - like_on/like_off kullan
+            // Favori butonu - SAĞ ÜST KÖŞEDE
             const favBtn = document.createElement("button");
             favBtn.className = "mp-fav-btn";
             favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
@@ -544,17 +568,17 @@ async function renderFavoritePlacesPanel() {
             };
             card.querySelector('.mp-card-head').appendChild(favBtn);
 
-            // Alt butonlar - KOYU RENKLİ
+            // Alt butonlar - YAN YANA, AYNI BOYUT
             const acts = document.createElement("div");
             acts.className = "mp-acts";
 
-            // Start New Trip butonu - KOYU MOR
+            // Start New Trip butonu - YUMUŞAK MOR
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
             b1.innerHTML = `<img src="img/start_icon.svg" style="width:16px;height:16px;"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
-            // Add to Trip butonu - KOYU MAVİ
+            // Add to Trip butonu - YUMUŞAK MAVİ
             const b2 = document.createElement("button");
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
