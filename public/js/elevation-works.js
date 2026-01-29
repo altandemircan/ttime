@@ -491,17 +491,19 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // Loading UI
+// Loading UI
 let track = container.querySelector('.scale-bar-track');
 if (!track) {
   container.innerHTML = `
     <div class="scale-bar-track loading">
-      <div class="tt-scale-loader">
+      <div class="tt-scale-loader" style="display: flex !important;">
         <div class="spinner"></div>
         <div>Loading elevation</div>
       </div>
     </div>
   `;
   track = container.querySelector('.scale-bar-track');
+  console.log("✅ Track oluşturuldu, spinner var mı?", track.querySelector('.spinner'));
 }
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
