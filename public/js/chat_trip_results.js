@@ -262,8 +262,8 @@ function injectDropdownStyles() {
         }
 
         .item_action .change span.active {
-            background: #8a4af3 !important;
-            border-color: #8a4af3 !important;
+            background: #12a5e8 !important;
+            border-color: #12a5e8 !important;
         }
 
         .item_action .change span.active img {
