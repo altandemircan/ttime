@@ -2352,13 +2352,7 @@ window.showMap = function(element) {
     const image = visualDiv.querySelector('img.check');
     
     // Diğer elementleri gizle
-    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { 
-        el.style.display = 'none'; 
-    });
-    stepsElement.querySelectorAll('.fav-heart').forEach(el => { 
-        el.style.display = 'none'; 
-    });
-    stepsElement.querySelectorAll('.cats').forEach(el => { 
+    stepsElement.querySelectorAll('.geoapify-tags-section, .fav-heart, .cats, .info-icon-wrapper').forEach(el => { 
         el.style.display = 'none'; 
     });
     
@@ -2372,12 +2366,13 @@ window.showMap = function(element) {
         
         if (image) image.style.display = "none";
         
-        // Yeni iframe oluştur
+        // Yeni iframe oluştur - CACHE ÖNLEMEK İÇİN TIMESTAMP
+        const timestamp = Date.now();
         const iframe = document.createElement('iframe');
         iframe.className = 'leaflet-mini-map';
-        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}&t=${Date.now()}`; // Cache önlemek için timestamp
+        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}&t=${timestamp}&z=16`;
         
-        // CSS stilini düzelt
+        // IFRAME STİLİ - KESİN BOYUT
         iframe.style.cssText = `
             width: 100%;
             height: 235px;
@@ -2386,41 +2381,33 @@ window.showMap = function(element) {
             background: #f8f9fa;
             border-radius: 8px;
             overflow: hidden;
+            position: relative;
         `;
         
         iframe.sandbox = "allow-scripts allow-same-origin";
-        iframe.loading = "eager"; // Daha hızlı yüklenmesi için
         
-        // Iframe yüklendiğinde
+        // IFRAME YÜKLENDİĞİNDE MARKER SABİT KALSIN
         iframe.onload = function() {
-            console.log('Map iframe loaded');
-            
-            // Ekstra bir güvenlik için iframe içindeki haritayı yeniden boyutlandır
+            // IFRAME İÇİNDEKİ HARİTAYA MESAJ GÖNDER
             setTimeout(() => {
                 try {
                     iframe.contentWindow.postMessage({
-                        type: 'resize',
-                        height: '235px'
+                        type: 'centerMarker',
+                        lat: lat,
+                        lon: lon
                     }, '*');
                 } catch(e) {
-                    console.log('Could not communicate with iframe');
+                    // MESAJ GÖNDERİLEMEZSE SORUN DEĞİL
                 }
-            }, 200);
+            }, 100);
         };
         
         visualDiv.appendChild(iframe);
         
-        // Iframe mesajlarını dinle
-        window.addEventListener('message', function handleMapMessage(event) {
-            if (event.data && event.data.type === 'mapReady') {
-                console.log('Map is ready inside iframe');
-            }
-        });
-        
     } else {
         alert("Location not found.");
     }
-};
+};;
 
 window.showImage = function(element) {
     const stepsElement = element.closest('.steps');
