@@ -1057,7 +1057,7 @@ ease;
     border-radius: 18px 18px 0 0;
     border: none;
 }
-.g
+
 
 .change {
     display: flex; 
@@ -1078,7 +1078,6 @@ ease;
     align-content: center;
     justify-content: center;
     align-items: center;
-    background: #ffffff70;
     border-radius: 16px;
 }
 
@@ -3965,8 +3964,8 @@ ease;
 .change {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 12px;
-    align-items: center;
+    gap: 8px 4px;
+    align-items: center;;
 }
 .change .info-item {
     display: inline-flex;
