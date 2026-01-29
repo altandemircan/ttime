@@ -6279,6 +6279,13 @@ border-bottom:1px solid #ddd;
   border-radius: 50% !important;
   animation: ttSpinnerGlobal 0.8s linear infinite !important;
   margin: 0 auto !important;
+  position: relative;
+  z-index: 10000 !important;
+}
+
+.tt-scale-loader {
+  position: relative;
+  z-index: 10001 !important;
 }
 
 @keyframes ttSpinnerGlobal {
