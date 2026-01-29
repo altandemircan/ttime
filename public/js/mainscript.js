@@ -9116,7 +9116,7 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
         <button class="remove-marker-btn" data-day="${day}" data-idx="${idx}" style="font-size: 0.8rem !important">Remove place</button>
       </div>
     `, {
-        offset: [0, -20] //
+        offset: [0, -20], //
       autoClose: false,
       closeButton: true,
       autoPan: false // Popup açılınca harita kaymasın
