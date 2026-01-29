@@ -61,11 +61,6 @@ function generateStepHtml(step, day, category, idx = 0) {
     // JSON verisini güvenli sakla
     const stepJson = encodeURIComponent(JSON.stringify(step));
 
-    // Title için truncate fonksiyonu (sığmazsa ... koy)
-    const truncateTitle = (text, maxLength = 50) => {
-        return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
-    };
-
     return `
     <div class="steps" data-day="${targetDay}" data-category="${category}" data-lat="${lat}" data-lon="${lon}" 
          data-step="${stepJson}">
@@ -104,18 +99,7 @@ function generateStepHtml(step, day, category, idx = 0) {
 
         <div class="info day_cats item-info-view">
    
-            <div class="title-wrapper">
-                <div class="title" title="${name}">${truncateTitle(name)}</div>
-                ${website ? `
-                <a class="website-link-icon" href="${website}" target="_blank" title="Website: ${website}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                        <path d="M2 12h20"></path>
-                    </svg>
-                </a>
-                ` : ''}
-            </div>
+            <div class="title" title="${name}">${name}</div>
             
             <div class="address">
                 <img src="img/address_icon.svg">
@@ -140,6 +124,11 @@ function generateStepHtml(step, day, category, idx = 0) {
                 <span onclick="window.showMap && window.showMap(this)">
                     <img src="img/map_icon.svg">
                 </span>
+                ${website ? `
+                <span onclick="window.open('${website}', '_blank')">
+                    <img src="img/website_link.svg" title="${website}">
+                </span>
+                ` : ''}
             </div>
             
             <div class="trip-action-group">
@@ -156,55 +145,10 @@ function generateStepHtml(step, day, category, idx = 0) {
     </div>`;
 }
 
-// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ (RENK GÜNCELLENDİ + RESPONSİV)
+// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ (RENK GÜNCELLENDİ)
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        /* === TITLE WRAPPER (Title + Website Link) === */
-        .title-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: #333;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: 1;
-        }
-
-        .website-link-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            padding: 4px;
-            color: #8a4af3;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-        }
-
-        .website-link-icon:hover {
-            color: #7b42db;
-            transform: scale(1.1);
-        }
-
-        .website-link-icon svg {
-            width: 100%;
-            height: 100%;
-            stroke: currentColor;
-        }
-
         /* === BÜTÜNLEŞİK AKSİYON GRUBU === */
         .trip-action-group {
             display: inline-flex;
@@ -216,8 +160,6 @@ function injectDropdownStyles() {
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
             margin-left: auto;
-            flex-wrap: wrap;
-            gap: 0;
         }
 
         .trip-action-group:hover {
@@ -243,7 +185,6 @@ function injectDropdownStyles() {
             padding-right: 16px;
             margin-right: 4px;
             font-family: inherit;
-            min-width: 70px;
         }
 
         .trip-action-group select:hover {
@@ -264,7 +205,6 @@ function injectDropdownStyles() {
             outline: none;
             height: 100%;
             font-family: inherit;
-            white-space: nowrap;
         }
 
         /* --- ADD MODU (MOR TASARIM) --- */
@@ -293,75 +233,24 @@ function injectDropdownStyles() {
             background-color: #ffe8e6;
         }
 
-        /* === RESPONSIVE TASARIM === */
-        @media (max-width: 768px) {
-            .trip-action-group {
-                flex-direction: row;
-                gap: 0;
-                width: 100%;
-            }
-
-            .trip-action-group select {
-                flex: 1;
-                min-width: 0;
-                margin-right: 0;
-                border-right: 1px solid #e0e0e0;
-            }
-
-            .trip-action-group .action-btn {
-                flex: 1;
-                justify-content: center;
-                padding: 8px 6px;
-                font-size: 0.75rem;
-            }
-
-            .trip-action-group .action-btn span {
-                display: none;
-            }
-
-            .trip-action-group .action-btn img,
-            .trip-action-group .action-btn svg {
-                width: 16px;
-                height: 16px;
-            }
-        }
-
         @media (prefers-color-scheme: dark) {
             .trip-action-group {
                 background: #2a2a2a;
                 border-color: #444;
             }
-            
-            .title {
-                color: #e0e0e0;
-            }
-
             .trip-action-group select {
                 color: #e0e0e0;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             }
-            
-            .trip-action-group select:hover {
-                background-color: #333;
-            }
-
+            /* Dark modda Add butonu parlak kalsın veya hafif koyulabilir */
             .trip-action-group .action-btn.btn-add {
                 background-color: #8a4af3; 
                 color: white;
             }
-
-            .trip-action-group .action-btn.btn-remove {
+             .trip-action-group .action-btn.btn-remove {
                 background-color: #3e2a2a;
                 color: #ef5350;
                 border-left-color: #444;
-            }
-
-            .website-link-icon {
-                color: #8a4af3;
-            }
-
-            .website-link-icon:hover {
-                color: #a85dff;
             }
         }
     `;
