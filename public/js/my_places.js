@@ -216,14 +216,6 @@ async function renderFavoritePlacesPanel() {
         return;
     }
 
-    // Verileri hazırla (resim vb. kontrolü)
-    for (let place of favList) {
-        if (!place.image || place.image === "img/placeholder.png") {
-           // Resim yoksa placeholder kalabilir veya async fetch yapılabilir
-           // (Burada basit tutuyoruz)
-        }
-    }
-
     const grouped = groupFavoritesByCountryCity(favList);
 
     Object.entries(grouped).forEach(([locationKey, places]) => {
@@ -235,8 +227,13 @@ async function renderFavoritePlacesPanel() {
         ul.style = "list-style:none;padding:0;margin:0;";
 
         places.forEach((place, i) => {
+            // --- 1. MESAFE KONTROLÜ ---
+            const check = isPlaceAddableToCurrentTrip(place.lat, place.lon);
+            const isDimmed = !check.canAdd; // Uzaksa hafif soluk yap
+
             const li = document.createElement("li");
-            li.className = "fav-item";
+            li.className = `fav-item ${isDimmed ? 'dimmed' : ''}`;
+            // Stilini CSS class'ına taşıdık ama inline override gerekebilir
             li.style = "margin-bottom:12px;background:#f8f9fa;border-radius:12px;box-shadow:0 1px 6px #e3e3e3;padding:9px 12px;display:flex;align-items:center;gap:16px;min-width:0;";
 
             const imgDiv = document.createElement("div");
@@ -249,64 +246,76 @@ async function renderFavoritePlacesPanel() {
 
             const infoDiv = document.createElement("div");
             infoDiv.style = "flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;";
+            
+            // Eğer eklenemiyorsa altına küçük uyarı ekle
+            const warningHtml = isDimmed ? `<span class="dist-warning">⚠️ ${check.reason}</span>` : '';
+
             infoDiv.innerHTML = `
                 <span style="font-weight:500;font-size:15px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.name}</span>
-                <span style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${place.address || ""}</span>
                 <span style="font-size:11px;color:#1976d2;background:#e3e8ff;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:2px;width:max-content;text-overflow:ellipsis;overflow:hidden;">${place.category || ""}</span>
+                ${warningHtml}
             `;
 
             const btnDiv = document.createElement("div");
-            btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:7px;";
+            btnDiv.style = "display:flex;flex-direction:row;align-items:center;gap:6px;";
 
-            // SEPETE EKLE BUTONU (+)
-            const addBtn = document.createElement("button");
-            addBtn.className = "add-fav-to-trip-btn";
-            addBtn.title = "Add to trip";
-            addBtn.style = "width:32px;height:32px;background:#1976d2;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
-            addBtn.textContent = "+";
-            
-            addBtn.onclick = function() {
-                if (typeof addToCart === "function") {
-                    addToCart(
-                        place.name,
-                        place.image,
-                        window.currentDay || 1,
-                        place.category,
-                        place.address || "",
-                        null, null, place.opening_hours || "",
-                        null,
-                        place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
-                        place.website || ""
-                    );
-                }
-                if (typeof updateCart === "function") updateCart();
-                
-                // Mobilde paneli kapatma mantığı
-                const overlay = document.getElementById('sidebar-overlay-favorite-places');
-                if (overlay) overlay.classList.remove('open');
-                if (window.toggleSidebar) window.toggleSidebar('sidebar-overlay-trip');
+            // --- BUTON 1: START NEW TRIP (Roket) ---
+            const startBtn = document.createElement("button");
+            startBtn.className = "fav-action-btn btn-start-new";
+            startBtn.title = "Start a NEW trip with this place";
+            startBtn.innerHTML = "🚀"; // Veya bir SVG ikon
+            startBtn.onclick = function() {
+                startNewTripWithPlace(place);
             };
 
-            // FAVORİDEN SİL BUTONU (-)
+            // --- BUTON 2: ADD TO CURRENT (+) ---
+            const addBtn = document.createElement("button");
+            addBtn.className = `fav-action-btn btn-add-current ${isDimmed ? 'disabled' : ''}`;
+            addBtn.title = isDimmed ? `Cannot add: ${check.reason}` : "Add to CURRENT trip";
+            addBtn.innerHTML = "+";
+            
+            if (!isDimmed) {
+                addBtn.onclick = function() {
+                    if (typeof addToCart === "function") {
+                        addToCart(
+                            place.name,
+                            place.image,
+                            window.currentDay || 1,
+                            place.category,
+                            place.address || "",
+                            null, null, place.opening_hours || "",
+                            null,
+                            place.lat && place.lon ? { lat: Number(place.lat), lng: Number(place.lon) } : null,
+                            place.website || ""
+                        );
+                    }
+                    if (typeof updateCart === "function") updateCart();
+                    
+                    // Ekledikten sonra paneli tekrar render et (Mesafe kontrolünü güncellemek için)
+                    renderFavoritePlacesPanel();
+                };
+            }
+
+            // --- BUTON 3: REMOVE (-) ---
             const removeBtn = document.createElement("button");
-            removeBtn.className = "remove-fav-btn";
+            removeBtn.className = "fav-action-btn btn-remove-fav";
             removeBtn.title = "Remove from favorites";
-            removeBtn.style = "width:32px;height:32px;background:#ffecec;color:#d32f2f;border:none;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;";
-            removeBtn.textContent = "–";
+            removeBtn.innerHTML = "–"; // &minus;
             
             removeBtn.onclick = function() {
-                // Listeden bul ve sil (gerçek referansı bulmak daha güvenli)
                 const delIdx = window.favTrips.findIndex(f => f.name === place.name && String(f.lat) === String(place.lat));
                 if (delIdx > -1) {
                     window.favTrips.splice(delIdx, 1);
                     saveFavTrips();
-                    renderFavoritePlacesPanel(); // Paneli yenile
-                    updateAllFavVisuals(); // Diğer butonları (sepetteki vs) güncelle
+                    renderFavoritePlacesPanel(); 
+                    updateAllFavVisuals(); 
                 }
             };
 
-            btnDiv.appendChild(addBtn);
-            btnDiv.appendChild(removeBtn);
+            // Butonları ekle
+            btnDiv.appendChild(startBtn); // Yeni gezi
+            btnDiv.appendChild(addBtn);   // Mevcut geziye ekle
+            btnDiv.appendChild(removeBtn); // Sil
 
             li.appendChild(imgDiv);
             li.appendChild(infoDiv);
@@ -318,4 +327,136 @@ async function renderFavoritePlacesPanel() {
         section.appendChild(ul);
         favPanel.appendChild(section);
     });
+}
+
+// my_places.js dosyasının en altına veya uygun bir yerine ekleyin
+(function addMyPlacesStyles() {
+    const styleId = 'my-places-advanced-styles';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+        .fav-action-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        
+        /* Add to Current Trip Button */
+        .btn-add-current { background: #1976d2; color: #fff; }
+        .btn-add-current:hover { background: #1565c0; transform: scale(1.05); }
+        
+        /* Start New Trip Button */
+        .btn-start-new { background: #6c3fc2; color: #fff; font-size: 14px; }
+        .btn-start-new:hover { background: #5e35b1; transform: scale(1.05); }
+
+        /* Remove Button */
+        .btn-remove-fav { background: #ffecec; color: #d32f2f; }
+        .btn-remove-fav:hover { background: #ffcdd2; transform: scale(1.05); }
+
+        /* DISABLED STATE (Mesafe Limiti) */
+        .btn-add-current.disabled {
+            background: #e0e0e0; 
+            color: #9e9e9e; 
+            cursor: not-allowed; 
+            transform: none !important;
+            opacity: 0.7;
+        }
+
+        /* Tooltip benzeri uyarı için */
+        .fav-item { position: relative; transition: opacity 0.3s; }
+        .fav-item.dimmed { opacity: 0.6; background: #f0f0f0 !important; }
+        .dist-warning {
+            font-size: 10px; color: #d32f2f; background: #ffecec; 
+            padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+// 600km Limit Kontrolü
+function isPlaceAddableToCurrentTrip(placeLat, placeLon) {
+    // 1. Sepet boşsa her yer eklenebilir
+    if (!window.cart || window.cart.length === 0) return { canAdd: true, reason: "" };
+
+    // 2. Sepetteki 'Place' veya 'Restaurant' gibi lokasyonlu itemları bul
+    const validItems = window.cart.filter(i => 
+        i.location && 
+        isFinite(Number(i.location.lat)) && 
+        isFinite(Number(i.location.lng)) &&
+        !i._starter && !i._placeholder
+    );
+
+    // Eğer sepette henüz hiç lokasyon yoksa (Sadece gün başlıkları varsa) eklenebilir
+    if (validItems.length === 0) return { canAdd: true, reason: "" };
+
+    // 3. Son eklenen lokasyonu referans al
+    const lastItem = validItems[validItems.length - 1];
+    
+    // Haversine (mainscript.js içinde tanımlı olmalı) ile mesafe ölç
+    if (typeof haversine !== 'function') return { canAdd: true, reason: "" }; // Fallback
+
+    const distMeters = haversine(
+        Number(lastItem.location.lat), Number(lastItem.location.lng),
+        Number(placeLat), Number(placeLon)
+    );
+
+    // 600km (600,000 metre) kontrolü
+    if (distMeters > 600000) {
+        return { 
+            canAdd: false, 
+            reason: `Too far (${(distMeters/1000).toFixed(0)}km)` 
+        };
+    }
+
+    return { canAdd: true, reason: "" };
+}
+
+// Yeni Gezi Başlatma Fonksiyonu
+async function startNewTripWithPlace(place) {
+    if (confirm(`Start a brand new trip plan for "${place.city || place.name}"? Current plan will be saved.`)) {
+        
+        // 1. Mevcut geziyi kaydet (Varsa)
+        if (typeof saveCurrentTripToStorage === "function") await saveCurrentTripToStorage();
+
+        // 2. Her şeyi sıfırla (mainscript.js'deki reset mantığına benzer)
+        window.cart = [];
+        window.activeTripKey = null;
+        window.lastUserQuery = "";
+        window.selectedCity = place.city || place.name;
+        
+        // Haritaları temizle
+        if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
+        if (typeof clearAllRouteCaches === "function") clearAllRouteCaches();
+
+        // 3. Bu mekanı 1. güne ekle
+        addToCart(
+            place.name,
+            place.image,
+            1, // 1. Gün
+            place.category,
+            place.address || "",
+            null, null, place.opening_hours || "",
+            null,
+            { lat: Number(place.lat), lng: Number(place.lon) },
+            place.website || ""
+        );
+
+        // 4. UI Güncelle
+        if (typeof updateCart === "function") updateCart();
+        
+        // 5. Sidebar'ı kapat (Mobilde)
+        const overlay = document.getElementById('sidebar-overlay-favorite-places');
+        if (overlay) overlay.classList.remove('open');
+        
+        // 6. Chat/Input alanını bu şehre göre ayarla
+        const inputWrapper = document.querySelector('.input-wrapper');
+        if (inputWrapper) inputWrapper.style.display = '';
+        const userInput = document.getElementById('user-input');
+        if (userInput) userInput.value = `Trip to ${place.city}`;
+
+        // 7. Kullanıcıya bilgi ver
+        if (typeof showToast === 'function') showToast("New trip started!", "success");
+    }
 }
