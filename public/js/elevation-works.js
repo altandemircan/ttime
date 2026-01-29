@@ -383,7 +383,7 @@ if (Array.isArray(markers)) {
 
     track.style.position = 'relative';
     track.appendChild(elevationLabels);
-    
+
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
@@ -638,7 +638,6 @@ try {
       // ----------------------------------------
 
       const placeholder = track.querySelector('.elevation-placeholder');
-      if (placeholder) placeholder.remove(); 
       const oldLoader = track.querySelector('.tt-scale-loader');
       if (oldLoader) oldLoader.remove(); 
       
