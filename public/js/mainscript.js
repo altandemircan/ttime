@@ -2347,12 +2347,13 @@ function addChatResultsToCart() {
     });
 }
 // 1️⃣ window.showMap Fonksiyonunu Güncelle (Kırmızı Markerlı)
+// 1️⃣ window.showMap - Sadece Kırmızı Marker Özelliği Eklendi (Boyutlar Orjinal)
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
 
-    // Diğer görsel öğeleri gizle
+    // Görsel öğeleri gizle (Orjinal koddaki gibi)
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
@@ -2362,45 +2363,38 @@ window.showMap = function(element) {
     const lon = parseFloat(stepsElement.getAttribute('data-lon'));
 
     if (!isNaN(lat) && !isNaN(lon)) {
-        // Varsa eski iframe'i veya harita div'ini temizle
+        // Eski iframe varsa kaldır
         const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
         if (oldIframe) oldIframe.remove();
         
+        // Daha önce açılmış harita div'i varsa temizle
         const oldMap = visualDiv.querySelector('.embedded-step-map');
         if (oldMap) oldMap.remove();
 
         if (image) image.style.display = "none";
 
-        // Yeni Harita Alanı Oluştur
+        // Yeni Harita Div'i (Orjinal Iframe boyutlarına sadık kalarak)
         const mapDiv = document.createElement('div');
-        mapDiv.className = 'embedded-step-map'; // Yeni class adı
+        mapDiv.className = 'embedded-step-map';
         mapDiv.style.width = "100%";
-        mapDiv.style.height = "235px";
-        mapDiv.style.borderRadius = "12px";
-        mapDiv.style.zIndex = "1";
-        mapDiv.style.backgroundColor = "#eef0f5"; // Yüklenirken gri fon
+        mapDiv.style.height = "235px"; // Iframe'in orjinal yüksekliği
+        mapDiv.style.border = "0";     // Iframe'in orjinal border ayarı
         visualDiv.appendChild(mapDiv);
 
-        // Leaflet Kütüphanesi Kontrolü
+        // Leaflet Başlatma
         if (typeof L !== 'undefined') {
             const map = L.map(mapDiv, {
                 center: [lat, lon],
                 zoom: 15,
                 zoomControl: false,
-                attributionControl: false,
-                dragging: false,        // Mini harita olduğu için sürüklemeyi kapatıyoruz (opsiyonel)
-                scrollWheelZoom: false,
-                doubleClickZoom: false,
-                touchZoom: false
+                attributionControl: false
             });
 
-            // Harita Katmanı (Diğer fonksiyonlarınızdaki ile aynı)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19
             }).addTo(map);
 
-            // === KIRMIZI YUVARLAK MARKER HTML ===
-            // Mainscript stilini birebir kopyalıyoruz
+            // === İSTEDİĞİN KIRMIZI YUVARLAK MARKER ===
             const redMarkerHtml = `
                 <div class="custom-marker-outer red" style="
                     background-color: #d32f2f; 
@@ -2426,13 +2420,13 @@ window.showMap = function(element) {
 
             L.marker([lat, lon], { icon: icon }).addTo(map);
 
-            // Harita tam otursun diye ufak bir gecikme ile refresh
+            // Harita render hatasını önlemek için ufak bir tetikleme
             setTimeout(() => {
                 map.invalidateSize();
-                map.setView([lat, lon], 15, { animate: false });
-            }, 150);
+            }, 100);
         } else {
-            mapDiv.innerHTML = "<div style='text-align:center; padding-top:100px;'>Map loading...</div>";
+            // Leaflet yüklenmemişse fallback
+            mapDiv.innerHTML = "Map Library Missing";
         }
 
     } else {
@@ -2440,49 +2434,24 @@ window.showMap = function(element) {
     }
 };
 
-// 2️⃣ window.showImage Fonksiyonunu Güncelle (Yeni Haritayı Kapatabilmesi İçin)
+// 2️⃣ window.showImage - Kapatma Fonksiyonu (Değişmedi, sadece yeni div'i temizliyor)
 window.showImage = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
     const image = visualDiv.querySelector('img.check');
     
-    // Eski iframe'i temizle
     const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
     if (iframe) iframe.remove();
 
-    // Yeni eklediğimiz harita div'ini temizle
     const embeddedMap = visualDiv.querySelector('.embedded-step-map');
     if (embeddedMap) embeddedMap.remove();
 
-    // Resmi geri getir
     if (image) image.style.display = '';
 
-    // Gizlenen diğer öğeleri geri getir
     stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = ''; });
     stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = ''; });
     stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = ''; });
     stepsElement.querySelectorAll('.visual.img').forEach(el => { el.style.display = ''; });
-};
-
-window.showImage = function(element) {
-    const stepsElement = element.closest('.steps');
-    const visualDiv = stepsElement.querySelector('.visual');
-    const image = visualDiv.querySelector('img.check');
-    // DÜZELTME: Doğru class ile iframe'i kaldır!
-    const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
-    if (iframe) iframe.remove();
-    if (image) image.style.display = '';
-
-    // TAG, FAV ve CATS bölümlerini GERİ GETİR
-    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
-        el.style.display = '';
-    });
-    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
-        el.style.display = '';
-    });
-    stepsElement.querySelectorAll('.cats').forEach(el => {
-        el.style.display = '';
-    });
 };
     // --- KLAVYE NAVİGASYONU & ENTER KORUMASI ---
 function addActive(x) {
