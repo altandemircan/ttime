@@ -7318,6 +7318,16 @@ async function expandMap(containerId, day) {
     scaleBarDiv.id = `expanded-route-scale-bar-day${day}`;
     scaleBarDiv.style.display = "block";
 
+    // ✅ Loading spinner
+scaleBarDiv.innerHTML = `
+  <div class="scale-bar-track loading">
+    <div class="tt-scale-loader" style="display: flex !important;">
+      <div class="spinner" style="display: inline-block !important;"></div>
+      <div>Loading elevation</div>
+    </div>
+  </div>
+`;
+
     const panelDiv = document.createElement('div');
     panelDiv.className = 'expanded-map-panel';
     panelDiv.appendChild(headerDiv);
