@@ -48,6 +48,135 @@
             break-inside: avoid;
         }
 
+        /* ============================================================
+           MOBİL OPTIMIZASYON - 1 GÜN FULL SCREEN
+           ============================================================ */
+        @media (max-width: 768px) {
+            .survey-results {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .sect {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            /* Mobilde accordion-list tam ekran olsun */
+            .accordion-list {
+                height: 100vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                scroll-snap-type: y mandatory;
+                scroll-padding-top: 0;
+            }
+
+            /* Her gün tam sayfa yüksekliğinde olsun */
+            .day-item {
+                min-height: 100vh;
+                max-height: 100vh;
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            /* Accordion container tam uzansın */
+            .accordion-container {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Başlık sabit kalıp, içerik scrollable olsun */
+            .accordion-label {
+                flex-shrink: 0;
+                z-index: 10;
+            }
+
+            /* İçerik geriye kalan yeri doldursun */
+            .accordion-content {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Day steps tam uzansın */
+            .day-steps {
+                min-height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Slider tam container'ı doldursun */
+            .splide {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                padding: 10px 12px;
+            }
+
+            .splide__track {
+                flex: 1;
+                display: flex;
+                align-items: center;
+            }
+
+            .splide__list {
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Step card'lar slider içinde optimal boyut */
+            .splide__slide {
+                height: auto;
+                display: flex;
+            }
+
+            .steps {
+                width: 100%;
+                max-width: 100%;
+                margin: 0 auto;
+            }
+
+            /* Mobilede step visual daha büyük olsun */
+            .steps .visual {
+                height: 200px;
+                min-height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Çok küçük ekranlarda daha kompakt */
+            .day-item {
+                min-height: 100vh;
+                max-height: 100vh;
+            }
+
+            .accordion-label {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .steps .visual {
+                height: 180px;
+                min-height: 180px;
+            }
+
+            .steps .info {
+                padding: 8px 10px;
+            }
+
+            .item_action {
+                padding: 8px 10px;
+            }
+        }
+
         /* Accordion container */
         .accordion-container {
             margin: 0;
@@ -396,134 +525,102 @@
            RESPONSIVE OPTIMIZATIONS
            ============================================================ */
 
-        @media (max-width: 768px) {
+        /* MOBİL FIRST (Küçük ekranlar) */
+        @media (max-width: 480px) {
             .accordion-label {
-                padding: 9px 12px;
+                padding: 10px 12px;
                 font-size: 0.9rem;
             }
 
             .splide {
-                padding: 6px 10px;
+                padding: 10px 0;
             }
 
             .steps {
-                border-radius: 6px;
+                border-radius: 0;
             }
 
             .steps .visual {
-                height: 140px;
+                height: 180px;
+                min-height: 180px;
             }
 
             .steps .info {
-                padding: 6px 8px;
-                gap: 2px;
+                padding: 10px;
             }
 
             .steps .title {
-                font-size: 0.9rem;
+                font-size: 0.95rem;
             }
 
             .steps .address,
             .steps .opening_hours {
-                font-size: 0.75rem;
+                font-size: 0.8rem;
             }
 
             .item_action {
-                padding: 6px;
-                gap: 6px;
+                padding: 10px;
+                gap: 8px;
             }
 
             .item_action .change {
-                gap: 6px;
-            }
-
-            .item_action .change span {
-                padding: 3px;
-            }
-
-            .item_action .change span img {
-                width: 16px;
-                height: 16px;
-            }
-
-            .trip-action-group {
-                border-radius: 5px;
+                gap: 8px;
             }
 
             .trip-action-group select {
-                padding: 6px 6px 6px 10px;
                 font-size: 0.8rem;
                 min-width: 60px;
             }
 
             .trip-action-group .action-btn {
-                padding: 6px 10px;
                 font-size: 0.75rem;
-            }
-
-            .trip-action-group .action-btn img,
-            .trip-action-group .action-btn svg {
-                width: 12px;
-                height: 12px;
+                padding: 8px 10px;
             }
         }
 
-        @media (max-width: 480px) {
+        /* TABLET (768px ve üzeri) */
+        @media (min-width: 769px) {
             .accordion-label {
-                padding: 8px 10px;
-                font-size: 0.85rem;
+                padding: 10px 14px;
+                font-size: 0.95rem;
             }
 
             .splide {
-                padding: 4px 8px;
+                padding: 8px 12px;
             }
 
             .steps {
-                border-radius: 5px;
+                border-radius: 8px;
             }
 
             .steps .visual {
-                height: 120px;
+                height: 160px;
             }
 
             .steps .info {
-                padding: 4px 6px;
-                gap: 1px;
+                padding: 8px 10px;
             }
 
             .steps .title {
-                font-size: 0.85rem;
-                -webkit-line-clamp: 2;
+                font-size: 0.95rem;
             }
 
             .steps .address,
             .steps .opening_hours {
-                font-size: 0.7rem;
+                font-size: 0.8rem;
             }
 
             .item_action {
-                padding: 4px;
-                gap: 4px;
-            }
-
-            .item_action .change {
-                gap: 4px;
-            }
-
-            .item_action .change span img {
-                width: 14px;
-                height: 14px;
+                padding: 8px;
+                gap: 8px;
             }
 
             .trip-action-group select {
-                padding: 5px 5px 5px 8px;
-                font-size: 0.75rem;
-                min-width: 55px;
+                font-size: 0.85rem;
             }
 
             .trip-action-group .action-btn {
-                padding: 5px 8px;
-                font-size: 0.7rem;
+                font-size: 0.8rem;
             }
         }
 
@@ -632,26 +729,52 @@
         document.head.appendChild(badgeAnimation);
     }
 
-    // === 3. ACCORDION TOGGLE LOGIC ===
+    // === 3. ACCORDION TOGGLE LOGIC + MOBİL FULL-SCREEN ===
     function initAccordionToggle() {
         document.addEventListener('change', function(e) {
             if (e.target && e.target.classList.contains('accordion-toggle')) {
-                // Açık/kapanır işlemleri burada yapılabilir
-                console.log(`[Accordion] Day ${e.target.id} toggled`);
+                const dayItem = e.target.closest('.day-item');
+                if (dayItem && window.innerWidth <= 768) {
+                    // Mobilde açılan gün otomatik kaydırsın
+                    setTimeout(() => {
+                        dayItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
             }
+        });
+
+        // Tüm gunleri default açık yap (expanded state)
+        document.querySelectorAll('.accordion-toggle').forEach(checkbox => {
+            checkbox.checked = true;
         });
     }
 
-    // === 4. SPLIDE MOB ILE OPTIMIZASYON ===
+    // === 4. SPLIDE MOBİLE OPTIMIZASYON + SNAP ===
     function optimizeSplideSliders() {
-        // Splide mount edildikten sonra çalışır
         document.querySelectorAll('.splide').forEach(slider => {
-            if (slider._splideInstance) {
-                const instance = slider._splideInstance;
-                // Mobilde single item göster
-                if (window.innerWidth <= 768) {
-                    instance.options.perPage = 1;
-                }
+            // Mount kontrolü
+            if (!slider._splideInstance) return;
+
+            const instance = slider._splideInstance;
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                // MOBİLDE: Tek item, full genişlik, snap
+                instance.options.perPage = 1;
+                instance.options.gap = 0;
+                instance.options.padding = { left: 0, right: 0 };
+                instance.options.arrows = false;  // Okları gizle
+                instance.options.pagination = false;  // Pagination gizle
+                instance.options.drag = true;
+                instance.options.type = 'slide';
+                instance.refresh();
+            } else {
+                // DESKTOP: Multiple items
+                instance.options.perPage = Math.max(1, Math.floor(window.innerWidth / 320));
+                instance.options.gap = '12px';
+                instance.options.arrows = true;
+                instance.options.pagination = false;
+                instance.refresh();
             }
         });
     }
