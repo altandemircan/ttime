@@ -4780,15 +4780,7 @@ if (aiInfoSection) {
                 li.classList.add("note-item");
             }
 
-            li.dataset.index = currIdx;
-            // YENİ EKLENEN SATIR: Günlük sıra numarasını (markerLabel) elemente kaydet
-            li.setAttribute("data-daily-index", markerLabel); 
-
-            if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
-                li.setAttribute("data-lat", item.location.lat);
-                li.setAttribute("data-lon", item.location.lng);
-            }
-
+            // --- DEĞİŞİKLİK: HESAPLAMAYI EN ÜSTE ALDIK ---
             let markerLabel = "";
             let markerBgColor = ""; 
 
@@ -4799,6 +4791,17 @@ if (aiInfoSection) {
                 markerLabel = placeCounter;
                 markerBgColor = "#d32f2f"; 
                 placeCounter++; 
+            }
+            // ---------------------------------------------
+
+            li.dataset.index = currIdx;
+            
+            // YENİ EKLENEN SATIR:
+            li.setAttribute("data-daily-index", markerLabel); 
+
+            if (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number") {
+                li.setAttribute("data-lat", item.location.lat);
+                li.setAttribute("data-lon", item.location.lng);
             }
 
             const listMarkerHtml = `
