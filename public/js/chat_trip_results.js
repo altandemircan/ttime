@@ -178,7 +178,7 @@ function injectDropdownStyles() {
             border: none;
             background-color: transparent;
             padding: 8px 6px 8px 12px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: #333;
             cursor: pointer;
@@ -246,7 +246,7 @@ function injectDropdownStyles() {
 
         .item_action .change span {
             cursor: pointer;
-            padding: 6px;
+            padding: 4px;
             border-radius: 6px;
             display: flex;
             align-items: center;
