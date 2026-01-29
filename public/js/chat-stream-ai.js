@@ -374,31 +374,32 @@ async function sendAIChatMessage(userMessage) {
     chatHistory.push({ role: "user", content: userMessage });
     saveCurrentChat();
 
-    // AI MESAJ KUTUSU OLUŞTUR
-    const aiDiv = document.createElement('div');
-    aiDiv.className = 'chat-message ai-message';
+// --- 7. MESAJ GÖNDERME İÇİNDE (Güncellenmiş Bölüm) ---
 
-    const aiImg = document.createElement('video');
-aiImg.src = '/img/intro.webm';
-aiImg.alt = 'AI';
-aiImg.autoplay = true;
-aiImg.loop = true;
-aiImg.muted = true;
-aiImg.playsInline = true;
+// AI MESAJ KUTUSU OLUŞTUR
+const aiDiv = document.createElement('div');
+aiDiv.className = 'chat-message ai-message';
 
-    const aiContent = document.createElement('div');
-    aiContent.innerHTML = '<span class="typing">...</span>';
+// Video yerine doğrudan img elementi oluşturuyoruz
+const aiImg = document.createElement('img');
+aiImg.src = '/img/mira_profile.png'; // Profil resmi yolu
+aiImg.style.width = '32px';
+aiImg.style.borderRadius = '50%';
+aiImg.alt = 'Mira AI';
 
-    const contentContainer = document.createElement('div');
-    contentContainer.style.display = 'flex';
-    contentContainer.style.flexDirection = 'column';
-    contentContainer.style.flex = '1';
+const aiContent = document.createElement('div');
+aiContent.innerHTML = '<span class="typing">...</span>';
 
-    contentContainer.appendChild(aiContent);
-    aiDiv.appendChild(aiImg);
-    aiDiv.appendChild(contentContainer);
-    messagesDiv.appendChild(aiDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+const contentContainer = document.createElement('div');
+contentContainer.style.display = 'flex';
+contentContainer.style.flexDirection = 'column';
+contentContainer.style.flex = '1';
+
+contentContainer.appendChild(aiContent);
+aiDiv.appendChild(aiImg); // Artık img ekleniyor
+aiDiv.appendChild(contentContainer);
+messagesDiv.appendChild(aiDiv);
+messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     // STREAM BAŞLASIN
     let hasError = false;
