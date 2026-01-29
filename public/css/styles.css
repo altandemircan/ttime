@@ -6269,22 +6269,22 @@ border-bottom:1px solid #ddd;
     font-weight: 700;
 }
 
-.loading-spinner,
-.elev-animation .spinner,
-.tt-scale-loader .spinner {
-  display: inline-block;
-  width: 20px !important;
-  height: 20px !important;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #4285f4;
+/* === GLOBAL SPINNER - HER YERDE AYNI === */
+.spinner {
+  display: inline-block !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: 3px solid #f0f0f0;
+  border-top: 3px solid #8a4af3;
   border-radius: 50% !important;
-  animation: spin 0.8s linear infinite;
+  animation: ttSpinnerGlobal 0.8s linear infinite !important;
+  margin: 0 auto !important;
 }
-@keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
+
+@keyframes ttSpinnerGlobal {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-.spinner { aspect-ratio: 1/1 !important; }
 
 
       @keyframes ttspin{to{transform:rotate(360deg)}}

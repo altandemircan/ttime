@@ -468,15 +468,13 @@ function renderRouteScaleBar(container, totalKm, markers) {
 
   if (/^route-scale-bar-day\d+$/.test(container.id || '')) {
     container.innerHTML = `
-      <div class="spinner" style="width: 32px; height: 32px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; margin: 20px auto; animation: spinLoader 1s linear infinite;"></div>
-      <style id="spinner-loader-style">
-        @keyframes spinLoader {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
+      <div class="scale-bar-track loading">
+        <div class="tt-scale-loader">
+          <div class="spinner"></div>
+          <div>Loading elevation</div>
+        </div>
+      </div>
     `;
-    // return; ← BURASI KALDIRMA, devamet etsin!
   }
 
   // Koordinat kontrolü (Tekrar)
@@ -503,8 +501,8 @@ let track = container.querySelector('.scale-bar-track');
 if (!track) {
   container.innerHTML = `
     <div class="scale-bar-track loading">
-      <div class="tt-scale-loader" style="display: flex !important;">
-        <div class="spinner" style="display: inline-block !important;"></div>
+      <div class="tt-scale-loader">
+        <div class="spinner"></div>
         <div>Loading elevation</div>
       </div>
     </div>
@@ -892,9 +890,10 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
 
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          // Spinner'ı 500ms sonra sakla (veri yüklendikten sonra)
+          // Spinner'ı 500ms sonra sakla
           setTimeout(() => {
-            window.hideScaleBarLoading?.(container);
+            const loader = track.querySelector('.tt-scale-loader');
+            if (loader) loader.style.display = 'none';
             track.classList.remove('loading');
           }, 500);
       });
