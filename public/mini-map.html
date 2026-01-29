@@ -22,11 +22,6 @@
       cursor: default !important;
       pointer-events: none !important;
     }
-    /* MARKER KESİN ÜSTTE VE TAM ORTADA */
-    .leaflet-marker-icon {
-      z-index: 9999 !important;
-      transform: translate(-50%, -50%) !important;
-    }
   </style>
 </head>
 <body>
@@ -68,7 +63,7 @@
         interactive: false
       }).addTo(map);
 
-      // 24px KIRMIZI MARKER - TAM ORTADA
+      // 24px KIRMIZI MARKER - BİRAZ SAĞDA
       const redMarkerHtml = `
         <div style="
           background:#d32f2f;
@@ -79,11 +74,7 @@
           align-items:center; 
           justify-content:center;
           border:2px solid #fff; 
-          box-shadow:0 1px 3px rgba(0,0,0,0.2);
-          position:absolute;
-          top:50%;
-          left:50%;
-          transform:translate(-50%, -50%);">
+          box-shadow:0 1px 3px rgba(0,0,0,0.2);">
             <div style="width:6px; height:6px; background:#fff; border-radius:50%;"></div>
         </div>
       `;
@@ -93,7 +84,7 @@
           html: redMarkerHtml,
           className: '',
           iconSize: [24, 24],
-          iconAnchor: [12, 12], // TAM ORTA
+          iconAnchor: [16, 12], // BİRAZ SAĞDA: 16px sağ, 12px aşağı
           popupAnchor: [0, -12]
         }),
         interactive: false
@@ -101,11 +92,7 @@
 
       setTimeout(() => {
         map.invalidateSize(false);
-        // EK KONTROL: MARKER'I TEKRAR ORTALA
-        map.setView([lat, lon], zoom, {animate: false});
       }, 100);
-      
-      map.off();
       
     }).catch(err => {
       console.log('Map loaded');
@@ -113,7 +100,6 @@
 
   // ETKİLEŞİM YOK
   document.addEventListener('wheel', e => e.preventDefault(), { passive: false });
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 </script>
 </body>
 </html>
