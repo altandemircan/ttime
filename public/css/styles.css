@@ -1063,14 +1063,14 @@ ease;
     display: flex; 
     flex-direction: row; 
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .change span {
     position: relative;
     width: 16px;
     height: 16px;
-    padding: 6px;
+    padding: 2px;
     color: #4b4b4b;
     border-radius: 4px;   
     display: flex;
