@@ -497,16 +497,26 @@ if (!track) {
     <div class="scale-bar-track">
       <div class="elevation-placeholder" style="width:100%;height:220px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;font-size:14px;">
         <div class="elev-animation">
-          <div style="
-            width: 30px;
-            height: 30px;
-            border: 4px solid #e0e0e0;
-            border-top: 4px solid #1976d2;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          "></div>
+          <svg width="40" height="40" viewBox="0 0 100 100" style="display:inline-block;margin-right:8px;animation:elevPulse 2s ease-in-out infinite;">
+            <!-- Sol dağ (aşağıda başlar) -->
+            <path d="M 10 70 L 30 40 L 45 55 L 60 35 L 80 65 L 100 50 L 100 100 L 0 100 Z" fill="#8a4af3" opacity="0.8"/>
+            <!-- Sağ dağ (daha yüksek) -->
+            <path d="M 15 80 L 35 50 L 50 65 L 65 45 L 85 75 L 100 60" stroke="#8a4af3" stroke-width="3" fill="none" opacity="0.6"/>
+            <!-- İleri geri oyan highlight line -->
+            <line x1="20" y1="75" x2="85" y2="55" stroke="#4a9eff" stroke-width="2" opacity="0" style="animation:elevLine 1.5s ease-in-out infinite;"/>
+          </svg>
           <div>Loading elevation</div>
         </div>
+        <style>
+          @keyframes elevPulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.08); }
+          }
+          @keyframes elevLine {
+            0%, 100% { opacity: 0; y: 0; }
+            50% { opacity: 0.8; y: -5px; }
+          }
+        </style>
       </div>
     </div>
   `;
