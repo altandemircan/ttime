@@ -278,7 +278,7 @@ if (!document.getElementById(styleId)) {
 
             if (msg.role === 'user') div.textContent = '🧑 ' + text;
             else {
-                div.innerHTML = '<img src="/img/mira_profile.png"><div style="display:flex;flex-direction:column;flex:1;">' + text + '</div>';
+                div.innerHTML = '<img src="/img/mira_profile.png" style="width:32px; border-radius:50%"><div style="display:flex;flex-direction:column;flex:1;">' + text + '</div>';
             }
             messagesDiv.appendChild(div);
         });
