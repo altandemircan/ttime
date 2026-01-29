@@ -339,6 +339,7 @@ if (document.readyState === 'loading') {
 // === LOGIC: BUTON YÖNETİMİ, EKLEME VE ÇIKARMA İŞLEMLERİ ===
 // ==========================================================
 
+
 // 1. Yardımcı: Item sepette var mı?
 function isItemInCartForDay(lat, lon, name, day) {
     if (!window.cart) return false;
@@ -484,7 +485,32 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// Dropdown değiştiğinde kontrol et
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
+        updateAllChatButtons();
+    }
+});
 
+// MutationObserver: Chat'e yeni mesaj geldiğinde
+const observer = new MutationObserver(function(mutations) {
+    updateAllChatButtons();
+});
+
+// İlk yüklemede çalıştır
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        updateAllChatButtons();
+        const chatContainer = document.getElementById('chat-container') || document.body;
+        observer.observe(chatContainer, { childList: true, subtree: true });
+    });
+} else {
+    updateAllChatButtons();
+    const chatContainer = document.getElementById('chat-container') || document.body;
+    observer.observe(chatContainer, { childList: true, subtree: true });
+}
+
+// Harita ve kamera fonksiyonları
 window.showMap = function(element) {
     const stepsElement = element.closest('.steps');
     const visualDiv = stepsElement.querySelector('.visual');
@@ -566,6 +592,7 @@ window.showImage = function(element) {
     }
 };
 
+
 // Sayfa yüklendiğinde tüm kamera ikonlarını aktif yap
 function activateDefaultCameraIcons() {
     document.querySelectorAll('.steps').forEach(step => {
@@ -588,6 +615,7 @@ if (document.readyState === 'loading') {
     setTimeout(activateDefaultCameraIcons, 100);
 }
 
+
 // Yeni step'ler eklendiğinde de aktif et
 observer.observe(chatContainer, { 
     childList: true, 
@@ -597,17 +625,8 @@ observer.observe(chatContainer, {
     }
 });
 
-// Dropdown değiştiğinde kontrol et
-document.addEventListener('change', function(e) {
-    if (e.target && e.target.classList.contains('day-select-dropdown-premium')) {
-        updateAllChatButtons();
-    }
-});
 
-// MutationObserver: Chat'e yeni mesaj geldiğinde
-const observer = new MutationObserver(function(mutations) {
-    updateAllChatButtons();
-});
+
 const chatContainer = document.getElementById('chat-container') || document.body;
 observer.observe(chatContainer, { childList: true, subtree: true });
 
