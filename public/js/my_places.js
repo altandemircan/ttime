@@ -608,7 +608,7 @@ async function renderFavoritePlacesPanel() {
             } else {
                 // PASİF DURUM: İkon Gri (GÜNCELLENDİ)
                 // brightness(0) invert(1) yerine opacity vererek grileşmesini sağladık.
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:grayscale(1) opacity(0.5);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:ggrayscale(1) opacity(0.8) brightness(0.5);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
