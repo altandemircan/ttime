@@ -155,7 +155,7 @@ function saveFavTrips() {
             border: 1px solid #edf2f7;
         }
         
-        #favorite-places-panel .mp-img { 
+        #favorite-places-panel .mp-card .mp-img { 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
@@ -196,7 +196,7 @@ function saveFavTrips() {
             width: fit-content;
         }
         
-        #favorite-places-panel .mp-cats img {
+        #favorite-places-panel .mp-card .mp-cats img {
             width: 14px;
             height: 14px;
             opacity: 0.7;
