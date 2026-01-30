@@ -2227,7 +2227,7 @@ window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, c
         ? img.src
         : defaultIcon;
     
-    // Sepete ekle
+    // 1. Sepete ekle
     addToCart(
         name,
         imgSrc,
@@ -2239,7 +2239,19 @@ window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, c
         ""
     );
     
-    // Temizlik
+    // ============================================================
+    // [EKLENEN DÜZELTME] Kayıt İşlemi (Sayfa yenilenince silinmemesi için)
+    // ============================================================
+    // 'cart' verisini güncelle (mainscript.js açılışta buradan okur)
+    localStorage.setItem('cart', JSON.stringify(window.cart));
+
+    // Veritabanına (My Trips) işle
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+    }
+    // ============================================================
+
+    // Temizlik ve 3D Layer/Marker Kaldırma İşlemleri
     const layer3DKey = `_${categoryType}3DLayers`;
     const marker3DKey = `_${categoryType}3DMarkers`;
     
