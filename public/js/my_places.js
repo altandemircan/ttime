@@ -117,6 +117,7 @@ function saveFavTrips() {
             display: flex; 
             flex-direction: column; 
             gap: 12px; 
+            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
         }
 
         /* --- KART YAPISI --- */
@@ -236,23 +237,23 @@ function saveFavTrips() {
             border-radius: 0 0 10px 10px; 
             overflow: hidden; 
             border-top: 1px solid #edf2f7;
+            padding: 10px;
         }
         
         .mp-btn {
-            flex: 1; 
-            border: none; 
-            padding: 12px;
-            font-size: 0.85rem; 
-            font-weight: 600; 
-            cursor: pointer;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            gap: 6px; 
-            color: #4a5568; 
-            transition: all 0.2s ease;
-            font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: transparent;
+     flex: 1;
+    display: flex;
+    gap: 8px;
+    font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 10px;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
         }
         
         /* YUMUŞAK MOR buton */
