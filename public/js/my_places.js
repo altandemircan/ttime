@@ -748,6 +748,20 @@ async function renderFavoritePlacesPanel() {
                                     favSidebar.classList.remove('open');
                                 }
                             }
+                            
+                            // Trip sidebar'ını aç
+                            setTimeout(() => {
+                                const tripSidebar = document.getElementById('sidebar-overlay-trip');
+                                if (tripSidebar) {
+                                    if (typeof window.toggleSidebarTrip === 'function') {
+                                        if (!tripSidebar.classList.contains('open')) {
+                                            window.toggleSidebarTrip();
+                                        }
+                                    } else {
+                                        tripSidebar.classList.add('open');
+                                    }
+                                }
+                            }, 100);
                         }
                     });
                 };
