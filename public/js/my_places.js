@@ -257,31 +257,35 @@ function saveFavTrips() {
         
         /* YUMUŞAK MOR buton */
         .mp-btn-start { 
-            background: #f5f3ff; 
-            border-right: 1px solid #edf2f7; 
-            color: #7c3aed;
+            background: linear-gradient(135deg, #8a4af3 0%, #7a3ae3 100%);
+            border: none;
+            box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
+            color: #ffffff;
         }
         
         .mp-btn-start:hover { 
-            background: #ede9fe; 
-            color: #6d28d9;
+            background: linear-gradient(135deg, #7a3ae3 0%, #6a2ad3 100%);
+            box-shadow: 0 3px 8px rgba(138, 74, 243, 0.3);
         }
         
-        /* YUMUŞAK MAVİ buton */
+        /* KOYU MAVİ buton */
         .mp-btn-add { 
-            background: #eff6ff; 
-            color: #3b82f6;
+            background: linear-gradient(135deg, #02aee4 0%, #0098d4 100%);
+            border: none;
+            box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
+            color: #ffffff;
         }
         
         .mp-btn-add:hover { 
-            background: #dbeafe; 
-            color: #2563eb;
+            background: linear-gradient(135deg, #0098d4 0%, #0088c4 100%);
+            box-shadow: 0 3px 8px rgba(2, 174, 228, 0.3);
         }
         
         .mp-btn-dis { 
-            background: #f7fafc !important; 
-            color: #a0aec0 !important; 
-            cursor: not-allowed; 
+            background: #e8eaed !important; 
+            color: #999999 !important; 
+            cursor: not-allowed;
+            box-shadow: none !important;
         }
 
         .mp-hint-ok { 
