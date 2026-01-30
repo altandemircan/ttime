@@ -262,7 +262,7 @@ function saveFavTrips() {
         }
         
         /* KOYU MAVİ buton */
-        .p-btn-start { 
+        .mp-btn-start { 
                 background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
             border: none;
             box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
