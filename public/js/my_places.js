@@ -279,6 +279,7 @@ function saveFavTrips() {
             color: #999999 !important; 
             cursor: not-allowed;
             box-shadow: none !important;
+        border:none;
         }
 
         .mp-hint-ok { 
