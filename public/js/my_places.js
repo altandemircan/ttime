@@ -62,13 +62,13 @@ function saveFavTrips() {
         
         /* Sayı Rozeti */
         .mp-badge {
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: #718096;
-            background: #ffffff; 
-            padding: 2px 8px; 
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
+      font-size: 0.8rem;
+    font-weight: 600;
+    color: #718096;
+    background: #ffffff;
+    padding: 0px 6px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
         }
 
         /* Ok İkonu */
