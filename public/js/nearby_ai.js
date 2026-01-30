@@ -686,7 +686,7 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
 
             // ============================================================
             // [KRİTİK DÜZELTME] "cart" verisini LocalStorage'a ELLE yaz
-            // ============================================================
+            // ============================================================ 
             // 1. Sayfa yenilendiğinde verinin orada olması için:
             localStorage.setItem('cart', JSON.stringify(window.cart));
             
