@@ -7604,6 +7604,7 @@ display: block !important;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
     border: 1px solid rgba(255,255,255,0.1); 
     letter-spacing: 0.5px;
+    padding:10px;
 
     /* --- TIKLAMA SORUNU ÇÖZÜMÜ --- */
     cursor: pointer !important;  /* El işareti çıksın */
