@@ -417,25 +417,27 @@ function groupFavoritesClean(list) {
 // ======================================================
 // EKSİK OLAN FONKSİYON: START NEW TRIP
 // ======================================================
+// ======================================================
+// EKSİK OLAN FONKSİYON: START NEW TRIP (ENGLISH)
+// ======================================================
 window.startNewTripWithPlace = function(place) {
-    // 1. Kullanıcıdan onay iste (Mevcut gezi silineceği için)
-    if (!confirm("Mevcut gezi planın temizlenecek ve bu yer ile yeni bir gezi başlatılacak. Devam etmek istiyor musun?")) {
+    // 1. Kullanıcıdan onay iste (INGILIZCE)
+    if (!confirm("Your current trip plan will be cleared and a new trip will be started with this place. Do you want to continue?")) {
         return;
     }
 
     // 2. Mevcut sepeti (cart) tamamen boşalt
     window.cart = [];
     
-    // Eğer localStorage kullanıyorsan orayı da temizlemesi için updateCart çağırmadan önce:
+    // Eğer localStorage kullanıyorsan orayı da temizlemesi için:
     if (typeof saveCart === "function") saveCart();
 
     // 3. Seçilen yeri 1. Güne ekle
-    // (Mevcut addToCart fonksiyonunu kullanarak standart formatta ekliyoruz)
     if (typeof addToCart === "function") {
         addToCart(
             place.name, 
             place.image, 
-            1, // Gün 1
+            1, // Day 1
             place.category,
             place.address || "", 
             null, 
@@ -446,7 +448,7 @@ window.startNewTripWithPlace = function(place) {
             place.website || ""
         );
     } else {
-        // Eğer addToCart yoksa manuel push yap (Yedek yöntem)
+        // Yedek ekleme yöntemi
         window.cart.push({
             name: place.name,
             image: place.image,
@@ -464,9 +466,6 @@ window.startNewTripWithPlace = function(place) {
     
     // 5. Paneli güncelle (Mesafe hesapları değişeceği için)
     renderFavoritePlacesPanel();
-
-    // Opsiyonel: Bilgi ver
-    // alert("Yeni gezi başlatıldı!");
 };
 
 
