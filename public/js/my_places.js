@@ -429,7 +429,7 @@ window.startNewTripWithPlace = function(place) {
     // 2. State'i Manuel ve Temiz Bir Şekilde Sıfırla
     window.cart = []; 
     window.activeTripKey = null;
-    window.selectedCity = ""; // Şehri sıfırla ki yeni şehrin adını alabilsin
+    window.selectedCity = place.city || ""; // Place'in city'sini set et
     window.lastUserQuery = "";
     localStorage.removeItem('activeTripKey');
     localStorage.removeItem('selectedCity');
@@ -479,6 +479,11 @@ window.startNewTripWithPlace = function(place) {
     
     // 5. Favoriler panelini güncelle
     renderFavoritePlacesPanel();
+
+    // 6. AI Information'ı yükle - place'in city'si ile
+    if (typeof onCitySelected === "function") {
+        onCitySelected(place.city || window.selectedCity);
+    }
 
     // 6. PANEL GEÇİŞİ
     const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
