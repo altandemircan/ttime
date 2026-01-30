@@ -417,6 +417,9 @@ function groupFavoritesClean(list) {
 // ======================================================
 // DÜZELTİLMİŞ FONKSİYON: START NEW TRIP (SAFE)
 // ======================================================
+// ======================================================
+// DÜZELTİLMİŞ FONKSİYON: START NEW TRIP (AI FIX)
+// ======================================================
 window.startNewTripWithPlace = function(place) {
     // 1. Kullanıcı onayı (İngilizce)
     if (!confirm("Your current trip plan will be cleared and a new trip will be started with this place. Do you want to continue?")) {
@@ -424,39 +427,48 @@ window.startNewTripWithPlace = function(place) {
     }
 
     // 2. State'i Manuel ve Temiz Bir Şekilde Sıfırla
-    // startNewChat() kullanmıyoruz çünkü o fonksiyon async kayıt yapıp çakışma yaratabilir.
     window.cart = []; 
     window.activeTripKey = null;
-    window.selectedCity = "";
+    window.selectedCity = ""; // Şehri sıfırla ki yeni şehrin adını alabilsin
     window.lastUserQuery = "";
     localStorage.removeItem('activeTripKey');
     localStorage.removeItem('selectedCity');
     
-    // AI Verilerini temizle
+    // --- DÜZELTME BURADA: AI VERİLERİNİ VE EKRANINI TEMİZLE ---
+    
+    // A) Hafızadaki veriyi sil
     if (window.cart) window.cart.aiData = null;
     window.lastTripAIInfo = null;
 
-    // 3. Yeni öğeyi DOĞRUDAN listeye ekle (addToCart kullanmadan)
-    // Bu sayede harita güncellemesi (updateCart) çağrılmadan önce listemiz hazır olur.
-    // Ara render işlemi olmadığı için "Undefined properties" hatası engellenir.
+    // B) Ekranda kalan eski (Roma vb.) yazıları sil ve paneli gizle
+    const aiSection = document.querySelector('.ai-info-section');
+    if (aiSection) aiSection.style.display = 'none'; // Kutuyu gizle
+    
+    if (typeof window.showTripAiInfo === "function") {
+        // İçeriği boşalt
+        window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+    }
+    // -----------------------------------------------------------
+
+    // 3. Yeni öğeyi DOĞRUDAN listeye ekle
     const newItem = {
         name: place.name,
         image: place.image,
-        day: 1, // V2 yapısında 'day' kullanılır
-        dailyIndex: 1, // Eski yapı desteği için
+        day: 1, 
+        dailyIndex: 1,
         category: place.category,
         address: place.address || "",
         location: { lat: Number(place.lat), lng: Number(place.lon) },
-        lat: Number(place.lat), // Yedek
-        lon: Number(place.lon), // Yedek
+        lat: Number(place.lat), 
+        lon: Number(place.lon), 
         website: place.website || "",
         note: "",
-        title: place.name // Başlık olarak yer ismini kullan
+        title: place.name
     };
     
     window.cart.push(newItem);
 
-    // 4. Haritayı ve Listeyi Güncelle (Try-Catch ile korumalı)
+    // 4. Haritayı ve Listeyi Güncelle
     if (typeof updateCart === "function") {
         try {
             updateCart(); 
@@ -465,12 +477,10 @@ window.startNewTripWithPlace = function(place) {
         }
     }
     
-    // 5. Favoriler panelini güncelle (Görsel durumlar için)
+    // 5. Favoriler panelini güncelle
     renderFavoritePlacesPanel();
 
-    // 6. PANEL GEÇİŞİ (ÖNEMLİ: Favorileri kapat, Geziyi aç)
-    
-    // Favoriler panelini kapat
+    // 6. PANEL GEÇİŞİ
     const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
     if (favSidebar && favSidebar.classList.contains('open')) {
         if(typeof window.toggleSidebar === 'function') {
@@ -480,11 +490,9 @@ window.startNewTripWithPlace = function(place) {
         }
     }
 
-    // Gezi panelini (My Trip / Chat) aç
     const tripSidebar = document.getElementById('sidebar-overlay-trip');
     if (tripSidebar) {
         if(typeof window.toggleSidebarTrip === 'function') {
-            // Eğer kapalıysa aç
             if (!tripSidebar.classList.contains('open')) {
                 window.toggleSidebarTrip();
             }
@@ -493,11 +501,10 @@ window.startNewTripWithPlace = function(place) {
         }
     }
     
-    // 1. Günü Göster
     if (typeof window.showDay === 'function') {
         setTimeout(() => window.showDay(1), 100);
     }
-};
+};;
 
 // Mesafe Kontrol
 function checkDist(lat, lon) {
