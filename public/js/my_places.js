@@ -738,6 +738,16 @@ async function renderFavoritePlacesPanel() {
                             );
                             if (typeof updateCart === "function") updateCart();
                             renderFavoritePlacesPanel();
+                            
+                            // My Places panelini kapat
+                            const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
+                            if (favSidebar && favSidebar.classList.contains('open')) {
+                                if (typeof window.toggleSidebar === 'function') {
+                                    window.toggleSidebar('sidebar-overlay-favorite-places');
+                                } else {
+                                    favSidebar.classList.remove('open');
+                                }
+                            }
                         }
                     });
                 };
