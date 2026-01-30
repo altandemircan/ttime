@@ -413,6 +413,63 @@ function groupFavoritesClean(list) {
     return groups;
 }
 
+
+// ======================================================
+// EKSİK OLAN FONKSİYON: START NEW TRIP
+// ======================================================
+window.startNewTripWithPlace = function(place) {
+    // 1. Kullanıcıdan onay iste (Mevcut gezi silineceği için)
+    if (!confirm("Mevcut gezi planın temizlenecek ve bu yer ile yeni bir gezi başlatılacak. Devam etmek istiyor musun?")) {
+        return;
+    }
+
+    // 2. Mevcut sepeti (cart) tamamen boşalt
+    window.cart = [];
+    
+    // Eğer localStorage kullanıyorsan orayı da temizlemesi için updateCart çağırmadan önce:
+    if (typeof saveCart === "function") saveCart();
+
+    // 3. Seçilen yeri 1. Güne ekle
+    // (Mevcut addToCart fonksiyonunu kullanarak standart formatta ekliyoruz)
+    if (typeof addToCart === "function") {
+        addToCart(
+            place.name, 
+            place.image, 
+            1, // Gün 1
+            place.category,
+            place.address || "", 
+            null, 
+            null, 
+            place.opening_hours || "", 
+            null,
+            { lat: Number(place.lat), lng: Number(place.lon) }, 
+            place.website || ""
+        );
+    } else {
+        // Eğer addToCart yoksa manuel push yap (Yedek yöntem)
+        window.cart.push({
+            name: place.name,
+            image: place.image,
+            dailyIndex: 1,
+            category: place.category,
+            location: { lat: Number(place.lat), lng: Number(place.lon) },
+            address: place.address
+        });
+    }
+
+    // 4. Sistemi güncelle
+    if (typeof updateCart === "function") {
+        updateCart(); // Sepeti ve haritayı yenile
+    }
+    
+    // 5. Paneli güncelle (Mesafe hesapları değişeceği için)
+    renderFavoritePlacesPanel();
+
+    // Opsiyonel: Bilgi ver
+    // alert("Yeni gezi başlatıldı!");
+};
+
+
 // Mesafe Kontrol
 function checkDist(lat, lon) {
     if (!window.cart || window.cart.length === 0) return { ok: true, msg: "" };
