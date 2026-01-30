@@ -485,16 +485,19 @@ window.toggleMpGroup = function(header) {
 // Kategori ikonunu getiren fonksiyon
 function getPlaceCategoryIcon(category) {
     const iconMap = {
-        'Restaurant': '/img/restaurant_icon.svg',
-        'Cafe': '/img/cafe_icon.svg',
-        'Hotel': '/img/hotel_icon.svg',
-        'Museum': '/img/museum_icon.svg',
-        'Park': '/img/park_icon.svg',
-        'Beach': '/img/beach_icon.svg',
-        'Shopping': '/img/shopping_icon.svg',
-        'Bar': '/img/bar_icon.svg',
-        'Viewpoint': '/img/viewpoint_icon.svg',
-        'Historical': '/img/historical_icon.svg'
+        'Restaurant': 'https://stage.triptime.ai/img/restaurant_icon.svg',
+        'Cafe': 'https://stage.triptime.ai/img/coffee_icon.svg',
+        'Coffee': 'https://stage.triptime.ai/img/coffee_icon.svg',
+        'Hotel': 'https://stage.triptime.ai/img/accommodation_icon.svg',
+        'Museum': 'https://stage.triptime.ai/img/museum_icon.svg',
+        'Park': 'https://stage.triptime.ai/img/park_icon.svg',
+        'Beach': 'https://stage.triptime.ai/img/beach_icon.svg',
+        'Shopping': 'https://stage.triptime.ai/img/market_icon.svg',
+        'Bar': 'https://stage.triptime.ai/img/bar_icon.svg',
+        'Viewpoint': 'https://stage.triptime.ai/img/viewpoint_icon.svg',
+        'Historical': 'https://stage.triptime.ai/img/historical_icon.svg',
+        'Touristic Attraction': 'https://stage.triptime.ai/img/touristic_icon.svg',
+        'Touristic': 'https://stage.triptime.ai/img/touristic_icon.svg'
     };
     return iconMap[category] || '';
 }
@@ -585,7 +588,7 @@ async function renderFavoritePlacesPanel() {
             // Start New Trip butonu - KOYU MOR
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<img src="img/start_with_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Start New`;
+            b1.innerHTML = `<img src="img/start_icon.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
             // Add to Trip butonu - KOYU MAVİ
@@ -593,7 +596,7 @@ async function renderFavoritePlacesPanel() {
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.onclick = () => {
                     openDayModal((d) => {
                         if (typeof addToCart === "function") {
@@ -608,7 +611,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
