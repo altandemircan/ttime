@@ -485,23 +485,22 @@ window.toggleMpGroup = function(header) {
 // Kategori ikonunu getiren fonksiyon
 function getPlaceCategoryIcon(category) {
     const iconMap = {
-        'Restaurant': 'https://stage.triptime.ai/img/restaurant_icon.svg',
-        'Cafe': 'https://stage.triptime.ai/img/coffee_icon.svg',
-        'Coffee': 'https://stage.triptime.ai/img/coffee_icon.svg',
-        'Hotel': 'https://stage.triptime.ai/img/accommodation_icon.svg',
-        'Museum': 'https://stage.triptime.ai/img/museum_icon.svg',
-        'Park': 'https://stage.triptime.ai/img/park_icon.svg',
-        'Beach': 'https://stage.triptime.ai/img/beach_icon.svg',
-        'Shopping': 'https://stage.triptime.ai/img/market_icon.svg',
-        'Bar': 'https://stage.triptime.ai/img/bar_icon.svg',
-        'Viewpoint': 'https://stage.triptime.ai/img/viewpoint_icon.svg',
-        'Historical': 'https://stage.triptime.ai/img/historical_icon.svg',
-        'Touristic Attraction': 'https://stage.triptime.ai/img/touristic_icon.svg',
-        'Touristic': 'https://stage.triptime.ai/img/touristic_icon.svg'
+        'Restaurant': '/img/restaurant_icon.svg',
+        'Cafe': '/img/coffee_icon.svg',
+        'Coffee': '/img/coffee_icon.svg',
+        'Hotel': '/img/accommodation_icon.svg',
+        'Museum': '/img/museum_icon.svg',
+        'Park': '/img/park_icon.svg',
+        'Beach': '/img/beach_icon.svg',
+        'Shopping': '/img/market_icon.svg',
+        'Bar': '/img/bar_icon.svg',
+        'Viewpoint': '/img/viewpoint_icon.svg',
+        'Historical': '/img/historical_icon.svg',
+        'Touristic Attraction': '/img/touristic_icon.svg',
+        'Touristic': '/img/touristic_icon.svg'
     };
     return iconMap[category] || '';
 }
-
 // ------------------------------------------------------
 // 3. RENDER - Yumuşak renkler, yan yana butonlar
 // ------------------------------------------------------
