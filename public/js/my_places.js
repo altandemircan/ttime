@@ -18,7 +18,7 @@ function saveFavTrips() {
     style.id = styleId;
     style.textContent = `
         /* --- GRUP (AKORDİYON) --- */
-        #favorite-places-panel .mp-group {
+        .mp-group {
             margin-bottom: 16px;
             background: #fff;
           
@@ -28,13 +28,13 @@ function saveFavTrips() {
             transition: all 0.3s ease;
         }
 
-        #favorite-places-panel .mp-group:hover {
+        .mp-group:hover {
             box-shadow: rgba(149, 157, 165, 0.12) 0px 6px 16px;
             border-color: #e2e8f0;
         }
 
         /* Başlık Kısmı */
-        #favorite-places-panel .mp-group-header {
+        .mp-group-header {
             padding: 14px 16px;
             background: #fafafc;
             cursor: pointer;
@@ -46,12 +46,12 @@ function saveFavTrips() {
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         
-        #favorite-places-panel .mp-group-header:hover { 
+        .mp-group-header:hover { 
             background: #f5f7fa; 
         }
 
         /* Başlık Yazısı */
-        #favorite-places-panel .mp-group-title {
+        .mp-group-title {
             font-size: 0.95rem; 
             font-weight: 600; 
             color: #4a5568;
@@ -61,7 +61,7 @@ function saveFavTrips() {
         }
         
         /* Sayı Rozeti */
-        #favorite-places-panel .mp-badge {
+        .mp-badge {
             font-size: 0.8rem; 
             font-weight: 600; 
             color: #718096;
@@ -72,7 +72,7 @@ function saveFavTrips() {
         }
 
         /* Ok İkonu */
-        #favorite-places-panel .mp-arrow {
+        .mp-arrow {
             font-size: 0.9rem; 
             color: #a0aec0;
             transition: transform 0.3s ease;
@@ -84,7 +84,7 @@ function saveFavTrips() {
         }
         
         /* AÇIK DURUM (OPEN) */
-        #favorite-places-panel .mp-group.open .mp-group-header {
+        .mp-group.open .mp-group-header {
            border-bottom: 1px solid #e2e8f0;
     background: #eeefef;
     color: #333333;
@@ -95,24 +95,24 @@ function saveFavTrips() {
     margin-bottom: 10px;
         }
         
-        #favorite-places-panel .mp-group.open .mp-arrow { 
+        .mp-group.open .mp-arrow { 
             transform: rotate(180deg); 
         }
         
         /* İçerik Alanı (Animasyonlu) */
-        #favorite-places-panel .mp-content {
+        .mp-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s ease-out;
             background: #fff;
         }
         
-        #favorite-places-panel .mp-group.open .mp-content {
+        .mp-group.open .mp-content {
             max-height: 3000px;
             transition: max-height 0.5s ease-in;
         }
 
-        #favorite-places-panel .mp-list-wrap { 
+        .mp-list-wrap { 
             padding: 12px 0; 
             display: flex; 
             flex-direction: column; 
@@ -120,7 +120,7 @@ function saveFavTrips() {
         }
 
         /* --- KART YAPISI --- */
-        #favorite-places-panel .mp-card {
+        .mp-card {
             background: #fff; 
             border: 1px solid #e2e8f0; 
             border-radius: 10px;
@@ -129,13 +129,13 @@ function saveFavTrips() {
             overflow: hidden;
         }
 
-        #favorite-places-panel .mp-card:hover {
+        .mp-card:hover {
             box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
             border-color: #d0d7e2;
         }
 
         /* Kart Üst Kısmı */
-        #favorite-places-panel .mp-card-head {
+        .mp-card-head {
             display: flex; 
             padding: 12px; 
             gap: 12px; 
@@ -145,7 +145,7 @@ function saveFavTrips() {
         }
         
         /* Resim kutusu */
-        #favorite-places-panel .mp-img-box {
+        .mp-img-box {
             width: 56px; 
             height: 40px; 
             flex-shrink: 0; 
@@ -155,13 +155,13 @@ function saveFavTrips() {
             border: 1px solid #edf2f7;
         }
         
-        #favorite-places-panel .mp-card .mp-img { 
+        .mp-img { 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
         }
         
-        #favorite-places-panel .mp-info { 
+        .mp-info { 
             flex: 1; 
             min-width: 0; 
             display: flex; 
@@ -169,7 +169,7 @@ function saveFavTrips() {
             gap: 6px; 
         }
         
-        #favorite-places-panel .mp-name { 
+        .mp-name { 
             font-size: 0.95rem; 
             font-weight: 600; 
             color: #2d3748; 
@@ -182,7 +182,7 @@ function saveFavTrips() {
         }
         
         /* Kategori etiketi */
-        #favorite-places-panel .mp-cats {
+        .mp-cats {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -196,124 +196,110 @@ function saveFavTrips() {
             width: fit-content;
         }
         
-        #favorite-places-panel .mp-card .mp-cats img {
+        .mp-cats img {
             width: 14px;
             height: 14px;
             opacity: 0.7;
         }
 
         /* Favori butonu - SAĞDA */
-        #favorite-places-panel .mp-fav-btn {
+        .mp-fav-btn {
             position: absolute;
             top: 12px;
             right: 12px;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            border-radius: 6px;
+            border-radius: 8px;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             transition: all 0.2s ease;
         }
         
-        #favorite-places-panel .mp-fav-btn:hover {
-            background: #f1e9ff;
-            border-color: #d4a5ff;
+        .mp-fav-btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e0;
         }
         
-        #favorite-places-panel .mp-fav-btn img {
-            width: 14px;
-            height: 14px;
+        .mp-fav-btn img {
+            width: 16px;
+            height: 16px;
         }
 
-        /* Alt Butonlar - KOMPAKT */
-        #favorite-places-panel .mp-acts { 
+        /* Alt Butonlar - YAN YANA, AYNI BOYUT */
+        .mp-acts { 
             display: flex; 
-            gap: 6px;
-            background: #fff; 
+            background: #fafcfd; 
             border-radius: 0 0 10px 10px; 
-            overflow: visible;
+            overflow: hidden; 
             border-top: 1px solid #edf2f7;
-            padding: 8px;
-            align-items: stretch;
         }
         
-        #favorite-places-panel .mp-btn {
+        .mp-btn {
             flex: 1; 
             border: none; 
-            padding: 9px 10px;
-            font-size: 0.8rem; 
+            padding: 12px;
+            font-size: 0.85rem; 
             font-weight: 600; 
             cursor: pointer;
             display: flex; 
             align-items: center; 
             justify-content: center;
             gap: 6px; 
-            color: #fff; 
+            color: #4a5568; 
             transition: all 0.2s ease;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            border-radius: 6px;
-            white-space: nowrap;
+            background: transparent;
         }
         
-        #favorite-places-panel .mp-btn img {
-            width: 16px;
-            height: 16px;
-            margin: 0;
+        /* YUMUŞAK MOR buton */
+        .mp-btn-start { 
+            background: #f5f3ff; 
+            border-right: 1px solid #edf2f7; 
+            color: #7c3aed;
         }
         
-        /* MOR buton - DOLU */
-        #favorite-places-panel .mp-btn-start { 
-            background: linear-gradient(135deg, #8a4af3 0%, #7a3ae3 100%);
-            border: none;
-            box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
+        .mp-btn-start:hover { 
+            background: #ede9fe; 
+            color: #6d28d9;
         }
         
-        #favorite-places-panel .mp-btn-start:hover { 
-            background: linear-gradient(135deg, #7a3ae3 0%, #6a2ad3 100%);
-            box-shadow: 0 3px 8px rgba(138, 74, 243, 0.3);
+        /* YUMUŞAK MAVİ buton */
+        .mp-btn-add { 
+            background: #eff6ff; 
+            color: #3b82f6;
         }
         
-        /* MAVİ buton - DOLU, ORTALANMIŞ */
-        #favorite-places-panel .mp-btn-add { 
-            background: linear-gradient(135deg, #02aee4 0%, #0098d4 100%);
-            border: none;
-            box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
-            justify-content: center;
+        .mp-btn-add:hover { 
+            background: #dbeafe; 
+            color: #2563eb;
         }
         
-        #favorite-places-panel .mp-btn-add:hover { 
-            background: linear-gradient(135deg, #0098d4 0%, #0088c4 100%);
-            box-shadow: 0 3px 8px rgba(2, 174, 228, 0.3);
-        }
-        
-        #favorite-places-panel .mp-btn-dis { 
-            background: #e8eaed !important; 
-            color: #999999 !important; 
-            cursor: not-allowed;
-            box-shadow: none !important;
+        .mp-btn-dis { 
+            background: #f7fafc !important; 
+            color: #a0aec0 !important; 
+            cursor: not-allowed; 
         }
 
-        #favorite-places-panel .mp-hint-ok { 
-            font-size: 0.65rem; 
-            color: #ffffff;
-            opacity: 0.9;
-            margin-left: 0;
+        .mp-hint-ok { 
+            font-size: 0.75rem; 
+            color: #48bb78;
+            margin-left: 4px;
             font-weight: 500;
         }
         
-        #favorite-places-panel .mp-hint-no { 
-            font-size: 0.65rem; 
-            color: #ffdddd; 
-            margin-left: 0;
+        .mp-hint-no { 
+            font-size: 0.75rem; 
+            color: #f56565; 
+            margin-left: 4px;
             font-weight: 500;
         }
 
         /* Mesafe bilgisi */
-        #favorite-places-panel .mp-distance-info {
+        .mp-distance-info {
             font-size: 0.75rem;
             color: #718096;
             margin-top: 4px;
@@ -323,7 +309,7 @@ function saveFavTrips() {
         }
 
         /* MODAL */
-        #favorite-places-panel .mp-overlay {
+        .mp-overlay {
             position: fixed; 
             top: 0; 
             left: 0; 
@@ -337,7 +323,7 @@ function saveFavTrips() {
             backdrop-filter: blur(2px);
         }
         
-        #favorite-places-panel .mp-modal {
+        .mp-modal {
             background: #fff; 
             width: 280px; 
             padding: 24px;
@@ -347,7 +333,7 @@ function saveFavTrips() {
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         
-        #favorite-places-panel .mp-days { 
+        .mp-days { 
             display: flex; 
             flex-direction: column; 
             gap: 8px; 
@@ -356,7 +342,7 @@ function saveFavTrips() {
             overflow-y: auto; 
         }
         
-        #favorite-places-panel .mp-day-row {
+        .mp-day-row {
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
             padding: 12px;
@@ -369,7 +355,7 @@ function saveFavTrips() {
             color: #4a5568;
         }
         
-        #favorite-places-panel .mp-day-row:hover { 
+        .mp-day-row:hover { 
             background: #edf2f7; 
             border-color: #cbd5e0; 
         }
@@ -592,30 +578,18 @@ async function renderFavoritePlacesPanel() {
             const acts = document.createElement("div");
             acts.className = "mp-acts";
 
-            // Start New Trip butonu - MOR
+            // Start New Trip butonu - YUMUŞAK MOR
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            const img1 = document.createElement("img");
-            img1.src = "img/location.svg";
-            img1.style.width = "16px";
-            img1.style.height = "16px";
-            img1.style.filter = "brightness(0) invert(1)";
-            b1.appendChild(img1);
-            b1.appendChild(document.createTextNode(" Start New"));
+            b1.innerHTML = `<img src="img/start_icon.svg" style="width:16px;height:16px;"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
-            // Add to Trip butonu - MAVİ
+            // Add to Trip butonu - YUMUŞAK MAVİ
             const b2 = document.createElement("button");
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                const img2 = document.createElement("img");
-                img2.src = "img/location.svg";
-                img2.style.width = "16px";
-                img2.style.height = "16px";
-                img2.style.filter = "brightness(0) invert(1)";
-                b2.appendChild(img2);
-                b2.appendChild(document.createTextNode(" Add to Trip"));
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip`;
                 b2.onclick = () => {
                     openDayModal((d) => {
                         if (typeof addToCart === "function") {
@@ -630,13 +604,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                const img2 = document.createElement("img");
-                img2.src = "img/location.svg";
-                img2.style.width = "16px";
-                img2.style.height = "16px";
-                img2.style.filter = "brightness(0) invert(1)";
-                b2.appendChild(img2);
-                b2.appendChild(document.createTextNode(" Add to Trip"));
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip <span class="mp-hint-no">${st.msg}</span>`;
                 b2.title = "Too far";
             }
 
