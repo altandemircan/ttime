@@ -582,18 +582,18 @@ async function renderFavoritePlacesPanel() {
             const acts = document.createElement("div");
             acts.className = "mp-acts";
 
-            // Start New Trip butonu - YUMUŞAK MOR
+            // Start New Trip butonu - KOYU MOR
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<img src="img/start_icon.svg" style="width:16px;height:16px;"> Start New`;
+            b1.innerHTML = `<img src="img/start_icon.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
-            // Add to Trip butonu - YUMUŞAK MAVİ
+            // Add to Trip butonu - KOYU MAVİ
             const b2 = document.createElement("button");
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.onclick = () => {
                     openDayModal((d) => {
                         if (typeof addToCart === "function") {
@@ -608,7 +608,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip <span class="mp-hint-no">${st.msg}</span>`;
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
