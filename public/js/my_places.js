@@ -476,19 +476,32 @@ window.startNewTripWithPlace = function(place) {
 
     // Map initialize et - delay ile
     setTimeout(() => {
-        if (typeof initializeMap === "function") {
-            initializeMap();
+        // Map container'ı kontrol et
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) {
+            console.warn("Map container not found");
+            return;
         }
 
-        // 4. Haritayı ve Listeyi Güncelle
-        if (typeof updateCart === "function") {
+        if (typeof initializeMap === "function") {
             try {
-                updateCart(); 
+                initializeMap();
             } catch (e) {
-                console.warn("Map update warning:", e);
+                console.warn("Map init error:", e);
             }
         }
-    }, 300);
+
+        // Küçük delay daha sonra updateCart çağır
+        setTimeout(() => {
+            if (typeof updateCart === "function") {
+                try {
+                    updateCart(); 
+                } catch (e) {
+                    console.warn("UpdateCart error:", e);
+                }
+            }
+        }, 200);
+    }, 100);
     
     // 5. Favoriler panelini güncelle
     renderFavoritePlacesPanel();
