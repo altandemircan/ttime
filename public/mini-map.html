@@ -2,66 +2,104 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>OpenFreeMap – Single Map</title>
-
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
-
-  <!-- MapLibre -->
-  <link
-    href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"
-    rel="stylesheet"
-  >
-
+  <title>OpenFreeMap – Static Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css" rel="stylesheet">
   <style>
     html, body {
       height: 100%;
       margin: 0;
       padding: 0;
+      overflow: hidden;
     }
-
     #map {
       width: 100%;
       height: 100%;
-      border-radius: 15px;
+      border-radius: 0;
+    }
+    /* TÜM İNTERAKTİVİTEYİ KAPAT */
+    .leaflet-container {
+      cursor: default !important;
+      pointer-events: none !important;
     }
   </style>
 </head>
 <body>
-
 <div id="map"></div>
-
-<!-- JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
-
 <script>
+  // Parametre oku
   function getParam(name) {
     const url = new URL(window.location.href);
     return url.searchParams.get(name);
   }
-
   const lat = parseFloat(getParam("lat")) || 41.01;
   const lon = parseFloat(getParam("lon")) || 29.00;
-  const zoom = 14;
+  const zoom = 16;
 
-  const map = L.map('map').setView([lat, lon], zoom);
+  // SADECE GÖRÜNTÜ HARİTASI
+  const map = L.map('map', { 
+    zoomControl: false,
+    attributionControl: false,
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    tap: false,
+    zoomSnap: 0,
+    zoomDelta: 0
+  }).setView([lat, lon], zoom);
 
+  // HARİTA KATMANI
   fetch('https://tiles.openfreemap.org/styles/bright')
     .then(res => res.json())
     .then(style => {
       L.maplibreGL({
         style: style,
-        interactive: true
+        interactive: false
       }).addTo(map);
+
+      // 24px KIRMIZI MARKER - BİRAZ SAĞDA
+      const redMarkerHtml = `
+        <div style="
+          background:#d32f2f;
+          width:24px; 
+          height:24px; 
+          border-radius:50%;
+          display:flex; 
+          align-items:center; 
+          justify-content:center;
+          border:2px solid #fff; 
+          box-shadow:0 1px 3px rgba(0,0,0,0.2);">
+            <div style="width:6px; height:6px; background:#fff; border-radius:50%;"></div>
+        </div>
+      `;
+      
+      L.marker([lat, lon], {
+        icon: L.divIcon({
+          html: redMarkerHtml,
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [16, 12], // BİRAZ SAĞDA: 16px sağ, 12px aşağı
+          popupAnchor: [0, -12]
+        }),
+        interactive: false
+      }).addTo(map);
+
+      setTimeout(() => {
+        map.invalidateSize(false);
+      }, 100);
+      
+    }).catch(err => {
+      console.log('Map loaded');
     });
 
-  L.marker([lat, lon]).addTo(map);
+  // ETKİLEŞİM YOK
+  document.addEventListener('wheel', e => e.preventDefault(), { passive: false });
 </script>
-
 </body>
 </html>

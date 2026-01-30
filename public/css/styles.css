@@ -1057,13 +1057,13 @@ ease;
     border-radius: 18px 18px 0 0;
     border: none;
 }
-.g
+
 
 .change {
     display: flex; 
     flex-direction: row; 
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .change span {
@@ -1078,7 +1078,6 @@ ease;
     align-content: center;
     justify-content: center;
     align-items: center;
-    background: #ffffff70;
     border-radius: 16px;
 }
 
@@ -1088,6 +1087,30 @@ ease;
     border-radius: 0 !important;
     margin-right: 0px !important;
 }
+
+
+.change {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 4px;
+    align-items: center;;
+}
+.change .info-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.98em;
+    color: #444;
+}
+.change .info-item img {
+    width: 18px;
+    height: 18px;
+    opacity: 0.85;
+}
+
+
+
+
 .web-link img {
     width: 22px !important;
     height: 22px !important;
@@ -3473,7 +3496,7 @@ ease;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 16px;
         flex-direction: column;
     margin-bottom: 20px;
 }
@@ -3960,26 +3983,6 @@ ease;
   color: #aaa;
 }
 
-
-
-.change {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    align-items: center;
-}
-.change .info-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.98em;
-    color: #444;
-}
-.change .info-item img {
-    width: 18px;
-    height: 18px;
-    opacity: 0.85;
-}
 
 
 .ai-info-section, .trip-info-section {
@@ -4945,15 +4948,22 @@ right: 30px;
   100% { transform: rotate(360deg);}
 }
 .custom-marker-outer {
-  width:24px;height:24px;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  border:2px solid #fff;
-  box-shadow:0 2px 8px rgba(0,0,0,0.2);
-  position:relative;
-  transition:background 0.2s, box-shadow 0.18s;
+  width: 32px !important;       /* 24px yerine 32px */
+  height: 32px !important;      /* 24px yerine 32px */
+  box-sizing: border-box !important; /* Çerçeveyi boyuta dahil et */
+  margin: 0 !important;         /* Dış boşlukları sıfırla */
+  
+  /* Diğer özellikler kalabilir */
+  border-radius: 50%;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: relative;
+  transition: background 0.2s, box-shadow 0.18s;
   background: #d32f2f;
-      color: #fff;
+  color: #fff;
 }
 .custom-marker-outer.spin {
   animation: spin-marker-bg 0.7s linear infinite;
@@ -5715,7 +5725,7 @@ ease;
 .maplibregl-ctrl-bottom-right {
     display: none;
 }
-.route-controls-bar .leaflet-touch .leaflet-control-attribution {
+/*.route-controls-bar .leaflet-touch .leaflet-control-attribution {
     width: max-content;
     bottom: 0px !important;
     right: 2px !important;
@@ -5724,7 +5734,7 @@ ease;
     font-weight: 400;
 }
 
-
+*/
 .leaflet-control-attribution  {
        position: absolute !important;
     bottom: 32px !important;
@@ -5743,11 +5753,6 @@ ease;
 
 .leaflet-attribution-flag {
     display: none !important;
-}
-.leaflet-popup-pane {
-    z-index: 700;
-
-    margin-top: 4px;
 }
 
 
@@ -6233,13 +6238,6 @@ border-bottom:1px solid #ddd;
     font-weight: 700;
         }
 
-      .elev-animation .spinner{width: 20px;
-    height: 20px;
-    border: 4px solid #e0e0e0;
-    border-top-color: #8a4af3;
-    border-radius: 50%;
-    animation: ttspin .9s linear infinite;
-}
 
 
  .scale-bar-track.loading > *:not(.elev-animation) {
@@ -6270,12 +6268,26 @@ border-bottom:1px solid #ddd;
     color: #8a4af3;
     font-weight: 700;}
 
-      .tt-scale-loader .spinner{width: 20px;
-    height: 20px;
+
+.elev-animation .spinner,
+.tt-scale-loader .spinner,
+.elevation-placeholder .spinner {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    aspect-ratio: 1 !important;
     border: 4px solid #e0e0e0;
     border-top-color: #8a4af3;
     border-radius: 50%;
-    animation: ttspin .9s linear infinite;}
+    animation: ttspin .9s linear infinite;
+    box-sizing: border-box;
+    display: block;
+}
+
+
       @keyframes ttspin{to{transform:rotate(360deg)}}
       .scale-bar-track{position:relative}
 
@@ -6324,7 +6336,7 @@ border-bottom:1px solid #ddd;
     .tt-elev-cursor { position:absolute; top:48px; bottom:16px; width:2px; background:#263238; opacity:.25; pointer-events:none; }
    .tt-elev-tooltip {
   position: absolute;
-    top: 28px;
+    top: 36px;
     left: 0;
     background: rgba(255, 255, 255, 0.95);
     color: #222;
@@ -7592,6 +7604,7 @@ display: block !important;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
     border: 1px solid rgba(255,255,255,0.1); 
     letter-spacing: 0.5px;
+    padding:10px;
 
     /* --- TIKLAMA SORUNU ÇÖZÜMÜ --- */
     cursor: pointer !important;  /* El işareti çıksın */

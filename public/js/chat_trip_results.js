@@ -99,7 +99,16 @@ function generateStepHtml(step, day, category, idx = 0) {
 
         <div class="info day_cats item-info-view">
    
-            <div class="title" title="${name}">${name}</div>
+            <div class="title" title="${name}">
+                ${name}
+                ${website ? `<a href="${website}" target="_blank" style="display: inline-block; margin-left: 6px; vertical-align: middle;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #8a4af3;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        <path d="M2 12h20"></path>
+                    </svg>
+                </a>` : ''}
+            </div>
             
             <div class="address">
                 <img src="img/address_icon.svg">
@@ -118,18 +127,13 @@ function generateStepHtml(step, day, category, idx = 0) {
 
         <div class="item_action">
             <div class="change">
-                <span onclick="window.showImage && window.showImage(this)">
-                    <img src="img/camera_icon.svg">
-                </span>
-                <span onclick="window.showMap && window.showMap(this)">
-                    <img src="img/map_icon.svg">
-                </span>
-                ${website ? `
-                <span onclick="window.open('${website}', '_blank')">
-                    <img src="img/website_link.svg" title="${website}">
-                </span>
-                ` : ''}
-            </div>
+    <span onclick="window.showImage && window.showImage(this)" class="active">
+        <img src="img/camera_icon.svg">
+    </span>
+    <span onclick="window.showMap && window.showMap(this)">
+        <img src="img/map_icon.svg">
+    </span>
+</div>
             
             <div class="trip-action-group">
                 <select class="day-select-dropdown-premium">
@@ -145,7 +149,7 @@ function generateStepHtml(step, day, category, idx = 0) {
     </div>`;
 }
 
-// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ (RENK GÜNCELLENDİ)
+// 4️⃣  DROPDOWN VE BUTON GRUBU CSS'İ
 function injectDropdownStyles() {
     const style = document.createElement('style');
     style.textContent = `
@@ -174,7 +178,7 @@ function injectDropdownStyles() {
             border: none;
             background-color: transparent;
             padding: 8px 6px 8px 12px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: #333;
             cursor: pointer;
@@ -194,7 +198,7 @@ function injectDropdownStyles() {
         /* Buton Stili (Temel) */
         .trip-action-group .action-btn {
             border: none;
-            padding: 8px 14px;
+            padding: 8px 10px;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -209,18 +213,19 @@ function injectDropdownStyles() {
 
         /* --- ADD MODU (MOR TASARIM) --- */
         .trip-action-group .action-btn.btn-add {
-            background-color: #8a4af3; /* İSTENİLEN RENK */
-            color: #ffffff;            /* BEYAZ YAZI */
-            border-left: 1px solid rgba(255,255,255,0.2); /* Hafif ayraç */
+            background-color: #8a4af3;
+            color: #ffffff;
+            border-left: 1px solid rgba(255,255,255,0.2);
         }
         
         .trip-action-group .action-btn.btn-add:hover {
-            background-color: #7b42db; /* Hover: Hafif koyu mor */
+            background-color: #7b42db;
         }
 
         /* İkonu Beyaz Yapmak İçin Filtre */
         .trip-action-group .action-btn.btn-add img {
             filter: brightness(0) invert(1);
+        margin-right:0px;
         }
 
         /* --- REMOVE MODU (Kırmızı Tasarım) --- */
@@ -233,6 +238,44 @@ function injectDropdownStyles() {
             background-color: #ffe8e6;
         }
 
+        /* === KAMERA/HARİTA İKON STİLLERİ === */
+        .item_action .change {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item_action .change span {
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: #ccf0fb;
+            border: 1px solid transparent;
+        }
+
+        .item_action .change span:hover {
+            background: #e9e9e9;
+            transform: translateY(-1px);
+        }
+
+        .item_action .change span.active {
+            background: #9ec69f !important;
+            border-color: #ffffff !important;
+        }
+
+        .item_action .change span.active img {
+            filter: brightness(0) invert(1) !important;
+        }
+
+        .item_action .change img {
+            width: 16px;
+            height: 16px;
+            transition: filter 0.2s;
+        }
+
         @media (prefers-color-scheme: dark) {
             .trip-action-group {
                 background: #2a2a2a;
@@ -242,16 +285,44 @@ function injectDropdownStyles() {
                 color: #e0e0e0;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             }
-            /* Dark modda Add butonu parlak kalsın veya hafif koyulabilir */
             .trip-action-group .action-btn.btn-add {
                 background-color: #8a4af3; 
                 color: white;
             }
-             .trip-action-group .action-btn.btn-remove {
+            .trip-action-group .action-btn.btn-remove {
                 background-color: #3e2a2a;
                 color: #ef5350;
                 border-left-color: #444;
             }
+            
+            .item_action .change span {
+                background: #2a2a2a;
+                border-color: #444;
+            }
+            .item_action .change span:hover {
+                background: #333;
+            }
+            .item_action .change span.active {
+                background: #8a4af3 !important;
+                border-color: #8a4af3 !important;
+            }
+        }
+
+        /* === HARİTA IFRAME STİLLERİ === */
+        iframe.leaflet-mini-map {
+            display: block !important;
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+
+        .leaflet-marker-icon {
+            z-index: 9999 !important;
+        }
+
+        .steps .visual iframe {
+            cursor: default !important;
+            border-radius: 15px 15px 0 0;
         }
     `;
     document.head.appendChild(style);
@@ -268,6 +339,7 @@ if (document.readyState === 'loading') {
 // ==========================================================
 // === LOGIC: BUTON YÖNETİMİ, EKLEME VE ÇIKARMA İŞLEMLERİ ===
 // ==========================================================
+
 
 // 1. Yardımcı: Item sepette var mı?
 function isItemInCartForDay(lat, lon, name, day) {
@@ -328,13 +400,16 @@ function updateAllChatButtons() {
         const isAdded = isItemInCartForDay(lat, lon, name, selectedDay);
 
         if (isAdded) {
-            // REMOVE MODUNA GEÇ
-            if (!btn.classList.contains('btn-remove')) {
-                btn.className = 'action-btn btn-remove addtotrip-toggle';
-                btn.innerHTML = `<span>Remove</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-            }
-        } else {
+    if (!btn.classList.contains('btn-remove')) {
+        btn.className = 'action-btn btn-remove addtotrip-toggle';
+        btn.innerHTML = `
+            <span class="btn-text">Remove</span>
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>`;
+    }
+} else {
             // ADD MODUNA GEÇ
             if (!btn.classList.contains('btn-add')) {
                 btn.className = 'action-btn btn-add addtotrip-toggle';
@@ -422,8 +497,143 @@ document.addEventListener('change', function(e) {
 const observer = new MutationObserver(function(mutations) {
     updateAllChatButtons();
 });
-const chatContainer = document.getElementById('chat-container') || document.body;
-observer.observe(chatContainer, { childList: true, subtree: true });
 
 // İlk yüklemede çalıştır
-updateAllChatButtons();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        updateAllChatButtons();
+        const chatContainer = document.getElementById('chat-container') || document.body;
+        observer.observe(chatContainer, { childList: true, subtree: true });
+    });
+} else {
+    updateAllChatButtons();
+    const chatContainer = document.getElementById('chat-container') || document.body;
+    observer.observe(chatContainer, { childList: true, subtree: true });
+}
+
+window.showMap = function(element) {
+    const stepsElement = element.closest('.steps');
+    const visualDiv = stepsElement.querySelector('.visual');
+    const image = visualDiv.querySelector('img.check');
+    const changeContainer = stepsElement.querySelector('.item_action .change');
+    
+    // Diğer elementleri gizle
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.cats').forEach(el => { el.style.display = 'none'; });
+    stepsElement.querySelectorAll('.info-icon-wrapper').forEach(el => { el.style.display = 'none'; });
+    
+    const lat = parseFloat(stepsElement.getAttribute('data-lat'));
+    const lon = parseFloat(stepsElement.getAttribute('data-lon'));
+    
+    if (!isNaN(lat) && !isNaN(lon)) {
+        // Eski iframe'i kaldır
+        const oldIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+        if (oldIframe) oldIframe.remove();
+        if (image) image.style.display = "none";
+        
+        // Yeni iframe oluştur
+        const iframe = document.createElement('iframe');
+        iframe.className = 'leaflet-mini-map';
+        iframe.src = `/mini-map.html?lat=${lat}&lon=${lon}`;
+        iframe.width = "100%";
+        iframe.height = "235";
+        iframe.frameBorder = "0";
+        iframe.style.border = "0";
+        iframe.style.pointerEvents = "none";
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        visualDiv.appendChild(iframe);
+        
+        // Aktif ikonları ayarla - SADECE HARİTA İKONU AKTİF
+        if (changeContainer) {
+            const mapIcon = changeContainer.querySelector('span:nth-child(2)'); // Harita ikonu
+            const cameraIcon = changeContainer.querySelector('span:nth-child(1)'); // Kamera ikonu
+            
+            // Önce hepsini temizle
+            if (cameraIcon) cameraIcon.classList.remove('active');
+            if (mapIcon) mapIcon.classList.remove('active');
+            
+            // Sadece harita ikonunu aktif yap
+            if (mapIcon) mapIcon.classList.add('active');
+        }
+    } else {
+        alert("Location not found.");
+    }
+};
+
+window.showImage = function(element) {
+    const stepsElement = element.closest('.steps');
+    const visualDiv = stepsElement.querySelector('.visual');
+    const image = visualDiv.querySelector('img.check');
+    const changeContainer = stepsElement.querySelector('.item_action .change');
+    
+    // Eski iframe'i kaldır
+    const iframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+    if (iframe) iframe.remove();
+    if (image) image.style.display = '';
+
+    // TAG, FAV ve CATS bölümlerini GERİ GETİR
+    stepsElement.querySelectorAll('.geoapify-tags-section').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.fav-heart').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.cats').forEach(el => {
+        el.style.display = '';
+    });
+    stepsElement.querySelectorAll('.info-icon-wrapper').forEach(el => {
+        el.style.display = '';
+    });
+    
+    // Aktif ikonları ayarla - SADECE KAMERA İKONU AKTİF
+    if (changeContainer) {
+        const mapIcon = changeContainer.querySelector('span:nth-child(2)'); // Harita ikonu
+        const cameraIcon = changeContainer.querySelector('span:nth-child(1)'); // Kamera ikonu
+        
+        // Önce hepsini temizle
+        if (cameraIcon) cameraIcon.classList.remove('active');
+        if (mapIcon) mapIcon.classList.remove('active');
+        
+        // Sadece kamera ikonunu aktif yap
+        if (cameraIcon) cameraIcon.classList.add('active');
+    }
+};
+
+
+// Sayfa yüklendiğinde sadece harita görünümünde olmayan step'lerde kamera ikonunu aktif yap
+function activateDefaultCameraIcons() {
+    document.querySelectorAll('.steps').forEach(step => {
+        const changeContainer = step.querySelector('.item_action .change');
+        const visualDiv = step.querySelector('.visual');
+        const hasMapIframe = visualDiv.querySelector('iframe.leaflet-mini-map');
+        
+        if (changeContainer && !hasMapIframe) {
+            const cameraIcon = changeContainer.querySelector('span:nth-child(1)');
+            const mapIcon = changeContainer.querySelector('span:nth-child(2)');
+            
+            if (cameraIcon && mapIcon) {
+                // Harita iframe'i yoksa kamera aktif olsun
+                cameraIcon.classList.add('active');
+                mapIcon.classList.remove('active');
+            }
+        }
+    });
+}
+// CSS yüklendikten sonra çalıştır
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(activateDefaultCameraIcons, 100);
+    });
+} else {
+    setTimeout(activateDefaultCameraIcons, 100);
+}
+
+const chatContainer = document.getElementById('chat-container') || document.body;
+observer.observe(chatContainer, { 
+    childList: true, 
+    subtree: true
+});
+
+
+
