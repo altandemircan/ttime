@@ -731,6 +731,14 @@ async function renderFavoritePlacesPanel() {
                 b2.onclick = () => {
                     openDayModal((d) => {
                         if (typeof addToCart === "function") {
+                            // activeTripKey yoksa set et
+                            if (!window.activeTripKey) {
+                                window.activeTripKey = `trip_${Date.now()}`;
+                                if (window.selectedCity) {
+                                    window.activeTripKey = `${window.selectedCity.replace(/\s+/g, '_')}_${Date.now()}`;
+                                }
+                            }
+                            
                             addToCart(
                                 place.name, place.image, d, place.category,
                                 place.address || "", null, null, place.opening_hours || "", null,
