@@ -249,27 +249,27 @@ function saveFavTrips() {
         }
         
         /* YUMUŞAK MOR buton */
-        .mp-btn-start { 
+        .mp-btn-addm { 
                 background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%);
             border: none;
             box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
             color: #ffffff;
         }
         
-        .mp-btn-start:hover { 
+        .mp-btn-add:hover { 
                 box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3);
     background: linear-gradient(135deg, #a475f1 0%, #8b60ca 100%);
         }
         
         /* KOYU MAVİ buton */
-        .mp-btn-add { 
+        .p-btn-start { 
                 background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
             border: none;
             box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
             color: #ffffff;
         }
         
-        .mp-btn-add:hover { 
+        .mp-btn-start:hover { 
            box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
     background: linear-gradient(135deg, #1996d6 0%, #2dd4d0 100%);
         }
