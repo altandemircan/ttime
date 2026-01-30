@@ -612,7 +612,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip <span class="mp-hint-no">${st.msg}</span>`;
+                b2.innerHTML = `<img src="img/add_icon.svg" style="width:16px;height:16px;"> Add to Trip`;
                 b2.title = "Too far";
             }
 
