@@ -747,10 +747,13 @@ async function renderFavoritePlacesPanel() {
                             if (typeof updateCart === "function") updateCart();
                             renderFavoritePlacesPanel();
                             
-                            // Trip'i localStorage'a kaydet
-                            if (typeof saveCurrentTripToStorage === "function") {
-                                saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-                            }
+                            // Trip'i localStorage'a kaydet - DELAY ile
+                            setTimeout(() => {
+                                if (typeof saveCurrentTripToStorage === "function") {
+                                    console.log("Saving trip...", window.cart);
+                                    saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+                                }
+                            }, 500);
                             
                             // My Places panelini kapat
                             const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
