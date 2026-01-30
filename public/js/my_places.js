@@ -744,16 +744,9 @@ async function renderFavoritePlacesPanel() {
                                 place.address || "", null, null, place.opening_hours || "", null,
                                 { lat: Number(place.lat), lng: Number(place.lon) }, place.website || ""
                             );
-                            if (typeof updateCart === "function") updateCart();
+                            // Çakışmayı önlemek için manuel updateCart ve save komutları kaldırıldı.
+                            // addToCart fonksiyonu bu işlemleri zaten yönetiyor.
                             renderFavoritePlacesPanel();
-                            
-                            // Trip'i localStorage'a kaydet - DELAY ile
-                            setTimeout(() => {
-                                if (typeof saveCurrentTripToStorage === "function") {
-                                    console.log("Saving trip...", window.cart);
-                                    saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-                                }
-                            }, 500);
                             
                             // My Places panelini kapat
                             const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
