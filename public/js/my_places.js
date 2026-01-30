@@ -259,7 +259,7 @@ function saveFavTrips() {
         
         /* YUMUŞAK MOR buton */
         .mp-btn-start { 
-            background: linear-gradient(135deg, #8a4af3 0%, #7a3ae3 100%);
+                background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%);
             border: none;
             box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
             color: #ffffff;
@@ -272,7 +272,7 @@ function saveFavTrips() {
         
         /* KOYU MAVİ buton */
         .mp-btn-add { 
-            background: linear-gradient(135deg, #02aee4 0%, #0098d4 100%);
+                background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
             border: none;
             box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
             color: #ffffff;
