@@ -3498,7 +3498,7 @@ ease;
     justify-content: space-between;
     gap: 16px;
         flex-direction: column;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .date-info {
