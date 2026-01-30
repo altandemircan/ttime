@@ -589,9 +589,8 @@ async function renderFavoritePlacesPanel() {
             // Start New Trip butonu - MOR
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" style="color:white;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Start New`;
+            b1.innerHTML = `<img src="img/location.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Start New`;
             b1.style.gap = '6px';
-            b1.style.color = '#ffffff';
             b1.onclick = () => startNewTripWithPlace(place);
 
             // Add to Trip butonu - MAVİ
@@ -599,9 +598,8 @@ async function renderFavoritePlacesPanel() {
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                b2.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" style="color:white;"><circle cx="12" cy="12" r="1"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path><circle cx="12" cy="12" r="9"></circle></svg> Add to Trip`;
+                b2.innerHTML = `<img src="img/location.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.style.gap = '6px';
-                b2.style.color = '#ffffff';
                 b2.onclick = () => {
                     openDayModal((d) => {
                         if (typeof addToCart === "function") {
@@ -616,7 +614,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" style="color:white;"><circle cx="12" cy="12" r="1"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path><circle cx="12" cy="12" r="9"></circle></svg> Add to Trip`;
+                b2.innerHTML = `<img src="img/location.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.style.gap = '6px';
                 b2.title = "Too far";
             }
