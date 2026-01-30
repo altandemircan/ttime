@@ -207,41 +207,44 @@ function saveFavTrips() {
             position: absolute;
             top: 12px;
             right: 12px;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border-radius: 8px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #fff5fa;
+            border: 1px solid #f5d6e8;
             transition: all 0.2s ease;
         }
         
         .mp-fav-btn:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e0;
+            background: #ffebf5;
+            border-color: #f0a8d8;
+            transform: scale(1.08);
         }
         
         .mp-fav-btn img {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
         }
 
-        /* Alt Butonlar - YAN YANA, AYNI BOYUT */
+        /* Alt Butonlar - DOLU, MODERN */
         .mp-acts { 
             display: flex; 
-            background: #fafcfd; 
+            gap: 10px;
+            background: #fff; 
             border-radius: 0 0 10px 10px; 
-            overflow: hidden; 
-            border-top: 1px solid #edf2f7;
+            overflow: visible;
+            border-top: 1px solid #f0f2f5;
+            padding: 12px;
         }
         
         .mp-btn {
             flex: 1; 
             border: none; 
-            padding: 12px;
+            padding: 11px 16px;
             font-size: 0.85rem; 
             font-weight: 600; 
             cursor: pointer;
@@ -249,50 +252,58 @@ function saveFavTrips() {
             align-items: center; 
             justify-content: center;
             gap: 6px; 
-            color: #4a5568; 
+            color: #fff; 
             transition: all 0.2s ease;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: transparent;
+            border-radius: 8px;
         }
         
-        /* YUMUŞAK MOR buton */
+        /* MOR buton - DOLU */
         .mp-btn-start { 
-            background: #f5f3ff; 
-            border-right: 1px solid #edf2f7; 
-            color: #7c3aed;
+            background: linear-gradient(135deg, #8a4af3 0%, #7a3ae3 100%);
+            border: none;
+            box-shadow: 0 2px 8px rgba(138, 74, 243, 0.25);
         }
         
         .mp-btn-start:hover { 
-            background: #ede9fe; 
-            color: #6d28d9;
+            background: linear-gradient(135deg, #7a3ae3 0%, #6a2ad3 100%);
+            box-shadow: 0 4px 12px rgba(138, 74, 243, 0.35);
+            transform: translateY(-1px);
         }
         
-        /* YUMUŞAK MAVİ buton */
+        /* MAVİ buton - DOLU */
         .mp-btn-add { 
-            background: #eff6ff; 
-            color: #3b82f6;
+            background: linear-gradient(135deg, #02aee4 0%, #0098d4 100%);
+            border: none;
+            box-shadow: 0 2px 8px rgba(2, 174, 228, 0.25);
         }
         
         .mp-btn-add:hover { 
-            background: #dbeafe; 
-            color: #2563eb;
+            background: linear-gradient(135deg, #0098d4 0%, #0088c4 100%);
+            box-shadow: 0 4px 12px rgba(2, 174, 228, 0.35);
+            transform: translateY(-1px);
         }
         
         .mp-btn-dis { 
-            background: #f7fafc !important; 
-            color: #a0aec0 !important; 
-            cursor: not-allowed; 
+            background: #e8eaed !important; 
+            color: #999999 !important; 
+            cursor: not-allowed;
+            box-shadow: none !important;
         }
 
         .mp-hint-ok { 
             font-size: 0.75rem; 
-            color: #48bb78;
-            margin-left: 4px;
+            color: #ffffff;
+            opacity: 0.95;
+            margin-left: 2px;
             font-weight: 500;
         }
         
         .mp-hint-no { 
             font-size: 0.75rem; 
+            color: #ffdddd; 
+            margin-left: 2px;
+        } 
             color: #f56565; 
             margin-left: 4px;
             font-weight: 500;
