@@ -593,7 +593,7 @@ async function renderFavoritePlacesPanel() {
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                b2.innerHTML = `<img src="add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.onclick = () => {
                     openDayModal((d) => {
                         if (typeof addToCart === "function") {
@@ -608,7 +608,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<img src="add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
