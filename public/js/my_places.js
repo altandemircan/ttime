@@ -741,7 +741,9 @@ function toggleFavFromCart(btn) {
     const opening_hours = btn.getAttribute('data-opening_hours') || '';
 
     const place = {
-        name, category, lat: parseFloat(lat), lon: parseFloat(lon), image, address, website, opening_hours
+        name, category, lat: parseFloat(lat), lon: parseFloat(lon), image, address, website, opening_hours,
+        city: window.selectedCity || '', // Mevcut city'i ekle
+        country: (window.selectedLocation && window.selectedLocation.country) || '' // Mevcut country'i ekle
     };
 
     if (!window.favTrips) window.favTrips = [];
