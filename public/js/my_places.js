@@ -475,33 +475,38 @@ window.startNewTripWithPlace = function(place) {
         tripTitleDiv.textContent = `${cityName} Trip Plan`;
     }
 
-    // Map initialize et - delay ile
-    setTimeout(() => {
-        // Map container'ı kontrol et
+    // Map initialize et - container açılana kadar bekle
+    let mapWaitCount = 0;
+    const waitForMapContainer = setInterval(() => {
         const mapContainer = document.getElementById('map');
-        if (!mapContainer) {
-            console.warn("Map container not found");
-            return;
-        }
-
-        if (typeof initializeMap === "function") {
-            try {
-                initializeMap();
-            } catch (e) {
-                console.warn("Map init error:", e);
-            }
-        }
-
-        // Küçük delay daha sonra updateCart çağır
-        setTimeout(() => {
-            if (typeof updateCart === "function") {
+        if (mapContainer) {
+            clearInterval(waitForMapContainer);
+            
+            if (typeof initializeMap === "function") {
                 try {
-                    updateCart(); 
+                    initializeMap();
                 } catch (e) {
-                    console.warn("UpdateCart error:", e);
+                    console.warn("Map init error:", e);
                 }
             }
-        }, 200);
+
+            // Küçük delay daha sonra updateCart çağır
+            setTimeout(() => {
+                if (typeof updateCart === "function") {
+                    try {
+                        updateCart(); 
+                    } catch (e) {
+                        console.warn("UpdateCart error:", e);
+                    }
+                }
+            }, 200);
+        }
+        
+        mapWaitCount++;
+        if (mapWaitCount > 50) {
+            clearInterval(waitForMapContainer);
+            console.warn("Map container timeout");
+        }
     }, 100);
     
     // 5. Favoriler panelini güncelle
