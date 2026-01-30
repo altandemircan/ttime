@@ -590,6 +590,7 @@ async function renderFavoritePlacesPanel() {
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
+                // AKTİF DURUM: İkon Beyaz (Mevcut hali)
                 b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.onclick = () => {
                     openDayModal((d) => {
@@ -605,7 +606,9 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                // PASİF DURUM: İkon Gri (GÜNCELLENDİ)
+                // brightness(0) invert(1) yerine opacity vererek grileşmesini sağladık.
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:grayscale(1) opacity(0.5);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
