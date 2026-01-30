@@ -196,6 +196,11 @@ function saveFavTrips() {
             width: fit-content;
         }
         
+        .mp-cats img {
+            width: 14px;
+            height: 14px;
+            opacity: 0.7;
+        }
 
         /* Favori butonu - SAĞDA */
         .mp-fav-btn {
@@ -474,7 +479,7 @@ window.toggleMpGroup = function(header) {
 };
 
 // Kategori ikonunu getiren fonksiyon
-function getCategoryIcon(category) {
+function getPlaceCategoryIcon(category) {
     const iconMap = {
         'Restaurant': '/img/restaurant_icon.svg',
         'Cafe': '/img/cafe_icon.svg',
@@ -487,7 +492,7 @@ function getCategoryIcon(category) {
         'Viewpoint': '/img/viewpoint_icon.svg',
         'Historical': '/img/historical_icon.svg'
     };
-    return iconMap[category] || '/img/default_icon.svg';
+    return iconMap[category] || '';
 }
 
 // ------------------------------------------------------
@@ -542,7 +547,7 @@ async function renderFavoritePlacesPanel() {
                     <div class="mp-info">
                         <div class="mp-name" title="${place.name}">${place.name}</div>
                         <div class="mp-cats">
-                            <img src="${getCategoryIcon(place.category)}" alt="${place.category}">
+                            <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
                             ${place.category || 'Place'}
                         </div>
                         ${st.msg ? `<div class="mp-distance-info">📍 ${st.msg}</div>` : ''}
