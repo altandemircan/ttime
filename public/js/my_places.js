@@ -430,9 +430,9 @@ window.startNewTripWithPlace = function(place) {
     window.cart = []; 
     window.activeTripKey = null;
     window.selectedCity = place.city || ""; // Place'in city'sini set et
+    localStorage.setItem('selectedCity', place.city || ''); // localStorage'a kaydet
     window.lastUserQuery = "";
     localStorage.removeItem('activeTripKey');
-    localStorage.removeItem('selectedCity');
     
     // --- DÜZELTME BURADA: AI VERİLERİNİ VE EKRANINI TEMİZLE ---
     
@@ -468,19 +468,27 @@ window.startNewTripWithPlace = function(place) {
     
     window.cart.push(newItem);
 
-    // Map initialize et
-    if (typeof initializeMap === "function") {
-        initializeMap();
+    // Trip title'ı güncelle
+    const tripTitleDiv = document.getElementById('trip_title');
+    if (tripTitleDiv) {
+        tripTitleDiv.textContent = place.city ? `${place.city} Trip Plan` : "Trip Plan";
     }
 
-    // 4. Haritayı ve Listeyi Güncelle
-    if (typeof updateCart === "function") {
-        try {
-            updateCart(); 
-        } catch (e) {
-            console.warn("Map update warning:", e);
+    // Map initialize et - delay ile
+    setTimeout(() => {
+        if (typeof initializeMap === "function") {
+            initializeMap();
         }
-    }
+
+        // 4. Haritayı ve Listeyi Güncelle
+        if (typeof updateCart === "function") {
+            try {
+                updateCart(); 
+            } catch (e) {
+                console.warn("Map update warning:", e);
+            }
+        }
+    }, 300);
     
     // 5. Favoriler panelini güncelle
     renderFavoritePlacesPanel();
@@ -490,7 +498,7 @@ window.startNewTripWithPlace = function(place) {
         onCitySelected(place.city || window.selectedCity);
     }
 
-    // 6. PANEL GEÇİŞİ
+    // 7. PANEL GEÇİŞİ
     const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
     if (favSidebar && favSidebar.classList.contains('open')) {
         if(typeof window.toggleSidebar === 'function') {
