@@ -84,16 +84,7 @@ function saveFavTrips() {
         }
         
         /* AÇIK DURUM (OPEN) */
-        .mp-group.open .mp-group-header {
-           border-bottom: 1px solid #e2e8f0;
-    background: #eeefef;
-    color: #333333;
-    padding: 10px 10px;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: 6px;
-    margin-bottom: 10px;
-        }
+  
         
         .mp-group.open .mp-arrow { 
             transform: rotate(180deg); 
