@@ -611,7 +611,7 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
