@@ -468,10 +468,11 @@ window.startNewTripWithPlace = function(place) {
     
     window.cart.push(newItem);
 
-    // Trip title'ı güncelle
+    // Trip title'ı güncelle - place'in group key'inden city al
     const tripTitleDiv = document.getElementById('trip_title');
     if (tripTitleDiv) {
-        tripTitleDiv.textContent = place.city ? `${place.city} Trip Plan` : "Trip Plan";
+        const cityName = place._groupKey || place.city || window.selectedCity || "Trip Plan";
+        tripTitleDiv.textContent = `${cityName} Trip Plan`;
     }
 
     // Map initialize et - delay ile
@@ -657,6 +658,9 @@ async function renderFavoritePlacesPanel() {
         wrapper.className = "mp-list-wrap";
 
         items.forEach((place, placeIndex) => {
+            // Şehir adını place'e ekle
+            place._groupKey = key;
+            
             const st = checkDist(place.lat, place.lon);
             const isFav = isTripFav(place);
             
