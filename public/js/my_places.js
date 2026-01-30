@@ -497,9 +497,10 @@ function getPlaceCategoryIcon(category) {
         'Viewpoint': '/img/viewpoint_icon.svg',
         'Historical': '/img/historical_icon.svg',
         'Touristic Attraction': '/img/touristic_icon.svg',
-        'Touristic': '/img/touristic_icon.svg'
+        'Touristic': '/img/touristic_icon.svg',
+        'touristic attraction': '/img/touristic_icon.svg'
     };
-    return iconMap[category] || '';
+    return iconMap[category] || '/img/location.svg';
 }
 // ------------------------------------------------------
 // 3. RENDER - Yumuşak renkler, yan yana butonlar
