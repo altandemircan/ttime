@@ -303,6 +303,8 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
     tripTitle = (
       (window.activeTripKey && getAllSavedTrips()[window.activeTripKey] && getAllSavedTrips()[window.activeTripKey].title)
         ? getAllSavedTrips()[window.activeTripKey].title
+        : (window.selectedCity && window.selectedCity.trim().length > 0)
+          ? `${window.selectedCity} Trip Plan`
         : (window.lastUserQuery && window.lastUserQuery.trim().length > 0)
           ? window.lastUserQuery.trim()
           : (window.cart && window.cart.length > 0 && window.cart[0].title)

@@ -3510,11 +3510,13 @@ async function appendSuggestion(suggestion, container, day) {
 
 function handleSuggestionClick(suggestion, imgUrl, day) {
     const props = suggestion.properties || suggestion;
+    
     // GÜVENLİ location oluştur
     let lat = Number(props.lat ?? props.latitude ?? (props.geometry && props.geometry.coordinates && props.geometry.coordinates[1]));
     let lon = Number(props.lon ?? props.longitude ?? (props.geometry && props.geometry.coordinates && props.geometry.coordinates[0]));
     let location = (Number.isFinite(lat) && Number.isFinite(lon)) ? { lat, lng: lon } : null;
 
+    // 1. Sepete Ekle (addToCart zaten updateCart'ı çağırır)
     addToCart(
         props.name || props.address_line1 || '',
         imgUrl,
@@ -3525,25 +3527,21 @@ function handleSuggestionClick(suggestion, imgUrl, day) {
         location,
         props.website || ""
     );
-    const newItem = {
-        name: props.name || props.address_line1 || '',
-        image: imgUrl,
-        day: parseInt(day),
-        category: "Place",
-        address: props.formatted || "",
-        place_id: props.place_id,
-        location: {
-            lat: props.lat,
-            lng: props.lon
-        }
-    };
-    // Çift ekleme engeli
-    if (!window.cart.some(item => item.place_id === newItem.place_id && item.day === newItem.day)) {
-        
-        updateCart();
+
+    // ============================================================
+    // [KRİTİK DÜZELTME] "cart" verisini LocalStorage'a ELLE yaz
+    // ============================================================
+    // Sayfa yenilendiğinde verinin kalıcı olması için:
+    localStorage.setItem('cart', JSON.stringify(window.cart));
+    
+    // My Trips veritabanına da hemen işle
+    if (typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
     }
+    // ============================================================
+
     // Feedback ve input temizleme
-const detailsDiv = document.getElementById(`place-details-${day}`);
+    const detailsDiv = document.getElementById(`place-details-${day}`);
     if (detailsDiv) {
         detailsDiv.innerHTML = `<div class="success">✓ Added to Day ${day}</div>`;
         const input = document.getElementById(`place-input-${day}`);
