@@ -536,6 +536,9 @@ async function renderFavoritePlacesPanel() {
             const st = checkDist(place.lat, place.lon);
             const isFav = isTripFav(place);
             
+            // 1. DÜZENLEME: Mesafe Rengi (st.ok ise Yeşil, değilse Kırmızı)
+            const distColor = st.ok ? '#48bb78' : '#f56565'; 
+
             const card = document.createElement("div");
             card.className = "mp-card";
             
@@ -551,12 +554,12 @@ async function renderFavoritePlacesPanel() {
                             <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
                             ${place.category || 'Place'}
                         </div>
-                        ${st.msg ? `<div class="mp-distance-info">📍 ${st.msg}</div>` : ''}
+                        ${st.msg ? `<div class="mp-distance-info" style="color:${distColor}; font-weight:600;">📍 ${st.msg}</div>` : ''}
                     </div>
                 </div>
             `;
             
-            // Favori butonu - SAĞ ÜST KÖŞEDE
+            // Favori butonu
             const favBtn = document.createElement("button");
             favBtn.className = "mp-fav-btn";
             favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
@@ -575,22 +578,22 @@ async function renderFavoritePlacesPanel() {
             };
             card.querySelector('.mp-card-head').appendChild(favBtn);
 
-            // Alt butonlar - YAN YANA, AYNI BOYUT
+            // Alt butonlar
             const acts = document.createElement("div");
             acts.className = "mp-acts";
 
-            // Start New Trip butonu - KOYU MOR
+            // Start New Trip
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
             b1.innerHTML = `<img src="img/start_with_place.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
-            // Add to Trip butonu - KOYU MAVİ
+            // Add to Trip
             const b2 = document.createElement("button");
             b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                // AKTİF DURUM: İkon Beyaz (Mevcut hali)
+                // AKTİF DURUM: İkon Beyaz
                 b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
                 b2.onclick = () => {
                     openDayModal((d) => {
@@ -606,9 +609,9 @@ async function renderFavoritePlacesPanel() {
                     });
                 };
             } else {
-                // PASİF DURUM: İkon Gri (GÜNCELLENDİ)
-                // brightness(0) invert(1) yerine opacity vererek grileşmesini sağladık.
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:grayscale(1) opacity(0.8) brightness(0.5);"> Add to Trip`;
+                // 2. DÜZENLEME: PASİF DURUM: İkon Gri
+                // brightness(0) invert(1) yerine opacity ve grayscale kullandık.
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:grayscale(1) opacity(0.5);"> Add to Trip`;
                 b2.title = "Too far";
             }
 
