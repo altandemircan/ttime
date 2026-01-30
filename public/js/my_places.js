@@ -728,56 +728,77 @@ async function renderFavoritePlacesPanel() {
             if (st.ok) {
                 // AKTİF DURUM: İkon Beyaz
                 b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
-                b2.onclick = () => {
-                    openDayModal((d) => {
-                        if (typeof addToCart === "function") {
-                            // activeTripKey yoksa set et
-                            if (!window.activeTripKey) {
-                                window.activeTripKey = `trip_${Date.now()}`;
-                                if (window.selectedCity) {
-                                    window.activeTripKey = `${window.selectedCity.replace(/\s+/g, '_')}_${Date.now()}`;
-                                }
+                b2.onclick = function(e) {
+                // 1. Tıklama olayını durdur (Sayfa yenilenmesini engeller)
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                // 2. Gün seçme modunu aç
+                openDayModal((selectedDay) => {
+                    // Bu kısım gün seçildikten sonra çalışır. 
+                    // Burada 'e' değişkeni kullanılmamalıdır.
+
+                    if (typeof addToCart === "function") {
+                        // Eğer aktif trip key yoksa oluştur
+                        if (!window.activeTripKey) {
+                            window.activeTripKey = `trip_${Date.now()}`;
+                            if (window.selectedCity) {
+                                window.activeTripKey = `${window.selectedCity.replace(/\s+/g, '_')}_${Date.now()}`;
                             }
-                            
-                            addToCart(
-                                place.name, place.image, d, place.category,
-                                place.address || "", null, null, place.opening_hours || "", null,
-                                { lat: Number(place.lat), lng: Number(place.lon) }, place.website || ""
-                            );
-                            if (typeof updateCart === "function") updateCart();
-                            renderFavoritePlacesPanel();
-                            
-                            // Trip'i localStorage'a kaydet - DELAY ile
-                            if (typeof saveCurrentTripToStorage === "function") {
-    saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-}
-                            
-                            // My Places panelini kapat
-                            const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
-                            if (favSidebar && favSidebar.classList.contains('open')) {
-                                if (typeof window.toggleSidebar === 'function') {
-                                    window.toggleSidebar('sidebar-overlay-favorite-places');
-                                } else {
-                                    favSidebar.classList.remove('open');
-                                }
-                            }
-                            
-                            // Trip sidebar'ını aç
-                            setTimeout(() => {
-                                const tripSidebar = document.getElementById('sidebar-overlay-trip');
-                                if (tripSidebar) {
-                                    if (typeof window.toggleSidebarTrip === 'function') {
-                                        if (!tripSidebar.classList.contains('open')) {
-                                            window.toggleSidebarTrip();
-                                        }
-                                    } else {
-                                        tripSidebar.classList.add('open');
-                                    }
-                                }
-                            }, 100);
                         }
-                    });
-                };
+
+                        // 3. Sepete Ekle
+                        addToCart(
+                            place.name, 
+                            place.image, 
+                            selectedDay, 
+                            place.category,
+                            place.address || "", 
+                            null, 
+                            null, 
+                            place.opening_hours || "", 
+                            null,
+                            { lat: Number(place.lat), lng: Number(place.lon) }, 
+                            place.website || ""
+                        );
+
+                        // 4. ANINDA KAYDET (Sorunu çözen kritik kısım)
+                        if (typeof saveCurrentTripToStorage === "function") {
+                            // Delay 0 vererek hemen yazılmasını sağlıyoruz
+                            saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+                        }
+
+                        // 5. Paneli güncelle ve sidebarları ayarla
+                        renderFavoritePlacesPanel();
+                        
+                        // My Places panelini kapat
+                        const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
+                        if (favSidebar && favSidebar.classList.contains('open')) {
+                            if (typeof window.toggleSidebar === 'function') {
+                                window.toggleSidebar('sidebar-overlay-favorite-places');
+                            } else {
+                                favSidebar.classList.remove('open');
+                            }
+                        }
+                        
+                        // Trip sidebar'ını aç
+                        setTimeout(() => {
+                            const tripSidebar = document.getElementById('sidebar-overlay-trip');
+                            if (tripSidebar) {
+                                if (typeof window.toggleSidebarTrip === 'function') {
+                                    if (!tripSidebar.classList.contains('open')) {
+                                        window.toggleSidebarTrip();
+                                    }
+                                } else {
+                                    tripSidebar.classList.add('open');
+                                }
+                            }
+                        }, 100);
+                    }
+                });
+            };
             } else {
                 // 2. DÜZENLEME: PASİF DURUM: İkon Gri
                 // brightness(0) invert(1) yerine opacity ve grayscale kullandık.
