@@ -196,11 +196,6 @@ function saveFavTrips() {
             width: fit-content;
         }
         
-        .mp-cats img {
-            width: 14px;
-            height: 14px;
-            opacity: 0.7;
-        }
 
         /* Favori butonu - SAĞDA */
         .mp-fav-btn {
