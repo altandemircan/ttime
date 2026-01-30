@@ -739,6 +739,11 @@ async function renderFavoritePlacesPanel() {
                             if (typeof updateCart === "function") updateCart();
                             renderFavoritePlacesPanel();
                             
+                            // Trip'i localStorage'a kaydet
+                            if (typeof saveCurrentTripToStorage === "function") {
+                                saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+                            }
+                            
                             // My Places panelini kapat
                             const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
                             if (favSidebar && favSidebar.classList.contains('open')) {
