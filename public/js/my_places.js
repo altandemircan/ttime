@@ -122,12 +122,12 @@ function saveFavTrips() {
 
         /* --- KART YAPISI --- */
         .mp-card {
-            background: #fff; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 10px;
-            box-shadow: rgba(149, 157, 165, 0.05) 0px 2px 8px;
-            transition: all 0.3s ease;
-            overflow: hidden;
+                background: #fff;
+    overflow: hidden;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    background-color: #fff;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 12px;
         }
 
         .mp-card:hover {
@@ -238,6 +238,7 @@ function saveFavTrips() {
             overflow: hidden; 
             border-top: 1px solid #edf2f7;
             padding: 10px;
+            gap: 10px;
         }
         
         .mp-btn {
