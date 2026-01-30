@@ -728,20 +728,18 @@ async function renderFavoritePlacesPanel() {
             if (st.ok) {
                 // AKTİF DURUM: İkon Beyaz
                 b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
-                b2.onclick = function(e) {
-                // 1. Tıklama olayını durdur (Sayfa yenilenmesini engeller)
+            b2.onclick = function(e) {
+                // 1. Tıklama olayını en başta durdur (Hata riskini önler)
                 if (e) {
                     e.preventDefault();
                     e.stopPropagation();
                 }
 
-                // 2. Gün seçme modunu aç
+                // 2. Gün seçimi modunu aç
                 openDayModal((selectedDay) => {
-                    // Bu kısım gün seçildikten sonra çalışır. 
-                    // Burada 'e' değişkeni kullanılmamalıdır.
-
                     if (typeof addToCart === "function") {
-                        // Eğer aktif trip key yoksa oluştur
+                        
+                        // Active Trip Key (Gezi Kimliği) yoksa oluştur
                         if (!window.activeTripKey) {
                             window.activeTripKey = `trip_${Date.now()}`;
                             if (window.selectedCity) {
@@ -764,16 +762,29 @@ async function renderFavoritePlacesPanel() {
                             place.website || ""
                         );
 
-                        // 4. ANINDA KAYDET (Sorunu çözen kritik kısım)
+                        // ============================================================
+                        // [KRİTİK DÜZELTME] "cart" verisini LocalStorage'a ELLE yaz
+                        // ============================================================
+                        // mainscript.js sayfa açılışında veriyi 'cart' anahtarından okur.
+                        // saveCurrentTripToStorage() bazen burayı güncellemeyi atlıyor olabilir.
+                        // Bu satır, sayfa yenilendiğinde verinin orada olmasını GARANTİLER.
+                        console.log("Forcing storage save for 'cart'...");
+                        localStorage.setItem('cart', JSON.stringify(window.cart));
+                        
+                        // ID ve Şehir bilgisini de güncelle
+                        if (window.activeTripKey) localStorage.setItem('activeTripKey', window.activeTripKey);
+                        if (window.selectedCity) localStorage.setItem('selectedCity', window.selectedCity);
+                        // ============================================================
+
+                        // 4. Standart Kayıt (My Trips paneli için)
                         if (typeof saveCurrentTripToStorage === "function") {
-                            // Delay 0 vererek hemen yazılmasını sağlıyoruz
                             saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
                         }
 
-                        // 5. Paneli güncelle ve sidebarları ayarla
+                        // 5. Arayüzü Güncelle
                         renderFavoritePlacesPanel();
                         
-                        // My Places panelini kapat
+                        // "My Places" panelini kapat
                         const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
                         if (favSidebar && favSidebar.classList.contains('open')) {
                             if (typeof window.toggleSidebar === 'function') {
@@ -783,7 +794,7 @@ async function renderFavoritePlacesPanel() {
                             }
                         }
                         
-                        // Trip sidebar'ını aç
+                        // "Trip" panelini aç (Kullanıcı eklendiğini görsün)
                         setTimeout(() => {
                             const tripSidebar = document.getElementById('sidebar-overlay-trip');
                             if (tripSidebar) {
