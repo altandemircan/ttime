@@ -468,6 +468,11 @@ window.startNewTripWithPlace = function(place) {
     
     window.cart.push(newItem);
 
+    // Map initialize et
+    if (typeof initializeMap === "function") {
+        initializeMap();
+    }
+
     // 4. Haritayı ve Listeyi Güncelle
     if (typeof updateCart === "function") {
         try {
