@@ -249,7 +249,7 @@ function saveFavTrips() {
         }
         
         /* YUMUŞAK MOR buton */
-        .mp-btn-addm { 
+        .mp-btn-add { 
                 background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%);
             border: none;
             box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
