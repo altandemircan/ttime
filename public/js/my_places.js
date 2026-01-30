@@ -729,3 +729,43 @@ function isTripFav(item) {
         String(f.lat) === String(item.lat || item.location?.lat)
     );
 }
+// toggleFavFromCart fonksiyonu - gezi listesinden fav ekle/çıkar
+function toggleFavFromCart(btn) {
+    const name = btn.getAttribute('data-name');
+    const category = btn.getAttribute('data-category');
+    const lat = btn.getAttribute('data-lat');
+    const lon = btn.getAttribute('data-lon');
+    const image = btn.getAttribute('data-image');
+    const address = btn.getAttribute('data-address') || '';
+    const website = btn.getAttribute('data-website') || '';
+    const opening_hours = btn.getAttribute('data-opening_hours') || '';
+
+    const place = {
+        name, category, lat: parseFloat(lat), lon: parseFloat(lon), image, address, website, opening_hours
+    };
+
+    if (!window.favTrips) window.favTrips = [];
+
+    const idx = window.favTrips.findIndex(f => 
+        f.name === place.name && String(f.lat) === String(place.lat)
+    );
+
+    if (idx > -1) {
+        window.favTrips.splice(idx, 1);
+        btn.classList.remove('fav-active');
+        btn.querySelector('.fav-icon').src = 'img/like_off.svg';
+    } else {
+        window.favTrips.push(place);
+        btn.classList.add('fav-active');
+        btn.querySelector('.fav-icon').src = 'img/like_on.svg';
+    }
+
+    localStorage.setItem('favTrips', JSON.stringify(window.favTrips));
+    
+    if (typeof updateAllFavVisuals === 'function') {
+        updateAllFavVisuals();
+    }
+    if (typeof renderFavoritePlacesPanel === 'function') {
+        renderFavoritePlacesPanel();
+    }
+}
