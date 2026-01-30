@@ -207,81 +207,81 @@ function saveFavTrips() {
             position: absolute;
             top: 12px;
             right: 12px;
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            border-radius: 8px;
-            background: #fff5fa;
-            border: 1px solid #f5d6e8;
+            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             transition: all 0.2s ease;
         }
         
         .mp-fav-btn:hover {
-            background: #ffebf5;
-            border-color: #f0a8d8;
-            transform: scale(1.08);
+            background: #f1e9ff;
+            border-color: #d4a5ff;
         }
         
         .mp-fav-btn img {
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
         }
 
-        /* Alt Butonlar - DOLU, MODERN */
+        /* Alt Butonlar - KOMPAKT */
         .mp-acts { 
             display: flex; 
-            gap: 10px;
+            gap: 6px;
             background: #fff; 
             border-radius: 0 0 10px 10px; 
             overflow: visible;
-            border-top: 1px solid #f0f2f5;
-            padding: 12px;
+            border-top: 1px solid #edf2f7;
+            padding: 8px;
+            align-items: stretch;
         }
         
         .mp-btn {
             flex: 1; 
             border: none; 
-            padding: 11px 16px;
-            font-size: 0.85rem; 
+            padding: 9px 10px;
+            font-size: 0.8rem; 
             font-weight: 600; 
             cursor: pointer;
             display: flex; 
             align-items: center; 
             justify-content: center;
-            gap: 6px; 
+            gap: 4px; 
             color: #fff; 
             transition: all 0.2s ease;
             font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            border-radius: 8px;
+            border-radius: 6px;
+            white-space: nowrap;
         }
         
         /* MOR buton - DOLU */
         .mp-btn-start { 
             background: linear-gradient(135deg, #8a4af3 0%, #7a3ae3 100%);
             border: none;
-            box-shadow: 0 2px 8px rgba(138, 74, 243, 0.25);
+            box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
         }
         
         .mp-btn-start:hover { 
             background: linear-gradient(135deg, #7a3ae3 0%, #6a2ad3 100%);
-            box-shadow: 0 4px 12px rgba(138, 74, 243, 0.35);
-            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(138, 74, 243, 0.3);
         }
         
-        /* MAVİ buton - DOLU */
+        /* MAVİ buton - DOLU, ORTALANMIŞ */
         .mp-btn-add { 
             background: linear-gradient(135deg, #02aee4 0%, #0098d4 100%);
             border: none;
-            box-shadow: 0 2px 8px rgba(2, 174, 228, 0.25);
+            box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
+            justify-content: center;
         }
         
         .mp-btn-add:hover { 
             background: linear-gradient(135deg, #0098d4 0%, #0088c4 100%);
-            box-shadow: 0 4px 12px rgba(2, 174, 228, 0.35);
-            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(2, 174, 228, 0.3);
         }
         
         .mp-btn-dis { 
@@ -292,20 +292,17 @@ function saveFavTrips() {
         }
 
         .mp-hint-ok { 
-            font-size: 0.75rem; 
+            font-size: 0.65rem; 
             color: #ffffff;
-            opacity: 0.95;
-            margin-left: 2px;
+            opacity: 0.9;
+            margin-left: 0;
             font-weight: 500;
         }
         
         .mp-hint-no { 
-            font-size: 0.75rem; 
+            font-size: 0.65rem; 
             color: #ffdddd; 
-            margin-left: 2px;
-        } 
-            color: #f56565; 
-            margin-left: 4px;
+            margin-left: 0;
             font-weight: 500;
         }
 
