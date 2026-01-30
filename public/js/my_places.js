@@ -739,26 +739,18 @@ async function renderFavoritePlacesPanel() {
                                 }
                             }
                             
-                            // 1. Olayı izole et (Sayfa yenilemesini veya menü kapanmasını önle)
-                            if (e && e.preventDefault) e.preventDefault();
-                            if (e && e.stopPropagation) e.stopPropagation();
-
-                            // 2. Sepete Ekle
                             addToCart(
                                 place.name, place.image, d, place.category,
                                 place.address || "", null, null, place.opening_hours || "", null,
                                 { lat: Number(place.lat), lng: Number(place.lon) }, place.website || ""
                             );
-
-                            // 3. ANINDA VE ZORLA KAYDET (TIMEOUT YOK)
-                            // addToCart içindeki saveTripAfterRoutes (rota hesaplama) uzun sürebilir veya hata verebilir.
-                            // Bu yüzden burada veriyi "ham" haliyle hemen diske yazıyoruz.
+                            if (typeof updateCart === "function") updateCart();
+                            renderFavoritePlacesPanel();
+                            
+                            // Trip'i localStorage'a kaydet - DELAY ile
                             if (typeof saveCurrentTripToStorage === "function") {
-                                saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-                            }
-
-                            // 4. Paneli güncelle
-                            renderFavoritePlacesPanel()
+    saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+}
                             
                             // My Places panelini kapat
                             const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
