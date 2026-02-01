@@ -5118,7 +5118,13 @@ if (aiInfoSection) {
         addNewDayButton.style.backgroundColor = "#ccc"; // Görsel olarak grileştir
     } else {
         // AKTİF DURUM (Limit Dolmadı)
-        addNewDayButton.textContent = "+ Add New Day";
+        // İkonlu içerik
+                addNewDayButton.innerHTML = '<img src="img/add_new_day_icon.svg" style="width: 18px; height: 18px;"> + Add New Day';
+                // Flex stilini butonun kendisine (veya CSS'e) ekleyebilirsiniz, burada JS ile zorluyoruz:
+                addNewDayButton.style.display = 'flex';
+                addNewDayButton.style.alignItems = 'center';
+                addNewDayButton.style.justifyContent = 'center';
+                addNewDayButton.style.gap = '6px';
         addNewDayButton.disabled = false;
         addNewDayButton.onclick = function () { 
              if(typeof addNewDay === 'function') addNewDay(this); 
@@ -5299,6 +5305,12 @@ if (aiInfoSection) {
     if (!pdfBtn) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
+        pdfBtn.innerHTML = '<img src="img/pdf_download_icon.svg" style="width: 18px; height: 18px;"> Download Trip Plan';
+        pdfBtn.style.display = 'flex';
+        pdfBtn.style.alignItems = 'center';
+        pdfBtn.style.justifyContent = 'center';
+        pdfBtn.style.gap = '6px';
+        
         pdfBtn.className = 'add-to-calendar-btn'; 
         pdfBtn.textContent = 'Download Trip Plan';
         pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
