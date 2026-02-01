@@ -5121,9 +5121,7 @@ if (aiInfoSection) {
         // İkonlu içerik
                 addNewDayButton.innerHTML = '<img src="img/add_new_day_icon.svg" style="width: 18px; height: 18px;">Add New Day';
                 // Flex stilini butonun kendisine (veya CSS'e) ekleyebilirsiniz, burada JS ile zorluyoruz:
-                addNewDayButton.style.display = 'flex';
-                addNewDayButton.style.alignItems = 'center';
-                addNewDayButton.style.justifyContent = 'center';
+               
                 addNewDayButton.style.gap = '6px';
         addNewDayButton.disabled = false;
         addNewDayButton.onclick = function () { 
