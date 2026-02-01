@@ -194,11 +194,8 @@ function saveFavTrips() {
             opacity: 0.7;
         }
 
-        /* Favori butonu - SAĞDA */
+        /* Favori butonu - SONDA */
         .mp-fav-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
             width: 32px;
             height: 32px;
             display: flex;
@@ -701,25 +698,6 @@ card.innerHTML = `
     </div>
 `;
             
-            // Favori butonu
-            const favBtn = document.createElement("button");
-            favBtn.className = "mp-fav-btn";
-            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
-            favBtn.onclick = (e) => {
-                e.stopPropagation();
-                const favIdx = window.favTrips.findIndex(f => 
-                    f.name === place.name && 
-                    String(f.lat) === String(place.lat)
-                );
-                if (favIdx > -1) {
-                    window.favTrips.splice(favIdx, 1);
-                    saveFavTrips();
-                    renderFavoritePlacesPanel();
-                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
-                }
-            };
-            card.querySelector('.mp-card-head').appendChild(favBtn);
-
             // Alt butonlar
             const acts = document.createElement("div");
             acts.className = "mp-acts";
@@ -824,6 +802,25 @@ card.innerHTML = `
             acts.appendChild(b1);
             acts.appendChild(b2);
             card.appendChild(acts);
+
+            // Favori butonu - SONDA EKLENIYOR
+            const favBtn = document.createElement("button");
+            favBtn.className = "mp-fav-btn";
+            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
+            favBtn.onclick = (e) => {
+                e.stopPropagation();
+                const favIdx = window.favTrips.findIndex(f => 
+                    f.name === place.name && 
+                    String(f.lat) === String(place.lat)
+                );
+                if (favIdx > -1) {
+                    window.favTrips.splice(favIdx, 1);
+                    saveFavTrips();
+                    renderFavoritePlacesPanel();
+                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
+                }
+            };
+            card.appendChild(favBtn);
             
             wrapper.appendChild(card);
         });
