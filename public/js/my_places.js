@@ -234,7 +234,7 @@ function saveFavTrips() {
     display: flex;
     gap: 8px;
     font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    padding: 10px;
+    padding: 6px;
     width: 100%;
     font-weight: 600;
     align-items: center;
