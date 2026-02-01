@@ -3423,6 +3423,8 @@ ease;
     color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     cursor: default;
+    display: flex;
+    gap: 6px;
 }
 
 #calendar-container {
