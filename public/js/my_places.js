@@ -296,15 +296,18 @@ function saveFavTrips() {
             font-weight: 500;
         }
 
-        /* Mesafe bilgisi */
-        .mp-distance-info {
-            font-size: 0.75rem;
-            color: #718096;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
+        .mp-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap; /* Mobilde sığmazsa alt satıra geçer */
+    margin-top: 4px;
+}
+
+/* Mesafe bilgisindeki üst boşluğu sıfırlıyoruz çünkü kapsayıcıda gap var */
+.mp-distance-info {
+    margin-top: 0 !important;
+}
 
         /* MODAL */
         .mp-overlay {
@@ -676,21 +679,26 @@ async function renderFavoritePlacesPanel() {
             card.className = "mp-card";
             
             // Kart oluştur
-            card.innerHTML = `
-                <div class="mp-card-head">
-                    <div class="mp-img-box">
-                        <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
-                    </div>
-                    <div class="mp-info">
-                        <div class="mp-name" title="${place.name}">${place.name}</div>
-                        <div class="mp-cats">
-                            <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
-                            ${place.category || 'Place'}
-                        </div>
-                        ${st.msg ? `<div class="mp-distance-info" style="color:${distColor}; font-weight:600;">📍 ${st.msg}</div>` : ''}
-                    </div>
+           // Kart oluştur - renderFavoritePlacesPanel içindeki ilgili kısım
+card.innerHTML = `
+    <div class="mp-card-head">
+        <div class="mp-img-box">
+            <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
+        </div>
+        <div class="mp-info">
+            <div class="mp-name" title="${place.name}">${place.name}</div>
+            
+            <div class="mp-meta-row">
+                <div class="mp-cats">
+                    <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
+                    ${place.category || 'Place'}
                 </div>
-            `;
+                ${st.msg ? `<div class="mp-distance-info" style="color:${distColor}; font-weight:600;">📍 ${st.msg}</div>` : ''}
+            </div>
+            
+        </div>
+    </div>
+`;
             
             // Favori butonu
             const favBtn = document.createElement("button");
@@ -762,12 +770,7 @@ async function renderFavoritePlacesPanel() {
                             place.website || ""
                         );
 
-                        // ============================================================
-                        // [KRİTİK DÜZELTME] "cart" verisini LocalStorage'a ELLE yaz
-                        // ============================================================
-                        // mainscript.js sayfa açılışında veriyi 'cart' anahtarından okur.
-                        // saveCurrentTripToStorage() bazen burayı güncellemeyi atlıyor olabilir.
-                        // Bu satır, sayfa yenilendiğinde verinin orada olmasını GARANTİLER.
+                 
                         console.log("Forcing storage save for 'cart'...");
                         localStorage.setItem('cart', JSON.stringify(window.cart));
                         
