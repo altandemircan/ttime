@@ -113,12 +113,12 @@ function saveFavTrips() {
 
         /* --- KART YAPISI --- */
         .mp-card {
-                background: #fff;
-    overflow: hidden;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    background-color: #fff;
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-    border-radius: 12px;
+            position: relative; /* Butonun kart içinde hizalanması için eklendi */
+            background: #fff;
+            overflow: hidden;
+            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 12px;
         }
 
         .mp-card:hover {
@@ -701,24 +701,40 @@ card.innerHTML = `
     </div>
 `;
             
-            // Favori butonu
-            const favBtn = document.createElement("button");
-            favBtn.className = "mp-fav-btn";
-            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
-            favBtn.onclick = (e) => {
-                e.stopPropagation();
-                const favIdx = window.favTrips.findIndex(f => 
-                    f.name === place.name && 
-                    String(f.lat) === String(place.lat)
-                );
-                if (favIdx > -1) {
-                    window.favTrips.splice(favIdx, 1);
-                    saveFavTrips();
-                    renderFavoritePlacesPanel();
-                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
-                }
-            };
-            card.querySelector('.mp-card-head').appendChild(favBtn);
+            // Favori butonu mantığı
+const favBtn = document.createElement("button");
+favBtn.className = "mp-fav-btn";
+favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
+favBtn.onclick = (e) => {
+    e.stopPropagation();
+    const favIdx = window.favTrips.findIndex(f => 
+        f.name === place.name && 
+        String(f.lat) === String(place.lat)
+    );
+    if (favIdx > -1) {
+        window.favTrips.splice(favIdx, 1);
+        saveFavTrips();
+        renderFavoritePlacesPanel();
+        if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
+    }
+};
+
+// --- EKLEME SIRASI DEĞİŞTİRİLDİ ---
+// 1. Önce Header ekleniyor (içinde buton yok)
+// card.querySelector('.mp-card-head').appendChild(favBtn); <-- BU SATIRI SİLDİK
+
+// 2. Alt aksiyon butonları ekleniyor
+const acts = document.createElement("div");
+acts.className = "mp-acts";
+// ... (b1 ve b2 butonlarını oluşturma kodları buraya gelecek)
+acts.appendChild(b1);
+acts.appendChild(b2);
+card.appendChild(acts);
+
+// 3. Favori butonu en sona, direkt kartın içine ekleniyor
+card.appendChild(favBtn); 
+
+wrapper.appendChild(card);
 
             // Alt butonlar
             const acts = document.createElement("div");
