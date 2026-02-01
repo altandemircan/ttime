@@ -701,40 +701,24 @@ card.innerHTML = `
     </div>
 `;
             
-            // Favori butonu mantığı
-const favBtn = document.createElement("button");
-favBtn.className = "mp-fav-btn";
-favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
-favBtn.onclick = (e) => {
-    e.stopPropagation();
-    const favIdx = window.favTrips.findIndex(f => 
-        f.name === place.name && 
-        String(f.lat) === String(place.lat)
-    );
-    if (favIdx > -1) {
-        window.favTrips.splice(favIdx, 1);
-        saveFavTrips();
-        renderFavoritePlacesPanel();
-        if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
-    }
-};
-
-// --- EKLEME SIRASI DEĞİŞTİRİLDİ ---
-// 1. Önce Header ekleniyor (içinde buton yok)
-// card.querySelector('.mp-card-head').appendChild(favBtn); <-- BU SATIRI SİLDİK
-
-// 2. Alt aksiyon butonları ekleniyor
-const acts = document.createElement("div");
-acts.className = "mp-acts";
-// ... (b1 ve b2 butonlarını oluşturma kodları buraya gelecek)
-acts.appendChild(b1);
-acts.appendChild(b2);
-card.appendChild(acts);
-
-// 3. Favori butonu en sona, direkt kartın içine ekleniyor
-card.appendChild(favBtn); 
-
-wrapper.appendChild(card);
+            // Favori butonu
+            const favBtn = document.createElement("button");
+            favBtn.className = "mp-fav-btn";
+            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
+            favBtn.onclick = (e) => {
+                e.stopPropagation();
+                const favIdx = window.favTrips.findIndex(f => 
+                    f.name === place.name && 
+                    String(f.lat) === String(place.lat)
+                );
+                if (favIdx > -1) {
+                    window.favTrips.splice(favIdx, 1);
+                    saveFavTrips();
+                    renderFavoritePlacesPanel();
+                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
+                }
+            };
+            card.querySelector('.mp-card-head').appendChild(favBtn);
 
             // Alt butonlar
             const acts = document.createElement("div");
