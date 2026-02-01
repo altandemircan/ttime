@@ -196,9 +196,8 @@ function saveFavTrips() {
 
         /* Favori butonu - AYNI DIV'DE */
         .mp-fav-btn {
-            flex: 1;
-            width: 100%;
-            height: auto;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -207,7 +206,6 @@ function saveFavTrips() {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             transition: all 0.2s ease;
-            padding: 10px;
         }
         
         .mp-fav-btn:hover {
