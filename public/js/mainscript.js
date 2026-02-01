@@ -5186,11 +5186,7 @@ if (aiInfoSection) {
             newChat.id = 'newchat';
         // İkonlu içerik ve Flex stil güncellemesi
         newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
-        newChat.style.display = 'flex';
-        newChat.style.alignItems = 'center';
-        newChat.style.justifyContent = 'center';
-        newChat.style.gap = '6px';
-            newChat.style.cursor = 'pointer';
+     ;
 
         newChat.onclick = function () {
         const chatBox = document.getElementById('chat-box');

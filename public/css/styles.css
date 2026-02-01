@@ -2510,6 +2510,8 @@ ease;
     color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
+    display: flex;
+    gap: 6px;
 
 }
 
