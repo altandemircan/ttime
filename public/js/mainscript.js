@@ -5171,37 +5171,6 @@ if (aiInfoSection) {
 
     if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-//     (function ensureSelectDatesButton() {
-//         const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
-//             !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
-//         );
-//         if (!hasRealItem) {
-//             let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-//             if (btn) btn.remove();
-//             return;
-//         }
-//         let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-//         if (!btn) {
-//             btn = document.createElement('button');
-//             btn.className = 'add-to-calendar-btn';
-//             btn.setAttribute('data-role', 'trip-dates');
-//             cartDiv.appendChild(btn);
-//         }
-//         btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
-//         btn.onclick = () => {
-//     if (typeof openCalendar === 'function') {
-//         const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
-//         openCalendar(maxDay);
-
-//         // [FIX] Takvim açıldıktan hemen sonra butonun altına taşı
-//         const calContainer = document.getElementById('calendar-container');
-//         if (calContainer) {
-//             btn.insertAdjacentElement('afterend', calContainer);
-//         }
-//     }
-// };
-//     })();
-
     (function ensureNewChatInsideCart() {
         const oldOutside = document.querySelector('#newchat');
         if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
@@ -5211,7 +5180,12 @@ if (aiInfoSection) {
         if (!newChat) {
             newChat = document.createElement('div');
             newChat.id = 'newchat';
-            newChat.textContent = 'New Trip Plan';
+        // İkonlu içerik ve Flex stil güncellemesi
+        newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
+        newChat.style.display = 'flex';
+        newChat.style.alignItems = 'center';
+        newChat.style.justifyContent = 'center';
+        newChat.style.gap = '6px';
             newChat.style.cursor = 'pointer';
 
         newChat.onclick = function () {
