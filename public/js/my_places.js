@@ -307,7 +307,7 @@ function saveFavTrips() {
 /* Mesafe bilgisindeki üst boşluğu sıfırlıyoruz çünkü kapsayıcıda gap var */
 .mp-distance-info {
     margin-top: 0 !important;
-        font-size:0.8rem;
+        font-size:0.8rem !important;
 }
 
         /* MODAL */
@@ -694,7 +694,7 @@ card.innerHTML = `
                     <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
                     ${place.category || 'Place'}
                 </div>
-                ${st.msg ? `<div class="mp-distance-info" style="color:${distColor};>📍 ${st.msg}</div>` : ''}
+                ${st.msg ? `<div class="mp-distance-info" style="color:${distColor};">📍 ${st.msg}</div>` : ''}
             </div>
             
         </div>
