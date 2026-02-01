@@ -5306,10 +5306,7 @@ if (aiInfoSection) {
         pdfBtn.className = 'add-to-calendar-btn'; 
         
         // Önce stili ayarla
-        pdfBtn.style.display = 'flex';
-        pdfBtn.style.alignItems = 'center';
-        pdfBtn.style.justifyContent = 'center';
-        pdfBtn.style.gap = '6px';
+       
         pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
         pdfBtn.style.color = '#fff';
         
