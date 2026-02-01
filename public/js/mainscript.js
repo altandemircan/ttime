@@ -5288,6 +5288,7 @@ if (aiInfoSection) {
             cartRoot.appendChild(newChat);
         }
         const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
+        newChat.style.display = itemCount > 0 ? 'block' : 'none';
     })();
 
 
@@ -5322,8 +5323,7 @@ if (aiInfoSection) {
 
     // 2. Görünürlük
     const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
-    pdfBtn.style.display = hasRealItem ? 'block' : 'none';
-
+pdfBtn.style.display = hasRealItem ? '' : 'none';
     // 3. PDF Butonunu "Add New Day"'in altına koy
     const addNewDayBtn = document.getElementById('add-new-day-button');
     if (addNewDayBtn) {
