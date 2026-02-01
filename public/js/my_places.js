@@ -194,10 +194,11 @@ function saveFavTrips() {
             opacity: 0.7;
         }
 
-        /* Favori butonu - SONDA */
+        /* Favori butonu - AYNI DIV'DE */
         .mp-fav-btn {
-            width: 32px;
-            height: 32px;
+            flex: 1;
+            width: 100%;
+            height: auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -206,6 +207,7 @@ function saveFavTrips() {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             transition: all 0.2s ease;
+            padding: 10px;
         }
         
         .mp-fav-btn:hover {
@@ -801,9 +803,8 @@ card.innerHTML = `
 
             acts.appendChild(b1);
             acts.appendChild(b2);
-            card.appendChild(acts);
 
-            // Favori butonu - SONDA EKLENIYOR
+            // Favori butonu - AYNı DIV İÇİNDE
             const favBtn = document.createElement("button");
             favBtn.className = "mp-fav-btn";
             favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
@@ -820,7 +821,8 @@ card.innerHTML = `
                     if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
                 }
             };
-            card.appendChild(favBtn);
+            acts.appendChild(favBtn);
+            card.appendChild(acts);
             
             wrapper.appendChild(card);
         });
