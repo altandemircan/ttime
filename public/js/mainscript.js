@@ -5288,7 +5288,6 @@ if (aiInfoSection) {
             cartRoot.appendChild(newChat);
         }
         const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-        newChat.style.display = itemCount > 0 ? 'block' : 'none';
     })();
 
 
