@@ -296,7 +296,7 @@ function saveFavTrips() {
         .mp-meta-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex-wrap: wrap; /* Mobilde sığmazsa alt satıra geçer */
     margin-top: 4px;
 }
@@ -304,7 +304,7 @@ function saveFavTrips() {
 /* Mesafe bilgisindeki üst boşluğu sıfırlıyoruz çünkü kapsayıcıda gap var */
 .mp-distance-info {
     margin-top: 0 !important;
-        font-size:0.8rem !important;
+        font-size:0.75rem !important;
 }
 
         /* MODAL */
