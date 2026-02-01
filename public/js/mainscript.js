@@ -5305,10 +5305,7 @@ if (aiInfoSection) {
         pdfBtn.id = 'tt-pdf-dl-btn';
         pdfBtn.className = 'add-to-calendar-btn'; 
         
-        // Önce stili ayarla
-       
-        pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
-        pdfBtn.style.color = '#fff';
+     
         
         // textContent kullanma, doğrudan innerHTML ile ikon ve metni birlikte ver
         pdfBtn.innerHTML = '<img src="img/pdf_download_icon.svg" style="width: 18px; height: 18px;"> Download Trip Plan';

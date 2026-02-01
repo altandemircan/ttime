@@ -3416,7 +3416,7 @@ ease;
     justify-content: center;
     border: 1px solid #ffffff;
     border-radius: 8px;
-    background: #4CAF50;
+    background: linear-gradient(135deg, rgb(229, 80, 80) 0%, rgb(219, 95, 197) 100%);
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.9rem;
