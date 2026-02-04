@@ -22,19 +22,14 @@ function generateStepHtml(step, day, category, idx = 0) {
         // -- Mevcut Kategoriler ve Varyasyonları --
         "Coffee": "img/coffee_icon.svg",
         "Breakfast": "img/coffee_icon.svg",
-        "Cafes": "img/coffee_icon.svg",
-        
-        "Museum": "img/museum_icon.svg",
-        
-        "Touristic attraction": "img/touristic_icon.svg",
-        
+        "Cafes": "img/coffee_icon.svg",        
+        "Museum": "img/museum_icon.svg",        
+        "Touristic attraction": "img/touristic_icon.svg",        
         "Restaurant": "img/restaurant_icon.svg",
         "Lunch": "img/restaurant_icon.svg",
-        "Dinner": "img/restaurant_icon.svg",
-        
+        "Dinner": "img/restaurant_icon.svg",        
         "Accommodation": "img/accommodation_icon.svg",
-        "Hotel": "img/accommodation_icon.svg",
-        
+        "Hotel": "img/accommodation_icon.svg",        
         "Parks": "img/park_icon.svg",
 
         // -- Yeni Eklenen Kategoriler --

@@ -4831,11 +4831,12 @@ if (aiInfoSection) {
                     }
                 }
                 const leafletMapId = "leaflet-map-" + currIdx;
-                const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+               const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
                     ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
                     : '<div class="map-error">Location not available</div>';
 
-               const catIcon = getCategoryIcon(item.category);
+               // DÜZELTME: Artık yeni eklenen ikonları da içeren ana fonksiyonu çağırıyoruz
+               const catIcon = categoryIcon(item.category);
 
             // --- PAYLAŞIM GÖRSELİ FİX (Priority Logic) ---
             let finalImg = item.image;
