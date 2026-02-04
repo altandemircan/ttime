@@ -42,6 +42,7 @@ async function geoapifyLocationAutocomplete(query) {
     try {
         console.log("Şehirler yerel veritabanından çekiliyor...");
         const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
+
         const localCities = await resLocal.json();
         localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
             properties: {
@@ -63,7 +64,7 @@ async function geoapifyLocationAutocomplete(query) {
     let apiFeatures = [];
     if (unescoResults.length + localCityResults.length < 5) {
         try {
-            let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
             let data = await response.json();
             apiFeatures = data.features || [];
         } catch (e) {
