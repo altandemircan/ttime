@@ -19,7 +19,7 @@ window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo'
 async function geoapifyLocationAutocomplete(query) {
     // QUERY TEMİZLE
     let cleanQuery = query
-        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '')
+        .replace(/(\d+)\s*(?:-?\s*)?\(?:day|days|gün|gun)\b/gi, '')
         .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at|a|an|the)\b/gi, '')
         .trim();
     console.log("Original:", query, "→ Cleaned:", cleanQuery);
@@ -712,13 +712,17 @@ chatInput.addEventListener("input", debounce(async function () {
 
     // geoapifyLocationAutocomplete kullan (UNESCO + Şehir + Geoapify)
     try {
-        // UNESCO + API arama
-const results = await geoapifyLocationAutocomplete(rawText);
-if (results && results.length > 0) {
-    renderSuggestions(results, rawText);
-} else {
-    suggestionsDiv.innerHTML = '<div class="category-area-option">No location found</div>';
-}
+        const results = await geoapifyLocationAutocomplete(rawText);
+        console.log("Geoapify results:", results.length, "results");
+        
+        if (results && results.length > 0) {
+            if (typeof renderSuggestions === 'function') {
+                renderSuggestions(results, rawText);
+            }
+        } else {
+            console.log("No results found");
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+        }
     } catch (error) {
         console.error("Search error:", error);
         suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Search error</div>';
