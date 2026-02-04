@@ -2113,7 +2113,7 @@ ease;
     border-radius: 5px;
     cursor: pointer;
     color: #000;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 500;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
@@ -2469,6 +2469,8 @@ hr {
     font-size: 0.9rem;
     color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    display: flex;
+    gap: 6px;
 
 }
 
@@ -2508,6 +2510,8 @@ ease;
     color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
+    display: flex;
+    gap: 6px;
 
 }
 
@@ -3414,13 +3418,15 @@ ease;
     justify-content: center;
     border: 1px solid #ffffff;
     border-radius: 8px;
-    background: #4CAF50;
+    background: linear-gradient(135deg, rgb(229, 80, 80) 0%, rgb(219, 95, 197) 100%);
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.9rem;
     color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     cursor: default;
+    display: flex;
+    gap: 6px;
 }
 
 #calendar-container {

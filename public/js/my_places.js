@@ -29,7 +29,7 @@ function saveFavTrips() {
         }
 
         .mp-group:hover {
-            box-shadow: rgba(149, 157, 165, 0.12) 0px 6px 16px;
+            
             border-color: #e2e8f0;
         }
 
@@ -113,12 +113,12 @@ function saveFavTrips() {
 
         /* --- KART YAPISI --- */
         .mp-card {
-                background: #fff;
-    overflow: hidden;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    background-color: #fff;
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-    border-radius: 12px;
+            position: relative; /* Butonun kart içinde hizalanması için eklendi */
+            background: #fff;
+            overflow: hidden;
+            box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 12px;
         }
 
         .mp-card:hover {
@@ -194,11 +194,8 @@ function saveFavTrips() {
             opacity: 0.7;
         }
 
-        /* Favori butonu - SAĞDA */
+        /* Favori butonu - AYNI DIV'DE */
         .mp-fav-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
             width: 32px;
             height: 32px;
             display: flex;
@@ -237,41 +234,41 @@ function saveFavTrips() {
     display: flex;
     gap: 8px;
     font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    padding: 10px;
+    padding: 6px;
     width: 100%;
-    font-weight: 600;
+    font-weight: 500;
     align-items: center;
     justify-content: center;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
         }
         
         /* YUMUŞAK MOR buton */
         .mp-btn-add { 
-                background: linear-gradient(135deg, #a475f1 0%, #8e5bd6 100%);
-            border: none;
-            box-shadow: 0 2px 6px rgba(138, 74, 243, 0.2);
-            color: #ffffff;
+            background: #fff;
+    border: 1px solid #ddd;
+    /* box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2); */
+    color: #9462dd;
         }
         
         .mp-btn-add:hover { 
                 box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3);
-    background: linear-gradient(135deg, #a475f1 0%, #8b60ca 100%);
+
         }
         
         /* KOYU MAVİ buton */
         .mp-btn-start { 
-                background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
-            border: none;
-            box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2);
-            color: #ffffff;
+            background: #fff;
+    border: 1px solid #ddd;
+    /* box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2); */
+    color: #1e293b;
         }
         
         .mp-btn-start:hover { 
            box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
-    background: linear-gradient(135deg, #1996d6 0%, #2dd4d0 100%);
+  
         }
         
         .mp-btn-dis { 
@@ -296,15 +293,19 @@ function saveFavTrips() {
             font-weight: 500;
         }
 
-        /* Mesafe bilgisi */
-        .mp-distance-info {
-            font-size: 0.75rem;
-            color: #718096;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
+        .mp-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap; /* Mobilde sığmazsa alt satıra geçer */
+    margin-top: 4px;
+}
+
+/* Mesafe bilgisindeki üst boşluğu sıfırlıyoruz çünkü kapsayıcıda gap var */
+.mp-distance-info {
+    margin-top: 0 !important;
+        font-size:0.75rem !important;
+}
 
         /* MODAL */
         .mp-overlay {
@@ -676,41 +677,27 @@ async function renderFavoritePlacesPanel() {
             card.className = "mp-card";
             
             // Kart oluştur
-            card.innerHTML = `
-                <div class="mp-card-head">
-                    <div class="mp-img-box">
-                        <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
-                    </div>
-                    <div class="mp-info">
-                        <div class="mp-name" title="${place.name}">${place.name}</div>
-                        <div class="mp-cats">
-                            <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
-                            ${place.category || 'Place'}
-                        </div>
-                        ${st.msg ? `<div class="mp-distance-info" style="color:${distColor}; font-weight:600;">📍 ${st.msg}</div>` : ''}
-                    </div>
-                </div>
-            `;
+           // Kart oluştur - renderFavoritePlacesPanel içindeki ilgili kısım
+card.innerHTML = `
+    <div class="mp-card-head">
+        <div class="mp-img-box">
+            <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
+        </div>
+        <div class="mp-info">
+            <div class="mp-name" title="${place.name}">${place.name}</div>
             
-            // Favori butonu
-            const favBtn = document.createElement("button");
-            favBtn.className = "mp-fav-btn";
-            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
-            favBtn.onclick = (e) => {
-                e.stopPropagation();
-                const favIdx = window.favTrips.findIndex(f => 
-                    f.name === place.name && 
-                    String(f.lat) === String(place.lat)
-                );
-                if (favIdx > -1) {
-                    window.favTrips.splice(favIdx, 1);
-                    saveFavTrips();
-                    renderFavoritePlacesPanel();
-                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
-                }
-            };
-            card.querySelector('.mp-card-head').appendChild(favBtn);
-
+            <div class="mp-meta-row">
+                <div class="mp-cats">
+                    <img src="${getPlaceCategoryIcon(place.category)}" alt="${place.category}">
+                    ${place.category || 'Place'}
+                </div>
+                ${st.msg ? `<div class="mp-distance-info" style="color:${distColor};">📍 ${st.msg}</div>` : ''}
+            </div>
+            
+        </div>
+    </div>
+`;
+            
             // Alt butonlar
             const acts = document.createElement("div");
             acts.className = "mp-acts";
@@ -718,7 +705,7 @@ async function renderFavoritePlacesPanel() {
             // Start New Trip
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<img src="img/start_with_place.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Start New`;
+            b1.innerHTML = `<img src="img/start_with_place.svg" style="width:16px;height:16px;"> Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
             // Add to Trip
@@ -727,7 +714,7 @@ async function renderFavoritePlacesPanel() {
             
             if (st.ok) {
                 // AKTİF DURUM: İkon Beyaz
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:brightness(0) invert(1);"> Add to Trip`;
+                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;"> Add to Trip`;
             b2.onclick = function(e) {
                 // 1. Tıklama olayını en başta durdur (Hata riskini önler)
                 if (e) {
@@ -762,12 +749,7 @@ async function renderFavoritePlacesPanel() {
                             place.website || ""
                         );
 
-                        // ============================================================
-                        // [KRİTİK DÜZELTME] "cart" verisini LocalStorage'a ELLE yaz
-                        // ============================================================
-                        // mainscript.js sayfa açılışında veriyi 'cart' anahtarından okur.
-                        // saveCurrentTripToStorage() bazen burayı güncellemeyi atlıyor olabilir.
-                        // Bu satır, sayfa yenilendiğinde verinin orada olmasını GARANTİLER.
+                 
                         console.log("Forcing storage save for 'cart'...");
                         localStorage.setItem('cart', JSON.stringify(window.cart));
                         
@@ -819,6 +801,25 @@ async function renderFavoritePlacesPanel() {
 
             acts.appendChild(b1);
             acts.appendChild(b2);
+
+            // Favori butonu - AYNı DIV İÇİNDE
+            const favBtn = document.createElement("button");
+            favBtn.className = "mp-fav-btn";
+            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
+            favBtn.onclick = (e) => {
+                e.stopPropagation();
+                const favIdx = window.favTrips.findIndex(f => 
+                    f.name === place.name && 
+                    String(f.lat) === String(place.lat)
+                );
+                if (favIdx > -1) {
+                    window.favTrips.splice(favIdx, 1);
+                    saveFavTrips();
+                    renderFavoritePlacesPanel();
+                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
+                }
+            };
+            acts.appendChild(favBtn);
             card.appendChild(acts);
             
             wrapper.appendChild(card);

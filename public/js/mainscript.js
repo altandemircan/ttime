@@ -267,6 +267,7 @@ async function geoapifyLocationAutocomplete(query) {
     try {
         console.log("Şehirler yerel veritabanından çekiliyor...");
         const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
+
         // mainscript.js içinde bul ve değiştir:
 
 // mainscript.js içinde bul ve değiştir:
@@ -683,144 +684,81 @@ document.addEventListener("DOMContentLoaded", function() {
 // ============================================================
 // 4. INPUT EVENT LISTENER
 // ============================================================
+// ============================================================
+// 4. INPUT EVENT LISTENER (DÜZELTİLMİŞ)
+// ============================================================
 if (typeof chatInput !== 'undefined' && chatInput) {
-   // mainscript.js içindeki 4. INPUT EVENT LISTENER bölümü
-chatInput.addEventListener("input", debounce(async function () {
-    console.log("=== INPUT DEBUG ===");
-    
-    if (window.__programmaticInput) {
-        console.log("Skipping - programmatic input");
-        return;
-    }
-
-    const rawText = this.value.trim();
-    console.log("User typed:", rawText);
-    
-    const suggestionsDiv = document.getElementById("suggestions");
-    if (!suggestionsDiv) return;
-
-    // 1. KUTUYU AÇ
-    if (rawText.length > 0) {
-        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Searching...</div>';
-    } else {
-        if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-        showSuggestions();
-        return;
-    }
-
-    // 2. KELİMELERE AYIR ve TEMİZLE
-    let cleanedText = rawText
-        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '') // sayı ve gün
-        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at|a|an|the)\b/gi, '') // filler
-        .replace(/[^a-zA-Z\s]/g, ' ') // sadece harf ve boşluk
-        .replace(/\s+/g, ' ')
-        .trim();
-    
-    // 3. POTANSİYEL ŞEHİR İSİMLERİNİ BUL
-    const words = cleanedText.split(' ').filter(w => w.length >= 2);
-    console.log("Words:", words);
-    
-    let foundResults = [];
-    let foundQuery = "";
-    
-    // 4. ÇOKLU KELİME KOMBİNASYONLARINI DENE
-    // Önce tüm kelimeleri birleştirerek dene: "new york"
-    if (words.length >= 2) {
-        for (let i = 0; i <= words.length - 2; i++) {
-            for (let j = 2; j <= Math.min(3, words.length - i); j++) {
-                const phrase = words.slice(i, i + j).join(' ');
-                if (phrase.length >= 3) {
-                    console.log(`Trying phrase: "${phrase}"`);
-                    
-                    try {
-                        const response = await fetch(`/api/cities?q=${encodeURIComponent(phrase.toLowerCase())}`);
-                        const cities = await response.json();
-                        
-                        if (cities && cities.length > 0) {
-                            console.log(`Found ${cities.length} results for "${phrase}"`);
-                            foundResults = cities;
-                            foundQuery = phrase.toLowerCase();
-                            break;
-                        }
-                    } catch (error) {
-                        console.error("Search error:", error);
-                    }
-                }
-            }
-            if (foundResults.length > 0) break;
-        }
-    }
-    
-    // 5. TEK KELİME ARAMASI (fallback)
-    if (foundResults.length === 0) {
-        // En uzun kelimeden başla
-        words.sort((a, b) => b.length - a.length);
+    chatInput.addEventListener("input", debounce(async function () {
+        console.log("=== INPUT DEBUG ===");
         
-        for (let word of words) {
-            try {
-                const searchWord = word.toLowerCase();
-                console.log(`Trying single word: "${searchWord}"`);
-                
-                const response = await fetch(`/api/cities?q=${encodeURIComponent(searchWord)}`);
-                const cities = await response.json();
-                
-                if (cities && cities.length > 0) {
-                    console.log(`Found ${cities.length} results for "${searchWord}"`);
-                    foundResults = cities;
-                    foundQuery = searchWord;
-                    break;
-                }
-            } catch (error) {
-                console.error("Search error:", error);
-            }
+        if (window.__programmaticInput) {
+            console.log("Skipping - programmatic input");
+            return;
         }
-    }
-    
-    // 6. SONUÇLARI GÖSTER
-    if (foundResults.length > 0) {
-        console.log("Showing results for:", foundQuery);
-        
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(
-                foundResults.map(city => ({
-                    properties: {
-                        name: city.name,
-                        city: city.name,
-                        country_code: (city.countryCode || "").toLowerCase(),
-                        formatted: `${city.name}, ${city.countryCode || ''}`,
-                        lat: parseFloat(city.latitude),
-                        lon: parseFloat(city.longitude),
-                        result_type: city.type || 'city',
-                        place_id: `local-${city.latitude}-${city.longitude}`
-                    }
-                })),
-                foundQuery
-            );
-        }
-    } else {
-        console.log("No results found");
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
-    }
-}, 400));
 
-    // FOCUS VE CLICK OLAYLARI - INPUT DOLUYSA HİÇBİR ŞEY YAPMA
+        const rawText = this.value.trim();
+        const suggestionsDiv = document.getElementById("suggestions");
+        if (!suggestionsDiv) return;
+
+        // 1. KUTUYU AÇ
+        if (rawText.length > 0) {
+            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Searching...</div>';
+        } else {
+            if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
+            // showSuggestions(); // İsterseniz boşken varsayılanları gösterin
+            return;
+        }
+
+        // 2. TEMİZLİK (Gereksiz kelimeleri at)
+        let cleanedText = rawText
+            .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '') 
+            .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at|a|an|the)\b/gi, '')
+            .replace(/[^a-zA-Z\sçğıöşüÇĞİÖŞÜ]/g, ' ') // Türkçe karakter desteği eklendi
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        // Eğer temizlik sonrası elimizde anlamlı bir kelime kalmadıysa
+        if (cleanedText.length < 2) {
+             suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Please type a location...</div>';
+             return;
+        }
+
+        // 3. MERKEZİ ARAMA FONKSİYONUNU ÇAĞIR (UNESCO + CITY + API)
+        // Eski kodda burası sadece /api/cities çağırıyordu. Şimdi hepsini kapsayan fonksiyonu çağırıyoruz.
+        try {
+            console.log("Searching for:", cleanedText);
+            const results = await geoapifyLocationAutocomplete(cleanedText);
+            
+            // 4. SONUÇLARI GÖSTER
+            if (results && results.length > 0) {
+                console.log(`Found ${results.length} combined results`);
+                if (typeof renderSuggestions === 'function') {
+                    // geoapifyLocationAutocomplete zaten 'properties' formatında döndüğü için
+                    // map işlemine gerek yok, direkt veriyoruz.
+                    renderSuggestions(results, cleanedText);
+                }
+            } else {
+                console.log("No results found");
+                suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+            }
+
+        } catch (error) {
+            console.error("Search error:", error);
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Error searching</div>';
+        }
+        
+    }, 400));
+
+    // FOCUS VE CLICK OLAYLARI
     chatInput.addEventListener("focus", function(e) {
         e.stopPropagation();
-        // Sadece input boşsa default önerileri göster
-        if (!this.value.trim()) {
-            showSuggestions();
-        }
-        // Input doluysa hiçbir şey yapma!
+        if (!this.value.trim()) showSuggestions();
     });
     
     chatInput.addEventListener("click", function(e) {
         e.stopPropagation();
-        // Sadece input boşsa default önerileri göster
-        if (!this.value.trim()) {
-            showSuggestions();
-        }
-        // Input doluysa hiçbir şey yapma!
+        if (!this.value.trim()) showSuggestions();
     });
 }
 
@@ -2787,7 +2725,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
             <li class="splide__slide">
                 <div class="visual step-item load-more-card" 
                      onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${radiusKm}, ${limit + 5})"
-                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                     style="height: 100%; height: 489px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div style="font-size: 32px; color: #64748b; margin-bottom: 8px;">+</div>
                     <div style="font-size: 14px; font-weight: 600; color: #64748b;">Load More Results</div>
                     <div style="font-size: 12px; color: #94a3b8;">(Same Area)</div>
@@ -2808,7 +2746,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
             <li class="splide__slide">
                 <div class="visual step-item widen-area-card" 
                      onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${nextRadius}, ${limit})"
-                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #eff6ff; border: 2px dashed #60a5fa; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                     style="height: 100%; height: 489px;; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #eff6ff; border: 2px dashed #60a5fa; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div style="font-size: 32px; color: #3b82f6; margin-bottom: 8px;">🔭</div>
                     <div style="font-size: 14px; font-weight: 600; color: #3b82f6;">Search Further</div>
                     <div style="font-size: 12px; color: #60a5fa;">Expand to ${nextRadius}km</div>
@@ -2823,7 +2761,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
          html += `
             <li class="splide__slide">
                 <div class="visual step-item end-search-card" 
-                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff1f2; border: 2px dashed #fda4af; border-radius: 12px;">
+                     style="height: 100%; height: 489px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff1f2; border: 2px dashed #fda4af; border-radius: 12px;">
                     <div style="font-size: 32px; color: #e11d48; margin-bottom: 8px;">📍</div>
                     <div style="font-size: 14px; font-weight: 600; color: #e11d48;">That's all!</div>
                     <div style="font-size: 12px; color: #fb7185; text-align:center; padding:0 10px;">
@@ -2908,18 +2846,36 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-    function categoryIcon(category) {
+function categoryIcon(category) {
     // Kategori isimlerini normalize et (Büyük/küçük harf hatasını önler)
     const cat = String(category || "").trim();
     
     const icons = {
+        // --- Mevcut Temel Kategoriler ---
         "Coffee": "img/coffee_icon.svg",
         "Museum": "img/museum_icon.svg",
         "Touristic attraction": "img/touristic_icon.svg",
         "Restaurant": "img/restaurant_icon.svg",
-        "Accommodation": "img/accommodation_icon.svg"
+        "Accommodation": "img/accommodation_icon.svg",
+
+        // --- Yeni Eklenen Traveler Needs Kategorileri ---
+        "Bar": "img/bar_icon.svg",
+        "Pub": "img/pub_icon.svg",
+        "Fast Food": "img/fastfood_icon.svg",
+        "Supermarket": "img/supermarket_icon.svg",
+        "Pharmacy": "img/pharmacy_icon.svg",
+        "Hospital": "img/hospital_icon.svg",
+        "Bookstore": "img/bookstore_icon.svg",
+        "Post Office": "img/postoffice_icon.svg",
+        "Library": "img/library_icon.svg",
+        "Hostel": "img/hostel_icon.svg", // Eğer ayrı ikon yoksa accommodation_icon.svg de verebilirsiniz
+        "Cinema": "img/cinema_icon.svg",
+        "Jewelry Shop": "img/jewelry_icon.svg",
+        "University": "img/university_icon.svg",
+        "Religion": "img/religion_icon.svg"
     };
 
+    // Eğer listede yoksa varsayılan location ikonunu döndür
     return icons[cat] || "img/location.svg";
 }
 
@@ -4875,11 +4831,12 @@ if (aiInfoSection) {
                     }
                 }
                 const leafletMapId = "leaflet-map-" + currIdx;
-                const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
+               const mapHtml = (item.location && typeof item.location.lat === "number" && typeof item.location.lng === "number")
                     ? `<div class="map-container"><div class="leaflet-map" id="${leafletMapId}" style="width:100%;height:250px;"></div></div>`
                     : '<div class="map-error">Location not available</div>';
 
-               const catIcon = getCategoryIcon(item.category);
+               // DÜZELTME: Artık yeni eklenen ikonları da içeren ana fonksiyonu çağırıyoruz
+               const catIcon = categoryIcon(item.category);
 
             // --- PAYLAŞIM GÖRSELİ FİX (Priority Logic) ---
             let finalImg = item.image;
@@ -5118,7 +5075,11 @@ if (aiInfoSection) {
         addNewDayButton.style.backgroundColor = "#ccc"; // Görsel olarak grileştir
     } else {
         // AKTİF DURUM (Limit Dolmadı)
-        addNewDayButton.textContent = "+ Add New Day";
+        // İkonlu içerik
+                addNewDayButton.innerHTML = '<img src="img/add_new_day_icon.svg" style="width: 18px; height: 18px;">Add New Day';
+                // Flex stilini butonun kendisine (veya CSS'e) ekleyebilirsiniz, burada JS ile zorluyoruz:
+               
+                addNewDayButton.style.gap = '6px';
         addNewDayButton.disabled = false;
         addNewDayButton.onclick = function () { 
              if(typeof addNewDay === 'function') addNewDay(this); 
@@ -5171,37 +5132,6 @@ if (aiInfoSection) {
 
     if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-//     (function ensureSelectDatesButton() {
-//         const hasRealItem = Array.isArray(window.cart) && window.cart.some(i =>
-//             !i._starter && !i._placeholder && i.name && i.name.trim() !== ''
-//         );
-//         if (!hasRealItem) {
-//             let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-//             if (btn) btn.remove();
-//             return;
-//         }
-//         let btn = cartDiv.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
-//         if (!btn) {
-//             btn = document.createElement('button');
-//             btn.className = 'add-to-calendar-btn';
-//             btn.setAttribute('data-role', 'trip-dates');
-//             cartDiv.appendChild(btn);
-//         }
-//         btn.textContent = window.cart?.startDate ? 'Change Dates' : 'Select Dates';
-//         btn.onclick = () => {
-//     if (typeof openCalendar === 'function') {
-//         const maxDay = [...new Set(window.cart.map(i => i.day))].sort((a, b) => a - b).pop() || 1;
-//         openCalendar(maxDay);
-
-//         // [FIX] Takvim açıldıktan hemen sonra butonun altına taşı
-//         const calContainer = document.getElementById('calendar-container');
-//         if (calContainer) {
-//             btn.insertAdjacentElement('afterend', calContainer);
-//         }
-//     }
-// };
-//     })();
-
     (function ensureNewChatInsideCart() {
         const oldOutside = document.querySelector('#newchat');
         if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
@@ -5211,8 +5141,9 @@ if (aiInfoSection) {
         if (!newChat) {
             newChat = document.createElement('div');
             newChat.id = 'newchat';
-            newChat.textContent = 'New Trip Plan';
-            newChat.style.cursor = 'pointer';
+        // İkonlu içerik ve Flex stil güncellemesi
+        newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
+     ;
 
         newChat.onclick = function () {
         const chatBox = document.getElementById('chat-box');
@@ -5310,7 +5241,7 @@ if (aiInfoSection) {
             cartRoot.appendChild(newChat);
         }
         const itemCount = window.cart.filter(i => i.name && !i._starter && !i._placeholder).length;
-        newChat.style.display = itemCount > 0 ? 'block' : 'none';
+        newChat.style.display = itemCount > 0 ? '' : 'none';
     })();
 
 
@@ -5326,9 +5257,12 @@ if (aiInfoSection) {
         pdfBtn = document.createElement('button');
         pdfBtn.id = 'tt-pdf-dl-btn';
         pdfBtn.className = 'add-to-calendar-btn'; 
-        pdfBtn.textContent = 'Download Trip Plan';
-        pdfBtn.style.background = 'linear-gradient(135deg, #e55050 0%, #db5fc5 100%)';
-        pdfBtn.style.color = '#fff';
+        
+     
+        
+        // textContent kullanma, doğrudan innerHTML ile ikon ve metni birlikte ver
+        pdfBtn.innerHTML = '<img src="img/pdf_download_icon.svg" style="width: 18px; height: 18px;"> Download Trip Plan';
+
         pdfBtn.onclick = function () {
             if (typeof saveCurrentTripToStorage === "function") saveCurrentTripToStorage();
             if (typeof downloadTripPlanPDF === "function") {
@@ -5342,8 +5276,7 @@ if (aiInfoSection) {
 
     // 2. Görünürlük
     const hasRealItem = window.cart && window.cart.some(i => i.name && !i._starter && !i._placeholder);
-    pdfBtn.style.display = hasRealItem ? 'block' : 'none';
-
+pdfBtn.style.display = hasRealItem ? '' : 'none';
     // 3. PDF Butonunu "Add New Day"'in altına koy
     const addNewDayBtn = document.getElementById('add-new-day-button');
     if (addNewDayBtn) {

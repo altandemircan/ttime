@@ -1,4 +1,5 @@
 // 2️⃣  generateStepHtml() - DROPDOWN VE BUTON BİRLEŞİK TASARIM
+// 2️⃣  generateStepHtml() - DROPDOWN VE BUTON BİRLEŞİK TASARIM (GÜNCELLENMİŞ)
 function generateStepHtml(step, day, category, idx = 0) {
     const name = getDisplayName(step) || category;
     const localName = getLocalName(step);
@@ -16,19 +17,41 @@ function generateStepHtml(step, day, category, idx = 0) {
         tagsHtml = uniqueTags.map(t => `<span class="geo-tag" title="${t.tag}">${t.label}</span>`).join(' ');
     }
 
-    let catIcon = "https://www.svgrepo.com/show/522166/location.svg";
-    if (category === "Coffee" || category === "Breakfast" || category === "Cafes")
-        catIcon = "/img/coffee_icon.svg";
-    else if (category === "Museum")
-        catIcon = "/img/museum_icon.svg";
-    else if (category === "Touristic attraction")
-        catIcon = "/img/touristic_icon.svg";
-    else if (category === "Restaurant" || category === "Lunch" || category === "Dinner")
-        catIcon = "/img/restaurant_icon.svg";
-    else if (category === "Accommodation")
-        catIcon = "/img/accommodation_icon.svg";
-    else if (category === "Parks")
-        catIcon = "/img/park_icon.svg";
+    // === GÜNCELLENEN İKON MANTIĞI ===
+    const iconMap = {
+        // -- Mevcut Kategoriler ve Varyasyonları --
+        "Coffee": "img/coffee_icon.svg",
+        "Breakfast": "img/coffee_icon.svg",
+        "Cafes": "img/coffee_icon.svg",        
+        "Museum": "img/museum_icon.svg",        
+        "Touristic attraction": "img/touristic_icon.svg",        
+        "Restaurant": "img/restaurant_icon.svg",
+        "Lunch": "img/restaurant_icon.svg",
+        "Dinner": "img/restaurant_icon.svg",        
+        "Accommodation": "img/accommodation_icon.svg",
+        "Hotel": "img/accommodation_icon.svg",        
+        "Parks": "img/park_icon.svg",
+
+        // -- Yeni Eklenen Kategoriler --
+        "Bar": "img/bar_icon.svg",
+        "Pub": "img/pub_icon.svg",
+        "Fast Food": "img/fastfood_icon.svg",
+        "Supermarket": "img/supermarket_icon.svg",
+        "Pharmacy": "img/pharmacy_icon.svg",
+        "Hospital": "img/hospital_icon.svg",
+        "Bookstore": "img/bookstore_icon.svg",
+        "Post Office": "img/postoffice_icon.svg",
+        "Library": "img/library_icon.svg",
+        "Hostel": "img/hostel_icon.svg", // Varsa hostel_icon.svg, yoksa accommodation kullanabilirsin
+        "Cinema": "img/cinema_icon.svg",
+        "Jewelry Shop": "img/jewelry_icon.svg",
+        "University": "img/university_icon.svg",
+        "Religion": "img/religion_icon.svg"
+    };
+
+    // Haritada varsa al, yoksa varsayılan location ikonunu kullan
+    let catIcon = iconMap[category] || "https://www.svgrepo.com/show/522166/location.svg";
+    // ==================================
 
     const isFav = (typeof isTripFav === 'function') 
         ? isTripFav({ name, category, lat, lon }) 
@@ -36,10 +59,8 @@ function generateStepHtml(step, day, category, idx = 0) {
     const favIconSrc = isFav ? "/img/like_on.svg" : "/img/like_off.svg";
 
     // === GÜN SEÇİMİ DÜZELTMESİ ===
-    // 1. Gelen 'day' parametresini kesinlikle sayıya çevir
     const targetDay = parseInt(day, 10) || 1;
 
-    // 2. Toplam gün sayısını hem Plan'dan hem Cart'tan kontrol et (Manuel eklenen günler için)
     let maxDay = 1;
     if (window.cart && window.cart.length > 0) {
         maxDay = Math.max(...window.cart.map(i => i.day || 1));
@@ -48,17 +69,15 @@ function generateStepHtml(step, day, category, idx = 0) {
         const maxPlan = Math.max(...window.latestTripPlan.map(i => i.day || 1));
         if (maxPlan > maxDay) maxDay = maxPlan;
     }
-    // Dropdown en az hedef gün kadar olmalı
+    
     const daysCount = Math.max(maxDay, targetDay);
 
     let dayOptionsHtml = '';
     for (let d = 1; d <= daysCount; d++) {
-        // Burada her ikisi de number olduğu için karşılaştırma doğru çalışır
         const selected = d === targetDay ? 'selected' : '';
         dayOptionsHtml += `<option value="${d}" ${selected}>Day ${d}</option>`;
     }
 
-    // JSON verisini güvenli sakla
     const stepJson = encodeURIComponent(JSON.stringify(step));
 
     return `
