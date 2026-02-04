@@ -261,39 +261,31 @@ async function geoapifyLocationAutocomplete(query) {
                 }
             })).slice(0, 3);
     }
-
-    // 2. [YENİ] ŞEHİR (LOCAL) ARAMA - Senin yeni kurduğun yerel paket
+    
+    // 2. ŞEHİR (LOCAL) ARAMA
     let localCityResults = [];
     try {
         console.log("Şehirler yerel veritabanından çekiliyor...");
         const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
-        // mainscript.js içinde bul ve değiştir:
-
-// mainscript.js içinde bul ve değiştir:
-const localCities = await resLocal.json();
-
-// Gelen verinin dizi olduğundan emin ol (Kritik koruma)
-localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
-    properties: {
-        name: item.name,
-        city: item.name,
-        country_code: (item.countryCode || "").toLowerCase(),
-        formatted: `${item.name}, ${item.countryCode || 'TR'}`,
-        lat: parseFloat(item.latitude),
-        lon: parseFloat(item.longitude),
-        result_type: item.type || 'city',
-        place_id: `local-${item.latitude}-${item.longitude}`
-    }
-})) : [];
-
-
+        const localCities = await resLocal.json();
+        localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
+            properties: {
+                name: item.name,
+                city: item.name,
+                country_code: (item.countryCode || "").toLowerCase(),
+                formatted: `${item.name}, ${item.countryCode || 'TR'}`,
+                lat: parseFloat(item.latitude),
+                lon: parseFloat(item.longitude),
+                result_type: item.type || 'city',
+                place_id: `local-${item.latitude}-${item.longitude}`
+            }
+        })) : [];
     } catch (e) {
         console.warn("Yerel şehir API hatası:", e);
     }
-
+    
     // 3. API ARAMASI (YEDEK)
     let apiFeatures = [];
-    // Eğer yerelde (UNESCO + Şehir) yeterli sonuç yoksa Geoapify'a git
     if (unescoResults.length + localCityResults.length < 5) {
         try {
             let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
@@ -303,17 +295,16 @@ localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
             console.warn("Geoapify API hatası:", e);
         }
     }
-
+    
     // 4. BİRLEŞTİRME
-    // Önce UNESCO, sonra Şehirler, en son API sonuçları
     let combined = [...unescoResults, ...localCityResults, ...apiFeatures];
-
-    // --- Bölge/Şehir tamamlama kodların (Nearby) dokunmadan aynen kalıyor ---
+    
+    // Bölge/Şehir tamamlama
     const region = combined.find(f => {
         const t = f.properties.result_type || f.properties.place_type || '';
         return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
     });
-
+    
     if (region) {
         try {
             const resNearby = await fetch(
@@ -335,7 +326,7 @@ localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
             combined = [...combined, ...nearbyCities];
         } catch (err) {}
     }
-
+    
     return combined;
 }
 
