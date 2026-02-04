@@ -242,7 +242,7 @@ function saveFavTrips() {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
         }
         
         /* YUMUŞAK MOR buton */
