@@ -709,7 +709,7 @@ chatInput.addEventListener("input", debounce(async function () {
         
         if (results && results.length > 0) {
             if (typeof renderSuggestions === 'function') {
-                renderSuggestions(results, rawText);
+                renderSuggestions(results, cleanedText);
             }
         } else {
             console.log("No results found");
