@@ -29,7 +29,7 @@ function saveFavTrips() {
         }
 
         .mp-group:hover {
-            box-shadow: rgba(149, 157, 165, 0.12) 0px 6px 16px;
+            
             border-color: #e2e8f0;
         }
 
