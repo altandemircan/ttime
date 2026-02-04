@@ -2725,7 +2725,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
             <li class="splide__slide">
                 <div class="visual step-item load-more-card" 
                      onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${radiusKm}, ${limit + 5})"
-                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                     style="height: 100%; height: 489px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div style="font-size: 32px; color: #64748b; margin-bottom: 8px;">+</div>
                     <div style="font-size: 14px; font-weight: 600; color: #64748b;">Load More Results</div>
                     <div style="font-size: 12px; color: #94a3b8;">(Same Area)</div>
