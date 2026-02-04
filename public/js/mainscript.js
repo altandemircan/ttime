@@ -702,98 +702,22 @@ chatInput.addEventListener("input", debounce(async function () {
         return;
     }
 
-    // 2. KELİMELERE AYIR ve TEMİZLE
-    let cleanedText = rawText
-        .replace(/(\d+)\s*(?:-?\s*)?(?:day|days|gün|gun)\b/gi, '') // sayı ve gün
-        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at|a|an|the)\b/gi, '') // filler
-        .replace(/[^a-zA-Z\s]/g, ' ') // sadece harf ve boşluk
-        .replace(/\s+/g, ' ')
-        .trim();
-    
-    // 3. POTANSİYEL ŞEHİR İSİMLERİNİ BUL
-    const words = cleanedText.split(' ').filter(w => w.length >= 2);
-    console.log("Words:", words);
-    
-    let foundResults = [];
-    let foundQuery = "";
-    
-    // 4. ÇOKLU KELİME KOMBİNASYONLARINI DENE
-    // Önce tüm kelimeleri birleştirerek dene: "new york"
-    if (words.length >= 2) {
-        for (let i = 0; i <= words.length - 2; i++) {
-            for (let j = 2; j <= Math.min(3, words.length - i); j++) {
-                const phrase = words.slice(i, i + j).join(' ');
-                if (phrase.length >= 3) {
-                    console.log(`Trying phrase: "${phrase}"`);
-                    
-                    try {
-                        const response = await fetch(`/api/cities?q=${encodeURIComponent(phrase.toLowerCase())}`);
-                        const cities = await response.json();
-                        
-                        if (cities && cities.length > 0) {
-                            console.log(`Found ${cities.length} results for "${phrase}"`);
-                            foundResults = cities;
-                            foundQuery = phrase.toLowerCase();
-                            break;
-                        }
-                    } catch (error) {
-                        console.error("Search error:", error);
-                    }
-                }
-            }
-            if (foundResults.length > 0) break;
-        }
-    }
-    
-    // 5. TEK KELİME ARAMASI (fallback)
-    if (foundResults.length === 0) {
-        // En uzun kelimeden başla
-        words.sort((a, b) => b.length - a.length);
+    // geoapifyLocationAutocomplete kullan (UNESCO + Şehir + Geoapify)
+    try {
+        const results = await geoapifyLocationAutocomplete(rawText);
+        console.log("Geoapify results:", results.length, "results");
         
-        for (let word of words) {
-            try {
-                const searchWord = word.toLowerCase();
-                console.log(`Trying single word: "${searchWord}"`);
-                
-                const response = await fetch(`/api/cities?q=${encodeURIComponent(searchWord)}`);
-                const cities = await response.json();
-                
-                if (cities && cities.length > 0) {
-                    console.log(`Found ${cities.length} results for "${searchWord}"`);
-                    foundResults = cities;
-                    foundQuery = searchWord;
-                    break;
-                }
-            } catch (error) {
-                console.error("Search error:", error);
+        if (results && results.length > 0) {
+            if (typeof renderSuggestions === 'function') {
+                renderSuggestions(results, rawText);
             }
+        } else {
+            console.log("No results found");
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
         }
-    }
-    
-    // 6. SONUÇLARI GÖSTER
-    if (foundResults.length > 0) {
-        console.log("Showing results for:", foundQuery);
-        
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(
-                foundResults.map(city => ({
-                    properties: {
-                        name: city.name,
-                        city: city.name,
-                        country_code: (city.countryCode || "").toLowerCase(),
-                        formatted: `${city.name}, ${city.countryCode || ''}`,
-                        lat: parseFloat(city.latitude),
-                        lon: parseFloat(city.longitude),
-                        result_type: city.type || 'city',
-                        place_id: `local-${city.latitude}-${city.longitude}`
-                    }
-                })),
-                foundQuery
-            );
-        }
-    } else {
-        console.log("No results found");
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+    } catch (error) {
+        console.error("Search error:", error);
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Search error</div>';
     }
 }, 400));
 
