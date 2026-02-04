@@ -2746,7 +2746,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
             <li class="splide__slide">
                 <div class="visual step-item widen-area-card" 
                      onclick="window.showSuggestionsInChat('${category}', ${day}, ${code ? "'" + code + "'" : 'null'}, ${nextRadius}, ${limit})"
-                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #eff6ff; border: 2px dashed #60a5fa; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                     style="height: 100%; height: 489px;; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #eff6ff; border: 2px dashed #60a5fa; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div style="font-size: 32px; color: #3b82f6; margin-bottom: 8px;">🔭</div>
                     <div style="font-size: 14px; font-weight: 600; color: #3b82f6;">Search Further</div>
                     <div style="font-size: 12px; color: #60a5fa;">Expand to ${nextRadius}km</div>
@@ -2761,7 +2761,7 @@ function displayPlacesInChat(places, category, day, code = null, radiusKm = 3, l
          html += `
             <li class="splide__slide">
                 <div class="visual step-item end-search-card" 
-                     style="height: 100%; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff1f2; border: 2px dashed #fda4af; border-radius: 12px;">
+                     style="height: 100%; height: 489px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff1f2; border: 2px dashed #fda4af; border-radius: 12px;">
                     <div style="font-size: 32px; color: #e11d48; margin-bottom: 8px;">📍</div>
                     <div style="font-size: 14px; font-weight: 600; color: #e11d48;">That's all!</div>
                     <div style="font-size: 12px; color: #fb7185; text-align:center; padding:0 10px;">
