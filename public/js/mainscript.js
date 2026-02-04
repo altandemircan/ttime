@@ -2846,18 +2846,36 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-    function categoryIcon(category) {
+function categoryIcon(category) {
     // Kategori isimlerini normalize et (Büyük/küçük harf hatasını önler)
     const cat = String(category || "").trim();
     
     const icons = {
+        // --- Mevcut Temel Kategoriler ---
         "Coffee": "img/coffee_icon.svg",
         "Museum": "img/museum_icon.svg",
         "Touristic attraction": "img/touristic_icon.svg",
         "Restaurant": "img/restaurant_icon.svg",
-        "Accommodation": "img/accommodation_icon.svg"
+        "Accommodation": "img/accommodation_icon.svg",
+
+        // --- Yeni Eklenen Traveler Needs Kategorileri ---
+        "Bar": "img/bar_icon.svg",
+        "Pub": "img/pub_icon.svg",
+        "Fast Food": "img/fastfood_icon.svg",
+        "Supermarket": "img/supermarket_icon.svg",
+        "Pharmacy": "img/pharmacy_icon.svg",
+        "Hospital": "img/hospital_icon.svg",
+        "Bookstore": "img/bookstore_icon.svg",
+        "Post Office": "img/postoffice_icon.svg",
+        "Library": "img/library_icon.svg",
+        "Hostel": "img/hostel_icon.svg", // Eğer ayrı ikon yoksa accommodation_icon.svg de verebilirsiniz
+        "Cinema": "img/cinema_icon.svg",
+        "Jewelry Shop": "img/jewelry_icon.svg",
+        "University": "img/university_icon.svg",
+        "Religion": "img/religion_icon.svg"
     };
 
+    // Eğer listede yoksa varsayılan location ikonunu döndür
     return icons[cat] || "img/location.svg";
 }
 
