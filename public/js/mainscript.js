@@ -426,8 +426,8 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         console.log(`Comparing: "${name}" -> "${normalizedName}" with "${targetTerm}"`);
         
         // Filtre - normalize edilmiş haliyle karşılaştır
-        const containsTarget = normalizedName.includes(targetTerm);
-if (!containsTarget && (p.result_type || p.place_type || '').toLowerCase() !== 'unesco_site') {
+const containsTarget = normalizedName.includes(targetTerm);
+if (!containsTarget) {
     console.log(`  ✗ Does not contain "${targetTerm}"`);
     return { item, score: -9999 };
 }
