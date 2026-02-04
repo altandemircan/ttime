@@ -652,7 +652,9 @@ window.addNearbyPlaceToTripFromPopup = async function(index, day, lat, lon) {
         const p = place.properties;
         const name = p.name || p.formatted || "Unknown Place";
         const address = p.formatted || "";
-        const category = place.category || 'Place';
+        
+        // Kategoriyi Geoapify verilerinden doğru şekilde belirle
+        const category = getSimplePlaceCategory(place);
 
         // 2. Try to get an image (or use placeholder)
         let imageUrl = "img/placeholder.png";
@@ -747,29 +749,119 @@ function handlePopupImageLoading(f, imgId) {
 function getSimplePlaceCategory(f) {
     const cats = f.properties.categories || "";
     
-    // 1. MARKETS
-    if (cats.includes('commercial') || cats.includes('market')) {
-        return 'markets';
+    // 1. COFFEE / CAFE
+    if (cats.includes('catering.cafe') || cats.includes('cafe')) {
+        return 'Coffee';
     }
     
-    // 2. ENTERTAINMENT
+    // 2. RESTAURANT
+    if (cats.includes('catering.restaurant') || cats.includes('restaurant')) {
+        return 'Restaurant';
+    }
+    
+    // 3. BAR
+    if (cats.includes('catering.bar') || cats.includes('bar')) {
+        return 'Bar';
+    }
+    
+    // 4. PUB
+    if (cats.includes('catering.pub') || cats.includes('pub')) {
+        return 'Pub';
+    }
+    
+    // 5. FAST FOOD
+    if (cats.includes('catering.fast_food') || cats.includes('fast_food')) {
+        return 'Fast Food';
+    }
+    
+    // 6. HOTEL / ACCOMMODATION
+    if (cats.includes('accommodation.hotel') || cats.includes('hotel')) {
+        return 'Accommodation';
+    }
+    
+    // 7. HOSTEL
+    if (cats.includes('accommodation.hostel') || cats.includes('hostel')) {
+        return 'Hostel';
+    }
+    
+    // 8. MUSEUM
+    if (cats.includes('entertainment.museum') || cats.includes('museum')) {
+        return 'Museum';
+    }
+    
+    // 9. CINEMA
+    if (cats.includes('entertainment.cinema') || cats.includes('cinema')) {
+        return 'Cinema';
+    }
+    
+    // 10. SUPERMARKET
+    if (cats.includes('commercial.supermarket') || cats.includes('supermarket')) {
+        return 'Supermarket';
+    }
+    
+    // 11. PHARMACY
+    if (cats.includes('healthcare.pharmacy') || cats.includes('pharmacy')) {
+        return 'Pharmacy';
+    }
+    
+    // 12. HOSPITAL
+    if (cats.includes('healthcare.hospital') || cats.includes('hospital')) {
+        return 'Hospital';
+    }
+    
+    // 13. BOOKSTORE
+    if (cats.includes('commercial.books') || cats.includes('bookstore')) {
+        return 'Bookstore';
+    }
+    
+    // 14. POST OFFICE
+    if (cats.includes('service.post') || cats.includes('post_office')) {
+        return 'Post Office';
+    }
+    
+    // 15. LIBRARY
+    if (cats.includes('education.library') || cats.includes('library')) {
+        return 'Library';
+    }
+    
+    // 16. UNIVERSITY
+    if (cats.includes('education.university') || cats.includes('university')) {
+        return 'University';
+    }
+    
+    // 17. JEWELRY
+    if (cats.includes('commercial.jewelry') || cats.includes('jewelry')) {
+        return 'Jewelry Shop';
+    }
+    
+    // 18. RELIGION
+    if (cats.includes('religion')) {
+        return 'Religion';
+    }
+    
+    // 19. TOURISTIC ATTRACTION
+    if (cats.includes('tourism.sights') || cats.includes('tourism') || cats.includes('attraction')) {
+        return 'Touristic attraction';
+    }
+    
+    // 20. ENTERTAINMENT / LEISURE (genel)
     if (cats.includes('entertainment') || cats.includes('leisure')) {
-        return 'entertainment';
+        return 'Entertainment';
     }
     
-    // 3. RESTAURANT
-    if (cats.includes('restaurant') || cats.includes('cafe') || cats.includes('food')) {
-        return 'restaurant';
+    // 21. MARKETS (genel commercial)
+    if (cats.includes('commercial') || cats.includes('market') || cats.includes('shopping')) {
+        return 'Supermarket';
     }
     
-    // 4. HOTEL
-    if (cats.includes('accommodation') || cats.includes('hotel')) {
-        return 'hotel';
+    // 22. ACCOMMODATION (genel)
+    if (cats.includes('accommodation')) {
+        return 'Accommodation';
     }
     
-    return 'restaurant';
+    // DEFAULT: Place (location ikonu kullanılacak)
+    return 'Place';
 }
-
 
 
 
@@ -2226,25 +2318,46 @@ function handlePlacePopupImageLoading(f, imgId, categoryType) {
 window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, categoryType) {
     window.currentDay = parseInt(day);
     
-    const categoryIcons = {
-        'restaurant': '/img/restaurant_icon.svg',
-        'hotel': '/img/hotel_icon.svg',
-        'market': '/img/market_icon.svg',
-        'entertainment': '/img/entertainment_icon.svg'
+    // Kategori tipini normalize et (küçük harften büyük harfe çevir)
+    const categoryMap = {
+        'restaurant': 'Restaurant',
+        'hotel': 'Accommodation',
+        'market': 'Supermarket',
+        'entertainment': 'Entertainment',
+        'place': 'Place',
+        'coffee': 'Coffee',
+        'cafe': 'Coffee',
+        'bar': 'Bar',
+        'pub': 'Pub',
+        'fast_food': 'Fast Food',
+        'hostel': 'Hostel',
+        'museum': 'Museum',
+        'cinema': 'Cinema',
+        'supermarket': 'Supermarket',
+        'pharmacy': 'Pharmacy',
+        'hospital': 'Hospital',
+        'bookstore': 'Bookstore',
+        'post_office': 'Post Office',
+        'library': 'Library',
+        'university': 'University',
+        'jewelry': 'Jewelry Shop',
+        'religion': 'Religion',
+        'touristic attraction': 'Touristic attraction'
     };
     
+    const normalizedCategory = categoryMap[categoryType.toLowerCase()] || categoryType;
+    
     const img = document.getElementById(imgId);
-    const defaultIcon = categoryIcons[categoryType] || '/img/placeholder.png';
     const imgSrc = (img && img.src && img.src !== "" && !img.classList.contains("hidden-img"))
         ? img.src
-        : defaultIcon;
+        : 'img/placeholder.png';
     
     // 1. Sepete ekle
     addToCart(
         name,
         imgSrc,
         day,
-        categoryType.charAt(0).toUpperCase() + categoryType.slice(1),
+        normalizedCategory,
         address,
         null, null, null, null,
         { lat: Number(lat), lng: Number(lon) },
