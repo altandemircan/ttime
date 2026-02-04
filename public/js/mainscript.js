@@ -16,97 +16,6 @@ window.__locationPickedFromSuggestions = false;
 window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
-async function geoapifyLocationAutocomplete(query) {
-    // 1. UNESCO (LOCAL) ARAMA - Mevcut listen
-    let unescoResults = [];
-    if (window.UNESCO_DATA) {
-        const q = query.toLowerCase().trim();
-        unescoResults = window.UNESCO_DATA
-            .filter(item => item.name.toLowerCase().includes(q))
-            .map(item => ({
-                properties: {
-                    name: item.name,
-                    city: item.name, 
-                    country_code: item.country_code ? item.country_code.toLowerCase() : "", 
-                    formatted: `${item.name} (UNESCO Site)`,
-                    lat: item.lat,
-                    lon: item.lon,
-                    result_type: 'unesco_site',
-                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
-                }
-            })).slice(0, 3);
-    }
-    
-    // 2. ŞEHİR (LOCAL) ARAMA
-    let localCityResults = [];
-    try {
-        console.log("Şehirler yerel veritabanından çekiliyor...");
-        const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
-
-        const localCities = await resLocal.json();
-        localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
-            properties: {
-                name: item.name,
-                city: item.name,
-                country_code: (item.countryCode || "").toLowerCase(),
-                formatted: `${item.name}, ${item.countryCode || 'TR'}`,
-                lat: parseFloat(item.latitude),
-                lon: parseFloat(item.longitude),
-                result_type: item.type || 'city',
-                place_id: `local-${item.latitude}-${item.longitude}`
-            }
-        })) : [];
-    } catch (e) {
-        console.warn("Yerel şehir API hatası:", e);
-    }
-    
-    // 3. API ARAMASI (YEDEK)
-    let apiFeatures = [];
-    if (unescoResults.length + localCityResults.length < 5) {
-        try {
-let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
-
-            let data = await response.json();
-            apiFeatures = data.features || [];
-        } catch (e) {
-            console.warn("Geoapify API hatası:", e);
-        }
-    }
-    
-    // 4. BİRLEŞTİRME
-    let combined = [...unescoResults, ...localCityResults, ...apiFeatures];
-    
-    // Bölge/Şehir tamamlama
-    const region = combined.find(f => {
-        const t = f.properties.result_type || f.properties.place_type || '';
-        return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
-    });
-    
-    if (region) {
-        try {
-            const resNearby = await fetch(
-                `/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=80000`
-            );
-            const nearbyData = await resNearby.json();
-            let nearbyCities = (nearbyData.features || []).filter(f => {
-                const t = f.properties.result_type || f.properties.place_type || '';
-                return ['city', 'town', 'village'].includes(t);
-            });
-            
-            const existingNames = new Set(combined.map(f =>
-                (f.properties.city || f.properties.name || '').toLowerCase()
-            ));
-            
-            nearbyCities = nearbyCities.filter(f =>
-                !existingNames.has((f.properties.city || f.properties.name || '').toLowerCase())
-            );
-            combined = [...combined, ...nearbyCities];
-        } catch (err) {}
-    }
-    
-    return combined;
-}
-
 // Türkçe karakter normalizasyon fonksiyonu
 function normalizeTurkish(text) {
     if (!text) return '';
@@ -332,7 +241,104 @@ function showSuggestions() {
 let lastAutocompleteQuery = '';
 let lastAutocompleteController = null;
 
+async function geoapifyLocationAutocomplete(query) {
+    // 1. UNESCO (LOCAL) ARAMA - Mevcut listen
+    let unescoResults = [];
+    if (window.UNESCO_DATA) {
+        const q = query.toLowerCase().trim();
+        unescoResults = window.UNESCO_DATA
+            .filter(item => item.name.toLowerCase().includes(q))
+            .map(item => ({
+                properties: {
+                    name: item.name,
+                    city: item.name, 
+                    country_code: item.country_code ? item.country_code.toLowerCase() : "", 
+                    formatted: `${item.name} (UNESCO Site)`,
+                    lat: item.lat,
+                    lon: item.lon,
+                    result_type: 'unesco_site',
+                    place_id: 'unesco_' + item.name.replace(/\s/g, '_')
+                }
+            })).slice(0, 3);
+    }
 
+    // 2. [YENİ] ŞEHİR (LOCAL) ARAMA - Senin yeni kurduğun yerel paket
+    let localCityResults = [];
+    try {
+        console.log("Şehirler yerel veritabanından çekiliyor...");
+        const resLocal = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
+
+        // mainscript.js içinde bul ve değiştir:
+
+// mainscript.js içinde bul ve değiştir:
+const localCities = await resLocal.json();
+
+// Gelen verinin dizi olduğundan emin ol (Kritik koruma)
+localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
+    properties: {
+        name: item.name,
+        city: item.name,
+        country_code: (item.countryCode || "").toLowerCase(),
+        formatted: `${item.name}, ${item.countryCode || 'TR'}`,
+        lat: parseFloat(item.latitude),
+        lon: parseFloat(item.longitude),
+        result_type: item.type || 'city',
+        place_id: `local-${item.latitude}-${item.longitude}`
+    }
+})) : [];
+
+
+    } catch (e) {
+        console.warn("Yerel şehir API hatası:", e);
+    }
+
+    // 3. API ARAMASI (YEDEK)
+    let apiFeatures = [];
+    // Eğer yerelde (UNESCO + Şehir) yeterli sonuç yoksa Geoapify'a git
+    if (unescoResults.length + localCityResults.length < 5) {
+        try {
+            let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+            let data = await response.json();
+            apiFeatures = data.features || [];
+        } catch (e) {
+            console.warn("Geoapify API hatası:", e);
+        }
+    }
+
+    // 4. BİRLEŞTİRME
+    // Önce UNESCO, sonra Şehirler, en son API sonuçları
+    let combined = [...unescoResults, ...localCityResults, ...apiFeatures];
+
+    // --- Bölge/Şehir tamamlama kodların (Nearby) dokunmadan aynen kalıyor ---
+    const region = combined.find(f => {
+        const t = f.properties.result_type || f.properties.place_type || '';
+        return ['region', 'area'].includes(t) && f.properties.lat && f.properties.lon;
+    });
+
+    if (region) {
+        try {
+            const resNearby = await fetch(
+                `/api/geoapify/nearby-cities?lat=${region.properties.lat}&lon=${region.properties.lon}&radius=80000`
+            );
+            const nearbyData = await resNearby.json();
+            let nearbyCities = (nearbyData.features || []).filter(f => {
+                const t = f.properties.result_type || f.properties.place_type || '';
+                return ['city', 'town', 'village'].includes(t);
+            });
+            
+            const existingNames = new Set(combined.map(f =>
+                (f.properties.city || f.properties.name || '').toLowerCase()
+            ));
+            
+            nearbyCities = nearbyCities.filter(f =>
+                !existingNames.has((f.properties.city || f.properties.name || '').toLowerCase())
+            );
+            combined = [...combined, ...nearbyCities];
+        } catch (err) {}
+    }
+
+    return combined;
+}
 
 function extractLocationQuery(input) {
     if (!input) return "";
@@ -427,11 +433,12 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         console.log(`Comparing: "${name}" -> "${normalizedName}" with "${targetTerm}"`);
         
-const containsTarget = normalizedName.includes(targetTerm);
-const isUnesco = (p.result_type || '').toLowerCase() === 'unesco_site';
-if (!containsTarget && !isUnesco) {
-    return { item, score: -9999 };
-}
+        // Filtre - normalize edilmiş haliyle karşılaştır
+        const containsTarget = normalizedName.includes(targetTerm);
+        if (!containsTarget) {
+            console.log(`  ✗ Does not contain "${targetTerm}"`);
+            return { item, score: -9999 };
+        }
         
         console.log(`  ✓ Contains "${targetTerm}"`);
         
@@ -727,23 +734,19 @@ chatInput.addEventListener("input", debounce(async function () {
                 if (phrase.length >= 3) {
                     console.log(`Trying phrase: "${phrase}"`);
                     
-                     // UNESCO + API arama
-    try {
-        const results = await geoapifyLocationAutocomplete(rawText);
-        console.log("Geoapify results:", results.length);
-        
-        if (results && results.length > 0) {
-            if (typeof renderSuggestions === 'function') {
-                renderSuggestions(results, rawText);
-            }
-        } else {
-            console.log("No results found");
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
-        }
-    } catch (error) {
-        console.error("Search error:", error);
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Search error</div>';
-    }
+                    try {
+                        const response = await fetch(`/api/cities?q=${encodeURIComponent(phrase.toLowerCase())}`);
+                        const cities = await response.json();
+                        
+                        if (cities && cities.length > 0) {
+                            console.log(`Found ${cities.length} results for "${phrase}"`);
+                            foundResults = cities;
+                            foundQuery = phrase.toLowerCase();
+                            break;
+                        }
+                    } catch (error) {
+                        console.error("Search error:", error);
+                    }
                 }
             }
             if (foundResults.length > 0) break;
@@ -775,31 +778,31 @@ chatInput.addEventListener("input", debounce(async function () {
         }
     }
     
-  // 6. SONUÇLARI GÖSTER
-if (foundResults.length > 0) {
-    console.log("Showing results for:", foundQuery);
-    
-    if (typeof renderSuggestions === 'function') {
-        renderSuggestions(
-            foundResults.map(city => ({
-                properties: {
-                    name: city.name,
-                    city: city.name,
-                    country_code: (city.countryCode || "").toLowerCase(),
-                    formatted: `${city.name}, ${city.countryCode || ''}`,
-                    lat: parseFloat(city.latitude),
-                    lon: parseFloat(city.longitude),
-                    result_type: city.type || 'city',
-                    place_id: `local-${city.latitude}-${city.longitude}`
-                }
-            })),
-            cleanedText
-        );
+    // 6. SONUÇLARI GÖSTER
+    if (foundResults.length > 0) {
+        console.log("Showing results for:", foundQuery);
+        
+        if (typeof renderSuggestions === 'function') {
+            renderSuggestions(
+                foundResults.map(city => ({
+                    properties: {
+                        name: city.name,
+                        city: city.name,
+                        country_code: (city.countryCode || "").toLowerCase(),
+                        formatted: `${city.name}, ${city.countryCode || ''}`,
+                        lat: parseFloat(city.latitude),
+                        lon: parseFloat(city.longitude),
+                        result_type: city.type || 'city',
+                        place_id: `local-${city.latitude}-${city.longitude}`
+                    }
+                })),
+                foundQuery
+            );
+        }
+    } else {
+        console.log("No results found");
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
     }
-} else {
-    console.log("No results found");
-    suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
-}
 }, 400));
 
     // FOCUS VE CLICK OLAYLARI - INPUT DOLUYSA HİÇBİR ŞEY YAPMA
