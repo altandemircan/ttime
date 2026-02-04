@@ -726,19 +726,22 @@ chatInput.addEventListener("input", debounce(async function () {
                 if (phrase.length >= 3) {
                     console.log(`Trying phrase: "${phrase}"`);
                     
-                    try {
-                        const response = await fetch(`/api/cities?q=${encodeURIComponent(phrase.toLowerCase())}`);
-                        const cities = await response.json();
-                        
-                        if (cities && cities.length > 0) {
-                            console.log(`Found ${cities.length} results for "${phrase}"`);
-                            foundResults = cities;
-                            foundQuery = phrase.toLowerCase();
-                            break;
-                        }
-                    } catch (error) {
-                        console.error("Search error:", error);
-                    }
+                     try {
+        const results = await geoapifyLocationAutocomplete(rawText);
+        console.log("Geoapify results:", results.length);
+        
+        if (results && results.length > 0) {
+            if (typeof renderSuggestions === 'function') {
+                renderSuggestions(results, rawText);
+            }
+        } else {
+            console.log("No results found");
+            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+        }
+    } catch (error) {
+        console.error("Search error:", error);
+        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Search error</div>';
+    }
                 }
             }
             if (foundResults.length > 0) break;
