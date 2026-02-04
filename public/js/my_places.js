@@ -255,7 +255,7 @@ function saveFavTrips() {
         
         .mp-btn-add:hover { 
                 box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3);
-    background: linear-gradient(135deg, #a475f1 0%, #8b60ca 100%);
+
         }
         
         /* KOYU MAVİ buton */
@@ -268,7 +268,7 @@ function saveFavTrips() {
         
         .mp-btn-start:hover { 
            box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
-    background: linear-gradient(135deg, #1996d6 0%, #2dd4d0 100%);
+  
         }
         
         .mp-btn-dis { 
