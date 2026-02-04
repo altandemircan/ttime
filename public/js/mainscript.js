@@ -17,6 +17,14 @@ window.selectedLocationLocked = false;
 window.__dismissedAutoInfo = JSON.parse(localStorage.getItem('dismissedAutoInfo')) || [];
 
 async function geoapifyLocationAutocomplete(query) {
+    // QUERY TEMİZLE
+    let cleanQuery = query
+        .replace(/(\d+)\s*(?:-?\s*)?\(?:day|days|gün|gun)\b/gi, '')
+        .replace(/\b(?:plan|trip|tour|itinerary|visit|travel|to|for|in|at|a|an|the)\b/gi, '')
+        .trim();
+    console.log("Original:", query, "→ Cleaned:", cleanQuery);
+    query = cleanQuery;
+    
     // 1. UNESCO (LOCAL) ARAMA - Mevcut listen
     let unescoResults = [];
     if (window.UNESCO_DATA) {
