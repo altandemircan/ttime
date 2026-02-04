@@ -770,31 +770,31 @@ chatInput.addEventListener("input", debounce(async function () {
         }
     }
     
-    // 6. SONUÇLARI GÖSTER
-    if (foundResults.length > 0) {
-        console.log("Showing results for:", foundQuery);
-        
-        if (typeof renderSuggestions === 'function') {
-            renderSuggestions(
-                foundResults.map(city => ({
-                    properties: {
-                        name: city.name,
-                        city: city.name,
-                        country_code: (city.countryCode || "").toLowerCase(),
-                        formatted: `${city.name}, ${city.countryCode || ''}`,
-                        lat: parseFloat(city.latitude),
-                        lon: parseFloat(city.longitude),
-                        result_type: city.type || 'city',
-                        place_id: `local-${city.latitude}-${city.longitude}`
-                    }
-                })),
-                foundQuery
-            );
-        }
-    } else {
-        console.log("No results found");
-        suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+  // 6. SONUÇLARI GÖSTER
+if (foundResults.length > 0) {
+    console.log("Showing results for:", foundQuery);
+    
+    if (typeof renderSuggestions === 'function') {
+        renderSuggestions(
+            foundResults.map(city => ({
+                properties: {
+                    name: city.name,
+                    city: city.name,
+                    country_code: (city.countryCode || "").toLowerCase(),
+                    formatted: `${city.name}, ${city.countryCode || ''}`,
+                    lat: parseFloat(city.latitude),
+                    lon: parseFloat(city.longitude),
+                    result_type: city.type || 'city',
+                    place_id: `local-${city.latitude}-${city.longitude}`
+                }
+            })),
+            cleanedText
+        );
     }
+} else {
+    console.log("No results found");
+    suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">No location found</div>';
+}
 }, 400));
 
     // FOCUS VE CLICK OLAYLARI - INPUT DOLUYSA HİÇBİR ŞEY YAPMA
