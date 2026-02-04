@@ -65,6 +65,7 @@ async function geoapifyLocationAutocomplete(query) {
     if (unescoResults.length + localCityResults.length < 5) {
         try {
 let response = await fetch(`/api/geoapify/autocomplete?q=${encodeURIComponent(query)}&limit=20`);
+
             let data = await response.json();
             apiFeatures = data.features || [];
         } catch (e) {
@@ -726,7 +727,8 @@ chatInput.addEventListener("input", debounce(async function () {
                 if (phrase.length >= 3) {
                     console.log(`Trying phrase: "${phrase}"`);
                     
-                     try {
+                     // UNESCO + API arama
+    try {
         const results = await geoapifyLocationAutocomplete(rawText);
         console.log("Geoapify results:", results.length);
         
