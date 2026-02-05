@@ -1,11 +1,21 @@
 function getCategoryIcon(category) {
     if (!category) return 'img/location.svg';
+    
+    // Eğer array ise ilk elemanı al
+    if (Array.isArray(category)) {
+        category = category[0];
+    }
+    
     const cat = category.toLowerCase().trim();
     const categoryIcons = {
         "coffee": "img/coffee_icon.svg",
         "museum": "img/museum_icon.svg",
         "touristic attraction": "img/touristic_icon.svg",
         "restaurant": "img/restaurant_icon.svg",
+        "catering": "img/restaurant_icon.svg",
+        "catering.restaurant": "img/restaurant_icon.svg",
+        "catering.cafe": "img/coffee_icon.svg",
+        "catering.bar": "img/bar_icon.svg",
         "accommodation": "img/accommodation_icon.svg",
         "hotel": "img/accommodation_icon.svg",
         "hostel": "img/hostel_icon.svg",
@@ -27,7 +37,6 @@ function getCategoryIcon(category) {
     };
     return categoryIcons[cat] || 'img/location.svg';
 }
-
 let aiAbortController = null;
 let aiDebounceTimeout = null;
 // BUNU DOSYA BAŞINDA tanımla (global olmalı)
