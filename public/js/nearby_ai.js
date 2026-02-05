@@ -1281,7 +1281,7 @@ tabsHtml += '</div>';
                             </div>
                            <div style="flex: 1; min-width: 0;">
     <div style="display: flex; align-items: center; gap: 8px;">
-        <img src="${getCategoryIcon(f.properties.categories?.[0] || 'place')}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
+        <img src="${getCategoryIcon(typeof f.properties.categories === 'string' ? f.properties.categories.split(',')[0] : f.properties.categories)}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
         <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
             ${name}
         </div>
