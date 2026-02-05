@@ -2468,7 +2468,7 @@ function getCategoryIcon(category) {
 
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
-  opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender
+  opening_hours = null, place_id = null, location = null, website = null, options = {}, silent = false, skipRender, icon = null
 ) {
   // === OVERRIDE BLOĞUNU TAMAMEN SİL! ===
 
@@ -2550,8 +2550,9 @@ function addToCart(
     place_id,
     location: loc,
     website,
+    icon: icon || getCategoryIcon(safeCategory),  // ← BURAYA EKLE
     addedAt: new Date().toISOString()
-  };
+};
 
   window.cart.push(newItem);
 
