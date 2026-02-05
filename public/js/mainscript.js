@@ -2432,18 +2432,39 @@ const chatCategories = ["Coffee", "Museum", "Touristic attraction", "Restaurant"
 
 const categoryIcons = {
     "coffee": "img/coffee_icon.svg",
+    "breakfast": "img/coffee_icon.svg",
+    "cafes": "img/coffee_icon.svg",
     "museum": "img/museum_icon.svg",
     "touristic attraction": "img/touristic_icon.svg",
     "touristic": "img/touristic_icon.svg",
     "restaurant": "img/restaurant_icon.svg",
-    "accommodation": "img/accommodation_icon.svg"
+    "lunch": "img/restaurant_icon.svg",
+    "dinner": "img/restaurant_icon.svg",
+    "accommodation": "img/accommodation_icon.svg",
+    "hotel": "img/accommodation_icon.svg",
+    "hostel": "img/hostel_icon.svg",
+    "parks": "img/park_icon.svg",
+    "bar": "img/bar_icon.svg",
+    "pub": "img/pub_icon.svg",
+    "fast food": "img/fastfood_icon.svg",
+    "supermarket": "img/supermarket_icon.svg",
+    "pharmacy": "img/pharmacy_icon.svg",
+    "hospital": "img/hospital_icon.svg",
+    "bookstore": "img/bookstore_icon.svg",
+    "post office": "img/postoffice_icon.svg",
+    "library": "img/library_icon.svg",
+    "cinema": "img/cinema_icon.svg",
+    "jewelry shop": "img/jewelry_icon.svg",
+    "university": "img/university_icon.svg",
+    "religion": "img/religion_icon.svg",
+    "entertainment": "img/entertainment_icon.svg"
 };
 
 function getCategoryIcon(category) {
     if (!category) return 'img/location.svg';
     const cat = category.toLowerCase().trim();
     return categoryIcons[cat] || 'img/location.svg';
-};
+}
 
 function addToCart(
   name, image, day, category, address = null, rating = null, user_ratings_total = null,
