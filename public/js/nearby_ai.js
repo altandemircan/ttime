@@ -2202,7 +2202,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
             const pLng = f.properties.lon;
             const pLat = f.properties.lat;
             const imgId = `${config.layerPrefix}-img-${idx}-${Date.now()}`;
-            let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance);
+let popupContent = getFastPlacePopupHTML(f, imgId, day, config, distance, topPlaces, idx);
 
             if (isMapLibre) {
                 window[layer3DKey] = window[layer3DKey] || [];
@@ -2289,7 +2289,7 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 }
 
 
-function getFastPlacePopupHTML(f, imgId, day, config, distance = null) {
+function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces = [], idx = 0) {
     // 1. Değişkenleri Tanımla
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
     const address = f.properties.formatted || "";
