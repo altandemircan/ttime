@@ -160,9 +160,9 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         
         // Kategoriyi belirle
         let category = "Place";
-        if (pointInfo.categories) {
-            category = getSimplePlaceCategoryFromString(pointInfo.categories);
-        }
+if (pointInfo.categories) {
+    category = getSimplePlaceCategoryFromString(pointInfo.categories);
+}
         
         let imageUrl = "img/placeholder.png";
         if (typeof getPexelsImage === "function") {
@@ -171,18 +171,21 @@ window.addClickedPointToCart = async function(lat, lng, day) {
             } catch (e) { /* ... */ }
         }
         
-        addToCart(
-    placeName,
-    imageUrl,
-    day,
-    category,
-    pointInfo.address || "",
-    null, null,
-    pointInfo.opening_hours || "",
-    null,
-    { lat: lat, lng: lng },
-    "",
-    null, null, null,
+       addToCart(
+    placeName,           // name
+    imageUrl,            // image
+    day,                 // day
+    category,            // category
+    pointInfo.address || "",  // address
+    null,                // rating
+    null,                // user_ratings_total
+    pointInfo.opening_hours || "",  // opening_hours
+    null,                // place_id
+    { lat: lat, lng: lng },  // location
+    "",                  // website
+    null,                // options
+    false,               // silent
+    false,               // skipRender
     getCategoryIcon(category)  // ← BURAYA EKLE
 );
 
