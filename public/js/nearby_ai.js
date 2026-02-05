@@ -1,41 +1,39 @@
-function getCategoryIcon(category) {
-    if (!category) return 'img/location.svg';
+function getCategoryIcons(categories) {
+    if (!categories) return ['img/location.svg'];
     
-    if (Array.isArray(category)) {
-        // Boş olmayan ilk kategoriyi bul
-        category = category.find(c => c && c.trim().length > 0);
+    if (!Array.isArray(categories)) {
+        categories = [categories];
     }
     
-    if (!category) return 'img/location.svg';
-    
-    const cat = category.toLowerCase().trim();
-    
-    // ALT KATEGORİ kontrolü
-    if (cat.includes('museum')) return 'img/museum_icon.svg';
-    if (cat.includes('catering.bar')) return 'img/bar_icon.svg';
-    if (cat.includes('catering.pub')) return 'img/pub_icon.svg';
-    if (cat.includes('cinema')) return 'img/cinema_icon.svg';
-    if (cat.includes('catering.restaurant')) return 'img/restaurant_icon.svg';
-    if (cat.includes('catering.cafe')) return 'img/coffee_icon.svg';
-    if (cat.includes('fast_food')) return 'img/fastfood_icon.svg';
-    if (cat.includes('supermarket')) return 'img/supermarket_icon.svg';
-    if (cat.includes('pharmacy')) return 'img/pharmacy_icon.svg';
-    if (cat.includes('hospital')) return 'img/hospital_icon.svg';
-    
-    // GENEL KATEGORİ
-    const categoryIcons = {
-        "catering": "img/restaurant_icon.svg",
-        "accommodation": "img/accommodation_icon.svg",
-        "entertainment": "img/entertainment_icon.svg",
-        "commercial": "img/supermarket_icon.svg",
-        "healthcare": "img/hospital_icon.svg",
-        "education": "img/university_icon.svg"
+    const categoryMap = {
+        'museum': 'img/museum_icon.svg',
+        'catering.bar': 'img/bar_icon.svg',
+        'catering.pub': 'img/pub_icon.svg',
+        'cinema': 'img/cinema_icon.svg',
+        'catering.restaurant': 'img/restaurant_icon.svg',
+        'catering.cafe': 'img/coffee_icon.svg',
+        'catering.fast_food': 'img/fastfood_icon.svg',
+        'commercial.supermarket': 'img/supermarket_icon.svg',
+        'pharmacy': 'img/pharmacy_icon.svg',
+        'hospital': 'img/hospital_icon.svg',
+        'catering': 'img/restaurant_icon.svg',
+        'accommodation': 'img/accommodation_icon.svg',
+        'entertainment': 'img/entertainment_icon.svg',
+        'commercial': 'img/supermarket_icon.svg',
+        'healthcare': 'img/hospital_icon.svg'
     };
     
-    if (categoryIcons[cat]) return categoryIcons[cat];
+    const icons = [];
+    categories.forEach(cat => {
+        const c = cat.toLowerCase().trim();
+        if (categoryMap[c] && !icons.includes(categoryMap[c])) {
+            icons.push(categoryMap[c]);
+        }
+    });
     
-    return 'img/location.svg';
+    return icons.length > 0 ? icons : ['img/location.svg'];
 }
+
 let aiAbortController = null;
 let aiDebounceTimeout = null;
 // BUNU DOSYA BAŞINDA tanımla (global olmalı)
