@@ -2172,13 +2172,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             </div>
                         </div>
                         <div style="flex: 1; min-width: 0;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <img src="${getCategoryIcon(places[idx].properties.categories)}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
-        <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
-                    margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-            ${name}
-        </div>
-    </div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">${name}</div>
                             <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
