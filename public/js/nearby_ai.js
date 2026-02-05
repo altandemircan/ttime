@@ -1,3 +1,32 @@
+function getCategoryIcon(category) {
+    if (!category) return 'img/location.svg';
+    const cat = category.toLowerCase().trim();
+    const categoryIcons = {
+        "coffee": "img/coffee_icon.svg",
+        "museum": "img/museum_icon.svg",
+        "touristic attraction": "img/touristic_icon.svg",
+        "restaurant": "img/restaurant_icon.svg",
+        "accommodation": "img/accommodation_icon.svg",
+        "hotel": "img/accommodation_icon.svg",
+        "hostel": "img/hostel_icon.svg",
+        "parks": "img/park_icon.svg",
+        "bar": "img/bar_icon.svg",
+        "pub": "img/pub_icon.svg",
+        "fast food": "img/fastfood_icon.svg",
+        "supermarket": "img/supermarket_icon.svg",
+        "pharmacy": "img/pharmacy_icon.svg",
+        "hospital": "img/hospital_icon.svg",
+        "bookstore": "img/bookstore_icon.svg",
+        "post office": "img/postoffice_icon.svg",
+        "library": "img/library_icon.svg",
+        "cinema": "img/cinema_icon.svg",
+        "jewelry shop": "img/jewelry_icon.svg",
+        "university": "img/university_icon.svg",
+        "religion": "img/religion_icon.svg",
+        "entertainment": "img/entertainment_icon.svg"
+    };
+    return categoryIcons[cat] || 'img/location.svg';
+}
 
 let aiAbortController = null;
 let aiDebounceTimeout = null;
