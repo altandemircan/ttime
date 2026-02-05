@@ -2170,7 +2170,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                         </div>
                         <div style="flex: 1; min-width: 0;">
     <div style="display: flex; align-items: center; gap: 8px;">
-<img src="${getCategoryIcon(topPlaces[idx].feature.properties.categories)}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
+<img src="${getCategoryIcons(topPlaces[idx].feature.properties.categories).map(icon => `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`).join('')}
+" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
         <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
                     margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
             ${name}
