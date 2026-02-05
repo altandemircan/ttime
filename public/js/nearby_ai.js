@@ -1,3 +1,46 @@
+function normalizeCategories(categories) {
+    if (!categories) return [];
+    if (Array.isArray(categories)) {
+        return categories
+            .filter(Boolean)
+            .map(c => String(c).toLowerCase().trim())
+            .filter(Boolean);
+    }
+    // string ise: "a,b,c" veya "a; b"
+    return String(categories)
+        .split(/[,;]+/)
+        .map(s => s.toLowerCase().trim())
+        .filter(Boolean);
+}
+
+// Bir place'in categories bilgisinden ikon(lar) üretir.
+// opts.multi=true => birden fazla ikon döndürür (maxIcons ile limitli)
+// opts.multi=false => tek ikon döndürür
+function getIconsForPlaceCategories(categories, opts = { multi: false, maxIcons: 3 }) {
+    const normalized = normalizeCategories(categories);
+
+    // getCategoryIcons zaten map'e göre ikon döndürüyor ama inputu normalize edelim:
+    const icons = getCategoryIcons(normalized);
+
+    // getCategoryIcons fallback olarak zaten location döndürüyor.
+    if (!opts.multi) return icons[0] || 'img/location.svg';
+
+    // multi ise location tek başına geldiyse yine tek bas
+    const unique = [...new Set(icons)].filter(Boolean);
+    return unique.slice(0, opts.maxIcons || 3);
+}
+
+// HTML'e basmak için küçük helper
+function renderCategoryIconsHTML(categories, { multi = false, maxIcons = 3 } = {}) {
+    if (multi) {
+        const icons = getIconsForPlaceCategories(categories, { multi: true, maxIcons });
+        return icons
+            .map(icon => `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`)
+            .join('');
+    }
+    const icon = getIconsForPlaceCategories(categories, { multi: false });
+    return `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`;
+}
 function getCategoryIcons(categories) {
     if (!categories) return ['img/location.svg'];
     
@@ -1286,12 +1329,12 @@ tabsHtml += '</div>';
                                 </div>
                             </div>
                            <div style="flex: 1; min-width: 0;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-<img src="${getCategoryIcon(topPlaces[idx].feature.properties.categories)}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
-        <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-            ${name}
-        </div>
-    </div>
+   <div style="display: flex; align-items: center; gap: 8px;">
+  ${renderCategoryIconsHTML(p.categories, { multi: true, maxIcons: 3 })}
+  <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+      ${name}
+  </div>
+</div>
                                 <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                                             text-overflow: ellipsis; white-space: nowrap;">
                                     ${p.formatted || ""}
@@ -2160,29 +2203,29 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const locationContext = [f.properties.suburb, f.properties.city, f.properties.country].filter(Boolean).join(', ');
 
                 const itemHtml = `
-    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
-        <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
-            <img id="${imgId}" src="img/placeholder.png" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${pLat}, ${pLng}, '${locationContext}', {}, 'ai-point-description')" 
-                 style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                <span style="font-size: 10px; color: white;">✨</span>
-            </div>
-        </div>
-        <div style="flex: 1; min-width: 0;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                ${getCategoryIcons(f.properties.categories).map(icon => `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`).join('')}
-                <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-                    ${name}
-                </div>
-            </div>
-            <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
-            <div style="font-size: 10px; color: #999; white-space: nowrap;">${distanceText}</div>
-            <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${pLat}, ${pLng})"
-                    style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">+</button>
-        </div>
-    </div>`;
+                    <div class="category-place-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;">
+                        <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
+                            <img id="${imgId}" src="img/placeholder.png" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                            <div onclick="event.stopPropagation(); window.fetchClickedPointAI('${safeName}', ${pLat}, ${pLng}, '${locationContext}', {}, 'ai-point-description')" 
+                                 style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+                                <span style="font-size: 10px; color: white;">✨</span>
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+   <div style="display: flex; align-items: center; gap: 8px;">
+  ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })}
+  <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+      ${name}
+  </div>
+</div>
+                            <div style="font-size: 0.9rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${address}</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+                            <div style="font-size: 10px; color: #999; white-space: nowrap;">${distanceText}</div>
+                            <button onclick="window.addNearbyPlaceToTripFromPopup(${idx}, ${day}, ${pLat}, ${pLng})"
+                                    style="width: 30px; height: 30px; background: #fff; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; color: #1976d2; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center;">+</button>
+                        </div>
+                    </div>`;
                 
                 const itemDiv = document.createElement('div');
                 itemDiv.innerHTML = itemHtml;
@@ -2343,13 +2386,12 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
         </div>
         
         <div style="flex: 1; min-width: 0;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-<img src="${getCategoryIcon(topPlaces[idx].feature.properties.categories)}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
-        <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
-                    margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-            ${name}
-        </div>
-    </div>
+   <div style="display: flex; align-items: center; gap: 8px;">
+  ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })}
+  <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+      ${name}
+  </div>
+</div>
           <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                         text-overflow: ellipsis; white-space: nowrap;">
             ${address}
