@@ -1,41 +1,39 @@
 function getCategoryIcon(category) {
     if (!category) return 'img/location.svg';
     
-    // Eğer array ise ilk elemanı al
     if (Array.isArray(category)) {
         category = category[0];
     }
     
     const cat = category.toLowerCase().trim();
+    
+    // Önce ALT KATEGORİ kontrolü (entertainment.museum)
+    if (cat.includes('museum')) return 'img/museum_icon.svg';
+    if (cat.includes('cinema')) return 'img/cinema_icon.svg';
+    if (cat.includes('restaurant')) return 'img/restaurant_icon.svg';
+    if (cat.includes('cafe')) return 'img/coffee_icon.svg';
+    if (cat.includes('bar')) return 'img/bar_icon.svg';
+    if (cat.includes('fast_food')) return 'img/fastfood_icon.svg';
+    if (cat.includes('supermarket')) return 'img/supermarket_icon.svg';
+    if (cat.includes('pharmacy')) return 'img/pharmacy_icon.svg';
+    if (cat.includes('hospital')) return 'img/hospital_icon.svg';
+    if (cat.includes('bookstore')) return 'img/bookstore_icon.svg';
+    if (cat.includes('library')) return 'img/library_icon.svg';
+    if (cat.includes('university')) return 'img/university_icon.svg';
+    
+    // Sonra GENEL KATEGORİ (entertainment, catering, accommodation vs)
     const categoryIcons = {
-        "coffee": "img/coffee_icon.svg",
-        "museum": "img/museum_icon.svg",
-        "touristic attraction": "img/touristic_icon.svg",
-        "restaurant": "img/restaurant_icon.svg",
         "catering": "img/restaurant_icon.svg",
-        "catering.restaurant": "img/restaurant_icon.svg",
-        "catering.cafe": "img/coffee_icon.svg",
-        "catering.bar": "img/bar_icon.svg",
         "accommodation": "img/accommodation_icon.svg",
-        "hotel": "img/accommodation_icon.svg",
-        "hostel": "img/hostel_icon.svg",
-        "parks": "img/park_icon.svg",
-        "bar": "img/bar_icon.svg",
-        "pub": "img/pub_icon.svg",
-        "fast food": "img/fastfood_icon.svg",
-        "supermarket": "img/supermarket_icon.svg",
-        "pharmacy": "img/pharmacy_icon.svg",
-        "hospital": "img/hospital_icon.svg",
-        "bookstore": "img/bookstore_icon.svg",
-        "post office": "img/postoffice_icon.svg",
-        "library": "img/library_icon.svg",
-        "cinema": "img/cinema_icon.svg",
-        "jewelry shop": "img/jewelry_icon.svg",
-        "university": "img/university_icon.svg",
-        "religion": "img/religion_icon.svg",
-        "entertainment": "img/entertainment_icon.svg"
+        "entertainment": "img/entertainment_icon.svg",
+        "commercial": "img/supermarket_icon.svg",
+        "healthcare": "img/hospital_icon.svg",
+        "education": "img/university_icon.svg"
     };
-    return categoryIcons[cat] || 'img/location.svg';
+    
+    if (categoryIcons[cat]) return categoryIcons[cat];
+    
+    return 'img/location.svg';
 }
 let aiAbortController = null;
 let aiDebounceTimeout = null;
