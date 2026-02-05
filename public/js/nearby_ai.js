@@ -155,7 +155,14 @@ window.addClickedPointToCart = async function(lat, lng, day) {
     try {
         window.currentDay = parseInt(day); // Gün sabitleme
 
-const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "" };        const placeName = pointInfo.name;
+        const pointInfo = window._currentPointInfo || { name: "Selected Point", address: "", opening_hours: "", categories: "" };
+        const placeName = pointInfo.name;
+        
+        // Kategoriyi belirle
+        let category = "Place";
+        if (pointInfo.categories) {
+            category = getSimplePlaceCategoryFromString(pointInfo.categories);
+        }
         
         let imageUrl = "img/placeholder.png";
         if (typeof getPexelsImage === "function") {
@@ -168,7 +175,7 @@ const pointInfo = window._currentPointInfo || { name: "Selected Point", address:
             placeName,
             imageUrl,
             day,
-            "Place",
+            category,
             pointInfo.address || "",
             null, null,
             pointInfo.opening_hours || "",
@@ -860,10 +867,41 @@ function getSimplePlaceCategory(f) {
     }
     
     // DEFAULT: Place (location ikonu kullanılacak)
+    // DEFAULT: Place (location ikonu kullanılacak)
     return 'Place';
 }
 
-
+// String kategorilerden kategori belirle (pointInfo.categories için)
+function getSimplePlaceCategoryFromString(cats) {
+    if (!cats || typeof cats !== 'string') return 'Place';
+    
+    const c = cats.toLowerCase();
+    
+    if (c.includes('cafe') || c.includes('coffee')) return 'Coffee';
+    if (c.includes('restaurant')) return 'Restaurant';
+    if (c.includes('bar') && !c.includes('barbershop')) return 'Bar';
+    if (c.includes('pub')) return 'Pub';
+    if (c.includes('fast_food')) return 'Fast Food';
+    if (c.includes('hotel')) return 'Accommodation';
+    if (c.includes('hostel')) return 'Hostel';
+    if (c.includes('museum')) return 'Museum';
+    if (c.includes('cinema')) return 'Cinema';
+    if (c.includes('supermarket') || c.includes('convenience')) return 'Supermarket';
+    if (c.includes('pharmacy')) return 'Pharmacy';
+    if (c.includes('hospital')) return 'Hospital';
+    if (c.includes('books')) return 'Bookstore';
+    if (c.includes('post')) return 'Post Office';
+    if (c.includes('library')) return 'Library';
+    if (c.includes('university')) return 'University';
+    if (c.includes('jewelry')) return 'Jewelry Shop';
+    if (c.includes('religion') || c.includes('mosque') || c.includes('church')) return 'Religion';
+    if (c.includes('tourism') || c.includes('attraction') || c.includes('sights')) return 'Touristic attraction';
+    if (c.includes('entertainment') || c.includes('leisure')) return 'Entertainment';
+    if (c.includes('commercial') || c.includes('shop')) return 'Supermarket';
+    if (c.includes('accommodation')) return 'Accommodation';
+    
+    return 'Place';
+}
 
 async function showNearbyPlacesPopup(lat, lng, map, day, radius = 2000) {
 
@@ -1081,7 +1119,7 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                 <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
                     <div style="font-size: 11px; color: #999;">Clicked</div>
                     <button class="add-point-to-cart-btn" 
-                        onclick="window.addPlaceToTripFromPopup('clicked-point-img', '${(pointInfo.name || '').replace(/'/g, "\\'")}', '${(pointInfo.address || '').replace(/'/g, "\\'")}', ${day}, ${lat}, ${lng}, 'place')" 
+                        onclick="window.addPlaceToTripFromPopup('clicked-point-img', '${(pointInfo.name || '').replace(/'/g, "\\'")}', '${(pointInfo.address || '').replace(/'/g, "\\'")}', ${day}, ${lat}, ${lng}, '${pointInfo.categories || 'place'}')" 
                         style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
                 </div>
                 <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
@@ -1787,7 +1825,7 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 <div class="point-actions" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
                     <div style="font-size: 11px; color: #999;">Clicked</div>
                     <button class="add-point-to-cart-btn" 
-                        onclick="window.addPlaceToTripFromPopup('clicked-point-img', '${pointInfo.name.replace(/'/g, "\\'")}', '${(pointInfo.address||"").replace(/'/g, "\\'")}', ${day}, ${lat}, ${lng}, 'place')" 
+                        onclick="window.addPlaceToTripFromPopup('clicked-point-img', '${pointInfo.name.replace(/'/g, "\\'")}', '${(pointInfo.address||"").replace(/'/g, "\\'")}', ${day}, ${lat}, ${lng}, '${pointInfo.categories || 'place'}')" 
                         style="width: 36px; height: 36px; background: #1976d2; color: white; border: none; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">+</button>
                 </div>
                 <div id="ai-point-description" style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 10px;"></div>
