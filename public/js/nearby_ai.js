@@ -1193,8 +1193,15 @@ showCustomPopup(lat, lng, map, loadingContent, false);
                 </div>
                 <div class="point-info" style="flex: 1; min-width: 0;">
                     <div class="point-name-editor" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <span id="point-name-display" style="font-weight: 600; font-size: 15px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pointInfo.name}</span>
-                    </div>
+    <span style="display:flex; align-items:center; gap:6px; min-width:0;">
+        <span id="clicked-point-icons" style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+            ${renderCategoryIconsHTML(pointInfo.categories || pointInfo.category || pointInfo.type || 'place', { multi: true, maxIcons: 3 })}
+        </span>
+        <span id="point-name-display" style="font-weight: 600; font-size: 15px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${pointInfo.name}
+        </span>
+    </span>
+</div>
                     <div class="point-address" style="font-size: 12px; color: #666; line-height: 1.3;">
                         ${pointInfo.address || 'Selected location'}
                     </div>
