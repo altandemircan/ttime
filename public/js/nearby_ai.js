@@ -12,7 +12,8 @@ function getCategoryIcon(category) {
     if (cat.includes('cinema')) return 'img/cinema_icon.svg';
     if (cat.includes('restaurant')) return 'img/restaurant_icon.svg';
     if (cat.includes('cafe')) return 'img/coffee_icon.svg';
-    if (cat.includes('bar')) return 'img/bar_icon.svg';
+    if (cat.includes('.bar') || cat.includes('catering.bar')) return 'img/bar_icon.svg';
+if (cat.includes('.pub') || cat.includes('catering.pub')) return 'img/pub_icon.svg';
     if (cat.includes('fast_food')) return 'img/fastfood_icon.svg';
     if (cat.includes('supermarket')) return 'img/supermarket_icon.svg';
     if (cat.includes('pharmacy')) return 'img/pharmacy_icon.svg';
