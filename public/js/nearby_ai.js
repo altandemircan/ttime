@@ -2,27 +2,27 @@ function getCategoryIcon(category) {
     if (!category) return 'img/location.svg';
     
     if (Array.isArray(category)) {
-        category = category[0];
+        // Boş olmayan ilk kategoriyi bul
+        category = category.find(c => c && c.trim().length > 0);
     }
+    
+    if (!category) return 'img/location.svg';
     
     const cat = category.toLowerCase().trim();
     
-    // Önce ALT KATEGORİ kontrolü (entertainment.museum)
+    // ALT KATEGORİ kontrolü
     if (cat.includes('museum')) return 'img/museum_icon.svg';
-    if (cat.includes('cinema')) return 'img/cinema_icon.svg';
-    if (cat.includes('restaurant')) return 'img/restaurant_icon.svg';
-    if (cat.includes('cafe')) return 'img/coffee_icon.svg';
     if (cat.includes('catering.bar')) return 'img/bar_icon.svg';
     if (cat.includes('catering.pub')) return 'img/pub_icon.svg';
+    if (cat.includes('cinema')) return 'img/cinema_icon.svg';
+    if (cat.includes('catering.restaurant')) return 'img/restaurant_icon.svg';
+    if (cat.includes('catering.cafe')) return 'img/coffee_icon.svg';
     if (cat.includes('fast_food')) return 'img/fastfood_icon.svg';
     if (cat.includes('supermarket')) return 'img/supermarket_icon.svg';
     if (cat.includes('pharmacy')) return 'img/pharmacy_icon.svg';
     if (cat.includes('hospital')) return 'img/hospital_icon.svg';
-    if (cat.includes('bookstore')) return 'img/bookstore_icon.svg';
-    if (cat.includes('library')) return 'img/library_icon.svg';
-    if (cat.includes('university')) return 'img/university_icon.svg';
     
-    // Sonra GENEL KATEGORİ (entertainment, catering, accommodation vs)
+    // GENEL KATEGORİ
     const categoryIcons = {
         "catering": "img/restaurant_icon.svg",
         "accommodation": "img/accommodation_icon.svg",
