@@ -1250,11 +1250,13 @@ tabsHtml += '</div>';
                                     <span style="font-size: 10px; color: white;">✨</span>
                                 </div>
                             </div>
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600; font-size: 0.9rem; color: #333; 
-                                            margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-                                    ${name}
-                                </div>
+                           <div style="flex: 1; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <img src="${getCategoryIcon(f.properties.categories?.[0] || 'place')}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">
+        <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+            ${name}
+        </div>
+    </div>
                                 <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                                             text-overflow: ellipsis; white-space: nowrap;">
                                     ${p.formatted || ""}
