@@ -172,17 +172,19 @@ window.addClickedPointToCart = async function(lat, lng, day) {
         }
         
         addToCart(
-            placeName,
-            imageUrl,
-            day,
-            category,
-            pointInfo.address || "",
-            null, null,
-            pointInfo.opening_hours || "",
-            null,
-            { lat: lat, lng: lng },
-            ""
-        );
+    placeName,
+    imageUrl,
+    day,
+    category,
+    pointInfo.address || "",
+    null, null,
+    pointInfo.opening_hours || "",
+    null,
+    { lat: lat, lng: lng },
+    "",
+    null, null, null,
+    getCategoryIcon(category)  // ← BURAYA EKLE
+);
 
         closeNearbyPopup();
         
