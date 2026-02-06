@@ -2938,11 +2938,28 @@ const geoapifyCategoryMap = {
   "Religion": "religion"
 };
 
-// showCategoryList(day) fonksiyonunda BUTONLARIN SIRASINI DEĞİŞTİRİN:
-
 function showCategoryList(day) {
 
-    // ... üst kısımlar aynı ...
+    // === AI Info Section Toggle ===
+    const aiInfoSection = document.querySelector('.ai-info-section');
+    if (aiInfoSection) {
+        aiInfoSection.style.display = 'none';
+    }
+
+    window.currentDay = day;
+    console.log("showCategoryList CALLED, day=", day);
+
+    const cartDiv = document.getElementById("cart-items");
+
+    // Clear existing content
+    if (cartDiv) {
+        cartDiv.innerHTML = "";
+    }
+
+    // --- Auto Plan Container ---
+    const autoPlanContainer = document.createElement("div");
+    autoPlanContainer.id = "auto-plan-container";
+    cartDiv.appendChild(autoPlanContainer);
 
     // --- Manual Add Section ---
     const manualAddSection = document.createElement("div");
@@ -2960,7 +2977,7 @@ function showCategoryList(day) {
     const customNoteContainer = document.createElement("div");
     customNoteContainer.id = "customNoteContainer";
     customNoteContainer.style.display = "none";
-    customNoteContainer.className = "custom-note-container";
+    customNoteContainer.className = "custom-note-container"; // Added class for styling if needed
     customNoteContainer.innerHTML = `
         <h3>Add Custom Note for Day ${day}</h3>
         <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
@@ -2972,11 +2989,8 @@ function showCategoryList(day) {
     `;
     cartDiv.appendChild(customNoteContainer);
 
-    // =====================================================
-    // 1) ÖNCE CATEGORY BLOKLARINI EKLE (Add Category)
-    // =====================================================
-
     // --- Categories Data ---
+    // (Bu bölüm "Add Category" ekranının kendisi)
     const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
         { name: "Museum", icon: "🏛️" },
@@ -2986,20 +3000,20 @@ function showCategoryList(day) {
     ];
 
     const travelMainCategories = [
-      { name: "Bar", code: "catering.bar", icon: "🍹" },
-      { name: "Pub", code: "catering.pub", icon: "🍻" },
-      { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
-      { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
-      { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
-      { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-      { name: "Bookstore", code: "commercial.books", icon: "📚" },
-      { name: "Post Office", code: "service.post", icon: "📮" },
-      { name: "Library", code: "education.library", icon: "📖" },
-      { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
-      { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-      { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" }, 
-      { name: "University", code: "education.university", icon: "🎓" },
-      { name: "Religion", code: "religion", icon: "⛪" }
+        { name: "Bar", code: "catering.bar", icon: "🍹" },
+        { name: "Pub", code: "catering.pub", icon: "🍻" },
+        { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
+        { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
+        { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
+        { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
+        { name: "Bookstore", code: "commercial.books", icon: "📚" },
+        { name: "Post Office", code: "service.post", icon: "📮" },
+        { name: "Library", code: "education.library", icon: "📖" },
+        { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
+        { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
+        { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
+        { name: "University", code: "education.university", icon: "🎓" },
+        { name: "Religion", code: "religion", icon: "⛪" }
     ];
 
     // -------- BASIC PLAN BLOK --------
@@ -3084,27 +3098,44 @@ function showCategoryList(day) {
     cartDiv.appendChild(travelerItem);
 
     // =====================================================
-    // 2) SONRA BUTONLARI EKLE:
-    //    Add Custom Note
-    //    Add from My Places
+    // İSTENEN YENİ SIRA:
+    // (Add Category ekranı yukarıdaki bloklar)
+    // Add Custom Note
+    // Add from My Places
     // =====================================================
 
-    // --- Add Custom Note Button ---
+    // --- Add Custom Note Button (kategori bloklarının ALTINA) ---
     const addCustomNoteButton = document.createElement("button");
     addCustomNoteButton.classList.add("add-custom-note-btn");
     addCustomNoteButton.textContent = "✍️ Add Custom Note";
+
     addCustomNoteButton.addEventListener('click', function() {
         const container = document.getElementById("customNoteContainer");
         if (container) {
             container.style.display = "block";
+            // Optional: focus on the title input
             const titleInput = document.getElementById("noteTitle");
             if (titleInput) titleInput.focus();
         }
-        this.style.display = "none";
+        this.style.display = "none"; // Hide the "Add Custom Note" button itself
     });
+
     cartDiv.appendChild(addCustomNoteButton);
 
-    // --- Add Favorite Button ---
+    // Attach event listeners for Save and Cancel buttons dynamically
+    setTimeout(() => {
+        const saveBtn = document.getElementById("btn-save-note");
+        const cancelBtn = document.getElementById("btn-cancel-note");
+
+        if (saveBtn) {
+            saveBtn.onclick = function() { saveCustomNote(day); };
+        }
+        if (cancelBtn) {
+            cancelBtn.onclick = function() { closeCustomNoteInput(); };
+        }
+    }, 0);
+
+    // --- Add Favorite Button (kategori bloklarının ALTINA, Custom Note'un ALTINA) ---
     const addFavBtn = document.createElement("button");
     addFavBtn.className = "add-favorite-place-btn";
     addFavBtn.textContent = "❤️ Add from My Places";
@@ -3114,14 +3145,6 @@ function showCategoryList(day) {
         }
     };
     cartDiv.appendChild(addFavBtn);
-
-    // Save/Cancel eventleri aynı kalsın
-    setTimeout(() => {
-        const saveBtn = document.getElementById("btn-save-note");
-        const cancelBtn = document.getElementById("btn-cancel-note");
-        if (saveBtn) saveBtn.onclick = function() { saveCustomNote(day); };
-        if (cancelBtn) cancelBtn.onclick = function() { closeCustomNoteInput(); };
-    }, 0);
 
     // --- Close Button ---
     const closeButton = document.createElement("button");
