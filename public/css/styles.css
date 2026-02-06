@@ -2277,19 +2277,16 @@ ease;
 }
 
 .add-more-btn {
-       padding: 10px;
+    padding: 10px;
     width: 100%;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: none;
+    border: 1px solid #d4bef8;
     border-radius: 8px;
-    background: #9159ed;
+    background: #ffffff;
     cursor: pointer;
-    transition: all 0.3s 
-ease;
-    font-size: 0.9rem;
-    color: #ffffff;
+    color: #2c3e50;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     margin: 20px 0;
 }
@@ -2960,14 +2957,14 @@ ease;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: 1px solid #ffd358;
+    border: 1px solid #f2d59e;
     border-radius: 8px;
-    background: #edb959;
+    background: #ffffff;
     cursor: pointer;
-    transition: all 0.3s ease;   
+    transition: all 0.3s ease;
     color: #2c3e50;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    text-align: center; 
+    text-align: center;
     width: -webkit-fill-available;
  
 }
@@ -6498,18 +6495,16 @@ border-bottom:1px solid #ddd;
 }
 
 .add-favorite-place-btn {
-    gap: 7px;
-    padding: 10px;
+        padding: 10px;
     margin: 0px 0;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: 1px solid #ffb4af;
+    border: 1px solid #ffc0c7;
     border-radius: 8px;
-    background: #ed5969;
+    background: #ffffff;
     cursor: pointer;
-    transition: all 0.3s
-ease;
+    transition: all 0.3s ease;
     color: #2c3e50;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
