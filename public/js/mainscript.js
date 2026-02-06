@@ -5127,7 +5127,7 @@ actionsRow.className = 'tt-day-actions-row';
 actionsRow.style.display = 'flex';
 actionsRow.style.flexDirection = 'row';
 actionsRow.style.gap = '8px';
-actionsRow.style.flexWrap = 'wrap';      // küçük ekranda taşarsa alta insin
+actionsRow.style.flexWrap = 'nowrap';      // küçük ekranda taşarsa alta insin
 actionsRow.style.alignItems = 'center';
 
 actionsRow.appendChild(addCategoryBtn);
