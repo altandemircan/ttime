@@ -3988,20 +3988,17 @@ ease;
 
 
 .ai-info-section, .trip-info-section {
-    margin-top: 20px;
-background: #f9f7fd;
-    border-radius: 10px; 
+  margin-top: 20px;
+    background: #f9f7fd;
+    border-radius: 10px;
     font-weight: 400;
-    transition: background-color 0.2s 
-ease, transform 0.2s 
-ease, box-shadow 0.2s 
-ease;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     border-radius: 12px;
-  
-    line-height: 1.6;  
+    line-height: 1.6;
     padding: 10px 10px;
     border-radius: 6px;
     cursor: pointer;
+    font-size: 0.95rem;
 }
 .ai-info-section h3, .trip-info-section h3 {
   margin: 0 0 6px 0;
