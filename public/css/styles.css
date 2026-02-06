@@ -2943,10 +2943,10 @@ ease;
     background: #a5a5a5; 
 }
 
-#customNoteContainer .modal-actions .save-note {
+.customNoteContainer .modal-actions .save-note {
    background: #83c179; 
 }
-#customNoteContainer .modal-actions .cancel-note {
+.customNoteContainer .modal-actions .cancel-note {
    background: #a5a5a5; 
 }
 
