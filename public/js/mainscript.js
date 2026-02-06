@@ -2962,16 +2962,82 @@ function showCategoryList(day) {
     cartDiv.appendChild(autoPlanContainer);
 
     // --- Manual Add Section ---
-    const manualAddSection = document.createElement("div");
-    manualAddSection.className = "manual-add-section";
-    manualAddSection.innerHTML = `
-        <h3>Add Custom Place to Day ${day}</h3>
-        <div class="search-container">
-            <input type="text" id="place-input-${day}" placeholder="Enter place name" class="place-input">
-            <div id="place-details-${day}" class="place-details"></div>
-        </div>
-    `;
-    cartDiv.appendChild(manualAddSection);
+    // --- YENİ BAŞLANGIÇ: Add Category Accordion Yapısı ---
+            const manualAddSection = document.createElement("div");
+            manualAddSection.className = "manual-add-section";
+            manualAddSection.style.marginTop = "15px";
+
+            // 1. Ana Buton (Accordion Başlığı)
+            const addCategoryBtn = document.createElement("button");
+            addCategoryBtn.className = "add-category-btn";
+            addCategoryBtn.innerHTML = `Add Category <span class="custom-icon" style="float:right; font-weight:bold;">+</span>`;
+            addCategoryBtn.style.cssText = "width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; text-align: left; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;";
+            
+            // 2. Açılır İçerik Kutusu (Accordion Gövdesi)
+            const addCategoryContent = document.createElement("div");
+            addCategoryContent.className = "add-category-content";
+            // Başlangıçta gizli (display: none)
+            addCategoryContent.style.cssText = "display: none; flex-direction: column; gap: 10px; padding: 15px; border: 1px solid #ddd; border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; background-color: #fff;";
+
+            // Tıklayınca Aç/Kapa (Toggle) İşlevi
+            addCategoryBtn.onclick = function() {
+                const isHidden = addCategoryContent.style.display === "none";
+                addCategoryContent.style.display = isHidden ? "flex" : "none";
+                this.querySelector(".custom-icon").textContent = isHidden ? "−" : "+";
+            };
+
+            // 3. İçerik Elemanları
+            
+            // A. Arama Kutusu (Search Input)
+            const searchContainer = document.createElement("div");
+            searchContainer.className = "search-container";
+            searchContainer.style.width = "100%";
+            searchContainer.innerHTML = `
+                <input type="text" id="place-input-${day}" placeholder="Search for a place..." class="place-input" style="width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; box-sizing: border-box;">
+                <div id="place-details-${day}" class="place-details"></div>
+            `;
+
+            // B. Add Custom Note Butonu
+            const addCustomNoteBtn = document.createElement("button");
+            addCustomNoteBtn.textContent = "Add Custom Note";
+            addCustomNoteBtn.className = "action-btn";
+            addCustomNoteBtn.style.cssText = "width: 100%; padding: 10px; background: #f1f3f5; border: none; border-radius: 6px; cursor: pointer; text-align: left; font-size: 14px; transition: background 0.2s;";
+            addCustomNoteBtn.onmouseover = function() { this.style.background = "#e9ecef"; };
+            addCustomNoteBtn.onmouseout = function() { this.style.background = "#f1f3f5"; };
+            
+            addCustomNoteBtn.onclick = function() {
+                // Not alanını bul ve aç/kapa
+                let noteContainer = document.getElementById(`custom-note-container-${day}`);
+                if (noteContainer) {
+                    noteContainer.style.display = noteContainer.style.display === "none" ? "block" : "none";
+                }
+            };
+
+            // C. Add from My Places Butonu
+            const addFromMyPlacesBtn = document.createElement("button");
+            addFromMyPlacesBtn.textContent = "Add from My Places";
+            addFromMyPlacesBtn.className = "action-btn";
+            addFromMyPlacesBtn.style.cssText = "width: 100%; padding: 10px; background: #f1f3f5; border: none; border-radius: 6px; cursor: pointer; text-align: left; font-size: 14px; transition: background 0.2s;";
+            addFromMyPlacesBtn.onmouseover = function() { this.style.background = "#e9ecef"; };
+            addFromMyPlacesBtn.onmouseout = function() { this.style.background = "#f1f3f5"; };
+            
+            addFromMyPlacesBtn.onclick = function() {
+                console.log("Add from My Places Clicked for Day " + day);
+                // Varsa import butonunu tetikle
+                const importBtn = document.querySelector('.gps-import');
+                if(importBtn) importBtn.click();
+            };
+
+            // Elemanları birleştir
+            addCategoryContent.appendChild(searchContainer);
+            addCategoryContent.appendChild(addCustomNoteBtn);
+            addCategoryContent.appendChild(addFromMyPlacesBtn);
+
+            manualAddSection.appendChild(addCategoryBtn);
+            manualAddSection.appendChild(addCategoryContent);
+
+            cartDiv.appendChild(manualAddSection);
+            // --- BİTİŞ ---
 
     // --- Custom Note Container (initially hidden) ---
     const customNoteContainer = document.createElement("div");
