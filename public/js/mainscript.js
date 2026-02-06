@@ -5026,10 +5026,7 @@ if (anyDayHasRealItem && !hideAddCat) {
     if (!existingGroup) {
         const group = document.createElement('div');
         group.className = 'tt-day-actions';
-        group.style.display = 'flex';
-group.style.flexDirection = 'column';  // KRİTİK: noteBox altta kalsın
-group.style.gap = '8px';
-group.style.marginTop = '12px';
+
 
         // 1) Add Category
         const addCategoryBtn = document.createElement("button");
