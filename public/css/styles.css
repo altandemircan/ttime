@@ -4874,7 +4874,12 @@ right: 30px;
     padding: 10px;
     border-radius: 10px;
 }
-
+.tt-day-actions-row {
+    display: flex;
+    flex-flow: row;
+    gap: 8px;
+    align-items: center;
+}
 
 .day-list,
 .route-map,
