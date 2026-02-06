@@ -5026,7 +5026,10 @@ if (anyDayHasRealItem && !hideAddCat) {
     if (!existingGroup) {
         const group = document.createElement('div');
         group.className = 'tt-day-actions';
-
+        group.style.display = 'flex';
+group.style.flexDirection = 'column';  // KRİTİK: noteBox altta kalsın
+group.style.gap = '8px';
+group.style.marginTop = '12px';
 
         // 1) Add Category
         const addCategoryBtn = document.createElement("button");
@@ -5121,6 +5124,11 @@ if (anyDayHasRealItem && !hideAddCat) {
         // Butonlar yan yana (row)
 const actionsRow = document.createElement('div');
 actionsRow.className = 'tt-day-actions-row';
+actionsRow.style.display = 'flex';
+actionsRow.style.flexDirection = 'row';
+actionsRow.style.gap = '8px';
+actionsRow.style.flexWrap = 'nowrap';      // küçük ekranda taşarsa alta insin
+actionsRow.style.alignItems = 'center';
 
 actionsRow.appendChild(addCategoryBtn);
 actionsRow.appendChild(addCustomNoteBtn);
