@@ -2902,7 +2902,7 @@ ease;
     font-size: 1.4rem;
 }
 
-#customNoteContainer h3::before  {
+.customNoteContainer h3::before  {
     content: "📝";
     font-size: 1.4rem;
 }
@@ -2911,13 +2911,13 @@ ease;
     flex-direction: column;
         gap: 4px;
 }
-#customNoteContainer .modal-actions, .confirmation-container .modal-actions {
+.customNoteContainer .modal-actions, .confirmation-container .modal-actions {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     margin-top: 6px;
 }
-#customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
+.customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
     width: 100%;
     padding: 10px;
     margin: 0px 0;
