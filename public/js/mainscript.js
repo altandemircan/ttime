@@ -2987,15 +2987,15 @@ function showCategoryList(day) {
             <button id="btn-cancel-note" class="cancel-note">Cancel</button>
         </div>
     `;
-    cartDiv.appendChild(customNoteContainer);
+    // cartDiv.appendChild(customNoteContainer);
 
-    // Save/Cancel eventleri
-    setTimeout(() => {
-        const saveBtn = document.getElementById("btn-save-note");
-        const cancelBtn = document.getElementById("btn-cancel-note");
-        if (saveBtn) saveBtn.onclick = function() { saveCustomNote(day); };
-        if (cancelBtn) cancelBtn.onclick = function() { closeCustomNoteInput(); };
-    }, 0);
+    // // Save/Cancel eventleri
+    // setTimeout(() => {
+    //     const saveBtn = document.getElementById("btn-save-note");
+    //     const cancelBtn = document.getElementById("btn-cancel-note");
+    //     if (saveBtn) saveBtn.onclick = function() { saveCustomNote(day); };
+    //     if (cancelBtn) cancelBtn.onclick = function() { closeCustomNoteInput(); };
+    // }, 0);
 
     // --- Categories Data ---
     const basicPlanCategories = [
@@ -5014,13 +5014,7 @@ if (aiInfoSection) {
             setTimeout(() => wrapRouteControls(day), 0);
         }
 
-        const anyDayHasRealItem = window.cart.some(i =>
-            !i._starter && !i._placeholder && i.category !== "Note" && i.name
-        );
-        const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
-
-        if (anyDayHasRealItem && !hideAddCat) {
-            // updateCart() içinde, eski "+ Add Category" butonu eklenen yeri bununla değiştirin:
+// updateCart() içinde, eski "+ Add Category" butonu eklenen yeri bununla değiştirin:
 
 const anyDayHasRealItem = window.cart.some(i =>
     !i._starter && !i._placeholder && i.category !== "Note" && i.name
@@ -5029,7 +5023,6 @@ const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[da
 
 if (anyDayHasRealItem && !hideAddCat) {
 
-    // Aynı gün için ikinci kez eklenmesin
     let existingGroup = dayList.querySelector('.tt-day-actions');
     if (!existingGroup) {
 
@@ -5049,25 +5042,97 @@ if (anyDayHasRealItem && !hideAddCat) {
             if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
         };
 
-        // 2) Add Custom Note
+        // 2) Add Custom Note (kategoriye gitmeden, altta formu aç)
         const addCustomNoteBtn = document.createElement("button");
         addCustomNoteBtn.className = "add-custom-note-btn";
         addCustomNoteBtn.textContent = "✍️ Add Custom Note";
-        addCustomNoteBtn.onclick = function () {
-            // Kategori ekranını açmadan direkt not ekleme:
-            // Mevcut not UI'ını kullanmak için showCategoryList(day) açıp customNoteContainer'ı göstermek yerine
-            // burada direkt not ekleme modal/alanı yoksa en güvenlisi showCategoryList'i açıp note container'ı açmak.
-            if (typeof showCategoryList === 'function') showCategoryList(day);
 
-            setTimeout(() => {
-                const container = document.getElementById("customNoteContainer");
-                if (container) {
-                    container.style.display = "block";
-                    const titleInput = document.getElementById("noteTitle");
-                    if (titleInput) titleInput.focus();
-                }
-            }, 0);
+        // Not formu (day'e özel id'li)
+        const noteFormId = `customNoteContainer-day${day}`;
+        const noteTitleId = `noteTitle-day${day}`;
+        const noteDetailsId = `noteDetails-day${day}`;
+        const noteSaveId = `btn-save-note-day${day}`;
+        const noteCancelId = `btn-cancel-note-day${day}`;
+
+        const customNoteContainer = document.createElement('div');
+        customNoteContainer.id = noteFormId;
+        customNoteContainer.className = 'custom-note-container';
+        customNoteContainer.style.display = 'none';
+        customNoteContainer.innerHTML = `
+            <h3>Add Custom Note for Day ${day}</h3>
+            <input type="text" id="${noteTitleId}" placeholder="Note title" class="note-input">
+            <textarea id="${noteDetailsId}" placeholder="Note details" class="note-textarea"></textarea>
+            <div class="modal-actions">
+                <button id="${noteSaveId}" class="save-note">Save Note</button>
+                <button id="${noteCancelId}" class="cancel-note">Cancel</button>
+            </div>
+        `;
+
+        addCustomNoteBtn.onclick = function () {
+            const isOpen = customNoteContainer.style.display === 'block';
+            customNoteContainer.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) {
+                // açıldıysa title’a focus
+                setTimeout(() => {
+                    const t = document.getElementById(noteTitleId);
+                    if (t) t.focus();
+                }, 0);
+            }
         };
+
+        // Save/Cancel bağla
+        setTimeout(() => {
+            const saveBtn = document.getElementById(noteSaveId);
+            const cancelBtn = document.getElementById(noteCancelId);
+
+            if (saveBtn) {
+                saveBtn.onclick = function () {
+                    // saveCustomNote(day) mevcut fonksiyonun ID’leri sabit (#noteTitle/#noteDetails) bekliyor olabilir.
+                    // Bu yüzden geçici olarak eski ID’lere değer kopyalayıp çağırıyoruz.
+                    // (Minimum müdahale ile çalışan çözüm)
+                    const legacyTitle = document.getElementById('noteTitle');
+                    const legacyDetails = document.getElementById('noteDetails');
+
+                    // Eğer legacy inputlar DOM'da yoksa, geçici oluştur
+                    let tempLegacyCreated = false;
+                    let tempWrap = null;
+
+                    if (!legacyTitle || !legacyDetails) {
+                        tempLegacyCreated = true;
+                        tempWrap = document.createElement('div');
+                        tempWrap.style.display = 'none';
+                        tempWrap.innerHTML = `
+                            <input id="noteTitle" />
+                            <textarea id="noteDetails"></textarea>
+                        `;
+                        document.body.appendChild(tempWrap);
+                    }
+
+                    // değerleri legacy id’lere yaz
+                    const t = document.getElementById(noteTitleId);
+                    const d = document.getElementById(noteDetailsId);
+                    document.getElementById('noteTitle').value = t ? t.value : '';
+                    document.getElementById('noteDetails').value = d ? d.value : '';
+
+                    // kaydet
+                    if (typeof saveCustomNote === 'function') saveCustomNote(day);
+
+                    // formu kapat & temizle
+                    customNoteContainer.style.display = 'none';
+                    if (t) t.value = '';
+                    if (d) d.value = '';
+
+                    // temp legacy temizle
+                    if (tempLegacyCreated && tempWrap) tempWrap.remove();
+                };
+            }
+
+            if (cancelBtn) {
+                cancelBtn.onclick = function () {
+                    customNoteContainer.style.display = 'none';
+                };
+            }
+        }, 0);
 
         // 3) Add from My Places
         const addFromMyPlacesBtn = document.createElement("button");
@@ -5082,6 +5147,7 @@ if (anyDayHasRealItem && !hideAddCat) {
         group.appendChild(addCategoryBtn);
         group.appendChild(addCustomNoteBtn);
         group.appendChild(addFromMyPlacesBtn);
+        group.appendChild(customNoteContainer);
 
         dayList.appendChild(group);
     }
