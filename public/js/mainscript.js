@@ -5047,11 +5047,76 @@ if (anyDayHasRealItem && !hideAddCat) {
         addCustomNoteBtn.className = "add-custom-note-btn";
         addCustomNoteBtn.textContent = "✍️ Add Custom Note";
 
-        const noteFormId = `customNoteContainer-day${day}`;
-        const noteTitleId = `noteTitle-day${day}`;
-        const noteDetailsId = `noteDetails-day${day}`;
-        const noteSaveId = `btn-save-note-day${day}`;
-        const noteCancelId = `btn-cancel-note-day${day}`;
+        // 2) Add Custom Note
+const addCustomNoteBtn = document.createElement("button");
+addCustomNoteBtn.className = "add-custom-note-btn";
+addCustomNoteBtn.textContent = "✍️ Add Custom Note";
+
+addCustomNoteBtn.onclick = function () {
+  // Eğer kategori ekranındaki eski container varsa onu kullan (CSS bozulmasın)
+  let container = document.getElementById("customNoteContainer");
+
+  // Yoksa burada oluştur ama ID’leri ASLA değiştirme
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "customNoteContainer";
+    container.className = "custom-note-container";
+    container.style.display = "none";
+    container.innerHTML = `
+      <h3 id="customNoteTitle">Add Custom Note</h3>
+      <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
+      <textarea id="noteDetails" placeholder="Note details" class="note-textarea"></textarea>
+      <div class="modal-actions">
+        <button id="btn-save-note" class="save-note">Save Note</button>
+        <button id="btn-cancel-note" class="cancel-note">Cancel</button>
+      </div>
+    `;
+    // Add Category altına ekle (buton grubunun içine/sonuna koyabilirsin)
+    dayList.appendChild(container);
+  }
+
+  // Hangi gün için not ekleniyor?
+  container.dataset.day = String(day);
+
+  // Başlığı güncelle (opsiyonel)
+  const h3 = container.querySelector("h3");
+  if (h3) h3.textContent = `Add Custom Note for Day ${day}`;
+
+  // Toggle göster/gizle
+  const open = container.style.display === "block";
+  container.style.display = open ? "none" : "block";
+
+  if (!open) {
+    setTimeout(() => {
+      const titleInput = document.getElementById("noteTitle");
+      if (titleInput) titleInput.focus();
+    }, 0);
+  }
+
+  // Save/Cancel eventleri (1 kere bağla)
+  if (!container.__ttBound) {
+    container.__ttBound = true;
+
+    const saveBtn = document.getElementById("btn-save-note");
+    const cancelBtn = document.getElementById("btn-cancel-note");
+
+    if (saveBtn) {
+      saveBtn.onclick = async function () {
+        const d = parseInt(container.dataset.day || "1", 10) || 1;
+        if (typeof saveCustomNote === "function") {
+          await saveCustomNote(d);
+        }
+        container.style.display = "none";
+      };
+    }
+
+    if (cancelBtn) {
+      cancelBtn.onclick = function () {
+        container.style.display = "none";
+      };
+    }
+  }
+};
 
         const customNoteContainer = document.createElement('div');
         customNoteContainer.id = noteFormId;
