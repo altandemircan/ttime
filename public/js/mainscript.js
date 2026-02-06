@@ -5015,7 +5015,7 @@ if (aiInfoSection) {
         }
 
  
-       const anyDayHasRealItem = window.cart.some(i =>
+    const anyDayHasRealItem = window.cart.some(i =>
     !i._starter && !i._placeholder && i.category !== "Note" && i.name
 );
 const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
@@ -5047,7 +5047,6 @@ if (anyDayHasRealItem && !hideAddCat) {
         addCustomNoteBtn.className = "add-custom-note-btn";
         addCustomNoteBtn.textContent = "✍️ Add Custom Note";
 
-        // Not formu (day'e özel ID'ler)
         const noteFormId = `customNoteContainer-day${day}`;
         const noteTitleId = `noteTitle-day${day}`;
         const noteDetailsId = `noteDetails-day${day}`;
@@ -5079,15 +5078,12 @@ if (anyDayHasRealItem && !hideAddCat) {
             }
         };
 
-        // Save / Cancel bağla
         setTimeout(() => {
             const saveBtn = document.getElementById(noteSaveId);
             const cancelBtn = document.getElementById(noteCancelId);
 
             if (saveBtn) {
                 saveBtn.onclick = async function () {
-                    // saveCustomNote(day) legacy ID (#noteTitle / #noteDetails) bekliyor.
-                    // Değerleri legacy alanlara kopyalayıp mevcut fonksiyonu kullanıyoruz.
                     let tempWrap = null;
 
                     if (!document.getElementById('noteTitle') || !document.getElementById('noteDetails')) {
@@ -5109,7 +5105,6 @@ if (anyDayHasRealItem && !hideAddCat) {
                         await saveCustomNote(day);
                     }
 
-                    // Kapat + temizle
                     customNoteContainer.style.display = 'none';
                     if (t) t.value = '';
                     if (d) d.value = '';
@@ -5143,7 +5138,7 @@ if (anyDayHasRealItem && !hideAddCat) {
         dayList.appendChild(group);
     }
 }
-        }
+       
 
         cartDiv.appendChild(dayContainer);
     } 
