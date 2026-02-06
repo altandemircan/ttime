@@ -4865,7 +4865,15 @@ right: 30px;
 }
 
 
-
+.tt-day-actions {
+        display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    background: #edf5f7;
+    padding: 10px;
+    border-radius: 10px;
+}
 
 
 .day-list,
@@ -4900,6 +4908,7 @@ right: 30px;
 
 .route-info {
     margin-bottom:0px;
+    margin-top: 20px;
 }
 .ai-tags {
     display: flex;

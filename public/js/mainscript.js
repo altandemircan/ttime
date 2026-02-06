@@ -5124,11 +5124,6 @@ group.style.marginTop = '12px';
         // Butonlar yan yana (row)
 const actionsRow = document.createElement('div');
 actionsRow.className = 'tt-day-actions-row';
-actionsRow.style.display = 'flex';
-actionsRow.style.flexDirection = 'row';
-actionsRow.style.gap = '8px';
-actionsRow.style.flexWrap = 'nowrap';      // küçük ekranda taşarsa alta insin
-actionsRow.style.alignItems = 'center';
 
 actionsRow.appendChild(addCategoryBtn);
 actionsRow.appendChild(addCustomNoteBtn);
