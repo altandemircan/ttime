@@ -5027,9 +5027,9 @@ if (anyDayHasRealItem && !hideAddCat) {
         const group = document.createElement('div');
         group.className = 'tt-day-actions';
         group.style.display = 'flex';
-        group.style.flexDirection = 'column';
-        group.style.gap = '8px';
-        group.style.marginTop = '12px';
+group.style.flexDirection = 'column';  // KRİTİK: noteBox altta kalsın
+group.style.gap = '8px';
+group.style.marginTop = '12px';
 
         // 1) Add Category
         const addCategoryBtn = document.createElement("button");
@@ -5121,12 +5121,26 @@ if (anyDayHasRealItem && !hideAddCat) {
         };
 
         // sırayla ekle
-        group.appendChild(addCategoryBtn);
-        group.appendChild(addCustomNoteBtn);
-        group.appendChild(addFromMyPlacesBtn);
+        // Butonlar yan yana (row)
+const actionsRow = document.createElement('div');
+actionsRow.className = 'tt-day-actions-row';
+actionsRow.style.display = 'flex';
+actionsRow.style.flexDirection = 'row';
+actionsRow.style.gap = '8px';
+actionsRow.style.flexWrap = 'wrap';      // küçük ekranda taşarsa alta insin
+actionsRow.style.alignItems = 'center';
 
-        // not kutusu butonların hemen altında dursun
-        group.appendChild(noteBox);
+actionsRow.appendChild(addCategoryBtn);
+actionsRow.appendChild(addCustomNoteBtn);
+actionsRow.appendChild(addFromMyPlacesBtn);
+
+// group içine önce row'u koy
+group.appendChild(actionsRow);
+
+// note kutusu her zaman altta, tam genişlik
+noteBox.style.width = '100%';
+noteBox.style.flexBasis = '100%';
+group.appendChild(noteBox);
 
         dayList.appendChild(group);
     }
