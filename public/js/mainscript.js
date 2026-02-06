@@ -2950,11 +2950,10 @@ function showCategoryList(day) {
     console.log("showCategoryList CALLED, day=", day);
 
     const cartDiv = document.getElementById("cart-items");
+    if (!cartDiv) return;
 
     // Clear existing content
-    if (cartDiv) {
-        cartDiv.innerHTML = "";
-    }
+    cartDiv.innerHTML = "";
 
     // --- Auto Plan Container ---
     const autoPlanContainer = document.createElement("div");
@@ -2974,10 +2973,11 @@ function showCategoryList(day) {
     cartDiv.appendChild(manualAddSection);
 
     // --- Custom Note Container (initially hidden) ---
+    // NOT: Bu container burada kalabilir. Butonu day listesinde göstereceğiz.
     const customNoteContainer = document.createElement("div");
     customNoteContainer.id = "customNoteContainer";
     customNoteContainer.style.display = "none";
-    customNoteContainer.className = "custom-note-container"; // Added class for styling if needed
+    customNoteContainer.className = "custom-note-container";
     customNoteContainer.innerHTML = `
         <h3>Add Custom Note for Day ${day}</h3>
         <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
@@ -2989,8 +2989,15 @@ function showCategoryList(day) {
     `;
     cartDiv.appendChild(customNoteContainer);
 
+    // Save/Cancel eventleri
+    setTimeout(() => {
+        const saveBtn = document.getElementById("btn-save-note");
+        const cancelBtn = document.getElementById("btn-cancel-note");
+        if (saveBtn) saveBtn.onclick = function() { saveCustomNote(day); };
+        if (cancelBtn) cancelBtn.onclick = function() { closeCustomNoteInput(); };
+    }, 0);
+
     // --- Categories Data ---
-    // (Bu bölüm "Add Category" ekranının kendisi)
     const basicPlanCategories = [
         { name: "Coffee", icon: "☕" },
         { name: "Museum", icon: "🏛️" },
@@ -3096,55 +3103,6 @@ function showCategoryList(day) {
 
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
-
-    // =====================================================
-    // İSTENEN YENİ SIRA:
-    // (Add Category ekranı yukarıdaki bloklar)
-    // Add Custom Note
-    // Add from My Places
-    // =====================================================
-
-    // --- Add Custom Note Button (kategori bloklarının ALTINA) ---
-    const addCustomNoteButton = document.createElement("button");
-    addCustomNoteButton.classList.add("add-custom-note-btn");
-    addCustomNoteButton.textContent = "✍️ Add Custom Note";
-
-    addCustomNoteButton.addEventListener('click', function() {
-        const container = document.getElementById("customNoteContainer");
-        if (container) {
-            container.style.display = "block";
-            // Optional: focus on the title input
-            const titleInput = document.getElementById("noteTitle");
-            if (titleInput) titleInput.focus();
-        }
-        this.style.display = "none"; // Hide the "Add Custom Note" button itself
-    });
-
-    cartDiv.appendChild(addCustomNoteButton);
-
-    // Attach event listeners for Save and Cancel buttons dynamically
-    setTimeout(() => {
-        const saveBtn = document.getElementById("btn-save-note");
-        const cancelBtn = document.getElementById("btn-cancel-note");
-
-        if (saveBtn) {
-            saveBtn.onclick = function() { saveCustomNote(day); };
-        }
-        if (cancelBtn) {
-            cancelBtn.onclick = function() { closeCustomNoteInput(); };
-        }
-    }, 0);
-
-    // --- Add Favorite Button (kategori bloklarının ALTINA, Custom Note'un ALTINA) ---
-    const addFavBtn = document.createElement("button");
-    addFavBtn.className = "add-favorite-place-btn";
-    addFavBtn.textContent = "❤️ Add from My Places";
-    addFavBtn.onclick = function() {
-        if (window.toggleSidebarFavoritePlaces) {
-            window.toggleSidebarFavoritePlaces();
-        }
-    };
-    cartDiv.appendChild(addFavBtn);
 
     // --- Close Button ---
     const closeButton = document.createElement("button");
@@ -5062,17 +5020,72 @@ if (aiInfoSection) {
         const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
 
         if (anyDayHasRealItem && !hideAddCat) {
-            let existingBtn = dayList.querySelector('.add-more-btn');
-            if (!existingBtn) {
-                const addMoreButton = document.createElement("button");
-                addMoreButton.className = "add-more-btn";
-                addMoreButton.textContent = "+ Add Category";
-                addMoreButton.dataset.day = day;
-                addMoreButton.onclick = function () {
-                    if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
-                };
-                dayList.appendChild(addMoreButton);
+            // updateCart() içinde, eski "+ Add Category" butonu eklenen yeri bununla değiştirin:
+
+const anyDayHasRealItem = window.cart.some(i =>
+    !i._starter && !i._placeholder && i.category !== "Note" && i.name
+);
+const hideAddCat = window.__hideAddCatBtnByDay && window.__hideAddCatBtnByDay[day];
+
+if (anyDayHasRealItem && !hideAddCat) {
+
+    // Aynı gün için ikinci kez eklenmesin
+    let existingGroup = dayList.querySelector('.tt-day-actions');
+    if (!existingGroup) {
+
+        const group = document.createElement('div');
+        group.className = 'tt-day-actions';
+        group.style.display = 'flex';
+        group.style.flexDirection = 'column';
+        group.style.gap = '8px';
+        group.style.marginTop = '12px';
+
+        // 1) Add Category
+        const addCategoryBtn = document.createElement("button");
+        addCategoryBtn.className = "add-more-btn";
+        addCategoryBtn.textContent = "+ Add Category";
+        addCategoryBtn.dataset.day = day;
+        addCategoryBtn.onclick = function () {
+            if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
+        };
+
+        // 2) Add Custom Note
+        const addCustomNoteBtn = document.createElement("button");
+        addCustomNoteBtn.className = "add-custom-note-btn";
+        addCustomNoteBtn.textContent = "✍️ Add Custom Note";
+        addCustomNoteBtn.onclick = function () {
+            // Kategori ekranını açmadan direkt not ekleme:
+            // Mevcut not UI'ını kullanmak için showCategoryList(day) açıp customNoteContainer'ı göstermek yerine
+            // burada direkt not ekleme modal/alanı yoksa en güvenlisi showCategoryList'i açıp note container'ı açmak.
+            if (typeof showCategoryList === 'function') showCategoryList(day);
+
+            setTimeout(() => {
+                const container = document.getElementById("customNoteContainer");
+                if (container) {
+                    container.style.display = "block";
+                    const titleInput = document.getElementById("noteTitle");
+                    if (titleInput) titleInput.focus();
+                }
+            }, 0);
+        };
+
+        // 3) Add from My Places
+        const addFromMyPlacesBtn = document.createElement("button");
+        addFromMyPlacesBtn.className = "add-favorite-place-btn";
+        addFromMyPlacesBtn.textContent = "❤️ Add from My Places";
+        addFromMyPlacesBtn.onclick = function () {
+            if (window.toggleSidebarFavoritePlaces) {
+                window.toggleSidebarFavoritePlaces();
             }
+        };
+
+        group.appendChild(addCategoryBtn);
+        group.appendChild(addCustomNoteBtn);
+        group.appendChild(addFromMyPlacesBtn);
+
+        dayList.appendChild(group);
+    }
+}
         }
 
         cartDiv.appendChild(dayContainer);
