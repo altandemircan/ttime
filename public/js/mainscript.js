@@ -2954,7 +2954,7 @@ function showCategoryList(day) {
 
     // Clear existing content
     cartDiv.innerHTML = "";
-
+ 
     // --- Auto Plan Container ---
     const autoPlanContainer = document.createElement("div");
     autoPlanContainer.id = "auto-plan-container";
