@@ -2962,15 +2962,14 @@ ease;
     justify-content: center;
     border: 1px solid #ffd358;
     border-radius: 8px;
-    background: #ffffff;
+    background: #edb959;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
+    transition: all 0.3s ease;   
     color: #2c3e50;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center; 
     width: -webkit-fill-available;
-    font-family: 'Satoshi';
+ 
 }
 
 .insertion-placeholder {
@@ -6507,16 +6506,14 @@ border-bottom:1px solid #ddd;
     justify-content: center;
     border: 1px solid #ffb4af;
     border-radius: 8px;
-    background: #ffffff;
+    background: #ed5969;
     cursor: pointer;
     transition: all 0.3s
 ease;
-    font-size: 0.95rem;
     color: #2c3e50;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
     width: -webkit-fill-available;
-    font-family: 'Satoshi';
 
 }
 
