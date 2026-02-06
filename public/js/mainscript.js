@@ -2938,112 +2938,29 @@ const geoapifyCategoryMap = {
   "Religion": "religion"
 };
 
+// showCategoryList(day) fonksiyonunda BUTONLARIN SIRASINI DEĞİŞTİRİN:
+
 function showCategoryList(day) {
 
-    // === AI Info Section Toggle ===
-    const aiInfoSection = document.querySelector('.ai-info-section');
-    if (aiInfoSection) {
-        aiInfoSection.style.display = 'none';
-    }
-
-    window.currentDay = day;
-    console.log("showCategoryList CALLED, day=", day);
-
-    const cartDiv = document.getElementById("cart-items");
-    
-    // Clear existing content
-    if (cartDiv) {
-        cartDiv.innerHTML = "";
-    }
-   
-    // --- Auto Plan Container ---
-    const autoPlanContainer = document.createElement("div");
-    autoPlanContainer.id = "auto-plan-container";
-    cartDiv.appendChild(autoPlanContainer);
+    // ... üst kısımlar aynı ...
 
     // --- Manual Add Section ---
-    // --- YENİ BAŞLANGIÇ: Add Category Accordion Yapısı ---
-            const manualAddSection = document.createElement("div");
-            manualAddSection.className = "manual-add-section";
-            manualAddSection.style.marginTop = "15px";
-
-            // 1. Ana Buton (Accordion Başlığı)
-            const addCategoryBtn = document.createElement("button");
-            addCategoryBtn.className = "add-category-btn";
-            addCategoryBtn.innerHTML = `Add Category <span class="custom-icon" style="float:right; font-weight:bold;">+</span>`;
-            addCategoryBtn.style.cssText = "width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; text-align: left; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;";
-            
-            // 2. Açılır İçerik Kutusu (Accordion Gövdesi)
-            const addCategoryContent = document.createElement("div");
-            addCategoryContent.className = "add-category-content";
-            // Başlangıçta gizli (display: none)
-            addCategoryContent.style.cssText = "display: none; flex-direction: column; gap: 10px; padding: 15px; border: 1px solid #ddd; border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; background-color: #fff;";
-
-            // Tıklayınca Aç/Kapa (Toggle) İşlevi
-            addCategoryBtn.onclick = function() {
-                const isHidden = addCategoryContent.style.display === "none";
-                addCategoryContent.style.display = isHidden ? "flex" : "none";
-                this.querySelector(".custom-icon").textContent = isHidden ? "−" : "+";
-            };
-
-            // 3. İçerik Elemanları
-            
-            // A. Arama Kutusu (Search Input)
-            const searchContainer = document.createElement("div");
-            searchContainer.className = "search-container";
-            searchContainer.style.width = "100%";
-            searchContainer.innerHTML = `
-                <input type="text" id="place-input-${day}" placeholder="Search for a place..." class="place-input" style="width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; box-sizing: border-box;">
-                <div id="place-details-${day}" class="place-details"></div>
-            `;
-
-            // B. Add Custom Note Butonu
-            const addCustomNoteBtn = document.createElement("button");
-            addCustomNoteBtn.textContent = "Add Custom Note";
-            addCustomNoteBtn.className = "action-btn";
-            addCustomNoteBtn.style.cssText = "width: 100%; padding: 10px; background: #f1f3f5; border: none; border-radius: 6px; cursor: pointer; text-align: left; font-size: 14px; transition: background 0.2s;";
-            addCustomNoteBtn.onmouseover = function() { this.style.background = "#e9ecef"; };
-            addCustomNoteBtn.onmouseout = function() { this.style.background = "#f1f3f5"; };
-            
-            addCustomNoteBtn.onclick = function() {
-                // Not alanını bul ve aç/kapa
-                let noteContainer = document.getElementById(`custom-note-container-${day}`);
-                if (noteContainer) {
-                    noteContainer.style.display = noteContainer.style.display === "none" ? "block" : "none";
-                }
-            };
-
-            // C. Add from My Places Butonu
-            const addFromMyPlacesBtn = document.createElement("button");
-            addFromMyPlacesBtn.textContent = "Add from My Places";
-            addFromMyPlacesBtn.className = "action-btn";
-            addFromMyPlacesBtn.style.cssText = "width: 100%; padding: 10px; background: #f1f3f5; border: none; border-radius: 6px; cursor: pointer; text-align: left; font-size: 14px; transition: background 0.2s;";
-            addFromMyPlacesBtn.onmouseover = function() { this.style.background = "#e9ecef"; };
-            addFromMyPlacesBtn.onmouseout = function() { this.style.background = "#f1f3f5"; };
-            
-            addFromMyPlacesBtn.onclick = function() {
-                console.log("Add from My Places Clicked for Day " + day);
-                // Varsa import butonunu tetikle
-                const importBtn = document.querySelector('.gps-import');
-                if(importBtn) importBtn.click();
-            };
-
-            // Elemanları birleştir
-            addCategoryContent.appendChild(searchContainer);
-            addCategoryContent.appendChild(addCustomNoteBtn);
-            addCategoryContent.appendChild(addFromMyPlacesBtn);
-
-            manualAddSection.appendChild(addCategoryBtn);
-            manualAddSection.appendChild(addCategoryContent);
-
-            cartDiv.appendChild(manualAddSection);
-            // --- BİTİŞ ---
+    const manualAddSection = document.createElement("div");
+    manualAddSection.className = "manual-add-section";
+    manualAddSection.innerHTML = `
+        <h3>Add Custom Place to Day ${day}</h3>
+        <div class="search-container">
+            <input type="text" id="place-input-${day}" placeholder="Enter place name" class="place-input">
+            <div id="place-details-${day}" class="place-details"></div>
+        </div>
+    `;
+    cartDiv.appendChild(manualAddSection);
 
     // --- Custom Note Container (initially hidden) ---
     const customNoteContainer = document.createElement("div");
     customNoteContainer.id = "customNoteContainer";
     customNoteContainer.style.display = "none";
-    customNoteContainer.className = "custom-note-container"; // Added class for styling if needed
+    customNoteContainer.className = "custom-note-container";
     customNoteContainer.innerHTML = `
         <h3>Add Custom Note for Day ${day}</h3>
         <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
@@ -3055,49 +2972,9 @@ function showCategoryList(day) {
     `;
     cartDiv.appendChild(customNoteContainer);
 
-    // --- Add Custom Note Button ---
-    const addCustomNoteButton = document.createElement("button");
-    addCustomNoteButton.classList.add("add-custom-note-btn");
-    addCustomNoteButton.textContent = "✍️ Add Custom Note";
-    
-    // Direct event listener for opening the note input
-    addCustomNoteButton.addEventListener('click', function() {
-        const container = document.getElementById("customNoteContainer");
-        if (container) {
-            container.style.display = "block";
-            // Optional: focus on the title input
-            const titleInput = document.getElementById("noteTitle");
-            if (titleInput) titleInput.focus();
-        }
-        this.style.display = "none"; // Hide the "Add Custom Note" button itself
-    });
-    cartDiv.appendChild(addCustomNoteButton);
-
-    // Attach event listeners for Save and Cancel buttons dynamically
-    // This ensures they have the correct 'day' context
-    setTimeout(() => {
-        const saveBtn = document.getElementById("btn-save-note");
-        const cancelBtn = document.getElementById("btn-cancel-note");
-
-        if (saveBtn) {
-            saveBtn.onclick = function() { saveCustomNote(day); };
-        }
-        if (cancelBtn) {
-            cancelBtn.onclick = function() { closeCustomNoteInput(); };
-        }
-    }, 0);
-
-
-    // --- Add Favorite Button ---
-    const addFavBtn = document.createElement("button");
-    addFavBtn.className = "add-favorite-place-btn";
-    addFavBtn.textContent = "❤️ Add from My Places";
-    addFavBtn.onclick = function() {
-        if (window.toggleSidebarFavoritePlaces) {
-            window.toggleSidebarFavoritePlaces();
-        }
-    };
-    cartDiv.appendChild(addFavBtn);
+    // =====================================================
+    // 1) ÖNCE CATEGORY BLOKLARINI EKLE (Add Category)
+    // =====================================================
 
     // --- Categories Data ---
     const basicPlanCategories = [
@@ -3138,11 +3015,11 @@ function showCategoryList(day) {
     basicPlanCategories.forEach(cat => {
         const subCategoryItem = document.createElement("li");
         subCategoryItem.classList.add("subcategory-item");
-        
+
         const iconSpan = document.createElement("span");
         iconSpan.classList.add("subcategory-icon");
         iconSpan.textContent = cat.icon;
-        
+
         const nameSpan = document.createElement("span");
         nameSpan.classList.add("subcategory-name");
         nameSpan.textContent = cat.name;
@@ -3150,7 +3027,7 @@ function showCategoryList(day) {
         const toggleBtn = document.createElement("button");
         toggleBtn.classList.add("toggle-subcategory-btn");
         toggleBtn.textContent = "View";
-        
+
         subCategoryItem.appendChild(iconSpan);
         subCategoryItem.appendChild(nameSpan);
         subCategoryItem.appendChild(toggleBtn);
@@ -3162,7 +3039,7 @@ function showCategoryList(day) {
             showSuggestionsInChat(cat.name, day, cat.code);
         });
     });
-    
+
     basicPlanItem.appendChild(basicList);
     cartDiv.appendChild(basicPlanItem);
 
@@ -3179,11 +3056,11 @@ function showCategoryList(day) {
     travelMainCategories.forEach(cat => {
         const subCategoryItem = document.createElement("li");
         subCategoryItem.classList.add("subcategory-item", "premium-category-bg");
-        
+
         const iconSpan = document.createElement("span");
         iconSpan.classList.add("subcategory-icon");
         iconSpan.textContent = cat.icon;
-        
+
         const nameSpan = document.createElement("span");
         nameSpan.classList.add("subcategory-name");
         nameSpan.textContent = cat.name;
@@ -3191,7 +3068,7 @@ function showCategoryList(day) {
         const toggleBtn = document.createElement("button");
         toggleBtn.classList.add("toggle-subcategory-btn");
         toggleBtn.textContent = "View";
-        
+
         subCategoryItem.appendChild(iconSpan);
         subCategoryItem.appendChild(nameSpan);
         subCategoryItem.appendChild(toggleBtn);
@@ -3205,6 +3082,46 @@ function showCategoryList(day) {
 
     travelerItem.appendChild(travelerList);
     cartDiv.appendChild(travelerItem);
+
+    // =====================================================
+    // 2) SONRA BUTONLARI EKLE:
+    //    Add Custom Note
+    //    Add from My Places
+    // =====================================================
+
+    // --- Add Custom Note Button ---
+    const addCustomNoteButton = document.createElement("button");
+    addCustomNoteButton.classList.add("add-custom-note-btn");
+    addCustomNoteButton.textContent = "✍️ Add Custom Note";
+    addCustomNoteButton.addEventListener('click', function() {
+        const container = document.getElementById("customNoteContainer");
+        if (container) {
+            container.style.display = "block";
+            const titleInput = document.getElementById("noteTitle");
+            if (titleInput) titleInput.focus();
+        }
+        this.style.display = "none";
+    });
+    cartDiv.appendChild(addCustomNoteButton);
+
+    // --- Add Favorite Button ---
+    const addFavBtn = document.createElement("button");
+    addFavBtn.className = "add-favorite-place-btn";
+    addFavBtn.textContent = "❤️ Add from My Places";
+    addFavBtn.onclick = function() {
+        if (window.toggleSidebarFavoritePlaces) {
+            window.toggleSidebarFavoritePlaces();
+        }
+    };
+    cartDiv.appendChild(addFavBtn);
+
+    // Save/Cancel eventleri aynı kalsın
+    setTimeout(() => {
+        const saveBtn = document.getElementById("btn-save-note");
+        const cancelBtn = document.getElementById("btn-cancel-note");
+        if (saveBtn) saveBtn.onclick = function() { saveCustomNote(day); };
+        if (cancelBtn) cancelBtn.onclick = function() { closeCustomNoteInput(); };
+    }, 0);
 
     // --- Close Button ---
     const closeButton = document.createElement("button");
