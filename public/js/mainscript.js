@@ -5034,7 +5034,7 @@ group.style.marginTop = '12px';
         // 1) Add Category
         const addCategoryBtn = document.createElement("button");
         addCategoryBtn.className = "add-more-btn";
-        addCategoryBtn.textContent = "+ Add Category";
+        addCategoryBtn.textContent = "+ Add Item";
         addCategoryBtn.dataset.day = day;
         addCategoryBtn.onclick = function () {
             if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
@@ -5043,7 +5043,7 @@ group.style.marginTop = '12px';
         // 2) Add Custom Note (CSS bozulmasın diye ID’ler sabit)
         const addCustomNoteBtn = document.createElement("button");
         addCustomNoteBtn.className = "add-custom-note-btn";
-        addCustomNoteBtn.textContent = "✍️ Add Custom Note";
+        addCustomNoteBtn.textContent = "✍️ Add Note";
 
         // Not formu: tek instance, id sabit
         let noteBox = document.getElementById("customNoteContainer");
@@ -5113,7 +5113,7 @@ group.style.marginTop = '12px';
         // 3) Add from My Places
         const addFromMyPlacesBtn = document.createElement("button");
         addFromMyPlacesBtn.className = "add-favorite-place-btn";
-        addFromMyPlacesBtn.textContent = "❤️ Add from My Places";
+        addFromMyPlacesBtn.textContent = "❤️ My Places";
         addFromMyPlacesBtn.onclick = function () {
             if (window.toggleSidebarFavoritePlaces) {
                 window.toggleSidebarFavoritePlaces();
