@@ -3013,19 +3013,18 @@ function showCategoryList(day) {
     { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
     { name: "University", code: "education.university", icon: "🎓" },
     { name: "Religion", code: "religion", icon: "⛪" },
-    // Düzeltilmiş 10 yeni kategori
-    { name: "Bank", code: "commercial.bank", icon: "🏧" }, // ATM yerine Bank
-    { name: "Parking", code: "parking", icon: "🅿️" }, // Kısa kod
-    { name: "Toilets", code: "amenity.toilets", icon: "🚻" }, // amenity prefix
+    // Çalışan 10 kategori
+    { name: "Convenience", code: "commercial.convenience", icon: "🏪" },
+    { name: "Parking", code: "parking", icon: "🅿️" },
+    { name: "Bus Station", code: "public_transport.bus", icon: "🚌" },
     { name: "Police", code: "service.police", icon: "👮" },
-    { name: "Fuel", code: "service.fuel", icon: "⛽" }, // fuel_station yerine fuel
-    { name: "Bakery", code: "catering.cafe.bakery", icon: "🥐" }, // Tam yol
+    { name: "Cafe", code: "catering.cafe", icon: "☕" },
+    { name: "Department Store", code: "commercial.department_store", icon: "🏬" },
     { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
     { name: "Clothes", code: "commercial.clothing", icon: "👕" },
-    { name: "Sports Shop", code: "commercial.sports", icon: "👟" }, // Shoes yerine Sports
-    { name: "Mall", code: "commercial.shopping_mall", icon: "🏬" }
+    { name: "Market", code: "commercial.marketplace", icon: "🛍️" },
+    { name: "Hotel", code: "accommodation.hotel", icon: "🏨" }
 ];
-
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
     basicPlanItem.classList.add("category-item");
