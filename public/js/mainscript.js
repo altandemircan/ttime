@@ -4985,21 +4985,25 @@ if (anyDayHasRealItem && !hideAddCat) {
 
         // 2) Add Custom Note
         // 2) Add Custom Note
+        // 2) Add Custom Note
         const addCustomNoteBtn = document.createElement("button");
         addCustomNoteBtn.className = "add-custom-note-btn";
         addCustomNoteBtn.innerHTML = `
-          <img src="img/add_item.svg" alt="" style="width:18px;height:18px;">
+          <img src="img/add_note.svg" alt="" style="width:18px;height:18px;">
           <span>Add Note</span>
         `;
-        // Buton stili
         addCustomNoteBtn.style.cssText = "display: flex; align-items: center; justify-content: center; gap: 6px;";
 
         // Not Kutusu (Container)
         const noteBox = document.createElement("div");
         noteBox.className = "custom-note-container";
-        // Başlangıçta CSS class'ı ile gizli olduğundan emin oluyoruz.
-        // JS ile style vermiyoruz, CSS class'ı ekliyoruz.
-        noteBox.classList.add("hidden-note-box"); 
+        
+        // --- KRİTİK NOKTA: KESİN GİZLE ---
+        // Oluşturulur oluşturulmaz inline style olarak gizliyoruz. 
+        // Bu, CSS dosyalarından etkilenmez.
+        noteBox.style.display = "none"; 
+        noteBox.style.width = "100%";
+        noteBox.style.flexBasis = "100%";
         
         noteBox.innerHTML = `
             <h3>Add Custom Note for Day ${day}</h3>
@@ -5017,40 +5021,41 @@ if (anyDayHasRealItem && !hideAddCat) {
         const titleInput = noteBox.querySelector(".note-input");
         const detailsInput = noteBox.querySelector(".note-textarea");
 
-        // --- AÇMA / KAPAMA ---
+        // --- AÇMA / KAPAMA (Add Note Butonu) ---
         addCustomNoteBtn.onclick = function () {
-            // "hidden-note-box" sınıfı varsa kaldır (göster), yoksa ekle (gizle)
-            if (noteBox.classList.contains("hidden-note-box")) {
-                noteBox.classList.remove("hidden-note-box");
+            // Eğer display none ise, flex yap (aç). Değilse none yap (kapat).
+            if (noteBox.style.display === "none") {
+                noteBox.style.display = "flex";
+                noteBox.style.flexDirection = "column"; // Flex yönünü de JS ile veriyoruz
+                noteBox.style.gap = "6px";
+                noteBox.style.margin = "20px 0";
                 titleInput.focus();
             } else {
-                noteBox.classList.add("hidden-note-box");
+                noteBox.style.display = "none";
             }
         };
 
-        // --- İPTAL ---
+        // --- İPTAL (Cancel) ---
         cancelBtn.onclick = function () {
-            noteBox.classList.add("hidden-note-box"); // Gizle
+            noteBox.style.display = "none"; // Kesin kapat
             titleInput.value = "";
             detailsInput.value = "";
         };
 
-        // --- KAYDET ---
+        // --- KAYDET (Save) ---
         saveBtn.onclick = async function () {
             if (typeof saveCustomNote === "function") {
-                // ID Atama Hilesi (Mevcut saveCustomNote fonksiyonu için)
+                // ID Atama Hilesi
                 titleInput.id = "noteTitle";
                 detailsInput.id = "noteDetails";
 
-                // Doğru gün parametresiyle çağır
                 await saveCustomNote(day);
 
-                // ID Temizliği
                 titleInput.removeAttribute("id");
                 detailsInput.removeAttribute("id");
             }
-            // Kapat ve Temizle
-            noteBox.classList.add("hidden-note-box");
+            // Kapat ve temizle
+            noteBox.style.display = "none";
             titleInput.value = "";
             detailsInput.value = "";
         };
