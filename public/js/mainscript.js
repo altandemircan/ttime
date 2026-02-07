@@ -5032,7 +5032,7 @@ if (anyDayHasRealItem && !hideAddCat) {
         addCategoryBtn.className = "add-more-btn";
         addCategoryBtn.innerHTML = `
           <img src="img/add_item.svg" alt="" style="width:18px;height:18px;">
-          <span>Add Category</span>
+          <span>Add Item</span>
         `;
         addCategoryBtn.style.display = 'flex';
         addCategoryBtn.style.alignItems = 'center';
@@ -5063,7 +5063,7 @@ if (anyDayHasRealItem && !hideAddCat) {
             noteBox.className = "custom-note-container";
             noteBox.style.display = "none";
             noteBox.innerHTML = `
-                <h3 id="customNoteTitle">Add Custom Note</h3>
+                <h3 id="customNoteTitle">Add Note</h3>
                 <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
                 <textarea id="noteDetails" placeholder="Note details" class="note-textarea"></textarea>
                 <div class="modal-actions">
@@ -5125,7 +5125,7 @@ if (anyDayHasRealItem && !hideAddCat) {
         addFromMyPlacesBtn.className = "add-favorite-place-btn";
         addFromMyPlacesBtn.innerHTML = `
           <img src="img/add_my_places.svg" alt="" style="width:18px;height:18px;">
-          <span>Add from My Places</span>
+          <span>My Places</span>
         `;
         addFromMyPlacesBtn.style.display = 'flex';
         addFromMyPlacesBtn.style.alignItems = 'center';
