@@ -2904,18 +2904,18 @@ ease;
     font-size: 1.4rem;
 }
 #customNoteContainer {
-        display: flex;
+        display: flex !important;
     flex-direction: column;
     gap: 6px;
     margin: 20px 0;
 }
-.customNoteContainer .modal-actions, .confirmation-container .modal-actions {
+#customNoteContainer .modal-actions, .confirmation-container .modal-actions {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     margin-top: 6px;
 }
-.customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
+#customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
     width: 100%;
     padding: 10px;
     margin: 0px 0;
