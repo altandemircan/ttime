@@ -3014,11 +3014,12 @@ function showCategoryList(day) {
     { name: "University", code: "education.university", icon: "🎓" },
     { name: "Religion", code: "religion", icon: "⛪" },
     // Çalışan 10 kategori
-    { name: "Convenience", code: "commercial.convenience", icon: "🏪" },
+    
     { name: "Parking", code: "parking", icon: "🅿️" },
     { name: "Bus Station", code: "public_transport.bus", icon: "🚌" },
     { name: "Police", code: "service.police", icon: "👮" },
-    { name: "Beach", code: "leisure.beach", icon: "🏖️" },
+    { name: "Toy Store", code: "commercial.toys", icon: "🧸" }
+    { name: "Electronics", code: "commercial.electronics", icon: "📱" }
     { name: "Department Store", code: "commercial.department_store", icon: "🏬" },
     { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
     { name: "Clothes", code: "commercial.clothing", icon: "👕" },
