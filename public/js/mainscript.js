@@ -2999,34 +2999,44 @@ function showCategoryList(day) {
     ];
 
     const travelMainCategories = [
+    { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
     { name: "Bar", code: "catering.bar", icon: "🍹" },
     { name: "Pub", code: "catering.pub", icon: "🍻" },
     { name: "Fast Food", code: "catering.fast_food", icon: "🍔" },
-    { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
-    { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
-    { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
-    { name: "Bookstore", code: "commercial.books", icon: "📚" },
-    { name: "Post Office", code: "service.post", icon: "📮" },
-    { name: "Library", code: "education.library", icon: "📖" },
-    { name: "Hostel", code: "accommodation.hostel", icon: "🛏️" },
-    { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
-    { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
-    { name: "University", code: "education.university", icon: "🎓" },
-    { name: "Religion", code: "religion", icon: "⛪" },
-    // Çalışan 10 kategori
-    
-    { name: "Parking", code: "parking", icon: "🅿️" },
-    { name: "Bus Station", code: "public_transport.bus", icon: "🚌" },
-    { name: "Police", code: "service.police", icon: "👮" },
-    { name: "Toy Store", code: "commercial.toys", icon: "🧸" }
-    { name: "Electronics", code: "commercial.electronics", icon: "📱" }
-    { name: "Department Store", code: "commercial.department_store", icon: "🏬" },
-    { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
-    { name: "Clothes", code: "commercial.clothing", icon: "👕" },
+    { name: "ATM", code: "commercial.money.atm", icon: "🏧" },
     { name: "Park", code: "leisure.park", icon: "🌳" },
-    { name: "Nightclub", code: "entertainment.nightclub", icon: "💃" },
+    { name: "Religion", code: "religion", icon: "⛪" },
+
+    { name: "Supermarket", code: "commercial.supermarket", icon: "🛒" },
+    { name: "Clothes", code: "commercial.clothing", icon: "👕" },
+    { name: "Toy Store", code: "commercial.toys", icon: "🧸" }
+    { name: "Electronics", code: "commercial.electronics", icon: "📱" },    
+    { name: "Department Store", code: "commercial.department_store", icon: "🏬" },
+    { name: "Electronics", code: "commercial.electronics", icon: "📱" }
+    { name: "Florist", code: "commercial.florist", icon: "💐" },
+    { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
+    
+    { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
+    { name: "Pharmacy", code: "healthcare.pharmacy", icon: "💊" },
+    { name: "Bookstore", code: "commercial.books", icon: "📚" },
+
+    { name: "Library", code: "education.library", icon: "📖" },
+    { name: "Hospital", code: "healthcare.hospital", icon: "🏥" },
+    { name: "Police", code: "service.police", icon: "👮" },   
+    { name: "Post Office", code: "service.post", icon: "📮" },
+    { name: "University", code: "education.university", icon: "🎓" },
+    { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
     { name: "Gym", code: "sport.fitness", icon: "💪" },
 
+    
+        // Çalışan 10 kategori    
+    { name: "Parking", code: "parking", icon: "🅿️" },
+    { name: "Bus Station", code: "public_transport.bus", icon: "🚌" },       
+    { name: "Gas Station", code: "commercial.gas", icon: "⛽" },
+    { name: "Train Station", code: "public_transport.train", icon: "🚆" }
+
+    
+   
 ];
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
