@@ -2987,15 +2987,7 @@ function showCategoryList(day) {
             <button id="btn-cancel-note" class="cancel-note">Cancel</button>
         </div>
     `;
-    // cartDiv.appendChild(customNoteContainer);
 
-    // // Save/Cancel eventleri
-    // setTimeout(() => {
-    //     const saveBtn = document.getElementById("btn-save-note");
-    //     const cancelBtn = document.getElementById("btn-cancel-note");
-    //     if (saveBtn) saveBtn.onclick = function() { saveCustomNote(day); };
-    //     if (cancelBtn) cancelBtn.onclick = function() { closeCustomNoteInput(); };
-    // }, 0);
 
     // --- Categories Data ---
     const basicPlanCategories = [
@@ -3020,7 +3012,19 @@ function showCategoryList(day) {
         { name: "Cinema", code: "entertainment.cinema", icon: "🎬" },
         { name: "Jewelry Shop", code: "commercial.jewelry", icon: "💍" },
         { name: "University", code: "education.university", icon: "🎓" },
-        { name: "Religion", code: "religion", icon: "⛪" }
+        { name: "Religion", code: "religion", icon: "⛪" },
+
+        // +10 yeni kategori
+        { name: "ATM", code: "service.atm", icon: "🏧" },
+        { name: "Bank", code: "service.bank", icon: "🏦" },
+        { name: "Parking", code: "service.parking", icon: "🅿️" },
+        { name: "Car Rental", code: "service.car_rental", icon: "🚗" },
+        { name: "Taxi", code: "service.taxi", icon: "🚕" },
+        { name: "Fuel Station", code: "service.fuel", icon: "⛽" },
+        { name: "Toilets", code: "service.toilets", icon: "🚻" },
+        { name: "Laundry", code: "service.laundry", icon: "🧺" },
+        { name: "Police", code: "service.police", icon: "👮" },
+        { name: "Tourist Information", code: "service.tourist_information", icon: "ℹ️" }
     ];
 
     // -------- BASIC PLAN BLOK --------
