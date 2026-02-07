@@ -4866,13 +4866,9 @@ right: 30px;
 
 
 .tt-day-actions {
-        display: flex;
+         display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
-    background: #edf5f7;
-    padding: 10px;
-    border-radius: 10px;
+    margin: 20px 0;
 }
 .tt-day-actions-row {
     display: flex;
