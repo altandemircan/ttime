@@ -3015,16 +3015,17 @@ function showCategoryList(day) {
         { name: "Religion", code: "religion", icon: "⛪" },
 
         // +10 yeni kategori
-        { name: "ATM", code: "service.atm", icon: "🏧" },
-        { name: "Bank", code: "service.bank", icon: "🏦" },
+          { name: "ATM", code: "service.atm", icon: "🏧" },
         { name: "Parking", code: "service.parking", icon: "🅿️" },
-        { name: "Car Rental", code: "service.car_rental", icon: "🚗" },
-        { name: "Taxi", code: "service.taxi", icon: "🚕" },
-        { name: "Fuel Station", code: "service.fuel", icon: "⛽" },
         { name: "Toilets", code: "service.toilets", icon: "🚻" },
-        { name: "Laundry", code: "service.laundry", icon: "🧺" },
         { name: "Police", code: "service.police", icon: "👮" },
-        { name: "Tourist Information", code: "service.tourist_information", icon: "ℹ️" }
+        { name: "Fuel Station", code: "service.fuel", icon: "⛽" },
+
+        { name: "Bakery", code: "catering.bakery", icon: "🥐" },
+        { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
+        { name: "Clothes", code: "commercial.clothing", icon: "👕" },
+        { name: "Shoes", code: "commercial.shoes", icon: "👟" },
+        { name: "Mall", code: "commercial.shopping_mall", icon: "🏬" }
     ];
 
     // -------- BASIC PLAN BLOK --------
