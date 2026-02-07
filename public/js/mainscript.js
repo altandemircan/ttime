@@ -5021,10 +5021,16 @@ if (anyDayHasRealItem && !hideAddCat) {
             const cancelBtn = noteBox.querySelector("#btn-cancel-note");
 
             if (saveBtn) {
+                // Önceki event listener'ları temizlemek için (eğer cloneNode kullanılmadıysa bu yöntem daha güvenlidir)
+                // Ancak __ttBound kontrolü olduğu için sadece içeriği güncelliyoruz.
                 saveBtn.onclick = async function () {
-                    const d = parseInt(noteBox.dataset.day || "1", 10) || 1;
+                    // Tıklama anında dataset.day değerini taze olarak oku
+                    const currentDay = parseInt(noteBox.dataset.day, 10);
+                    // Eğer geçerli bir sayı değilse varsayılan olarak 1 al, ama normalde set edilmiş olmalı
+                    const targetDay = (!isNaN(currentDay) && currentDay > 0) ? currentDay : 1;
+                    
                     if (typeof saveCustomNote === "function") {
-                        await saveCustomNote(d);
+                        await saveCustomNote(targetDay);
                     }
                     noteBox.style.display = "none";
 
