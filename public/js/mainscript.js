@@ -3012,7 +3012,7 @@ function showCategoryList(day) {
     { name: "Toy Store", code: "commercial.toys", icon: "🧸" }
     { name: "Electronics", code: "commercial.electronics", icon: "📱" },    
     { name: "Department Store", code: "commercial.department_store", icon: "🏬" },
-    { name: "Electronics", code: "commercial.electronics", icon: "📱" }
+    { name: "Electronics", code: "commercial.electronics", icon: "📱" },
     { name: "Florist", code: "commercial.florist", icon: "💐" },
     { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
     
