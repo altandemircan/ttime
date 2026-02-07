@@ -2766,31 +2766,7 @@ ease;
     background-color: #7db5d7;
     color: #ffffff;
 }
-/* Harita infowindow için özel stil */
-.gm-style .gm-style-iw {
-  max-width: 350px !important;
-  max-height: none !important;
-  overflow: visible !important;
 
-}
-
-.gm-style .gm-style-iw-c {
-  padding: 0;
-  max-height: none !important;
-}
-
-.gm-style .gm-style-iw-d {
-  overflow: auto !important;
-  max-height: none !important;
-}
-
-/* Özel içerik için stil */
-.map-infowindow-content {
-  width: 300px;
-  padding: 10px;
- 
-  box-shadow: 0 2px 7px rgba(0,0,0,0.3);
-}
 
 .day-map {
     height: 600px;
@@ -2801,14 +2777,7 @@ ease;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.map-infowindow-content {
-    width: 300px;
-    max-width: 100%;
-}
 
-.gm-style-iw {
-    max-width: 300px !important;
-}
 
 /* Mesafe göstergeleri için stiller */
 .total-distance {
@@ -2837,14 +2806,6 @@ ease;
     white-space: nowrap;
 }
 
-/* Harita mesafe göstergeleri */
-.gm-style .distance-marker {
-   
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-}
 
 
 .km-label {
@@ -2884,7 +2845,7 @@ ease;
     border-radius: 12px;
 }
 
-.manual-add-section h3, #customNoteContainer h3 {
+.manual-add-section h3, .custom-note-container h3 {
     margin: 0 0 15px 0;
     color: #2c3e50;
     font-size: 1rem;
@@ -2899,23 +2860,29 @@ ease;
     font-size: 1.4rem;
 }
 
-.customNoteContainer h3::before  {
+.custom-note-container h3::before  {
     content: "📝";
     font-size: 1.4rem;
 }
-#customNoteContainer {
-        display: flex !important;
+
+/* Ana Konteyner (Artık Class) */
+.custom-note-container {
+    display: flex !important;
     flex-direction: column;
     gap: 6px;
     margin: 20px 0;
 }
-#customNoteContainer .modal-actions, .confirmation-container .modal-actions {
+
+/* Buton Grupları */
+.custom-note-container .modal-actions, .confirmation-container .modal-actions {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     margin-top: 6px;
 }
-#customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
+
+/* Genel Buton Stilleri */
+.custom-note-container .modal-actions button, .confirmation-container .modal-actions button {
     width: 100%;
     padding: 10px;
     margin: 0px 0;
@@ -2931,55 +2898,27 @@ ease;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
 }
-.confirmation-container .modal-actions .confirm-remove-btn {
-    background: #e37f7f; 
-}
-.confirmation-container .modal-actions .confirm-reset-btn {
-    background: #ffb33e; 
-}
-.confirmation-container .modal-actions .cancel-action-btn {
-    background: #a5a5a5; 
-}
 
-#customNoteContainer .modal-actions .save-note {
+/* Onay Kutusu Renkleri (Değişmedi) */
+.confirmation-container .modal-actions .confirm-remove-btn { background: #e37f7f; }
+.confirmation-container .modal-actions .confirm-reset-btn { background: #ffb33e; }
+.confirmation-container .modal-actions .cancel-action-btn { background: #a5a5a5; }
+
+/* Save Note Butonu (Class Seçicisi ile) */
+.custom-note-container .modal-actions .save-note {
    background: #83c179; 
-   width: 100%;
-    padding: 10px;
-    margin: 0px 0;
-    font-weight: 600;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #ffffff;
-    border-radius: 8px;    
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-    color: #ffffff;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    text-align: center;
-}
-#customNoteContainer .modal-actions .cancel-note {
-   background: #a5a5a5; 
-   width: 100%;
-    padding: 10px;
-    margin: 0px 0;
-    font-weight: 600;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #ffffff;
-    border-radius: 8px;    
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-    color: #ffffff;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    text-align: center;
+   /* Diğer özellikler üstteki genel button kuralından gelir ama eziyorsanız kalsın */
 }
 
-#noteDetails {
+/* Cancel Note Butonu (Class Seçicisi ile) */
+.custom-note-container .modal-actions .cancel-note {
+   background: #a5a5a5; 
+}
+
+/* Textarea Yüksekliği */
+.note-textarea {
     height: 80px;
 }
-
 .add-custom-note-btn {
         padding: 10px;
     margin: 0px 0;
@@ -3051,21 +2990,21 @@ ease;
     position: relative;
 }
 
-.place-input, #noteTitle, #noteDetails  {
-       width: -webkit-fill-available;
+/* Input ve Textarea Genel Stilleri */
+.place-input, .note-input, .note-textarea  {
+    width: -webkit-fill-available;
     padding: 12px 15px;
     border: none;
     border-radius: 8px;
     font-size: 0.95rem;
-    transition: all 0.3s 
-ease;
+    transition: all 0.3s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     font-family: 'Satoshi';
     border: 1px solid #d9d9d9;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
 
-.place-input:focus {
+.place-input:focus, .note-input:focus, .note-textarea:focus {
     border-color: #3498db;
     outline: none;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
@@ -3353,65 +3292,8 @@ hr {
 }
 
 
-
-
-.gm-style {
-    font: inherit !important;
-
-}
-.gm-style .gm-style-iw {
-    font-size: inherit !important;
-    font-weight: inherit !important;
-}
-.gm-style .gm-style-iw-c {
-    border-radius: 15px !important;
-}
-.gm-style-iw-ch {
-    padding: 0 !important;
-
-
-}
-.gm-style-iw-chr {
-     margin-top: -48px;
-    z-index: 124 !important;
-   
-        
-}
 .transit-container {
     padding: 20px;
-}
-.gm-style-iw-chr button {
-    position: absolute !important;
-    top: -42px !important;
-    right: 6px !important;
-    border-radius: 50% !important;
-    background: #ffffff !important;
-    width: 32px !important;
-    height: 32px !important;
-}
-
-.gm-style-iw-chr button span {
-    width: 16px !important;
-    height: 16px !important;
-    margin: 8px !important;
-    }
-.map-infowindow-content {
-    width: 335px !important;
-    max-width: 100% !important;
-    padding: 0 !important;
-}
-.poi-info-window .view-link, .poi-info-window a:visited {
-        color: #ffffff;
-    padding: 10px;
-    background: #8a4af3;
-    margin-top: 10px;
-    text-align: center;
-}
-.poi-info-window a:link {
-    text-decoration: none;
-    color: #ffffff;    
-    background: #8a4af3;
-    font-size: 0.9rem;
 }
 
 
@@ -3580,11 +3462,7 @@ ease;
     justify-content: center;
     align-items: center;
 }
-.poi-info-window .address {
-    color: #555;
-    padding: 20px 20px 0px 20px;
-    background: #ffffff;
-}
+
 
 .item-actions {
     display: flex;
