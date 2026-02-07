@@ -4984,27 +4984,23 @@ if (anyDayHasRealItem && !hideAddCat) {
         };
 
         // 2) Add Custom Note
+        // 2) Add Custom Note
         const addCustomNoteBtn = document.createElement("button");
         addCustomNoteBtn.className = "add-custom-note-btn";
         addCustomNoteBtn.innerHTML = `
-          <img src="img/add_note.svg" alt="" style="width:18px;height:18px;">
+          <img src="img/add_item.svg" alt="" style="width:18px;height:18px;">
           <span>Add Note</span>
         `;
-        addCustomNoteBtn.style.display = 'flex';
-        addCustomNoteBtn.style.alignItems = 'center';
-        addCustomNoteBtn.style.justifyContent = 'center';
-        addCustomNoteBtn.style.gap = '6px';
+        // Buton stili
+        addCustomNoteBtn.style.cssText = "display: flex; align-items: center; justify-content: center; gap: 6px;";
 
-        // --- YENİ DÜZENLEME BAŞLANGICI ---
-        // Not formu: Her gün için YENİ ve BAĞIMSIZ bir kutu oluşturuyoruz.
-        // ID kullanmıyoruz, class'larla ilerliyoruz.
+        // Not Kutusu (Container)
         const noteBox = document.createElement("div");
-        noteBox.className = "custom-note-container"; // Sizin orijinal class'ınız
-        noteBox.style.display = "none"; // Sayfa yüklenince/yenilenince gizli başla
-        noteBox.style.width = "100%";
-        noteBox.style.flexBasis = "100%";
-
-        // İçerik HTML'i (ID'leri kaldırdık, sadece class bıraktık)
+        noteBox.className = "custom-note-container";
+        // Başlangıçta CSS class'ı ile gizli olduğundan emin oluyoruz.
+        // JS ile style vermiyoruz, CSS class'ı ekliyoruz.
+        noteBox.classList.add("hidden-note-box"); 
+        
         noteBox.innerHTML = `
             <h3>Add Custom Note for Day ${day}</h3>
             <input type="text" placeholder="Note title" class="note-input">
@@ -5015,30 +5011,46 @@ if (anyDayHasRealItem && !hideAddCat) {
             </div>
         `;
 
-        // Elementleri class ile bulalım
+        // Element Referansları
         const saveBtn = noteBox.querySelector(".save-note");
         const cancelBtn = noteBox.querySelector(".cancel-note");
         const titleInput = noteBox.querySelector(".note-input");
         const detailsInput = noteBox.querySelector(".note-textarea");
 
-        // --- SAVE BUTONU ---
+        // --- AÇMA / KAPAMA ---
+        addCustomNoteBtn.onclick = function () {
+            // "hidden-note-box" sınıfı varsa kaldır (göster), yoksa ekle (gizle)
+            if (noteBox.classList.contains("hidden-note-box")) {
+                noteBox.classList.remove("hidden-note-box");
+                titleInput.focus();
+            } else {
+                noteBox.classList.add("hidden-note-box");
+            }
+        };
+
+        // --- İPTAL ---
+        cancelBtn.onclick = function () {
+            noteBox.classList.add("hidden-note-box"); // Gizle
+            titleInput.value = "";
+            detailsInput.value = "";
+        };
+
+        // --- KAYDET ---
         saveBtn.onclick = async function () {
             if (typeof saveCustomNote === "function") {
-                // saveCustomNote fonksiyonunuz ID arıyor ("noteTitle" ve "noteDetails").
-                // Bu yüzden TIKLAMA ANINDA bu kutunun inputlarına geçici olarak o ID'leri veriyoruz.
-                // Böylece fonksiyon doğru inputları okuyor.
+                // ID Atama Hilesi (Mevcut saveCustomNote fonksiyonu için)
                 titleInput.id = "noteTitle";
                 detailsInput.id = "noteDetails";
 
+                // Doğru gün parametresiyle çağır
                 await saveCustomNote(day);
 
-                // İşimiz bitince ID'leri siliyoruz ki diğer butonlarla çakışmasın
+                // ID Temizliği
                 titleInput.removeAttribute("id");
                 detailsInput.removeAttribute("id");
             }
-            
-            // Kapat ve temizle
-            noteBox.style.display = "none";
+            // Kapat ve Temizle
+            noteBox.classList.add("hidden-note-box");
             titleInput.value = "";
             detailsInput.value = "";
         };

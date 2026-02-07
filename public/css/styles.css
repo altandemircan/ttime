@@ -2865,12 +2865,18 @@ ease;
     font-size: 1.4rem;
 }
 
-/* Ana Konteyner (Artık Class) */
+/* Not kutusunu gizlemek için özel sınıf */
+.custom-note-container.hidden-note-box {
+    display: none !important;
+}
+
+/* Not kutusu görünür olduğunda alacağı stil */
 .custom-note-container {
-    display: flex !important;
+    display: flex; /* Varsayılan olarak flex olsun, hidden class'ı gelince gizlenir */
     flex-direction: column;
     gap: 6px;
     margin: 20px 0;
+    width: 100%;
 }
 
 /* Buton Grupları */
@@ -2990,21 +2996,21 @@ ease;
     position: relative;
 }
 
-/* Input ve Textarea Genel Stilleri */
-.place-input, .note-input, .note-textarea  {
-    width: -webkit-fill-available;
+.place-input, #noteTitle, #noteDetails  {
+       width: -webkit-fill-available;
     padding: 12px 15px;
     border: none;
     border-radius: 8px;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s 
+ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     font-family: 'Satoshi';
     border: 1px solid #d9d9d9;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
 
-.place-input:focus, .note-input:focus, .note-textarea:focus {
+.place-input:focus {
     border-color: #3498db;
     outline: none;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
