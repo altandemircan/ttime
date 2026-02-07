@@ -5030,16 +5030,30 @@ if (anyDayHasRealItem && !hideAddCat) {
         // 1) Add Category
         const addCategoryBtn = document.createElement("button");
         addCategoryBtn.className = "add-more-btn";
-        addCategoryBtn.textContent = "+ Add Item";
+        addCategoryBtn.innerHTML = `
+          <img src="img/add_item.svg" alt="" style="width:18px;height:18px;">
+          <span>Add Category</span>
+        `;
+        addCategoryBtn.style.display = 'flex';
+        addCategoryBtn.style.alignItems = 'center';
+        addCategoryBtn.style.justifyContent = 'center';
+        addCategoryBtn.style.gap = '6px';
         addCategoryBtn.dataset.day = day;
         addCategoryBtn.onclick = function () {
             if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
         };
 
-        // 2) Add Custom Note (CSS bozulmasın diye ID’ler sabit)
+        // 2) Add Custom Note
         const addCustomNoteBtn = document.createElement("button");
         addCustomNoteBtn.className = "add-custom-note-btn";
-        addCustomNoteBtn.textContent = "✍️ Add Note";
+        addCustomNoteBtn.innerHTML = `
+          <img src="img/add_note.svg" alt="" style="width:18px;height:18px;">
+          <span>Add Custom Note</span>
+        `;
+        addCustomNoteBtn.style.display = 'flex';
+        addCustomNoteBtn.style.alignItems = 'center';
+        addCustomNoteBtn.style.justifyContent = 'center';
+        addCustomNoteBtn.style.gap = '6px';
 
         // Not formu: tek instance, id sabit
         let noteBox = document.getElementById("customNoteContainer");
@@ -5109,7 +5123,14 @@ if (anyDayHasRealItem && !hideAddCat) {
         // 3) Add from My Places
         const addFromMyPlacesBtn = document.createElement("button");
         addFromMyPlacesBtn.className = "add-favorite-place-btn";
-        addFromMyPlacesBtn.textContent = "❤️ My Places";
+        addFromMyPlacesBtn.innerHTML = `
+          <img src="img/add_my_places.svg" alt="" style="width:18px;height:18px;">
+          <span>Add from My Places</span>
+        `;
+        addFromMyPlacesBtn.style.display = 'flex';
+        addFromMyPlacesBtn.style.alignItems = 'center';
+        addFromMyPlacesBtn.style.justifyContent = 'center';
+        addFromMyPlacesBtn.style.gap = '6px';
         addFromMyPlacesBtn.onclick = function () {
             if (window.toggleSidebarFavoritePlaces) {
                 window.toggleSidebarFavoritePlaces();
