@@ -2277,16 +2277,16 @@ ease;
 }
 
 .add-more-btn {
-    padding: 10px;
+        padding: 10px;
     width: 100%;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: 1px solid #d4bef8;
+    border: none;
     border-radius: 8px;
-    background: #ffffff;
+    background: #8a4af3;
     cursor: pointer;
-    color: #2c3e50;
+    color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 
 }
@@ -2952,17 +2952,17 @@ ease;
 }
 
 .add-custom-note-btn {
-    padding: 10px;
+        padding: 10px;
     margin: 0px 0;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: 1px solid #f2d59e;
+    border: none;
     border-radius: 8px;
-    background: #ffffff;
+    background: #cda752;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #2c3e50;
+    color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
     width: -webkit-fill-available;
@@ -6506,17 +6506,17 @@ border-bottom:1px solid #ddd;
 }
 
 .add-favorite-place-btn {
-        padding: 10px;
+  padding: 10px;
     margin: 0px 0;
     font-weight: 600;
     align-items: center;
     justify-content: center;
-    border: 1px solid #ffc0c7;
+    border: none;
     border-radius: 8px;
-    background: #ffffff;
+    background: #ea4971;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #2c3e50;
+    color: #ffffff;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
     width: -webkit-fill-available;
