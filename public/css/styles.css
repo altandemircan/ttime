@@ -2921,6 +2921,46 @@ ease;
    background: #a5a5a5; 
 }
 
+#customNoteContainer .modal-actions .save-note {
+   background: #83c179; 
+   width: 100%;
+    padding: 10px;
+    margin: 0px 0;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    text-align: center;
+}
+#customNoteContainer .modal-actions .cancel-note {
+   background: #a5a5a5; 
+   width: 100%;
+    padding: 10px;
+    margin: 0px 0;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;    
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    text-align: center;
+}
+
+#noteDetails {
+    height: 80px;
+}
+
+
 /* Textarea Yüksekliği */
 .note-textarea {
     height: 80px;
