@@ -3018,12 +3018,14 @@ function showCategoryList(day) {
     { name: "Parking", code: "parking", icon: "🅿️" },
     { name: "Bus Station", code: "public_transport.bus", icon: "🚌" },
     { name: "Police", code: "service.police", icon: "👮" },
-    { name: "Cafe", code: "catering.cafe", icon: "☕" },
+    { name: "Beach", code: "leisure.beach", icon: "🏖️" },
     { name: "Department Store", code: "commercial.department_store", icon: "🏬" },
     { name: "Ice Cream", code: "catering.ice_cream", icon: "🍦" },
     { name: "Clothes", code: "commercial.clothing", icon: "👕" },
-    { name: "Market", code: "commercial.marketplace", icon: "🛍️" },
-    { name: "Hotel", code: "accommodation.hotel", icon: "🏨" }
+    { name: "Park", code: "leisure.park", icon: "🌳" },
+    { name: "Nightclub", code: "entertainment.nightclub", icon: "💃" },
+    { name: "Gym", code: "sport.fitness", icon: "💪" },
+
 ];
     // -------- BASIC PLAN BLOK --------
     const basicPlanItem = document.createElement("div");
