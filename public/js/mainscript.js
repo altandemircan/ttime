@@ -4995,76 +4995,89 @@ if (anyDayHasRealItem && !hideAddCat) {
         addCustomNoteBtn.style.justifyContent = 'center';
         addCustomNoteBtn.style.gap = '6px';
 
-        // Not formu: tek instance, id sabit
-        let noteBox = document.getElementById("customNoteContainer");
-        if (!noteBox) {
-            noteBox = document.createElement("div");
-            noteBox.id = "customNoteContainer";
-            noteBox.className = "custom-note-container";
+        // --- YENİ KOD BAŞLANGICI ---
+        // Not formu: Her gün için yeni ve benzersiz oluşturuyoruz
+        const noteBox = document.createElement("div");
+        noteBox.className = "custom-note-container";
+        // Sayfa yenilendiğinde veya ilk açılışta kesinlikle gizli başla
+        noteBox.style.display = "none"; 
+        noteBox.style.width = "100%";
+        noteBox.style.flexBasis = "100%";
+        
+        // İçerik HTML'i (ID kullanmıyoruz, class ile çalışacağız ki çakışma olmasın)
+        noteBox.innerHTML = `
+            <h3>Add Custom Note for Day ${day}</h3>
+            <input type="text" placeholder="Note title" class="note-input field-title">
+            <textarea placeholder="Note details" class="note-textarea field-details"></textarea>
+            <div class="modal-actions">
+                <button type="button" class="save-note btn-save">Save Note</button>
+                <button type="button" class="cancel-note btn-cancel">Cancel</button>
+            </div>
+        `;
+
+        // Butonları bu kutu (noteBox) içinde buluyoruz
+        const saveBtn = noteBox.querySelector(".btn-save");
+        const cancelBtn = noteBox.querySelector(".btn-cancel");
+        const titleInput = noteBox.querySelector(".field-title");
+        const detailsInput = noteBox.querySelector(".field-details");
+
+        // --- SAVE BUTONU ---
+        saveBtn.onclick = async function () {
+            // Değerleri buradan alıp fonksiyona göndermek daha güvenli olabilir
+            // Ancak mevcut saveCustomNote yapınızı bozmamak için
+            // geçici olarak global ID'lere atama yapabiliriz veya
+            // saveCustomNote fonksiyonunuzun parametre aldığını varsayıyoruz.
+            
+            // Eğer saveCustomNote inputları ID'den okuyorsa bu yöntem çalışmayabilir.
+            // Bu yüzden ID bağımlılığını kaldırmak için input değerlerini manuel işleyelim:
+            
+            if (typeof saveCustomNote === "function") {
+                // Not: saveCustomNote fonksiyonunuzun input değerlerini parametre olarak alacak şekilde
+                // güncellenmesi gerekebilir. Ancak mevcut yapıda, inputlara geçici ID verip
+                // fonksiyonu çağırıp sonra ID'yi silebiliriz (hacky çözüm) 
+                // YA DA en temiz haliyle:
+                
+                // Buradaki inputların değerlerini global bir değişkene veya fonksiyona aktarmalıyız.
+                // Şimdilik standart çağrıyı yapıyoruz, gerekirse saveCustomNote'u da düzenleriz.
+                
+                // Eski ID tabanlı okumayı desteklemek için geçici ID ataması:
+                titleInput.id = "noteTitle";
+                detailsInput.id = "noteDetails";
+                
+                await saveCustomNote(day);
+                
+                // ID'leri temizle
+                titleInput.removeAttribute("id");
+                detailsInput.removeAttribute("id");
+            }
+            
+            // Kaydettikten sonra kapat ve temizle
             noteBox.style.display = "none";
-            noteBox.innerHTML = `
-                <h3 id="customNoteTitle">Add Custom Note</h3>
-                <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
-                <textarea id="noteDetails" placeholder="Note details" class="note-textarea"></textarea>
-                <div class="modal-actions">
-                    <button id="btn-save-note" class="save-note">Save Note</button>
-                    <button id="btn-cancel-note" class="cancel-note">Cancel</button>
-                </div>
-            `;
-        }
+            titleInput.value = "";
+            detailsInput.value = "";
+        };
 
-        // Save/Cancel handler’ları sadece 1 kere bağla
-        if (!noteBox.__ttBound) {
-            noteBox.__ttBound = true;
+        // --- CANCEL BUTONU ---
+        cancelBtn.onclick = function () {
+            noteBox.style.display = "none";
+            titleInput.value = "";
+            detailsInput.value = "";
+        };
 
-            const saveBtn = noteBox.querySelector("#btn-save-note");
-            const cancelBtn = noteBox.querySelector("#btn-cancel-note");
-
-            if (saveBtn) {
-                // Önceki event listener'ları temizlemek için (eğer cloneNode kullanılmadıysa bu yöntem daha güvenlidir)
-                // Ancak __ttBound kontrolü olduğu için sadece içeriği güncelliyoruz.
-                saveBtn.onclick = async function () {
-                    // Tıklama anında dataset.day değerini taze olarak oku
-                    const currentDay = parseInt(noteBox.dataset.day, 10);
-                    // Eğer geçerli bir sayı değilse varsayılan olarak 1 al, ama normalde set edilmiş olmalı
-                    const targetDay = (!isNaN(currentDay) && currentDay > 0) ? currentDay : 1;
-                    
-                    if (typeof saveCustomNote === "function") {
-                        await saveCustomNote(targetDay);
-                    }
-                    noteBox.style.display = "none";
-
-                    const t = noteBox.querySelector("#noteTitle");
-                    const det = noteBox.querySelector("#noteDetails");
-                    if (t) t.value = "";
-                    if (det) det.value = "";
-                };
-            }
-
-            if (cancelBtn) {
-                cancelBtn.onclick = function () {
-                    noteBox.style.display = "none";
-                };
-            }
-        }
-
+        // --- AÇMA/KAPAMA BUTONU (Add Note) ---
         addCustomNoteBtn.onclick = function () {
-            // hangi gün için açıldı?
-            noteBox.dataset.day = String(day);
+            // Diğer günlerin açık kutularını kapatmak isterseniz buraya kod eklenebilir
+            // Şimdilik sadece bu günü toggle yapıyoruz
+            const isHidden = noteBox.style.display === "none";
+            noteBox.style.display = isHidden ? "block" : "none";
 
-            const h3 = noteBox.querySelector("#customNoteTitle") || noteBox.querySelector("h3");
-            if (h3) h3.textContent = `Add Custom Note for Day ${day}`;
-
-            const open = noteBox.style.display === "block";
-            noteBox.style.display = open ? "none" : "block";
-
-            if (!open) {
+            if (isHidden) {
                 setTimeout(() => {
-                    const titleInput = noteBox.querySelector("#noteTitle");
-                    if (titleInput) titleInput.focus();
+                    titleInput.focus();
                 }, 0);
             }
         };
+        // --- YENİ KOD BİTİŞİ ---
 
         // 3) Add from My Places
         const addFromMyPlacesBtn = document.createElement("button");
