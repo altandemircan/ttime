@@ -2884,7 +2884,7 @@ ease;
     border-radius: 12px;
 }
 
-.manual-add-section h3, .custom-note-container h3 {
+.manual-add-section h3, #customNoteContainer h3 {
     margin: 0 0 15px 0;
     color: #2c3e50;
     font-size: 1rem;
@@ -2903,19 +2903,19 @@ ease;
     content: "📝";
     font-size: 1.4rem;
 }
-.custom-note-container {
+#customNoteContainer {
         display: flex !important;
     flex-direction: column;
     gap: 6px;
     margin: 20px 0;
 }
-.custom-note-container .modal-actions, .confirmation-container .modal-actions {
+#customNoteContainer .modal-actions, .confirmation-container .modal-actions {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     margin-top: 6px;
 }
-.custom-note-container .modal-actions button, .confirmation-container .modal-actions button {
+#customNoteContainer .modal-actions button, .confirmation-container .modal-actions button {
     width: 100%;
     padding: 10px;
     margin: 0px 0;
@@ -2941,7 +2941,7 @@ ease;
     background: #a5a5a5; 
 }
 
-.custom-note-container .modal-actions .save-note {
+#customNoteContainer .modal-actions .save-note {
    background: #83c179; 
    width: 100%;
     padding: 10px;
@@ -2958,7 +2958,7 @@ ease;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     text-align: center;
 }
-.custom-note-container .modal-actions .cancel-note {
+#customNoteContainer .modal-actions .cancel-note {
    background: #a5a5a5; 
    width: 100%;
     padding: 10px;
