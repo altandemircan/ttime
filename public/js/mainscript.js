@@ -5048,7 +5048,7 @@ if (anyDayHasRealItem && !hideAddCat) {
         addCustomNoteBtn.className = "add-custom-note-btn";
         addCustomNoteBtn.innerHTML = `
           <img src="img/add_note.svg" alt="" style="width:18px;height:18px;">
-          <span>Add Custom Note</span>
+          <span>Add Note</span>
         `;
         addCustomNoteBtn.style.display = 'flex';
         addCustomNoteBtn.style.alignItems = 'center';
@@ -5063,7 +5063,7 @@ if (anyDayHasRealItem && !hideAddCat) {
             noteBox.className = "custom-note-container";
             noteBox.style.display = "none";
             noteBox.innerHTML = `
-                <h3 id="customNoteTitle">Add Note</h3>
+                <h3 id="customNoteTitle">Add Custom Note</h3>
                 <input type="text" id="noteTitle" placeholder="Note title" class="note-input">
                 <textarea id="noteDetails" placeholder="Note details" class="note-textarea"></textarea>
                 <div class="modal-actions">
