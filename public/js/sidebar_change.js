@@ -95,10 +95,30 @@ function toggleSidebarTrip() {
 }
 
 window.toggleSidebarFavoritePlaces = function() {
-    window.toggleSidebar('sidebar-overlay-favorite-places');
     const favPanel = document.getElementById('sidebar-overlay-favorite-places');
-    if (favPanel && favPanel.classList.contains('open') && typeof renderFavoritePlacesPanel === 'function') {
-        renderFavoritePlacesPanel();
+    
+    // DURUM 1: Panel zaten AÇIKSA (Kullanıcı X'e bastı demektir)
+    if (favPanel && favPanel.classList.contains('open')) {
+        // 1. My Places'i kapat
+        favPanel.classList.remove('open');
+        
+        // 2. Gezi Planını (Gallery) geri aç
+        // ID'si 'sidebar-overlay-gallery' veya class'ı 'sidebar-gallery' olanı bul
+        const galleryPanel = document.getElementById('sidebar-overlay-gallery') || document.querySelector('.sidebar-overlay.sidebar-gallery');
+        if (galleryPanel) {
+            galleryPanel.classList.add('open');
+        }
+    } 
+    // DURUM 2: Panel KAPALIYSA (Kullanıcı butona basıp açıyor)
+    else {
+        // Standart açma işlemi (diğerlerini kapatır, bunu açar)
+        window.toggleSidebar('sidebar-overlay-favorite-places');
+        
+        // İçeriği yenile (Render)
+        const newFavPanel = document.getElementById('sidebar-overlay-favorite-places');
+        if (newFavPanel && newFavPanel.classList.contains('open') && typeof renderFavoritePlacesPanel === 'function') {
+            renderFavoritePlacesPanel();
+        }
     }
 };
 
