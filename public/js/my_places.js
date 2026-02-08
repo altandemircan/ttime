@@ -420,30 +420,31 @@ window.startNewTripWithPlace = function (place) {
         return;
     }
 
-    // 1️⃣ HARD RESET (net)
+    // === 1. RESET (mevcut sistemle uyumlu) ===
+    if (window.cart && window.cart.length > 0 && typeof saveCurrentTripToStorage === "function") {
+        saveCurrentTripToStorage();
+    }
+
     window.cart = [];
     window.latestTripPlan = [];
-    window.activeTripKey = null;
-    window.lastUserQuery = "";
+    window.activeTripKey = `trip_${Date.now()}`;
     window.selectedCity = place.city || place._groupKey || "";
 
-    localStorage.removeItem("cart");
-    localStorage.removeItem("activeTripKey");
-    localStorage.setItem("selectedCity", window.selectedCity);
+    localStorage.setItem('activeTripKey', window.activeTripKey);
+    localStorage.setItem('selectedCity', window.selectedCity);
 
-    // 2️⃣ AI temizle
-    window.lastTripAIInfo = null;
-    const aiSection = document.querySelector(".ai-info-section");
-    if (aiSection) aiSection.remove();
+    window.lastUserQuery = "";
+    window.directionsPolylines = {};
+    window.routeElevStatsByDay = {};
 
-    // 3️⃣ İLK ITEM
+    // === 2. İLK ITEM (DEĞİŞMEDİ) ===
     const newItem = {
         name: place.name,
         title: place.name,
-        image: place.image,
-        category: place.category,
+        image: place.image || 'img/placeholder.png',
         day: 1,
         dailyIndex: 1,
+        category: place.category,
         address: place.address || "",
         location: {
             lat: Number(place.lat),
@@ -456,38 +457,45 @@ window.startNewTripWithPlace = function (place) {
     };
 
     window.cart.push(newItem);
+    localStorage.setItem('cart', JSON.stringify(window.cart));
 
-    // 4️⃣ ACTIVE TRIP OLUŞTUR
-    window.activeTripKey = `${(window.selectedCity || "trip").replace(/\s+/g, "_")}_${Date.now()}`;
-    localStorage.setItem("activeTripKey", window.activeTripKey);
-    localStorage.setItem("cart", JSON.stringify(window.cart));
-
-    // 5️⃣ UI ZORLA GÜNCELLE
+    // === 3. UI GÜNCELLE (mevcut sistem) ===
     if (typeof updateCart === "function") updateCart();
 
-    // Trip title
-    const tripTitle = document.getElementById("trip_title");
-    if (tripTitle) {
-        tripTitle.textContent = `${window.selectedCity || "Trip"} Trip Plan`;
+    const tripTitleDiv = document.getElementById('trip_title');
+    if (tripTitleDiv) {
+        tripTitleDiv.textContent = `${window.selectedCity || "Trip"} Trip Plan`;
     }
 
-    // 6️⃣ PANEL GEÇİŞİ
-    const favSidebar = document.getElementById("sidebar-overlay-favorite-places");
-    if (favSidebar?.classList.contains("open")) {
-        favSidebar.classList.remove("open");
+    // === 4. AI BİLGİSİ (ESKİ DAVRANIŞ GERİ) ===
+    // Şehir AI bilgisi otomatik gelir
+    if (typeof insertTripAiInfo === "function" && window.selectedCity) {
+        insertTripAiInfo(false, null, window.selectedCity);
     }
 
-    const tripSidebar = document.getElementById("sidebar-overlay-trip");
-    if (tripSidebar && !tripSidebar.classList.contains("open")) {
-        tripSidebar.classList.add("open");
+    // === 5. PANEL GEÇİŞLERİ (ESKİ HALİYLE) ===
+    const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
+    if (favSidebar && favSidebar.classList.contains('open')) {
+        if (typeof window.toggleSidebar === "function") {
+            window.toggleSidebar('sidebar-overlay-favorite-places');
+        } else {
+            favSidebar.classList.remove('open');
+        }
     }
 
-    // 7️⃣ DAY 1 AÇ
+    const tripSidebar = document.getElementById('sidebar-overlay-trip');
+    if (tripSidebar && !tripSidebar.classList.contains('open')) {
+        if (typeof window.toggleSidebarTrip === "function") {
+            window.toggleSidebarTrip();
+        } else {
+            tripSidebar.classList.add('open');
+        }
+    }
+
+    // === 6. DAY 1 AÇ (mevcut özellik) ===
     if (typeof window.showDay === "function") {
-        setTimeout(() => window.showDay(1), 50);
+        window.showDay(1);
     }
-
-    console.log("START NEW OK:", window.cart, window.activeTripKey);
 };
 
 
