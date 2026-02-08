@@ -415,12 +415,6 @@ function groupFavoritesClean(list) {
 }
 
 
-// ======================================================
-// DÜZELTİLMİŞ FONKSİYON: START NEW TRIP (SAFE)
-// ======================================================
-// ======================================================
-// DÜZELTİLMİŞ FONKSİYON: START NEW TRIP (AI FIX)
-// ======================================================
 window.startNewTripWithPlace = function(place) {
     // 1. Kullanıcı onayı (İngilizce)
     if (!confirm("Your current trip plan will be cleared and a new trip will be started with this place. Do you want to continue?")) {
@@ -547,7 +541,7 @@ localStorage.setItem('cart', JSON.stringify(window.cart));
     if (typeof window.showDay === 'function') {
         setTimeout(() => window.showDay(1), 100);
     }
-};;
+};
 
 // Mesafe Kontrol
 function checkDist(lat, lon) {
