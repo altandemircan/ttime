@@ -339,36 +339,38 @@ localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
 
     return combined;
 }
-
+// Kodunuzda çağrılan isim 'extractPureLocation' ise fonksiyon adını ona göre güncelleyin.
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    // Orijinal inputu al
-    let cleaned = input; 
+    // 1. "in", "at", "to", "for" edatlarından SONRASINI al (Cümlenin özünü yakala)
+    // Örnek: "A 3-day nature tour in Cappadocia" -> "Cappadocia"
+    let prepositionMatch = input.match(/\b(in|at|to|for)\b\s+(.*)/i);
+    let meaningfulPart = prepositionMatch ? prepositionMatch[2] : input;
+
+    let cleaned = meaningfulPart;
     
-    // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
-    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
+    // 2. Sayı ve zaman ifadelerini temizle (3-day, 5 gün vb.)
     cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // Özel karakterleri temizle
+    // 3. Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     
-    // Gereksiz kelimeleri (stop words) temizle
+    // 4. Stop Words Temizliği (Garanti olsun diye "and", "nature" gibi kelimeleri de ekledik)
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
         "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
-        // [FIX] Zaman birimleri stop words'e eklendi
-        "day", "days", "gün", "gun", "night", "nights"
+        "day", "days", "gün", "gun", "night", "nights",
+        "and", "&", "nature", "balloon", "holiday", "vacation" // [YENİ EKLENENLER]
     ];
     
-    // Kelimeleri ayır ve stop word'leri temizle
     let words = cleaned.split(/\s+/);
+    // 2 karakterden kısa kelimeleri ve stop word'leri at
     words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
     
     return words.join(" ").trim();
 }
-
 // ============================================================
 // GÖRÜNÜM YARDIMCILARI (KESİN ÇÖZÜM)
 // ============================================================
@@ -393,21 +395,23 @@ window.hideSuggestionsDiv = function(clear = false) {
 // Global değişken (Listenin dışında tanımlı olmalı)
 let currentFocus = -1; // Global focus takibi
 
-// mainscript.js içinde `renderSuggestions` fonksiyonunu bulun ve değiştirin:
-
 function renderSuggestions(originalResults = [], manualQuery = "") {
     console.log("=== RENDER DEBUG ===");
     console.log("Manual query:", manualQuery);
     console.log("Results:", originalResults);
 
+
+    
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
+const chatInput = document.getElementById("user-input");
 
-    if (!suggestionsDiv || !chatInput) return;
+if (!suggestionsDiv || !chatInput) return;
 
-    suggestionsDiv.dataset.hasResults = "true";
-    suggestionsDiv.innerHTML = "";
+// ✅ BURAYA EKLE
+suggestionsDiv.dataset.hasResults = "true";
+
+suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
         console.log("No results to show");
@@ -415,19 +419,13 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         return;
     }
 
-    // === GÜÇLÜ NORMALİZASYON FONKSİYONU ===
+    // A. PUANLAMA - Türkçe karakter düzeltmesi ekle
     const normalizeForCompare = (text) => {
         if (!text) return '';
         return text
             .toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Aksanları kaldır
-            .replace(/ı/g, 'i')
-            .replace(/ğ/g, 'g')
-            .replace(/ü/g, 'u')
-            .replace(/ş/g, 's')
-            .replace(/ö/g, 'o')
-            .replace(/ç/g, 'c')
-            .replace(/[^a-z0-9]/g, ''); // Tüm özel karakterleri ve boşlukları kaldır
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // aksanları kaldır
+            .replace(/ı/g, 'i');
     };
     
     const targetTerm = normalizeForCompare(manualQuery);
@@ -442,8 +440,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         console.log(`Comparing: "${name}" -> "${normalizedName}" with "${targetTerm}"`);
         
-        // === FİLTRE: KELİME KELİME EŞLEŞME ===
-        // "Cappadocia" gibi kelimeler "3daynaturecappadocia" içinde aranmalı
+        // Filtre - normalize edilmiş haliyle karşılaştır
         const containsTarget = normalizedName.includes(targetTerm);
         if (!containsTarget) {
             console.log(`  ✗ Does not contain "${targetTerm}"`);
@@ -454,24 +451,22 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         
         let score = 0;
         
-        // === PUANLAMA KURALLARI ===
+        // Puanlama Kuralları
         if (type === 'unesco_site') score += 50000; 
         else if (type === 'amenity' || type === 'tourism') score += 500; 
         else if (type === 'city') score += 150; 
         else if (type === 'town' || type === 'village') score -= 50; 
 
-        // Tam eşleşme
+        // Tam eşleşme (normalize edilmiş)
         if (normalizedName === targetTerm) {
             console.log(`  ★ Exact match!`);
             score += 1500;
         }
-        // Başlangıç eşleşmesi
         else if (normalizedName.startsWith(targetTerm)) {
             console.log(`  ☆ Starts with`);
             score += 800;
         }
 
-        // Kısa ve öz sonuçlar öncelikli
         if (p.formatted && p.formatted.length < 45) score += 100;
 
         return { item, score };
@@ -487,7 +482,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
 
     console.log("Final results to show:", finalResults.length);
 
-    // === LİSTELEME VE GÖRSEL ===
+    // B. LİSTELEME VE GÖRSEL
     const seenSuggestions = new Set();
     
     finalResults.forEach((result) => {
@@ -535,17 +530,20 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         const div = document.createElement("div");
         div.className = "category-area-option";
         
+        // Başlangıçta KISA halini yaz
         div.textContent = shortDisplayText; 
         
+        // Verileri sakla
         div.dataset.shortText = shortDisplayText;
         div.dataset.fullText = fullDisplayText;
         div.title = fullDisplayText;
 
+        // Görünüm Ayarları
         div.style.whiteSpace = "nowrap";       
         div.style.overflow = "hidden";         
         div.style.display = "block";
 
-        // UNESCO Badge
+        // UNESCO Badge Ekleme
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
@@ -572,6 +570,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
         div.onclick = () => {
             console.log("Clicked:", fullDisplayText);
             
+            // GÖRSEL DÜZENLEME
             Array.from(suggestionsDiv.children).forEach(child => {
                 if (child !== div) child.style.display = 'none';
             });
@@ -581,12 +580,15 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             div.style.overflow = "visible";
             if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
 
+            // GÜN SAYISINI YAKALA
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
+            // INPUTA YAZ
             chatInput.value = `Plan a ${days}-day trip to ${LONG_INPUT_NAME}`;
 
+            // SİSTEMİ KİLİTLE
             const finalLocation = {
                 name: LONG_INPUT_NAME,
                 city: props.city || LONG_INPUT_NAME,
@@ -606,6 +608,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
             window.__locationPickedFromSuggestions = true;
             window.__programmaticInput = true;
 
+            // UI GÜNCELLEME
             if (typeof enableSendButton === "function") enableSendButton();
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
 
