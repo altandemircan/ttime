@@ -397,6 +397,9 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     console.log("=== RENDER DEBUG ===");
     console.log("Manual query:", manualQuery);
     console.log("Results:", originalResults);
+
+    suggestionsDiv.dataset.hasResults = "true";
+
     
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
@@ -701,9 +704,13 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         if (!suggestionsDiv) return;
 
         // 1. KUTUYU AÇ
-        if (rawText.length > 0) {
+       if (rawText.length > 0) {
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
-            suggestionsDiv.innerHTML = '<div class="category-area-option" style="color: #999; text-align: center; padding: 12px;">Searching...</div>';
+
+            if (!suggestionsDiv.dataset.hasResults) {
+                suggestionsDiv.innerHTML =
+                  '<div class="category-area-option" style="color:#999;text-align:center;padding:12px;">Searching...</div>';
+            }
         } else {
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
             // showSuggestions(); // İsterseniz boşken varsayılanları gösterin
