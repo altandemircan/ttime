@@ -415,133 +415,72 @@ function groupFavoritesClean(list) {
 }
 
 
-window.startNewTripWithPlace = function(place) {
-    // 1. Kullanıcı onayı (İngilizce)
+window.startNewTripWithPlace = function (place) {
     if (!confirm("Your current trip plan will be cleared and a new trip will be started with this place. Do you want to continue?")) {
         return;
     }
 
-    // 2. State'i Manuel ve Temiz Bir Şekilde Sıfırla
-    window.cart = []; 
-    window.activeTripKey = null;
-    window.selectedCity = place.city || ""; // Place'in city'sini set et
-    localStorage.setItem('selectedCity', place.city || ''); // localStorage'a kaydet
-    window.lastUserQuery = "";
-    localStorage.removeItem('activeTripKey');
-    
-    // --- DÜZELTME BURADA: AI VERİLERİNİ VE EKRANINI TEMİZLE ---
-    
-    // A) Hafızadaki veriyi sil
-    if (window.cart) window.cart.aiData = null;
+    // === 1. HARD RESET ===
+    window.cart = [];
+    window.latestTripPlan = [];
+    window.activeTripKey = `trip_${Date.now()}`;
+    window.selectedCity = place.city || "";
+
+    localStorage.setItem('activeTripKey', window.activeTripKey);
+    localStorage.setItem('selectedCity', window.selectedCity);
+
+    // AI temizle
     window.lastTripAIInfo = null;
-
-    // B) Ekranda kalan eski (Roma vb.) yazıları sil ve paneli gizle
     const aiSection = document.querySelector('.ai-info-section');
-    if (aiSection) aiSection.style.display = 'none'; // Kutuyu gizle
-    
-    if (typeof window.showTripAiInfo === "function") {
-        // İçeriği boşalt
-        window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
-    }
-    // -----------------------------------------------------------
+    if (aiSection) aiSection.remove();
 
-    // 3. Yeni öğeyi DOĞRUDAN listeye ekle
+    // === 2. İLK ITEM ===
     const newItem = {
         name: place.name,
-        image: place.image,
-        day: 1, 
+        title: place.name,
+        image: place.image || 'img/placeholder.png',
+        day: 1,
         dailyIndex: 1,
         category: place.category,
         address: place.address || "",
-        location: { lat: Number(place.lat), lng: Number(place.lon) },
-        lat: Number(place.lat), 
-        lon: Number(place.lon), 
+        location: {
+            lat: Number(place.lat),
+            lng: Number(place.lon)
+        },
+        lat: Number(place.lat),
+        lon: Number(place.lon),
         website: place.website || "",
-        note: "",
-        title: place.name
+        note: ""
     };
-    
+
     window.cart.push(newItem);
+    localStorage.setItem('cart', JSON.stringify(window.cart));
 
-    // ✅ BURAYA EKLE
-window.activeTripKey = `${(place.city || 'trip').replace(/\s+/g, '_')}_${Date.now()}`;
-localStorage.setItem('activeTripKey', window.activeTripKey);
-localStorage.setItem('cart', JSON.stringify(window.cart));
+    // === 3. UI ===
+    if (typeof updateCart === "function") updateCart();
 
-    // Trip title'ı güncelle - place'in group key'inden city al
-    const tripTitleDiv = document.getElementById('trip_title');
-    if (tripTitleDiv) {
-        const cityName = place._groupKey || place.city || window.selectedCity || "Trip Plan";
-        tripTitleDiv.textContent = `${cityName} Trip Plan`;
+    const tripTitle = document.getElementById('trip_title');
+    if (tripTitle) {
+        tripTitle.textContent = `${place.city || place._groupKey || "Trip"} Trip Plan`;
     }
 
-    // Map initialize et - container açılana kadar bekle
-    let mapWaitCount = 0;
-    const waitForMapContainer = setInterval(() => {
-        const mapContainer = document.getElementById('map');
-        if (mapContainer) {
-            clearInterval(waitForMapContainer);
-            
-            if (typeof initializeMap === "function") {
-                try {
-                    initializeMap();
-                } catch (e) {
-                    console.warn("Map init error:", e);
-                }
-            }
-
-            // Küçük delay daha sonra updateCart çağır
-            setTimeout(() => {
-                if (typeof updateCart === "function") {
-                    try {
-                        updateCart(); 
-                    } catch (e) {
-                        console.warn("UpdateCart error:", e);
-                    }
-                }
-            }, 200);
-        }
-        
-        mapWaitCount++;
-        if (mapWaitCount > 50) {
-            clearInterval(waitForMapContainer);
-            console.warn("Map container timeout");
-        }
-    }, 100);
-    
-    // 5. Favoriler panelini güncelle
-    renderFavoritePlacesPanel();
-
-    // 6. AI Information'ı yükle - place'in city'si ile
-    if (typeof onCitySelected === "function") {
-        onCitySelected(place.city || window.selectedCity);
-    }
-
-    // 7. PANEL GEÇİŞİ
+    // === 4. SIDEBAR SWITCH ===
     const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
-    if (favSidebar && favSidebar.classList.contains('open')) {
-        if(typeof window.toggleSidebar === 'function') {
-            window.toggleSidebar('sidebar-overlay-favorite-places'); 
-        } else {
-            favSidebar.classList.remove('open');
-        }
+    if (favSidebar?.classList.contains('open')) {
+        favSidebar.classList.remove('open');
     }
 
     const tripSidebar = document.getElementById('sidebar-overlay-trip');
-    if (tripSidebar) {
-        if(typeof window.toggleSidebarTrip === 'function') {
-            if (!tripSidebar.classList.contains('open')) {
-                window.toggleSidebarTrip();
-            }
-        } else {
-            tripSidebar.classList.add('open');
-        }
+    if (tripSidebar && !tripSidebar.classList.contains('open')) {
+        tripSidebar.classList.add('open');
     }
-    
-    if (typeof window.showDay === 'function') {
-        setTimeout(() => window.showDay(1), 100);
+
+    // === 5. DAY 1 AÇ ===
+    if (typeof window.showDay === "function") {
+        window.showDay(1);
     }
 };
+
 
 // Mesafe Kontrol
 function checkDist(lat, lon) {
