@@ -741,7 +741,7 @@ const results = await geoapifyLocationAutocomplete(locationQuery);
                 if (typeof renderSuggestions === 'function') {
                     // geoapifyLocationAutocomplete zaten 'properties' formatında döndüğü için
                     // map işlemine gerek yok, direkt veriyoruz.
-                    renderSuggestions(results, cleanedText);
+renderSuggestions(results, locationQuery);
                 }
             } else {
                 console.log("No results found");
