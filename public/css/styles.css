@@ -4392,8 +4392,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map, #maplibre-3d-view  {
     width: 100% !important;    
     min-height: 285px;
-     height: calc(100% - 120px) !important;
-    bottom: 180px;
+   
 }
 
 
@@ -4547,15 +4546,14 @@ right: 30px;
     z-index: 123456;
     display: flex;
     position: fixed;
-    bottom: 20px;
     background: rgb(255 255 255);
     gap: 4px;
     padding: 0px 20px 0px 20px;
-    /* border-radius: 10px; */
     align-items: center;
-    /* box-shadow: 0 3px 14px rgb(0 0 0 / 8%); */
+    box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
     flex-direction: column;
-    height: 145px;
+    /* height: 145px; */
+    bottom: 30px;
 }
 
 @media (max-width: 768px) {
