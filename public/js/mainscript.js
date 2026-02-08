@@ -402,11 +402,14 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
-    const chatInput = document.getElementById("user-input");
-    
-    if (!suggestionsDiv || !chatInput) return;
-    
-    suggestionsDiv.innerHTML = "";
+const chatInput = document.getElementById("user-input");
+
+if (!suggestionsDiv || !chatInput) return;
+
+// ✅ BURAYA EKLE
+suggestionsDiv.dataset.hasResults = "true";
+
+suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
         console.log("No results to show");
