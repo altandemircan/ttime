@@ -10557,8 +10557,6 @@ document.addEventListener("DOMContentLoaded", function() {
 }
 
 
-window.extractPureLocation = extractPureLocation;
-
 document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("user-input");
     if (!chatInput) return;
@@ -10573,13 +10571,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const text = caption.innerText.trim();
             chatInput.value = text;
 
-            // 🔥 GERÇEK LOKASYONU ÇIKAR
-            const locationQuery = window.extractPureLocation(text);
+            // 🔥 SON KELİMEYİ LOKASYON SAY
+            const words = text.split(/\s+/);
+            const locationQuery = words[words.length - 1]
+                .replace(/[^a-zA-Z]/g, "")
+                .toLowerCase();
+
             console.log("🎯 Forced location query:", locationQuery);
 
-            if (!locationQuery || locationQuery.length < 2) return;
+            if (locationQuery.length < 2) return;
 
-            // 🔥 API + RENDER’I BİZ ÇALIŞTIRIYORUZ
             const results = await geoapifyLocationAutocomplete(locationQuery);
             renderSuggestions(results, locationQuery);
         });
