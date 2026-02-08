@@ -398,7 +398,10 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     console.log("Manual query:", manualQuery);
     console.log("Results:", originalResults);
 
-
+if (suggestionsDiv.dataset.locked === "true") {
+    console.log("🔒 Suggestions locked, skipping render");
+    return;
+}
     
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
@@ -426,9 +429,8 @@ suggestionsDiv.innerHTML = "";
             .replace(/ı/g, 'i');
     };
     
-    const targetTerm = normalizeForCompare(
-    manualQuery.split(/\s+/).pop()
-);    console.log("Normalized target:", targetTerm);
+    const targetTerm = normalizeForCompare(manualQuery);
+    console.log("Normalized target:", targetTerm);
     
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
@@ -10558,32 +10560,36 @@ document.addEventListener("DOMContentLoaded", function() {
 }
 
 
+window.extractPureLocation = extractPureLocation;
+
 document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("user-input");
     if (!chatInput) return;
 
     document.querySelectorAll(".gallery-item .add_theme").forEach(btn => {
-        btn.addEventListener("click", async () => {
+       btn.addEventListener("click", async () => {
 
-            const caption = btn.closest(".gallery-item")
-                ?.querySelector(".caption p");
-            if (!caption) return;
+    const caption = btn.closest(".gallery-item")
+        ?.querySelector(".caption p");
+    if (!caption) return;
 
-            const text = caption.innerText.trim();
-            chatInput.value = text;
+    const text = caption.innerText.trim();
+    chatInput.value = text;
 
-            // 🔥 SON KELİMEYİ LOKASYON SAY
-            const words = text.split(/\s+/);
-            const locationQuery = words[words.length - 1]
-                .replace(/[^a-zA-Z]/g, "")
-                .toLowerCase();
+    const locationQuery = extractPureLocation(text);
+    if (!locationQuery) return;
 
-            console.log("🎯 Forced location query:", locationQuery);
+    // 🔒 KİLİT
+    suggestionsDiv.dataset.locked = "true";
 
-            if (locationQuery.length < 2) return;
+    const results = await geoapifyLocationAutocomplete(locationQuery);
+    renderSuggestions(results, locationQuery);
 
-            const results = await geoapifyLocationAutocomplete(locationQuery);
-            renderSuggestions(results, locationQuery);
-        });
+    // 🔓 KİLİDİ AÇ
+    setTimeout(() => {
+        delete suggestionsDiv.dataset.locked;
+    }, 300);
+});
+
     });
 });
