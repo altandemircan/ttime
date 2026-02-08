@@ -696,10 +696,10 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
         console.log("=== INPUT DEBUG ===");
         
-        if (window.__programmaticInput) {
-            console.log("Skipping - programmatic input");
-            return;
-        }
+       if (window.__programmaticInput && !window.__forceSuggestions) {
+    console.log("Skipping - programmatic input");
+    return;
+}
 
         const rawText = this.value.trim();
         const suggestionsDiv = document.getElementById("suggestions");
@@ -10563,7 +10563,9 @@ document.addEventListener("DOMContentLoaded", () => {
             chatInput.value = caption.innerText.trim();
 
             // 🔥 INPUT EVENT'İ ZORLA
-            chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+          window.__forceSuggestions = true;
+chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+setTimeout(() => window.__forceSuggestions = false, 10
 
         });
     });
