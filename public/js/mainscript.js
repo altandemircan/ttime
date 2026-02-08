@@ -727,8 +727,13 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         // 3. MERKEZİ ARAMA FONKSİYONUNU ÇAĞIR (UNESCO + CITY + API)
         // Eski kodda burası sadece /api/cities çağırıyordu. Şimdi hepsini kapsayan fonksiyonu çağırıyoruz.
         try {
-            console.log("Searching for:", cleanedText);
-            const results = await geoapifyLocationAutocomplete(cleanedText);
+           const locationQuery = extractPureLocation(rawText);
+
+console.log("Searching for:", locationQuery);
+
+if (locationQuery.length < 2) return;
+
+const results = await geoapifyLocationAutocomplete(locationQuery);
             
             // 4. SONUÇLARI GÖSTER
             if (results && results.length > 0) {
@@ -1226,6 +1231,33 @@ document.addEventListener('DOMContentLoaded', () => {
         disableSendButton && disableSendButton();
     });
 });
+function extractPureLocation(input) {
+  if (!input) return "";
+
+  // Küçük harf + TR normalize
+  let text = normalizeTurkish(input.toLowerCase());
+
+  // Sayıları ve süreleri sil
+  text = text.replace(/\d+\s*(day|days|gün|gun|night|nights)?/gi, " ");
+
+  // Noktalama
+  text = text.replace(/[^\p{L}\s]/gu, " ");
+
+  // Kelimelere ayır
+  const words = text.split(/\s+/).filter(w => w.length > 2);
+
+  // Fiil / intent kelimeleri → regex ile TOPTAN
+  const intentRegex = /^(plan|explore|discover|visit|travel|make|create|show|give|see|things|do|doing|guide|trip|tour)$/;
+
+  const candidates = words.filter(w => !intentRegex.test(w));
+
+  // 1) Sona en yakın anlamlı kelime genelde şehir
+  if (candidates.length > 0) {
+    return candidates[candidates.length - 1];
+  }
+
+  return "";
+}
 
 function sendMessage() {
     // Kilit kontrolü
