@@ -4542,7 +4542,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
 .expanded-map-panel {
 right: 30px;
     left: 30px;
-    width: calc(100% - 465px);
+    width: 600px;
     z-index: 123456;
     display: flex;
     position: fixed;
@@ -4601,7 +4601,7 @@ right: 30px;
 .elev-segment-toolbar {
     bottom: 150px;
     right: 15px;
-    left: -30px;
+    left: -20px;
     position: absolute;
     display: flex;
     align-items: center;
