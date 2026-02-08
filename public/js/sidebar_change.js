@@ -97,26 +97,24 @@ function toggleSidebarTrip() {
 window.toggleSidebarFavoritePlaces = function() {
     const favPanel = document.getElementById('sidebar-overlay-favorite-places');
     
-    // DURUM 1: Panel zaten AÇIKSA (Kullanıcı X'e bastı demektir)
+    // DURUM 1: Panel şu an AÇIKSA (Demek ki kullanıcı X butonuna bastı ve kapatmak istiyor)
     if (favPanel && favPanel.classList.contains('open')) {
         // 1. My Places'i kapat
         favPanel.classList.remove('open');
         
-        // 2. Gezi Planını (Gallery) geri aç
-        // ID'si 'sidebar-overlay-gallery' veya class'ı 'sidebar-gallery' olanı bul
-        const galleryPanel = document.getElementById('sidebar-overlay-gallery') || document.querySelector('.sidebar-overlay.sidebar-gallery');
-        if (galleryPanel) {
-            galleryPanel.classList.add('open');
+        // 2. "Gezi" Sidebar'ını (Trip Planını) geri aç
+        const tripPanel = document.getElementById('sidebar-overlay-trip');
+        if (tripPanel) {
+            tripPanel.classList.add('open');
         }
     } 
-    // DURUM 2: Panel KAPALIYSA (Kullanıcı butona basıp açıyor)
+    // DURUM 2: Panel KAPALIYSA (Demek ki kullanıcı "My Places" butonuna bastı ve açmak istiyor)
     else {
         // Standart açma işlemi (diğerlerini kapatır, bunu açar)
         window.toggleSidebar('sidebar-overlay-favorite-places');
         
-        // İçeriği yenile (Render)
-        const newFavPanel = document.getElementById('sidebar-overlay-favorite-places');
-        if (newFavPanel && newFavPanel.classList.contains('open') && typeof renderFavoritePlacesPanel === 'function') {
+        // İçeriği yükle/yenile
+        if (typeof renderFavoritePlacesPanel === 'function') {
             renderFavoritePlacesPanel();
         }
     }
