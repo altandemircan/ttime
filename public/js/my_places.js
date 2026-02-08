@@ -420,28 +420,30 @@ window.startNewTripWithPlace = function (place) {
         return;
     }
 
-    // === 1. HARD RESET ===
+    // 1️⃣ HARD RESET (net)
     window.cart = [];
     window.latestTripPlan = [];
-    window.activeTripKey = `trip_${Date.now()}`;
-    window.selectedCity = place.city || "";
+    window.activeTripKey = null;
+    window.lastUserQuery = "";
+    window.selectedCity = place.city || place._groupKey || "";
 
-    localStorage.setItem('activeTripKey', window.activeTripKey);
-    localStorage.setItem('selectedCity', window.selectedCity);
+    localStorage.removeItem("cart");
+    localStorage.removeItem("activeTripKey");
+    localStorage.setItem("selectedCity", window.selectedCity);
 
-    // AI temizle
+    // 2️⃣ AI temizle
     window.lastTripAIInfo = null;
-    const aiSection = document.querySelector('.ai-info-section');
+    const aiSection = document.querySelector(".ai-info-section");
     if (aiSection) aiSection.remove();
 
-    // === 2. İLK ITEM ===
+    // 3️⃣ İLK ITEM
     const newItem = {
         name: place.name,
         title: place.name,
-        image: place.image || 'img/placeholder.png',
+        image: place.image,
+        category: place.category,
         day: 1,
         dailyIndex: 1,
-        category: place.category,
         address: place.address || "",
         location: {
             lat: Number(place.lat),
@@ -454,32 +456,40 @@ window.startNewTripWithPlace = function (place) {
     };
 
     window.cart.push(newItem);
-    localStorage.setItem('cart', JSON.stringify(window.cart));
 
-    // === 3. UI ===
+    // 4️⃣ ACTIVE TRIP OLUŞTUR
+    window.activeTripKey = `${(window.selectedCity || "trip").replace(/\s+/g, "_")}_${Date.now()}`;
+    localStorage.setItem("activeTripKey", window.activeTripKey);
+    localStorage.setItem("cart", JSON.stringify(window.cart));
+
+    // 5️⃣ UI ZORLA GÜNCELLE
     if (typeof updateCart === "function") updateCart();
 
-    const tripTitle = document.getElementById('trip_title');
+    // Trip title
+    const tripTitle = document.getElementById("trip_title");
     if (tripTitle) {
-        tripTitle.textContent = `${place.city || place._groupKey || "Trip"} Trip Plan`;
+        tripTitle.textContent = `${window.selectedCity || "Trip"} Trip Plan`;
     }
 
-    // === 4. SIDEBAR SWITCH ===
-    const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
-    if (favSidebar?.classList.contains('open')) {
-        favSidebar.classList.remove('open');
+    // 6️⃣ PANEL GEÇİŞİ
+    const favSidebar = document.getElementById("sidebar-overlay-favorite-places");
+    if (favSidebar?.classList.contains("open")) {
+        favSidebar.classList.remove("open");
     }
 
-    const tripSidebar = document.getElementById('sidebar-overlay-trip');
-    if (tripSidebar && !tripSidebar.classList.contains('open')) {
-        tripSidebar.classList.add('open');
+    const tripSidebar = document.getElementById("sidebar-overlay-trip");
+    if (tripSidebar && !tripSidebar.classList.contains("open")) {
+        tripSidebar.classList.add("open");
     }
 
-    // === 5. DAY 1 AÇ ===
+    // 7️⃣ DAY 1 AÇ
     if (typeof window.showDay === "function") {
-        window.showDay(1);
+        setTimeout(() => window.showDay(1), 50);
     }
+
+    console.log("START NEW OK:", window.cart, window.activeTripKey);
 };
+
 
 
 // Mesafe Kontrol
