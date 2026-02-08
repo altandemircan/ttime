@@ -696,7 +696,7 @@ if (typeof chatInput !== 'undefined' && chatInput) {
     chatInput.addEventListener("input", debounce(async function () {
         console.log("=== INPUT DEBUG ===");
         
-       if (window.__programmaticInput && !window.__forceSuggestions) {
+        if (window.__programmaticInput && !window.__forceSuggestions) {
     console.log("Skipping - programmatic input");
     return;
 }
@@ -10563,9 +10563,9 @@ document.addEventListener("DOMContentLoaded", () => {
             chatInput.value = caption.innerText.trim();
 
             // 🔥 INPUT EVENT'İ ZORLA
-          window.__forceSuggestions = true;
+           window.__forceSuggestions = true;
 chatInput.dispatchEvent(new Event("input", { bubbles: true }));
-setTimeout(() => window.__forceSuggestions = false, 10
+setTimeout(() => window.__forceSuggestions = false, 100);
 
         });
     });
