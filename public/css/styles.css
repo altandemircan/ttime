@@ -4600,8 +4600,8 @@ right: 30px;
 
 .elev-segment-toolbar {
     bottom: 150px;
-    right: 15px;
-    left: -20px;
+    /* right: 15px; */
+    /* left: -20px; */
     position: absolute;
     display: flex;
     align-items: center;
