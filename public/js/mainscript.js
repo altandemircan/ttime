@@ -10552,16 +10552,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".gallery-item .add_theme").forEach(btn => {
         btn.addEventListener("click", () => {
 
-            // 1. caption içindeki yazıyı al
             const caption = btn.closest(".gallery-item")
-                              .querySelector(".caption p");
+                .querySelector(".caption p");
 
             if (!caption || !chatInput) return;
 
-            // 2. inputa yaz (zaten senin sistemde yapılıyor olabilir ama garanti olsun)
+            // 🔓 KİLİDİ GEÇİCİ AÇ
+            window.__programmaticInput = false;
+
             chatInput.value = caption.innerText.trim();
 
-            // 🔥 3. KRİTİK SATIR (SUGGESTIONS’I ÇALIŞTIRIR)
+            // 🔥 INPUT EVENT'İ ZORLA
             chatInput.dispatchEvent(new Event("input", { bubbles: true }));
 
         });
