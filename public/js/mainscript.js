@@ -339,38 +339,36 @@ localCityResults = Array.isArray(localCities) ? localCities.map(item => ({
 
     return combined;
 }
-// Kodunuzda çağrılan isim 'extractPureLocation' ise fonksiyon adını ona göre güncelleyin.
+
 function extractLocationQuery(input) {
     if (!input) return "";
     
-    // 1. "in", "at", "to", "for" edatlarından SONRASINI al (Cümlenin özünü yakala)
-    // Örnek: "A 3-day nature tour in Cappadocia" -> "Cappadocia"
-    let prepositionMatch = input.match(/\b(in|at|to|for)\b\s+(.*)/i);
-    let meaningfulPart = prepositionMatch ? prepositionMatch[2] : input;
-
-    let cleaned = meaningfulPart;
+    // Orijinal inputu al
+    let cleaned = input; 
     
-    // 2. Sayı ve zaman ifadelerini temizle (3-day, 5 gün vb.)
+    // Sadece "1 day", "3 gün" gibi zaman ifadelerini sil.
+    // [FIX] Tire (-) karakterini de kapsayacak şekilde güncellendi (örn: 1-day)
     cleaned = cleaned.replace(/(\d+)\s*[-]?\s*(day|days|gün|gun|gece|night|nights)/gi, "");
     
-    // 3. Özel karakterleri temizle
+    // Özel karakterleri temizle
     cleaned = cleaned.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, " ");
     
-    // 4. Stop Words Temizliği (Garanti olsun diye "and", "nature" gibi kelimeleri de ekledik)
+    // Gereksiz kelimeleri (stop words) temizle
     const stopWords = [
         "plan", "trip", "tour", "itinerary", "route", "visit", "travel", "guide",
         "create", "make", "build", "generate", "show", "give", "please", 
         "for", "in", "to", "at", "of", "a", "the", "program", "city", "my",
-        "day", "days", "gün", "gun", "night", "nights",
-        "and", "&", "nature", "balloon", "holiday", "vacation" // [YENİ EKLENENLER]
+        // [FIX] Zaman birimleri stop words'e eklendi
+        "day", "days", "gün", "gun", "night", "nights"
     ];
     
+    // Kelimeleri ayır ve stop word'leri temizle
     let words = cleaned.split(/\s+/);
-    // 2 karakterden kısa kelimeleri ve stop word'leri at
     words = words.filter(w => !stopWords.includes(w.toLowerCase()) && w.length > 1);
     
     return words.join(" ").trim();
 }
+
 // ============================================================
 // GÖRÜNÜM YARDIMCILARI (KESİN ÇÖZÜM)
 // ============================================================
