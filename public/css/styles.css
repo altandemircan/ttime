@@ -4546,7 +4546,7 @@ right: 30px;
     z-index: 123456;
     display: flex;
     position: fixed;
-    background: ff9900;
+    background: #ff9900;
     gap: 4px;
     padding: 0px 20px 0px 20px;
     align-items: center;
