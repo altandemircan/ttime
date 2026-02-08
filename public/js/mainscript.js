@@ -393,26 +393,21 @@ window.hideSuggestionsDiv = function(clear = false) {
 // Global değişken (Listenin dışında tanımlı olmalı)
 let currentFocus = -1; // Global focus takibi
 
+// mainscript.js içinde `renderSuggestions` fonksiyonunu bulun ve değiştirin:
+
 function renderSuggestions(originalResults = [], manualQuery = "") {
     console.log("=== RENDER DEBUG ===");
     console.log("Manual query:", manualQuery);
     console.log("Results:", originalResults);
 
-if (suggestionsDiv.dataset.locked === "true") {
-    console.log("🔒 Suggestions locked, skipping render");
-    return;
-}
-    
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
-const chatInput = document.getElementById("user-input");
+    const chatInput = document.getElementById("user-input");
 
-if (!suggestionsDiv || !chatInput) return;
+    if (!suggestionsDiv || !chatInput) return;
 
-// ✅ BURAYA EKLE
-suggestionsDiv.dataset.hasResults = "true";
-
-suggestionsDiv.innerHTML = "";
+    suggestionsDiv.dataset.hasResults = "true";
+    suggestionsDiv.innerHTML = "";
 
     if (!originalResults || !originalResults.length) {
         console.log("No results to show");
@@ -420,13 +415,19 @@ suggestionsDiv.innerHTML = "";
         return;
     }
 
-    // A. PUANLAMA - Türkçe karakter düzeltmesi ekle
+    // === GÜÇLÜ NORMALİZASYON FONKSİYONU ===
     const normalizeForCompare = (text) => {
         if (!text) return '';
         return text
             .toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // aksanları kaldır
-            .replace(/ı/g, 'i');
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Aksanları kaldır
+            .replace(/ı/g, 'i')
+            .replace(/ğ/g, 'g')
+            .replace(/ü/g, 'u')
+            .replace(/ş/g, 's')
+            .replace(/ö/g, 'o')
+            .replace(/ç/g, 'c')
+            .replace(/[^a-z0-9]/g, ''); // Tüm özel karakterleri ve boşlukları kaldır
     };
     
     const targetTerm = normalizeForCompare(manualQuery);
@@ -441,7 +442,8 @@ suggestionsDiv.innerHTML = "";
         
         console.log(`Comparing: "${name}" -> "${normalizedName}" with "${targetTerm}"`);
         
-        // Filtre - normalize edilmiş haliyle karşılaştır
+        // === FİLTRE: KELİME KELİME EŞLEŞME ===
+        // "Cappadocia" gibi kelimeler "3daynaturecappadocia" içinde aranmalı
         const containsTarget = normalizedName.includes(targetTerm);
         if (!containsTarget) {
             console.log(`  ✗ Does not contain "${targetTerm}"`);
@@ -452,22 +454,24 @@ suggestionsDiv.innerHTML = "";
         
         let score = 0;
         
-        // Puanlama Kuralları
+        // === PUANLAMA KURALLARI ===
         if (type === 'unesco_site') score += 50000; 
         else if (type === 'amenity' || type === 'tourism') score += 500; 
         else if (type === 'city') score += 150; 
         else if (type === 'town' || type === 'village') score -= 50; 
 
-        // Tam eşleşme (normalize edilmiş)
+        // Tam eşleşme
         if (normalizedName === targetTerm) {
             console.log(`  ★ Exact match!`);
             score += 1500;
         }
+        // Başlangıç eşleşmesi
         else if (normalizedName.startsWith(targetTerm)) {
             console.log(`  ☆ Starts with`);
             score += 800;
         }
 
+        // Kısa ve öz sonuçlar öncelikli
         if (p.formatted && p.formatted.length < 45) score += 100;
 
         return { item, score };
@@ -483,7 +487,7 @@ suggestionsDiv.innerHTML = "";
 
     console.log("Final results to show:", finalResults.length);
 
-    // B. LİSTELEME VE GÖRSEL
+    // === LİSTELEME VE GÖRSEL ===
     const seenSuggestions = new Set();
     
     finalResults.forEach((result) => {
@@ -531,20 +535,17 @@ suggestionsDiv.innerHTML = "";
         const div = document.createElement("div");
         div.className = "category-area-option";
         
-        // Başlangıçta KISA halini yaz
         div.textContent = shortDisplayText; 
         
-        // Verileri sakla
         div.dataset.shortText = shortDisplayText;
         div.dataset.fullText = fullDisplayText;
         div.title = fullDisplayText;
 
-        // Görünüm Ayarları
         div.style.whiteSpace = "nowrap";       
         div.style.overflow = "hidden";         
         div.style.display = "block";
 
-        // UNESCO Badge Ekleme
+        // UNESCO Badge
         if (props.result_type === 'unesco_site') {
             div.style.backgroundColor = "#f2fce4"; 
             div.style.position = "relative";
@@ -571,7 +572,6 @@ suggestionsDiv.innerHTML = "";
         div.onclick = () => {
             console.log("Clicked:", fullDisplayText);
             
-            // GÖRSEL DÜZENLEME
             Array.from(suggestionsDiv.children).forEach(child => {
                 if (child !== div) child.style.display = 'none';
             });
@@ -581,15 +581,12 @@ suggestionsDiv.innerHTML = "";
             div.style.overflow = "visible";
             if (div.firstChild) div.firstChild.nodeValue = fullDisplayText;
 
-            // GÜN SAYISINI YAKALA
             const raw = chatInput.value.trim();
             const dayMatch = raw.match(/(\d+)\s*-?\s*day/i) || raw.match(/(\d+)\s*-?\s*gün/i);
             let days = dayMatch ? parseInt(dayMatch[1], 10) : 1;
 
-            // INPUTA YAZ
             chatInput.value = `Plan a ${days}-day trip to ${LONG_INPUT_NAME}`;
 
-            // SİSTEMİ KİLİTLE
             const finalLocation = {
                 name: LONG_INPUT_NAME,
                 city: props.city || LONG_INPUT_NAME,
@@ -609,7 +606,6 @@ suggestionsDiv.innerHTML = "";
             window.__locationPickedFromSuggestions = true;
             window.__programmaticInput = true;
 
-            // UI GÜNCELLEME
             if (typeof enableSendButton === "function") enableSendButton();
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
 
@@ -10560,36 +10556,3 @@ document.addEventListener("DOMContentLoaded", function() {
 }
 
 
-window.extractPureLocation = extractPureLocation;
-
-document.addEventListener("DOMContentLoaded", () => {
-    const chatInput = document.getElementById("user-input");
-    if (!chatInput) return;
-
-    document.querySelectorAll(".gallery-item .add_theme").forEach(btn => {
-       btn.addEventListener("click", async () => {
-
-    const caption = btn.closest(".gallery-item")
-        ?.querySelector(".caption p");
-    if (!caption) return;
-
-    const text = caption.innerText.trim();
-    chatInput.value = text;
-
-    const locationQuery = extractPureLocation(text);
-    if (!locationQuery) return;
-
-    // 🔒 KİLİT
-    suggestionsDiv.dataset.locked = "true";
-
-    const results = await geoapifyLocationAutocomplete(locationQuery);
-    renderSuggestions(results, locationQuery);
-
-    // 🔓 KİLİDİ AÇ
-    setTimeout(() => {
-        delete suggestionsDiv.dataset.locked;
-    }, 300);
-});
-
-    });
-});
