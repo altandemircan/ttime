@@ -469,6 +469,11 @@ window.startNewTripWithPlace = function(place) {
     
     window.cart.push(newItem);
 
+    // ✅ BURAYA EKLE
+window.activeTripKey = `${(place.city || 'trip').replace(/\s+/g, '_')}_${Date.now()}`;
+localStorage.setItem('activeTripKey', window.activeTripKey);
+localStorage.setItem('cart', JSON.stringify(window.cart));
+
     // Trip title'ı güncelle - place'in group key'inden city al
     const tripTitleDiv = document.getElementById('trip_title');
     if (tripTitleDiv) {
@@ -610,7 +615,7 @@ window.toggleMpGroup = function(header) {
 // Kategori ikonunu getiren fonksiyon
 function getPlaceCategoryIcon(category) {
     const iconMap = {
-          "Coffee": "img/coffee_icon.svg",
+        "Coffee": "img/coffee_icon.svg",
         "Breakfast": "img/coffee_icon.svg",
         "Cafes": "img/coffee_icon.svg",        
         "Museum": "img/museum_icon.svg",        
@@ -632,7 +637,7 @@ function getPlaceCategoryIcon(category) {
         "Bookstore": "img/bookstore_icon.svg",
         "Post Office": "img/postoffice_icon.svg",
         "Library": "img/library_icon.svg",
-        "Hostel": "img/hostel_icon.svg", // Varsa hostel_icon.svg, yoksa accommodation kullanabilirsin
+        "Hostel": "img/hostel_icon.svg",
         "Cinema": "img/cinema_icon.svg",
         "Jewelry Shop": "img/jewelry_icon.svg",
         "University": "img/university_icon.svg",
