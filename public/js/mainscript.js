@@ -10558,25 +10558,37 @@ document.addEventListener("DOMContentLoaded", function() {
 
 document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("user-input");
+    if (!chatInput) return;
 
     document.querySelectorAll(".gallery-item .add_theme").forEach(btn => {
         btn.addEventListener("click", () => {
 
             const caption = btn.closest(".gallery-item")
-                .querySelector(".caption p");
+                ?.querySelector(".caption p");
 
-            if (!caption || !chatInput) return;
+            if (!caption) return;
 
-            // 🔓 KİLİDİ GEÇİCİ AÇ
+            const text = caption.innerText.trim();
+
+            // 🔓 programmatic kilidi geçici kapat
             window.__programmaticInput = false;
 
-            chatInput.value = caption.innerText.trim();
+            // 1️⃣ gerçek metni yaz
+            chatInput.value = text;
 
-            // 🔥 INPUT EVENT'İ ZORLA
-           window.__forceSuggestions = true;
-chatInput.dispatchEvent(new Event("input", { bubbles: true }));
-setTimeout(() => window.__forceSuggestions = false, 100);
+            // 2️⃣ ilk input event
+            chatInput.dispatchEvent(new Event("input", { bubbles: true }));
 
+            // 3️⃣ 🔥 KRİTİK: ikinci zorunlu tetik
+            setTimeout(() => {
+                chatInput.value = text + " "; // minik fark
+                chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+                // 4️⃣ geri al (kullanıcı fark etmez)
+                setTimeout(() => {
+                    chatInput.value = text;
+                }, 0);
+            }, 0);
         });
     });
 });
