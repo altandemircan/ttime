@@ -736,7 +736,17 @@ if (typeof chatInput !== 'undefined' && chatInput) {
         // 3. MERKEZİ ARAMA FONKSİYONUNU ÇAĞIR (UNESCO + CITY + API)
         // Eski kodda burası sadece /api/cities çağırıyordu. Şimdi hepsini kapsayan fonksiyonu çağırıyoruz.
         try {
-           const locationQuery = extractPureLocation(rawText);
+           let locationQuery = "";
+
+if (window.__forceSuggestions) {
+    // Tema seçildiyse: cümlenin son anlamlı kelimesini al
+    locationQuery = rawText
+        .split(/in |for |to /i)
+        .pop()
+        .trim();
+} else {
+    locationQuery = extractPureLocation(rawText);
+}
 
 console.log("Searching for:", locationQuery);
 
