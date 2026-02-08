@@ -351,37 +351,63 @@ if (Array.isArray(markers)) {
         }
     }
 
+    // --- Grid Labels (DÜZELTİLMİŞ VERSİYON) ---
+    const oldLabels = track.querySelector('.elevation-labels-container');
+    if (oldLabels) oldLabels.remove();
+
+    // Eğer gridLabels yukarıda tanımlanmadıysa burada tanımlayalım (güvenlik için)
+    if (typeof gridLabels === 'undefined') {
+        let gridLabels = [];
+        const svg = track.querySelector('svg.tt-elev-svg');
+        if (svg) {
+             gridLabels = Array.from(svg.querySelectorAll('text'))
+                .map(t => ({
+                    value: t.textContent.trim(),
+                    y: Number(t.getAttribute('y')),
+                    svgHeight: Number(svg.getAttribute('height')) || 180
+                }))
+                .filter(obj => /-?\d+\s*m$/.test(obj.value));
+        }
+    }
+
     const elevationLabels = document.createElement('div');
     elevationLabels.className = 'elevation-labels-container';
+    elevationLabels.style.pointerEvents = 'none'; // Kullanıcı seçim yaparken engel olmasın
+    elevationLabels.style.zIndex = '10'; // Üstte görünsün
 
-    gridLabels.forEach((obj, index) => { 
-        let topStyle = '';
-        if (typeof obj.pct !== 'undefined') {
-            topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
-        } else {
-            const trackHeight = track.clientHeight || 180;
-            const correctedY = (obj.y / obj.svgHeight) * trackHeight;
-            topStyle = `top: ${correctedY}px;`;
-        }
+    // gridLabels değişkeninin dolu olduğundan eminsek döngüye gir
+    if (Array.isArray(gridLabels)) {
+        gridLabels.forEach((obj) => { 
+            let topStyle = '';
+            if (typeof obj.pct !== 'undefined') {
+                topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+            } else {
+                const trackHeight = track.clientHeight || 180;
+                // obj.y ve obj.svgHeight kontrolü
+                const yVal = obj.y || 0;
+                const hVal = obj.svgHeight || 180;
+                const correctedY = (yVal / hVal) * trackHeight;
+                topStyle = `top: ${correctedY}px;`;
+            }
 
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
 
-        const tick = document.createElement('div');
-        tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
+            const tick = document.createElement('div');
+            tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
 
-        const label = document.createElement('div');
-        label.className = 'elevation-label';
-        label.style.cssText = `font-size: 11px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap;`;
-        label.textContent = obj.value;
-        label.style.display = 'block';
+            const label = document.createElement('div');
+            label.className = 'elevation-label';
+            label.style.cssText = `font-size: 11px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap; display: block;`;
+            label.textContent = obj.value;
 
-        wrapper.appendChild(tick);
-        wrapper.appendChild(label);
-        elevationLabels.appendChild(wrapper);
-    });
+            wrapper.appendChild(tick);
+            wrapper.appendChild(label);
+            elevationLabels.appendChild(wrapper);
+        });
+    }
 
-    track.style.position = 'relative';
+    // Selection div'inin içine girmemesi için track'e append ediyoruz
     track.appendChild(elevationLabels);
 }
 
