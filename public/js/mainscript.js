@@ -398,8 +398,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     console.log("Manual query:", manualQuery);
     console.log("Results:", originalResults);
 
-    suggestionsDiv.dataset.hasResults = "true";
-
+    
     
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
