@@ -10556,39 +10556,32 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 }
 
+
+window.extractPureLocation = extractPureLocation;
+
 document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.getElementById("user-input");
     if (!chatInput) return;
 
     document.querySelectorAll(".gallery-item .add_theme").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
 
             const caption = btn.closest(".gallery-item")
                 ?.querySelector(".caption p");
-
             if (!caption) return;
 
             const text = caption.innerText.trim();
-
-            // 🔓 programmatic kilidi geçici kapat
-            window.__programmaticInput = false;
-
-            // 1️⃣ gerçek metni yaz
             chatInput.value = text;
 
-            // 2️⃣ ilk input event
-            chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+            // 🔥 GERÇEK LOKASYONU ÇIKAR
+            const locationQuery = window.extractPureLocation(text);
+            console.log("🎯 Forced location query:", locationQuery);
 
-            // 3️⃣ 🔥 KRİTİK: ikinci zorunlu tetik
-            setTimeout(() => {
-                chatInput.value = text + " "; // minik fark
-                chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+            if (!locationQuery || locationQuery.length < 2) return;
 
-                // 4️⃣ geri al (kullanıcı fark etmez)
-                setTimeout(() => {
-                    chatInput.value = text;
-                }, 0);
-            }, 0);
+            // 🔥 API + RENDER’I BİZ ÇALIŞTIRIYORUZ
+            const results = await geoapifyLocationAutocomplete(locationQuery);
+            renderSuggestions(results, locationQuery);
         });
     });
 });
