@@ -426,8 +426,9 @@ suggestionsDiv.innerHTML = "";
             .replace(/ı/g, 'i');
     };
     
-    const targetTerm = normalizeForCompare(manualQuery);
-    console.log("Normalized target:", targetTerm);
+    const targetTerm = normalizeForCompare(
+    manualQuery.split(/\s+/).pop()
+);    console.log("Normalized target:", targetTerm);
     
     const scoredResults = originalResults.map(item => {
         const p = item.properties || {};
