@@ -398,7 +398,7 @@ function renderSuggestions(originalResults = [], manualQuery = "") {
     console.log("Manual query:", manualQuery);
     console.log("Results:", originalResults);
 
-    
+
     
     currentFocus = -1;
     const suggestionsDiv = document.getElementById("suggestions");
@@ -10545,3 +10545,25 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 10);
     }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const chatInput = document.getElementById("user-input");
+
+    document.querySelectorAll(".gallery-item .add_theme").forEach(btn => {
+        btn.addEventListener("click", () => {
+
+            // 1. caption içindeki yazıyı al
+            const caption = btn.closest(".gallery-item")
+                              .querySelector(".caption p");
+
+            if (!caption || !chatInput) return;
+
+            // 2. inputa yaz (zaten senin sistemde yapılıyor olabilir ama garanti olsun)
+            chatInput.value = caption.innerText.trim();
+
+            // 🔥 3. KRİTİK SATIR (SUGGESTIONS’I ÇALIŞTIRIR)
+            chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+        });
+    });
+});
