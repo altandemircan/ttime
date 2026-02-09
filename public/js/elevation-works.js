@@ -230,15 +230,15 @@ if ((!spanKm || spanKm < 0.01) && !customElevData) {
         const curKm = Math.min(spanKm, i * stepKm);
         const leftPct = (curKm / spanKm) * 100;
 
-        const tick = document.createElement('div');
-        tick.className = 'scale-bar-tick';
-        tick.style.left = `${leftPct}%`;
-        tick.style.position = 'absolute';
-        tick.style.top = '10px';
-        tick.style.width = '1px';
-        tick.style.height = '16px';
-        tick.style.background = '#cfd8dc';
-        track.appendChild(tick);
+        // const tick = document.createElement('div');
+        // tick.className = 'scale-bar-tick';
+        // tick.style.left = `${leftPct}%`;
+        // tick.style.position = 'absolute';
+        // tick.style.top = '10px';
+        // tick.style.width = '1px';
+        // tick.style.height = '16px';
+        // tick.style.background = '#cfd8dc';
+        // track.appendChild(tick);
 
         const label = document.createElement('div');
         label.className = 'scale-bar-label';

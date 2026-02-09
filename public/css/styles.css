@@ -4586,7 +4586,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     position: absolute;
     left: -55px;
     width: 45px;
-        height: 148px;
+    height: 120px;
     pointer-events: none;
     z-index: 5;
     background: #ffffff;
@@ -4594,7 +4594,6 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-end;
-    top: 8px;
 
 }
 
