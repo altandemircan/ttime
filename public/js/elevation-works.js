@@ -924,8 +924,12 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
 
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
+          
+          // DEBUG: Loading ekranı 2 dakika (120 sn) ekranda kalsın
+          setTimeout(() => {
+              window.hideScaleBarLoading?.(container);
+              track.classList.remove('loading');
+          }, 120000); 
       });
 
       if (typeof day !== "undefined") {
