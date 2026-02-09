@@ -903,7 +903,12 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       container.dataset.elevLoadedKey = routeKey;
 
       // HEMEN ÇİZİM YAP (Fonksiyon artık tanımlı olduğu için çalışır)
-      console.log("⏳ Veri hazır ama DEBUG için 2 dakika çizilmiyor...");
+      if (typeof container._redrawElevation === 'function') {
+        console.log("🎯 _redrawElevation fonksiyonu mevcut, çağırılıyor...");
+        container._redrawElevation(container._elevationData);
+      } else {
+        console.error("❌ _redrawElevation fonksiyonu YOK! (Bu hata artık çıkmamalı)");
+      }
 
       function handleResize() {
         if (!container._elevationData) return;
@@ -920,20 +925,15 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       ro.observe(track);
       container._elevResizeObserver = ro;
 
-      setTimeout(() => {
-          requestAnimationFrame(() => {
-              console.log("🎯 Süre doldu (2dk), grafik çiziliyor...");
-              
-              // 1. Grafiği çiz
-              if (typeof container._redrawElevation === 'function') {
-                  container._redrawElevation(container._elevationData);
-              }
-              
-              // 2. Loading ekranını kaldır
+      requestAnimationFrame(() => {
+          container._redrawElevation(container._elevationData);
+          
+          // DEBUG: Loading ekranını ve 'loading' class'ını 2 dakika (120 sn) tut
+          setTimeout(() => {
               window.hideScaleBarLoading?.(container);
               track.classList.remove('loading');
-          });
-      }, 120000);
+          }, 120000); 
+      });
 
       if (typeof day !== "undefined") {
         let ascent = 0, descent = 0;
