@@ -2219,7 +2219,7 @@ window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm
       placeholder = document.createElement('div');
       placeholder.className = 'elevation-placeholder';
       
-      ensureScaleBarLoaderStyles();
+ensureScaleBarLoaderStyles();
 placeholder.style.cssText = `
   width: 100%; height: 130px; 
   display: flex; flex-direction: column; align-items: center; justify-content: center;
