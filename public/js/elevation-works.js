@@ -419,10 +419,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     style.innerHTML = `
         .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { opacity: 1; pointer-events: none; transition: opacity 0.2s ease; }
         .scale-bar-track.loading .tt-scale-loader { opacity: 1 !important; }
-        .scale-bar-track.loading .elevation-labels-container { opacity: 1 !important; pointer-events: auto !important;  min-height: 100px;
-    width: 100%;
-    position: relative;
-    padding: 0; }
+        .scale-bar-track.loading .elevation-labels-container { opacity: 1 !important; pointer-events: auto !important; }
         .scale-bar-track.loading {     min-height: 100px;
     width: 100%;
     position: relative;
@@ -930,8 +927,12 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
 
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
-          window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
+          
+          // DEBUG: Loading ekranını ve 'loading' class'ını 2 dakika (120 sn) tut
+          setTimeout(() => {
+              window.hideScaleBarLoading?.(container);
+              track.classList.remove('loading');
+          }, 120000); 
       });
 
       if (typeof day !== "undefined") {
