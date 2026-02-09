@@ -430,6 +430,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
         .dots { display: inline-block; width: 30px; text-align: left; color: #1976d2; }
         .dots::after { content: '...'; animation: gentlePulse 1.8s infinite ease-in-out; }
         @keyframes gentlePulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(108, 117, 125, 0.2); border-top-color: #6c757d; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     `;
     document.head.appendChild(style);
   }
