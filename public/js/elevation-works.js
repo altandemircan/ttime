@@ -522,7 +522,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       <div class="scale-bar-track">
         <div class="elevation-placeholder" style="
           width: 100%;
-          height: 130px;
+          height: 100px;
           border-radius: 8px;
           display: flex;
           flex-direction: column;
