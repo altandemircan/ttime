@@ -417,10 +417,10 @@ function renderRouteScaleBar(container, totalKm, markers) {
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
     style.innerHTML = `
-        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { opacity: 1; pointer-events: none; transition: opacity 0.2s ease;   background: #ffffff;}
+.scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { pointer-events: none; }
         .scale-bar-track.loading .tt-scale-loader { opacity: 1 !important; }
 .scale-bar-track.loading .elevation-labels-container { display: none !important; }
-        .scale-bar-track.loading {     min-height: 100px;
+.scale-bar-track.loading {     min-height: 180px;
     width: 100%;
     position: relative;
     padding: 0; }
@@ -525,15 +525,12 @@ function renderRouteScaleBar(container, totalKm, markers) {
       <div class="scale-bar-track">
         <div class="elevation-placeholder" style="
           width: 100%;
-          height: 100px;
-          border-radius: 8px;
+          height: 100%;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
           color: #6c757d;
           font-size: 14px;
-        background: #ffffff;
         ">
           <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
             <div class="spinner"></div>
@@ -545,7 +542,8 @@ function renderRouteScaleBar(container, totalKm, markers) {
     track = container.querySelector('.scale-bar-track');
   }
 
-  track.classList.add('loading');
+track.classList.add('loading');
+track.classList.add('segment-loading');
   container.dataset.totalKm = String(totalKm);
 
   //km'de nokta sayısı: 2'den 5'e
@@ -929,7 +927,8 @@ const smooth = elevations; // Yumuşatma kaldırıldı - veri olduğu gibi
       requestAnimationFrame(() => {
           container._redrawElevation(container._elevationData);
           window.hideScaleBarLoading?.(container);
-          track.classList.remove('loading');
+         track.classList.remove('loading');
+track.classList.remove('segment-loading');
       });
 
       if (typeof day !== "undefined") {

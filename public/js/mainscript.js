@@ -4165,19 +4165,6 @@ function createLeafletMapForItem(mapId, lat, lon, name, number, day) {
         const style = document.createElement('style');
         style.id = 'tt-marker-fix-style';
         style.textContent = `
-            /* Spinner Animasyonu */
-            .spinner {
-                width: 16px;
-                height: 16px;
-                border: 2px solid rgba(108, 117, 125, 0.2);
-                border-top-color: #6c757d;
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-            }
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-
             /* Wrapper'ı (Kapsayıcı) Flex Yapıp İçeriği Ortalıyoruz */
             .leaflet-marker-icon.tt-static-marker-icon {
                 background: transparent !important;
@@ -7748,14 +7735,6 @@ async function expandMap(containerId, day) {
     if (window.importedTrackByDay && window.importedTrackByDay[day] && window.importedTrackByDay[day].drawRaw) {
         ensureExpandedScaleBar(day, window.importedTrackByDay[day].rawPoints);
     }
-}
-
-// Canvas renderer helper
-function ensureCanvasRenderer(map) {
-  if (!map._canvasRenderer) {
-    map._canvasRenderer = L.canvas();
-  }
-  return map._canvasRenderer;
 }
 
 function updateExpandedMap(expandedMap, day) {
