@@ -7146,7 +7146,7 @@ async function expandMap(containerId, day) {
         `;
         document.head.appendChild(style);
     }
-    
+
     forceCleanExpandedMap(day);
 
     day = parseInt(day, 10);
@@ -7450,7 +7450,7 @@ async function expandMap(containerId, day) {
     const locBtn = document.createElement('button');
     locBtn.className = 'map-ctrl-btn';
     locBtn.id = `use-my-location-btn-day${day}`;
-    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate">';
+    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate" style="width: 20px;">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
     // Başlangıç durumu
