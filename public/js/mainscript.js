@@ -7242,10 +7242,23 @@ async function expandMap(containerId, day) {
     let currentLayer = 'bright';
     localStorage.setItem(`expanded-map-layer-day${day}`, 'bright');
 
-    const expandedMapId = `expanded-map-${day}`;
+        const expandedMapId = `expanded-map-${day}`;
     const expandedContainer = document.createElement('div');
     expandedContainer.id = expandedMapId;
     expandedContainer.className = 'expanded-map-container';
+
+    // === LOADING SPINNER (Harita yüklenene kadar gösterilecek) ===
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = `expanded-map-loading-${day}`;
+    loadingOverlay.className = 'elev-animation';
+    loadingOverlay.style.cssText = `
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        z-index: 10002; display: flex; align-items: center; gap: 10px;
+        background: #f8f8f8; border-radius: 10px; padding: 10px 13px;
+        font-size: 12px; color: #8a4af3; font-weight: 700;
+    `;
+    loadingOverlay.innerHTML = '<div class="spinner"></div> Loading map...';
+    expandedContainer.appendChild(loadingOverlay);
 
     layersBar.onclick = function(e) {
         if (this.classList.contains('closed')) {
