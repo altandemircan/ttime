@@ -419,7 +419,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
     style.innerHTML = `
         .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { opacity: 1; pointer-events: none; transition: opacity 0.2s ease; }
         .scale-bar-track.loading .tt-scale-loader { opacity: 1 !important; }
-        .scale-bar-track.loading .elevation-labels-container { opacity: 1 !important; pointer-events: auto !important; height: 120px !important; }
+.scale-bar-track.loading .elevation-labels-container { display: none !important; }
         .scale-bar-track.loading {     min-height: 100px;
     width: 100%;
     position: relative;
