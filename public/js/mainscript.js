@@ -7450,7 +7450,7 @@ async function expandMap(containerId, day) {
     const locBtn = document.createElement('button');
     locBtn.className = 'map-ctrl-btn';
     locBtn.id = `use-my-location-btn-day${day}`;
-    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate" style="width: 20px;">';
+    locBtn.innerHTML = '<img src="img/location.svg" alt="Locate" style="width: 16px;">';
     window.isLocationActiveByDay = window.isLocationActiveByDay || {};
 
     // Başlangıç durumu
