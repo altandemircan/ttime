@@ -540,9 +540,9 @@ function renderRouteScaleBar(container, totalKm, markers) {
           background: rgba(255, 255, 255, 0.95);
           z-index: 1000;
         ">
-          <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
+          <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
             <div class="spinner"></div>
-            <div>Loading elevation</div>
+            <div class="txt">Loading elevation</div>
           </div>
         </div>
       </div>
