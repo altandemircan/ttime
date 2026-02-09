@@ -6194,72 +6194,9 @@ border-bottom:1px solid #ddd;
       display: inline-block;
     }
 
-     .elev-animation {
-        position: absolute;
-    left: 50%;
-    margin-left: -15px;
-    top: 35%;
-    transform: translate(-50%, -50%);
-    align-items: center;
-    gap: 10px;
-    z-index: 5;
-    background: #f8f8f8;
-    /* border: 1px solid #e0e0e0; */
-    border-radius: 10px;
-    padding: 10px 13px;
-    /* box-shadow: 0 4px 12px rgba(0, 0, 0, .08); */
-    font-size: 12px;
-    color: #8a4af3;
-    font-weight: 700;
-        }
+    
 
-
-
- .scale-bar-track.loading > *:not(.elev-animation) {
-            opacity: 0.4; 
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-        .scale-bar-track.loading .elev-animation {
-            opacity: 1 !important;
-        }
-
-
-
-     .tt-scale-loader{        position: absolute;
-    left: 50%;
-    margin-left: -15px;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    align-items: center;
-    gap: 10px;
-    z-index: 5;
-    background: #f8f8f8;
-    /* border: 1px solid #e0e0e0; */
-    border-radius: 10px;
-    padding: 10px 13px;
-    /* box-shadow: 0 4px 12px rgba(0, 0, 0, .08); */
-    font-size: 12px;
-    color: #8a4af3;
-    font-weight: 700;}
-
-
-.elev-animation .spinner,
-.tt-scale-loader .spinner,
-.elevation-placeholder .spinner {
-    width: 20px !important;
-    height: 20px !important;
-    min-width: 20px !important;
-    min-height: 20px !important;
-    max-width: 20px !important;
-    max-height: 20px !important;
-    aspect-ratio: 1 !important;
-    border: 4px solid #e0e0e0;
-    border-top-color: #8a4af3;
-    border-radius: 50%;
-    animation: ttspin .9s linear infinite;
-    box-sizing: border-box;
-    display: block;
+ock;
 }
 
 
