@@ -7456,7 +7456,7 @@ async function expandMap(containerId, day) {
     // Başlangıç durumu
     if (window.isLocationActiveByDay[day]) {
         locBtn.classList.add('active');
-        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%);">';
+        locBtn.innerHTML = '<img src="img/location.svg" alt="On" style="filter: invert(36%) sepia(88%) saturate(1074%) hue-rotate(195deg) brightness(97%) contrast(101%); width: 16px;">';
     }
 
     locBtn.onclick = function() {
