@@ -60,17 +60,12 @@ function ensureScaleBarLoaderStyles() {
 
 function getScaleLoaderHTML(label = 'Loading elevation') {
   return `
-    <span style="display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:12px;color:#1976d2;">
-      <svg width="16" height="16" viewBox="0 0 50 50" style="display:block">
-        <circle cx="25" cy="25" r="20" fill="none" stroke="#1976d2" stroke-width="4" stroke-linecap="round" stroke-dasharray="31.4 31.4">
-          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
-        </circle>
-      </svg>
-      <span>${label}</span>
-    </span>
+    <div class="tt-scale-loader">
+      <span class="spinner"></span>
+      <span>${label}</span><span class="dots"></span>
+    </div>
   `;
 }
-
 function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
