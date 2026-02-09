@@ -6272,6 +6272,56 @@ border-bottom:1px solid #ddd;
   margin-right: 7px;
 }
 
+
+.tt-elev-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f5f7ff, #f2f7ff);
+  border: 1px solid #e3e8ff;
+  box-shadow: 0 6px 14px rgba(31, 41, 55, 0.08);
+  font-weight: 600;
+  font-size: 12px;
+  color: #1f3a8a;
+}
+
+.tt-elev-spinner {
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(124, 58, 237, 0.35));
+}
+
+.tt-elev-loader-text {
+  letter-spacing: 0.01em;
+}
+
+.tt-elev-loader-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.tt-elev-loader-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #7c3aed;
+  opacity: 0.4;
+  animation: ttElevDot 1s infinite ease-in-out;
+}
+
+.tt-elev-loader-dots span:nth-child(2) { animation-delay: 0.15s; }
+.tt-elev-loader-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes ttElevDot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+
     /* Vertical line under the marker on the map */
     .tt-map-vert-line {
       position:absolute; top:0; bottom:0; width:2px;
@@ -7551,51 +7601,3 @@ display: block !important;
     gap: 15px; display: flex; flex-direction: row; align-items: center; justify-content: center; opacity: 0.9;
 }
 
-
-.tt-elev-loader {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #f5f7ff, #f2f7ff);
-  border: 1px solid #e3e8ff;
-  box-shadow: 0 6px 14px rgba(31, 41, 55, 0.08);
-  font-weight: 600;
-  font-size: 12px;
-  color: #1f3a8a;
-}
-
-.tt-elev-spinner {
-  width: 18px;
-  height: 18px;
-  display: block;
-  filter: drop-shadow(0 1px 3px rgba(124, 58, 237, 0.35));
-}
-
-.tt-elev-loader-text {
-  letter-spacing: 0.01em;
-}
-
-.tt-elev-loader-dots {
-  display: inline-flex;
-  gap: 3px;
-  align-items: center;
-}
-
-.tt-elev-loader-dots span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #7c3aed;
-  opacity: 0.4;
-  animation: ttElevDot 1s infinite ease-in-out;
-}
-
-.tt-elev-loader-dots span:nth-child(2) { animation-delay: 0.15s; }
-.tt-elev-loader-dots span:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes ttElevDot {
-  0%, 100% { opacity: 0.25; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(-2px); }
-}
