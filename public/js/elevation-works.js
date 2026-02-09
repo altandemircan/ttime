@@ -1275,7 +1275,7 @@ window.updateRouteStatsUI = function(day) {
         
         const tb = document.createElement('div');
         tb.className = 'elev-segment-toolbar';
-        tb.style.display = 'flex';
+        // tb.style.display = 'flex';
         
         // Rota bilgileri "pill" formunda (Avg pill'i ÇIKARILDI)
         tb.innerHTML = `
