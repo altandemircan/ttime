@@ -3,7 +3,69 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 
+// BUL (varsa, en üstlerde yoksa ekle)
+window.__scaleBarDrag = null;
+window.__scaleBarDragTrack = null;
+window.__scaleBarDragSelDiv = null;
 
+// DEĞİŞTİR / EKLE (hemen altına ekle)
+function ensureScaleBarLoaderStyles() {
+  if (document.getElementById('tt-scale-loader-style')) return;
+  const style = document.createElement('style');
+  style.id = 'tt-scale-loader-style';
+  style.textContent = `
+    .tt-scale-loader {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      color: #1976d2;
+    }
+    .tt-scale-loader .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(25,118,210,0.25);
+      border-top-color: #1976d2;
+      border-radius: 50%;
+      animation: ttSpin 0.8s linear infinite;
+    }
+    .tt-scale-loader .dots::after {
+      content: '...';
+      animation: ttDots 1.2s steps(4, end) infinite;
+    }
+    @keyframes ttSpin { to { transform: rotate(360deg); } }
+    @keyframes ttDots {
+      0% { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+      100% { content: ''; }
+    }
+    .elevation-placeholder {
+      width: 100%;
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.95);
+      border-radius: 8px;
+      position: absolute;
+      inset: 0;
+      z-index: 1000;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function getScaleLoaderHTML(label = 'Loading elevation') {
+  return `
+    <div class="tt-scale-loader">
+      <span class="spinner"></span>
+      <span>${label}</span><span class="dots"></span>
+    </div>
+  `;
+}
 function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
@@ -413,7 +475,7 @@ if (Array.isArray(markers)) {
 
 function renderRouteScaleBar(container, totalKm, markers) {
 
-    
+
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
@@ -523,24 +585,11 @@ function renderRouteScaleBar(container, totalKm, markers) {
   // Loading UI
   let track = container.querySelector('.scale-bar-track');
   if (!track) {
+    ensureScaleBarLoaderStyles();
     container.innerHTML = `
       <div class="scale-bar-track">
-        <div class="elevation-placeholder" style="
-          width: 100%;
-          height: 100px;
-          border-radius: 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #6c757d;
-          font-size: 14px;
-        background: #ffffff;
-        ">
-          <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
-            <div class="spinner"></div>
-            <div>Loading elevation</div>
-          </div>
+        <div class="elevation-placeholder">
+          ${getScaleLoaderHTML('Loading elevation')}
         </div>
       </div>
     `;
@@ -2161,21 +2210,20 @@ window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm
       placeholder = document.createElement('div');
       placeholder.className = 'elevation-placeholder';
       
-      placeholder.style.cssText = `
+      ensureScaleBarLoaderStyles();
+        placeholder.style.cssText = `
           width: 100%; height: 130px; 
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           color: #6c757d; font-size: 14px;
           position: absolute; top: 0; left: 0;
           background: rgba(255, 255, 255, 0.95); z-index: 1000;
           pointer-events: auto; cursor: crosshair;
-      `;
-      
-      placeholder.innerHTML = `
-        <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
-            <div class="spinner"></div><div class="txt"></div>
-        </div>
-        <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
-      `;
+        `;
+        placeholder.innerHTML = `
+          ${getScaleLoaderHTML(t)}
+          <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
+        `;
+
       tr.appendChild(placeholder);
     }
     
