@@ -9351,7 +9351,30 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
 
       if (scaleBarDiv && totalKm > 0 && markerPositions.length > 0) {
         try { delete scaleBarDiv.dataset.elevLoadedKey; } catch (_) {}
-        scaleBarDiv.innerHTML = '<div class="spinner"></div>';
+        scaleBarDiv.innerHTML = `
+          <div class="scale-bar-track">
+            <div class="elevation-placeholder" style="
+              width: 100%;
+              height: 130px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              color: #6c757d;
+              font-size: 14px;
+              position: absolute;
+              top: 0;
+              left: 0;
+              background: rgba(255, 255, 255, 0.95);
+              z-index: 1000;
+            ">
+              <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
+                <div class="spinner"></div>
+                <div class="txt">Loading elevation</div>
+              </div>
+            </div>
+          </div>
+        `;
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
         
         const track = scaleBarDiv.querySelector('.scale-bar-track');
@@ -9360,7 +9383,30 @@ function addDraggableMarkersToExpandedMap(expandedMap, day) {
           createScaleElements(track, width, totalKm, 0, markerPositions);
         }
       } else if (scaleBarDiv) {
-        scaleBarDiv.innerHTML = '<div class="spinner"></div>';
+        scaleBarDiv.innerHTML = `
+          <div class="scale-bar-track">
+            <div class="elevation-placeholder" style="
+              width: 100%;
+              height: 130px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              color: #6c757d;
+              font-size: 14px;
+              position: absolute;
+              top: 0;
+              left: 0;
+              background: rgba(255, 255, 255, 0.95);
+              z-index: 1000;
+            ">
+              <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
+                <div class="spinner"></div>
+                <div class="txt">Loading elevation</div>
+              </div>
+            </div>
+          </div>
+        `;
       }
     });
   });
@@ -9819,7 +9865,30 @@ window.setTravelMode = async function(mode, day) {
     const markers = typeof getRouteMarkerPositionsOrdered === 'function'
       ? getRouteMarkerPositionsOrdered(d)
       : [];
-scaleBarDiv.innerHTML = '<div class="spinner"></div>';
+    scaleBarDiv.innerHTML = `
+      <div class="scale-bar-track">
+        <div class="elevation-placeholder" style="
+          width: 100%;
+          height: 130px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: #6c757d;
+          font-size: 14px;
+          position: absolute;
+          top: 0;
+          left: 0;
+          background: rgba(255, 255, 255, 0.95);
+          z-index: 1000;
+        ">
+          <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
+            <div class="spinner"></div>
+            <div class="txt">Loading elevation</div>
+          </div>
+        </div>
+      </div>
+    `;
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
   // Havresine fallback veya başka bir şey YOK!
@@ -10555,5 +10624,3 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 10);
     }
 }
-
-
