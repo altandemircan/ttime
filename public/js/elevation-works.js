@@ -393,8 +393,8 @@ if (Array.isArray(markers)) {
             const wrapper = document.createElement('div');
             wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
 
-            const tick = document.createElement('div');
-            tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
+            // const tick = document.createElement('div');
+            // tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
 
             const label = document.createElement('div');
             label.className = 'elevation-label';
