@@ -413,17 +413,7 @@ if (Array.isArray(markers)) {
 
 function renderRouteScaleBar(container, totalKm, markers) {
 
-     // 1️⃣ LOADING — BURASI
-  scaleBarDiv.innerHTML = `
-    <div class="scale-bar-track loading">
-      <div class="elev-animation">
-        <div class="spinner"></div>
-        <div>Loading elevation</div>
-      </div>
-    </div>
-  `;
-
-  
+    
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
