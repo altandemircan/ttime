@@ -522,7 +522,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
       <div class="scale-bar-track">
         <div class="elevation-placeholder" style="
           width: 100%;
-          height: 220px;
+          height: 120px;
           border-radius: 8px;
           display: flex;
           flex-direction: column;
@@ -1275,7 +1275,7 @@ window.updateRouteStatsUI = function(day) {
         
         const tb = document.createElement('div');
         tb.className = 'elev-segment-toolbar';
-        // tb.style.display = 'flex';
+        tb.style.display = 'flex';
         
         // Rota bilgileri "pill" formunda (Avg pill'i ÇIKARILDI)
         tb.innerHTML = `
@@ -2156,7 +2156,7 @@ window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm
       placeholder.className = 'elevation-placeholder';
       
       placeholder.style.cssText = `
-          width: 100%; height: 220px; border-radius: 8px;
+          width: 100%; height: 120px; 
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           color: #6c757d; font-size: 14px;
           position: absolute; top: 0; left: 0;

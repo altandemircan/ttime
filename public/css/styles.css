@@ -6229,7 +6229,7 @@ border-bottom:1px solid #ddd;
      .tt-scale-loader{        position: absolute;
     left: 50%;
     margin-left: -15px;
-    top: 35%;
+    top: 50%;
     transform: translate(-50%, -50%);
     align-items: center;
     gap: 10px;
