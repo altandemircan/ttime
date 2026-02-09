@@ -7721,11 +7721,15 @@ async function expandMap(containerId, day) {
 
     if (typeof renderRouteScaleBar === 'function') {
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
-        const track = scaleBarDiv.querySelector('.scale-bar-track');
-        if (track) {
-            const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
-            createScaleElements(track, width, totalKm, 0, markerPositions);
-        }
+
+const track = scaleBarDiv.querySelector('.scale-bar-track');
+if (track) {
+    // 🔥 FIX: ilk çizimde de loading aç
+    track.classList.add('loading');
+
+    const width = Math.max(200, Math.round(track.getBoundingClientRect().width));
+    createScaleElements(track, width, totalKm, 0, markerPositions);
+}
     }
 
     if (typeof addDraggableMarkersToExpandedMap === 'function') addDraggableMarkersToExpandedMap(expandedMapInstance, day);
@@ -7943,40 +7947,6 @@ function updateExpandedMap(expandedMap, day) {
     }
 }
  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
  function restoreMap(containerId, day) {
