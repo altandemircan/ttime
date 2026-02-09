@@ -7242,12 +7242,10 @@ async function expandMap(containerId, day) {
     let currentLayer = 'bright';
     localStorage.setItem(`expanded-map-layer-day${day}`, 'bright');
 
-       const expandedMapId = `expanded-map-${day}`;
+    const expandedMapId = `expanded-map-${day}`;
     const expandedContainer = document.createElement('div');
     expandedContainer.id = expandedMapId;
     expandedContainer.className = 'expanded-map-container';
-    expandedContainer.style.position = 'relative'; // Loading overlay için gerekli
-    expandedContainer.appendChild(loadingOverlay); // Spinner'ı container'a ekle
 
     layersBar.onclick = function(e) {
         if (this.classList.contains('closed')) {
