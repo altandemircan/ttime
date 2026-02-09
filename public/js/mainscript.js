@@ -9859,6 +9859,17 @@ window.setTravelMode = async function(mode, day) {
         </div>
       </div>
     `;
+    const scaleBarDiv = document.getElementById(`expanded-route-scale-bar-day${day}`);
+if (scaleBarDiv) {
+  scaleBarDiv.innerHTML = `
+    <div class="scale-bar-track loading">
+      <div class="elev-animation">
+        <div class="spinner"></div>
+        <div>Loading elevation</div>
+      </div>
+    </div>
+  `;
+}
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
   // Havresine fallback veya başka bir şey YOK!
