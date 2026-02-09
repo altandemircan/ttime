@@ -7215,6 +7215,17 @@ async function expandMap(containerId, day) {
     if (!originalContainer) ensureDayMapContainer(day);
     if (originalContainer) originalContainer.style.display = 'none';
 
+    // === LOADING ANIMATION (SPINNER) - Harita yüklenirken göster ===
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = `expanded-map-loading-${day}`;
+    loadingOverlay.className = 'tt-scale-loader';
+    loadingOverlay.style.cssText = `
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        z-index: 10002; display: flex; align-items: center; gap: 10px;
+        background: #f8f8f8; border-radius: 10px; padding: 10px 13px;
+        font-size: 12px; color: #8a4af3; font-weight: 700;
+    `;
+    loadingOverlay.innerHTML = '<div class="spinner"></div> Loading map...';
     // === HEADER & LAYERS ===
     const headerDiv = document.createElement('div');
     headerDiv.className = 'expanded-map-header';
@@ -7231,10 +7242,12 @@ async function expandMap(containerId, day) {
     let currentLayer = 'bright';
     localStorage.setItem(`expanded-map-layer-day${day}`, 'bright');
 
-    const expandedMapId = `expanded-map-${day}`;
+       const expandedMapId = `expanded-map-${day}`;
     const expandedContainer = document.createElement('div');
     expandedContainer.id = expandedMapId;
     expandedContainer.className = 'expanded-map-container';
+    expandedContainer.style.position = 'relative'; // Loading overlay için gerekli
+    expandedContainer.appendChild(loadingOverlay); // Spinner'ı container'a ekle
 
     layersBar.onclick = function(e) {
         if (this.classList.contains('closed')) {
