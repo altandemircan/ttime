@@ -7043,12 +7043,12 @@ function openMapLibre3D(expandedMap) {
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    maplibre3d.style.cssText = 'width:100%; height:480px; display:block; position:relative; z-index:1; background:#eef0f5;';
+    maplibre3d.style.cssText = 'width:100%; height:100vh; display:block; position:relative; z-index:1; background:#eef0f5;';
     if (panelDiv) { container.insertBefore(maplibre3d, panelDiv); } 
     else { container.appendChild(maplibre3d); }
   } else {
       maplibre3d.style.display = 'block';
-      maplibre3d.style.height = '480px';
+      
       maplibre3d.style.zIndex = '1'; 
   }
   maplibre3d.innerHTML = '';
