@@ -533,6 +533,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
           justify-content: center;
           color: #6c757d;
           font-size: 14px;
+        background: #ffffff;
         ">
           <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
             <div class="spinner"></div>
