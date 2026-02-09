@@ -60,17 +60,44 @@ function ensureScaleBarLoaderStyles() {
 
 function getScaleLoaderHTML(label = 'Loading elevation') {
   return `
-    <span style="display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:12px;color:#1976d2;">
-      <svg width="20" height="20" viewBox="0 0 50 50" style="display:block">
-        <circle cx="25" cy="25" r="20" fill="none" stroke="#1976d2" stroke-width="4" stroke-linecap="round" stroke-dasharray="31.4 31.4">
-          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+    <span class="tt-elev-loader" role="status" aria-live="polite">
+      <svg class="tt-elev-spinner" viewBox="0 0 50 50" aria-hidden="true">
+        <defs>
+          <linearGradient id="ttElevGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="50%" stop-color="#38bdf8"/>
+            <stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+        </defs>
+        <circle
+          cx="25" cy="25" r="18"
+          fill="none"
+          stroke="url(#ttElevGrad)"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-dasharray="20 10"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="0 25 25"
+            to="360 25 25"
+            dur="0.9s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="stroke-dasharray"
+            values="18 10; 26 10; 18 10"
+            dur="1.2s"
+            repeatCount="indefinite"
+          />
         </circle>
       </svg>
-      <span>${label}</span>
+      <span class="tt-elev-loader-text">${label}</span>
+      
     </span>
   `;
 }
-
 function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
