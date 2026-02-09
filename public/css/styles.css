@@ -4552,7 +4552,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     align-items: center;
     box-shadow: 0 3px 14px rgb(0 0 0 / 8%);
     flex-direction: column;
-    /* height: 145px; */
+    height: 150px;
     bottom: 30px;
     border-radius: 10px;
 
