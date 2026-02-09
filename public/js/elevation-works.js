@@ -583,18 +583,27 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // Loading UI
-  let track = container.querySelector('.scale-bar-track');
-  if (!track) {
-    ensureScaleBarLoaderStyles();
-    container.innerHTML = `
-      <div class="scale-bar-track">
-        <div class="elevation-placeholder">
-          ${getScaleLoaderHTML('Loading elevation')}
-        </div>
+  ensureScaleBarLoaderStyles();
+
+let track = container.querySelector('.scale-bar-track');
+if (!track) {
+  container.innerHTML = `
+    <div class="scale-bar-track">
+      <div class="elevation-placeholder">
+        ${getScaleLoaderHTML('Loading elevation')}
       </div>
-    `;
-    track = container.querySelector('.scale-bar-track');
+    </div>
+  `;
+  track = container.querySelector('.scale-bar-track');
+} else {
+  // ✅ track varsa bile ilk açılışta spinner görünmesi için zorla ekle
+  if (!track.querySelector('.elevation-placeholder')) {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'elevation-placeholder';
+    placeholder.innerHTML = getScaleLoaderHTML('Loading elevation');
+    track.appendChild(placeholder);
   }
+}
 
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
@@ -2211,18 +2220,18 @@ window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm
       placeholder.className = 'elevation-placeholder';
       
       ensureScaleBarLoaderStyles();
-        placeholder.style.cssText = `
-          width: 100%; height: 130px; 
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          color: #6c757d; font-size: 14px;
-          position: absolute; top: 0; left: 0;
-          background: rgba(255, 255, 255, 0.95); z-index: 1000;
-          pointer-events: auto; cursor: crosshair;
-        `;
-        placeholder.innerHTML = `
-          ${getScaleLoaderHTML(t)}
-          <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
-        `;
+placeholder.style.cssText = `
+  width: 100%; height: 130px; 
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #6c757d; font-size: 14px;
+  position: absolute; top: 0; left: 0;
+  background: rgba(255, 255, 255, 0.95); z-index: 1000;
+  pointer-events: auto; cursor: crosshair;
+`;
+placeholder.innerHTML = `
+  ${getScaleLoaderHTML(t)}
+  <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
+`;
 
       tr.appendChild(placeholder);
     }
