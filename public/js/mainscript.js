@@ -7723,6 +7723,7 @@ async function expandMap(containerId, day) {
         renderRouteScaleBar(scaleBarDiv, totalKm, markerPositions);
 
 const track = scaleBarDiv.querySelector('.scale-bar-track');
+
 if (track) {
     // 🔥 FIX: ilk çizimde de loading aç
     track.classList.add('loading');
@@ -8358,9 +8359,12 @@ if (expandedMapDiv) {
         expandedMapDiv.parentNode.insertBefore(expandedScaleBar, expandedMapDiv.nextSibling);
     }
     
-    // Temizlik ve Hazırlık
+    // 1. Temizlik ve Loading Başlangıcı
     expandedScaleBar.style.display = "block";
-    expandedScaleBar.innerHTML = "";
+    
+    // [YENİ] CSS'teki spinner'ı tetiklemek için geçici loading div'i ekle
+    // renderRouteScaleBar çalışıp içeriği ezene kadar bu görünecek.
+    expandedScaleBar.innerHTML = '<div class="scale-bar-track loading" style="height: 60px; width: 100%;"></div>';
 
     // OSRM'den gelen koordinatları al
     const routeCoords = routeData.coords.map(c => ({ lat: c[1], lng: c[0] }));
@@ -8369,15 +8373,20 @@ if (expandedMapDiv) {
     // ASYNC Çizim Fonksiyonu
     const drawElevationGraph = async () => {
         try {
-            // 1. Yükseklik verisini al (Mutlaka bekle!)
-            if (typeof window.getElevationsForRoute === 'function') {
-                // Bu satır grafik çizilmeden önce verinin gelmesini garantiler
+            // 2. Yükseklik verisini al ve Çiz (Mutlaka bekle!)
+            if (typeof window.renderRouteScaleBar === 'function') { // Fonksiyon adını düzelttim/kontrol ettim
+                // Bu fonksiyon çalıştığında, expandedScaleBar'ın içini (innerHTML) temizleyip
+                // kendi grafiğini çizeceği için loading div'i otomatik olarak kaybolur.
                 await window.renderRouteScaleBar(expandedScaleBar, totalKm, snappedPoints, routeCoords);
                 console.log(`[ScaleBar] Grafik başarıyla çizildi: Day ${day}`);
             }
         } catch (err) {
             console.error("[ScaleBar] Çizim hatası:", err);
-            // Fallback: Grafik çizilemezse bile barı oluştur
+            
+            // Hata durumunda loading div'ini sil
+            expandedScaleBar.innerHTML = "";
+            
+            // Fallback: Grafik çizilemezse bile barı oluştur (Verisiz)
             if (typeof renderRouteScaleBar === 'function') {
                 renderRouteScaleBar(expandedScaleBar, totalKm, snappedPoints);
             }
@@ -8748,6 +8757,9 @@ if (expandedMapDiv) {
             
             // elevation-works.js içindeki createScaleElements'i tetikle
             const track = expandedScaleBar.querySelector('.scale-bar-track');
+            if (track) {
+        track.classList.add('loading'); // CSS'teki spinner'ı tetikler
+    }
             if (track && typeof createScaleElements === 'function') {
                 createScaleElements(track, track.offsetWidth, totalKm, 0, markerPositions);
             }
@@ -9859,7 +9871,7 @@ window.setTravelMode = async function(mode, day) {
         </div>
       </div>
     `;
-    
+
     renderRouteScaleBar(scaleBarDiv, totalKm, markers);
   }
   // Havresine fallback veya başka bir şey YOK!
