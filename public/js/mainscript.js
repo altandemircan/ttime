@@ -7737,6 +7737,14 @@ async function expandMap(containerId, day) {
     }
 }
 
+// Canvas renderer helper
+function ensureCanvasRenderer(map) {
+  if (!map._canvasRenderer) {
+    map._canvasRenderer = L.canvas();
+  }
+  return map._canvasRenderer;
+}
+
 function updateExpandedMap(expandedMap, day) {
     console.log("[updateExpandedMap] Safe Render Started. Day:", day);
 
