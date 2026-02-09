@@ -537,7 +537,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
         ">
           <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
             <div class="spinner"></div>
-            <div>Loading elevation</div>
+            <div>-</div>
           </div>
         </div>
       </div>
