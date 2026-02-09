@@ -398,7 +398,7 @@ if (Array.isArray(markers)) {
 
             const label = document.createElement('div');
             label.className = 'elevation-label';
-            label.style.cssText = `font-size: 11px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap; display: block;`;
+            label.style.cssText = `font-size: 19px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap; display: block;`;
             label.textContent = obj.value;
 
             wrapper.appendChild(tick);
