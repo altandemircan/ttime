@@ -7128,6 +7128,25 @@ function openMapLibre3D(expandedMap) {
 
 
 async function expandMap(containerId, day) {
+    // ✅ Spinner CSS'i garantile (JS-only)
+    if (!document.getElementById('tt-spinner-style')) {
+        const style = document.createElement('style');
+        style.id = 'tt-spinner-style';
+        style.textContent = `
+          .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(25,118,210,0.25);
+            border-top-color: #1976d2;
+            border-radius: 50%;
+            animation: ttSpin 0.8s linear infinite;
+            display: inline-block;
+          }
+          @keyframes ttSpin { to { transform: rotate(360deg); } }
+        `;
+        document.head.appendChild(style);
+    }
+    
     forceCleanExpandedMap(day);
 
     day = parseInt(day, 10);
