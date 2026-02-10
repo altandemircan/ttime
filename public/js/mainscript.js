@@ -7114,6 +7114,23 @@ function openMapLibre3D(expandedMap) {
         refresh3DMapData(day);
     }
 
+    // --- ROTA ORTALAMA (Panel yüksekliğini hesaba kat) ---
+    if (hasBounds) {
+        const isMobile = window.innerWidth <= 768;
+        const bottomPadding = isMobile ? 170 : 180;
+        setTimeout(() => {
+            window._maplibre3DInstance.fitBounds(bounds, {
+                padding: { 
+                    top: 40, 
+                    bottom: bottomPadding, 
+                    left: 40, 
+                    right: 40 
+                },
+                duration: 0
+            });
+        }, 100);
+    }
+
     // --- SEGMENT KONTROLÜ: EĞER SEÇİLİ BİR YER VARSA 3D'DE DE GÖSTER ---
     if (
         window._lastSegmentDay === day && 
