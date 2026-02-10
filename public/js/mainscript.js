@@ -7547,13 +7547,20 @@ async function expandMap(containerId, day) {
     scaleBarDiv.style.display = "block";
 
     const panelDiv = document.createElement('div');
-    panelDiv.className = 'expanded-map-panel';
-    panelDiv.appendChild(headerDiv);
-    panelDiv.appendChild(statsDiv);
-    panelDiv.appendChild(controlsDiv);
-    panelDiv.appendChild(scaleBarDiv);
+panelDiv.className = 'expanded-map-panel';
 
-    expandedContainer.appendChild(panelDiv);
+// ✅ NEW WRAPPER (header + controls)
+const headerControlsWrap = document.createElement('div');
+headerControlsWrap.className = 'expanded-map-header-controls';
+
+headerControlsWrap.appendChild(headerDiv);
+headerControlsWrap.appendChild(controlsDiv);
+
+panelDiv.appendChild(headerControlsWrap);
+panelDiv.appendChild(statsDiv);
+panelDiv.appendChild(scaleBarDiv);
+
+expandedContainer.appendChild(panelDiv);
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'close-expanded-map';
