@@ -7958,13 +7958,20 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- İLK AÇILIŞ ODAKLANMASI ---
     try {
-        if (pts.length === 1) {
-             expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-        } else if (bounds.isValid()) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50] });
-        } else {
-            expandedMap.setView([39.0, 35.0], 6, { animate: false });
-        }
+        const scaleBarEl = document.getElementById(`expanded-route-scale-bar-day${day}`);
+const scaleBarHeight = scaleBarEl ? scaleBarEl.getBoundingClientRect().height : 0;
+
+// fitBounds alt padding = scaleBar yüksekliği + 20
+const fitPadding = [50, 50];
+fitPadding[1] = Math.max(50, scaleBarHeight + 20);
+
+if (pts.length === 1) {
+     expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+} else if (bounds.isValid()) {
+    expandedMap.fitBounds(bounds, { padding: fitPadding });
+} else {
+    expandedMap.setView([39.0, 35.0], 6, { animate: false });
+}
     } catch(e) { console.warn("FitBounds error:", e); }
 
     expandedMap.invalidateSize(); 
@@ -8407,12 +8414,7 @@ async function renderRouteForDay(day) {
         if (eMap) {
             eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
             const polyEx = L.polyline(fullGeojsonCoords.map(c => [c[1], c[0]]), { color: '#1565c0', weight: 7, opacity: 0.9 }).addTo(eMap);
-        try { 
-    eMap.fitBounds(polyEx.getBounds(), { 
-        paddingTopLeft: [20, 20], 
-        paddingBottomRight: [20, 150] 
-    }); 
-} catch (_) { }
+            try { eMap.fitBounds(polyEx.getBounds()); } catch (_) { }
             L.circleMarker([fullGeojsonCoords[0][1], fullGeojsonCoords[0][0]], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length - 1][1], fullGeojsonCoords[fullGeojsonCoords.length - 1][0]], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
         }
