@@ -4545,7 +4545,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
     width: 600px;
     z-index: 123456;
     display: flex;
-    position: absolute;
+    position: fixed;
     background: #ffffff;
     gap: 4px;
     padding: 10px 0px 12px 40px;
@@ -7586,4 +7586,3 @@ display: block !important;
 .main-icon {
     gap: 15px; display: flex; flex-direction: row; align-items: center; justify-content: center; opacity: 0.9;
 }
-

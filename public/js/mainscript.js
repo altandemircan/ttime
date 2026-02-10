@@ -132,12 +132,14 @@ function fitExpandedMapToRoute(day) {
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
+    // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
-      // DÜZELTME BURADA: Alt tarafa (bottom) 150px, diğer kenarlara 50px boşluk
+      const isMobile = window.innerWidth <= 768;
+      const bottomPadding = isMobile ? 170 : 180;
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { 
-          paddingTopLeft: [50, 50],
-          paddingBottomRight: [50, 150] 
+        paddingTopLeft: [20, 20], 
+        paddingBottomRight: [20, bottomPadding] 
       });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
@@ -7576,7 +7578,7 @@ expandedContainer.appendChild(panelDiv);
     mapDiv.id = mapDivId;
     mapDiv.className = 'expanded-map';
     mapDiv.style.width = "100%";
-    mapDiv.style.height = "480px";
+    mapDiv.style.height = "100%";
     expandedContainer.appendChild(mapDiv);
     document.body.appendChild(expandedContainer);
 
@@ -7964,7 +7966,13 @@ function updateExpandedMap(expandedMap, day) {
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
         } else if (bounds.isValid()) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50] });
+            // expanded-map-panel yüksekliği için ekstra padding (mobil: 170px, desktop: 180px)
+            const isMobile = window.innerWidth <= 768;
+            const bottomPadding = isMobile ? 170 : 180;
+            expandedMap.fitBounds(bounds, { 
+                paddingTopLeft: [50, 50], 
+                paddingBottomRight: [50, bottomPadding] 
+            });
         } else {
             expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
@@ -7976,7 +7984,13 @@ function updateExpandedMap(expandedMap, day) {
         try { 
             expandedMap.invalidateSize(); 
             if (bounds.isValid() && pts.length > 1) {
-                expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
+                const isMobile = window.innerWidth <= 768;
+                const bottomPadding = isMobile ? 170 : 180;
+                expandedMap.fitBounds(bounds, { 
+                    paddingTopLeft: [50, 50], 
+                    paddingBottomRight: [50, bottomPadding],
+                    animate: false 
+                });
             }
         } catch(e){} 
     }, 350);
@@ -8410,12 +8424,14 @@ async function renderRouteForDay(day) {
         if (eMap) {
             eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
             const polyEx = L.polyline(fullGeojsonCoords.map(c => [c[1], c[0]]), { color: '#1565c0', weight: 7, opacity: 0.9 }).addTo(eMap);
-          try { 
-    eMap.fitBounds(polyEx.getBounds(), { 
-        paddingTopLeft: [50, 50],     // Üst ve Sol boşluk
-        paddingBottomRight: [50, 150] // Sağ ve ALT boşluk (Paneli kurtarmak için yüksek değer)
-    }); 
-} catch (_) { }
+            try { 
+                const isMobile = window.innerWidth <= 768;
+                const bottomPadding = isMobile ? 170 : 180;
+                eMap.fitBounds(polyEx.getBounds(), { 
+                    paddingTopLeft: [50, 50], 
+                    paddingBottomRight: [50, bottomPadding] 
+                }); 
+            } catch (_) { }
             L.circleMarker([fullGeojsonCoords[0][1], fullGeojsonCoords[0][0]], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length - 1][1], fullGeojsonCoords[fullGeojsonCoords.length - 1][0]], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
         }
@@ -8677,7 +8693,14 @@ if (expandedMapDiv) {
                 eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
                 const latlngs = raw.map(pt => [pt.lat, pt.lng]);
                 const polyEx = L.polyline(latlngs, { color: '#1565c0', weight: 7, opacity: 0.9 }).addTo(eMap);
-                try { eMap.fitBounds(polyEx.getBounds()); } catch (_) { }
+                try { 
+                    const isMobile = window.innerWidth <= 768;
+                    const bottomPadding = isMobile ? 170 : 180;
+                    eMap.fitBounds(polyEx.getBounds(), { 
+                        paddingTopLeft: [50, 50], 
+                        paddingBottomRight: [50, bottomPadding] 
+                    }); 
+                } catch (_) { }
                 L.circleMarker(latlngs[0], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
                 L.circleMarker(latlngs[latlngs.length - 1], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             }
