@@ -7085,7 +7085,7 @@ function openMapLibre3D(expandedMap) {
 
   if (hasBounds) {
       const isMobile = window.innerWidth <= 768;
-      const bottomPadding = isMobile ? 220 : 240;
+      const bottomPadding = isMobile ? 280 : 320;
       mapOptions.bounds = bounds;
       mapOptions.fitBoundsOptions = { 
           padding: { 
@@ -7117,21 +7117,30 @@ function openMapLibre3D(expandedMap) {
 
     // --- ROTA ORTALAMA (Panel yüksekliğini hesaba kat) ---
     if (hasBounds) {
+        console.log('[3D Map] Applying fitBounds with panel compensation');
         const isMobile = window.innerWidth <= 768;
-        const bottomPadding = isMobile ? 220 : 240;
+        // 3D perspektif için daha yüksek padding gerekiyor
+        const bottomPadding = isMobile ? 280 : 320;
         setTimeout(() => {
-            window._maplibre3DInstance.fitBounds(bounds, {
-                padding: { 
-                    top: 40, 
-                    bottom: bottomPadding, 
-                    left: 40, 
-                    right: 40 
-                },
-                duration: 1000,
-                pitch: 60,
-                bearing: 0
-            });
+            try {
+                window._maplibre3DInstance.fitBounds(bounds, {
+                    padding: { 
+                        top: 40, 
+                        bottom: bottomPadding, 
+                        left: 40, 
+                        right: 40 
+                    },
+                    duration: 1000,
+                    pitch: 60,
+                    bearing: 0
+                });
+                console.log('[3D Map] fitBounds applied successfully');
+            } catch(e) {
+                console.error('[3D Map] fitBounds error:', e);
+            }
         }, 300);
+    } else {
+        console.warn('[3D Map] No bounds available for fitBounds');
     }
 
     // --- SEGMENT KONTROLÜ: EĞER SEÇİLİ BİR YER VARSA 3D'DE DE GÖSTER ---
