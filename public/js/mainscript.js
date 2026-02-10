@@ -7048,7 +7048,7 @@ function openMapLibre3D(expandedMap) {
   if (!maplibre3d) {
     maplibre3d = document.createElement('div');
     maplibre3d.id = 'maplibre-3d-view';
-    maplibre3d.style.cssText = 'width:100%; height:100vh; display:block; position:relative; z-index:1; background:#eef0f5;';
+    maplibre3d.style.cssText = 'width:100%; height:100%; display:block; position:relative; z-index:1; background:#eef0f5;';
     if (panelDiv) { container.insertBefore(maplibre3d, panelDiv); } 
     else { container.appendChild(maplibre3d); }
   } else {
@@ -7085,7 +7085,7 @@ function openMapLibre3D(expandedMap) {
 
   if (hasBounds) {
       const isMobile = window.innerWidth <= 768;
-      const bottomPadding = isMobile ? 170 : 180;
+      const bottomPadding = isMobile ? 220 : 240;
       mapOptions.bounds = bounds;
       mapOptions.fitBoundsOptions = { 
           padding: { 
@@ -7093,7 +7093,8 @@ function openMapLibre3D(expandedMap) {
               bottom: bottomPadding, 
               left: 40, 
               right: 40 
-          } 
+          },
+          duration: 0
       };
   } else {
       mapOptions.center = expandedMap.getCenter();
@@ -7117,7 +7118,7 @@ function openMapLibre3D(expandedMap) {
     // --- ROTA ORTALAMA (Panel yüksekliğini hesaba kat) ---
     if (hasBounds) {
         const isMobile = window.innerWidth <= 768;
-        const bottomPadding = isMobile ? 170 : 180;
+        const bottomPadding = isMobile ? 220 : 240;
         setTimeout(() => {
             window._maplibre3DInstance.fitBounds(bounds, {
                 padding: { 
@@ -7126,9 +7127,11 @@ function openMapLibre3D(expandedMap) {
                     left: 40, 
                     right: 40 
                 },
-                duration: 0
+                duration: 1000,
+                pitch: 60,
+                bearing: -20
             });
-        }, 100);
+        }, 300);
     }
 
     // --- SEGMENT KONTROLÜ: EĞER SEÇİLİ BİR YER VARSA 3D'DE DE GÖSTER ---
