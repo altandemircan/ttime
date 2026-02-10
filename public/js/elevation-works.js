@@ -2063,15 +2063,9 @@ else {
         }
 
         const expObj = window.expandedMaps && window.expandedMaps[cid];
-       if (expObj && expObj.expandedMap && bounds && bounds.isValid()) {
-    // paddingBottomRight: [Sağ, Alt] -> Alt değeri panelin yüksekliği (örn: 250px) kadar olmalı
-    expObj.expandedMap.fitBounds(bounds, { 
-        paddingTopLeft: [50, 50], 
-        paddingBottomRight: [50, 250], // <-- BURASI ÖNEMLİ (Panel yüksekliğine göre artır)
-        animate: true, 
-        duration: 1.0 
-    });
-}
+        if (expObj && expObj.expandedMap && bounds && bounds.isValid()) {
+            expObj.expandedMap.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.0 });
+        }
 
         const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
         if (is3DActive && window._maplibre3DInstance && bounds3d) {

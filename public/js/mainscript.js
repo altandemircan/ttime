@@ -7084,8 +7084,17 @@ function openMapLibre3D(expandedMap) {
   };
 
   if (hasBounds) {
+      const isMobile = window.innerWidth <= 768;
+      const bottomPadding = isMobile ? 170 : 180;
       mapOptions.bounds = bounds;
-      mapOptions.fitBoundsOptions = { padding: { top: 40, bottom: 40, left: 40, right: 40 } };
+      mapOptions.fitBoundsOptions = { 
+          padding: { 
+              top: 40, 
+              bottom: bottomPadding, 
+              left: 40, 
+              right: 40 
+          } 
+      };
   } else {
       mapOptions.center = expandedMap.getCenter();
       mapOptions.zoom = expandedMap.getZoom();
