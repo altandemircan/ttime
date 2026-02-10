@@ -7958,19 +7958,19 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- İLK AÇILIŞ ODAKLANMASI ---
     try {
-        // panel yüksekliğine göre alt padding hesapla
-const panelEl = document.querySelector(`#expanded-map-${day} .expanded-map-panel`);
-const panelHeight = panelEl ? panelEl.getBoundingClientRect().height : 0;
-const fitPadding = [50, 50];
-fitPadding[1] = Math.max(50, panelHeight + 20); // alt padding
-
-if (pts.length === 1) {
-     expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-} else if (bounds.isValid()) {
-    expandedMap.fitBounds(bounds, { padding: fitPadding });
-} else {
-    expandedMap.setView([39.0, 35.0], 6, { animate: false });
-}
+        if (pts.length === 1) {
+             expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+        } else if (bounds.isValid()) {
+            // expanded-map-panel yüksekliği için ekstra padding (mobil: 170px, desktop: 180px)
+            const isMobile = window.innerWidth <= 768;
+            const bottomPadding = isMobile ? 170 : 180;
+            expandedMap.fitBounds(bounds, { 
+                paddingTopLeft: [50, 50], 
+                paddingBottomRight: [50, bottomPadding] 
+            });
+        } else {
+            expandedMap.setView([39.0, 35.0], 6, { animate: false });
+        }
     } catch(e) { console.warn("FitBounds error:", e); }
 
     expandedMap.invalidateSize(); 
@@ -7979,7 +7979,13 @@ if (pts.length === 1) {
         try { 
             expandedMap.invalidateSize(); 
             if (bounds.isValid() && pts.length > 1) {
-                expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
+                const isMobile = window.innerWidth <= 768;
+                const bottomPadding = isMobile ? 170 : 180;
+                expandedMap.fitBounds(bounds, { 
+                    paddingTopLeft: [50, 50], 
+                    paddingBottomRight: [50, bottomPadding],
+                    animate: false 
+                });
             }
         } catch(e){} 
     }, 350);
