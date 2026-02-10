@@ -7080,7 +7080,7 @@ function openMapLibre3D(expandedMap) {
   const mapOptions = {
     container: 'maplibre-3d-view',
     style: 'https://tiles.openfreemap.org/styles/liberty',
-    pitch: 60, bearing: -20, interactive: true, attributionControl: false
+    pitch: 60, bearing: 0, interactive: true, attributionControl: false
   };
 
   if (hasBounds) {
@@ -7129,7 +7129,7 @@ function openMapLibre3D(expandedMap) {
                 },
                 duration: 1000,
                 pitch: 60,
-                bearing: -20
+                bearing: 0
             });
         }, 300);
     }
