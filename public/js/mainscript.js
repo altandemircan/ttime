@@ -129,17 +129,25 @@ function disableSendButton() {
 function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
+  
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
-    // === GÜÇLÜ NULL CHECK EKLE ===
+    // === GÜÇLÜ NULL CHECK ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    
     if (validPts.length > 1) {
       const isMobile = window.innerWidth <= 768;
-      const bottomPadding = isMobile ? 170 : 180;
+      
+      // Panel 200px olduğu için:
+      // Mobile: 240px (Panel + 40px boşluk)
+      // Desktop: 250px (Panel + 50px boşluk)
+      const bottomPadding = isMobile ? 240 : 250; 
+
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { 
-        paddingTopLeft: [20, 20], 
-        paddingBottomRight: [20, bottomPadding] 
+        paddingTopLeft: [50, 50],      // Üst ve Sol taraftan da biraz daha ferahlık verdim
+        paddingBottomRight: [50, bottomPadding], // Sağ: 50, Alt: Panel yüksekliği kadar
+        animate: false // İsterseniz true yapabilirsiniz
       });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
