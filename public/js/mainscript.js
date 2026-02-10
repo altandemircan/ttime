@@ -7131,59 +7131,56 @@ function openMapLibre3D(expandedMap) {
   });
   
   window._maplibre3DInstance.on('load', function () {
-    // 1. Verileri Çiz (Eğer fonksiyon varsa)
+    // 1. Verileri Çiz
     if (typeof refresh3DMapData === 'function') {
         refresh3DMapData(day);
     }
 
-    // 2. Rota Sınırlarını (Bounds) Hesapla
+    // 2. Rota Sınırlarını Hesapla
     const points = getDayPoints(day);
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     let bounds = null;
 
     if (validPts.length > 0) {
-        // MapLibre için LngLatBounds nesnesi oluşturuyoruz
         bounds = new maplibregl.LngLatBounds();
-        validPts.forEach(p => {
-            bounds.extend([p.lng, p.lat]); // Dikkat: MapLibre [lng, lat] sırasını kullanır
-        });
+        validPts.forEach(p => bounds.extend([p.lng, p.lat]));
     }
 
-    // 3. ROTA ORTALAMA (Panel yüksekliğini hesaba katarak)
+    // 3. ROTA ORTALAMA (Daha da yukarı taşıyoruz)
     if (bounds) {
-        console.log('[3D Map] Applying fitBounds with panel compensation');
+        console.log('[3D Map] Applying fitBounds with EXTRA height');
         
         const isMobile = window.innerWidth <= 768;
-        // 2D haritada 250px vermiştik, 3D eğimi (pitch) olduğu için 
-        // rotanın çok aşağıda kalmaması adına burayı biraz daha yüksek tutuyoruz.
-        const bottomPadding = isMobile ? 280 : 320; 
+        
+        // Önceki değerler: 280 / 320 idi.
+        // Yeni değerler: 330 / 400 yapıyoruz.
+        // Bu işlem rotayı ekranın üst kısmına iter.
+        const bottomPadding = isMobile ? 330 : 400; 
 
         setTimeout(() => {
             try {
                 window._maplibre3DInstance.fitBounds(bounds, {
                     padding: { 
-                        top: 550,         // Üstten biraz daha pay (Header vs için)
-                        bottom: bottomPadding, 
+                        top: 50,          
+                        bottom: bottomPadding, // Burayı artırdık
                         left: 50, 
                         right: 50 
                     },
-                    duration: 1000,      // Animasyon süresi
-                    pitch: 60,           // 3D Eğim açısı
-                    bearing: 0           // Yön
+                    duration: 1000,
+                    pitch: 60,
+                    bearing: 0
                 });
-                console.log('[3D Map] fitBounds applied successfully');
             } catch(e) {
                 console.error('[3D Map] fitBounds error:', e);
             }
-        }, 300); // Harita render'ı otursun diye ufak gecikme
+        }, 300);
     } else {
-        console.warn('[3D Map] No valid points found for fitBounds');
-        // Eğer nokta yoksa varsayılan bir yere odaklanabilir (örn: Antalya merkezi veya 0,0)
-        // window._maplibre3DInstance.setCenter([30.71, 36.89]); 
-        // window._maplibre3DInstance.setZoom(10);
+        // Rota yoksa varsayılan
+         window._maplibre3DInstance.setCenter([30.71, 36.89]); 
+         window._maplibre3DInstance.setZoom(10);
     }
 
-    // 4. SEGMENT KONTROLÜ (Seçili segmenti vurgula)
+    // 4. SEGMENT VE DİĞER İŞLEMLER...
     if (
         window._lastSegmentDay === day && 
         typeof window._lastSegmentStartKm === 'number' && 
@@ -7191,16 +7188,14 @@ function openMapLibre3D(expandedMap) {
     ) {
         setTimeout(() => {
             highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-        }, 500); // fitBounds animasyonunun ortasında veya sonunda çalışması için süreyi biraz artırdım
+        }, 500);
     }
-
-    // 5. Tıklama Eventi (Nearby Search)
+    
+    // Click eventleri vs. aynen kalabilir...
     window._maplibre3DInstance.on('click', (e) => {
         const { lng, lat } = e.lngLat;
         if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
         if (typeof showNearbyPlacesPopup === 'function') {
-            // Popup'ın panelin altında kalmaması için offset ayarlanabilir ama 
-            // şimdilik varsayılan fonksiyonu çağırıyoruz.
             showNearbyPlacesPopup(lat, lng, window._maplibre3DInstance, day, 500);
         }
     });
