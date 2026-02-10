@@ -132,17 +132,10 @@ function fitExpandedMapToRoute(day) {
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
-    // === GÜÇLÜ NULL CHECK ===
+    // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
-      // DEĞİŞİKLİK BURADA:
-      // paddingTopLeft: [Sol, Üst] -> [20, 20]
-      // paddingBottomRight: [Sağ, Alt] -> [20, 150] 
-      // (Alt değere panel yüksekliğini + pay ekledik. 150px değeri panel yüksekliğine göre ayarlanabilir.)
-      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { 
-          paddingTopLeft: [20, 20], 
-          paddingBottomRight: [20, 150] 
-      });
+      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
@@ -150,6 +143,7 @@ function fitExpandedMapToRoute(day) {
     }
   }
 }
+
 
 let selectedCity = "";
 
@@ -8413,7 +8407,12 @@ async function renderRouteForDay(day) {
         if (eMap) {
             eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
             const polyEx = L.polyline(fullGeojsonCoords.map(c => [c[1], c[0]]), { color: '#1565c0', weight: 7, opacity: 0.9 }).addTo(eMap);
-            try { eMap.fitBounds(polyEx.getBounds()); } catch (_) { }
+        try { 
+    eMap.fitBounds(polyEx.getBounds(), { 
+        paddingTopLeft: [20, 20], 
+        paddingBottomRight: [20, 150] 
+    }); 
+} catch (_) { }
             L.circleMarker([fullGeojsonCoords[0][1], fullGeojsonCoords[0][0]], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length - 1][1], fullGeojsonCoords[fullGeojsonCoords.length - 1][0]], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
         }
