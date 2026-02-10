@@ -7190,7 +7190,7 @@ async function expandMap(containerId, day) {
     align-items: center;
     gap: 15px;
     left: 0px }
-        @media (max-width:768px) { .expanded-map-header { left: 10px; } .map-custom-controls { right: 20px; } }
+        @media (max-width:768px) { .expanded-map-header { left: 10px; } .map-custom-controls { right: 10px; } }
         .map-layers-row { position: relative;
     display: flex;
     gap: 8px;
