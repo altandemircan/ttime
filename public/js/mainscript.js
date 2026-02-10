@@ -130,24 +130,24 @@ function fitExpandedMapToRoute(day) {
   const cid = `route-map-day${day}`;
   const expObj = window.expandedMaps && window.expandedMaps[cid];
   
-  if (expObj && expObj.expandedMap) {
-    const points = getDayPoints(day);
+  // Rota noktalarını al
+  const points = getDayPoints(day);
+  const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+  const hasPoints = validPts.length > 0;
 
-    // === GÜÇLÜ NULL CHECK ===
-    const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
-    
+  // ---------------------------------------------------------
+  // 1. 2D LEAFLET HARİTASI İÇİN FIT BOUNDS (Mevcut Mantık)
+  // ---------------------------------------------------------
+  if (expObj && expObj.expandedMap) {
     if (validPts.length > 1) {
       const isMobile = window.innerWidth <= 768;
-      
-      // Panel 200px olduğu için:
-      // Mobile: 240px (Panel + 40px boşluk)
-      // Desktop: 250px (Panel + 50px boşluk)
+      // 2D harita için panel boşluğu
       const bottomPadding = isMobile ? 240 : 250; 
 
       expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { 
-        paddingTopLeft: [50, 50],      // Üst ve Sol taraftan da biraz daha ferahlık verdim
-        paddingBottomRight: [50, bottomPadding], // Sağ: 50, Alt: Panel yüksekliği kadar
-        animate: false // İsterseniz true yapabilirsiniz
+        paddingTopLeft: [50, 50], 
+        paddingBottomRight: [50, bottomPadding],
+        animate: true 
       });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
@@ -155,8 +155,42 @@ function fitExpandedMapToRoute(day) {
       expObj.expandedMap.setView([0, 0], 2);
     }
   }
-}
 
+  // ---------------------------------------------------------
+  // 2. 3D MAPLIBRE HARİTASI İÇİN FIT BOUNDS (Yeni Eklenen Kısım)
+  // ---------------------------------------------------------
+  const map3d = window._maplibre3DInstance;
+  const map3dContainer = document.getElementById('maplibre-3d-view');
+
+  // Eğer 3D harita o an açıksa ve görünürse (display: none değilse)
+  if (map3d && map3dContainer && map3dContainer.style.display !== 'none' && hasPoints) {
+      
+      // MapLibre için Bounds nesnesi oluştur
+      const bounds = new maplibregl.LngLatBounds();
+      validPts.forEach(p => bounds.extend([p.lng, p.lat])); // Dikkat: [lng, lat] sırası
+
+      const isMobile = window.innerWidth <= 768;
+      // 3D için daha fazla padding (Eğimden dolayı alt kısım daralır)
+      const bottomPadding = isMobile ? 330 : 400; 
+
+      try {
+          map3d.fitBounds(bounds, {
+              padding: { 
+                  top: 50, 
+                  bottom: bottomPadding, 
+                  left: 50, 
+                  right: 50 
+              },
+              duration: 1000, // Yumuşak geçiş
+              pitch: 60,      // Eğimi koru
+              bearing: 0      // Kuzeye bak
+          });
+          console.log('[3D Map] Route updated and fitted to screen.');
+      } catch (e) {
+          console.error("3D fitBounds error:", e);
+      }
+  }
+}
 
 let selectedCity = "";
 
