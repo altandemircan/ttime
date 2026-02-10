@@ -7958,13 +7958,19 @@ function updateExpandedMap(expandedMap, day) {
 
     // --- İLK AÇILIŞ ODAKLANMASI ---
     try {
-        if (pts.length === 1) {
-             expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
-        } else if (bounds.isValid()) {
-            expandedMap.fitBounds(bounds, { padding: [50, 50] });
-        } else {
-            expandedMap.setView([39.0, 35.0], 6, { animate: false });
-        }
+        // panel yüksekliğine göre alt padding hesapla
+const panelEl = document.querySelector(`#expanded-map-${day} .expanded-map-panel`);
+const panelHeight = panelEl ? panelEl.getBoundingClientRect().height : 0;
+const fitPadding = [50, 50];
+fitPadding[1] = Math.max(50, panelHeight + 20); // alt padding
+
+if (pts.length === 1) {
+     expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
+} else if (bounds.isValid()) {
+    expandedMap.fitBounds(bounds, { padding: fitPadding });
+} else {
+    expandedMap.setView([39.0, 35.0], 6, { animate: false });
+}
     } catch(e) { console.warn("FitBounds error:", e); }
 
     expandedMap.invalidateSize(); 
