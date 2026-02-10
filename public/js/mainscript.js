@@ -7162,7 +7162,7 @@ function openMapLibre3D(expandedMap) {
             try {
                 window._maplibre3DInstance.fitBounds(bounds, {
                     padding: { 
-                        top: 50,         // Üstten biraz daha pay (Header vs için)
+                        top: 550,         // Üstten biraz daha pay (Header vs için)
                         bottom: bottomPadding, 
                         left: 50, 
                         right: 50 
