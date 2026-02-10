@@ -7131,63 +7131,80 @@ function openMapLibre3D(expandedMap) {
   });
   
   window._maplibre3DInstance.on('load', function () {
-    // Verileri Çiz (Refresh fonksiyonunu kullanıyoruz)
+    // 1. Verileri Çiz (Eğer fonksiyon varsa)
     if (typeof refresh3DMapData === 'function') {
         refresh3DMapData(day);
     }
 
-    // --- ROTA ORTALAMA (Panel yüksekliğini hesaba kat) ---
-    if (hasBounds) {
+    // 2. Rota Sınırlarını (Bounds) Hesapla
+    const points = getDayPoints(day);
+    const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
+    let bounds = null;
+
+    if (validPts.length > 0) {
+        // MapLibre için LngLatBounds nesnesi oluşturuyoruz
+        bounds = new maplibregl.LngLatBounds();
+        validPts.forEach(p => {
+            bounds.extend([p.lng, p.lat]); // Dikkat: MapLibre [lng, lat] sırasını kullanır
+        });
+    }
+
+    // 3. ROTA ORTALAMA (Panel yüksekliğini hesaba katarak)
+    if (bounds) {
         console.log('[3D Map] Applying fitBounds with panel compensation');
+        
         const isMobile = window.innerWidth <= 768;
-        // 3D perspektif için daha yüksek padding gerekiyor
-        const bottomPadding = isMobile ? 280 : 320;
+        // 2D haritada 250px vermiştik, 3D eğimi (pitch) olduğu için 
+        // rotanın çok aşağıda kalmaması adına burayı biraz daha yüksek tutuyoruz.
+        const bottomPadding = isMobile ? 280 : 320; 
+
         setTimeout(() => {
             try {
                 window._maplibre3DInstance.fitBounds(bounds, {
                     padding: { 
-                        top: 40, 
+                        top: 50,         // Üstten biraz daha pay (Header vs için)
                         bottom: bottomPadding, 
-                        left: 40, 
-                        right: 40 
+                        left: 50, 
+                        right: 50 
                     },
-                    duration: 1000,
-                    pitch: 60,
-                    bearing: 0
+                    duration: 1000,      // Animasyon süresi
+                    pitch: 60,           // 3D Eğim açısı
+                    bearing: 0           // Yön
                 });
                 console.log('[3D Map] fitBounds applied successfully');
             } catch(e) {
                 console.error('[3D Map] fitBounds error:', e);
             }
-        }, 300);
+        }, 300); // Harita render'ı otursun diye ufak gecikme
     } else {
-        console.warn('[3D Map] No bounds available for fitBounds');
+        console.warn('[3D Map] No valid points found for fitBounds');
+        // Eğer nokta yoksa varsayılan bir yere odaklanabilir (örn: Antalya merkezi veya 0,0)
+        // window._maplibre3DInstance.setCenter([30.71, 36.89]); 
+        // window._maplibre3DInstance.setZoom(10);
     }
 
-    // --- SEGMENT KONTROLÜ: EĞER SEÇİLİ BİR YER VARSA 3D'DE DE GÖSTER ---
+    // 4. SEGMENT KONTROLÜ (Seçili segmenti vurgula)
     if (
         window._lastSegmentDay === day && 
         typeof window._lastSegmentStartKm === 'number' && 
         typeof window._lastSegmentEndKm === 'number'
     ) {
-        // Harita tam otursun diye ufak bir gecikme ile çizdiriyoruz
         setTimeout(() => {
             highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
-        }, 200);
+        }, 500); // fitBounds animasyonunun ortasında veya sonunda çalışması için süreyi biraz artırdım
     }
-    // --------------------------------------------------------------------
 
-    // Tıklama Eventi (Nearby Search)
-
-    // Tıklama Eventi (Nearby Search)
+    // 5. Tıklama Eventi (Nearby Search)
     window._maplibre3DInstance.on('click', (e) => {
         const { lng, lat } = e.lngLat;
         if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
         if (typeof showNearbyPlacesPopup === 'function') {
+            // Popup'ın panelin altında kalmaması için offset ayarlanabilir ama 
+            // şimdilik varsayılan fonksiyonu çağırıyoruz.
             showNearbyPlacesPopup(lat, lng, window._maplibre3DInstance, day, 500);
         }
     });
-  }); 
+});
 }
 
 
