@@ -2063,9 +2063,15 @@ else {
         }
 
         const expObj = window.expandedMaps && window.expandedMaps[cid];
-        if (expObj && expObj.expandedMap && bounds && bounds.isValid()) {
-            expObj.expandedMap.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.0 });
-        }
+       if (expObj && expObj.expandedMap && bounds && bounds.isValid()) {
+    // paddingBottomRight: [Sağ, Alt] -> Alt değeri panelin yüksekliği (örn: 250px) kadar olmalı
+    expObj.expandedMap.fitBounds(bounds, { 
+        paddingTopLeft: [50, 50], 
+        paddingBottomRight: [50, 250], // <-- BURASI ÖNEMLİ (Panel yüksekliğine göre artır)
+        animate: true, 
+        duration: 1.0 
+    });
+}
 
         const is3DActive = document.getElementById('maplibre-3d-view') && document.getElementById('maplibre-3d-view').style.display !== 'none';
         if (is3DActive && window._maplibre3DInstance && bounds3d) {
@@ -2611,14 +2617,7 @@ window.cleanElevationData = function(elevations, samples = null) {
     
     const cleaned = elevations.slice();
     const SPIKE_THRESHOLD = 25; // 25m'den fazla sıçrama = hata
-    
-    // console.log("[ELEV CLEAN] Başlangıç:", {
-    //     total: cleaned.length,
-    //     nullCount: cleaned.filter(e => e == null).length,
-    //     min: Math.min(...cleaned.filter(e => e != null)),
-    //     max: Math.max(...cleaned.filter(e => e != null))
-    // });
-    
+
     // 1. Null/NaN değerleri komşuların ortalamasıyla doldur
     for (let i = 0; i < cleaned.length; i++) {
         if (cleaned[i] == null || !isFinite(cleaned[i])) {
@@ -2677,12 +2676,7 @@ window.cleanElevationData = function(elevations, samples = null) {
         }
     }
     
-    // console.log("[ELEV CLEAN] Sonuç:", {
-    //     total: cleaned.length,
-    //     fixedCount: fixedCount,
-    //     min: Math.min(...cleaned),
-    //     max: Math.max(...cleaned)
-    // });
+
     
     return cleaned;
 };
