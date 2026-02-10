@@ -6702,6 +6702,19 @@ function saveArcPointsForDay(day, points) {
     }
     window._curvedArcPointsByDay[day] = points;
 }
+// Helper function to find cart index by day and position
+function findCartIndexByDayPosition(dayNum, positionIdx) {
+    let n = 0;
+    for (let i = 0; i < window.cart.length; i++) {
+        const it = window.cart[i];
+        if (it.day == dayNum && it.location && !isNaN(it.location.lat) && !isNaN(it.location.lng)) {
+            if (n === positionIdx) return i;
+            n++;
+        }
+    }
+    return -1;
+}
+
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     if (!map || !map.getStyle()) return;
