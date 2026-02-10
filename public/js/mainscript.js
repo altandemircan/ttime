@@ -132,10 +132,17 @@ function fitExpandedMapToRoute(day) {
   if (expObj && expObj.expandedMap) {
     const points = getDayPoints(day);
 
-    // === GÜÇLÜ NULL CHECK EKLE ===
+    // === GÜÇLÜ NULL CHECK ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
-      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
+      // DEĞİŞİKLİK BURADA:
+      // paddingTopLeft: [Sol, Üst] -> [20, 20]
+      // paddingBottomRight: [Sağ, Alt] -> [20, 150] 
+      // (Alt değere panel yüksekliğini + pay ekledik. 150px değeri panel yüksekliğine göre ayarlanabilir.)
+      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { 
+          paddingTopLeft: [20, 20], 
+          paddingBottomRight: [20, 150] 
+      });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
@@ -143,7 +150,6 @@ function fitExpandedMapToRoute(day) {
     }
   }
 }
-
 
 let selectedCity = "";
 
@@ -7961,13 +7967,7 @@ function updateExpandedMap(expandedMap, day) {
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
         } else if (bounds.isValid()) {
-            // expanded-map-panel yüksekliği için ekstra padding (mobil: 170px, desktop: 180px)
-            const isMobile = window.innerWidth <= 768;
-            const bottomPadding = isMobile ? 170 : 180;
-            expandedMap.fitBounds(bounds, { 
-                paddingTopLeft: [50, 50], 
-                paddingBottomRight: [50, bottomPadding] 
-            });
+            expandedMap.fitBounds(bounds, { padding: [50, 50] });
         } else {
             expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
@@ -7979,13 +7979,7 @@ function updateExpandedMap(expandedMap, day) {
         try { 
             expandedMap.invalidateSize(); 
             if (bounds.isValid() && pts.length > 1) {
-                const isMobile = window.innerWidth <= 768;
-                const bottomPadding = isMobile ? 170 : 180;
-                expandedMap.fitBounds(bounds, { 
-                    paddingTopLeft: [50, 50], 
-                    paddingBottomRight: [50, bottomPadding],
-                    animate: false 
-                });
+                expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
             }
         } catch(e){} 
     }, 350);
