@@ -7088,6 +7088,10 @@ if (window.userLocationMarkersByDay && window.userLocationMarkersByDay[day]) {
     });
 
     map.once('click', () => { resetAll3DMarkersState(); });
+
+    if (typeof fitExpandedMapToRoute === 'function') {
+        fitExpandedMapToRoute(day);
+    }
 }
 function openMapLibre3D(expandedMap) {
   // DOM Elementlerini Bul
