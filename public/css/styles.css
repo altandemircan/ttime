@@ -4573,16 +4573,7 @@ input[type="checkbox"].accordion-toggle:checked ~ .accordion-label .accordion-ar
         width: calc(100% - 20px);
     }
 
-    .expanded-map {
-        /* Haritanın altını tam panelin bittiği yere (160px) çekiyoruz */
-        bottom: 160px !important; 
-        
-        /* Harita yüksekliği: Ekran boyu - Alt Panel Alanı (160px) */
-        height: calc(100dvh - 160px) !important; 
-        
-        width: 100% !important;
-        position: fixed !important;
-    }
+    
 }
 .elevation-labels-container {
     position: absolute;
