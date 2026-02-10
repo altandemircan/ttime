@@ -135,12 +135,7 @@ function fitExpandedMapToRoute(day) {
     // === GÜÇLÜ NULL CHECK EKLE ===
     const validPts = points.filter(p => isFinite(p.lat) && isFinite(p.lng));
     if (validPts.length > 1) {
-      const isMobile = window.innerWidth <= 768;
-      const bottomPadding = isMobile ? 170 : 180;
-      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { 
-        paddingTopLeft: [20, 20], 
-        paddingBottomRight: [20, bottomPadding] 
-      });
+      expObj.expandedMap.fitBounds(validPts.map(p => [p.lat, p.lng]), { padding: [20, 20] });
     } else if (validPts.length === 1) {
       expObj.expandedMap.setView([validPts[0].lat, validPts[0].lng], 14);
     } else {
@@ -6702,19 +6697,6 @@ function saveArcPointsForDay(day, points) {
     }
     window._curvedArcPointsByDay[day] = points;
 }
-// Helper function to find cart index by day and position
-function findCartIndexByDayPosition(dayNum, positionIdx) {
-    let n = 0;
-    for (let i = 0; i < window.cart.length; i++) {
-        const it = window.cart[i];
-        if (it.day == dayNum && it.location && !isNaN(it.location.lat) && !isNaN(it.location.lng)) {
-            if (n === positionIdx) return i;
-            n++;
-        }
-    }
-    return -1;
-}
-
 function refresh3DMapData(day) {
     const map = window._maplibre3DInstance;
     if (!map || !map.getStyle()) return;
@@ -7106,8 +7088,7 @@ function openMapLibre3D(expandedMap) {
               bottom: bottomPadding, 
               left: 40, 
               right: 40 
-          },
-          duration: 0
+          } 
       };
   } else {
       mapOptions.center = expandedMap.getCenter();
@@ -7130,30 +7111,21 @@ function openMapLibre3D(expandedMap) {
 
     // --- ROTA ORTALAMA (Panel yüksekliğini hesaba kat) ---
     if (hasBounds) {
-        console.log('[3D Map] Applying fitBounds with panel compensation');
         const isMobile = window.innerWidth <= 768;
-        // 3D perspektif için daha yüksek padding gerekiyor
         const bottomPadding = isMobile ? 280 : 320;
         setTimeout(() => {
-            try {
-                window._maplibre3DInstance.fitBounds(bounds, {
-                    padding: { 
-                        top: 40, 
-                        bottom: bottomPadding, 
-                        left: 40, 
-                        right: 40 
-                    },
-                    duration: 1000,
-                    pitch: 60,
-                    bearing: 0
-                });
-                console.log('[3D Map] fitBounds applied successfully');
-            } catch(e) {
-                console.error('[3D Map] fitBounds error:', e);
-            }
+            window._maplibre3DInstance.fitBounds(bounds, {
+                padding: { 
+                    top: 40, 
+                    bottom: bottomPadding, 
+                    left: 40, 
+                    right: 40 
+                },
+                duration: 1000,
+                pitch: 60,
+                bearing: 0
+            });
         }, 300);
-    } else {
-        console.warn('[3D Map] No bounds available for fitBounds');
     }
 
     // --- SEGMENT KONTROLÜ: EĞER SEÇİLİ BİR YER VARSA 3D'DE DE GÖSTER ---
@@ -7629,7 +7601,7 @@ expandedContainer.appendChild(panelDiv);
     mapDiv.id = mapDivId;
     mapDiv.className = 'expanded-map';
     mapDiv.style.width = "100%";
-    mapDiv.style.height = "100%";
+    mapDiv.style.height = "480px";
     expandedContainer.appendChild(mapDiv);
     document.body.appendChild(expandedContainer);
 
@@ -8017,13 +7989,7 @@ function updateExpandedMap(expandedMap, day) {
         if (pts.length === 1) {
              expandedMap.setView([pts[0].lat, pts[0].lng], 14, { animate: true });
         } else if (bounds.isValid()) {
-            // expanded-map-panel yüksekliği için ekstra padding (mobil: 170px, desktop: 180px)
-            const isMobile = window.innerWidth <= 768;
-            const bottomPadding = isMobile ? 170 : 180;
-            expandedMap.fitBounds(bounds, { 
-                paddingTopLeft: [50, 50], 
-                paddingBottomRight: [50, bottomPadding] 
-            });
+            expandedMap.fitBounds(bounds, { padding: [50, 50] });
         } else {
             expandedMap.setView([39.0, 35.0], 6, { animate: false });
         }
@@ -8035,13 +8001,7 @@ function updateExpandedMap(expandedMap, day) {
         try { 
             expandedMap.invalidateSize(); 
             if (bounds.isValid() && pts.length > 1) {
-                const isMobile = window.innerWidth <= 768;
-                const bottomPadding = isMobile ? 170 : 180;
-                expandedMap.fitBounds(bounds, { 
-                    paddingTopLeft: [50, 50], 
-                    paddingBottomRight: [50, bottomPadding],
-                    animate: false 
-                });
+                expandedMap.fitBounds(bounds, { padding: [50, 50], animate: false });
             }
         } catch(e){} 
     }, 350);
@@ -8475,14 +8435,7 @@ async function renderRouteForDay(day) {
         if (eMap) {
             eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
             const polyEx = L.polyline(fullGeojsonCoords.map(c => [c[1], c[0]]), { color: '#1565c0', weight: 7, opacity: 0.9 }).addTo(eMap);
-            try { 
-                const isMobile = window.innerWidth <= 768;
-                const bottomPadding = isMobile ? 170 : 180;
-                eMap.fitBounds(polyEx.getBounds(), { 
-                    paddingTopLeft: [50, 50], 
-                    paddingBottomRight: [50, bottomPadding] 
-                }); 
-            } catch (_) { }
+            try { eMap.fitBounds(polyEx.getBounds()); } catch (_) { }
             L.circleMarker([fullGeojsonCoords[0][1], fullGeojsonCoords[0][0]], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             L.circleMarker([fullGeojsonCoords[fullGeojsonCoords.length - 1][1], fullGeojsonCoords[fullGeojsonCoords.length - 1][0]], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
         }
@@ -8744,14 +8697,7 @@ if (expandedMapDiv) {
                 eMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) eMap.removeLayer(l); });
                 const latlngs = raw.map(pt => [pt.lat, pt.lng]);
                 const polyEx = L.polyline(latlngs, { color: '#1565c0', weight: 7, opacity: 0.9 }).addTo(eMap);
-                try { 
-                    const isMobile = window.innerWidth <= 768;
-                    const bottomPadding = isMobile ? 170 : 180;
-                    eMap.fitBounds(polyEx.getBounds(), { 
-                        paddingTopLeft: [50, 50], 
-                        paddingBottomRight: [50, bottomPadding] 
-                    }); 
-                } catch (_) { }
+                try { eMap.fitBounds(polyEx.getBounds()); } catch (_) { }
                 L.circleMarker(latlngs[0], { radius: 9, color: '#2e7d32', fillColor: '#2e7d32', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
                 L.circleMarker(latlngs[latlngs.length - 1], { radius: 9, color: '#c62828', fillColor: '#c62828', fillOpacity: 0.95, weight: 2 }).addTo(eMap);
             }
