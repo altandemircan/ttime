@@ -103,24 +103,40 @@ function injectDragStyles() {
         /* 2. BUTONLAR VE KALABALIK (MOBİLDE) */
         /* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
         /* ========== SÜRÜKLEME SIRASINDA BUTONLARI GİZLE - KESIN ÇÖZÜM ========== */
-@media (max-width: 768px) {
-    body.hide-map-details .my-places-btn,
-    body.hide-map-details .add-favorite-place-btn,
-    body.hide-map-details .add-note-btn,
-    body.hide-map-details .add-custom-note-btn,
-    body.hide-map-details .note-container,
-    body.hide-map-details .custom-note-container,
-    body.hide-map-details [data-role="my-places-btn"],
-    body.hide-map-details [data-role="add-note-btn"],
-    body.hide-map-details [data-role="note-container"],
-    body.hide-map-details button[onclick*="toggleSidebarFavoritePlaces"],
-    body.hide-map-details button[onclick*="saveCustomNote"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }
+/* 2. BUTONLAR VE KALABALIK (MOBİLDE) */
+/* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
+
+/* ===== Drag sırasında My Places + Add Note her ekranda gizlensin ===== */
+body.dragging-active .my-places-btn,
+body.dragging-active .add-favorite-place-btn,
+body.dragging-active .add-note-btn,
+body.dragging-active .add-custom-note-btn,
+body.dragging-active .note-container,
+body.dragging-active .custom-note-container,
+body.dragging-active [data-role="my-places-btn"],
+body.dragging-active [data-role="add-note-btn"],
+body.dragging-active [data-role="note-container"],
+body.dragging-active button[onclick*="toggleSidebarFavoritePlaces"],
+body.dragging-active button[onclick*="saveCustomNote"],
+
+body.hide-map-details .my-places-btn,
+body.hide-map-details .add-favorite-place-btn,
+body.hide-map-details .add-note-btn,
+body.hide-map-details .add-custom-note-btn,
+body.hide-map-details .note-container,
+body.hide-map-details .custom-note-container,
+body.hide-map-details [data-role="my-places-btn"],
+body.hide-map-details [data-role="add-note-btn"],
+body.hide-map-details [data-role="note-container"],
+body.hide-map-details button[onclick*="toggleSidebarFavoritePlaces"],
+body.hide-map-details button[onclick*="saveCustomNote"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
+
+/* Eski @media bloğu artık gereksiz → kaldır */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
