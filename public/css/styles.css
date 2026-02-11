@@ -7529,26 +7529,24 @@ display: block !important;
 /* Ortak Modern Buton Stili */
 /* Ortak Modern Buton Stili */
 .main-btn {
-    display: inline-flex;
+        cursor: pointer !important;
+    position: relative;
+    user-select: none;
+    padding: 10px;
+    font-weight: 600;
     align-items: center;
     justify-content: center;
-    gap: 8px; 
-    padding: 6px 10px;
-    border-radius: 12px;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    font-family: 'Satoshi';
     font-size: 0.85rem;
-    font-weight: 600;
-    text-decoration: none;
-    color: #ffffff !important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-    border: 1px solid rgba(255,255,255,0.1); 
-    letter-spacing: 0.5px;
-    padding:10px;
-
-    /* --- TIKLAMA SORUNU ÇÖZÜMÜ --- */
-    cursor: pointer !important;  /* El işareti çıksın */
-    position: relative;          /* Z-index için gerekli */
- 
-    user-select: none;           /* Metin seçimini engelle */
+    width: 136px;
+    display: flex;
+    gap: 8px;
+    align-content: center;
+}/
 }
 
 /* Butonun içindeki İKON ve YAZI tıklamayı engellemesin */
