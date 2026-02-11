@@ -2695,7 +2695,7 @@ function setupViewSwitcherButton(mapInstance) {
         color: #fff;
         border: none;
         border-radius: 50px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         font-weight: 600;
         font-size: 14px;
         display: flex !important;
