@@ -2022,7 +2022,7 @@ function setupViewSwitcherButton(mapInstance) {
     
     btn.style.cssText = `
         padding: 10px 16px;
-    background: #fff;
+    background: #ffffff;
     color: rgb(30, 41, 59);
     border: none;
     border-radius: 50px 0 0 50px;
@@ -2059,13 +2059,13 @@ function setupViewSwitcherButton(mapInstance) {
             popup.style.display = 'none';
             if (mapContainer) mapContainer.style.display = 'block';
             btn.innerHTML = contentToList;
-            btn.style.background = '#ffffff99';
+            btn.style.background = '#ffffff';
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
         } else {
             popup.style.display = 'block';
             btn.innerHTML = contentToMap;
-            btn.style.background = '#ffffff99';
+            btn.style.background = '#ffffff';
         }
     };
 
