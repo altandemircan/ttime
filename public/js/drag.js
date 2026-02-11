@@ -111,10 +111,7 @@ function injectDragStyles() {
             body.hide-map-details .add-to-calendar-btn,
             body.hide-map-details #newchat,
             body.hide-map-details .trip-share-section,
-            body.hide-map-details .date-range,
-            /* YENİ EKLENENLER: My Places ve Add Note */
-            body.hide-map-details .add-favorite-place-btn,
-            body.hide-map-details .add-custom-note-btn
+            body.hide-map-details .date-range
             {
                 display: none !important;
             }
@@ -360,23 +357,26 @@ function createDragGhost(item, clientX, clientY) {
     mainClone.style.top = 'auto';
     mainClone.style.position = 'relative';
     // Eğer not ise genişliği boş bırak (CSS halletsin), değilse %100 yap
-    mainClone.style.width = isNote ? '' : '100%';
-    
+    mainClone.style.width = isNote ? '' : '100%'; 
+
     ghostWrapper.appendChild(mainClone);
 
     // --- 2. ALTTAKİLERİ TOPLA (SADECE SÜRÜKLENEN BİR NOT DEĞİLSE) ---
     // Eğer biz zaten bir not sürüklüyorsak, altımızdaki notlar bize bağlı değildir.
     if (!isNote) {
         let nextSibling = item.nextElementSibling;
+        
         while (nextSibling && nextSibling.classList.contains('note-item')) {
             const noteClone = nextSibling.cloneNode(true);
             noteClone.removeAttribute('id');
-            noteClone.style.marginTop = '';
+            
+            noteClone.style.marginTop = ''; 
             noteClone.style.marginBottom = '';
-            noteClone.style.left = '';
+            noteClone.style.left = ''; 
             noteClone.style.top = '';
-            noteClone.style.position = '';
-            noteClone.style.width = '';
+            noteClone.style.position = ''; 
+            noteClone.style.width = ''; 
+
             ghostWrapper.appendChild(noteClone);
             
             // Görsel olarak soluklaştır
@@ -393,10 +393,9 @@ function createDragGhost(item, clientX, clientY) {
 
     document.body.appendChild(ghostWrapper);
 }
-
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.travel-item:not(.dragging-source)')];
-
+    
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -425,11 +424,10 @@ function updatePlaceholder(clientX, clientY) {
     if (draggedItem && placeholder) {
         const draggedRect = draggedItem.getBoundingClientRect();
         placeholder.style.width = draggedRect.width + "px";
-        
         const style = getComputedStyle(draggedItem);
         placeholder.style.marginLeft = style.marginLeft;
         placeholder.style.marginRight = style.marginRight;
-        placeholder.style.display = 'block';
+        placeholder.style.display = 'block'; 
         placeholder.style.boxSizing = style.boxSizing || 'border-box';
         placeholder.style.maxWidth = draggedRect.width + "px";
     }
@@ -441,10 +439,10 @@ function updatePlaceholder(clientX, clientY) {
     if (allItems.length === 0) {
         if (isDraggingNote) {
             if (placeholder.parentNode) placeholder.remove();
-            return;
+            return; 
         }
         dropZone.insertBefore(placeholder, dropZone.firstChild);
-        return;
+        return; 
     }
 
     // 2. HEDEF KONUMU BUL
@@ -473,8 +471,7 @@ function updatePlaceholder(clientX, clientY) {
         } else {
             dropZone.appendChild(placeholder);
         }
-    } 
-    else {
+    } else {
         // Araya ekle
         dropZone.insertBefore(placeholder, afterElement);
     }
@@ -482,283 +479,279 @@ function updatePlaceholder(clientX, clientY) {
     // ============================================================
     // --- KOMŞU KONTROLÜ (SEPARATORLARI ATLAYARAK) ---
     // ============================================================
-    // Helper: Bir eleman bizim sürüklendiğimiz kaynak grubun parçası mı?
-    // Eğer sürüklüyorsak .dragging-source ekledik. Placeholder, dragging-source'un hemen altına veya üstüne gelmemeli.
-    // Ancak DOM'da dragging-source gizlenmiş olabilir, görsel olarak.
-    // Mantık: Placeholder'ın previousSibling veya nextSibling'i "dragging-source" ise, yer değişimi yok demektir.
-    // Ancak arada separator divler olabilir (.distance-separator). Onları atlayarak bakmalıyız.
+    
+    // Helper: Bir eleman bizim sürüklediğimiz grubun parçası mı?
+    const isPartOfDraggingGroup = (el) => el && (el === draggedItem || el.classList.contains('dragging-source'));
 
-    let prevEl = placeholder.previousElementSibling;
-    while (prevEl && (prevEl.classList.contains('distance-separator') || prevEl.classList.contains('auto-copy-info'))) {
-        prevEl = prevEl.previousElementSibling;
+    // Geriye doğru ilk gerçek 'travel-item'ı bul (Separatorları atla)
+    let prev = placeholder.previousElementSibling;
+    while (prev && !prev.classList.contains('travel-item')) {
+        prev = prev.previousElementSibling;
     }
 
-    let nextEl = placeholder.nextElementSibling;
-    while (nextEl && (nextEl.classList.contains('distance-separator') || nextEl.classList.contains('auto-copy-info'))) {
-        nextEl = nextEl.nextElementSibling;
+    // İleriye doğru ilk gerçek 'travel-item'ı bul (Separatorları atla)
+    let next = placeholder.nextElementSibling;
+    while (next && !next.classList.contains('travel-item')) {
+        next = next.nextElementSibling;
     }
 
-    // Eğer placeholder, kendi orijinal yerindeyse (yani üstünde veya altında orijinal öğe varsa)
-    // Görsel olarak gizle (gereksiz titreşimi önler)
-    /* Bu kontrol biraz riskli, çünkü sürüklenen öğe zaten 'dragging-source' classına sahip.
-       Eğer placeholder'ın hemen yanıbaşında 'dragging-source' varsa, demek ki aynı yerdeyiz.
-    */
-    if ((prevEl && prevEl.classList.contains('dragging-source')) || 
-        (nextEl && nextEl.classList.contains('dragging-source'))) {
-        // Aynı yerdesin, placeholder'ı gösterme veya soluklaştır
-        placeholder.style.opacity = '0.3';
-    } else {
-        placeholder.style.opacity = '1';
+    // Eğer sağımızda veya solumuzda (aradaki çizgileri saymazsak) 
+    // kendi sürüklediğimiz eleman varsa, pozisyon değişmiyor demektir.
+    if (isPartOfDraggingGroup(prev) || isPartOfDraggingGroup(next)) {
+        placeholder.remove();
     }
 }
-
-// ========== TOUCH HANDLERS (Mobile) ==========
+// ========== HANDLERS ==========
 function handleTouchStart(e) {
-    const handle = e.target.closest('.drag-icon');
-    if (!handle) return;
+    // Harita içinde bir yere dokunulduysa sürüklemeyi engelle
+    if (e.target.closest('.leaflet-container')) return;
 
-    const item = handle.closest('.travel-item');
-    if (!item) return;
+    const item = e.target.closest('.travel-item');
+    if (!item || e.target.closest('button') || e.target.closest('.map-content-wrap')) return;
+    if (e.touches.length > 1) return;
 
-    // Sadece header'da basılı tutulursa (opsiyonel, şu an ikon zorunlu zaten)
-    e.preventDefault();
-    
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     
-    draggedItem = item;
+    const rect = item.getBoundingClientRect();
+    dragShiftX = startX - rect.left;
+    dragShiftY = startY - rect.top;
     
-    // Timer başlat
-    longPressTimer = setTimeout(() => {
-        startDrag(e.touches[0]);
-    }, LONG_PRESS_MS);
+    lastClientX = startX;
+    lastClientY = startY;
+    
+    longPressTimer = setTimeout(() => startDrag(item, startX, startY), LONG_PRESS_MS);
 }
 
 function handleTouchMove(e) {
-    if (!draggedItem) return;
+    lastClientX = e.touches[0].clientX;
+    lastClientY = e.touches[0].clientY;
 
     if (!isDragging) {
-        // Henüz drag başlamadı, parmak hareket ettiyse iptal et
-        const moveX = Math.abs(e.touches[0].clientX - startX);
-        const moveY = Math.abs(e.touches[0].clientY - startY);
-        if (moveX > 10 || moveY > 10) {
-            clearTimeout(longPressTimer);
-            draggedItem = null;
-        }
-    } else {
-        // Drag aktif
-        e.preventDefault(); 
-        lastClientX = e.touches[0].clientX;
-        lastClientY = e.touches[0].clientY;
-    }
-}
-
-function handleTouchEnd(e) {
-    if (longPressTimer) clearTimeout(longPressTimer);
-    if (isDragging) {
-        finishDrag();
-    }
-    draggedItem = null;
-    isDragging = false;
-}
-
-// ========== DESKTOP LISTENERS ==========
-function setupDesktopListeners() {
-    document.addEventListener('mousedown', (e) => {
-        const handle = e.target.closest('.drag-icon');
-        if (!handle) return;
-        const item = handle.closest('.travel-item');
-        if (!item) return;
-
-        e.preventDefault();
-        draggedItem = item;
-        startDrag(e); // Desktopta bekleme yok
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging || !draggedItem) return;
-        e.preventDefault();
-        lastClientX = e.clientX;
-        lastClientY = e.clientY;
-    });
-
-    document.addEventListener('mouseup', () => {
-        if (isDragging) finishDrag();
-    });
-}
-
-// ========== START DRAG ==========
-function startDrag(inputEvent) {
-    if (!draggedItem) return;
-    
-    isDragging = true;
-    document.body.classList.add('dragging-active');
-    
-    // Scroll parent bul
-    scrollContainer = getScrollParent(draggedItem);
-
-    // Kaynak index'i sakla
-    sourceIndex = parseInt(draggedItem.dataset.index);
-
-    // Body'ye class ekle (Diğerlerini gizlemek için)
-    document.body.classList.add('hide-map-details');
-
-    // Ghost oluştur
-    const rect = draggedItem.getBoundingClientRect();
-    dragShiftX = inputEvent.clientX - rect.left;
-    dragShiftY = inputEvent.clientY - rect.top;
-    
-    createDragGhost(draggedItem, inputEvent.clientX, inputEvent.clientY);
-
-    // Orijinal öğeyi soluklaştır
-    draggedItem.classList.add('dragging-source');
-    
-    // Eğer place ise, altındaki notları da soluklaştır
-    if (!draggedItem.classList.contains('note-item')) {
-        let next = draggedItem.nextElementSibling;
-        while(next && next.classList.contains('note-item')) {
-            next.classList.add('dragging-source');
-            next = next.nextElementSibling;
-        }
-    }
-
-    // İlk koordinatlar
-    lastClientX = inputEvent.clientX;
-    lastClientY = inputEvent.clientY;
-
-    // Loop başlat
-    dragRenderLoop();
-
-    // Titreşim (Mobil)
-    if (navigator.vibrate) navigator.vibrate(50);
-}
-
-// ========== FINISH DRAG ==========
-function finishDrag() {
-    if (!isDragging || !draggedItem) {
-        cleanupDrag();
+        const dx = Math.abs(lastClientX - startX);
+        const dy = Math.abs(lastClientY - startY);
+        if (dx > 10 || dy > 10) clearTimeout(longPressTimer);
         return;
     }
-
-    // Hedef günü ve sırayı bul
-    if (placeholder && placeholder.parentNode) {
-        const dropDayList = placeholder.parentNode;
-        const targetDay = parseInt(dropDayList.dataset.day);
-        
-        // Sıralama
-        const allItemsInTarget = Array.from(dropDayList.querySelectorAll('.travel-item:not(.dragging-source)'));
-        let targetIndex = allItemsInTarget.indexOf(placeholder.nextElementSibling);
-        
-        if (targetIndex === -1) targetIndex = allItemsInTarget.length;
-
-        // Kendi günümüzde miyiz?
-        const sourceDay = parseInt(draggedItem.closest('.day-list').dataset.day);
-        
-        // İşlemi yap
-        reorderItems(sourceDay, targetDay, draggedItem, targetIndex);
-    }
-
-    cleanupDrag();
+    
+    if (e.cancelable) e.preventDefault();
 }
 
-// ========== REORDER LOGIC (DATA) ==========
-function reorderItems(fromDay, toDay, itemElement, targetIndex) {
-    try {
-        const fromIndex = parseInt(itemElement.dataset.index);
-        
-        // Eğer aynı gün ve aynı yer ise iptal (Görsel titreme olmasın diye yapılan check)
-        // Ancak bu mantık biraz karmaşık, basitçe array manipülasyonuna geçelim.
+function handleTouchEnd() {
+    clearTimeout(longPressTimer);
+    if (isDragging) finishDrag();
+}
 
-        // 1. Taşınacakları belirle (Item + Altındaki Notlar)
-        let itemsToMove = [];
-        // window.cart'tan bul
-        let sourceCartIndex = -1;
-        // Global cart içindeki gerçek indexi bulmamız lazım.
-        // itemElement.dataset.index window.cart indexidir.
-        
-        // GÜVENLİK: DOM indexi ile Cart indexi senkron olmayabilir.
-        // En doğrusu: window.cart'ı filtreleyip, o günün itemlarını bulup, oradan index almak.
-        
-        // Basit Yöntem: dataset.index'e güveniyoruz (render sırasında güncelleniyor)
-        // Ancak, notları da peşine takmamız lazım.
-        
-        const mainItem = window.cart[fromIndex];
-        if (!mainItem) return; // Hata
+function setupDesktopListeners() {
+    document.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        // Harita alanı veya kontrollerine tıklandıysa sürüklemeyi başlatma
+        if (e.target.closest('.leaflet-container') || e.target.closest('.leaflet-control') || e.target.closest('.map-functions')) return;
 
-        itemsToMove.push(mainItem);
+        const item = e.target.closest('.travel-item');
+        if (item && !e.target.closest('button')) {
+            draggedItem = item;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = item.getBoundingClientRect();
+            dragShiftX = startX - rect.left;
+            dragShiftY = startY - rect.top;
+            
+            lastClientX = startX;
+            lastClientY = startY;
+
+            let isDragStarted = false;
+
+            const onMouseMove = (moveEvent) => {
+                if ((moveEvent.buttons & 1) === 0) {
+                    onMouseUp();
+                    return;
+                }
+
+                lastClientX = moveEvent.clientX;
+                lastClientY = moveEvent.clientY;
+
+                if (!isDragStarted) {
+                    const dx = Math.abs(lastClientX - startX);
+                    const dy = Math.abs(lastClientY - startY);
+                    if (dx > 5 || dy > 5) {
+                        isDragStarted = true;
+                        startDrag(item, lastClientX, lastClientY);
+                    }
+                }
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (isDragStarted) finishDrag();
+                else draggedItem = null;
+            };
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+    });
+}
+
+function startDrag(item, x, y) {
+    draggedItem = item;
+    sourceIndex = parseInt(item.dataset.index);
+    scrollContainer = getScrollParent(item);
+    
+    lastClientX = x;
+    lastClientY = y;
+
+    if (navigator.vibrate) navigator.vibrate(50);
+    
+    const currentDocHeight = document.documentElement.scrollHeight;
+    document.body.style.minHeight = currentDocHeight + 'px';
+
+    createDragGhost(item, x, y);
+    item.classList.add('dragging-source'); // <-- GRYSCALE BAŞLANGIÇ
+    
+    document.body.classList.add('hide-map-details');
+    document.body.classList.add('dragging-active');
+
+    isDragging = true;
+    dragRenderLoop();
+}
+
+function finishDrag() {
+    isDragging = false; 
+
+    if (placeholder && placeholder.parentNode) {
+        const dropList = placeholder.parentNode;
         
-        // Altındaki notları bul (Cart içinde, mainItem'dan sonra gelenler)
-        // Notlar, mainItem ile aynı günde ve araya başka 'Place' girmemiş olmalı.
-        let lookAhead = fromIndex + 1;
-        while (lookAhead < window.cart.length) {
-            const candidate = window.cart[lookAhead];
-            if (candidate.day === fromDay && candidate.category === 'Note') {
-                itemsToMove.push(candidate);
-                lookAhead++;
-            } else {
+        const getValidNeighbor = (startNode, direction) => {
+            let sibling = direction === 'prev' ? startNode.previousElementSibling : startNode.nextElementSibling;
+            while (sibling) {
+                if (sibling.classList.contains('dragging-source') || !sibling.classList.contains('travel-item')) {
+                    sibling = direction === 'prev' ? sibling.previousElementSibling : sibling.nextElementSibling;
+                } else {
+                    return sibling;
+                }
+            }
+            return null;
+        };
+
+        let prev = getValidNeighbor(placeholder, 'prev');
+        let next = getValidNeighbor(placeholder, 'next');
+
+        const isDuplicate = (element) => {
+            if (!element) return false;
+            const idx = parseInt(element.dataset.index);
+            const itemData = window.cart[idx];
+            if (!itemData || idx === sourceIndex) return false;
+            const name1 = (itemData.title || itemData.name || "").trim().toLowerCase();
+            const name2 = (window.cart[sourceIndex].name || "").trim().toLowerCase();
+            return name1 === name2 && name1 !== "";
+        };
+
+        if (isDuplicate(prev) || isDuplicate(next)) {
+            const conflictItem = isDuplicate(prev) ? prev : next;
+            conflictItem.classList.add('shake-error');
+            setTimeout(() => alert("ℹ️ Note: You added the same place consecutively."), 10);
+        }
+
+        const toDay = parseInt(dropList.dataset.day);
+        
+        let realIndex = 0;
+        const siblings = dropList.querySelectorAll('.travel-item:not(.dragging-source), .insertion-placeholder');
+        for(let i=0; i<siblings.length; i++) {
+            if(siblings[i].classList.contains('insertion-placeholder')) {
+                realIndex = i;
                 break;
             }
         }
 
-        // 2. Cart'tan çıkar
-        // Dikkat: Splice yaparken indexler kayar. O yüzden tersten veya dikkatli silmeliyiz.
-        // itemsToMove zaten sıralı (blok halinde).
-        // fromIndex'ten başlayarak itemsToMove.length kadar sil.
+        const fromIndex = sourceIndex;
+        if (window.cart && window.cart[fromIndex]) {
+            reorderCart(fromIndex, realIndex, window.cart[fromIndex].day, toDay);
+        }
+    }
+    cleanupDrag();
+}
+
+function reorderCart(fromIndex, toIndex, fromDay, toDay) {
+    try {
+        let newCart = [...window.cart];
         
-        const removedItems = window.cart.splice(fromIndex, itemsToMove.length);
+        if (!newCart[fromIndex]) return;
+
+        const mainItem = newCart[fromIndex];
+        const isNote = (mainItem.category === 'Note'); // KONTROL BURADA
+        const itemsToMove = [mainItem];
         
-        // Eğer gün değiştiyse, itemların gününü güncelle
+        // Sadece sürüklenen eleman NOT DEĞİLSE altındakileri topla
+        if (!isNote) {
+            let checkIndex = fromIndex + 1;
+            while (checkIndex < newCart.length) {
+                const nextItem = newCart[checkIndex];
+                // Aynı günde olan ardışık notları al
+                if (nextItem.category === 'Note' && nextItem.day === fromDay) {
+                    itemsToMove.push(nextItem);
+                    checkIndex++;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // 2. Silme
+        newCart = newCart.filter(item => !itemsToMove.includes(item));
+
+        // 3. Güncelleme
         if (fromDay !== toDay) {
-            removedItems.forEach(it => it.day = toDay);
+            itemsToMove.forEach(item => item.day = toDay);
         }
 
-        // 3. Hedef Konumu Bul (Global Cart Index)
-        // targetIndex: o günün listesindeki (DOM) sıra numarası.
-        // Bunu global cart indexine çevirmeliyiz.
-        
-        const targetDayItems = window.cart.filter(i => i.day === toDay);
-        
-        let insertGlobalIndex = 0;
-        
-        if (targetDayItems.length === 0) {
-            // Gün boşsa, diğer günlerin sonuna veya başına... 
-            // Basitçe: O günden önceki günlerin item sayısını bul.
-            const prevItems = window.cart.filter(i => i.day < toDay);
-            insertGlobalIndex = prevItems.length; 
-        } 
-        else if (targetIndex >= targetDayItems.length) {
-            // O günün sonuna ekle
-            // O günün son itemını bul, onun global indexini al + 1
-            const lastItem = targetDayItems[targetDayItems.length - 1];
-            insertGlobalIndex = window.cart.indexOf(lastItem) + 1;
-        } 
-        else {
-            // Araya ekle
-            const targetItem = targetDayItems[targetIndex];
-            insertGlobalIndex = window.cart.indexOf(targetItem);
-        }
+        // 4. Ekleme
+        const targetDayItems = newCart.filter(i => i.day === toDay);
+        targetDayItems.splice(toIndex, 0, ...itemsToMove);
 
-        // 4. Araya Ekle
-        window.cart.splice(insertGlobalIndex, 0, ...removedItems);
+        // 5. Birleştirme
+        const allDays = new Set([...window.cart.map(i => i.day), toDay, fromDay]);
+        const sortedDays = [...allDays].sort((a, b) => a - b);
+        
+        let finalCart = [];
+        sortedDays.forEach(d => {
+            if (d === toDay) {
+                finalCart = finalCart.concat(targetDayItems);
+            } else {
+                finalCart = finalCart.concat(newCart.filter(i => i.day === d));
+            }
+        });
 
-        // 5. Kaydet ve Çiz
+        window.cart = finalCart;
+
+        // === KAYDET ===
         if (typeof saveCurrentTripToStorage === "function") {
             saveCurrentTripToStorage();
         } else {
             localStorage.setItem('cart', JSON.stringify(window.cart));
         }
 
+        // === RENDER ===
         if (typeof updateCart === "function") updateCart();
 
         // Harita güncellemesi
         setTimeout(() => {
-            if (typeof renderRouteForDay === "function") {
-                renderRouteForDay(toDay);
-                if (fromDay !== toDay) renderRouteForDay(fromDay);
+            if (typeof calculateAllRoutes === "function") calculateAllRoutes();
+            else if (typeof renderMapForDay === "function") {
+                renderMapForDay(toDay);
+                if (fromDay !== toDay) renderMapForDay(fromDay);
             }
         }, 50);
 
     } catch (e) {
         console.error("Reorder error:", e);
     }
+}
+
+window.initDragDropSystem = initDragDropSystem;
+if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDragDropSystem);
+} else {
+    initDragDropSystem();
 }
