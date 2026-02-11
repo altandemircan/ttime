@@ -5065,160 +5065,124 @@ if (anyDayHasRealItem && !hideAddCat) {
         const group = document.createElement('div');
         group.className = 'tt-day-actions';
 
-        // 1) Add Category
-        const addCategoryBtn = document.createElement("button");
-        addCategoryBtn.className = "add-more-btn";
-        addCategoryBtn.innerHTML = `
-          <img src="img/add_item.svg" alt="" style="width:18px;height:18px;">
-          <span>Add Item</span>
-        `;
-        addCategoryBtn.style.display = 'flex';
-        addCategoryBtn.style.alignItems = 'center';
-        addCategoryBtn.style.justifyContent = 'center';
-        addCategoryBtn.style.gap = '6px';
-        addCategoryBtn.dataset.day = day;
-        addCategoryBtn.onclick = function () {
-            if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
-        };
+       // 1) Add Category
+const addCategoryBtn = document.createElement("button");
+addCategoryBtn.className = "add-more-btn";
+addCategoryBtn.innerHTML = `
+  <img src="img/add_item.svg" alt="" style="width:18px;height:18px;">
+  <span>Add Item</span>
+`;
+addCategoryBtn.style.display = 'flex';
+addCategoryBtn.style.alignItems = 'center';
+addCategoryBtn.style.justifyContent = 'center';
+addCategoryBtn.style.gap = '6px';
+addCategoryBtn.dataset.day = day;
+addCategoryBtn.onclick = function () {
+    if (typeof showCategoryList === 'function') showCategoryList(this.dataset.day);
+};
 
-        // 2) Add Custom Note
-        // 2) Add Custom Note
-        // 2) Add Custom Note
-        const addCustomNoteBtn = document.createElement("button");
-        addCustomNoteBtn.className = "add-custom-note-btn";
-        addCustomNoteBtn.innerHTML = `
-          <img src="img/add_note.svg" alt="" style="width:18px;height:18px;">
-          <span>Add Note</span>
-        `;
-        addCustomNoteBtn.style.cssText = "display: flex; align-items: center; justify-content: center; gap: 6px;";
+// 2) Add from My Places - DÜZENLENDİ
+const addFromMyPlacesBtn = document.createElement("button");
+addFromMyPlacesBtn.className = "add-favorite-place-btn my-places-btn"; // İKİ SINIF BİRDEN
+addFromMyPlacesBtn.innerHTML = `
+  <img src="img/add_my_places.svg" alt="" style="width:18px;height:18px;">
+  <span>My Places</span>
+`;
+addFromMyPlacesBtn.style.display = 'flex';
+addFromMyPlacesBtn.style.alignItems = 'center';
+addFromMyPlacesBtn.style.justifyContent = 'center';
+addFromMyPlacesBtn.style.gap = '6px';
+addFromMyPlacesBtn.setAttribute('data-role', 'my-places-btn'); // EKSTRA ATTRIBUTE
+addFromMyPlacesBtn.onclick = function () {
+    if (window.toggleSidebarFavoritePlaces) {
+        window.toggleSidebarFavoritePlaces();
+    }
+};
 
-        // Not Kutusu (Container)
-        const noteBox = document.createElement("div");
-        noteBox.className = "custom-note-container";
-        
-        // --- KRİTİK NOKTA: KESİN GİZLE ---
-        // Oluşturulur oluşturulmaz inline style olarak gizliyoruz. 
-        // Bu, CSS dosyalarından etkilenmez.
-        noteBox.style.display = "none"; 
-        noteBox.style.width = "100%";
-        noteBox.style.flexBasis = "100%";
-        
-        noteBox.innerHTML = `
-            <h3>Add Custom Note for Day ${day}</h3>
-            <input type="text" placeholder="Note title" class="note-input">
-            <textarea placeholder="Note details" class="note-textarea"></textarea>
-            <div class="modal-actions">
-                <button type="button" class="save-note">Save Note</button>
-                <button type="button" class="cancel-note">Cancel</button>
-            </div>
-        `;
+// 3) Add Custom Note - DÜZENLENDİ
+const addCustomNoteBtn = document.createElement("button");
+addCustomNoteBtn.className = "add-custom-note-btn add-note-btn"; // İKİ SINIF BİRDEN
+addCustomNoteBtn.innerHTML = `
+  <img src="img/add_note.svg" alt="" style="width:18px;height:18px;">
+  <span>Add Note</span>
+`;
+addCustomNoteBtn.style.cssText = "display: flex; align-items: center; justify-content: center; gap: 6px;";
+addCustomNoteBtn.setAttribute('data-role', 'add-note-btn'); // EKSTRA ATTRIBUTE
 
-        // Element Referansları
-        const saveBtn = noteBox.querySelector(".save-note");
-        const cancelBtn = noteBox.querySelector(".cancel-note");
-        const titleInput = noteBox.querySelector(".note-input");
-        const detailsInput = noteBox.querySelector(".note-textarea");
+// Not Kutusu (Container)
+const noteBox = document.createElement("div");
+noteBox.className = "custom-note-container note-container"; // İKİ SINIF BİRDEN
+noteBox.setAttribute('data-role', 'note-container'); // EKSTRA ATTRIBUTE
 
-        // --- AÇMA / KAPAMA (Add Note Butonu) ---
-        addCustomNoteBtn.onclick = function () {
-            // Eğer display none ise, flex yap (aç). Değilse none yap (kapat).
-            if (noteBox.style.display === "none") {
-                noteBox.style.display = "flex";
-                noteBox.style.flexDirection = "column"; // Flex yönünü de JS ile veriyoruz
-                noteBox.style.gap = "6px";
-                noteBox.style.margin = "20px 0";
-                titleInput.focus();
-            } else {
-                noteBox.style.display = "none";
-            }
-        };
+// --- KRİTİK NOKTA: KESİN GİZLE ---
+noteBox.style.display = "none"; 
+noteBox.style.width = "100%";
+noteBox.style.flexBasis = "100%";
 
-        // --- İPTAL (Cancel) ---
-        cancelBtn.onclick = function () {
-            noteBox.style.display = "none"; // Kesin kapat
-            titleInput.value = "";
-            detailsInput.value = "";
-        };
+noteBox.innerHTML = `
+    <h3>Add Custom Note for Day ${day}</h3>
+    <input type="text" placeholder="Note title" class="note-input">
+    <textarea placeholder="Note details" class="note-textarea"></textarea>
+    <div class="modal-actions">
+        <button type="button" class="save-note">Save Note</button>
+        <button type="button" class="cancel-note">Cancel</button>
+    </div>
+`;
 
-        // --- KAYDET (Save) ---
-        saveBtn.onclick = async function () {
-            if (typeof saveCustomNote === "function") {
-                // ID Atama Hilesi
-                titleInput.id = "noteTitle";
-                detailsInput.id = "noteDetails";
+// Element Referansları
+const saveBtn = noteBox.querySelector(".save-note");
+const cancelBtn = noteBox.querySelector(".cancel-note");
+const titleInput = noteBox.querySelector(".note-input");
+const detailsInput = noteBox.querySelector(".note-textarea");
 
-                await saveCustomNote(day);
+// --- AÇMA / KAPAMA (Add Note Butonu) ---
+addCustomNoteBtn.onclick = function () {
+    if (noteBox.style.display === "none") {
+        noteBox.style.display = "flex";
+        noteBox.style.flexDirection = "column";
+        noteBox.style.gap = "6px";
+        noteBox.style.margin = "20px 0";
+        titleInput.focus();
+    } else {
+        noteBox.style.display = "none";
+    }
+};
 
-                titleInput.removeAttribute("id");
-                detailsInput.removeAttribute("id");
-            }
-            // Kapat ve temizle
-            noteBox.style.display = "none";
-            titleInput.value = "";
-            detailsInput.value = "";
-        };
+// --- İPTAL (Cancel) ---
+cancelBtn.onclick = function () {
+    noteBox.style.display = "none";
+    titleInput.value = "";
+    detailsInput.value = "";
+};
 
-        // --- CANCEL BUTONU ---
-        cancelBtn.onclick = function () {
-            noteBox.style.display = "none";
-            titleInput.value = "";
-            detailsInput.value = "";
-        };
+// --- KAYDET (Save) ---
+saveBtn.onclick = async function () {
+    if (typeof saveCustomNote === "function") {
+        titleInput.id = "noteTitle";
+        detailsInput.id = "noteDetails";
+        await saveCustomNote(day);
+        titleInput.removeAttribute("id");
+        detailsInput.removeAttribute("id");
+    }
+    noteBox.style.display = "none";
+    titleInput.value = "";
+    detailsInput.value = "";
+};
 
-        // --- AÇMA/KAPAMA BUTONU ---
-        addCustomNoteBtn.onclick = function () {
-            // Açık mı kapalı mı kontrol et
-            const isHidden = noteBox.style.display === "none";
-            
-            // Toggle işlemi
-            noteBox.style.display = isHidden ? "block" : "none";
-
-            // Açılıyorsa başlığa odaklan
-            if (isHidden) {
-                setTimeout(() => {
-                    titleInput.focus();
-                }, 0);
-            }
-        };
-        // --- YENİ DÜZENLEME BİTİŞİ ---
-
-        // 3) Add from My Places
-        const addFromMyPlacesBtn = document.createElement("button");
-        addFromMyPlacesBtn.className = "add-favorite-place-btn";
-        addFromMyPlacesBtn.innerHTML = `
-          <img src="img/add_my_places.svg" alt="" style="width:18px;height:18px;">
-          <span>My Places</span>
-        `;
-        addFromMyPlacesBtn.style.display = 'flex';
-        addFromMyPlacesBtn.style.alignItems = 'center';
-        addFromMyPlacesBtn.style.justifyContent = 'center';
-        addFromMyPlacesBtn.style.gap = '6px';
-        addFromMyPlacesBtn.onclick = function () {
-            if (window.toggleSidebarFavoritePlaces) {
-                window.toggleSidebarFavoritePlaces();
-            }
-        };
-
-        // sırayla ekle
-        // Butonlar yan yana (row)
+// sırayla ekle
 const actionsRow = document.createElement('div');
 actionsRow.className = 'tt-day-actions-row';
 actionsRow.style.display = 'flex';
 actionsRow.style.flexDirection = 'row';
 actionsRow.style.gap = '8px';
-actionsRow.style.flexWrap = 'nowrap';      // küçük ekranda taşarsa alta insin
+actionsRow.style.flexWrap = 'nowrap';
 actionsRow.style.alignItems = 'center';
 
 actionsRow.appendChild(addCategoryBtn);
 actionsRow.appendChild(addFromMyPlacesBtn);
 actionsRow.appendChild(addCustomNoteBtn);
 
-// group içine önce row'u koy
 group.appendChild(actionsRow);
-
-// note kutusu her zaman altta, tam genişlik
-noteBox.style.width = '100%';
-noteBox.style.flexBasis = '100%';
 group.appendChild(noteBox);
 
         dayList.appendChild(group);

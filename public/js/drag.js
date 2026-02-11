@@ -102,30 +102,25 @@ function injectDragStyles() {
 
         /* 2. BUTONLAR VE KALABALIK (MOBİLDE) */
         /* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
-        /* Onlar artık görünür kalacak. Sadece butonları gizliyoruz. */
-        @media (max-width: 768px) {
-              body.hide-map-details .add-more-btn,
-    body.hide-map-details .add-new-day-btn,
-    body.hide-map-details #add-new-day-button,
-    body.hide-map-details .add-new-day-separator, 
-    body.hide-map-details .add-to-calendar-btn,
-    body.hide-map-details #newchat,
-    body.hide-map-details .trip-share-section,
-    body.hide-map-details .date-range,
-    /* My Places butonları - GERÇEK SINIF ADLARI */
+        /* ========== SÜRÜKLEME SIRASINDA BUTONLARI GİZLE - KESIN ÇÖZÜM ========== */
+@media (max-width: 768px) {
+    body.hide-map-details .my-places-btn,
     body.hide-map-details .add-favorite-place-btn,
-    body.hide-map-details [class*="favorite-place"],
-    body.hide-map-details [onclick*="toggleSidebarFavoritePlaces"],
-    /* Add Note butonları - GERÇEK SINIF ADLARI */
+    body.hide-map-details .add-note-btn,
     body.hide-map-details .add-custom-note-btn,
+    body.hide-map-details .note-container,
     body.hide-map-details .custom-note-container,
-    body.hide-map-details [class*="custom-note"],
-    body.hide-map-details [onclick*="saveCustomNote"]
-    {
+    body.hide-map-details [data-role="my-places-btn"],
+    body.hide-map-details [data-role="add-note-btn"],
+    body.hide-map-details [data-role="note-container"],
+    body.hide-map-details button[onclick*="toggleSidebarFavoritePlaces"],
+    body.hide-map-details button[onclick*="saveCustomNote"] {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
-        }
-
+}
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
