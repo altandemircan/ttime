@@ -2733,8 +2733,9 @@ function setupViewSwitcherButton(mapInstance) {
         }
     };
 
-    btn.innerHTML = contentToMap;
-
+    // ✅ İlk başta harita gösterilsin, liste gizli olsun
+    btn.innerHTML = contentToList;
+    
     const ghostChecker = setInterval(() => {
         if (!document.getElementById('custom-nearby-popup')) {
             btn.remove();
@@ -2753,6 +2754,8 @@ window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true
     setTimeout(() => {
         const popup = document.getElementById('custom-nearby-popup');
         if (popup && window.innerWidth < 768) {
+            // ✅ Mobilde ilk başta popup gizli olsun, harita görünsün
+            popup.style.display = 'none';
             setupViewSwitcherButton(map);
         }
     }, 100);
