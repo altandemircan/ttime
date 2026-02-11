@@ -2017,7 +2017,7 @@ function setupViewSwitcherButton(mapInstance) {
     
     btn.style.cssText = `
         padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.9);
+    background: #fff;
     color: rgb(30, 41, 59);
     border: none;
     border-radius: 50px 0 0 50px;
