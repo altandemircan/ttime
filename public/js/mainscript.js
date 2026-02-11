@@ -7228,15 +7228,7 @@ function openMapLibre3D(expandedMap) {
             highlightSegmentOnMap(day, window._lastSegmentStartKm, window._lastSegmentEndKm);
         }, 500);
     }
-    
-    // Click eventleri vs. aynen kalabilir...
-    window._maplibre3DInstance.on('click', (e) => {
-        const { lng, lat } = e.lngLat;
-        if (typeof closeNearbyPopup === 'function') closeNearbyPopup();
-        if (typeof showNearbyPlacesPopup === 'function') {
-            showNearbyPlacesPopup(lat, lng, window._maplibre3DInstance, day, 500);
-        }
-    });
+  
 });
 }
 
