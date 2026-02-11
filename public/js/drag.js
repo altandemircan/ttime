@@ -112,10 +112,15 @@ function injectDragStyles() {
     body.hide-map-details #newchat,
     body.hide-map-details .trip-share-section,
     body.hide-map-details .date-range,
-    body.hide-map-details .my-places-btn,           /* YENİ: My Places butonu */
-    body.hide-map-details .add-note-btn,            /* YENİ: Add Note butonu */
-    body.hide-map-details #my-places-button,        /* YENİ: ID'li versiyon */
-    body.hide-map-details #add-note-button          /* YENİ: ID'li versiyon */
+    /* My Places butonları - GERÇEK SINIF ADLARI */
+    body.hide-map-details .add-favorite-place-btn,
+    body.hide-map-details [class*="favorite-place"],
+    body.hide-map-details [onclick*="toggleSidebarFavoritePlaces"],
+    /* Add Note butonları - GERÇEK SINIF ADLARI */
+    body.hide-map-details .add-custom-note-btn,
+    body.hide-map-details .custom-note-container,
+    body.hide-map-details [class*="custom-note"],
+    body.hide-map-details [onclick*="saveCustomNote"]
     {
         display: none !important;
     }
