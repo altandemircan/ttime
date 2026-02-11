@@ -4,23 +4,23 @@ function injectDragStyles() {
     if (document.getElementById(styleId)) return;
     const css = `
         /* --- GHOST WRAPPER --- */
-        .drag-ghost {
-            position: fixed !important;
-            z-index: 999999 !important;
-            pointer-events: none !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
-            width: var(--ghost-width) !important;
-            height: auto !important; 
-            margin: 0 !important;
-            will-change: left, top;
-            transition: none !important;
-            overflow: visible !important; 
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
+       .drag-ghost {
+    position: fixed !important;
+    z-index: 999999 !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: var(--ghost-width) !important;
+    height: auto !important; 
+    margin: 0 !important;
+    will-change: transform; /* left/top değil */
+    transition: none !important;
+    overflow: visible !important; 
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
 
         .drag-ghost .travel-item:not(.note-item) {
             position: relative !important;
@@ -102,21 +102,41 @@ function injectDragStyles() {
 
         /* 2. BUTONLAR VE KALABALIK (MOBİLDE) */
         /* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
-        /* Onlar artık görünür kalacak. Sadece butonları gizliyoruz. */
-        @media (max-width: 768px) {
-            body.hide-map-details .add-more-btn,
-            body.hide-map-details .add-new-day-btn,
-            body.hide-map-details #add-new-day-button,
-            body.hide-map-details .add-new-day-separator, 
-            body.hide-map-details .add-to-calendar-btn,
-            body.hide-map-details #newchat,
-            body.hide-map-details .trip-share-section,
-            body.hide-map-details .date-range
-            {
-                display: none !important;
-            }
-        }
+        /* ========== SÜRÜKLEME SIRASINDA BUTONLARI GİZLE - KESIN ÇÖZÜM ========== */
+/* 2. BUTONLAR VE KALABALIK (MOBİLDE) */
+/* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
 
+/* ===== Drag sırasında My Places + Add Note her ekranda gizlensin ===== */
+body.dragging-active .my-places-btn,
+body.dragging-active .add-favorite-place-btn,
+body.dragging-active .add-note-btn,
+body.dragging-active .add-custom-note-btn,
+body.dragging-active .note-container,
+body.dragging-active .custom-note-container,
+body.dragging-active [data-role="my-places-btn"],
+body.dragging-active [data-role="add-note-btn"]
+,clbaody.dragging-active [data-role="note-container"],
+body.dragging-active button[onclick*="toggleSidebarFavoritePlaces"],
+body.dragging-active button[onclick*="saveCustomNote"],
+
+body.hide-map-details .my-places-btn,
+body.hide-map-details .add-favorite-place-btn,
+body.hide-map-details .add-note-btn,
+body.hide-map-details .add-custom-note-btn,
+body.hide-map-details .note-container,
+body.hide-map-details .custom-note-container,
+body.hide-map-details [data-role="my-places-btn"],
+body.hide-map-details [data-role="add-note-btn"],
+body.hide-map-details [data-role="note-container"],
+body.hide-map-details button[onclick*="toggleSidebarFavoritePlaces"],
+body.hide-map-details button[onclick*="saveCustomNote"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Eski @media bloğu artık gereksiz → kaldır */
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
             pointer-events: auto;
         }
@@ -159,6 +179,14 @@ const SCROLL_THRESHOLD_BOTTOM = 160;
 const MAX_SCROLL_SPEED = 28;  
 
 let lastClientX = 0, lastClientY = 0;
+
+// ALTINA EKLE:
+let ghostEl = null;
+let ghostPosX = 0, ghostPosY = 0;
+let ghostTargetX = 0, ghostTargetY = 0;
+let ghostWidth = 0, ghostHeight = 0;
+let lastPlaceholderUpdate = 0;
+let lastPlaceholderX = 0, lastPlaceholderY = 0;
 
 // ========== INITIALIZATION ==========
 function initDragDropSystem() {
@@ -246,41 +274,40 @@ function dragRenderLoop() {
     // 1. Scroll Hesapla ve Uygula
     handleAutoScroll(lastClientY);
 
-    // 2. Ghost Pozisyonunu Güncelle (yalnızca cart/sidebar alanında kalsın)
-    const ghost = document.querySelector('.drag-ghost');
-    if (ghost) {
-        // Kart alanını bul
-        const cart = document.querySelector('.sidebar, #cart, .cart-items');
-        if (cart) {
-            const cartRect = cart.getBoundingClientRect();
-            const ghostRect = ghost.getBoundingClientRect();
-            const width = ghostRect.width || ghost.offsetWidth;
-            const height = ghostRect.height || ghost.offsetHeight;
+    // DEĞİŞTİR:
+if (ghostEl) {
+    const cart = document.querySelector('.sidebar, #cart, .cart-items');
+    let newLeft = lastClientX - dragShiftX;
+    let newTop = lastClientY - dragShiftY;
 
-            // Mouse pozisyonunu, cart alanı dışına çıkmayacak şekilde sınırla
-            let newLeft = lastClientX - dragShiftX;
-            let newTop = lastClientY - dragShiftY;
+    if (cart) {
+        const cartRect = cart.getBoundingClientRect();
 
-            // Sol sınır
-            if (newLeft < cartRect.left) newLeft = cartRect.left;
-            // Sağ sınır
-            if (newLeft + width > cartRect.right) newLeft = cartRect.right - width;
-            // Üst sınır
-            if (newTop < cartRect.top) newTop = cartRect.top;
-            // Alt sınır
-            if (newTop + height > cartRect.bottom) newTop = cartRect.bottom - height;
-
-            ghost.style.left = newLeft + 'px';
-            ghost.style.top = newTop + 'px';
-        } else {
-            // Cart bulunamazsa mevcut davranış
-            ghost.style.left = (lastClientX - dragShiftX) + 'px';
-            ghost.style.top = (lastClientY - dragShiftY) + 'px';
-        }
+        if (newLeft < cartRect.left) newLeft = cartRect.left;
+        if (newLeft + ghostWidth > cartRect.right) newLeft = cartRect.right - ghostWidth;
+        if (newTop < cartRect.top) newTop = cartRect.top;
+        if (newTop + ghostHeight > cartRect.bottom) newTop = cartRect.bottom - ghostHeight;
     }
 
-    // 3. Placeholder Güncelle
+    ghostTargetX = newLeft;
+    ghostTargetY = newTop;
+
+    const smooth = 0.35; // yumuşaklık
+    ghostPosX += (ghostTargetX - ghostPosX) * smooth;
+    ghostPosY += (ghostTargetY - ghostPosY) * smooth;
+
+    ghostEl.style.transform = `translate3d(${ghostPosX}px, ${ghostPosY}px, 0)`;
+}
+    // BUNUNLA DEĞİŞTİR:
+const now = performance.now();
+const moved = Math.abs(lastPlaceholderX - lastClientX) + Math.abs(lastPlaceholderY - lastClientY) > 2;
+
+if (moved && now - lastPlaceholderUpdate > 16) {
     updatePlaceholder(lastClientX, lastClientY);
+    lastPlaceholderUpdate = now;
+    lastPlaceholderX = lastClientX;
+    lastPlaceholderY = lastClientY;
+}
 
     requestAnimationFrame(dragRenderLoop);
 }
@@ -336,11 +363,21 @@ function createDragGhost(item, clientX, clientY) {
     const ghostWrapper = document.createElement('div');
     ghostWrapper.classList.add('drag-ghost'); 
     
-    ghostWrapper.style.width = rect.width + "px";
-    ghostWrapper.style.left = rect.left + "px";
-    ghostWrapper.style.top = rect.top + "px";
-    ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
-    
+   // DEĞİŞTİR:
+ghostWrapper.style.width = rect.width + "px";
+ghostWrapper.style.setProperty('--ghost-width', rect.width + 'px');
+ghostWrapper.style.left = "0px";
+ghostWrapper.style.top = "0px";
+ghostWrapper.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+
+// VE BU BLOĞU EKLE (ghostWrapper oluşturulduktan hemen sonra):
+ghostEl = ghostWrapper;
+ghostWidth = rect.width;
+ghostHeight = rect.height;
+ghostPosX = rect.left;
+ghostPosY = rect.top;
+ghostTargetX = rect.left;
+ghostTargetY = rect.top;
     // --- OKLARI EKLE ---
     const upArrow = document.createElement('div');
     upArrow.className = 'drag-arrow-visual drag-arrow-top';

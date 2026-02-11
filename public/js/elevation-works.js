@@ -3,7 +3,101 @@ window.__scaleBarDragTrack = null;
 window.__scaleBarDragSelDiv = null;
 
 
+// BUL (varsa, en üstlerde yoksa ekle)
+window.__scaleBarDrag = null;
+window.__scaleBarDragTrack = null;
+window.__scaleBarDragSelDiv = null;
 
+// DEĞİŞTİR / EKLE (hemen altına ekle)
+function ensureScaleBarLoaderStyles() {
+  if (document.getElementById('tt-scale-loader-style')) return;
+  const style = document.createElement('style');
+  style.id = 'tt-scale-loader-style';
+  style.textContent = `
+    .tt-scale-loader {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      color: #1976d2;
+    }
+    .tt-scale-loader .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(25,118,210,0.25);
+      border-top-color: #1976d2;
+      border-radius: 50%;
+      animation: ttSpin 0.8s linear infinite;
+    }
+    .tt-scale-loader .dots::after {
+      content: '...';
+      animation: ttDots 1.2s steps(4, end) infinite;
+    }
+    @keyframes ttSpin { to { transform: rotate(360deg); } }
+    @keyframes ttDots {
+      0% { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+      100% { content: ''; }
+    }
+    .elevation-placeholder {
+      width: 100%;
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.95);
+      border-radius: 8px;
+      position: absolute;
+      inset: 0;
+      z-index: 1000;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function getScaleLoaderHTML(label = 'Loading elevation') {
+  return `
+    <span class="tt-elev-loader" role="status" aria-live="polite">
+      <svg class="tt-elev-spinner" viewBox="0 0 50 50" aria-hidden="true">
+        <defs>
+          <linearGradient id="ttElevGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="50%" stop-color="#38bdf8"/>
+            <stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+        </defs>
+        <circle
+          cx="25" cy="25" r="18"
+          fill="none"
+          stroke="url(#ttElevGrad)"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-dasharray="20 10"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="0 25 25"
+            to="360 25 25"
+            dur="0.9s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="stroke-dasharray"
+            values="18 10; 26 10; 18 10"
+            dur="1.2s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      </svg>
+      <span class="tt-elev-loader-text">${label}</span>
+      
+    </span>
+  `;
+}
 function fmt(distanceMeters, durationSeconds, ascentM, descentM) {
     const distStr = (typeof distanceMeters === 'number')
       ? (distanceMeters / 1000).toFixed(2) + ' km' : '';
@@ -230,15 +324,15 @@ if ((!spanKm || spanKm < 0.01) && !customElevData) {
         const curKm = Math.min(spanKm, i * stepKm);
         const leftPct = (curKm / spanKm) * 100;
 
-        const tick = document.createElement('div');
-        tick.className = 'scale-bar-tick';
-        tick.style.left = `${leftPct}%`;
-        tick.style.position = 'absolute';
-        tick.style.top = '10px';
-        tick.style.width = '1px';
-        tick.style.height = '16px';
-        tick.style.background = '#cfd8dc';
-        track.appendChild(tick);
+        // const tick = document.createElement('div');
+        // tick.className = 'scale-bar-tick';
+        // tick.style.left = `${leftPct}%`;
+        // tick.style.position = 'absolute';
+        // tick.style.top = '10px';
+        // tick.style.width = '1px';
+        // tick.style.height = '16px';
+        // tick.style.background = '#cfd8dc';
+        // track.appendChild(tick);
 
         const label = document.createElement('div');
         label.className = 'scale-bar-label';
@@ -351,50 +445,81 @@ if (Array.isArray(markers)) {
         }
     }
 
+    // --- Grid Labels (DÜZELTİLMİŞ VERSİYON) ---
+    const oldLabels = track.querySelector('.elevation-labels-container');
+    if (oldLabels) oldLabels.remove();
+
+    // Eğer gridLabels yukarıda tanımlanmadıysa burada tanımlayalım (güvenlik için)
+    if (typeof gridLabels === 'undefined') {
+        let gridLabels = [];
+        const svg = track.querySelector('svg.tt-elev-svg');
+        if (svg) {
+             gridLabels = Array.from(svg.querySelectorAll('text'))
+                .map(t => ({
+                    value: t.textContent.trim(),
+                    y: Number(t.getAttribute('y')),
+                    svgHeight: Number(svg.getAttribute('height')) || 180
+                }))
+                .filter(obj => /-?\d+\s*m$/.test(obj.value));
+        }
+    }
+
     const elevationLabels = document.createElement('div');
     elevationLabels.className = 'elevation-labels-container';
+    elevationLabels.style.pointerEvents = 'none'; // Kullanıcı seçim yaparken engel olmasın
+    elevationLabels.style.zIndex = '10'; // Üstte görünsün
 
-    gridLabels.forEach((obj, index) => { 
-        let topStyle = '';
-        if (typeof obj.pct !== 'undefined') {
-            topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
-        } else {
-            const trackHeight = track.clientHeight || 180;
-            const correctedY = (obj.y / obj.svgHeight) * trackHeight;
-            topStyle = `top: ${correctedY}px;`;
-        }
+    // gridLabels değişkeninin dolu olduğundan eminsek döngüye gir
+    if (Array.isArray(gridLabels)) {
+        gridLabels.forEach((obj) => { 
+            let topStyle = '';
+            if (typeof obj.pct !== 'undefined') {
+                topStyle = `top: ${100 - obj.pct}%; transform: translateY(-50%);`;
+            } else {
+                const trackHeight = track.clientHeight || 180;
+                // obj.y ve obj.svgHeight kontrolü
+                const yVal = obj.y || 0;
+                const hVal = obj.svgHeight || 180;
+                const correctedY = (yVal / hVal) * trackHeight;
+                topStyle = `top: ${correctedY}px;`;
+            }
 
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `position: absolute; right: 0; ${topStyle}`;
 
-        const tick = document.createElement('div');
-        tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
+            const tick = document.createElement('div');
+            // tick.style.cssText = `width: 35px; border-bottom: 1px dashed #cfd8dc; opacity: 0.7; display: block; margin-left: 0px; margin-top: 0px;`;
 
-        const label = document.createElement('div');
-        label.className = 'elevation-label';
-        label.style.cssText = `font-size: 11px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap;`;
-        label.textContent = obj.value;
-        label.style.display = 'block';
+            const label = document.createElement('div');
+            label.className = 'elevation-label';
+            label.style.cssText = `font-size: 10px; color: #607d8b; background: none; line-height: 1.5; text-align: right; padding-right: 0px; white-space: nowrap; display: block;`;
+            label.textContent = obj.value;
 
-        wrapper.appendChild(tick);
-        wrapper.appendChild(label);
-        elevationLabels.appendChild(wrapper);
-    });
+            wrapper.appendChild(tick);
+            wrapper.appendChild(label);
+            elevationLabels.appendChild(wrapper);
+        });
+    }
 
-    track.style.position = 'relative';
+    // Selection div'inin içine girmemesi için track'e append ediyoruz
     track.appendChild(elevationLabels);
 }
 
 function renderRouteScaleBar(container, totalKm, markers) {
+
+
   // 1. CSS GÜVENLİK KİLİDİ
   if (!document.getElementById('tt-scale-bar-css')) {
     const style = document.createElement('style');
     style.id = 'tt-scale-bar-css';
     style.innerHTML = `
-        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { opacity: 1; pointer-events: none; transition: opacity 0.2s ease; }
+        .scale-bar-track.loading > *:not(.tt-scale-loader):not(.elevation-labels-container) { opacity: 1; pointer-events: none; transition: opacity 0.2s ease;   background: #ffffff;}
         .scale-bar-track.loading .tt-scale-loader { opacity: 1 !important; }
-        .scale-bar-track.loading .elevation-labels-container { opacity: 1 !important; pointer-events: auto !important; }
-        .scale-bar-track.loading { min-height: 200px; width: 100%; position: relative; }
+.scale-bar-track.loading .elevation-labels-container { display: none !important; }
+        .scale-bar-track.loading {     min-height: 100px;
+    width: 100%;
+    position: relative;
+    padding: 0; }
         .tt-elev-tooltip { z-index: 9999 !important; }
         .scale-bar-vertical-line { z-index: 9998 !important; }
         .scale-bar-selection { z-index: 9000 !important; }
@@ -490,30 +615,27 @@ function renderRouteScaleBar(container, totalKm, markers) {
   }
 
   // Loading UI
-  let track = container.querySelector('.scale-bar-track');
-  if (!track) {
-    container.innerHTML = `
-      <div class="scale-bar-track">
-        <div class="elevation-placeholder" style="
-          width: 100%;
-          height: 220px;
-          border-radius: 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #6c757d;
-          font-size: 14px;
-        ">
-          <div class="elev-animation" style="display: flex; align-items: center; gap: 10px;">
-            <div class="spinner"></div>
-            <div>Loading elevation</div>
-          </div>
-        </div>
+  ensureScaleBarLoaderStyles();
+
+let track = container.querySelector('.scale-bar-track');
+if (!track) {
+  container.innerHTML = `
+    <div class="scale-bar-track">
+      <div class="elevation-placeholder">
+        ${getScaleLoaderHTML('Loading elevation')}
       </div>
-    `;
-    track = container.querySelector('.scale-bar-track');
+    </div>
+  `;
+  track = container.querySelector('.scale-bar-track');
+} else {
+  // ✅ track varsa bile ilk açılışta spinner görünmesi için zorla ekle
+  if (!track.querySelector('.elevation-placeholder')) {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'elevation-placeholder';
+    placeholder.innerHTML = getScaleLoaderHTML('Loading elevation');
+    track.appendChild(placeholder);
   }
+}
 
   track.classList.add('loading');
   container.dataset.totalKm = String(totalKm);
@@ -521,7 +643,7 @@ function renderRouteScaleBar(container, totalKm, markers) {
   //km'de nokta sayısı: 2'den 5'e
   // const N = Math.max(40, Math.round(totalKm * 2));
 
-  const N = Math.max(80, Math.round(totalKm * 2));
+  const N = Math.max(80, Math.round(totalKm * 1));
   
   function hv(lat1, lon1, lat2, lon2) {
     const R = 6371000, toRad = x => x * Math.PI / 180;
@@ -2129,21 +2251,20 @@ window.showScaleBarLoading = function(c, t='Loading elevation…', day=null, sKm
       placeholder = document.createElement('div');
       placeholder.className = 'elevation-placeholder';
       
-      placeholder.style.cssText = `
-          width: 100%; height: 220px; border-radius: 8px;
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          color: #6c757d; font-size: 14px;
-          position: absolute; top: 0; left: 0;
-          background: rgba(255, 255, 255, 0.95); z-index: 1000;
-          pointer-events: auto; cursor: crosshair;
-      `;
-      
-      placeholder.innerHTML = `
-        <div class="tt-scale-loader" style="display: flex; align-items: center; gap: 10px;">
-            <div class="spinner"></div><div class="txt"></div>
-        </div>
-        <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
-      `;
+ensureScaleBarLoaderStyles();
+placeholder.style.cssText = `
+  width: 100%; height: 130px; 
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #6c757d; font-size: 14px;
+  position: absolute; top: 0; left: 0;
+  background: rgba(255, 255, 255, 0.95); z-index: 1000;
+  pointer-events: auto; cursor: crosshair;
+`;
+placeholder.innerHTML = `
+  ${getScaleLoaderHTML(t)}
+  <div class="loader-vertical-line" style="position:absolute; top:0; bottom:0; width:2px; background:#8a4af3; opacity:0.5; display:none; pointer-events:none;"></div>
+`;
+
       tr.appendChild(placeholder);
     }
     
@@ -2490,14 +2611,7 @@ window.cleanElevationData = function(elevations, samples = null) {
     
     const cleaned = elevations.slice();
     const SPIKE_THRESHOLD = 25; // 25m'den fazla sıçrama = hata
-    
-    // console.log("[ELEV CLEAN] Başlangıç:", {
-    //     total: cleaned.length,
-    //     nullCount: cleaned.filter(e => e == null).length,
-    //     min: Math.min(...cleaned.filter(e => e != null)),
-    //     max: Math.max(...cleaned.filter(e => e != null))
-    // });
-    
+
     // 1. Null/NaN değerleri komşuların ortalamasıyla doldur
     for (let i = 0; i < cleaned.length; i++) {
         if (cleaned[i] == null || !isFinite(cleaned[i])) {
@@ -2556,12 +2670,7 @@ window.cleanElevationData = function(elevations, samples = null) {
         }
     }
     
-    // console.log("[ELEV CLEAN] Sonuç:", {
-    //     total: cleaned.length,
-    //     fixedCount: fixedCount,
-    //     min: Math.min(...cleaned),
-    //     max: Math.max(...cleaned)
-    // });
+
     
     return cleaned;
 };
