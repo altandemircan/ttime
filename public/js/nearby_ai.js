@@ -1896,44 +1896,6 @@ window.addPlaceToTripFromPopup = function(imgId, name, address, day, lat, lon, c
     alert(`${name} added to your trip!`);
 };
 
-// ============================================
-// ESKİ FONKSİYONLARI YENİ TEKİL FONKSİYONLARA YÖNLENDİR
-// ============================================
-
-// async function showNearbyRestaurants(lat, lng, map, day) {
-//     return showNearbyPlacesByCategory(lat, lng, map, day, 'restaurants', 1000);
-// }
-
-// async function showNearbyHotels(lat, lng, map, day) {
-//     return showNearbyPlacesByCategory(lat, lng, map, day, 'hotels', 1000);
-// }
-
-// async function showNearbyMarkets(lat, lng, map, day) {
-//     return showNearbyPlacesByCategory(lat, lng, map, day, 'markets', 1000);
-// }
-
-// async function showNearbyEntertainment(lat, lng, map, day) {
-//     return showNearbyPlacesByCategory(lat, lng, map, day, 'entertainment', 1000);
-// }
-
-// // Eski fonksiyonları yeni fonksiyona yönlendir (geriye dönük uyumluluk)
-// window.addRestaurantToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-//     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'restaurant');
-// };
-
-// window.addHotelToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-//     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'hotel');
-// };
-
-// window.addMarketToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-//     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'market');
-// };
-
-// window.addEntertainmentToTripFromPopup = function(imgId, name, address, day, lat, lon) {
-//     return window.addPlaceToTripFromPopup(imgId, name, address, day, lat, lon, 'entertainment');
-// }; 
-
-
 
 // ============================================
 // NEARBY POPUP MANAGEMENT & VIEW SWITCHER
