@@ -1011,32 +1011,49 @@ window.toggleItemAI = async function(aiContainerId, pointName, lat, lng, city) {
     }
 };
 
+// GLOBAL DEĞİŞKENLERİ GÜNCELLE
+// Tek bir controller yerine, her element ID'si için bir controller tutan Map oluşturuyoruz.
+const aiRequestControllers = new Map();
+
+// fetchClickedPointAI FONKSİYONUNU BU ŞEKİLDE DEĞİŞTİR:
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
     const descDiv = document.getElementById(targetDivId);
     if (!descDiv) return;
-
-    // --- EN GÜNCEL İSTEK KORUMASI / REQUEST GUARD ---
-    aiActiveRequest++; // Yeni her çağrıda artır
-    const myRequestId = aiActiveRequest;
 
     // Item container mı yoksa ana container mı kontrol et
     const isIconClick = targetDivId.startsWith('ai-icon-');
     const isItemContainer = targetDivId.startsWith('ai-item-');
     const mainAiDiv = document.getElementById('ai-point-description');
     
-    // Item container ise kendi target'ını kullan, değilse main div'i kullan
+    // Hedef elementi belirle
     const targetElement = isItemContainer ? descDiv : (isIconClick ? mainAiDiv : descDiv);
-
     if (!targetElement) return;
 
-    if (targetElement.dataset.loading === 'true' && !targetElement.querySelector('.ai-spinner')) {
-        return;
+    // 1. AYNI ELEMENT İÇİN MEVCUT İSTEK VARSA İPTAL ET
+    // Eğer kullanıcı aynı butona art arda basarsa veya aynı container için yeni bir istek gelirse eskisini durdur.
+    if (aiRequestControllers.has(targetDivId)) {
+        aiRequestControllers.get(targetDivId).abort();
+        aiRequestControllers.delete(targetDivId);
     }
 
-    if ((targetDivId === 'ai-point-description' || isIconClick) && !isItemContainer) {
-        clearTimeout(aiDebounceTimeout);
-        if (aiAbortController) aiAbortController.abort();
-        aiAbortController = new AbortController();
+    // Yeni bir AbortController oluştur ve Map'e kaydet
+    const controller = new AbortController();
+    aiRequestControllers.set(targetDivId, controller);
+    const signal = controller.signal;
+
+    // 2. ANA TIKLAMALARDA DEBOUNCE (Sadece Ana Nokta İçin)
+    // Haritada hızlı hızlı farklı noktalara tıklanırsa sunucuyu boğmamak için.
+    if (!isItemContainer) {
+         // Eğer bir önceki debounce varsa temizle (Bu kısım global kalabilir veya özelleştirilebilir)
+         if (window._aiMainDebounce) clearTimeout(window._aiMainDebounce);
+         
+         // Promise ile bekleme (Debounce)
+         await new Promise(resolve => {
+             window._aiMainDebounce = setTimeout(resolve, 600);
+         });
+         
+         // Debounce süresince iptal edildiyse (yeni tıklama geldiyse) çık
+         if (signal.aborted) return;
     }
 
     const cleanCityContext = (context) => {
@@ -1049,164 +1066,128 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
             .trim();
     };
 
-    // Loading state
+    // Loading State Başlat
     targetElement.dataset.loading = 'true';
     targetElement.style.display = 'block';
 
-    // Aşamalı loading mesajları
+    // Aşamalı loading mesajları (Sadece görsel)
     const loadingPhases = [
-        { duration: 5000, text: `Loading AI analysis...` },
-        { duration: 5000, text: `Analyzing ${pointName}...` },
-        { duration: 5000, text: `Creating information ...` },
-        { duration: 5000, text: `Finalizing analysis...` }
+        { duration: 4000, text: `Analyzing data...` }, // Süreleri biraz kısalttım
+        { duration: 4000, text: `Creating summary...` },
+        { duration: 4000, text: `Finalizing...` }
     ];
 
-    let currentPhase = 0;
-    const loadingTimers = [];
-
-    const showLoadingPhase = (phaseIndex) => {
-        const phase = loadingPhases[phaseIndex];
-        const previousPhases = loadingPhases.slice(0, phaseIndex);
-
+    // Loading animasyonunu yöneten interval
+    let phaseIndex = 0;
+    
+    const renderLoading = (text) => {
         targetElement.innerHTML = `
             <div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;">
                 <div class="ai-spinner" style="width: 18px; height: 18px; border: 2px solid #8a4af3; border-top: 2px solid transparent; border-radius: 50%; animation: ai-spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
-                
-                ${previousPhases.map((p, idx) => `
-                    <div style="font-size: 10px; color: #666; margin-bottom: 4px; opacity: 0.7;">
-                        ✓ ${p.text}
-                    </div>
-                `).join('')}
-                
-                <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666; margin-top: ${phaseIndex > 0 ? '8px' : '0'};">
-                    ${phase.text}
+                <div style="font-size: 11px; font-weight: 500; text-transform: uppercase; color: #666;">
+                    ${text}
                 </div>
             </div>
             <style>@keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
         `;
     };
 
-    // İlk loading göster
-    showLoadingPhase(0);
-    currentPhase = 0;
+    renderLoading(`Loading AI info...`);
+    
+    // Loading metinlerini değiştiren timer
+    const loadingInterval = setInterval(() => {
+        if (phaseIndex < loadingPhases.length) {
+            renderLoading(loadingPhases[phaseIndex].text);
+            phaseIndex++;
+        }
+    }, 4000);
 
-    // Sonraki aşamaları planla
-    for (let i = 1; i < loadingPhases.length; i++) {
-        const timer = setTimeout(() => {
-            // Eğer bu loading artık eski ise daha değişiklik yapma!
-            if (myRequestId !== aiActiveRequest) return;
-            currentPhase = i;
-            showLoadingPhase(i);
-        }, loadingPhases.slice(0, i).reduce((sum, phase) => sum + phase.duration, 0));
-        loadingTimers.push(timer);
-    }
+    // API ÇAĞRISI
+    try {
+        const cleanedCity = cleanCityContext(city);
 
-   // API çağrısını hemen başlat
-    const triggerFetch = async () => {
-        try {
-            const cleanedCity = cleanCityContext(city);
+        const response = await fetch('/clicked-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                point: pointName, 
+                city: cleanedCity, 
+                lat, 
+                lng, 
+                facts 
+            }),
+            signal: signal // <--- Bu isteği sadece bu controller iptal edebilir
+        });
 
-            console.time('AI-API-Response');
-            const response = await fetch('/clicked-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    point: pointName, 
-                    city: cleanedCity, 
-                    lat, 
-                    lng, 
-                    facts 
-                })
-            });
-            // console.timeEnd('AI-API-Response');
+        // İstek iptal edildiyse hata fırlatır, catch'e düşer.
+        
+        const data = await response.json();
 
-            // --- YALNIZCA EN GÜNCEL İSTEKTE SONUÇ YAZ ---
-            if (myRequestId !== aiActiveRequest) {
-                console.log('IGNORED: Eski AI request response (başka tıklama daha güncel).');
-                return;
-            }
+        // Temizlik
+        clearInterval(loadingInterval);
+        aiRequestControllers.delete(targetDivId); // İş bitti, map'ten sil
+        targetElement.dataset.loading = 'false';
 
-            // console.log('API Response status:', response.status);
-            const data = await response.json();
-            // console.log('API Data received:', data);
+        // İçerik Kontrolü
+        let p1Content = data.p1;
+        let p2Content = data.p2;
 
-            // Loading temizle
-            loadingTimers.forEach(timer => clearTimeout(timer));
-            targetElement.dataset.loading = 'false';
+        if (!p1Content || p1Content.length < 5) {
+            p1Content = `${pointName} is located in ${city || 'the area'}.`;
+        }
 
-            // İçerik
-            let p1Content = data.p1;
-            let p2Content = data.p2;
-
-            // Çok nadir durumlarda (Server tamamen boş dönerse) son koruma
-            if (!p1Content || p1Content.length < 5) {
-                p1Content = `${pointName} is located in ${city || 'the area'}. Explore the surroundings to discover more.`;
-            }
-
-            // Benzersiz ID oluştur
-            const uniqueContentId = `ai-content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            
-            targetElement.innerHTML = `
-                <div style="margin-top: 4px; width: 100%;">
-                    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
-                        <div onclick="window.toggleAIContent('${uniqueContentId}')" style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0; cursor: pointer; user-select: none;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
-                                    <div style="font-weight: 600; font-size: 14px; color: #333;">AI Insight</div>
-                                </div>
-                                <div id="${uniqueContentId}-toggle" style="font-size: 18px; color: #666; transition: transform 0.3s ease;">▼</div>
+        const uniqueContentId = `ai-content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        targetElement.innerHTML = `
+            <div style="margin-top: 4px; width: 100%;">
+                <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
+                    <div onclick="window.toggleAIContent('${uniqueContentId}')" style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0; cursor: pointer; user-select: none;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
+                                <div style="font-weight: 600; font-size: 14px; color: #333;">AI Insight</div>
                             </div>
-                        </div>
-                        <div id="${uniqueContentId}" style="max-height: 1000px; overflow: hidden; transition: max-height 0.3s ease;">
-                            <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
-                                <div style="display: flex; align-items: flex-start; gap: 8px;">
-                                    <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
-                                    <div style="flex: 1;">${p1Content}</div>
-                                </div>
-                            </div>
-                            ${p2Content ? `
-                                <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
-                                    <span style="font-size: 12px; color: #ff9800;">💡</span>
-                                    <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
-                                        <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
-                                        ${p2Content}
-                                    </div>
-                                </div>` : ''}
+                            <div id="${uniqueContentId}-toggle" style="font-size: 18px; color: #666; transition: transform 0.3s ease;">▼</div>
                         </div>
                     </div>
-                </div>`;
+                    <div id="${uniqueContentId}" style="max-height: 1000px; overflow: hidden; transition: max-height 0.3s ease;">
+                        <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
+                                <div style="flex: 1;">${p1Content}</div>
+                            </div>
+                        </div>
+                        ${p2Content ? `
+                            <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
+                                <span style="font-size: 12px; color: #ff9800;">💡</span>
+                                <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
+                                    <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
+                                    ${p2Content}
+                                </div>
+                            </div>` : ''}
+                    </div>
+                </div>
+            </div>`;
 
-            console.log('targetElement after update:', targetElement);
-            console.log('Update complete!');
-        } catch (e) {
-            loadingTimers.forEach(timer => clearTimeout(timer));
-
-            if (myRequestId !== aiActiveRequest) {
-                console.log("IGNORED: AI error (requestId not most recent)");
-                return;
-            }
-
-            if (e.name === 'AbortError') {
-                console.log('Request aborted');
-                targetElement.innerHTML = "";
-                targetElement.style.display = 'none';
-                return;
-            }
-            targetElement.dataset.loading = 'false';
-            targetElement.innerHTML = `
-                <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
-                    <div style="margin-bottom: 4px;">⚠️ Information unavailable</div>
-                    <small style="color: #999;">Try clicking another location</small>
-                </div>`;
+    } catch (e) {
+        clearInterval(loadingInterval);
+        
+        // Eğer hata AbortError ise (yani kullanıcı aynı butona tekrar bastığı için iptal edildiyse)
+        // Hiçbir şey yapma, çünkü yeni istek zaten yolda ve UI'ı o güncelleyecek.
+        if (e.name === 'AbortError') {
+            console.log(`Request aborted for ${targetDivId}`);
+            return; 
         }
-    };
 
-    if ((targetDivId === 'ai-point-description' || isIconClick) && !isItemContainer) {
-        aiDebounceTimeout = setTimeout(triggerFetch, 600); // SADECE BİR KERE
-    } else if (isItemContainer) {
-        // Item container için direkt çalıştır (debounce yok)
-        triggerFetch();
+        console.error("AI Fetch Error:", e);
+        aiRequestControllers.delete(targetDivId);
+        targetElement.dataset.loading = 'false';
+        
+        targetElement.innerHTML = `
+            <div style="padding: 10px; text-align: center; color: #666; font-size: 12px; background: #f9f9f9; border-radius: 6px; margin-top: 8px;">
+                <div style="margin-bottom: 4px;">⚠️ Service Busy</div>
+                <small style="color: #999;">Please try again later.</small>
+            </div>`;
     }
 }
 
