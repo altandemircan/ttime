@@ -1153,10 +1153,7 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
-                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div>
-                                    </div>
+                                    <div style="font-weight: 600; font-size: 14px; color: #333;">AI Insight</div>
                                 </div>
                                 <div id="${uniqueContentId}-toggle" style="font-size: 18px; color: #666; transition: transform 0.3s ease;">▼</div>
                             </div>
