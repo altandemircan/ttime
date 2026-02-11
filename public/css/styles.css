@@ -7586,3 +7586,9 @@ display: block !important;
 .main-icon {
     gap: 15px; display: flex; flex-direction: row; align-items: center; justify-content: center; opacity: 0.9;
 }
+
+
+.category-place-item img {
+   width: 14px;
+   height: 14px;
+}
