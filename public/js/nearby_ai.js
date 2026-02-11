@@ -995,16 +995,20 @@ window.toggleItemAI = async function(aiContainerId, pointName, lat, lng, city) {
     const aiContainer = document.getElementById(aiContainerId);
     if (!aiContainer) return;
     
-    // Eğer zaten açıksa kapat
-    if (aiContainer.style.display === 'block' && aiContainer.innerHTML.trim() !== '') {
+    // Eğer zaten dolu içerik varsa (AI yüklendi), sadece aç/kapa toggle yap
+    if (aiContainer.innerHTML.trim() !== '' && aiContainer.style.display === 'block') {
+        // İçerik var ve gösteriliyor - sadece gizle
         aiContainer.style.display = 'none';
-        aiContainer.innerHTML = '';
         return;
     }
     
-    // Açık değilse aç ve AI bilgisini getir
+    // İçerik yoksa veya gizliyse - göster ve gerekirse AI'yı getir
     aiContainer.style.display = 'block';
-    await fetchClickedPointAI(pointName, lat, lng, city, {}, aiContainerId);
+    
+    // Eğer içerik boşsa AI'yı getir
+    if (aiContainer.innerHTML.trim() === '') {
+        await fetchClickedPointAI(pointName, lat, lng, city, {}, aiContainerId);
+    }
 };
 
 async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId = 'ai-point-description') {
@@ -1139,32 +1143,40 @@ async function fetchClickedPointAI(pointName, lat, lng, city, facts, targetDivId
                 p1Content = `${pointName} is located in ${city || 'the area'}. Explore the surroundings to discover more.`;
             }
 
+            // Benzersiz ID oluştur
+            const uniqueContentId = `ai-content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
             targetElement.innerHTML = `
                 <div style="margin-top: 4px; width: 100%;">
                     <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;">
-                        <div style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
-                                <div>
-                                    <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
-                                    <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div>
+                        <div onclick="window.toggleAIContent('${uniqueContentId}')" style="padding: 12px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%); border-bottom: 1px solid #e0e0e0; cursor: pointer; user-select: none;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 28px; height: 28px; background: #8a4af3; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">✨</div>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 14px; color: #333;">${pointName}</div>
+                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">AI Insight</div>
+                                    </div>
                                 </div>
+                                <div id="${uniqueContentId}-toggle" style="font-size: 18px; color: #666; transition: transform 0.3s ease;">▼</div>
                             </div>
                         </div>
-                        <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
-                            <div style="display: flex; align-items: flex-start; gap: 8px;">
-                                <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
-                                <div style="flex: 1;">${p1Content}</div>
-                            </div>
-                        </div>
-                        ${p2Content ? `
-                            <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
-                                <span style="font-size: 12px; color: #ff9800;">💡</span>
-                                <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
-                                    <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
-                                    ${p2Content}
+                        <div id="${uniqueContentId}" style="max-height: 1000px; overflow: hidden; transition: max-height 0.3s ease;">
+                            <div style="padding: 12px; font-size: 13px; line-height: 1.5; color: #333; border-bottom: 1px solid #f8f9fa;">
+                                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                    <span style="font-size: 12px; color: #8a4af3; margin-top: 2px;">📍</span>
+                                    <div style="flex: 1;">${p1Content}</div>
                                 </div>
-                            </div>` : ''}
+                            </div>
+                            ${p2Content ? `
+                                <div style="padding: 10px 12px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); display: flex; align-items: flex-start; gap: 8px;">
+                                    <span style="font-size: 12px; color: #ff9800;">💡</span>
+                                    <div style="color: #555; font-size: 12px; line-height: 1.4; flex: 1;">
+                                        <strong style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">Tip</strong>
+                                        ${p2Content}
+                                    </div>
+                                </div>` : ''}
+                        </div>
                     </div>
                 </div>`;
 
@@ -2174,3 +2186,25 @@ setTimeout(() => {
         attachClickNearbySearch(window._maplibre3DInstance, window.currentDay || 1);
     }
 }, 2000);
+
+// ============================================
+// AI CONTENT TOGGLE FUNCTION
+// ============================================
+window.toggleAIContent = function(contentId) {
+    const content = document.getElementById(contentId);
+    const toggle = document.getElementById(contentId + '-toggle');
+    
+    if (!content) return;
+    
+    const isCollapsed = content.style.maxHeight === '0px';
+    
+    if (isCollapsed) {
+        // Genişlet
+        content.style.maxHeight = '1000px';
+        if (toggle) toggle.style.transform = 'rotate(0deg)';
+    } else {
+        // Daralt
+        content.style.maxHeight = '0px';
+        if (toggle) toggle.style.transform = 'rotate(-90deg)';
+    }
+};
