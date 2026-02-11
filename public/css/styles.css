@@ -7546,7 +7546,8 @@ display: block !important;
     display: flex;
     gap: 8px;
     align-content: center;
-}/
+        text-decoration: none;
+
 }
 
 /* Butonun içindeki İKON ve YAZI tıklamayı engellemesin */
