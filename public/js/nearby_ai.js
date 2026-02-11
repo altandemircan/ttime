@@ -992,6 +992,11 @@ function getSimplePlaceCategoryFromString(cats) {
 // TOGGLE ITEM AI - Liste item için AI gösterimi
 // ============================================
 window.toggleItemAI = async function(aiContainerId, pointName, lat, lng, city) {
+    // Eğer halihazırda 2'den fazla aktif istek varsa yenisine izin verme.
+if (aiRequestControllers.size >= 2) {
+    alert("Please wait for the current AI analysis to finish.");
+    return;
+}
     const aiContainer = document.getElementById(aiContainerId);
     if (!aiContainer) return;
     
