@@ -2028,7 +2028,7 @@ function setupViewSwitcherButton(mapInstance) {
     gap: 8px;
     cursor: pointer;
     position: fixed !important;
-    bottom: 26% !important;
+    bottom: 240px !important;
     right: 0% !important;
     z-index: 9999999 !important;
 
