@@ -2685,23 +2685,23 @@ function setupViewSwitcherButton(mapInstance) {
     btn.id = 'nearby-view-switcher-btn';
     
     btn.style.cssText = `
-        position: fixed !important;
-        bottom: 30px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        z-index: 9999999 !important;
         padding: 12px 24px;
-        background: #ff9900;
-        color: #fff;
-        border: none;
-        border-radius: 50px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        font-weight: 600;
-        font-size: 14px;
-        display: flex !important;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
+    background: rgb(217 217 217 / 60%);
+    color: rgb(25 118 210);
+    border: none;
+    border-radius: 50px;
+    /* box-shadow: rgba(0, 0, 0, 0.5) 0px 4px 15px; */
+    font-weight: 600;
+    font-size: 14px;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 9999999 !important;
+    display: flex !important;
     `;
     document.body.appendChild(btn);
 
