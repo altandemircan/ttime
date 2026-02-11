@@ -125,11 +125,23 @@ function injectDragStyles() {
             pointer-events: auto;
         }
         
-        body.dragging-active {
-            user-select: none !important;
-            cursor: grabbing !important;
-            touch-action: none !important; 
-        }
+       body.dragging-active .add-favorite-place-btn,
+body.dragging-active [class*="favorite-place"],
+body.dragging-active [onclick*="toggleSidebarFavoritePlaces"],
+body.dragging-active .add-custom-note-btn,
+body.dragging-active .custom-note-container,
+body.dragging-active [class*="custom-note"],
+body.dragging-active [onclick*="saveCustomNote"],
+
+body.hide-map-details .add-favorite-place-btn,
+body.hide-map-details [class*="favorite-place"],
+body.hide-map-details [onclick*="toggleSidebarFavoritePlaces"],
+body.hide-map-details .add-custom-note-btn,
+body.hide-map-details .custom-note-container,
+body.hide-map-details [class*="custom-note"],
+body.hide-map-details [onclick*="saveCustomNote"] {
+    display: none !important;
+}
     `;
     const style = document.createElement('style');
     style.id = styleId;
