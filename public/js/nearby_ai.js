@@ -2685,23 +2685,23 @@ function setupViewSwitcherButton(mapInstance) {
     btn.id = 'nearby-view-switcher-btn';
     
     btn.style.cssText = `
+        position: fixed !important;
+        bottom: 30px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999999 !important;
         padding: 12px 24px;
-    background: rgb(217 217 217 / 60%);
-    color: rgb(25 118 210);
-    border: none;
-    border-radius: 50px;
-    /* box-shadow: rgba(0, 0, 0, 0.5) 0px 4px 15px; */
-    font-weight: 600;
-    font-size: 14px;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    position: fixed !important;
-    bottom: 30px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 9999999 !important;
-    display: flex !important;
+        background: #ffffff;
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        font-weight: 600;
+        font-size: 14px;
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
     `;
     document.body.appendChild(btn);
 
@@ -2724,13 +2724,13 @@ function setupViewSwitcherButton(mapInstance) {
             popup.style.display = 'none';
             if (mapContainer) mapContainer.style.display = 'block';
             btn.innerHTML = contentToList;
-            btn.style.background = '#1976d2';
+            btn.style.background = '#ffffff';
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
         } else {
             popup.style.display = 'block';
             btn.innerHTML = contentToMap;
-            btn.style.background = '#333';
+            btn.style.background = '#ffffff';
         }
     };
 
