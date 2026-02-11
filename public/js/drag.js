@@ -104,17 +104,21 @@ function injectDragStyles() {
         /* Harita (.expanded-map-panel) ve AI (.ai-info-section) BURADAN ÇIKARILDI. */
         /* Onlar artık görünür kalacak. Sadece butonları gizliyoruz. */
         @media (max-width: 768px) {
-            body.hide-map-details .add-more-btn,
-            body.hide-map-details .add-new-day-btn,
-            body.hide-map-details #add-new-day-button,
-            body.hide-map-details .add-new-day-separator, 
-            body.hide-map-details .add-to-calendar-btn,
-            body.hide-map-details #newchat,
-            body.hide-map-details .trip-share-section,
-            body.hide-map-details .date-range
-            {
-                display: none !important;
-            }
+              body.hide-map-details .add-more-btn,
+    body.hide-map-details .add-new-day-btn,
+    body.hide-map-details #add-new-day-button,
+    body.hide-map-details .add-new-day-separator, 
+    body.hide-map-details .add-to-calendar-btn,
+    body.hide-map-details #newchat,
+    body.hide-map-details .trip-share-section,
+    body.hide-map-details .date-range,
+    body.hide-map-details .my-places-btn,           /* YENİ: My Places butonu */
+    body.hide-map-details .add-note-btn,            /* YENİ: Add Note butonu */
+    body.hide-map-details #my-places-button,        /* YENİ: ID'li versiyon */
+    body.hide-map-details #add-note-button          /* YENİ: ID'li versiyon */
+    {
+        display: none !important;
+    }
         }
 
         .route-controls-bar, .map-content-wrap, .tt-travel-mode-set {
