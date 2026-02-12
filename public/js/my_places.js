@@ -220,7 +220,7 @@ function saveFavTrips() {
 
         /* Alt Butonlar - YAN YANA, AYNI BOYUT */
         .mp-acts { 
-            display: inline-flex;
+          display: inline-flex;
     background: #fafcfd;
     border-radius: 0 0 10px 10px;
     overflow: hidden;
@@ -232,6 +232,7 @@ function saveFavTrips() {
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
+    width: -webkit-fill-available;
         }
         
         .mp-btn {
