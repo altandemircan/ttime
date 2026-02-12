@@ -770,7 +770,7 @@ card.innerHTML = `
             } else {
                 // 2. DÜZENLEME: PASİF DURUM: İkon Gri
                 // brightness(0) invert(1) yerine opacity ve grayscale kullandık.
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:grayscale(1) opacity(0.5);"> Add to Trip`;
+                b2.innerHTML = `Add to Trip`;
                 b2.title = "Too far";
             }
 
