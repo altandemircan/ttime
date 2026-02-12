@@ -136,18 +136,16 @@ function saveFavTrips() {
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            z-index: 10;
+                width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
         }
         
         .mp-card-head .mp-fav-btn:hover {
