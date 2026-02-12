@@ -243,7 +243,7 @@ function saveFavTrips() {
             font-weight: 600;
             align-items: center;
             justify-content: center;
-            border: none;
+            border: none !important;
             border-radius: 8px;
             cursor: pointer;
             box-shadow: rgba(149, 157, 165, 0.15) 0px 2px 8px;
@@ -253,9 +253,9 @@ function saveFavTrips() {
         
         /* Start New - KOYU MAVİ */
         .mp-btn-start { 
-            background: #fff;
-            border: 1px solid #ddd;
-            color: #12a5e8;
+            background: #5bc7d4;
+          
+            color: #ffffff;
         }
         
         .mp-btn-start:hover { 
@@ -264,9 +264,9 @@ function saveFavTrips() {
         
         /* Set Destination - YEŞİL */
         .mp-btn-dest {
-                background: #fff;
-    border: 1px solid #ddd;
-    color: #8c62d2;
+                background: #8c62d2;
+  
+    color: #ffffff;
         }
         
         .mp-btn-dest:hover {
@@ -276,7 +276,7 @@ function saveFavTrips() {
         /* Add to Trip - MOR */
         .mp-btn-add { 
                 background: #9462dd;
-    border: 1px solid #ddd;
+   
     color: #ffffff;
         }
         
