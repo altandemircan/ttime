@@ -264,7 +264,7 @@ function saveFavTrips() {
         
         /* Set Destination - YEŞİL */
         .mp-btn-dest {
-                background: #8c62d2;
+                background: #2bb0e1;
   
     color: #ffffff;
         }
