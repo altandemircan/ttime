@@ -239,16 +239,20 @@ function saveFavTrips() {
      flex: 1;
     display: flex;
     gap: 8px;
-    font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    padding: 6px;
-    width: 100%;
-    font-weight: 500;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.85rem;
+    padding: 10px;
+    width: 100%;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: #8a4af3;
+    cursor: pointer;
+    color: #ffffff;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    font-family: 'Satoshi'
         }
         
         /* YUMUŞAK MOR buton */
