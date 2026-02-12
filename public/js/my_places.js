@@ -232,7 +232,7 @@ function saveFavTrips() {
             gap: 8px;
             flex-direction: row;
             align-items: stretch;
-            width: 100%;
+           
         }
         
         .mp-btn {
@@ -240,7 +240,7 @@ function saveFavTrips() {
             display: flex;
             gap: 6px;
             transition: all 0.3s ease;
-            font-size: 0.78rem;
+            
             padding: 10px 6px;
             font-weight: 600;
             align-items: center;
