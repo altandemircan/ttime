@@ -220,13 +220,18 @@ function saveFavTrips() {
 
         /* Alt Butonlar - YAN YANA, AYNI BOYUT */
         .mp-acts { 
-            display: flex; 
-            background: #fafcfd; 
-            border-radius: 0 0 10px 10px; 
-            overflow: hidden; 
-            border-top: 1px solid #edf2f7;
-            padding: 10px;
-            gap: 10px;
+            display: inline-flex;
+    background: #fafcfd;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    border-top: 1px solid #edf2f7;
+    padding: 10px;
+    gap: 10px;
+    flex-direction: row;
+    align-content: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
         }
         
         .mp-btn {
@@ -674,7 +679,7 @@ card.innerHTML = `
             // Start New Trip
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<img src="img/start_with_place.svg" style="width:16px;height:16px;"> Start New`;
+            b1.innerHTML = `Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
             // Add to Trip
@@ -683,7 +688,7 @@ card.innerHTML = `
             
             if (st.ok) {
                 // AKTİF DURUM: İkon Beyaz
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;"> Add to Trip`;
+                b2.innerHTML = `Add to Trip`;
             b2.onclick = function(e) {
                 // 1. Tıklama olayını en başta durdur (Hata riskini önler)
                 if (e) {
