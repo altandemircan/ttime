@@ -107,6 +107,36 @@ window.toggleSidebarFavoritePlaces = function() {
         if (tripPanel) {
             tripPanel.classList.add('open');
         }
+        
+        // 3. MOBİL HARİTA FİXİ: Panel kapandıktan sonra haritayı yenile
+        setTimeout(() => {
+            // Küçük harita (mini map)
+            if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                window.miniMap.invalidateSize();
+                console.log('[Fix] Mini map invalidated after closing My Places');
+            }
+            
+            // Ana harita
+            if (window.map && typeof window.map.invalidateSize === 'function') {
+                window.map.invalidateSize();
+                console.log('[Fix] Main map invalidated after closing My Places');
+            }
+            
+            // Leaflet haritalar
+            if (window.leafletMaps) {
+                Object.values(window.leafletMaps).forEach(map => {
+                    if (map && typeof map.invalidateSize === 'function') {
+                        map.invalidateSize();
+                    }
+                });
+            }
+            
+            // Rotaları yeniden çiz (varsa)
+            if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
+                const days = [...new Set(window.cart.map(i => i.day))];
+                days.forEach(d => renderRouteForDay(d));
+            }
+        }, 350); // Panel kapanma animasyonu için bekle
     } 
     // DURUM 2: Panel KAPALIYSA (Demek ki kullanıcı "My Places" butonuna bastı ve açmak istiyor)
     else {
