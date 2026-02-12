@@ -257,7 +257,7 @@ function saveFavTrips() {
         .mp-btn-start { 
             background: #fff;
             border: 1px solid #ddd;
-            color: #1e293b;
+            color: #12a5e8;
         }
         
         .mp-btn-start:hover { 
@@ -266,9 +266,9 @@ function saveFavTrips() {
         
         /* Set Destination - YEŞİL */
         .mp-btn-dest {
-            background: #fff;
-            border: 1px solid #ddd;
-            color: #059669;
+                background: #fff;
+    border: 1px solid #ddd;
+    color: #8c62d2;
         }
         
         .mp-btn-dest:hover {
@@ -277,9 +277,9 @@ function saveFavTrips() {
         
         /* Add to Trip - MOR */
         .mp-btn-add { 
-            background: #fff;
-            border: 1px solid #ddd;
-            color: #9462dd;
+                background: #9462dd;
+    border: 1px solid #ddd;
+    color: #ffffff;
         }
         
         .mp-btn-add:hover { 
