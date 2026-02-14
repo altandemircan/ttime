@@ -1,30 +1,31 @@
 // ============================================================
-// CART ROUTE MAP LOADING SKELETON
-// Cart içindeki günlük route haritaları için loading state
+// CART ROUTE MAP LOADING SKELETON - SADECE KÜÇÜK HARİTALAR
+// Sadece cart içindeki günlük küçük route haritaları için
+// Büyük expanded map'i ETKİLEMEZ
 // ============================================================
 
 (function() {
     'use strict';
     
-    // Route Map için özel CSS
+    // SADECE cart içindeki küçük haritalar için CSS
     function injectRouteMapLoadingStyles() {
         if (document.getElementById('route-map-loading-styles')) return;
         
         const style = document.createElement('style');
         style.id = 'route-map-loading-styles';
         style.textContent = `
-            /* Route Map Container - SABİT YÜKSEKLİK */
-            .route-map,
-            [id^="route-map-day"] {
+            /* SADECE CART İÇİNDEKİ KÜÇÜK HARİTALAR - Expanded map hariç */
+            .route-controls-bar .route-map,
+            .map-content-wrap [id^="route-map-day"] {
                 min-height: 285px !important;
                 height: 285px !important;
                 background-color: #eef0f5 !important;
                 position: relative;
-                transition: opacity 0.15s ease;
             }
             
-            /* Route Map Loading Skeleton */
-            .route-map-loading {
+            /* Route Map Loading Skeleton - SADECE KÜÇÜK HARİTALAR */
+            .route-controls-bar .route-map-loading,
+            .map-content-wrap .route-map-loading {
                 position: absolute;
                 top: 0;
                 left: 0;
@@ -55,7 +56,7 @@
                 50% { background-position: 100% 50%; }
             }
             
-            /* Loading Icon Container */
+            /* Loading Content */
             .route-map-loading-content {
                 display: flex;
                 flex-direction: column;
@@ -64,7 +65,7 @@
                 z-index: 1001;
             }
             
-            /* Map Icon Animation */
+            /* Map Icon */
             .route-map-loading-icon {
                 width: 56px;
                 height: 56px;
@@ -109,10 +110,9 @@
                 font-size: 14px;
                 font-weight: 500;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                text-align: center;
             }
             
-            /* Route Placeholder Lines */
+            /* Placeholder Lines */
             .route-map-placeholder-lines {
                 position: absolute;
                 top: 0;
@@ -191,15 +191,10 @@
                 transition: opacity 0.5s ease;
             }
             
-            /* Map görünür olduğunda */
-            .route-map.loaded {
-                opacity: 1 !important;
-            }
-            
             /* Mobile */
             @media (max-width: 768px) {
-                .route-map,
-                [id^="route-map-day"] {
+                .route-controls-bar .route-map,
+                .map-content-wrap [id^="route-map-day"] {
                     min-height: 240px !important;
                     height: 240px !important;
                 }
@@ -221,13 +216,12 @@
         document.head.appendChild(style);
     }
     
-    // Route Map Loading Skeleton HTML
+    // Loading skeleton HTML
     function createRouteMapLoadingSkeleton(day) {
         const skeleton = document.createElement('div');
         skeleton.className = 'route-map-loading';
         skeleton.setAttribute('data-day', day);
         
-        // Random marker pozisyonları
         const markerPositions = [
             { top: '25%', left: '30%' },
             { top: '45%', left: '60%' },
@@ -251,54 +245,63 @@
         return skeleton;
     }
     
-    // Route Map'e loading ekle
+    // SADECE CART İÇİNDEKİ KÜÇÜK HARİTA MI KONTROL ET
+    function isSmallRouteMap(mapElement) {
+        if (!mapElement) return false;
+        
+        // 1. route-controls-bar içinde mi?
+        if (mapElement.closest('.route-controls-bar')) return true;
+        
+        // 2. map-content-wrap içinde mi?
+        if (mapElement.closest('.map-content-wrap')) return true;
+        
+        // 3. Expanded map değil mi?
+        if (mapElement.closest('.expanded-map-overlay')) return false;
+        if (mapElement.classList.contains('expanded-map')) return false;
+        
+        // 4. ID kontrolü - sadece route-map-day
+        if (mapElement.id && mapElement.id.match(/^route-map-day\d+$/)) return true;
+        
+        return false;
+    }
+    
+    // Loading ekle - SADECE KÜÇÜK HARİTALAR
     window.addRouteMapLoading = function(mapElement, day) {
-        if (!mapElement) return null;
+        if (!mapElement || !isSmallRouteMap(mapElement)) {
+            return null;
+        }
         
         // Zaten varsa ekleme
         let skeleton = mapElement.querySelector('.route-map-loading');
         if (skeleton) return skeleton;
         
-        // SADECE skeleton eklenirken map'i gizle
-        mapElement.style.opacity = '0';
-        mapElement.style.transition = 'opacity 0.3s ease';
-        
         skeleton = createRouteMapLoadingSkeleton(day);
         mapElement.appendChild(skeleton);
         
-        console.log(`[Route Map Loading] Skeleton added for Day ${day}`);
+        console.log(`[Route Map Loading] Skeleton added for small map Day ${day}`);
         return skeleton;
     };
     
-    // Route Map loading'i kaldır
+    // Loading kaldır
     window.removeRouteMapLoading = function(mapElement, delay = 400) {
-        if (!mapElement) return;
-        
-        const skeleton = mapElement.querySelector('.route-map-loading');
-        
-        // Skeleton yoksa sadece opacity'yi düzelt
-        if (!skeleton) {
-            mapElement.style.opacity = '1';
-            mapElement.classList.add('loaded');
+        if (!mapElement || !isSmallRouteMap(mapElement)) {
             return;
         }
         
-        // Map'i görünür yap
-        mapElement.style.opacity = '1';
-        mapElement.classList.add('loaded');
+        const skeleton = mapElement.querySelector('.route-map-loading');
+        if (!skeleton) return;
         
-        // Skeleton fade out
         skeleton.classList.add('fade-out');
         
         setTimeout(() => {
             if (skeleton && skeleton.parentNode) {
                 skeleton.remove();
-                console.log('[Route Map Loading] Skeleton removed');
+                console.log('[Route Map Loading] Skeleton removed from small map');
             }
         }, delay);
     };
     
-    // renderRouteForDay fonksiyonunu wrap et
+    // renderRouteForDay wrap - SADECE KÜÇÜK HARİTALAR
     function wrapRenderRouteForDay() {
         if (typeof window.renderRouteForDay !== 'undefined' && !window.renderRouteForDay.__wrapped) {
             const originalRenderRouteForDay = window.renderRouteForDay;
@@ -307,19 +310,17 @@
                 const mapId = `route-map-day${day}`;
                 const mapElement = document.getElementById(mapId);
                 
-                // Loading ekle
-                if (mapElement && window.addRouteMapLoading) {
+                // SADECE küçük harita ise loading ekle
+                if (mapElement && isSmallRouteMap(mapElement)) {
                     window.addRouteMapLoading(mapElement, day);
                 }
                 
-                // Orijinal fonksiyonu çağır
                 const result = originalRenderRouteForDay.call(this, day, ...args);
                 
-                // Promise ise
                 if (result && typeof result.then === 'function') {
                     return result.then((res) => {
                         setTimeout(() => {
-                            if (mapElement && window.removeRouteMapLoading) {
+                            if (mapElement && isSmallRouteMap(mapElement)) {
                                 window.removeRouteMapLoading(mapElement);
                             }
                         }, 500);
@@ -327,9 +328,8 @@
                     });
                 }
                 
-                // Promise değilse timeout ile kaldır
                 setTimeout(() => {
-                    if (mapElement && window.removeRouteMapLoading) {
+                    if (mapElement && isSmallRouteMap(mapElement)) {
                         window.removeRouteMapLoading(mapElement);
                     }
                 }, 800);
@@ -337,53 +337,45 @@
                 return result;
             };
             
-            // Wrap işaretini ekle (tekrar wrap'i önle)
             window.renderRouteForDay.__wrapped = true;
-            
-            console.log('[Route Map Loading] renderRouteForDay wrapped successfully');
+            console.log('[Route Map Loading] renderRouteForDay wrapped (small maps only)');
             return true;
         }
         return false;
     }
     
-    // Hemen dene
+    // Hemen dene, yoksa bekle
     if (!wrapRenderRouteForDay()) {
-        // Yoksa bekle ve tekrar dene
         let attempts = 0;
-        const maxAttempts = 50; // 5 saniye
+        const maxAttempts = 50;
         
         const checkInterval = setInterval(() => {
             attempts++;
-            
             if (wrapRenderRouteForDay()) {
                 clearInterval(checkInterval);
             } else if (attempts >= maxAttempts) {
-                console.warn('[Route Map Loading] renderRouteForDay not found after 5 seconds');
+                console.warn('[Route Map Loading] renderRouteForDay not found');
                 clearInterval(checkInterval);
             }
         }, 100);
     }
     
-    // MutationObserver ile yeni route map'leri yakala
+    // MutationObserver - SADECE KÜÇÜK HARİTALAR
     function observeRouteMapContainers() {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1) {
-                        // Route map kontrolü
-                        if (node.classList && node.classList.contains('route-map')) {
+                        if (node.classList && node.classList.contains('route-map') && isSmallRouteMap(node)) {
                             const day = node.id ? node.id.replace('route-map-day', '') : '1';
-                            
-                            // Henüz yüklenmemişse loading ekle
                             if (!node.querySelector('.leaflet-map-pane')) {
                                 window.addRouteMapLoading(node, day);
                             }
                         }
                         
-                        // Alt elementlerde route map ara
                         const routeMaps = node.querySelectorAll('[id^="route-map-day"]');
                         routeMaps.forEach(map => {
-                            if (!map.querySelector('.leaflet-map-pane')) {
+                            if (isSmallRouteMap(map) && !map.querySelector('.leaflet-map-pane')) {
                                 const day = map.id.replace('route-map-day', '');
                                 window.addRouteMapLoading(map, day);
                             }
@@ -393,7 +385,6 @@
             });
         });
         
-        // Sidebar'ı gözlemle
         const tripSidebar = document.getElementById('sidebar-overlay-trip');
         if (tripSidebar) {
             observer.observe(tripSidebar, {
@@ -403,41 +394,16 @@
         }
     }
     
-    // Sayfa yüklendiğinde başlat
+    // Init
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             injectRouteMapLoadingStyles();
             observeRouteMapContainers();
-            fixExistingMaps();
         });
     } else {
         injectRouteMapLoadingStyles();
         observeRouteMapContainers();
-        fixExistingMaps();
     }
     
-    // Mevcut haritaların opacity'sini düzelt
-    function fixExistingMaps() {
-        const existingMaps = document.querySelectorAll('[id^="route-map-day"]');
-        existingMaps.forEach(map => {
-            // Eğer skeleton yoksa ve opacity 0 ise düzelt
-            if (!map.querySelector('.route-map-loading') && map.style.opacity === '0') {
-                map.style.opacity = '1';
-                map.classList.add('loaded');
-                console.log('[Route Map Loading] Fixed existing map opacity:', map.id);
-            }
-        });
-    }
-    
-    // Her 500ms'de bir kontrol et (ilk 5 saniye)
-    let checkCount = 0;
-    const checkInterval = setInterval(() => {
-        fixExistingMaps();
-        checkCount++;
-        if (checkCount >= 10) {
-            clearInterval(checkInterval);
-        }
-    }, 500);
-    
-    console.log('[Route Map Loading] System initialized');
+    console.log('[Route Map Loading] System initialized - SMALL MAPS ONLY');
 })();
