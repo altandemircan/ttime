@@ -292,44 +292,69 @@
     };
     
     // renderRouteForDay fonksiyonunu wrap et
-    if (typeof window.renderRouteForDay !== 'undefined') {
-        const originalRenderRouteForDay = window.renderRouteForDay;
-        
-        window.renderRouteForDay = function(day, ...args) {
-            const mapId = `route-map-day${day}`;
-            const mapElement = document.getElementById(mapId);
+    function wrapRenderRouteForDay() {
+        if (typeof window.renderRouteForDay !== 'undefined' && !window.renderRouteForDay.__wrapped) {
+            const originalRenderRouteForDay = window.renderRouteForDay;
             
-            // Loading ekle
-            if (mapElement && window.addRouteMapLoading) {
-                window.addRouteMapLoading(mapElement, day);
-            }
-            
-            // Orijinal fonksiyonu çağır
-            const result = originalRenderRouteForDay.call(this, day, ...args);
-            
-            // Promise ise
-            if (result && typeof result.then === 'function') {
-                return result.then((res) => {
-                    setTimeout(() => {
-                        if (mapElement && window.removeRouteMapLoading) {
-                            window.removeRouteMapLoading(mapElement);
-                        }
-                    }, 500);
-                    return res;
-                });
-            }
-            
-            // Promise değilse timeout ile kaldır
-            setTimeout(() => {
-                if (mapElement && window.removeRouteMapLoading) {
-                    window.removeRouteMapLoading(mapElement);
+            window.renderRouteForDay = function(day, ...args) {
+                const mapId = `route-map-day${day}`;
+                const mapElement = document.getElementById(mapId);
+                
+                // Loading ekle
+                if (mapElement && window.addRouteMapLoading) {
+                    window.addRouteMapLoading(mapElement, day);
                 }
-            }, 800);
+                
+                // Orijinal fonksiyonu çağır
+                const result = originalRenderRouteForDay.call(this, day, ...args);
+                
+                // Promise ise
+                if (result && typeof result.then === 'function') {
+                    return result.then((res) => {
+                        setTimeout(() => {
+                            if (mapElement && window.removeRouteMapLoading) {
+                                window.removeRouteMapLoading(mapElement);
+                            }
+                        }, 500);
+                        return res;
+                    });
+                }
+                
+                // Promise değilse timeout ile kaldır
+                setTimeout(() => {
+                    if (mapElement && window.removeRouteMapLoading) {
+                        window.removeRouteMapLoading(mapElement);
+                    }
+                }, 800);
+                
+                return result;
+            };
             
-            return result;
-        };
+            // Wrap işaretini ekle (tekrar wrap'i önle)
+            window.renderRouteForDay.__wrapped = true;
+            
+            console.log('[Route Map Loading] renderRouteForDay wrapped successfully');
+            return true;
+        }
+        return false;
+    }
+    
+    // Hemen dene
+    if (!wrapRenderRouteForDay()) {
+        // Yoksa bekle ve tekrar dene
+        let attempts = 0;
+        const maxAttempts = 50; // 5 saniye
         
-        console.log('[Route Map Loading] renderRouteForDay wrapped');
+        const checkInterval = setInterval(() => {
+            attempts++;
+            
+            if (wrapRenderRouteForDay()) {
+                clearInterval(checkInterval);
+            } else if (attempts >= maxAttempts) {
+                console.warn('[Route Map Loading] renderRouteForDay not found after 5 seconds');
+                clearInterval(checkInterval);
+            }
+        }, 100);
     }
     
     // MutationObserver ile yeni route map'leri yakala
