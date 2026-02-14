@@ -1,5 +1,5 @@
 // ============================================================
-// photo_day_slider.js
+// photo_day_slider.js - LOADING SKELETON İLE GÜNCELLENMİŞ
 // Gün bazlı fotoğraf kolajı (slider) ve akıllı konum bulma modülü
 // ============================================================
 
@@ -41,9 +41,6 @@ try {
 // 2. HİYERARŞİ ANALİZİ VE İSİM ÇIKARMA
 // ============================================================
 function extractSmartSearchTerm(info, fallbackCity = "") {
-    // Info varsa (koordinat geldiyse) hafızadaki ülkeyi dayatma, veriden çekmeye çalış.
-    // Eğer veride ülke yoksa o zaman hafızayı düşünürüz.
-    
     if (!info) return { term: fallbackCity, context: "", country: window.__lastKnownCountry || "" };
 
     const props = info.properties || {};
@@ -92,7 +89,7 @@ function extractSmartSearchTerm(info, fallbackCity = "") {
 window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
     const latKey = Number(lat).toFixed(4);
     const lngKey = Number(lng).toFixed(4);
-    const storageKey = `tt_loc_name_v36_${latKey}_${lngKey}`; // v36
+    const storageKey = `tt_loc_name_v36_${latKey}_${lngKey}`;
 
     try {
         const cachedName = localStorage.getItem(storageKey);
@@ -104,7 +101,6 @@ window.fetchSmartLocationName = async function(lat, lng, fallbackCity = "") {
             const info = await window.getPlaceInfoFromLatLng(lat, lng);
             const result = extractSmartSearchTerm(info, fallbackCity);
             
-            // Veriyi kaydetmeden önce hafızayı güncellemiyoruz, render içinde yapacağız.
             if (result && (result.term || result.context)) {
                 try { localStorage.setItem(storageKey, JSON.stringify(result)); } catch(e) {}
             }
@@ -135,26 +131,19 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
         options.exclude.forEach(u => seenUrls.add(u));
     }
 
-    // --- ADAY LİSTESİ ---
     const candidates = [];
 
-    // 1. Aday: İlçe + İl
     if (term && context) candidates.push({ query: `${term} ${context}`, label: term });
-    // 2. Aday: Sadece İlçe
     if (term) candidates.push({ query: term, label: term });
-    // 3. Aday: Sadece İl
     if (context && context !== term) candidates.push({ query: context, label: context });
-    // 4. Aday: Ülke
     if (country) candidates.push({ query: country, label: country });
 
     let finalLabel = "";
 
-    // --- DÖNGÜ ---
     for (const candidate of candidates) {
         if (accumulatedImages.length >= limit) break;
 
         const query = candidate.query;
-        // Kaynakları (Pixabay ve Pexels) sırayla dene
         const sources = ['pixabay', 'pexels'];
 
         for (const source of sources) {
@@ -217,7 +206,7 @@ window.getCityCollageImages = async function(searchObj, options = {}) {
 };
 
 
-// 4. RENDER İŞLEMLERİ (DÜZELTİLMİŞ HAFIZA MANTIĞI)
+// 4. RENDER İŞLEMLERİ
 // ============================================================
 window.renderDayCollage = async function renderDayCollage(day, dayContainer, dayItemsArr) {
     if (!dayContainer) return;
@@ -227,7 +216,7 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
     if (!collage) {
         collage = document.createElement('div');
         collage.className = 'day-collage';
-        collage.style.cssText = "margin: 30px 0 10px 0; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 100px;";
+        collage.style.cssText = "margin: 30px 0 10px 0; border-radius: 10px; overflow: hidden; position: relative; display: block; min-height: 260px;";
     }
 
     const list = dayContainer.querySelector('.day-list');
@@ -246,7 +235,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         dayContainer.appendChild(collage);
     }
 
-    // --- C. KONUM BELİRLEME ---
     let firstLoc = null;
     if (dayItemsArr && dayItemsArr.length > 0) {
         firstLoc = dayItemsArr.find(i => i.location && i.location.lat && !i._starter && !i._placeholder);
@@ -254,31 +242,18 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 
     let searchObj = { term: "", context: "", country: "" };
     
-    // =========================================================================
-    // [KRİTİK DÜZELTME]: HAFIZA YÖNETİMİ
-    // =========================================================================
-    
     if (firstLoc && typeof window.fetchSmartLocationName === 'function') {
-        // DURUM 1: KOORDİNAT VAR.
-        // Veriyi çek. Hafızayı ASLA araya karıştırma.
-        // Gelen veri neyse odur.
         searchObj = await window.fetchSmartLocationName(firstLoc.location.lat, firstLoc.location.lng, window.selectedCity);
         
-        // ŞİMDİ hafızayı güncelle (Gelecek boş günler için)
         if (searchObj.context) window.__lastKnownContext = searchObj.context;
         if (searchObj.country) window.__lastKnownCountry = searchObj.country;
         
-        // Eğer koordinattan ülke gelmediyse (nadir), ancak o zaman hafızadaki ülkeyi ekleyebiliriz
-        // ama Context'i ASLA eklemeyin. Çünkü Isparta'nın contexti boşsa boş kalsın, Antalya olmasın.
         if (!searchObj.country && window.__lastKnownCountry) {
             searchObj.country = window.__lastKnownCountry;
         }
 
     } 
     else {
-        // DURUM 2: KOORDİNAT YOK (BOŞ GÜN).
-        // Sadece bu durumda hafızadaki son bilgiyi kullanabiliriz.
-        
         let rawCity = window.selectedCity || "";
         if (rawCity.includes(',')) {
             let parts = rawCity.split(',');
@@ -292,8 +267,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             searchObj.term = rawCity;
         }
 
-        // Boş gün olduğu için hafızadaki son şehri (Context) kullan.
-        // Örn: 1. Gün Isparta idi, 2. Gün boş. O zaman 2. Gün Isparta sayılır.
         if (!searchObj.context && window.__lastKnownContext) searchObj.context = window.__lastKnownContext;
         if (!searchObj.country && window.__lastKnownCountry) searchObj.country = window.__lastKnownCountry;
     }
@@ -303,25 +276,21 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         return;
     }
 
-    // --- DEĞİŞİKLİK KONTROLÜ ---
     const currentIdentifier = `${searchObj.term}_${searchObj.context}_${searchObj.country}`.replace(/\s+/g, '_'); 
     const previousIdentifier = collage.getAttribute('data-collage-id');
 
-    // D. Cache Kontrolü
     if (!window.__globalCollageUsedByTrip) window.__globalCollageUsedByTrip = {};
     if (!window.__globalCollageUsedByTrip[tripTokenAtStart]) {
         window.__globalCollageUsedByTrip[tripTokenAtStart] = new Set();
     }
     const usedSet = window.__globalCollageUsedByTrip[tripTokenAtStart];
 
-    // Cache Key
     const safeTerm = (searchObj.term || searchObj.context).replace(/\s+/g, '_');
     const cacheKey = `tt_day_collage_v36_${day}_${currentIdentifier}_combined`;
     
     let images = [];
     let fromCache = false;
 
-    // Eğer konum değişmediyse cache kullan, değiştiyse SİL.
     if (currentIdentifier === previousIdentifier) {
         try {
             const cachedData = localStorage.getItem(cacheKey);
@@ -335,12 +304,10 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
             }
         } catch (e) {}
     } else {
-        // console.log(`[Collage] Location Changed: ${previousIdentifier} -> ${currentIdentifier}. Refreshing...`);
         collage.innerHTML = ""; 
         fromCache = false; 
     }
 
-    // E. API'den Çek
     if (!fromCache || images.length === 0) {
         if (window.__activeTripSessionToken !== tripTokenAtStart) return;
 
@@ -366,7 +333,6 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
         }
     }
 
-    // F. Render
     if (images.length > 0 && typeof renderCollageSlides === 'function') {
         collage.setAttribute('data-collage-id', currentIdentifier);
         renderCollageSlides(collage, images, searchObj);
@@ -377,14 +343,14 @@ window.renderDayCollage = async function renderDayCollage(day, dayContainer, day
 };
 
 
-// 5. SLIDER RENDERER (BAŞLIK & ALT YAZI & DEDUPLICATION)
+// 5. SLIDER RENDERER - LOADING SKELETON İLE GÜNCELLENMİŞ ✨
 // ============================================================
 function renderCollageSlides(collage, images, searchObj) {
     const isMobile = window.innerWidth < 600;
     const visible = isMobile ? 2 : 3;
     let index = 0;
   
-    // --- BAŞLIK OLUŞTURMA ---
+    // Başlık Oluşturma
     let rawParts = [searchObj.term, searchObj.context, searchObj.country];
     
     if (!searchObj.country && window.__lastKnownCountry) {
@@ -408,14 +374,12 @@ function renderCollageSlides(collage, images, searchObj) {
       ? `<div style="position:absolute; top:12px; left:12px; z-index:2; background:rgba(0,0,0,0.6); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; pointer-events:none;">${displayTerm}</div>`
       : "";
 
-    // Alt Yazı
     const footerHtml = `
       <div style="font-size: 0.8rem; color: #666; margin-top: 8px; text-align: left; font-weight: 400;">
         ✨ Inspiring visuals for your trip are provided 
       </div>
     `;
 
-    // Info İkonu
     const infoIconHtml = `
     <span class="info-icon-wrapper">
         <img src="https://www.svgrepo.com/show/474873/info.svg" alt="Info">
@@ -427,23 +391,96 @@ function renderCollageSlides(collage, images, searchObj) {
     <style> .info-icon-wrapper:hover .info-tooltip { display: block !important; } </style>
     `;
   
+    // SABİT YÜKSEKLİK - Scroll jump'ı önlemek için 🎯
+    const viewportHeight = '168px'; // 160px resim + 8px padding
+    
     collage.innerHTML = `
       ${topHeaderHtml}
-      <div class="collage-viewport" style="overflow:hidden; width:100%; position:relative; border-radius:8px;">
+      <div class="collage-viewport" style="overflow:hidden; width:100%; height:${viewportHeight}; min-height:${viewportHeight}; position:relative; border-radius:8px; background:#f5f7fa;">
         ${badgeHtml}
-        <div class="collage-track" style="display:flex; transition: transform 0.4s ease-out; will-change: transform;"></div>
+        <div class="collage-track" style="display:flex; transition: transform 0.4s ease-out; will-change: transform; height:100%;"></div>
+        
+        <!-- LOADING SKELETON 💀 -->
+        <div class="collage-loading-skeleton" style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; gap:8px; padding:4px; z-index:1;">
+          ${Array(visible).fill(0).map(() => `
+            <div style="flex:1; background:linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px;"></div>
+          `).join('')}
+        </div>
       </div>
       <button class="collage-nav prev" style="position:absolute; left:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❮</button>
       <button class="collage-nav next" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#000; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index:5;">❯</button>
       ${infoIconHtml}
       ${footerHtml}
+      
+      <style>
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      </style>
     `;
   
     const track = collage.querySelector(".collage-track");
+    const skeleton = collage.querySelector(".collage-loading-skeleton");
+    let loadedCount = 0;
+    const totalImages = images.length;
+    
+    // Resimleri ekle
     images.forEach((src) => {
       const slide = document.createElement("div");
       slide.style.cssText = `flex: 0 0 ${100 / visible}%; max-width: ${100 / visible}%; padding: 4px; box-sizing: border-box;`;
-      slide.innerHTML = `<div style="width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed;"><img src="${src}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+      
+      const imgContainer = document.createElement("div");
+      imgContainer.style.cssText = "width:100%; height:160px; border-radius:8px; overflow:hidden; background:#e5e8ed; position:relative;";
+      
+      const img = document.createElement("img");
+      img.src = src;
+      img.loading = "lazy";
+      img.style.cssText = "width:100%; height:100%; object-fit:cover; display:block; opacity:0; transition:opacity 0.3s ease;";
+      
+      // Resim yüklenince ✅
+      img.onload = () => {
+        img.style.opacity = "1";
+        loadedCount++;
+        
+        // Tüm resimler yüklenince skeleton'ı gizle
+        if (loadedCount === totalImages && skeleton) {
+          skeleton.style.opacity = "0";
+          skeleton.style.transition = "opacity 0.3s ease";
+          setTimeout(() => {
+            if (skeleton && skeleton.parentNode) {
+              skeleton.remove();
+            }
+          }, 300);
+        }
+      };
+      
+      // Resim yüklenemezse de say ❌
+      img.onerror = () => {
+        img.style.opacity = "1";
+        loadedCount++;
+        if (loadedCount === totalImages && skeleton) {
+          skeleton.style.opacity = "0";
+          skeleton.style.transition = "opacity 0.3s ease";
+          setTimeout(() => {
+            if (skeleton && skeleton.parentNode) {
+              skeleton.remove();
+            }
+          }, 300);
+        }
+      };
+      
+      // Eğer resim cache'den gelirse 🚀
+      if (img.complete) {
+        img.style.opacity = "1";
+        loadedCount++;
+        if (loadedCount === totalImages && skeleton) {
+          skeleton.style.display = "none";
+        }
+      }
+      
+      imgContainer.appendChild(img);
+      slide.appendChild(imgContainer);
       track.appendChild(slide);
     });
   
