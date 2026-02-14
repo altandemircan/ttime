@@ -202,14 +202,21 @@ window.toggleSidebarFavoritePlaces = function() {
         if (tripPanel) {
             tripPanel.classList.add('open');
             
-            // Trip panelini en üste scroll et
+            // SCROLL POZİSYONU RESTORE: Kaydedilmiş pozisyona dön
             setTimeout(() => {
-                tripPanel.scrollTop = 0;
+                if (window.sidebarScrollPositions && typeof window.sidebarScrollPositions.trip !== 'undefined') {
+                    tripPanel.scrollTop = window.sidebarScrollPositions.trip;
+                    console.log('[Scroll Restore] Trip position restored after closing My Places:', window.sidebarScrollPositions.trip);
+                } else {
+                    // Kaydedilmiş pozisyon yoksa en üste git
+                    tripPanel.scrollTop = 0;
+                }
+                
                 const sidebarContent = tripPanel.querySelector('.sidebar-trip, .sidebar-content, [class*="sidebar"]');
-                if (sidebarContent) {
+                if (sidebarContent && window.sidebarScrollPositions && typeof window.sidebarScrollPositions.trip !== 'undefined') {
                     sidebarContent.scrollTop = 0;
                 }
-            }, 50);
+            }, 350); // Harita ve rota animasyonlarından sonra
         }
         
         // 3. MOBİL HARİTA FİXİ: Panel kapandıktan sonra haritayı yenile
@@ -380,6 +387,29 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     
+    // SCROLL POZİSYONU KAYDETME SİSTEMİ
+    window.sidebarScrollPositions = window.sidebarScrollPositions || {};
+    
+    // Trip sidebar scroll pozisyonunu kaydet
+    function saveTripScrollPosition() {
+        const tripSidebar = document.getElementById('sidebar-overlay-trip');
+        if (tripSidebar) {
+            window.sidebarScrollPositions.trip = tripSidebar.scrollTop;
+            console.log('[Scroll Save] Trip scroll position saved:', tripSidebar.scrollTop);
+        }
+    }
+    
+    // Trip sidebar scroll pozisyonunu geri yükle
+    function restoreTripScrollPosition() {
+        const tripSidebar = document.getElementById('sidebar-overlay-trip');
+        if (tripSidebar && typeof window.sidebarScrollPositions.trip !== 'undefined') {
+            setTimeout(() => {
+                tripSidebar.scrollTop = window.sidebarScrollPositions.trip;
+                console.log('[Scroll Restore] Trip scroll position restored:', window.sidebarScrollPositions.trip);
+            }, 100);
+        }
+    }
+    
     // ADD ITEM BUTONU İÇİN SCROLL TO TOP
     // Event delegation kullanarak dinamik butonları da yakala
     document.addEventListener('click', function(e) {
@@ -387,6 +417,9 @@ document.addEventListener("DOMContentLoaded", function () {
         
         if (addMoreBtn) {
             console.log('[Scroll Fix] Add Item button clicked, scrolling to top');
+            
+            // Önce mevcut pozisyonu kaydet
+            saveTripScrollPosition();
             
             // Trip sidebar'ını bul ve en üste scroll et
             setTimeout(() => {
@@ -406,12 +439,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
     
-    // MY PLACES BUTONU İÇİN SCROLL TO TOP
+    // MY PLACES BUTONU İÇİN SCROLL TO TOP VE POZİSYON KAYDETME
     document.addEventListener('click', function(e) {
         const myPlacesBtn = e.target.closest('.my-places-btn, .add-favorite-place-btn, [data-role="my-places-btn"]');
         
         if (myPlacesBtn) {
-            console.log('[Scroll Fix] My Places button clicked, will scroll to top');
+            console.log('[Scroll Fix] My Places button clicked, saving position');
+            
+            // Mevcut Trip pozisyonunu kaydet
+            saveTripScrollPosition();
             
             setTimeout(() => {
                 const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
@@ -428,6 +464,23 @@ document.addEventListener("DOMContentLoaded", function () {
             }, 150);
         }
     });
+    
+    // KATEGORİ LİSTESİ VEYA DİĞER OVERLAY KAPANIRKEN POZİSYONU GERİ YÜKLE
+    // Global olarak ESC tuşu ve overlay kapatma işlemlerini dinle
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            setTimeout(restoreTripScrollPosition, 200);
+        }
+    });
+    
+    // Overlay kapatma butonlarını dinle (X, Cancel, Close vb.)
+    document.addEventListener('click', function(e) {
+        const closeBtn = e.target.closest('.close-btn, .cancel-btn, [class*="close"], [class*="cancel"], .overlay-close');
+        if (closeBtn) {
+            setTimeout(restoreTripScrollPosition, 200);
+        }
+    });
+
 });
 
 function openTripSidebar() {
