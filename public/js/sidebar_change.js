@@ -10,13 +10,50 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleSidebar = function(sidebarId) {
         const allSidebars = document.querySelectorAll('.sidebar-overlay');
         const clickedSidebar = document.getElementById(sidebarId);
+        
         if (clickedSidebar) {
+            const wasOpen = clickedSidebar.classList.contains('open');
+            const willBeOpen = !wasOpen;
+            
             allSidebars.forEach(sidebar => {
                 if (sidebar.id !== sidebarId) {
                     sidebar.classList.remove('open');
                 }
             });
             clickedSidebar.classList.toggle('open');
+            
+            // HARITA FIX: Eğer bir sidebar açılıyorsa ve içinde harita varsa
+            if (willBeOpen) {
+                const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+                if (miniMapContainer) {
+                    miniMapContainer.style.opacity = '0';
+                    miniMapContainer.style.transition = 'opacity 0.15s ease';
+                }
+                
+                setTimeout(() => {
+                    // Tüm harita tiplerini yenile
+                    if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                        window.miniMap.invalidateSize();
+                    }
+                    if (window.map && typeof window.map.invalidateSize === 'function') {
+                        window.map.invalidateSize();
+                    }
+                    if (window.leafletMaps) {
+                        Object.values(window.leafletMaps).forEach(map => {
+                            if (map && typeof map.invalidateSize === 'function') {
+                                map.invalidateSize();
+                            }
+                        });
+                    }
+                    
+                    // Haritayı tekrar göster
+                    setTimeout(() => {
+                        if (miniMapContainer) {
+                            miniMapContainer.style.opacity = '1';
+                        }
+                    }, 50);
+                }, 300);
+            }
         }
     };
     
@@ -210,12 +247,43 @@ window.toggleSidebarMyTrips = function(event) {
         return;
     }
 
-    if (sidebarMyTripsOverlay && sidebarMyTripsOverlay.classList.contains('open')) {
+    const wasOpen = sidebarMyTripsOverlay && sidebarMyTripsOverlay.classList.contains('open');
+    
+    if (wasOpen) {
         sidebarMyTripsOverlay.classList.remove('open');
         if (sidebarDefaultOverlay) sidebarDefaultOverlay.classList.add('open');
     } else if (sidebarMyTripsOverlay) {
         sidebarMyTripsOverlay.classList.add('open');
         if (sidebarDefaultOverlay) sidebarDefaultOverlay.classList.remove('open');
+        
+        // HARITA FIX: My Trips açılırken
+        const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+        if (miniMapContainer) {
+            miniMapContainer.style.opacity = '0';
+            miniMapContainer.style.transition = 'opacity 0.15s ease';
+        }
+        
+        setTimeout(() => {
+            if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                window.miniMap.invalidateSize();
+            }
+            if (window.map && typeof window.map.invalidateSize === 'function') {
+                window.map.invalidateSize();
+            }
+            if (window.leafletMaps) {
+                Object.values(window.leafletMaps).forEach(map => {
+                    if (map && typeof map.invalidateSize === 'function') {
+                        map.invalidateSize();
+                    }
+                });
+            }
+            
+            setTimeout(() => {
+                if (miniMapContainer) {
+                    miniMapContainer.style.opacity = '1';
+                }
+            }, 50);
+        }, 300);
     }
     
     if (sidebarMyTripsOverlay && sidebarMyTripsOverlay.classList.contains('open') && typeof updateMyTripsPanel === 'function') {
@@ -261,9 +329,14 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function openTripSidebar() {
+    // toggleSidebarTrip kullanarak aç - böylece harita fix'i otomatik çalışır
     const tripSidebar = document.getElementById("sidebar-overlay-trip");
     if (tripSidebar && !tripSidebar.classList.contains("open")) {
-        tripSidebar.classList.add("open");
+        if (typeof window.toggleSidebarTrip === 'function') {
+            window.toggleSidebarTrip();
+        } else {
+            tripSidebar.classList.add("open");
+        }
     }
 }
 
