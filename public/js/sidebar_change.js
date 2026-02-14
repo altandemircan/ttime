@@ -379,6 +379,55 @@ document.addEventListener("DOMContentLoaded", function () {
             if (sidebarOverlay) sidebarOverlay.style.display = 'none';
         });
     }
+    
+    // ADD ITEM BUTONU İÇİN SCROLL TO TOP
+    // Event delegation kullanarak dinamik butonları da yakala
+    document.addEventListener('click', function(e) {
+        const addMoreBtn = e.target.closest('.add-more-btn, .add-category-btn, [class*="add-item"], [class*="add-cat"]');
+        
+        if (addMoreBtn) {
+            console.log('[Scroll Fix] Add Item button clicked, scrolling to top');
+            
+            // Trip sidebar'ını bul ve en üste scroll et
+            setTimeout(() => {
+                const tripSidebar = document.getElementById('sidebar-overlay-trip');
+                if (tripSidebar && tripSidebar.classList.contains('open')) {
+                    tripSidebar.scrollTop = 0;
+                    
+                    // İçindeki content'i de scroll et
+                    const sidebarContent = tripSidebar.querySelector('.sidebar-trip, .sidebar-content, [class*="sidebar"]');
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
+                    
+                    console.log('[Scroll Fix] Scrolled to top after Add Item click');
+                }
+            }, 100); // Kategori listesi açılsın diye biraz bekle
+        }
+    });
+    
+    // MY PLACES BUTONU İÇİN SCROLL TO TOP
+    document.addEventListener('click', function(e) {
+        const myPlacesBtn = e.target.closest('.my-places-btn, .add-favorite-place-btn, [data-role="my-places-btn"]');
+        
+        if (myPlacesBtn) {
+            console.log('[Scroll Fix] My Places button clicked, will scroll to top');
+            
+            setTimeout(() => {
+                const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
+                if (favSidebar && favSidebar.classList.contains('open')) {
+                    favSidebar.scrollTop = 0;
+                    
+                    const sidebarContent = favSidebar.querySelector('.sidebar-content, [class*="sidebar"]');
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
+                    
+                    console.log('[Scroll Fix] Scrolled My Places to top');
+                }
+            }, 150);
+        }
+    });
 });
 
 function openTripSidebar() {
