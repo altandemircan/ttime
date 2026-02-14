@@ -37,20 +37,54 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.toggleSidebarTrip = function() {
+        const tripPanel = document.getElementById('sidebar-overlay-trip');
+        const isOpening = tripPanel && !tripPanel.classList.contains('open');
+        
         window.toggleSidebar('sidebar-overlay-trip');
 
-        setTimeout(() => {
-            if (window.leafletMaps) {
-                Object.values(window.leafletMaps).forEach(map => {
-                    map.invalidateSize();
-                });
+        // Eğer panel AÇILIYORSA (kapalıyken açılıyor), harita fix'i uygula
+        if (isOpening) {
+            // Harita container'ını bul ve geçici olarak gizle
+            const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+            if (miniMapContainer) {
+                miniMapContainer.style.opacity = '0';
+                miniMapContainer.style.transition = 'opacity 0.15s ease';
             }
             
-            if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
-                const days = [...new Set(window.cart.map(i => i.day))];
-                days.forEach(d => renderRouteForDay(d));
-            }
-        }, 350);
+            setTimeout(() => {
+                // Küçük harita
+                if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                    window.miniMap.invalidateSize();
+                }
+                
+                // Ana harita
+                if (window.map && typeof window.map.invalidateSize === 'function') {
+                    window.map.invalidateSize();
+                }
+                
+                // Leaflet haritalar
+                if (window.leafletMaps) {
+                    Object.values(window.leafletMaps).forEach(map => {
+                        if (map && typeof map.invalidateSize === 'function') {
+                            map.invalidateSize();
+                        }
+                    });
+                }
+                
+                // Rotaları yeniden çiz
+                if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
+                    const days = [...new Set(window.cart.map(i => i.day))];
+                    days.forEach(d => renderRouteForDay(d));
+                }
+                
+                // Haritayı tekrar göster (smooth fade-in)
+                setTimeout(() => {
+                    if (miniMapContainer) {
+                        miniMapContainer.style.opacity = '1';
+                    }
+                }, 50);
+            }, 300);
+        }
     };
 
     window.toggleSidebarMyTrips = function() {
