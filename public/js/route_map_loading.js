@@ -259,8 +259,9 @@
         let skeleton = mapElement.querySelector('.route-map-loading');
         if (skeleton) return skeleton;
         
-        // Map'i önce gizle (opacity)
+        // SADECE skeleton eklenirken map'i gizle
         mapElement.style.opacity = '0';
+        mapElement.style.transition = 'opacity 0.3s ease';
         
         skeleton = createRouteMapLoadingSkeleton(day);
         mapElement.appendChild(skeleton);
@@ -274,7 +275,13 @@
         if (!mapElement) return;
         
         const skeleton = mapElement.querySelector('.route-map-loading');
-        if (!skeleton) return;
+        
+        // Skeleton yoksa sadece opacity'yi düzelt
+        if (!skeleton) {
+            mapElement.style.opacity = '1';
+            mapElement.classList.add('loaded');
+            return;
+        }
         
         // Map'i görünür yap
         mapElement.style.opacity = '1';
@@ -401,11 +408,36 @@
         document.addEventListener('DOMContentLoaded', () => {
             injectRouteMapLoadingStyles();
             observeRouteMapContainers();
+            fixExistingMaps();
         });
     } else {
         injectRouteMapLoadingStyles();
         observeRouteMapContainers();
+        fixExistingMaps();
     }
+    
+    // Mevcut haritaların opacity'sini düzelt
+    function fixExistingMaps() {
+        const existingMaps = document.querySelectorAll('[id^="route-map-day"]');
+        existingMaps.forEach(map => {
+            // Eğer skeleton yoksa ve opacity 0 ise düzelt
+            if (!map.querySelector('.route-map-loading') && map.style.opacity === '0') {
+                map.style.opacity = '1';
+                map.classList.add('loaded');
+                console.log('[Route Map Loading] Fixed existing map opacity:', map.id);
+            }
+        });
+    }
+    
+    // Her 500ms'de bir kontrol et (ilk 5 saniye)
+    let checkCount = 0;
+    const checkInterval = setInterval(() => {
+        fixExistingMaps();
+        checkCount++;
+        if (checkCount >= 10) {
+            clearInterval(checkInterval);
+        }
+    }, 500);
     
     console.log('[Route Map Loading] System initialized');
 })();
