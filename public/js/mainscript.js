@@ -5336,6 +5336,9 @@ group.appendChild(noteBox);
         window._lastSegmentEndKm = undefined;
         
         console.log('[New Trip] Route data cleared - polylines and elevation reset');
+
+        // 👇 EKLENECEK KOD: Eski harita/elevation izlerini siler
+            if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
         // ========================================
         
         // ========================================
