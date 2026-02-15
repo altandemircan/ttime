@@ -5635,8 +5635,8 @@ ease;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    background-color: #1976d2 !important; /* Dışarıdan gelen beyaz hover ezilmelerini kesin önler */
-    color: #ffffff !important; 
+    background: #1976d2 !important; /* Beyaz olmasını kesin engeller */
+    color: #ffffff; 
     font-size: 13px; 
     font-weight: 600;
     cursor: pointer;
@@ -5645,18 +5645,22 @@ ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     overflow: hidden; 
     z-index: 1;
-    transition: box-shadow 0.2s ease; /* Sadece gölge geçişini yumuşatır */
 }
 
-/* Yazı ve ikonun parlamanın (::before) altında ezilmemesi için üste alıyoruz */
-.expand-map-btn img,
-.expand-map-btn .tm-label,
-.expand-map-btn span {
+/* SENİN ORİJİNAL BOYUT AYARIN - BUNA DOKUNMUYORUZ */
+.expand-map-btn img {
+    width: 20px; 
+    height: 20px; 
+    display: block;
+}
+
+/* Yazı ve ikonun ışığın altında ezilmemesi için */
+.expand-map-btn > * {
     position: relative;
     z-index: 2;
 }
 
-/* Butonun içinden geçen, hafif beyaz saydam parlama (Sweep) */
+/* Butonun içinden geçen hafif şeffaf ışık süzmesi */
 .expand-map-btn::before {
     content: "";
     position: absolute;
@@ -5664,11 +5668,10 @@ ease;
     left: -150%;
     width: 100%;
     height: 100%;
-    /* Gerçek bir parlama efekti için ortası %25 saydam beyaz, kenarları şeffaf bir gradyan */
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
     animation: light-sweep 3s infinite;
-    z-index: 1; 
-    pointer-events: none; /* Parlama katmanının tıklamaları engellemesini önler */
+    z-index: 1;
+    pointer-events: none;
 }
 
 @keyframes light-sweep {
@@ -5677,10 +5680,9 @@ ease;
     100% { left: 150%; }
 }
 
-/* Hover durumunda arka planı sabitleyip, efekti güçlendiriyoruz */
+/* Hover anında arka planın beyazlaşmasını engelliyoruz */
 .expand-map-btn:hover {
-    background-color: #1976d2 !important; /* Beyaz olmasını kesin engeller */
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.4); /* Üzerine gelince tatlı bir mavi gölge verir */
+    background: #1976d2 !important; 
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
