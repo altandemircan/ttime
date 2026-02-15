@@ -5470,7 +5470,7 @@ group.appendChild(noteBox);
         const chatScreen = document.getElementById("chat-screen");
         if (chatScreen) chatScreen.innerHTML = "";
     };
-
+    
         }
         const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         if (datesBtn && datesBtn.nextSibling !== newChat) {
@@ -8457,34 +8457,6 @@ async function enforceDailyRouteLimit(day, maxKm) {
     return false;
 }
 async function renderRouteForDay(day) {
-
-        const dayItems = window.cart ? window.cart.filter(item => item.day === day) : [];
-    
-    if (!dayItems || dayItems.length === 0) {
-        console.log(`[renderRouteForDay] Skipping day ${day} - no items in cart`);
-        
-        // Temizlik yap
-        const containerId = `route-map-day${day}`;
-        if (typeof clearRouteCachesForDay === 'function') clearRouteCachesForDay(day);
-        if (typeof clearRouteVisualsForDay === 'function') clearRouteVisualsForDay(day);
-        if (typeof clearDistanceLabels === 'function') clearDistanceLabels(day);
-        if (typeof updateRouteStatsUI === 'function') updateRouteStatsUI(day);
-        
-        // Harita varsa temizle
-        const map = window.leafletMaps?.[containerId];
-        if (map) {
-            map.eachLayer(l => {
-                if (!(l instanceof L.TileLayer)) {
-                    map.removeLayer(l);
-                }
-            });
-        }
-        
-        return; // 🛑 FONKSİYONU DURDUR
-    }
-    //
-
-    
     // --- 1. LIMIT KONTROLÜ ---
     // Eğer limit aşıldıysa ve kullanıcı "Evet taşı" dediyse, 
     // fonksiyon true döner ve biz bu render'ı iptal ederiz (çünkü updateCart yeni render yapacak).
