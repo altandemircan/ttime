@@ -5649,20 +5649,14 @@ ease;
 
 /* Butonun içinden geçen, sadece beyaz üzerinde belli olan çok hafif parlama */
 .expand-map-btn::before {
-    content: "";
+        content: "";
     position: absolute;
     top: 0;
     left: -150%;
     width: 100%;
     height: 100%;
-    /* Sayfadaki mor butona selam çakan çok hafif bir yansıma */
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(139, 92, 246, 0.2), 
-        transparent
-    );
-    animation: light-sweep 4s infinite;
+    background: linear-gradient(90deg, #1976d2, #1976d2, #1976d2c7);
+    animation: light-sweep 3s infinite;
     z-index: -1;
 }
 
