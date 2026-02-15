@@ -5275,7 +5275,7 @@ group.appendChild(noteBox);
 
     if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-   (function ensureNewChatInsideCart() {
+ (function ensureNewChatInsideCart() {
         const oldOutside = document.querySelector('#newchat');
         if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
         const cartRoot = document.getElementById('cart');
@@ -5284,9 +5284,8 @@ group.appendChild(noteBox);
         if (!newChat) {
             newChat = document.createElement('div');
             newChat.id = 'newchat';
-        // İkonlu içerik ve Flex stil güncellemesi
         newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
-     ;
+        ;
 
         newChat.onclick = function () {
         const chatBox = document.getElementById('chat-box');
@@ -5302,7 +5301,7 @@ group.appendChild(noteBox);
         window.cart = [];
         
         // ========================================
-        // SIDEBAR TEMİZLEME - YENİ EKLENEN KISIM
+        // SIDEBAR TEMİZLEME - GÜNCELLENMIŞ
         // ========================================
         
         // 1. Trip başlığını gizle
@@ -5312,10 +5311,24 @@ group.appendChild(noteBox);
             tripTitle.style.display = 'none';
         }
         
-        // 2. AI Information bölümünü gizle
+        // 2. AI Information bölümünü TAMAMEN gizle
         const aiSection = document.querySelector('.ai-info-section');
         if (aiSection) {
             aiSection.style.display = 'none';
+            aiSection.style.visibility = 'hidden';
+            aiSection.style.height = '0';
+            aiSection.style.overflow = 'hidden';
+            aiSection.style.margin = '0';
+            aiSection.style.padding = '0';
+            aiSection.style.opacity = '0';
+            
+            // İçeriği de boşalt
+            const aiSummary = document.getElementById('ai-summary');
+            const aiTip = document.getElementById('ai-tip');
+            const aiHighlight = document.getElementById('ai-highlight');
+            if (aiSummary) aiSummary.textContent = '';
+            if (aiTip) aiTip.textContent = '';
+            if (aiHighlight) aiHighlight.textContent = '';
         }
         
         // 3. AI verilerini temizle
@@ -5326,14 +5339,16 @@ group.appendChild(noteBox);
         }
         
         // 4. "New Trip Plan" butonunu gizle (kendini gizle)
-        newChat.style.display = 'none';
+        if (newChat) {
+            newChat.style.display = 'none';
+        }
         
         // 5. activeTripKey'i temizle
         window.activeTripKey = null;
         localStorage.removeItem('activeTripKey');
         localStorage.removeItem('selectedCity');
         
-        console.log('[New Trip] Sidebar cleaned - title, AI info, and button hidden');
+        console.log('[New Trip] Sidebar fully cleaned - AI section completely hidden');
         
         // ========================================
         
@@ -5382,9 +5397,8 @@ group.appendChild(noteBox);
         window.__welcomeHiddenForever = false;
 
         if (chatBox) {
-            chatBox.innerHTML = ''; // İçeriği tamamen boşalt
+            chatBox.innerHTML = '';
             
-            // Typing indicator'ı (gizli olarak) tekrar oluştur/ekle
             let indicator = document.getElementById('typing-indicator');
             if (!indicator) {
                 indicator = document.createElement('div');
@@ -5399,7 +5413,6 @@ group.appendChild(noteBox);
         var iw = document.querySelector('.input-wrapper');
         if (iw) iw.style.display = '';
 
-        // Önerileri sıfırla
         if (typeof showSuggestions === "function") showSuggestions(); 
 
         document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
