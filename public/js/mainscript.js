@@ -5287,7 +5287,7 @@ group.appendChild(noteBox);
         newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
         ;
 
-        newChat.onclick = function () {
+   newChat.onclick = function () {
         const chatBox = document.getElementById('chat-box');
         if (chatBox) chatBox.innerHTML = ''; 
 
@@ -5296,16 +5296,26 @@ group.appendChild(noteBox);
         window.__welcomeHiddenForever = false;
         window.__locationPickedFromSuggestions = false;
 
-        // Diğer temizlik işlemleri...
+        // ========================================
+        // KRİTİK: ROTA VERİLERİNİ ÖNCE TEMİZLE
+        // ========================================
         window.selectedCity = null;
         window.cart = [];
         
-        // ========================================
-        // SIDEBAR TEMİZLEME - GÜNCELLENMIŞ
+        // ROTA VE ELEVATION VERİLERİNİ TEMİZLE
+        window.directionsPolylines = {};
+        window.routeElevStatsByDay = {};
+        window.__ttElevDayCache = {};
+        window._segmentHighlight = {};
+        window._lastSegmentDay = undefined;
+        window._lastSegmentStartKm = undefined;
+        window._lastSegmentEndKm = undefined;
+        
+        console.log('[New Trip] Route data cleared - polylines and elevation reset');
         // ========================================
         
-       // ========================================
-        // SIDEBAR TEMİZLEME - GÜNCELLENMIŞ + HARİTA TEMİZLİĞİ
+        // ========================================
+        // SIDEBAR TEMİZLEME
         // ========================================
         
         // 1. Trip başlığını gizle
@@ -5356,8 +5366,6 @@ group.appendChild(noteBox);
         
         // ========================================
         
-        // ========================================
-        
         // Typing indicator'ı temizle ve gizli olarak ekle
         if (chatBox) {
             let indicator = document.getElementById('typing-indicator');
@@ -5382,13 +5390,6 @@ group.appendChild(noteBox);
         }
         
         if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        
-        window.routeElevStatsByDay = {};
-        window.__ttElevDayCache = {};
-        window._segmentHighlight = {};
-        window._lastSegmentDay = undefined;
-        window._lastSegmentStartKm = undefined;
-        window._lastSegmentEndKm = undefined;
 
         document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
 
@@ -5430,6 +5431,7 @@ group.appendChild(noteBox);
             
             console.log('[New Trip] Full cleanup completed - all maps removed');
         }, 200);
+        // ========================================
         
         document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
         const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
@@ -5468,6 +5470,7 @@ group.appendChild(noteBox);
         const chatScreen = document.getElementById("chat-screen");
         if (chatScreen) chatScreen.innerHTML = "";
     };
+    
         }
         const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         if (datesBtn && datesBtn.nextSibling !== newChat) {
