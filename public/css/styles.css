@@ -7542,7 +7542,7 @@ display: block !important;
     border: none;
     border-radius: 8px;
     color: #ffffff;
-    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 2px 4px;
     font-family: 'Satoshi';
     font-size: 0.85rem;
     width: 136px;
@@ -7579,6 +7579,7 @@ display: block !important;
 /* Mavi Buton (Mira AI Chat) */
 .btn-blue {
         background: linear-gradient(135deg, #12a5e8 0%, #67ccd1 100%);
+        margin-top: 20px;
    
 }
 .btn-blue:hover {
