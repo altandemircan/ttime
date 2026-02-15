@@ -1044,24 +1044,59 @@ window.startNewChat = function() {
     window.selectedCity = "";
     window.activeTripKey = null;
     
-    // [FIX] Yeni geziye başlarken hafızadaki eski anahtarı sil
-    // Bu sayede sayfa yenilense bile eski geziye geri dönmez, temiz sayfa açar.
     localStorage.removeItem('activeTripKey');
     localStorage.removeItem('selectedCity');
       
-    // --- EKLENEN KISIM: AI Verisini Sıfırla ---
+    // AI Verisini Sıfırla
     window.lastTripAIInfo = null; 
     if (window.cart) window.cart.aiData = null;
       
-    // UI'daki AI yazısını da temizle
     const aiSection = document.querySelector('.ai-info-section');
     if (aiSection) aiSection.style.display = 'none';
     if (typeof window.showTripAiInfo === "function") {
         window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
     }
-    // ------------------------------------------
-
-    // Boş haliyle kaydet (State'i temizle)
+    
+    // ========================================
+    // SIDEBAR TEMİZLEME
+    // ========================================
+    
+    // 1. Trip başlığını gizle
+    const tripTitle = document.getElementById('trip_title');
+    if (tripTitle) {
+        tripTitle.textContent = '';
+        tripTitle.style.display = 'none';
+    }
+    
+    // 2. AI Information gizle
+    if (aiSection) {
+        aiSection.style.display = 'none';
+    }
+    
+    // 3. "New Trip Plan" butonunu gizle
+    const newChatBtn = document.getElementById('newchat');
+    if (newChatBtn) {
+        newChatBtn.style.display = 'none';
+    }
+    
+    // 4. Chat box temizle
+    const chatBox = document.getElementById('chat-box');
+    if (chatBox) {
+        chatBox.innerHTML = '';
+    }
+    
+    // 5. Cart temizle
+    const cartItems = document.getElementById('cart-items');
+    if (cartItems) {
+        cartItems.innerHTML = '';
+    }
+    
+    if (typeof updateCart === 'function') {
+        updateCart();
+    }
+    
+    console.log('[New Trip] Sidebar cleaned');
+    
     saveTripAfterRoutes();
 };
 
