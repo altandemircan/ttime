@@ -5647,7 +5647,7 @@ ease;
     z-index: 1;
 }
 
-/* SENİN ORİJİNAL BOYUT AYARIN - BUNA DOKUNMUYORUZ */
+/* Orijinal boyut ayarınız */
 .expand-map-btn img {
     width: 20px; 
     height: 20px; 
@@ -5660,7 +5660,7 @@ ease;
     z-index: 2;
 }
 
-/* Butonun içinden geçen hafif şeffaf ışık süzmesi */
+/* Butonun içinden geçen şeffaf ışık süzmesi */
 .expand-map-btn::before {
     content: "";
     position: absolute;
@@ -5668,8 +5668,10 @@ ease;
     left: -150%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-    animation: light-sweep 3s infinite;
+    /* DAHA BELİRGİN: rgba(255, 255, 255, 0.25) yerine 0.45 kullanıldı */
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    /* DAHA HIZLI: 3s yerine 2s yapıldı */
+    animation: light-sweep 2s infinite;
     z-index: 1;
     pointer-events: none;
 }
