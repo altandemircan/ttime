@@ -5275,7 +5275,7 @@ group.appendChild(noteBox);
 
     if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-    (function ensureNewChatInsideCart() {
+   (function ensureNewChatInsideCart() {
         const oldOutside = document.querySelector('#newchat');
         if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
         const cartRoot = document.getElementById('cart');
@@ -5300,6 +5300,42 @@ group.appendChild(noteBox);
         // Diğer temizlik işlemleri...
         window.selectedCity = null;
         window.cart = [];
+        
+        // ========================================
+        // SIDEBAR TEMİZLEME - YENİ EKLENEN KISIM
+        // ========================================
+        
+        // 1. Trip başlığını gizle
+        const tripTitle = document.getElementById('trip_title');
+        if (tripTitle) {
+            tripTitle.textContent = '';
+            tripTitle.style.display = 'none';
+        }
+        
+        // 2. AI Information bölümünü gizle
+        const aiSection = document.querySelector('.ai-info-section');
+        if (aiSection) {
+            aiSection.style.display = 'none';
+        }
+        
+        // 3. AI verilerini temizle
+        window.lastTripAIInfo = null;
+        if (window.cart) window.cart.aiData = null;
+        if (typeof window.showTripAiInfo === "function") {
+            window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+        }
+        
+        // 4. "New Trip Plan" butonunu gizle (kendini gizle)
+        newChat.style.display = 'none';
+        
+        // 5. activeTripKey'i temizle
+        window.activeTripKey = null;
+        localStorage.removeItem('activeTripKey');
+        localStorage.removeItem('selectedCity');
+        
+        console.log('[New Trip] Sidebar cleaned - title, AI info, and button hidden');
+        
+        // ========================================
         
         // Typing indicator'ı temizle ve gizli olarak ekle
         if (chatBox) {
