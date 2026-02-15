@@ -7527,6 +7527,7 @@ display: block !important;
     display: flex;
     gap: 15px; /* Butonlar arası boşluk */
     justify-content: center;
+    z-index: 0;
 }
 
 /* Ortak Modern Buton Stili */
