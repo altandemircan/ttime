@@ -10482,7 +10482,7 @@ function wrapRouteControls(day) {
 
       expandBtn.innerHTML = `
         <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
-        <span class="tm-label" style="color: #1976d2">Expand map</span>
+        <span class="tm-label" style="color: #ffffff">Expand map</span>
       `;
       
       expandBtn.onclick = function(e) {
