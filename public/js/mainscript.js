@@ -5497,6 +5497,23 @@ group.appendChild(noteBox);
 
         const chatScreen = document.getElementById("chat-screen");
         if (chatScreen) chatScreen.innerHTML = "";
+        // KRİTİK: loadTripFromStorage'ı engelle
+window.activeTripKey = null;
+localStorage.removeItem('activeTripKey');
+localStorage.removeItem('selectedCity');
+
+// Eğer loadTripFromStorage çağrılmaya çalışırsa, engelle
+const originalLoadTrip = window.loadTripFromStorage;
+window.loadTripFromStorage = function(...args) {
+    console.log('[BLOCKED] loadTripFromStorage blocked during new trip');
+    return false;
+};
+
+// 1 saniye sonra geri yükle
+setTimeout(() => {
+    window.loadTripFromStorage = originalLoadTrip;
+    console.log('[RESTORED] loadTripFromStorage restored');
+}, 1000);
     };
     
         }
