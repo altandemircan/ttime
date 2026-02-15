@@ -3951,8 +3951,32 @@ function initEmptyDayMap(day) {
 function startMapPlanning() {
   window.cart = [];
   window.__startedWithMapFlag = true;
-  window.activeTripKey = null; // <-- En kritik satır: yeni map planlamada key sıfırlanır.
-
+  window.activeTripKey = null;
+  
+  // ========================================
+  // KRİTİK: ROTA VERİLERİNİ TEMİZLE
+  // ========================================
+  window.directionsPolylines = {};
+  window.routeElevStatsByDay = {};
+  window.__ttElevDayCache = {};
+  window._segmentHighlight = {};
+  window._lastSegmentDay = undefined;
+  window._lastSegmentStartKm = undefined;
+  window._lastSegmentEndKm = undefined;
+  
+  // Expanded map'leri temizle
+  document.querySelectorAll('[id*="expanded"]').forEach(el => el.remove());
+  document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+  if (window.expandedMaps) {
+    Object.values(window.expandedMaps).forEach(obj => {
+      if (obj?.expandedMap?.remove) {
+        try { obj.expandedMap.remove(); } catch(e) {}
+      }
+    });
+    window.expandedMaps = {};
+  }
+  
+  console.log('[Start Map] All route data cleared');
   window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
   window.__hideStartMapButtonByDay[1] = true;
   window.__hideAddCatBtnByDay[1] = true;
