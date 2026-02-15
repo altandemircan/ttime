@@ -5635,7 +5635,7 @@ ease;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    background: #1976d2;
+    background: #1976d2 !important;
     color: #ffffff; /* Profesyonel koyu gri */
     font-size: 13px; /* Sabit */
     font-weight: 600;
