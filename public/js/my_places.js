@@ -9,7 +9,7 @@ function saveFavTrips() {
 }
 
 // ------------------------------------------------------
-// 1. CSS: Yumuşak renkler, yan yana butonlar
+// 1. CSS: Yumuşak renkler, 3 buton yan yana
 // ------------------------------------------------------
 (function addSafeStyles() {
     const styleId = 'mp-accordion-final';
@@ -21,7 +21,6 @@ function saveFavTrips() {
         .mp-group {
             margin-bottom: 16px;
             background: #fff;
-          
             border-radius: 12px;
             overflow: hidden;
             box-shadow: rgba(149, 157, 165, 0.08) 0px 4px 12px;
@@ -29,7 +28,6 @@ function saveFavTrips() {
         }
 
         .mp-group:hover {
-            
             border-color: #e2e8f0;
         }
 
@@ -62,13 +60,13 @@ function saveFavTrips() {
         
         /* Sayı Rozeti */
         .mp-badge {
-      font-size: 0.8rem;
-    font-weight: 600;
-    color: #718096;
-    background: #ffffff;
-    padding: 0px 6px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #718096;
+            background: #ffffff;
+            padding: 0px 6px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
 
         /* Ok İkonu */
@@ -82,9 +80,6 @@ function saveFavTrips() {
             align-items: center;
             justify-content: center;
         }
-        
-        /* AÇIK DURUM (OPEN) */
-  
         
         .mp-group.open .mp-arrow { 
             transform: rotate(180deg); 
@@ -113,7 +108,7 @@ function saveFavTrips() {
 
         /* --- KART YAPISI --- */
         .mp-card {
-            position: relative; /* Butonun kart içinde hizalanması için eklendi */
+            position: relative;
             background: #fff;
             overflow: hidden;
             box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
@@ -134,6 +129,35 @@ function saveFavTrips() {
             align-items: flex-start;
             position: relative;
             background: #fff;
+        }
+        
+        /* Favori butonu - SAĞ ÜSTTE */
+        .mp-card-head .mp-fav-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+                width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+        }
+        
+        .mp-card-head .mp-fav-btn:hover {
+            background: #fff;
+            border-color: #cbd5e0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+            transform: scale(1.05);
+        }
+        
+        .mp-card-head .mp-fav-btn img {
+            width: 18px;
+            height: 18px;
         }
         
         /* Resim kutusu */
@@ -158,7 +182,8 @@ function saveFavTrips() {
             min-width: 0; 
             display: flex; 
             flex-direction: column; 
-            gap: 6px; 
+            gap: 6px;
+            padding-right: 40px; /* Fav butonu için boşluk */
         }
         
         .mp-name { 
@@ -194,89 +219,78 @@ function saveFavTrips() {
             opacity: 0.7;
         }
 
-        /* Favori butonu - AYNI DIV'DE */
-        .mp-fav-btn {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 8px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s ease;
-        }
-        
-        .mp-fav-btn:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e0;
-        }
-        
-        .mp-fav-btn img {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* Alt Butonlar - YAN YANA, AYNI BOYUT */
+        /* Alt Butonlar - 3 BUTON YAN YANA */
         .mp-acts { 
-            display: flex; 
-            background: #fafcfd; 
-            border-radius: 0 0 10px 10px; 
-            overflow: hidden; 
+            display: flex;
+            background: #fafcfd;
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
             border-top: 1px solid #edf2f7;
             padding: 10px;
-            gap: 10px;
+            gap: 8px;
+            flex-direction: row;
+            align-items: stretch;
+           
         }
         
         .mp-btn {
-     flex: 1;
-    display: flex;
-    gap: 8px;
-    font-family: 'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    padding: 6px;
-    width: 100%;
-    font-weight: 500;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.85rem;
+            flex: 1;
+            display: flex;
+            gap: 6px;
+            transition: all 0.3s ease;
+            
+            padding: 10px 6px;
+            font-weight: 600;
+            align-items: center;
+            justify-content: center;
+            border: none !important;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: rgba(149, 157, 165, 0.15) 0px 2px 8px;
+            font-family: 'Satoshi';
+            white-space: nowrap;
         }
         
-        /* YUMUŞAK MOR buton */
-        .mp-btn-add { 
-            background: #fff;
-    border: 1px solid #ddd;
-    /* box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2); */
-    color: #9462dd;
-        }
-        
-        .mp-btn-add:hover { 
-                box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3);
-
-        }
-        
-        /* KOYU MAVİ buton */
+        /* Start New - KOYU MAVİ */
         .mp-btn-start { 
-            background: #fff;
-    border: 1px solid #ddd;
-    /* box-shadow: 0 2px 6px rgba(2, 174, 228, 0.2); */
-    color: #1e293b;
+            background: #5bc7d4;
+          
+            color: #ffffff;
         }
         
         .mp-btn-start:hover { 
-           box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
-  
+            box-shadow: 0 2px 10px rgba(69, 170, 232, 0.3);
         }
         
+        /* Set Destination - YEŞİL */
+        .mp-btn-dest {
+                background: #2bb0e1;
+  
+    color: #ffffff;
+        }
+        
+        .mp-btn-dest:hover {
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Add to Trip - MOR */
+        .mp-btn-add { 
+                background: #9462dd;
+   
+    color: #ffffff;
+        }
+        
+        .mp-btn-add:hover { 
+            box-shadow: 0 2px 10px rgba(164, 117, 241, 0.3);
+        }
+        
+        /* DİSABLED DURUM */
         .mp-btn-dis { 
             background: #e8eaed !important; 
             color: #999999 !important; 
             cursor: not-allowed;
             box-shadow: none !important;
-        border:none;
+            border: none;
         }
 
         .mp-hint-ok { 
@@ -294,18 +308,17 @@ function saveFavTrips() {
         }
 
         .mp-meta-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap; /* Mobilde sığmazsa alt satıra geçer */
-    margin-top: 4px;
-}
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
 
-/* Mesafe bilgisindeki üst boşluğu sıfırlıyoruz çünkü kapsayıcıda gap var */
-.mp-distance-info {
-    margin-top: 0 !important;
-        font-size:0.75rem !important;
-}
+        .mp-distance-info {
+            margin-top: 0 !important;
+            font-size: 0.75rem !important;
+        }
 
         /* MODAL */
         .mp-overlay {
@@ -498,7 +511,62 @@ window.startNewTripWithPlace = function (place) {
     }
 };
 
+// YENİ FONKSİYON: Set Destination (Rota/Yay çizimi)
+window.setDestinationFromPlace = function(place) {
+    console.log("Set Destination clicked for:", place.name);
+    
+    // Kullanıcının mevcut konumunu al
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+    }
 
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            const destLat = Number(place.lat);
+            const destLng = Number(place.lon);
+
+            // Harita varsa yay/rota çiz
+            const currentMap = window.leafletMaps?.[1] || window._maplibre3DInstance;
+            
+            if (currentMap) {
+                // Türkiye kontrolü (basit koordinat bazlı)
+                const isTurkey = (userLat >= 36 && userLat <= 42 && userLng >= 26 && userLng <= 45) &&
+                                 (destLat >= 36 && destLat <= 42 && destLng >= 26 && destLng <= 45);
+
+                if (isTurkey) {
+                    // Türkiye içi - Gerçek rota çiz
+                    console.log("Drawing route in Turkey");
+                    if (typeof drawRouteOnMap === "function") {
+                        drawRouteOnMap(currentMap, userLat, userLng, destLat, destLng, place.name);
+                    }
+                } else {
+                    // Global - Yay çiz
+                    console.log("Drawing arc globally");
+                    if (typeof drawArcOnMap === "function") {
+                        drawArcOnMap(currentMap, userLat, userLng, destLat, destLng, place.name);
+                    }
+                }
+                
+                // Haritayı göster
+                const tripSidebar = document.getElementById('sidebar-overlay-trip');
+                if (tripSidebar?.classList.contains('open')) {
+                    if (typeof window.toggleSidebarTrip === "function") {
+                        window.toggleSidebarTrip();
+                    }
+                }
+            } else {
+                alert("Map is not available. Please open the trip planner.");
+            }
+        },
+        (error) => {
+            console.error("Geolocation error:", error);
+            alert("Unable to get your location. Please enable location services.");
+        }
+    );
+};
 
 // Mesafe Kontrol
 function checkDist(lat, lon) {
@@ -596,8 +664,9 @@ function getPlaceCategoryIcon(category) {
     };
     return iconMap[category] || '/img/location.svg';
 }
+
 // ------------------------------------------------------
-// 3. RENDER - Yumuşak renkler, yan yana butonlar
+// 3. RENDER - 3 buton: Start New, Set Destination, Add to Trip
 // ------------------------------------------------------
 async function renderFavoritePlacesPanel() {
     const panel = document.getElementById("favorite-places-panel");
@@ -639,15 +708,13 @@ async function renderFavoritePlacesPanel() {
             const st = checkDist(place.lat, place.lon);
             const isFav = isTripFav(place);
             
-            // 1. DÜZENLEME: Mesafe Rengi (st.ok ise Yeşil, değilse Kırmızı)
             const distColor = st.ok ? '#48bb78' : '#f56565'; 
 
             const card = document.createElement("div");
             card.className = "mp-card";
             
-            // Kart oluştur
-           // Kart oluştur - renderFavoritePlacesPanel içindeki ilgili kısım
-card.innerHTML = `
+            // Kart üst kısmı
+            card.innerHTML = `
     <div class="mp-card-head">
         <div class="mp-img-box">
             <img src="${place.image || 'img/placeholder.png'}" class="mp-img" onerror="this.src='img/default_place.jpg'">
@@ -664,133 +731,131 @@ card.innerHTML = `
             </div>
             
         </div>
+        
+        <!-- FAV BUTONU SAĞ ÜSTTE -->
+        <button class="mp-fav-btn">
+            <img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">
+        </button>
     </div>
 `;
             
-            // Alt butonlar
+            // Alt butonlar container
             const acts = document.createElement("div");
             acts.className = "mp-acts";
 
-            // Start New Trip
+            // 1. Start New
             const b1 = document.createElement("button");
             b1.className = "mp-btn mp-btn-start";
-            b1.innerHTML = `<img src="img/start_with_place.svg" style="width:16px;height:16px;"> Start New`;
+            b1.innerHTML = `Start New`;
             b1.onclick = () => startNewTripWithPlace(place);
 
-            // Add to Trip
+            // 2. Set Destination
             const b2 = document.createElement("button");
-            b2.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
+            b2.className = "mp-btn mp-btn-dest";
+            b2.innerHTML = `Set Destination`;
+            b2.onclick = () => setDestinationFromPlace(place);
+
+            // 3. Add to Trip
+            const b3 = document.createElement("button");
+            b3.className = st.ok ? "mp-btn mp-btn-add" : "mp-btn mp-btn-dis";
             
             if (st.ok) {
-                // AKTİF DURUM: İkon Beyaz
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;"> Add to Trip`;
-            b2.onclick = function(e) {
-                // 1. Tıklama olayını en başta durdur (Hata riskini önler)
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
+                b3.innerHTML = `Add to Trip`;
+                b3.onclick = function(e) {
+                    if (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
 
-                // 2. Gün seçimi modunu aç
-                openDayModal((selectedDay) => {
-                    if (typeof addToCart === "function") {
-                        
-                        // Active Trip Key (Gezi Kimliği) yoksa oluştur
-                        if (!window.activeTripKey) {
-                            window.activeTripKey = `trip_${Date.now()}`;
-                            if (window.selectedCity) {
-                                window.activeTripKey = `${window.selectedCity.replace(/\s+/g, '_')}_${Date.now()}`;
-                            }
-                        }
-
-                        // 3. Sepete Ekle
-                        addToCart(
-                            place.name, 
-                            place.image, 
-                            selectedDay, 
-                            place.category,
-                            place.address || "", 
-                            null, 
-                            null, 
-                            place.opening_hours || "", 
-                            null,
-                            { lat: Number(place.lat), lng: Number(place.lon) }, 
-                            place.website || ""
-                        );
-
-                 
-                        console.log("Forcing storage save for 'cart'...");
-                        localStorage.setItem('cart', JSON.stringify(window.cart));
-                        
-                        // ID ve Şehir bilgisini de güncelle
-                        if (window.activeTripKey) localStorage.setItem('activeTripKey', window.activeTripKey);
-                        if (window.selectedCity) localStorage.setItem('selectedCity', window.selectedCity);
-                        // ============================================================
-
-                        // 4. Standart Kayıt (My Trips paneli için)
-                        if (typeof saveCurrentTripToStorage === "function") {
-                            saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-                        }
-
-                        // 5. Arayüzü Güncelle
-                        renderFavoritePlacesPanel();
-                        
-                        // "My Places" panelini kapat
-                        const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
-                        if (favSidebar && favSidebar.classList.contains('open')) {
-                            if (typeof window.toggleSidebar === 'function') {
-                                window.toggleSidebar('sidebar-overlay-favorite-places');
-                            } else {
-                                favSidebar.classList.remove('open');
-                            }
-                        }
-                        
-                        // "Trip" panelini aç (Kullanıcı eklendiğini görsün)
-                        setTimeout(() => {
-                            const tripSidebar = document.getElementById('sidebar-overlay-trip');
-                            if (tripSidebar) {
-                                if (typeof window.toggleSidebarTrip === 'function') {
-                                    if (!tripSidebar.classList.contains('open')) {
-                                        window.toggleSidebarTrip();
-                                    }
-                                } else {
-                                    tripSidebar.classList.add('open');
+                    openDayModal((selectedDay) => {
+                        if (typeof addToCart === "function") {
+                            
+                            if (!window.activeTripKey) {
+                                window.activeTripKey = `trip_${Date.now()}`;
+                                if (window.selectedCity) {
+                                    window.activeTripKey = `${window.selectedCity.replace(/\s+/g, '_')}_${Date.now()}`;
                                 }
                             }
-                        }, 100);
-                    }
-                });
-            };
+
+                            addToCart(
+                                place.name, 
+                                place.image, 
+                                selectedDay, 
+                                place.category,
+                                place.address || "", 
+                                null, 
+                                null, 
+                                place.opening_hours || "", 
+                                null,
+                                { lat: Number(place.lat), lng: Number(place.lon) }, 
+                                place.website || ""
+                            );
+
+                            console.log("Forcing storage save for 'cart'...");
+                            localStorage.setItem('cart', JSON.stringify(window.cart));
+                            
+                            if (window.activeTripKey) localStorage.setItem('activeTripKey', window.activeTripKey);
+                            if (window.selectedCity) localStorage.setItem('selectedCity', window.selectedCity);
+
+                            if (typeof saveCurrentTripToStorage === "function") {
+                                saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
+                            }
+
+                            renderFavoritePlacesPanel();
+                            
+                            const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
+                            if (favSidebar && favSidebar.classList.contains('open')) {
+                                if (typeof window.toggleSidebar === 'function') {
+                                    window.toggleSidebar('sidebar-overlay-favorite-places');
+                                } else {
+                                    favSidebar.classList.remove('open');
+                                }
+                            }
+                            
+                            setTimeout(() => {
+                                const tripSidebar = document.getElementById('sidebar-overlay-trip');
+                                if (tripSidebar) {
+                                    if (typeof window.toggleSidebarTrip === 'function') {
+                                        if (!tripSidebar.classList.contains('open')) {
+                                            window.toggleSidebarTrip();
+                                        }
+                                    } else {
+                                        tripSidebar.classList.add('open');
+                                    }
+                                }
+                            }, 100);
+                        }
+                    });
+                };
             } else {
-                // 2. DÜZENLEME: PASİF DURUM: İkon Gri
-                // brightness(0) invert(1) yerine opacity ve grayscale kullandık.
-                b2.innerHTML = `<img src="img/add_to_current_trip.svg" style="width:16px;height:16px;filter:grayscale(1) opacity(0.5);"> Add to Trip`;
-                b2.title = "Too far";
+                b3.innerHTML = `Add to Trip`;
+                b3.title = "Too far";
             }
 
+            // Butonları ekle
             acts.appendChild(b1);
             acts.appendChild(b2);
+            acts.appendChild(b3);
 
-            // Favori butonu - AYNı DIV İÇİNDE
-            const favBtn = document.createElement("button");
-            favBtn.className = "mp-fav-btn";
-            favBtn.innerHTML = `<img class="fav-icon" src="${isFav ? 'img/like_on.svg' : 'img/like_off.svg'}" alt="${isFav ? 'Remove from fav' : 'Add to fav'}">`;
-            favBtn.onclick = (e) => {
-                e.stopPropagation();
-                const favIdx = window.favTrips.findIndex(f => 
-                    f.name === place.name && 
-                    String(f.lat) === String(place.lat)
-                );
-                if (favIdx > -1) {
-                    window.favTrips.splice(favIdx, 1);
-                    saveFavTrips();
-                    renderFavoritePlacesPanel();
-                    if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
-                }
-            };
-            acts.appendChild(favBtn);
+            // Favori butonuna event listener ekle
+            const favBtn = card.querySelector('.mp-fav-btn');
+            if (favBtn) {
+                favBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const favIdx = window.favTrips.findIndex(f => 
+                        f.name === place.name && 
+                        String(f.lat) === String(place.lat)
+                    );
+                    if (favIdx > -1) {
+                        window.favTrips.splice(favIdx, 1);
+                        saveFavTrips();
+                        renderFavoritePlacesPanel();
+                        if(typeof updateAllFavVisuals === 'function') updateAllFavVisuals();
+                    }
+                };
+            }
+
             card.appendChild(acts);
-            
             wrapper.appendChild(card);
         });
 
@@ -808,6 +873,7 @@ function isTripFav(item) {
         String(f.lat) === String(item.lat || item.location?.lat)
     );
 }
+
 // toggleFavFromCart fonksiyonu - gezi listesinden fav ekle/çıkar
 function toggleFavFromCart(btn) {
     const name = btn.getAttribute('data-name');
@@ -821,8 +887,8 @@ function toggleFavFromCart(btn) {
 
     const place = {
         name, category, lat: parseFloat(lat), lon: parseFloat(lon), image, address, website, opening_hours,
-        city: window.selectedCity || '', // Mevcut city'i ekle
-        country: (window.selectedLocation && window.selectedLocation.country) || '' // Mevcut country'i ekle
+        city: window.selectedCity || '',
+        country: (window.selectedLocation && window.selectedLocation.country) || ''
     };
 
     if (!window.favTrips) window.favTrips = [];

@@ -10,13 +10,62 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleSidebar = function(sidebarId) {
         const allSidebars = document.querySelectorAll('.sidebar-overlay');
         const clickedSidebar = document.getElementById(sidebarId);
+        
         if (clickedSidebar) {
+            const wasOpen = clickedSidebar.classList.contains('open');
+            const willBeOpen = !wasOpen;
+            
             allSidebars.forEach(sidebar => {
                 if (sidebar.id !== sidebarId) {
                     sidebar.classList.remove('open');
                 }
             });
             clickedSidebar.classList.toggle('open');
+            
+            // SCROLL TO TOP: Sidebar açılırken en üste git
+            if (willBeOpen) {
+                setTimeout(() => {
+                    clickedSidebar.scrollTop = 0;
+                    // İçindeki content varsa onu da en üste al
+                    const sidebarContent = clickedSidebar.querySelector('.sidebar-content, [class*="sidebar-"]');
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
+                }, 50);
+            }
+            
+            // HARITA FIX: Eğer bir sidebar açılıyorsa ve içinde harita varsa
+            if (willBeOpen) {
+                const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+                if (miniMapContainer) {
+                    miniMapContainer.style.opacity = '0';
+                    miniMapContainer.style.transition = 'opacity 0.15s ease';
+                }
+                
+                setTimeout(() => {
+                    // Tüm harita tiplerini yenile
+                    if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                        window.miniMap.invalidateSize();
+                    }
+                    if (window.map && typeof window.map.invalidateSize === 'function') {
+                        window.map.invalidateSize();
+                    }
+                    if (window.leafletMaps) {
+                        Object.values(window.leafletMaps).forEach(map => {
+                            if (map && typeof map.invalidateSize === 'function') {
+                                map.invalidateSize();
+                            }
+                        });
+                    }
+                    
+                    // Haritayı tekrar göster
+                    setTimeout(() => {
+                        if (miniMapContainer) {
+                            miniMapContainer.style.opacity = '1';
+                        }
+                    }, 50);
+                }, 300);
+            }
         }
     };
     
@@ -37,20 +86,66 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.toggleSidebarTrip = function() {
+        const tripPanel = document.getElementById('sidebar-overlay-trip');
+        const isOpening = tripPanel && !tripPanel.classList.contains('open');
+        
         window.toggleSidebar('sidebar-overlay-trip');
 
-        setTimeout(() => {
-            if (window.leafletMaps) {
-                Object.values(window.leafletMaps).forEach(map => {
-                    map.invalidateSize();
-                });
+        // Eğer panel AÇILIYORSA (kapalıyken açılıyor), harita fix'i uygula
+        if (isOpening) {
+            // Sidebar'ı en üste scroll et
+            setTimeout(() => {
+                if (tripPanel) {
+                    tripPanel.scrollTop = 0;
+                    // İçindeki sidebar content varsa onu da en üste al
+                    const sidebarContent = tripPanel.querySelector('.sidebar-trip, .sidebar-content, [class*="sidebar"]');
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
+                }
+            }, 50);
+            
+            // Harita container'ını bul ve geçici olarak gizle
+            const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+            if (miniMapContainer) {
+                miniMapContainer.style.opacity = '0';
+                miniMapContainer.style.transition = 'opacity 0.15s ease';
             }
             
-            if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
-                const days = [...new Set(window.cart.map(i => i.day))];
-                days.forEach(d => renderRouteForDay(d));
-            }
-        }, 350);
+            setTimeout(() => {
+                // Küçük harita
+                if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                    window.miniMap.invalidateSize();
+                }
+                
+                // Ana harita
+                if (window.map && typeof window.map.invalidateSize === 'function') {
+                    window.map.invalidateSize();
+                }
+                
+                // Leaflet haritalar
+                if (window.leafletMaps) {
+                    Object.values(window.leafletMaps).forEach(map => {
+                        if (map && typeof map.invalidateSize === 'function') {
+                            map.invalidateSize();
+                        }
+                    });
+                }
+                
+                // Rotaları yeniden çiz
+                if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
+                    const days = [...new Set(window.cart.map(i => i.day))];
+                    days.forEach(d => renderRouteForDay(d));
+                }
+                
+                // Haritayı tekrar göster (smooth fade-in)
+                setTimeout(() => {
+                    if (miniMapContainer) {
+                        miniMapContainer.style.opacity = '1';
+                    }
+                }, 50);
+            }, 300);
+        }
     };
 
     window.toggleSidebarMyTrips = function() {
@@ -106,9 +201,32 @@ window.toggleSidebarFavoritePlaces = function() {
         const tripPanel = document.getElementById('sidebar-overlay-trip');
         if (tripPanel) {
             tripPanel.classList.add('open');
+            
+            // SCROLL POZİSYONU RESTORE: Kaydedilmiş pozisyona dön
+            setTimeout(() => {
+                if (window.sidebarScrollPositions && typeof window.sidebarScrollPositions.trip !== 'undefined') {
+                    tripPanel.scrollTop = window.sidebarScrollPositions.trip;
+                    console.log('[Scroll Restore] Trip position restored after closing My Places:', window.sidebarScrollPositions.trip);
+                } else {
+                    // Kaydedilmiş pozisyon yoksa en üste git
+                    tripPanel.scrollTop = 0;
+                }
+                
+                const sidebarContent = tripPanel.querySelector('.sidebar-trip, .sidebar-content, [class*="sidebar"]');
+                if (sidebarContent && window.sidebarScrollPositions && typeof window.sidebarScrollPositions.trip !== 'undefined') {
+                    sidebarContent.scrollTop = 0;
+                }
+            }, 350); // Harita ve rota animasyonlarından sonra
         }
         
         // 3. MOBİL HARİTA FİXİ: Panel kapandıktan sonra haritayı yenile
+        // Harita container'ını bul ve geçici olarak gizle
+        const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+        if (miniMapContainer) {
+            miniMapContainer.style.opacity = '0';
+            miniMapContainer.style.transition = 'opacity 0.15s ease';
+        }
+        
         setTimeout(() => {
             // Küçük harita (mini map)
             if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
@@ -136,12 +254,30 @@ window.toggleSidebarFavoritePlaces = function() {
                 const days = [...new Set(window.cart.map(i => i.day))];
                 days.forEach(d => renderRouteForDay(d));
             }
-        }, 350); // Panel kapanma animasyonu için bekle
+            
+            // Haritayı tekrar göster (smooth fade-in)
+            setTimeout(() => {
+                if (miniMapContainer) {
+                    miniMapContainer.style.opacity = '1';
+                }
+            }, 50);
+        }, 300); // Panel kapanma animasyonu için bekle
     } 
     // DURUM 2: Panel KAPALIYSA (Demek ki kullanıcı "My Places" butonuna bastı ve açmak istiyor)
     else {
         // Standart açma işlemi (diğerlerini kapatır, bunu açar)
         window.toggleSidebar('sidebar-overlay-favorite-places');
+        
+        // My Places panelini en üste scroll et
+        setTimeout(() => {
+            if (favPanel) {
+                favPanel.scrollTop = 0;
+                const sidebarContent = favPanel.querySelector('.sidebar-content, [class*="sidebar"]');
+                if (sidebarContent) {
+                    sidebarContent.scrollTop = 0;
+                }
+            }
+        }, 50);
         
         // İçeriği yükle/yenile
         if (typeof renderFavoritePlacesPanel === 'function') {
@@ -162,12 +298,52 @@ window.toggleSidebarMyTrips = function(event) {
         return;
     }
 
-    if (sidebarMyTripsOverlay && sidebarMyTripsOverlay.classList.contains('open')) {
+    const wasOpen = sidebarMyTripsOverlay && sidebarMyTripsOverlay.classList.contains('open');
+    
+    if (wasOpen) {
         sidebarMyTripsOverlay.classList.remove('open');
         if (sidebarDefaultOverlay) sidebarDefaultOverlay.classList.add('open');
     } else if (sidebarMyTripsOverlay) {
         sidebarMyTripsOverlay.classList.add('open');
         if (sidebarDefaultOverlay) sidebarDefaultOverlay.classList.remove('open');
+        
+        // Sidebar'ı en üste scroll et
+        setTimeout(() => {
+            sidebarMyTripsOverlay.scrollTop = 0;
+            const sidebarContent = sidebarMyTripsOverlay.querySelector('.sidebar-content, [class*="sidebar"]');
+            if (sidebarContent) {
+                sidebarContent.scrollTop = 0;
+            }
+        }, 50);
+        
+        // HARITA FIX: My Trips açılırken
+        const miniMapContainer = document.querySelector('.mini-map-container, #mini-map, .leaflet-container');
+        if (miniMapContainer) {
+            miniMapContainer.style.opacity = '0';
+            miniMapContainer.style.transition = 'opacity 0.15s ease';
+        }
+        
+        setTimeout(() => {
+            if (window.miniMap && typeof window.miniMap.invalidateSize === 'function') {
+                window.miniMap.invalidateSize();
+            }
+            if (window.map && typeof window.map.invalidateSize === 'function') {
+                window.map.invalidateSize();
+            }
+            if (window.leafletMaps) {
+                Object.values(window.leafletMaps).forEach(map => {
+                    if (map && typeof map.invalidateSize === 'function') {
+                        map.invalidateSize();
+                    }
+                });
+            }
+            
+            setTimeout(() => {
+                if (miniMapContainer) {
+                    miniMapContainer.style.opacity = '1';
+                }
+            }, 50);
+        }, 300);
     }
     
     if (sidebarMyTripsOverlay && sidebarMyTripsOverlay.classList.contains('open') && typeof updateMyTripsPanel === 'function') {
@@ -210,12 +386,112 @@ document.addEventListener("DOMContentLoaded", function () {
             if (sidebarOverlay) sidebarOverlay.style.display = 'none';
         });
     }
+    
+    // SCROLL POZİSYONU KAYDETME SİSTEMİ
+    window.sidebarScrollPositions = window.sidebarScrollPositions || {};
+    
+    // Trip sidebar scroll pozisyonunu kaydet
+    function saveTripScrollPosition() {
+        const tripSidebar = document.getElementById('sidebar-overlay-trip');
+        if (tripSidebar) {
+            window.sidebarScrollPositions.trip = tripSidebar.scrollTop;
+            console.log('[Scroll Save] Trip scroll position saved:', tripSidebar.scrollTop);
+        }
+    }
+    
+    // Trip sidebar scroll pozisyonunu geri yükle
+    function restoreTripScrollPosition() {
+        const tripSidebar = document.getElementById('sidebar-overlay-trip');
+        if (tripSidebar && typeof window.sidebarScrollPositions.trip !== 'undefined') {
+            setTimeout(() => {
+                tripSidebar.scrollTop = window.sidebarScrollPositions.trip;
+                console.log('[Scroll Restore] Trip scroll position restored:', window.sidebarScrollPositions.trip);
+            }, 100);
+        }
+    }
+    
+    // ADD ITEM BUTONU İÇİN SCROLL TO TOP
+    // Event delegation kullanarak dinamik butonları da yakala
+    document.addEventListener('click', function(e) {
+        const addMoreBtn = e.target.closest('.add-more-btn, .add-category-btn, [class*="add-item"], [class*="add-cat"]');
+        
+        if (addMoreBtn) {
+            console.log('[Scroll Fix] Add Item button clicked, scrolling to top');
+            
+            // Önce mevcut pozisyonu kaydet
+            saveTripScrollPosition();
+            
+            // Trip sidebar'ını bul ve en üste scroll et
+            setTimeout(() => {
+                const tripSidebar = document.getElementById('sidebar-overlay-trip');
+                if (tripSidebar && tripSidebar.classList.contains('open')) {
+                    tripSidebar.scrollTop = 0;
+                    
+                    // İçindeki content'i de scroll et
+                    const sidebarContent = tripSidebar.querySelector('.sidebar-trip, .sidebar-content, [class*="sidebar"]');
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
+                    
+                    console.log('[Scroll Fix] Scrolled to top after Add Item click');
+                }
+            }, 100); // Kategori listesi açılsın diye biraz bekle
+        }
+    });
+    
+    // MY PLACES BUTONU İÇİN SCROLL TO TOP VE POZİSYON KAYDETME
+    document.addEventListener('click', function(e) {
+        const myPlacesBtn = e.target.closest('.my-places-btn, .add-favorite-place-btn, [data-role="my-places-btn"]');
+        
+        if (myPlacesBtn) {
+            console.log('[Scroll Fix] My Places button clicked, saving position');
+            
+            // Mevcut Trip pozisyonunu kaydet
+            saveTripScrollPosition();
+            
+            setTimeout(() => {
+                const favSidebar = document.getElementById('sidebar-overlay-favorite-places');
+                if (favSidebar && favSidebar.classList.contains('open')) {
+                    favSidebar.scrollTop = 0;
+                    
+                    const sidebarContent = favSidebar.querySelector('.sidebar-content, [class*="sidebar"]');
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
+                    
+                    console.log('[Scroll Fix] Scrolled My Places to top');
+                }
+            }, 150);
+        }
+    });
+    
+    // KATEGORİ LİSTESİ VEYA DİĞER OVERLAY KAPANIRKEN POZİSYONU GERİ YÜKLE
+    // Global olarak ESC tuşu ve overlay kapatma işlemlerini dinle
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            setTimeout(restoreTripScrollPosition, 200);
+        }
+    });
+    
+    // Overlay kapatma butonlarını dinle (X, Cancel, Close vb.)
+    document.addEventListener('click', function(e) {
+        const closeBtn = e.target.closest('.close-btn, .cancel-btn, [class*="close"], [class*="cancel"], .overlay-close');
+        if (closeBtn) {
+            setTimeout(restoreTripScrollPosition, 200);
+        }
+    });
+
 });
 
 function openTripSidebar() {
+    // toggleSidebarTrip kullanarak aç - böylece harita fix'i otomatik çalışır
     const tripSidebar = document.getElementById("sidebar-overlay-trip");
     if (tripSidebar && !tripSidebar.classList.contains("open")) {
-        tripSidebar.classList.add("open");
+        if (typeof window.toggleSidebarTrip === 'function') {
+            window.toggleSidebarTrip();
+        } else {
+            tripSidebar.classList.add("open");
+        }
     }
 }
 

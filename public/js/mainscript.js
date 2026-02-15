@@ -3951,8 +3951,32 @@ function initEmptyDayMap(day) {
 function startMapPlanning() {
   window.cart = [];
   window.__startedWithMapFlag = true;
-  window.activeTripKey = null; // <-- En kritik satır: yeni map planlamada key sıfırlanır.
-
+  window.activeTripKey = null;
+  
+  // ========================================
+  // KRİTİK: ROTA VERİLERİNİ TEMİZLE
+  // ========================================
+  window.directionsPolylines = {};
+  window.routeElevStatsByDay = {};
+  window.__ttElevDayCache = {};
+  window._segmentHighlight = {};
+  window._lastSegmentDay = undefined;
+  window._lastSegmentStartKm = undefined;
+  window._lastSegmentEndKm = undefined;
+  
+  // Expanded map'leri temizle
+  document.querySelectorAll('[id*="expanded"]').forEach(el => el.remove());
+  document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+  if (window.expandedMaps) {
+    Object.values(window.expandedMaps).forEach(obj => {
+      if (obj?.expandedMap?.remove) {
+        try { obj.expandedMap.remove(); } catch(e) {}
+      }
+    });
+    window.expandedMaps = {};
+  }
+  
+  console.log('[Start Map] All route data cleared');
   window.__hideStartMapButtonByDay = window.__hideStartMapButtonByDay || {};
   window.__hideStartMapButtonByDay[1] = true;
   window.__hideAddCatBtnByDay[1] = true;
@@ -5275,7 +5299,7 @@ group.appendChild(noteBox);
 
     if (typeof renderTravelModeControlsForAllDays === 'function') renderTravelModeControlsForAllDays();
 
-    (function ensureNewChatInsideCart() {
+ (function ensureNewChatInsideCart() {
         const oldOutside = document.querySelector('#newchat');
         if (oldOutside && !oldOutside.closest('#cart')) oldOutside.remove();
         const cartRoot = document.getElementById('cart');
@@ -5284,11 +5308,10 @@ group.appendChild(noteBox);
         if (!newChat) {
             newChat = document.createElement('div');
             newChat.id = 'newchat';
-        // İkonlu içerik ve Flex stil güncellemesi
         newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
-     ;
+        ;
 
-        newChat.onclick = function () {
+  newChat.onclick = function () {
         const chatBox = document.getElementById('chat-box');
         if (chatBox) chatBox.innerHTML = ''; 
 
@@ -5297,9 +5320,78 @@ group.appendChild(noteBox);
         window.__welcomeHiddenForever = false;
         window.__locationPickedFromSuggestions = false;
 
-        // Diğer temizlik işlemleri...
+        // ========================================
+        // KRİTİK: ROTA VERİLERİNİ ÖNCE TEMİZLE
+        // ========================================
         window.selectedCity = null;
         window.cart = [];
+        
+        // ROTA VE ELEVATION VERİLERİNİ TEMİZLE
+        window.directionsPolylines = {};
+        window.routeElevStatsByDay = {};
+        window.__ttElevDayCache = {};
+        window._segmentHighlight = {};
+        window._lastSegmentDay = undefined;
+        window._lastSegmentStartKm = undefined;
+        window._lastSegmentEndKm = undefined;
+        
+        console.log('[New Trip] Route data cleared - polylines and elevation reset');
+
+        // 👇 EKLENECEK KOD: Eski harita/elevation izlerini siler
+            if (typeof clearAllRouteCaches === 'function') clearAllRouteCaches();
+        // ========================================
+        
+        // ========================================
+        // SIDEBAR TEMİZLEME
+        // ========================================
+        
+        // 1. Trip başlığını gizle
+        const tripTitle = document.getElementById('trip_title');
+        if (tripTitle) {
+            tripTitle.textContent = '';
+            tripTitle.style.display = 'none';
+        }
+        
+        // 2. AI Information bölümünü TAMAMEN gizle
+        const aiSection = document.querySelector('.ai-info-section');
+        if (aiSection) {
+            aiSection.style.display = 'none';
+            aiSection.style.visibility = 'hidden';
+            aiSection.style.height = '0';
+            aiSection.style.overflow = 'hidden';
+            aiSection.style.margin = '0';
+            aiSection.style.padding = '0';
+            aiSection.style.opacity = '0';
+            
+            // İçeriği de boşalt
+            const aiSummary = document.getElementById('ai-summary');
+            const aiTip = document.getElementById('ai-tip');
+            const aiHighlight = document.getElementById('ai-highlight');
+            if (aiSummary) aiSummary.textContent = '';
+            if (aiTip) aiTip.textContent = '';
+            if (aiHighlight) aiHighlight.textContent = '';
+        }
+        
+        // 3. AI verilerini temizle
+        window.lastTripAIInfo = null;
+        if (window.cart) window.cart.aiData = null;
+        if (typeof window.showTripAiInfo === "function") {
+            window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+        }
+        
+        // 4. "New Trip Plan" butonunu gizle (kendini gizle)
+        if (newChat) {
+            newChat.style.display = 'none';
+        }
+        
+        // 5. activeTripKey'i temizle
+        window.activeTripKey = null;
+        localStorage.removeItem('activeTripKey');
+        localStorage.removeItem('selectedCity');
+        
+        console.log('[New Trip] Sidebar cleaned - title, AI info hidden');
+        
+        // ========================================
         
         // Typing indicator'ı temizle ve gizli olarak ekle
         if (chatBox) {
@@ -5325,17 +5417,76 @@ group.appendChild(noteBox);
         }
         
         if (typeof closeAllExpandedMapsAndReset === "function") closeAllExpandedMapsAndReset();
-        
-        window.routeElevStatsByDay = {};
-        window.__ttElevDayCache = {};
-        window._segmentHighlight = {};
-        window._lastSegmentDay = undefined;
-        window._lastSegmentStartKm = undefined;
-        window._lastSegmentEndKm = undefined;
 
         document.querySelectorAll('.expanded-map-container, .route-scale-bar, .tt-elev-svg, .elev-segment-toolbar, .custom-nearby-popup').forEach(el => el.remove());
 
         if (typeof updateCart === "function") updateCart();
+        
+        // ========================================
+        // KRİTİK: updateCart SONRASI HARİTA TEMİZLİĞİ
+        // ========================================
+        setTimeout(() => {
+            // ========================================
+            // YENİ: EXPANDED MAP TEMİZLİĞİ (EN ÖNCE)
+            // ========================================
+            
+            // Expanded map'leri temizle
+            document.querySelectorAll('[id*="expanded"]').forEach(el => {
+                console.log('[New Trip] Removing expanded element:', el.id);
+                el.remove();
+            });
+            
+            // Expanded map container'ları temizle
+            document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+            
+            // Expanded map objelerini temizle
+            if (window.expandedMaps) {
+                Object.values(window.expandedMaps).forEach(obj => {
+                    if (obj && obj.expandedMap && typeof obj.expandedMap.remove === 'function') {
+                        try {
+                            obj.expandedMap.remove();
+                        } catch(e) {}
+                    }
+                });
+                window.expandedMaps = {};
+            }
+            
+            console.log('[New Trip] All expanded maps removed');
+            // ========================================
+            
+            // Tüm route map'leri temizle
+            document.querySelectorAll('.route-controls-bar').forEach(el => el.remove());
+            document.querySelectorAll('[id^="route-map-day"]').forEach(el => el.remove());
+            
+            // Leaflet haritaları temizle
+            if (window.leafletMaps) {
+                Object.values(window.leafletMaps).forEach(map => {
+                    try {
+                        if (map && typeof map.remove === 'function') {
+                            map.remove();
+                        }
+                    } catch(e) {}
+                });
+                window.leafletMaps = {};
+            }
+            
+            // Elevation chart'ları temizle
+            document.querySelectorAll('.tt-elev-svg').forEach(el => el.remove());
+            document.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+            
+            // Scale bar'ları temizle
+            document.querySelectorAll('.route-scale-bar').forEach(el => el.remove());
+            
+            // Travel mode set'leri temizle
+            document.querySelectorAll('[id^="tt-travel-mode-set-day"]').forEach(el => el.remove());
+            
+            // Map bottom controls'ları temizle
+            document.querySelectorAll('[id^="map-bottom-controls-wrapper-day"]').forEach(el => el.remove());
+            document.querySelectorAll('[id^="map-bottom-controls-day"]').forEach(el => el.remove());
+            
+            console.log('[New Trip] Full cleanup completed - all maps removed');
+        }, 200);
+        // ========================================
         
         document.querySelectorAll('.sidebar-overlay').forEach(el => el.classList.remove('open'));
         const sidebar = document.querySelector('.sidebar-overlay.sidebar-gallery');
@@ -5346,9 +5497,8 @@ group.appendChild(noteBox);
         window.__welcomeHiddenForever = false;
 
         if (chatBox) {
-            chatBox.innerHTML = ''; // İçeriği tamamen boşalt
+            chatBox.innerHTML = '';
             
-            // Typing indicator'ı (gizli olarak) tekrar oluştur/ekle
             let indicator = document.getElementById('typing-indicator');
             if (!indicator) {
                 indicator = document.createElement('div');
@@ -5363,7 +5513,6 @@ group.appendChild(noteBox);
         var iw = document.querySelector('.input-wrapper');
         if (iw) iw.style.display = '';
 
-        // Önerileri sıfırla
         if (typeof showSuggestions === "function") showSuggestions(); 
 
         document.querySelectorAll('.category-area-option.selected-suggestion').forEach(function (el) {
@@ -5375,7 +5524,25 @@ group.appendChild(noteBox);
 
         const chatScreen = document.getElementById("chat-screen");
         if (chatScreen) chatScreen.innerHTML = "";
+        // KRİTİK: loadTripFromStorage'ı engelle
+window.activeTripKey = null;
+localStorage.removeItem('activeTripKey');
+localStorage.removeItem('selectedCity');
+
+// Eğer loadTripFromStorage çağrılmaya çalışırsa, engelle
+const originalLoadTrip = window.loadTripFromStorage;
+window.loadTripFromStorage = function(...args) {
+    console.log('[BLOCKED] loadTripFromStorage blocked during new trip');
+    return false;
+};
+
+// 1 saniye sonra geri yükle
+setTimeout(() => {
+    window.loadTripFromStorage = originalLoadTrip;
+    console.log('[RESTORED] loadTripFromStorage restored');
+}, 1000);
     };
+    
         }
         const datesBtn = cartRoot.querySelector('.add-to-calendar-btn[data-role="trip-dates"]');
         if (datesBtn && datesBtn.nextSibling !== newChat) {
@@ -7320,7 +7487,6 @@ async function expandMap(containerId, day) {
             btn.disabled = true;
             btn.style.pointerEvents = 'none';
             btn.style.opacity = '0.6';
-            btn.style.filter = 'grayscale(100%)';
             const label = btn.querySelector('.tm-label');
             if (label) label.textContent = 'Map Expanded';
         }
@@ -10301,7 +10467,7 @@ function wrapRouteControls(day) {
       expandBtn.style.opacity = '0.6';
       expandBtn.style.cursor = 'default';
       expandBtn.style.borderColor = '#ccc';
-      expandBtn.style.background = '#f9f9f9';
+      expandBtn.style.background = '#5588d0';
       
       expandBtn.innerHTML = `
         <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async" style="filter: grayscale(100%);">
@@ -10315,7 +10481,7 @@ function wrapRouteControls(day) {
 
       expandBtn.innerHTML = `
         <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async">
-        <span class="tm-label" style="color: #1976d2">Expand map</span>
+        <span class="tm-label" style="color: #ffffff">Expand map</span>
       `;
       
       expandBtn.onclick = function(e) {
