@@ -5304,6 +5304,10 @@ group.appendChild(noteBox);
         // SIDEBAR TEMİZLEME - GÜNCELLENMIŞ
         // ========================================
         
+       // ========================================
+        // SIDEBAR TEMİZLEME - GÜNCELLENMIŞ + HARİTA TEMİZLİĞİ
+        // ========================================
+        
         // 1. Trip başlığını gizle
         const tripTitle = document.getElementById('trip_title');
         if (tripTitle) {
@@ -5348,7 +5352,54 @@ group.appendChild(noteBox);
         localStorage.removeItem('activeTripKey');
         localStorage.removeItem('selectedCity');
         
-        console.log('[New Trip] Sidebar fully cleaned - AI section completely hidden');
+        // ========================================
+        // YENİ: HARİTA, ROTA VE ELEVATION TEMİZLİĞİ
+        // ========================================
+        
+        // 6. Tüm route map'leri temizle
+        document.querySelectorAll('.route-controls-bar').forEach(el => el.remove());
+        document.querySelectorAll('[id^="route-map-day"]').forEach(el => el.remove());
+        
+        // 7. Tüm harita verilerini sıfırla
+        window.directionsPolylines = {};
+        window.routeElevStatsByDay = {};
+        window.__ttElevDayCache = {};
+        window._segmentHighlight = {};
+        window._lastSegmentDay = undefined;
+        window._lastSegmentStartKm = undefined;
+        window._lastSegmentEndKm = undefined;
+        
+        // 8. Leaflet haritaları temizle
+        if (window.leafletMaps) {
+            Object.values(window.leafletMaps).forEach(map => {
+                try {
+                    if (map && typeof map.remove === 'function') {
+                        map.remove();
+                    }
+                } catch(e) {
+                    console.warn('[Map Cleanup] Error removing map:', e);
+                }
+            });
+            window.leafletMaps = {};
+        }
+        
+        // 9. Elevation chart'ları temizle
+        document.querySelectorAll('.tt-elev-svg').forEach(el => el.remove());
+        document.querySelectorAll('.elev-segment-toolbar').forEach(el => el.remove());
+        
+        // 10. Scale bar'ları temizle
+        document.querySelectorAll('.route-scale-bar').forEach(el => el.remove());
+        
+        // 11. Travel mode set'leri temizle
+        document.querySelectorAll('[id^="tt-travel-mode-set-day"]').forEach(el => el.remove());
+        
+        // 12. Map bottom controls'ları temizle
+        document.querySelectorAll('[id^="map-bottom-controls-wrapper-day"]').forEach(el => el.remove());
+        document.querySelectorAll('[id^="map-bottom-controls-day"]').forEach(el => el.remove());
+        
+        console.log('[New Trip] Full cleanup completed - maps, routes, and elevation removed');
+        
+        // ========================================
         
         // ========================================
         
