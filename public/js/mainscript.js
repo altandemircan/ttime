@@ -10468,7 +10468,7 @@ function wrapRouteControls(day) {
       expandBtn.style.opacity = '0.6';
       expandBtn.style.cursor = 'default';
       expandBtn.style.borderColor = '#ccc';
-      expandBtn.style.background = '#f9f9f9';
+      expandBtn.style.background = '#5588d0';
       
       expandBtn.innerHTML = `
         <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async" style="filter: grayscale(100%);">
