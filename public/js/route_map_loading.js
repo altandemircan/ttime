@@ -307,6 +307,36 @@
             const originalRenderRouteForDay = window.renderRouteForDay;
             
             window.renderRouteForDay = function(day, ...args) {
+                // ========================================
+                // KRİTİK: CART BOŞ İSE HİÇBİR ŞEY YAPMA
+                // ========================================
+                const dayItems = window.cart ? window.cart.filter(item => item.day === day) : [];
+                
+                if (!dayItems || dayItems.length === 0) {
+                    console.log(`[Route Map Loading] Skipping day ${day} - cart is empty`);
+                    
+                    // Harita varsa temizle
+                    const mapId = `route-map-day${day}`;
+                    const mapElement = document.getElementById(mapId);
+                    const map = window.leafletMaps?.[mapId];
+                    
+                    if (map) {
+                        map.eachLayer(l => {
+                            if (!(l instanceof L.TileLayer)) {
+                                map.removeLayer(l);
+                            }
+                        });
+                    }
+                    
+                    // Loading skeleton varsa kaldır
+                    if (mapElement) {
+                        window.removeRouteMapLoading(mapElement);
+                    }
+                    
+                    return; // 🛑 DURDUR
+                }
+                // ========================================
+                
                 const mapId = `route-map-day${day}`;
                 const mapElement = document.getElementById(mapId);
                 
