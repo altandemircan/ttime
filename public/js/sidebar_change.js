@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.toggleSidebar('sidebar-overlay-feedback');
     };
 
-    window.toggleSidebarTrip = function() {
+  window.toggleSidebarTrip = function() {
         const tripPanel = document.getElementById('sidebar-overlay-trip');
         const isOpening = tripPanel && !tripPanel.classList.contains('open');
         
@@ -97,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 if (tripPanel) {
                     tripPanel.scrollTop = 0;
-                    // İçindeki sidebar content varsa onu da en üste al
                     const sidebarContent = tripPanel.querySelector('.sidebar-trip, .sidebar-content, [class*="sidebar"]');
                     if (sidebarContent) {
                         sidebarContent.scrollTop = 0;
@@ -132,11 +131,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
                 
-                // Rotaları yeniden çiz
-                if (window.cart && window.cart.length > 0 && typeof renderRouteForDay === 'function') {
+                // ========================================
+                // KRİTİK FİX: SADECE CART DOLUYSA ROTA ÇİZ
+                // ========================================
+                // Rotaları yeniden çiz - AMA SADECE cart dolu ve polyline data varsa
+                if (window.cart && window.cart.length > 0 && 
+                    window.directionsPolylines && Object.keys(window.directionsPolylines).length > 0 &&
+                    typeof renderRouteForDay === 'function') {
                     const days = [...new Set(window.cart.map(i => i.day))];
                     days.forEach(d => renderRouteForDay(d));
+                } else {
+                    console.log('[toggleSidebarTrip] Skipping route render - cart is empty or no polyline data');
                 }
+                // ========================================
                 
                 // Haritayı tekrar göster (smooth fade-in)
                 setTimeout(() => {
