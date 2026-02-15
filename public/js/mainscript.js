@@ -5287,7 +5287,7 @@ group.appendChild(noteBox);
         newChat.innerHTML = '<img src="img/new_trip_plan_icon.svg" style="width: 18px; height: 18px;"> New Trip Plan';
         ;
 
-   newChat.onclick = function () {
+  newChat.onclick = function () {
         const chatBox = document.getElementById('chat-box');
         if (chatBox) chatBox.innerHTML = ''; 
 
@@ -5399,6 +5399,34 @@ group.appendChild(noteBox);
         // KRİTİK: updateCart SONRASI HARİTA TEMİZLİĞİ
         // ========================================
         setTimeout(() => {
+            // ========================================
+            // YENİ: EXPANDED MAP TEMİZLİĞİ (EN ÖNCE)
+            // ========================================
+            
+            // Expanded map'leri temizle
+            document.querySelectorAll('[id*="expanded"]').forEach(el => {
+                console.log('[New Trip] Removing expanded element:', el.id);
+                el.remove();
+            });
+            
+            // Expanded map container'ları temizle
+            document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+            
+            // Expanded map objelerini temizle
+            if (window.expandedMaps) {
+                Object.values(window.expandedMaps).forEach(obj => {
+                    if (obj && obj.expandedMap && typeof obj.expandedMap.remove === 'function') {
+                        try {
+                            obj.expandedMap.remove();
+                        } catch(e) {}
+                    }
+                });
+                window.expandedMaps = {};
+            }
+            
+            console.log('[New Trip] All expanded maps removed');
+            // ========================================
+            
             // Tüm route map'leri temizle
             document.querySelectorAll('.route-controls-bar').forEach(el => el.remove());
             document.querySelectorAll('[id^="route-map-day"]').forEach(el => el.remove());
