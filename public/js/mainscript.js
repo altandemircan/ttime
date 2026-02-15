@@ -7487,7 +7487,6 @@ async function expandMap(containerId, day) {
             btn.disabled = true;
             btn.style.pointerEvents = 'none';
             btn.style.opacity = '0.6';
-            btn.style.filter = 'grayscale(100%)';
             const label = btn.querySelector('.tm-label');
             if (label) label.textContent = 'Map Expanded';
         }
