@@ -5675,7 +5675,7 @@ ease;
 /* Hover: Sadece metni sayfadaki mor renge çeker */
 .expand-map-btn:hover {
    
-    background: #1976d2;
+    background: #1976d2 !important;
 }
 .maplibregl-ctrl-bottom-right {
     display: none;
