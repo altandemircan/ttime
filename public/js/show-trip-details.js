@@ -407,8 +407,8 @@ function showTripDetails(startDate) {
             <button class="share-btn twitter" onclick="showDatePickerBeforeShare('twitter')">
                 <img src="img/share_x.svg" alt="Twitter"> Twitter
             </button>
-            <button class="share-btn instagram" onclick="showDatePickerBeforeShare('instagram')">
-                <img src="img/share_instagram.svg" alt="Instagram"> Instagram
+            <button class="share-btn copy-link" onclick="showDatePickerBeforeShare('copy')">
+                <img src="img/share_copy.svg" alt="Copy Link"> Copy Link
             </button>
         </div>
     `;

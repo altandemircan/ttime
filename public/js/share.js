@@ -670,21 +670,8 @@ async function shareWithoutDates(platform = 'whatsapp') {
         case 'facebook':
             // Facebook post - gezi planı + URL
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
-            break;
-            
-        case 'instagram':
-    // Link'i kopyala
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        // Instagram ana sayfayı aç
-        window.open('instagram://', '_blank');
-        // Kullanıcıyı bilgilendir
-        setTimeout(() => {
-            alert('Link copied! Paste it in your Instagram story or DM.');
-        }, 500);
-    }).catch(() => {
-        alert('Could not copy link. Please copy manually: ' + shortUrl);
-    });
-    break;
+            break;          
+        
             
         case 'telegram':
             // Telegram - gezi planı + URL
@@ -703,6 +690,15 @@ async function shareWithoutDates(platform = 'whatsapp') {
         const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         window.open(gmailUrl, '_blank');
         break;
+
+        case 'copy':
+        navigator.clipboard.writeText(shortUrl).then(() => {
+            alert('Link copied to clipboard!');
+            closeShareModal();
+        }).catch(() => {
+            alert('Link: ' + shortUrl);
+        });
+        break
     }
 }
 
