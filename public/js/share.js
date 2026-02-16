@@ -611,17 +611,6 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             const body = shareText;
             window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
             break;
-            
-        case 'copy':
-            // Copy link to clipboard
-            navigator.clipboard.writeText(shortUrl).then(() => {
-                alert('Link copied to clipboard!');
-                closeShareModal();
-            }).catch(() => {
-                prompt('Copy this link:', shortUrl);
-                closeShareModal();
-            });
-            break;
     }
 }
 
@@ -706,17 +695,6 @@ async function shareWithoutDates(platform = 'whatsapp') {
             const subject = 'Check out my trip plan!';
             const body = shareText;
             window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-            break;
-            
-        case 'copy':
-            // Copy link to clipboard
-            navigator.clipboard.writeText(shortUrl).then(() => {
-                alert('Link copied to clipboard!');
-                closeShareModal();
-            }).catch(() => {
-                prompt('Copy this link:', shortUrl);
-                closeShareModal();
-            });
             break;
     }
 }

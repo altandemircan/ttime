@@ -502,11 +502,28 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(copyLinkSection);
 
-    // Generate and display the link
-    setTimeout(() => {
+    // Generate and display the link (with shortening)
+    setTimeout(async () => {
         const url = createOptimizedLongLink();
         const urlInput = document.getElementById('trip-share-url');
-        if (urlInput) urlInput.value = url;
+        
+        // Try to shorten the URL
+        try {
+            const response = await fetch('/api/shorten', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ longUrl: url })
+            });
+            if (response.ok) {
+                const result = await response.json();
+                if (urlInput) urlInput.value = result.shortUrl;
+            } else {
+                if (urlInput) urlInput.value = url;
+            }
+        } catch (e) {
+            console.warn("URL shortening failed");
+            if (urlInput) urlInput.value = url;
+        }
     }, 100);
 }
 
