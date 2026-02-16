@@ -414,7 +414,7 @@ function showTripDetails(startDate) {
             <div class="link-box">
                 <input type="text" id="trip-share-url" readonly class="trip-url-input" value="Loading...">
                 <button class="copy-btn" onclick="copyTripLink()">
-                    <img src="img/share_copy.svg" alt="Copy"> Copy
+                    <img src="img/share_copy.svg" alt="Copy"> Copy Link
                 </button>
             </div>
         </div>
