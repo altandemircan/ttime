@@ -10464,7 +10464,7 @@ function wrapRouteControls(day) {
       // --- DURUM 1: ZATEN AÇIK (PASİF) ---
       expandBtn.disabled = true;
       expandBtn.style.pointerEvents = 'none';
-      expandBtn.style.opacity = '0.6';
+      expandBtn.style.opacity = '0.4';
       expandBtn.style.cursor = 'default';
       expandBtn.style.borderColor = '#ccc';
       expandBtn.style.background = '#5588d0';
