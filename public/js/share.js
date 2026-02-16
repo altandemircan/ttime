@@ -662,10 +662,10 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
-        case 'twitter':
-            // Twitter - sadece URL gönder ki card preview çıksın
-            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
-            break;
+       case 'twitter':
+    const twitterText = `Check out my trip plan! Created with triptime.ai!`;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(shortUrl)}`, '_blank');
+    break;
             
         case 'facebook':
             // Facebook post - gezi planı + URL
