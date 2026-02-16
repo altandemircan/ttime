@@ -7536,7 +7536,7 @@ display: block !important;
         cursor: pointer !important;
     position: relative;
     user-select: none;
-    padding: 10px;
+       padding: 8px 10px;
     font-weight: 600;
     align-items: center;
     justify-content: center;
