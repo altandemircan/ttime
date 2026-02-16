@@ -485,255 +485,70 @@
             <!-- updates -->
     <div class="sidebar-overlay sidebar-updates" id="sidebar-overlay-updates">
     <div id="sidebar-updates">
-        <div class="sidebar_title">
-            Updates
-            <button class="sidebar-toggle" onclick="toggleSidebarUpdates()">
+        <div class="sidebar_title"> Updates <button class="sidebar-toggle" onclick="toggleSidebarUpdates()">
                 <img src="/img/close-icon.svg" alt="Close">
             </button>
-        </div>
-
-        <div class="mytripsall">
-            <div class="tripbox">
-                <p class="date">Feb 16, 2025</p>
-                <div class="custom-accordion">
-                    <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
-                        <span>☀️ Triptime AI is online!</span>
-                        <span class="custom-icon">+</span>
-                    </div>
-                    <div class="custom-accordion-content">
-                        <div class="content-section">
-                            <p>In the "My Trips" section, you can create travel itineraries and add locations to your daily plans and favorites list. You can list locations and add special notes with the Category Listing module. Additionally, you can include locations you've added to "My Places" into your current travel plan or start a travel plan with that point. The travel plan has a very useful drag-drop structure and plan changes are very fast.</p>
+            <div class="mytripsall">
+           
+                <div class="tripbox">
+                    <p class="date">Feb 16, 2025</p>
+                    <div class="custom-accordion">
+                        <div class="custom-accordion-header" onclick="toggleCustomAccordion(this)">
+                            <span>☀️ Triptime AI is online!</span>
+                            <span class="custom-icon">+</span>
                         </div>
+                        <div class="custom-accordion-content">
+                            <p>In the "My Trips" section, you can create travel itineraries and add locations to your daily plans and favorites list. You can list locations and add special notes with the Category Listing module. Additionally, you can include locations you've added to "My Places" into your current travel plan or start a travel plan with that point. The travel plan has a very useful drag-drop structure and plan changes are very fast.</p>
 
-                        <div class="content-section">
                             <h4>🧠 AI Travel Guides</h4>
                             <p>It automatically generates AI information by analyzing the items in the travel plan. Just determining the first point is enough.</p>
-                        </div>
 
-                        <div class="content-section">
                             <h4>🗺️ Map Operations</h4>
                             <p>You can perform your route operations on the map. You can see detailed elevation profiles, segment selection, and road information. Also, you can change the marker position instantly with a simple drag-and-drop. You can search in a circular area on the map and easily include the places you see in the travel plan. 3D map support is available.</p>
-                        </div>
 
-                        <div class="content-section">
                             <h4>🧠 Point-Specific AI</h4>
                             <p>AI information for the point clicked on the map is generated and presented to the user. AI information of the places in the list can also be viewed.</p>
-                        </div>
 
-                        <div class="content-section">
                             <h4>📁 PDF Download</h4>
                             <p>You can download your travel plan in PDF format and store it offline. Thus, even in cases where there is no internet, your travel plan will be with you. The generated AI and map are also included in the plan.</p>
-                        </div>
 
-                        <div class="content-section">
                             <h4>📤 Share via WhatsApp</h4>
                             <p>The created travel plan can be sent via WhatsApp and a unique link is formed. So your travel plan is never lost. If you wish, you can also assign a date to the plan and share it with your friends.</p>
-                        </div>
 
-                        <div class="content-section">
                             <h4>🧠 Mira AI Chat</h4>
                             <p>You can get information about travel by talking to Mira, a customized AI assistant. It helps you plan your trip by giving you information on subjects such as tourism, geography, and food. It works completely independently.</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <hr class="sidebar-divider">
-
-            <div class="tripbox">
-                <div class="update-info-title">Update Information</div>
-                <p class="update-info-text">If you have something to share about upcoming improvements, please use the Feedback form.</p>
-                <p class="update-info-note">
-                    <strong>Important Note:</strong> Triptime AI is continuously evolving! Behind the scenes, we're improving map accuracy, trip logic, and AI travel insights. The platform is currently in beta, and some features may change or be temporarily limited as we refine the experience. More features, transparency, and official updates will come with our full launch in late 2025.
-                </p>
+                <div class="tripbox">
+                    <div>Update Information</div>
+                    <p class="date">If you have something to share about upcoming improvements, please use the Feedback form.</p>
+                    <p class="date">
+                        <strong>Important Note:</strong> Triptime AI is continuously evolving! Behind the scenes, we're improving map accuracy, trip logic, and AI travel insights. The platform is currently in beta, and some features may change or be temporarily limited as we refine the experience. More features, transparency, and official updates will come with our full launch in late 2025.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-/* Sidebar & Container */
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: flex-end;
-    z-index: 1000;
+.custom-accordion-content p {
+    margin: 0 0 16px 0;
+    line-height: 1.5;
 }
 
-#sidebar-updates {
-    width: 90%;
-    max-width: 500px;
-    height: 100%;
-    background: white;
-    overflow-y: auto;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+.custom-accordion-content h4 {
+    margin: 16px 0 8px 0;
 }
 
-.sidebar_title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    font-size: 1.5rem;
-    font-weight: 600;
-    border-bottom: 1px solid #e0e0e0;
-    background: #f9f9f9;
+.custom-accordion-content h4:first-child {
+    margin-top: 0;
 }
 
-.sidebar-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.sidebar-toggle img {
-    width: 24px;
-    height: 24px;
-}
-
-/* Trips All */
-.mytripsall {
-    padding: 20px;
-}
-
-.tripbox {
-    margin-bottom: 24px;
-}
-
-.tripbox:last-child {
+.custom-accordion-content p:last-child {
     margin-bottom: 0;
-}
-
-.date {
-    font-size: 0.9rem;
-    color: #666;
-    margin: 0 0 12px 0;
-    font-weight: 500;
-}
-
-/* Accordion */
-.custom-accordion {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.custom-accordion-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    background: #f5f5f5;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.3s ease;
-}
-
-.custom-accordion-header:hover {
-    background: #ebebeb;
-}
-
-.custom-icon {
-    font-size: 1.2rem;
-    transition: transform 0.3s ease;
-}
-
-.custom-accordion-header.active .custom-icon {
-    transform: rotate(45deg);
-}
-
-.custom-accordion-content {
-    padding: 20px;
-    display: none;
-}
-
-.custom-accordion-header.active + .custom-accordion-content {
-    display: block;
-}
-
-/* Content Sections */
-.content-section {
-    margin-bottom: 20px;
-}
-
-.content-section:last-child {
-    margin-bottom: 0;
-}
-
-.content-section h4 {
-    margin: 0 0 8px 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.content-section p {
-    margin: 0;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: #555;
-}
-
-/* Divider */
-.sidebar-divider {
-    border: none;
-    border-top: 1px solid #e0e0e0;
-    margin: 20px 0;
-}
-
-/* Update Info */
-.update-info-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 12px;
-}
-
-.update-info-text {
-    font-size: 0.95rem;
-    color: #666;
-    margin: 0 0 12px 0;
-    line-height: 1.6;
-}
-
-.update-info-note {
-    font-size: 0.9rem;
-    color: #555;
-    line-height: 1.6;
-    margin: 0;
-    padding: 12px;
-    background: #f9f9f9;
-    border-left: 3px solid #007bff;
-    border-radius: 4px;
-}
-
-.update-info-note strong {
-    color: #333;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    #sidebar-updates {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .sidebar_title {
-        font-size: 1.3rem;
-    }
-
-    .mytripsall {
-        padding: 16px;
-    }
 }
 </style>
             <!-- privacy and terms -->
