@@ -577,9 +577,8 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             break;
             
         case 'twitter':
-            // Twitter sadece URL (karakter sınırı yüzünden)
-            const twitterText = `Check out my trip plan!\n\n${shortUrl}\n\nCreated with triptime.ai!`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}`, '_blank');
+            // Twitter - sadece URL gönder ki card preview çıksın
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'facebook':
@@ -664,9 +663,8 @@ async function shareWithoutDates(platform = 'whatsapp') {
             break;
             
         case 'twitter':
-            // Twitter sadece URL (karakter sınırı yüzünden)
-            const twitterText = `Check out my trip plan!\n\n${shortUrl}\n\nCreated with triptime.ai!`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}`, '_blank');
+            // Twitter - sadece URL gönder ki card preview çıksın
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'facebook':
