@@ -1,7 +1,7 @@
 // ============================================================
 // local_storage.js
 // ============================================================
-
+window.__suppressAutoSaveDuringLoad = false;
 const TRIP_STORAGE_KEY = "triptime_user_trips_v2";
 const PLACEHOLDER_IMG_URL = "https://www.svgrepo.com/show/381286/map-navigation-location-gps-directions.svg";
 
@@ -29,6 +29,7 @@ function toLatin(str) {
 }
 
 async function saveTripAfterRoutes() {
+  if (window.__suppressAutoSaveDuringLoad) return; // <-- ekle
   const maxDay = Math.max(1, ...(window.cart || []).map(it => it.day || 1));
   for (let day = 1; day <= maxDay; day++) {
     if (typeof renderRouteForDay === "function") {
@@ -248,6 +249,8 @@ function safeParse(jsonStr) {
 }
 
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
+    if (window.__suppressAutoSaveDuringLoad) return; // <-- ekle
+
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
@@ -424,235 +427,245 @@ function loadTripFromStorage(tripKey) {
     window.__planGenerationId = Date.now(); 
     window.isProcessing = false; 
 
-    window.activeTripKey = tripKey;
-    const trips = getAllSavedTrips();
-    if (!trips[tripKey]) return false;
-    const t = trips[tripKey];
+    // === YÜKLEME SIRASI İÇİN AUTO-SAVE KİLİDİ ===
+    window.__suppressAutoSaveDuringLoad = true;
 
-    // ============================================================
-    // --- COLLAGE RACE CONDITION FIX ---
-    // ============================================================
-  try {
-      if (typeof window.__ttNewTripToken === 'function') {
-        window.__activeTripSessionToken = window.__ttNewTripToken();
-      }
+    try {
+        window.activeTripKey = tripKey;
+        const trips = getAllSavedTrips();
+        if (!trips[tripKey]) return false;
+        const t = trips[tripKey];
 
-      if (t.dayCollageData) {
-          window.__dayCollagePhotosByDay = JSON.parse(JSON.stringify(t.dayCollageData));
-      } else {
-          window.__dayCollagePhotosByDay = {};
-      }
-
-      // *** PEXELS KALINTILARI TEMİZLİĞİ (GÜÇLENDİRİLMİŞ) ***
-      Object.keys(window.__dayCollagePhotosByDay || {}).forEach(k => {
-        const arr = window.__dayCollagePhotosByDay[k];
-        if (Array.isArray(arr)) {
-          // Pexels URL'lerini tamamen filtrele
-          const filtered = arr.filter(u => !(typeof u === "string" && /pexels\.com/i.test(u)));
-          window.__dayCollagePhotosByDay[k] = filtered;
-           
-          // Eğer tüm görseller Pexels ise, cache'i boşalt ki yeniden Pixabay'dan çeksin
-          if (filtered.length === 0 && arr.length > 0) {
-            console.log(`[Collage] Day ${k} had only Pexels images, clearing cache for Pixabay refresh`);
-          }
-        }
-      });
-
-      // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur (sadece non-Pexels)
-      window.__globalCollageUsed = new Set(
-        Object.values(window.__dayCollagePhotosByDay || {})
-          .flat()
-          .filter(u => typeof u === "string" && ! (/pexels\.com/i.test(u)))
-      );
-
-    } catch(e) {
-      console.warn('[collage] Token reset error:', e);
-    }
-
-    // Harita temizlikleri...
-    if (window._maplibre3DInstance) { try { window._maplibre3DInstance.remove(); } catch(e) {} window._maplibre3DInstance = null; }
-    const map3DElement = document.getElementById('maplibre-3d-view');
-    if (map3DElement) map3DElement.remove();
-    document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
-    document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
-    if (window.expandedMaps) { Object.values(window.expandedMaps).forEach(obj => { if (obj && obj.expandedMap) { try { obj.expandedMap.remove(); } catch(_) {} } }); window.expandedMaps = {}; }
-    document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
-
-    // --- VERİ YÜKLEME ---
-    window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
-    window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
-
-    // AI Info Fix
-    if (t.aiInfo) {
-        window.cart.aiData = t.aiInfo;
-        window.lastTripAIInfo = t.aiInfo;
-    } else {
-        window.cart.aiData = null;
-        window.lastTripAIInfo = null;
-    }
-     
-    // AI Panelini Güncelle
-    const aiSection = document.querySelector('.ai-info-section');
-    if (t.aiInfo) {
-        if (!aiSection) { if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo); } 
-        else { if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo); aiSection.style.display = 'block'; }
-    } else {
-        if (typeof window.showTripAiInfo === "function") window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
-        if (aiSection) aiSection.style.display = 'none';
-    }
-
-    window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
-
-    // Data normalizasyonu
-    window.cart = window.cart.map(item => {
-        item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
-        if (item.location) {
-            item.location.lat = (item.location.lat == null || isNaN(Number(item.location.lat))) ? 0 : Number(item.location.lat);
-            item.location.lng = (item.location.lng == null || isNaN(Number(item.location.lng))) ? 0 : Number(item.location.lng);
-        }
-        return item;
-    });
-    patchCartLocations();
-
-    window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
-    window.selectedCity = t.selectedCity || "";
-     
-    // === BAŞLIK DÜZELTME (KESİN VE DOĞRUDAN ÇÖZÜM) ===
-    let finalTitle = "Trip Plan";
-    if (t.title && t.title.trim().length > 0) {
-        finalTitle = t.title;
-    } else {
-        finalTitle = t.lastUserQuery || (window.selectedCity ? window.selectedCity + " trip plan" : "Trip Plan");
-    }
-     
-    // 1. Global değişkeni güncelle
-    window.lastUserQuery = finalTitle;
-
-    // 2. DOM ELEMENTİNİ ZORLA GÜNCELLE (Bu satır sorunu çözer!)
-    // updateTripTitle() fonksiyonunun ne yaptığına bakmaksızın, biz burada işi bitiriyoruz.
-    const titleEl = document.getElementById("trip_title");
-    if (titleEl) {
-        titleEl.textContent = finalTitle;
-    }
-    // ===================================================
-
-    // UI Güncellemeleri
-    const chatBox = document.getElementById("chat-box");
-    if (chatBox) chatBox.innerHTML = "";
-    let cartDiv = document.getElementById("cart-items");
-    if (cartDiv) cartDiv.innerHTML = "";
-
-    // updateTripTitle yine de kalsın, diğer UI elementlerini tetikliyorsa diye.
-    if (typeof updateTripTitle === "function") updateTripTitle(); 
-    if (typeof updateCart === "function") updateCart();
-    if (typeof showResults === "function") showResults();
-    if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
-
-    // Rota Çizimi
-   // Rota Çizimi - DÜZELTİLDİ
-    let maxDay = 0;
-    window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
-    
-    // CRITICAL FIX: Elevation ve Scalebar için DOM'un hazır olmasını bekle
-    setTimeout(async () => {
-        Object.values(window.leafletMaps || {}).forEach(map => { 
-            if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); 
-        });
-        
-        if (maxDay > 0) {
-            // Gün 1 için önce route çiz
-            await renderRouteForDay(1); 
-            
-            // DİĞER GÜNLERİ DE ÇİZ
-            for (let day = 2; day <= maxDay; day++) { 
-                renderRouteForDay(day); 
+        // ============================================================
+        // --- COLLAGE RACE CONDITION FIX ---
+        // ============================================================
+        try {
+            if (typeof window.__ttNewTripToken === 'function') {
+                window.__activeTripSessionToken = window.__ttNewTripToken();
             }
-            
-            // === ELEVATION VE SCALEBAR İÇİN EK GECİKME ===
-            setTimeout(() => {
-                // Tüm day slider'larını tazele
-                document.querySelectorAll('.scale-bar-track').forEach(track => { 
-                    if (typeof track.handleResize === "function") track.handleResize(); 
-                });
-                
-                // Elevation profillerini zorla yenile
-                if (typeof window.updateAllElevationProfiles === 'function') {
-                    window.updateAllElevationProfiles();
-                } else if (typeof window.renderElevationProfile === 'function') {
-                    // Her gün için elevation profile render et
-                    for (let day = 1; day <= maxDay; day++) {
-                        const points = getPointsFromTrip(t, day);
-                        if (points.length >= 2) {
-                            window.renderElevationProfile(day, points);
-                        }
+
+            if (t.dayCollageData) {
+                window.__dayCollagePhotosByDay = JSON.parse(JSON.stringify(t.dayCollageData));
+            } else {
+                window.__dayCollagePhotosByDay = {};
+            }
+
+            // *** PEXELS KALINTILARI TEMİZLİĞİ (GÜÇLENDİRİLMİŞ) ***
+            Object.keys(window.__dayCollagePhotosByDay || {}).forEach(k => {
+                const arr = window.__dayCollagePhotosByDay[k];
+                if (Array.isArray(arr)) {
+                    // Pexels URL'lerini tamamen filtrele
+                    const filtered = arr.filter(u => !(typeof u === "string" && /pexels\.com/i.test(u)));
+                    window.__dayCollagePhotosByDay[k] = filtered;
+                    
+                    // Eğer tüm görseller Pexels ise, cache'i boşalt ki yeniden Pixabay'dan çeksin
+                    if (filtered.length === 0 && arr.length > 0) {
+                        console.log(`[Collage] Day ${k} had only Pexels images, clearing cache for Pixabay refresh`);
                     }
                 }
+            });
+
+            // Kaydedilmiş collage URL'lerinden global used set'i tekrar kur (sadece non-Pexels)
+            window.__globalCollageUsed = new Set(
+                Object.values(window.__dayCollagePhotosByDay || {})
+                    .flat()
+                    .filter(u => typeof u === "string" && !(/pexels\.com/i.test(u)))
+            );
+
+        } catch(e) {
+            console.warn('[collage] Token reset error:', e);
+        }
+
+        // Harita temizlikleri...
+        if (window._maplibre3DInstance) { try { window._maplibre3DInstance.remove(); } catch(e) {} window._maplibre3DInstance = null; }
+        const map3DElement = document.getElementById('maplibre-3d-view');
+        if (map3DElement) map3DElement.remove();
+        document.querySelectorAll('#maplibre-3d-view').forEach(el => el.remove());
+        document.querySelectorAll('.expanded-map-container').forEach(el => el.remove());
+        if (window.expandedMaps) { Object.values(window.expandedMaps).forEach(obj => { if (obj && obj.expandedMap) { try { obj.expandedMap.remove(); } catch(_) {} } }); window.expandedMaps = {}; }
+        document.querySelectorAll('.ctrl-compass').forEach(el => el.style.display = 'none');
+
+        // --- VERİ YÜKLEME ---
+        window.cart = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+        window.latestTripPlan = Array.isArray(t.cart) && t.cart ? JSON.parse(JSON.stringify(t.cart)) : [];
+
+        // AI Info Fix
+        if (t.aiInfo) {
+            window.cart.aiData = t.aiInfo;
+            window.lastTripAIInfo = t.aiInfo;
+        } else {
+            window.cart.aiData = null;
+            window.lastTripAIInfo = null;
+        }
+        
+        // AI Panelini Güncelle
+        const aiSection = document.querySelector('.ai-info-section');
+        if (t.aiInfo) {
+            if (!aiSection) { if (typeof window.insertTripAiInfo === "function") window.insertTripAiInfo(null, t.aiInfo); } 
+            else { if (typeof window.showTripAiInfo === "function") window.showTripAiInfo(t.aiInfo); aiSection.style.display = 'block'; }
+        } else {
+            if (typeof window.showTripAiInfo === "function") window.showTripAiInfo({ summary: "", tip: "", highlight: "" });
+            if (aiSection) aiSection.style.display = 'none';
+        }
+
+        window.routeElevStatsByDay = t.elevStatsByDay ? { ...t.elevStatsByDay } : {};
+
+        // Data normalizasyonu
+        window.cart = window.cart.map(item => {
+            item.day = (item.day == null || isNaN(Number(item.day))) ? 1 : Number(item.day);
+            if (item.location) {
+                item.location.lat = (item.location.lat == null || isNaN(Number(item.location.lat))) ? 0 : Number(item.location.lat);
+                item.location.lng = (item.location.lng == null || isNaN(Number(item.location.lng))) ? 0 : Number(item.location.lng);
+            }
+            return item;
+        });
+        patchCartLocations();
+
+        window.customDayNames = t.customDayNames ? { ...t.customDayNames } : {};
+        window.selectedCity = t.selectedCity || "";
+        
+        // === BAŞLIK DÜZELTME (KESİN VE DOĞRUDAN ÇÖZÜM) ===
+        let finalTitle = "Trip Plan";
+        if (t.title && t.title.trim().length > 0) {
+            finalTitle = t.title;
+        } else {
+            finalTitle = t.lastUserQuery || (window.selectedCity ? window.selectedCity + " trip plan" : "Trip Plan");
+        }
+        
+        // 1. Global değişkeni güncelle
+        window.lastUserQuery = finalTitle;
+
+        // 2. DOM ELEMENTİNİ ZORLA GÜNCELLE (Bu satır sorunu çözer!)
+        // updateTripTitle() fonksiyonunun ne yaptığına bakmaksızın, biz burada işi bitiriyoruz.
+        const titleEl = document.getElementById("trip_title");
+        if (titleEl) {
+            titleEl.textContent = finalTitle;
+        }
+        // ===================================================
+
+        // UI Güncellemeleri
+        const chatBox = document.getElementById("chat-box");
+        if (chatBox) chatBox.innerHTML = "";
+        let cartDiv = document.getElementById("cart-items");
+        if (cartDiv) cartDiv.innerHTML = "";
+
+        // updateTripTitle yine de kalsın, diğer UI elementlerini tetikliyorsa diye.
+        if (typeof updateTripTitle === "function") updateTripTitle(); 
+        if (typeof updateCart === "function") updateCart();
+        if (typeof showResults === "function") showResults();
+        if (typeof window.toggleSidebarTrip === "function") window.toggleSidebarTrip();
+
+        // Rota Çizimi
+        // Rota Çizimi - DÜZELTİLDİ
+        let maxDay = 0;
+        window.cart.forEach(item => { if (item.day > maxDay) maxDay = item.day; });
+        
+        // CRITICAL FIX: Elevation ve Scalebar için DOM'un hazır olmasını bekle
+        setTimeout(async () => {
+            Object.values(window.leafletMaps || {}).forEach(map => { 
+                if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); 
+            });
+            
+            if (maxDay > 0) {
+                // Gün 1 için önce route çiz
+                await renderRouteForDay(1); 
                 
-                // Splide slider'larını tazele
-                document.querySelectorAll('.splide').forEach(sliderElem => { 
-                    if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') 
-                        sliderElem._splideInstance.refresh(); 
-                });
+                // DİĞER GÜNLERİ DE ÇİZ
+                for (let day = 2; day <= maxDay; day++) { 
+                    renderRouteForDay(day); 
+                }
                 
-                // SCALEBAR'LARI YENİDEN OLUŞTUR
-                document.querySelectorAll('.scale-bar-track').forEach(track => {
-                    if (track._updateTimeout) clearTimeout(track._updateTimeout);
-                    track._updateTimeout = setTimeout(() => {
-                        if (typeof track.handleResize === "function") {
-                            track.handleResize();
-                        }
-                        // Ek olarak createScaleElements'ı direkt çağır
-                        if (typeof createScaleElements === 'function' && track._day) {
-                            const day = track._day;
+                // === ELEVATION VE SCALEBAR İÇİN EK GECİKME ===
+                setTimeout(() => {
+                    // Tüm day slider'larını tazele
+                    document.querySelectorAll('.scale-bar-track').forEach(track => { 
+                        if (typeof track.handleResize === "function") track.handleResize(); 
+                    });
+                    
+                    // Elevation profillerini zorla yenile
+                    if (typeof window.updateAllElevationProfiles === 'function') {
+                        window.updateAllElevationProfiles();
+                    } else if (typeof window.renderElevationProfile === 'function') {
+                        // Her gün için elevation profile render et
+                        for (let day = 1; day <= maxDay; day++) {
                             const points = getPointsFromTrip(t, day);
                             if (points.length >= 2) {
-                                // Elevation data varsa kullan
-                                const elevData = window.routeElevStatsByDay && window.routeElevStatsByDay[day];
-                                const markers = window.cart.filter(item => item.day === day);
-                                
-                                // Scalebar'ı güncelle
-                                createScaleElements(
-                                    track, 
-                                    track.clientWidth || 300,
-                                    0, // spanKm sonradan hesaplanacak
-                                    0, // startKm
-                                    markers.map(m => ({
-                                        ...m,
-                                        distance: m._distance || 0,
-                                        originalIndex: markers.indexOf(m) + 1
-                                    })),
-                                    elevData
-                                );
+                                window.renderElevationProfile(day, points);
                             }
                         }
-                    }, 300); // Gecikmeyi artır
-                });
-                
-            }, 500); // Route çizildikten sonra elevation için ek bekleme
-        }
+                    }
+                    
+                    // Splide slider'larını tazele
+                    document.querySelectorAll('.splide').forEach(sliderElem => { 
+                        if (sliderElem._splideInstance && typeof sliderElem._splideInstance.refresh === 'function') 
+                            sliderElem._splideInstance.refresh(); 
+                    });
+                    
+                    // SCALEBAR'LARI YENİDEN OLUŞTUR
+                    document.querySelectorAll('.scale-bar-track').forEach(track => {
+                        if (track._updateTimeout) clearTimeout(track._updateTimeout);
+                        track._updateTimeout = setTimeout(() => {
+                            if (typeof track.handleResize === "function") {
+                                track.handleResize();
+                            }
+                            // Ek olarak createScaleElements'ı direkt çağır
+                            if (typeof createScaleElements === 'function' && track._day) {
+                                const day = track._day;
+                                const points = getPointsFromTrip(t, day);
+                                if (points.length >= 2) {
+                                    // Elevation data varsa kullan
+                                    const elevData = window.routeElevStatsByDay && window.routeElevStatsByDay[day];
+                                    const markers = window.cart.filter(item => item.day === day);
+                                    
+                                    // Scalebar'ı güncelle
+                                    createScaleElements(
+                                        track, 
+                                        track.clientWidth || 300,
+                                        0, // spanKm sonradan hesaplanacak
+                                        0, // startKm
+                                        markers.map(m => ({
+                                            ...m,
+                                            distance: m._distance || 0,
+                                            originalIndex: markers.indexOf(m) + 1
+                                        })),
+                                        elevData
+                                    );
+                                }
+                            }
+                        }, 300); // Gecikmeyi artır
+                    });
+                    
+                }, 500); // Route çizildikten sonra elevation için ek bekleme
+            }
+            
+            saveTripAfterRoutes();
+        }, 150); // Başlangıç beklemesi
         
-        saveTripAfterRoutes();
-    }, 150); // Başlangıç beklemesi
-    
-    // === TRIP PANEL AÇMA ===
-    setTimeout(() => {
-        if (typeof window.toggleSidebarTrip === "function") {
-            window.toggleSidebarTrip();
-        }
-        
-        // VEYA trip panelini direkt aç
-        const tripSidebar = document.getElementById('sidebar-overlay-trip');
-        if (tripSidebar && !tripSidebar.classList.contains('open')) {
-            tripSidebar.classList.add('open');
-        }
-        
-        // Day 1'i aktif yap
-        if (typeof window.showDay === 'function') {
-            window.showDay(1);
-        }
-    }, 800); // Daha uzun bekleme - tüm veriler yüklendikten sonra
+        // === TRIP PANEL AÇMA ===
+        setTimeout(() => {
+            if (typeof window.toggleSidebarTrip === "function") {
+                window.toggleSidebarTrip();
+            }
+            
+            // VEYA trip panelini direkt aç
+            const tripSidebar = document.getElementById('sidebar-overlay-trip');
+            if (tripSidebar && !tripSidebar.classList.contains('open')) {
+                tripSidebar.classList.add('open');
+            }
+            
+            // Day 1'i aktif yap
+            if (typeof window.showDay === 'function') {
+                window.showDay(1);
+            }
+        }, 800); // Daha uzun bekleme - tüm veriler yüklendikten sonra
 
-    return true;
+        return true;
+    } finally {
+        // Yükleme süreci (rota/thumbnail) tamamlandıktan sonra kaydetme kilidini kaldır
+        setTimeout(() => {
+            window.__suppressAutoSaveDuringLoad = false;
+        }, 1200);
+    }
 }
 function groupTripsByDate(trips) {
     const grouped = {};
