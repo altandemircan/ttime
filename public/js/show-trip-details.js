@@ -394,16 +394,16 @@ function showTripDetails(startDate) {
             </button>
             <button class="share-btn telegram" onclick="showDatePickerBeforeShare('telegram')">
                 <img src="img/share_telegram.svg" alt="Telegram"> Telegram
-            </button>
-            <button class="share-btn messenger" onclick="showDatePickerBeforeShare('messenger')">
-                <img src="img/share_messenger.svg" alt="Messenger"> Messenger
-            </button>
+            </button>            
             <button class="share-btn email" onclick="showDatePickerBeforeShare('email')">
                 <img src="img/share_email.svg" alt="Email"> Email
             </button>
-            <button class="share-btn facebook" onclick="showDatePickerBeforeShare('facebook')">
-                <img src="img/share_facebook.svg" alt="Facebook"> Facebook
-            </button>
+            // <button class="share-btn messenger" onclick="showDatePickerBeforeShare('messenger')">
+            //     <img src="img/share_messenger.svg" alt="Messenger"> Messenger
+            // </button>
+            // <button class="share-btn facebook" onclick="showDatePickerBeforeShare('facebook')">
+            //     <img src="img/share_facebook.svg" alt="Facebook"> Facebook
+            // </button>
             <button class="share-btn twitter" onclick="showDatePickerBeforeShare('twitter')">
                 <img src="img/share_x.svg" alt="Twitter"> Twitter
             </button>
