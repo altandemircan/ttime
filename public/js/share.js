@@ -675,8 +675,8 @@ async function shareWithoutDates(platform = 'whatsapp') {
         case 'instagram':
     // Link'i kopyala
     navigator.clipboard.writeText(shortUrl).then(() => {
-        // Instagram'ı aç
-        window.open('instagram://story-camera', '_blank');
+        // Instagram ana sayfayı aç
+        window.open('instagram://', '_blank');
         // Kullanıcıyı bilgilendir
         setTimeout(() => {
             alert('Link copied! Paste it in your Instagram story or DM.');
