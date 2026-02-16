@@ -429,8 +429,8 @@ function showTripDetails(startDate) {
             }
             
             .copy-link-container {
-                max-width: 600px;
-                margin: 0 auto;
+                max-width: 800px;
+                margin: 0;
             }
             
             .link-label {
@@ -448,6 +448,7 @@ function showTripDetails(startDate) {
             
             .trip-url-input {
                 flex: 1;
+                max-width: 600px;
                 padding: 12px 15px;
                 border: 1px solid #d0d0d0;
                 border-radius: 8px;
