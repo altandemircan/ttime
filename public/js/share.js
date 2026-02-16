@@ -690,12 +690,13 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`fb-messenger://share?link=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
-        case 'email':
-            // Email - gezi planı + URL
-            const subject = 'Check out my trip plan!';
-            const body = shareText;
-            window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-            break;
+       case 'email':
+        const subject = 'Check out my trip plan!';
+        const body = shareText;
+        // Gmail web interface
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(gmailUrl, '_blank');
+        break;
     }
 }
 
