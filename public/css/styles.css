@@ -2043,10 +2043,10 @@ ease;
  
 }
 .tripbox .date {  
-    margin-bottom: 10px;
+        margin-bottom: 20px;
     font-size: 0.8rem;
-    font-weight: 500;
-    color: #959595;
+    font-weight: 400;
+    color: #595959;
 }
 
 .tripbox div {
@@ -5634,7 +5634,7 @@ ease;
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 6px 12px;
     background: #1976d2 !important; /* Beyaz olmasını kesin engeller */
     color: #ffffff; 
     font-size: 13px; 
@@ -7536,7 +7536,7 @@ display: block !important;
         cursor: pointer !important;
     position: relative;
     user-select: none;
-    padding: 10px;
+       padding: 8px 10px;
     font-weight: 600;
     align-items: center;
     justify-content: center;
@@ -7551,6 +7551,7 @@ display: block !important;
     gap: 8px;
     align-content: center;
         text-decoration: none;
+            width: fit-content;
 
 }
 

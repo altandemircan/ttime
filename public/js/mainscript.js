@@ -10464,14 +10464,14 @@ function wrapRouteControls(day) {
       // --- DURUM 1: ZATEN AÇIK (PASİF) ---
       expandBtn.disabled = true;
       expandBtn.style.pointerEvents = 'none';
-      expandBtn.style.opacity = '0.6';
+      expandBtn.style.opacity = '0.4';
       expandBtn.style.cursor = 'default';
       expandBtn.style.borderColor = '#ccc';
       expandBtn.style.background = '#5588d0';
       
       expandBtn.innerHTML = `
         <img class="tm-icon" src="/img/expand_map.svg" alt="MAP" loading="lazy" decoding="async" style="filter: grayscale(100%);">
-        <span class="tm-label" style="color: #888">Map Expanded</span>
+        <span class="tm-label" style="color: #fff">Map Expanded</span>
       `;
   } else {
   
