@@ -611,6 +611,17 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             const body = shareText;
             window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
             break;
+            
+        case 'copy':
+            // Copy link to clipboard
+            navigator.clipboard.writeText(shortUrl).then(() => {
+                alert('Link copied to clipboard!');
+                closeShareModal();
+            }).catch(() => {
+                prompt('Copy this link:', shortUrl);
+                closeShareModal();
+            });
+            break;
     }
 }
 
@@ -662,16 +673,23 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
-       case 'twitter':
-    const twitterText = `Check out my trip plan! Created with triptime.ai!`;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(shortUrl)}`, '_blank');
-    break;
+        case 'twitter':
+            // Twitter - sadece URL gönder ki card preview çıksın
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
             
         case 'facebook':
             // Facebook post - gezi planı + URL
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
-            break;          
-        
+            break;
+            
+        case 'instagram':
+            // Instagram story kamerasını aç
+            window.open('instagram://story-camera', '_blank');
+            setTimeout(() => {
+                alert('Instagram app will open. Please share your trip manually!');
+            }, 1000);
+            break;
             
         case 'telegram':
             // Telegram - gezi planı + URL
@@ -683,22 +701,23 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`fb-messenger://share?link=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
-       case 'email':
-        const subject = 'Check out my trip plan!';
-        const body = shareText;
-        // Gmail web interface
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(gmailUrl, '_blank');
-        break;
-
+        case 'email':
+            // Email - gezi planı + URL
+            const subject = 'Check out my trip plan!';
+            const body = shareText;
+            window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+            break;
+            
         case 'copy':
-        navigator.clipboard.writeText(shortUrl).then(() => {
-            alert('Link copied to clipboard!');
-            closeShareModal();
-        }).catch(() => {
-            alert('Link: ' + shortUrl);
-        });
-        break
+            // Copy link to clipboard
+            navigator.clipboard.writeText(shortUrl).then(() => {
+                alert('Link copied to clipboard!');
+                closeShareModal();
+            }).catch(() => {
+                prompt('Copy this link:', shortUrl);
+                closeShareModal();
+            });
+            break;
     }
 }
 
