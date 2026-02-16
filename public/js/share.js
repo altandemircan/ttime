@@ -673,12 +673,18 @@ async function shareWithoutDates(platform = 'whatsapp') {
             break;
             
         case 'instagram':
-            // Instagram story kamerasını aç
-            window.open('instagram://story-camera', '_blank');
-            setTimeout(() => {
-                alert('Instagram app will open. Please share your trip manually!');
-            }, 1000);
-            break;
+    // Link'i kopyala
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        // Instagram'ı aç
+        window.open('instagram://story-camera', '_blank');
+        // Kullanıcıyı bilgilendir
+        setTimeout(() => {
+            alert('Link copied! Paste it in your Instagram story or DM.');
+        }, 500);
+    }).catch(() => {
+        alert('Could not copy link. Please copy manually: ' + shortUrl);
+    });
+    break;
             
         case 'telegram':
             // Telegram - gezi planı + URL
