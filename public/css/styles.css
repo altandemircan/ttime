@@ -3714,7 +3714,7 @@ ease;
     font-size: 1rem;
     border: 1px solid #dfccff;
     border-radius: 7px;
-    background: #f2f2f2;
+    background: #ffffff;
     color: #222;;
     font-weight: 600;
     cursor: pointer;
@@ -3731,10 +3731,6 @@ ease;
     vertical-align: middle;
 }
 
-.share-btn.whatsapp    { background: #e1f8ea; }
-.share-btn.instagram   { background: #fbeff6; }
-.share-btn.facebook    { background: #eaf1fb; }
-.share-btn.twitter     { background: #eaf7fb; }
 
 /* Hoverda sadece biraz koyulaşsın */
 .share-btn:hover, .share-btn:focus {
