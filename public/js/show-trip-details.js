@@ -457,6 +457,7 @@ function showTripDetails(startDate) {
                 background: #fff;
                 color: #333;
                 outline: none;
+            width: -webkit-fill-available;
             }
             
             .trip-url-input:focus {
