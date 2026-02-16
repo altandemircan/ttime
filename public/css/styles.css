@@ -2043,10 +2043,10 @@ ease;
  
 }
 .tripbox .date {  
-    margin-bottom: 10px;
+        margin-bottom: 10px;
     font-size: 0.8rem;
-    font-weight: 500;
-    color: #959595;
+    font-weight: 400;
+    color: #595959;
 }
 
 .tripbox div {
