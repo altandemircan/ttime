@@ -5634,7 +5634,7 @@ ease;
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 6px 12px;
     background: #1976d2 !important; /* Beyaz olmasını kesin engeller */
     color: #ffffff; 
     font-size: 13px; 
