@@ -583,7 +583,7 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             
         case 'facebook':
             // Facebook post - gezi planı + URL
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'instagram':
@@ -669,7 +669,7 @@ async function shareWithoutDates(platform = 'whatsapp') {
             
         case 'facebook':
             // Facebook post - gezi planı + URL
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'instagram':
