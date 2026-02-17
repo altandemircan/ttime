@@ -581,10 +581,9 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
-        case 'facebook':
-            // Facebook post - gezi planı + URL
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
-            break;
+       case 'facebook':
+    window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
+    break;
             
         case 'instagram':
             // Instagram story kamerasını aç
