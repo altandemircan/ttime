@@ -389,20 +389,172 @@ function showTripDetails(startDate) {
     shareDiv.className = 'share-buttons-container';
     shareDiv.innerHTML = `
         <div class="share-buttons">
-            <button class="share-btn whatsapp" onclick="showDatePickerBeforeShare()">
+            <button class="share-btn whatsapp" onclick="showDatePickerBeforeShare('whatsapp')">
                 <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
             </button>
-            <button class="share-btn instagram" onclick="showDatePickerBeforeShare()">
-                <img src="img/share_instagram.svg" alt="Instagram"> Instagram
+            <button class="share-btn telegram" onclick="showDatePickerBeforeShare('telegram')">
+                <img src="img/share_telegram.svg" alt="Telegram"> Telegram
+            </button>            
+            <button class="share-btn messenger" onclick="showDatePickerBeforeShare('messenger')">
+                <img src="img/share_messenger.svg" alt="Messenger"> Messenger
             </button>
-            <button class="share-btn facebook" onclick="showDatePickerBeforeShare()">
+            <button class="share-btn facebook" onclick="showDatePickerBeforeShare('facebook')">
                 <img src="img/share_facebook.svg" alt="Facebook"> Facebook
             </button>
-            <button class="share-btn twitter" onclick="showDatePickerBeforeShare()">
+            <button class="share-btn email" onclick="showDatePickerBeforeShare('email')">
+                <img src="img/share_email.svg" alt="Email"> Email
+            </button>
+            <button class="share-btn twitter" onclick="showDatePickerBeforeShare('twitter')">
                 <img src="img/share_x.svg" alt="Twitter"> Twitter
             </button>
         </div>
     `;
     tripDetailsSection.appendChild(shareDiv);
+
+    // Copy link section with visible URL
+    const copyLinkSection = document.createElement('div');
+    copyLinkSection.className = 'copy-link-section';
+    copyLinkSection.innerHTML = `
+        <div class="copy-link-container">
+            <div class="link-label">Or copy your trip link:</div>
+            <div class="link-box">
+                <input type="text" id="trip-share-url" readonly class="trip-url-input" value="Loading...">
+                <button class="copy-btn" onclick="copyTripLink()">
+                    <img src="img/share_copy.svg" alt="Copy"> Copy Link
+                </button>
+            </div>
+        </div>
+        
+        <style>
+            .copy-link-section {
+                margin-top: 30px;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 12px;
+                border: 1px solid #e0e0e0;
+            }
+            
+            .copy-link-container {
+                max-width: 800px;
+                margin: 0;
+            }
+            
+            .link-label {
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 10px;
+                font-weight: 500;
+            }
+            
+            .link-box {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            
+            .trip-url-input {
+                flex: 1;
+                max-width: 600px;
+                padding: 12px 15px;
+                border: 1px solid #d0d0d0;
+                border-radius: 8px;
+                font-size: 14px;
+                font-family: monospace;
+                background: #fff;
+                color: #333;
+                outline: none;
+                width: -webkit-fill-available;
+            }
+            
+            .trip-url-input:focus {
+                border-color: #8a4af3;
+            }
+            
+            .copy-btn {
+                padding: 12px 20px;
+                background: #8a4af3;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s;
+                white-space: nowrap;
+            }
+            
+            .copy-btn:hover {
+                background: #7a3ad3;
+                transform: translateY(-1px);
+            }
+            
+            .copy-btn img {
+                width: 16px;
+                height: 16px;
+                filter: brightness(0) invert(1);
+            }
+            
+            @media (max-width: 768px) {
+                .link-box {
+                    flex-direction: column;
+                }
+                
+                .copy-btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+        </style>
+    `;
+    tripDetailsSection.appendChild(copyLinkSection);
+
+    // Generate and display the link (with shortening)
+    setTimeout(async () => {
+        const url = createOptimizedLongLink();
+        const urlInput = document.getElementById('trip-share-url');
+        
+        try {
+            const response = await fetch('/api/shorten', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ longUrl: url })
+            });
+            if (response.ok) {
+                const result = await response.json();
+                if (urlInput) urlInput.value = result.shortUrl;
+            } else {
+                if (urlInput) urlInput.value = url;
+            }
+        } catch (e) {
+            console.warn("URL shortening failed");
+            if (urlInput) urlInput.value = url;
+        }
+    }, 100);
 }
 
+// Copy link function
+window.copyTripLink = function() {
+    const urlInput = document.getElementById('trip-share-url');
+    if (!urlInput) return;
+    
+    urlInput.select();
+    urlInput.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(urlInput.value).then(() => {
+        const copyBtn = document.querySelector('.copy-btn');
+        if (copyBtn) {
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<img src="img/check.svg" alt="Copied" style="filter: brightness(0) invert(1);"> Copied!';
+            copyBtn.style.background = '#4caf50';
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.style.background = '#8a4af3';
+            }, 2000);
+        }
+    }).catch(() => {
+        alert('Failed to copy. Please copy manually.');
+    });
+};

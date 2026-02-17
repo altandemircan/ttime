@@ -280,7 +280,10 @@ function createOptimizedLongLink() {
 }
 
 // --- 4. MODAL - İki Aşamalı Share ---
-function showDatePickerBeforeShare() {
+function showDatePickerBeforeShare(platform = 'whatsapp') {
+    // Platform'u global olarak sakla
+    window.selectedSharePlatform = platform;
+    
     const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
     
     const modal = document.createElement('div');
@@ -304,7 +307,7 @@ function showDatePickerBeforeShare() {
                 <p style="margin: 0 0 24px 0; color: #666; font-size: 14px; line-height: 1.5;">Help others discover amazing places</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button onclick="shareWithoutDates()" style="padding: 10px;
+                    <button onclick="shareWithoutDates(window.selectedSharePlatform)" style="padding: 10px;
     margin-top: 0px;
     font-weight: 600;
     align-items: center;
@@ -364,7 +367,7 @@ function showDatePickerBeforeShare() {
                 
                 <div id="modal-calendar-container" style="margin: 0 0 24px 0;"></div>
                 
-                <button id="modal-share-btn" onclick="confirmShareWithDates()" style="padding: 10px;
+                <button id="modal-share-btn" onclick="confirmShareWithDates(window.selectedSharePlatform)" style="padding: 10px;
     margin-top: 0px;
     font-weight: 600;
     align-items: center;
@@ -514,14 +517,13 @@ function closeShareModal() {
 }
 
 // --- 8. Tarihlerle birlikte share ---
-// --- 8. Tarihlerle birlikte share ---
-async function confirmShareWithDates() {
+async function confirmShareWithDates(platform = 'whatsapp') {
     if (!window.modalSelectedStartDate) {
         alert('Please select a date');
         return;
     }
     
-    // 1. window.cart'a ve PERSISTENCE İÇİN LOCALSTORAGE'A KAYDET (Düzeltme: Dizi property'si kaybolacağı için)
+    // 1. window.cart'a ve PERSISTENCE İÇİN LOCALSTORAGE'A KAYDET
     window.cart.startDate = window.modalSelectedStartDate;
     window.cart.endDates = window.modalSelectedEndDates;
     localStorage.setItem('tripStartDate', window.modalSelectedStartDate); 
@@ -535,7 +537,6 @@ async function confirmShareWithDates() {
         ? window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]
         : window.modalSelectedStartDate;
         
-    // (Düzeltme: Değişkenler silinmeden kullanılıyor)
     shareText += `${window.modalSelectedStartDate} - ${endDate}\n\n`;
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
@@ -548,9 +549,10 @@ async function confirmShareWithDates() {
         }
     }
     
-    // 4. ŞİMDİ MODAL'I KAPATABİLİRSİN (Değişkenler null oluyor)
+    // 4. ŞİMDİ MODAL'I KAPATABİLİRSİN
     closeShareModal();
     
+    // 5. URL'i kısalt
     let shortUrl = url;
     try {
         const response = await fetch('/api/shorten', {
@@ -567,11 +569,53 @@ async function confirmShareWithDates() {
     }
     
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    
+    // 6. Platform'a göre paylaşım
+    switch(platform) {
+        case 'whatsapp':
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+            break;
+            
+        case 'twitter':
+            // Twitter - sadece URL gönder ki card preview çıksın
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
+            
+        case 'facebook':
+            // Facebook post - gezi planı + URL
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
+            
+        case 'instagram':
+            // Instagram story kamerasını aç
+            window.open('instagram://story-camera', '_blank');
+            setTimeout(() => {
+                // Eğer uygulama açılmazsa kullanıcıyı bilgilendir
+                alert('Instagram app will open. Please share your trip manually!');
+            }, 1000);
+            break;
+            
+        case 'telegram':
+            // Telegram - gezi planı + URL
+            window.open(`https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+            break;
+            
+        case 'messenger':
+            // Messenger - link paylaşımı
+            window.open(`fb-messenger://share?link=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
+            
+        case 'email':
+            // Email - gezi planı + URL
+            const subject = 'Check out my trip plan!';
+            const body = shareText;
+            window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+            break;
+    }
 }
 
 // --- 9. Tarih seçmeden share ---
-async function shareWithoutDates() {
+async function shareWithoutDates(platform = 'whatsapp') {
     // Tarihleri temizle
     window.modalSelectedStartDate = null;
     window.modalSelectedEndDates = null;
@@ -611,7 +655,48 @@ async function shareWithoutDates() {
     }
     
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    
+    // Platform'a göre paylaşım
+    switch(platform) {
+        case 'whatsapp':
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+            break;
+            
+        case 'twitter':
+            // Twitter - sadece URL gönder ki card preview çıksın
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
+            
+        case 'facebook':
+            // Facebook post - gezi planı + URL
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
+            
+        case 'instagram':
+            // Instagram story kamerasını aç
+            window.open('instagram://story-camera', '_blank');
+            setTimeout(() => {
+                alert('Instagram app will open. Please share your trip manually!');
+            }, 1000);
+            break;
+            
+        case 'telegram':
+            // Telegram - gezi planı + URL
+            window.open(`https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+            break;
+            
+        case 'messenger':
+            // Messenger - link paylaşımı
+            window.open(`fb-messenger://share?link=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
+            
+        case 'email':
+            // Email - gezi planı + URL
+            const subject = 'Check out my trip plan!';
+            const body = shareText;
+            window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+            break;
+    }
 }
 
 function formatDateLong(dateInput) {
