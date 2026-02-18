@@ -373,7 +373,7 @@ function showTripDetails(startDate) {
                 sliderElem._splideInstance = splideInstance;
             }
         });
-    }, 1);
+    }, 1); 
 
     const shareTitle = document.createElement("div");
     shareTitle.className = "share-buttons-title";

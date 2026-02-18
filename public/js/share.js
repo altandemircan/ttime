@@ -574,7 +574,7 @@ async function confirmShareWithDates(platform = 'whatsapp') {
     switch(platform) {
         case 'whatsapp':
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-            break;
+            break; 
             
         case 'twitter':
             // Twitter - sadece URL gönder ki card preview çıksın
