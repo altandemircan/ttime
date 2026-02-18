@@ -1,4 +1,4 @@
-function showTripDetails(startDate) {
+function showTripDetails(startDate) { 
     const isMobile = window.innerWidth <= 768;
 
     let chatScreen = document.getElementById("chat-screen");
