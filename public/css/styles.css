@@ -277,7 +277,8 @@ ease;
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
-    object-position: calc(50% + 5px) center;
+    object-position: calc(50%) center;
+    scale: 1.2;
 }
 
 .sound-toggle img {
@@ -285,7 +286,7 @@ ease;
     height: 20px !important;
     border-radius: 50%;
     padding: 8px;
-    background: #f1f2f6;
+    
 }
 
 
