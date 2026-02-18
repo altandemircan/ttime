@@ -15,6 +15,17 @@ try {
     console.warn('[startup] dotenv not loaded:', e.message);
 }
 
+app.use((req, res, next) => {
+    res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'self'; " + 
+        "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; " + 
+        "style-src 'self' 'unsafe-inline'; " + 
+        "img-src 'self' data: https:; " + 
+        "connect-src 'self' https://cloudflareinsights.com https://api.geoapify.com https://tiles.openfreemap.org;"
+    );
+    next();
+});
 const app = express();
 
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
@@ -427,79 +438,43 @@ app.use('/api', (req, res) => {
 });
 
 // 8. SPA fallback (index.html servisi)
-app.get('/s/:id', (req, res) => {
-    try {
-        if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
-        
-        const data = JSON.parse(fs.readFileSync(shortUrlsFile, 'utf8'));
-        const longUrl = data[req.params.id];
-        
-        if (longUrl) {
-            // 1. KULLANICI BOT MU? (Facebook, WhatsApp, Twitter, Telegram vb.)
-            const userAgent = req.headers['user-agent'] || '';
-            const isBot = /facebookexternalhit|twitterbot|whatsapp|telegrambot|linkedinbot|slackbot|discordbot/i.test(userAgent);
-
-            // 2. EĞER BOT İSE: Sadece Meta Tag'leri içeren statik HTML döndür (Yönlendirme yapma!)
-            if (isBot) {
-                const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-                const host = req.get('host');
-                
-                // Gezi için özel görsel
-                const imageUrl = `${protocol}://${host}/img/share_og.png`;
-                
-                // Başlığı longUrl içinden çıkarmaya çalış (v2 parametresi)
-                let title = "My Trip Plan";
-                try {
-                    const urlObj = new URL(longUrl); // URL parse et
-                    const v2 = urlObj.searchParams.get('v2');
-                    if (v2) {
-                        // v2 yapısı: Title|Items|... şeklinde
-                        const decoded = decodeURIComponent(v2);
-                        const parts = decoded.split('|');
-                        if (parts[0]) title = parts[0]; 
-                    }
-                } catch (e) {
-                    // URL parse hatası olursa varsayılan başlık kalır
-                }
-
-                // Bot'a özel response
-                return res.send(`
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>${title} - Triptime AI</title>
-                        <meta property="og:title" content="${title}">
-                        <meta property="og:description" content="Check out my trip plan created with Triptime AI!">
-                        <meta property="og:image" content="${imageUrl}">
-                        <meta property="og:image:width" content="1200">
-                        <meta property="og:image:height" content="630">
-                        <meta property="og:type" content="website">
-                        <meta property="og:url" content="${protocol}://${host}/s/${req.params.id}">
-                        
-                        <meta name="twitter:card" content="summary_large_image">
-                        <meta name="twitter:title" content="${title}">
-                        <meta name="twitter:description" content="Check out my trip plan created with Triptime AI!">
-                        <meta name="twitter:image" content="${imageUrl}">
-                    </head>
-                    <body>
-                        <h1>${title}</h1>
-                        <img src="${imageUrl}" style="max-width:100%;" />
-                    </body>
-                    </html>
-                `);
-            }
-
-            // 3. EĞER İNSAN İSE: Normal yönlendirmeyi yap
-            console.log(`[Redirect] ${req.params.id} -> ${longUrl.substring(0, 50)}...`);
-            return res.redirect(longUrl);
-        }
-        
-        res.redirect('/');
-    } catch (e) {
-        console.error('[ShortURL Error]', e);
-        res.redirect('/');
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  
+  fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+    if (err) {
+      console.error('Error reading index.html:', err);
+      return res.status(500).send('Error loading page');
     }
+
+    // 1. Versiyonu Bas
+    let versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
+    
+    // 2. Gezi paylaşımı için OG image değiştir
+    const hasV2 = req.query.v2;
+    if (hasV2) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.get('host');
+      const shareOgImage = `${protocol}://${host}/img/share_og.png`;
+      
+      // og:image meta tag'ini değiştir
+      versionedHtml = versionedHtml.replace(
+        /<meta property="og:image" content="[^"]*">/,
+        `<meta property="og:image" content="${shareOgImage}">`
+      );
+    }
+    
+    // 3. Browser Önbelleğini ÖLDÜREN Headerlar (Kesin Çözüm)
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    // 4. ETag ve Last-Modified Başlıklarını SİL
+    res.removeHeader('ETag');
+    res.removeHeader('Last-Modified');
+
+    res.send(versionedHtml);
+  });
 });
 // 9. Global error handler
 app.use((err, req, res, next) => {
