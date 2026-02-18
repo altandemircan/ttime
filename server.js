@@ -15,16 +15,7 @@ try {
     console.warn('[startup] dotenv not loaded:', e.message);
 }
 
-
 const app = express();
-
-app.use((req, res, next) => {
-    res.setHeader(
-        "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cloudflareinsights.com https://api.geoapify.com https://tiles.openfreemap.org;"
-    );
-    next();
-});
 
 // 1. BODY PARSER (limit artırıldı: screenshot base64 için)
 app.use(express.json({ limit: '6mb' }));
