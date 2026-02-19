@@ -437,28 +437,14 @@ app.get('*', (req, res) => {
     }
 
     // 1. Versiyonu Bas
-    let versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
+    const versionedHtml = htmlData.replace(/__BUILD__/g, BUILD_ID);
     
-    // 2. Gezi paylaşımı için OG image değiştir
-    const hasV2 = req.query.v2;
-    if (hasV2) {
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-      const host = req.get('host');
-      const shareOgImage = `${protocol}://${host}/img/share_og.png`;
-      
-      // og:image meta tag'ini değiştir
-      versionedHtml = versionedHtml.replace(
-        /<meta property="og:image" content="[^"]*">/,
-        `<meta property="og:image" content="${shareOgImage}">`
-      );
-    }
-    
-    // 3. Browser Önbelleğini ÖLDÜREN Headerlar (Kesin Çözüm)
+    // 2. Browser Önbelleğini ÖLDÜREN Headerlar (Kesin Çözüm)
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
-    // 4. ETag ve Last-Modified Başlıklarını SİL
+    // 3. ETag ve Last-Modified Başlıklarını SİL
     res.removeHeader('ETag');
     res.removeHeader('Last-Modified');
 
