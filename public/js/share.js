@@ -583,11 +583,14 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-        case 'twitter': {
-    const twitterText = `Check out my trip plan on Triptime AI!`;
+ case 'twitter': {
+    const twitterText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
+    const twitterUrl = encodeURIComponent(shortUrl);
+    // intent sonrası yeni sekme açılır, mevcut sekme etkilenmez
     window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(shortUrl)}`,
-        '_blank'
+        `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
+        '_blank',
+        'width=600,height=400,noopener,noreferrer'
     );
     break;
 }
