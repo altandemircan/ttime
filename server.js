@@ -339,7 +339,7 @@ const shortUrlsFile = path.join(__dirname, 'shorturls.json');
 // 1. Kısaltma Oluşturma (POST)
 app.post('/api/shorten', (req, res) => {
     try {
-        const { longUrl } = req.body;
+        const { longUrl, title, city, description, imageUrl } = req.body;
         const shortId = Math.random().toString(36).substring(2, 8);
         
         let data = {};
@@ -348,7 +348,16 @@ app.post('/api/shorten', (req, res) => {
             data = fileContent ? JSON.parse(fileContent) : {};
         }
         
-        data[shortId] = longUrl;
+        // Metadata ile birlikte kaydet
+        data[shortId] = {
+            longUrl,
+            title: title || 'My Trip Plan',
+            city: city || 'Amazing Destination',
+            description: description || 'Check out this trip plan created with Triptime AI!',
+            imageUrl: imageUrl || null,
+            createdAt: Date.now()
+        };
+        
         fs.writeFileSync(shortUrlsFile, JSON.stringify(data, null, 2));
         
         const host = req.get('host');
@@ -365,14 +374,61 @@ app.get('/s/:id', (req, res) => {
         if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
         
         const data = JSON.parse(fs.readFileSync(shortUrlsFile, 'utf8'));
-        const longUrl = data[req.params.id];
+        const record = data[req.params.id];
         
-        if (longUrl) {
-            console.log(`[Redirect] ${req.params.id} -> ${longUrl.substring(0, 50)}...`);
-            return res.redirect(longUrl);
+        if (!record) return res.redirect('/');
+        
+        // Eski format uyumu (sadece string kaydedilmişse)
+        const longUrl = typeof record === 'string' ? record : record.longUrl;
+        
+        // Bot mu, insan mı?
+        const ua = req.headers['user-agent'] || '';
+        const isBot = /twitterbot|facebookexternalhit|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|bot|crawler|spider/i.test(ua);
+        
+        if (isBot && typeof record === 'object') {
+            const { title, city, description, imageUrl } = record;
+            const ogImage = imageUrl || `https://triptime.ai/img/share_og.png?v=${record.createdAt || Date.now()}`;
+            const ogTitle = `${title} - Triptime AI`;
+            const ogDesc = description || `Explore this ${city} trip plan created with Triptime AI!`;
+            const canonicalUrl = `https://triptime.ai/s/${req.params.id}`;
+            
+            console.log(`[Bot Detected] UA: ${ua.substring(0, 50)} → Serving OG HTML`);
+            
+            return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${ogTitle}</title>
+  
+  <meta property="og:title" content="${ogTitle}">
+  <meta property="og:description" content="${ogDesc}">
+  <meta property="og:image" content="${ogImage}">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="419">
+  <meta property="og:url" content="${canonicalUrl}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Triptime AI">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@triptimeai">
+  <meta name="twitter:title" content="${ogTitle}">
+  <meta name="twitter:description" content="${ogDesc}">
+  <meta name="twitter:image" content="${ogImage}">
+  
+  <meta http-equiv="refresh" content="0;url=${longUrl}">
+</head>
+<body>
+  <p>Redirecting to your trip plan...</p>
+</body>
+</html>`);
         }
-        res.redirect('/');
+        
+        // Normal kullanıcı → direkt redirect
+        console.log(`[Redirect] ${req.params.id} → ${longUrl.substring(0, 60)}...`);
+        return res.redirect(302, longUrl);
+        
     } catch (e) {
+        console.error('[ShortUrl Error]', e);
         res.redirect('/');
     }
 });
