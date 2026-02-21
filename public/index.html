@@ -703,14 +703,16 @@
             <div class="fixed-container">
               <div class="cw">
                     <div class="circle-container">
-                        <video id="circleVideo" class="circle-video" autoplay loop muted playsinline preload="auto" onloadedmetadata="this.currentTime = 0; this.play();">
-                            <source src="/img/mira_video.webm" type="video/webm">
-                            <source src="/img/mira_video.mp4" type="video/mp4">
-                        </video>
-                        <button class="sound-toggle" onclick="toggleSound()">
-                            <img src="/img/mic_mute.svg" class="sound-icon" alt="">
-                        </button>
-                    </div>
+    <div class="circle-video-wrapper">
+        <video id="circleVideo" class="circle-video" autoplay loop muted playsinline preload="auto">
+            <source src="/img/mira_video.webm" type="video/webm">
+            <source src="/img/mira_video.mp4" type="video/mp4">
+        </video>
+    </div>
+    <button class="sound-toggle" onclick="toggleSound()">
+        <img src="/img/mic_mute.svg" class="sound-icon" alt="">
+    </button>
+</div>
                     <h1>Hello, <span>I'm Mira!</span>
                         <img src="/img/mira-chat.gif">
                     </h1>
