@@ -248,8 +248,8 @@ ease;
 
 .sound-toggle {
     position: absolute;
-    top: 20px;
-    right: -7px;
+    top: 70px;
+    right: 10px;
     width: 26px;
     height: 26px;
     border-radius: 50%;
@@ -281,7 +281,7 @@ ease;
     border-radius: 50%;
     object-position: calc(50%) center;
     scale: 1.1;
-    object-position: 50% -90%;
+    object-position: 50% -50%;
 
 }
 
