@@ -265,12 +265,13 @@ ease;
 }
 /* Circle Container */
 .circle-container {
-    width: 110px;
-    height: 110px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     position: relative;
     margin: 0 auto;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
+    overflow: hidden;
 }
 
 .circle-video {
@@ -279,7 +280,9 @@ ease;
     object-fit: cover;
     border-radius: 50%;
     object-position: calc(50%) center;
-    scale: 1.3;
+    scale: 1.1;
+    object-position: 50% -90%;
+
 }
 
 .sound-toggle img {
