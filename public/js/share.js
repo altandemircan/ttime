@@ -323,7 +323,8 @@ function showDatePickerBeforeShare(platform = 'whatsapp') {
     width: -webkit-fill-available;">
                         Just share
                     </button>
-                    <button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
+                    ${window.selectedSharePlatform === 'facebook' ? '' : `
+<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
     background: white;
     color: #1a1a1a;
     padding: 10px;
@@ -338,6 +339,7 @@ function showDatePickerBeforeShare(platform = 'whatsapp') {
     width: -webkit-fill-available;">
                         Add dates
                     </button>
+`}
                 </div>
                 
                 <button onclick="closeShareModal()" style="margin-top: 12px;
