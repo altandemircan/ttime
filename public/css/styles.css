@@ -261,7 +261,7 @@ ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px); 
     z-index: 1;
 }
 /* Circle Container */
