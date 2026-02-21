@@ -537,7 +537,11 @@ async function confirmShareWithDates(platform = 'whatsapp') {
         ? window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]
         : window.modalSelectedStartDate;
         
+if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !== endDate) {
     shareText += `${window.modalSelectedStartDate} - ${endDate}\n\n`;
+} else {
+    shareText += `${window.modalSelectedStartDate}\n\n`;
+}
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     for (let day = 1; day <= maxDay; day++) {
