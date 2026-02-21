@@ -7472,7 +7472,7 @@ display: block !important;
     width: 100%;
     display: grid;
     max-width: 860px;
-    gap: 50px;
+    gap: 0px;
     margin: 0 auto;
 }
 /* Welcome kısmı */
