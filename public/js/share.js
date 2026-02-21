@@ -583,7 +583,7 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
- case 'twitter': {
+case 'twitter': {
     const twitterText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
     const twitterUrl = encodeURIComponent(shortUrl);
     // intent sonrası yeni sekme açılır, mevcut sekme etkilenmez
