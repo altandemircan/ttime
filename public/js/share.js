@@ -321,7 +321,8 @@ function showDatePickerBeforeShare(platform = 'whatsapp') {
     color: #ffffff;
     cursor: default;
     width: -webkit-fill-available;">
-                        Just share
+                        ${window.selectedSharePlatform === 'facebook' ? 'Share' : 'Just share'}
+
                     </button>
                     ${window.selectedSharePlatform === 'facebook' ? '' : `
 <button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
