@@ -7473,7 +7473,7 @@ display: block !important;
     display: grid;
     max-width: 860px;
     gap: 0px;
-    margin: 0 auto;
+    margin-bottom: 40px;
 }
 /* Welcome kısmı */
 #tt-welcome {
