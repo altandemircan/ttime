@@ -248,7 +248,7 @@ ease;
 
 .sound-toggle {
     position: absolute;
-    top: 70px;
+    top: 30px;
     right: 10px;
     width: 26px;
     height: 26px;
@@ -262,6 +262,7 @@ ease;
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(4px);
+    z-index: 12312;
 }
 /* Circle Container */
 .circle-container {
