@@ -262,7 +262,7 @@ ease;
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(4px);
-    z-index: 12312;
+    z-index: 1;
 }
 /* Circle Container */
 .circle-container {
