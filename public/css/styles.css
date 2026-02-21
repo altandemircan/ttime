@@ -269,7 +269,8 @@ ease;
     height: 110px;
     border-radius: 50%;
     position: relative;
-    margin-bottom: 40px
+    margin: 0 auto;
+    padding-bottom: 40px;
 }
 
 .circle-video {
