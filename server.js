@@ -378,30 +378,24 @@ app.get('/s/:id', (req, res) => {
         
         if (!record) return res.redirect('/');
         
-        // Eski format uyumu (sadece string kaydedilmişse)
         const longUrl = typeof record === 'string' ? record : record.longUrl;
-        
-        // Bot mu, insan mı?
         const ua = req.headers['user-agent'] || '';
-            console.log(`[/s/${req.params.id}] UA: ${ua}`); // ← Bu logu ekle
-
-        const isBot = /twitterbot|facebookexternalhit|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|bot|crawler|spider/i.test(ua);
+        console.log(`[/s/${req.params.id}] UA: ${ua}`);
         
-        if (isBot && typeof record === 'object') {
-            const { title, city, description, imageUrl } = record;
-            const ogImage = imageUrl || `https://triptime.ai/img/share_og.png?v=${record.createdAt || Date.now()}`;
+        if (typeof record === 'object') {
+            const { title, city, description, imageUrl, createdAt } = record;
+            const ogImage = imageUrl || `https://triptime.ai/img/share_og.png?v=${createdAt || Date.now()}`;
             const ogTitle = `${title} - Triptime AI`;
             const ogDesc = description || `Explore this ${city} trip plan created with Triptime AI!`;
             const canonicalUrl = `https://triptime.ai/s/${req.params.id}`;
             
-            console.log(`[Bot Detected] UA: ${ua.substring(0, 50)} → Serving OG HTML`);
+            console.log(`[OG HTML] Serving for: ${req.params.id}`);
             
             return res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>${ogTitle}</title>
-  
   <meta property="og:title" content="${ogTitle}">
   <meta property="og:description" content="${ogDesc}">
   <meta property="og:image" content="${ogImage}">
@@ -410,13 +404,11 @@ app.get('/s/:id', (req, res) => {
   <meta property="og:url" content="${canonicalUrl}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Triptime AI">
-  
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@triptimeai">
   <meta name="twitter:title" content="${ogTitle}">
   <meta name="twitter:description" content="${ogDesc}">
   <meta name="twitter:image" content="${ogImage}">
-  
   <meta http-equiv="refresh" content="0;url=${longUrl}">
 </head>
 <body>
@@ -425,7 +417,7 @@ app.get('/s/:id', (req, res) => {
 </html>`);
         }
         
-        // Normal kullanıcı → direkt redirect
+        // Eski format (string) → direkt redirect
         console.log(`[Redirect] ${req.params.id} → ${longUrl.substring(0, 60)}...`);
         return res.redirect(302, longUrl);
         
