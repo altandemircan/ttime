@@ -584,11 +584,13 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             break; 
             
         case 'twitter': {
-            // Twitter - text + link
-            const twitterText = `Check out my trip plan!\n\n${shortUrl}\nCreated with triptime.ai!`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}`, '_blank');
-            break;
-        }
+    const twitterText = `Check out my trip plan on Triptime AI!`;
+    window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(shortUrl)}`,
+        '_blank'
+    );
+    break;
+}
             
        case 'facebook':
     window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
@@ -676,9 +678,11 @@ async function shareWithoutDates(platform = 'whatsapp') {
             break;
             
         case 'twitter':
-            // Twitter - sadece URL gönder ki card preview çıksın
-            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`, '_blank');
-            break;
+    window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI!')}&url=${encodeURIComponent(shortUrl)}`,
+        '_blank'
+    );
+    break;
             
         case 'facebook':
             // Facebook post - gezi planı + URL

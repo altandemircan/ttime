@@ -383,6 +383,8 @@ app.get('/s/:id', (req, res) => {
         
         // Bot mu, insan mı?
         const ua = req.headers['user-agent'] || '';
+            console.log(`[/s/${req.params.id}] UA: ${ua}`); // ← Bu logu ekle
+
         const isBot = /twitterbot|facebookexternalhit|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|bot|crawler|spider/i.test(ua);
         
         if (isBot && typeof record === 'object') {
