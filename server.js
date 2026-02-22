@@ -369,6 +369,7 @@ app.post('/api/shorten', (req, res) => {
     }
 });
 // 2. Yönlendirme (GET /s/id) - DİKKAT: Bunu 'express.static' satırından önceye koy
+// 2. Yönlendirme (GET /s/id) - GÜNCELLENMİŞ VERSİYON
 app.get('/s/:id', (req, res) => {
     try {
         if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
@@ -382,33 +383,55 @@ app.get('/s/:id', (req, res) => {
         const ua = req.headers['user-agent'] || '';
         console.log(`[/s/${req.params.id}] UA: ${ua}`);
         
-        if (typeof record === 'object') {
-            const { title, city, description, imageUrl, createdAt } = record;
-            const ogImage = imageUrl || `https://triptime.ai/img/share_og.png?v=${createdAt || Date.now()}`;
-            const ogTitle = `${title} - Triptime AI`;
-            const ogDesc = description || `Explore this ${city} trip plan created with Triptime AI!`;
+        // Twitter bot kontrolü
+        const isTwitterBot = ua.includes('Twitterbot') || ua.includes('twitterbot');
+        
+        if (typeof record === 'object' || isTwitterBot) {
+            const { title, city, description, imageUrl, createdAt } = typeof record === 'object' ? record : {};
+            
+            // Varsayılan görsel - mutlaka tam URL olmalı
+            const defaultImage = `https://triptime.ai/img/share_og.png?v=${BUILD_ID}`;
+            const ogImage = imageUrl || defaultImage;
+            
+            // Görselin tam URL olduğundan emin ol
+            const fullImageUrl = ogImage.startsWith('http') ? ogImage : `https://triptime.ai${ogImage}`;
+            
+            const ogTitle = title ? `${title} - Triptime AI` : 'Trip Plan - Triptime AI';
+            const ogDesc = description || (city ? `Explore this ${city} trip plan created with Triptime AI!` : 'Check out this trip plan created with Triptime AI!');
             const canonicalUrl = `https://triptime.ai/s/${req.params.id}`;
             
-            console.log(`[OG HTML] Serving for: ${req.params.id}`);
+            console.log(`[OG HTML] Serving for: ${req.params.id}, Image: ${fullImageUrl}`);
             
+            // Twitter kartı için özel meta etiketler
             return res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>${ogTitle}</title>
+  
+  <!-- Open Graph meta tags -->
   <meta property="og:title" content="${ogTitle}">
   <meta property="og:description" content="${ogDesc}">
-  <meta property="og:image" content="${ogImage}">
-  <meta property="og:image:width" content="800">
-  <meta property="og:image:height" content="419">
+  <meta property="og:image" content="${fullImageUrl}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:url" content="${canonicalUrl}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Triptime AI">
+  
+  <!-- Twitter Card meta tags (büyük görsel için) -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@triptimeai">
+  <meta name="twitter:creator" content="@triptimeai">
   <meta name="twitter:title" content="${ogTitle}">
   <meta name="twitter:description" content="${ogDesc}">
-  <meta name="twitter:image" content="${ogImage}">
+  <meta name="twitter:image" content="${fullImageUrl}">
+  <meta name="twitter:image:alt" content="${ogTitle}">
+  
+  <!-- Cache kontrol -->
+  <meta http-equiv="cache-control" content="no-cache">
+  
+  <!-- Yönlendirme -->
   <meta http-equiv="refresh" content="0;url=${longUrl}">
 </head>
 <body>
