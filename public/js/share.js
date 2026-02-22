@@ -282,6 +282,10 @@ function createOptimizedLongLink() {
 // --- 4. MODAL - İki Aşamalı Share ---
 function showDatePickerBeforeShare(platform = 'whatsapp') {
     // Platform'u global olarak sakla
+     if (platform === 'twitter') {
+        shareWithoutDates('twitter');
+        return;
+    }
     window.selectedSharePlatform = platform;
     
     const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
@@ -324,8 +328,7 @@ function showDatePickerBeforeShare(platform = 'whatsapp') {
                         ${window.selectedSharePlatform === 'facebook' ? 'Share' : 'Just share'}
 
                     </button>
-                    ${window.selectedSharePlatform === 'facebook' ? '' : `
-<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
+${window.selectedSharePlatform === 'facebook' || window.selectedSharePlatform === 'twitter' ? '' : `<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
     background: white;
     color: #1a1a1a;
     padding: 10px;
@@ -600,39 +603,7 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-        // share.js - Twitter kısmını değiştir
 
-case 'twitter': {
-    closeShareModal();
-    
-    // URL'i kısalt (fetch ile)
-    const url = createOptimizedLongLink();
-    let shortUrl = url;
-    
-    try {
-        const response = await fetch('/api/shorten', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
-            })
-        });
-        if (response.ok) {
-            const result = await response.json();
-            shortUrl = result.shortUrl;
-        }
-    } catch (e) {
-        console.warn("URL shortening failed");
-    }
-    
-    // AYNI SAYFADA aç, yeni pencere DEĞİL
-    location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
-    
-    break;
-}
 
       case 'facebook':
             closeShareModal();
@@ -723,7 +694,7 @@ async function shareWithoutDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
-    // URL'i kısalt (fetch ile)
+    // URL'i kısalt
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -733,24 +704,27 @@ case 'twitter': {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan'
             })
         });
         if (response.ok) {
             const result = await response.json();
             shortUrl = result.shortUrl;
         }
-    } catch (e) {
-        console.warn("URL shortening failed");
-    }
+    } catch (e) {}
     
-    // AYNI SAYFADA aç, yeni pencere DEĞİL
-    location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
+    // TEK BİR PENCERE - AYNI İSİMLE
+    window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+        'twitter-share-dialog', // AYNI İSİM
+        'width=600,height=400'
+    );
     
     break;
-}       
+}   
+
+        
+
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
