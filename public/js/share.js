@@ -713,25 +713,20 @@ case 'twitter': {
         }
     } catch (e) {}
     
-    // Cache kırıcı ekle
-    const cacheBuster = Date.now();
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl + '?cb=' + cacheBuster)}`;
-    
-    // Popup ayarları
+    // Popup ayarları - SADECE POPUP, LİNK DEĞİŞMEDİ
     const width = 600;
     const height = 500;
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
     
     window.open(
-        twitterUrl,
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
         'twitter-share-popup',
         `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     );
     
     break;
 }
-
         
 
         case 'facebook':
