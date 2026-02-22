@@ -600,30 +600,43 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-        case 'twitter': {
-            closeShareModal(); // ÖNCE MODAL'I KAPAT
-            
-            // Twitter için sadece URL paylaş - Twitter kartı otomatik görseli çekecek
-            const tweetText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
-            const tweetUrl = encodeURIComponent(shortUrl);
-            
-            // Yeni sekmede Twitter intent aç
-            window.open(
-                `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`,
-                '_blank',
-                'noopener,noreferrer'
-            );
-            
-            // Kısa bir süre sonra butonun aktif kalmasını engelle
-            setTimeout(() => {
-                // Aktif buton varsa temizle
-                document.querySelectorAll('.note-trigger-btn.active').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-            }, 500);
-            
-            break;
-        }    
+        // share.js - Twitter kısmını değiştir
+
+case 'twitter': {
+    closeShareModal();
+    
+    // Linki kısalt
+    const shortUrl = await getShortUrl(); // shorten işlemi
+    
+    // Linki panoya kopyala
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        // Toast mesajı göster
+        const toast = document.createElement('div');
+        toast.textContent = '✓ Link copied! Paste it in Twitter';
+        toast.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1D9BF0;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 999px;
+            font-weight: 600;
+            z-index: 999999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: fadeInOut 3s ease;
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.remove(), 2800);
+        
+        // Twitter'ı aç
+        window.open('https://twitter.com/intent/tweet', '_blank');
+    });
+    
+    break;
+}
         case 'facebook':
             closeShareModal();
             window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
