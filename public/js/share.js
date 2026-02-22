@@ -588,7 +588,7 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-case 'twitter': {    // Linki panoya kopyala
+case 'twitter':    // Linki panoya kopyala
     navigator.clipboard.writeText(shortUrl).then(() => {
         // Bildirim göster
         const toast = document.createElement('div');
@@ -614,7 +614,7 @@ case 'twitter': {    // Linki panoya kopyala
         );
     });
     break;
-  
+   
        case 'facebook':
     window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
     break;
