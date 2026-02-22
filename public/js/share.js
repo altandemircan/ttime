@@ -565,7 +565,12 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
         const response = await fetch('/api/shorten', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ longUrl: url })
+            body: JSON.stringify({ 
+    longUrl: url,
+    title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+    city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+    description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
+})
         });
         if (response.ok) {
             const result = await response.json();
@@ -584,14 +589,22 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             break; 
             
 case 'twitter': {
+    // Önce linki oluştur (zaten shortUrl var)
+    // Twitter'ın scrape etmesi için kısa bir bekleme ekle
     const twitterText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
     const twitterUrl = encodeURIComponent(shortUrl);
-    // intent sonrası yeni sekme açılır, mevcut sekme etkilenmez
-    window.open(
-        `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
-        '_blank',
-        'width=600,height=400,noopener,noreferrer'
-    );
+    
+    // Scrape tetikle (arka planda)
+    fetch(`/api/preload-twitter?url=${encodeURIComponent(shortUrl)}`).catch(() => {});
+    
+    // 1.5 saniye bekle, sonra intent aç
+    setTimeout(() => {
+        window.open(
+            `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
+            '_blank',
+            'width=600,height=400'
+        );
+    }, 1500);
     break;
 }
             
