@@ -370,27 +370,57 @@ app.post('/api/shorten', (req, res) => {
 });
 // 2. Yönlendirme (GET /s/id) - DİKKAT: Bunu 'express.static' satırından önceye koy
 // 2. Yönlendirme (GET /s/id) - Twitter bot için özel yanıt
+// 2. Yönlendirme (GET /s/id) - Twitter bot için özel yanıt
 app.get('/s/:id', (req, res) => {
     try {
-        if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
+        const shortId = req.params.id;
+        console.log(`1. [${shortId}] İstek alındı, User-Agent:`, req.headers['user-agent']);
         
-        const data = JSON.parse(fs.readFileSync(shortUrlsFile, 'utf8'));
-        const record = data[req.params.id];
+        // Dosya var mı kontrol et
+        console.log(`2. [${shortId}] shortUrls.json yolu:`, shortUrlsFile);
+        console.log(`3. [${shortId}] Dosya var mı?`, fs.existsSync(shortUrlsFile));
         
-        if (!record) return res.redirect('/');
+        if (!fs.existsSync(shortUrlsFile)) {
+            console.log(`4. [${shortId}] DOSYA YOK! Ana sayfaya yönlendiriliyor`);
+            return res.redirect('/');
+        }
+        
+        // Dosyayı oku
+        const fileContent = fs.readFileSync(shortUrlsFile, 'utf8');
+        console.log(`5. [${shortId}] Dosya okundu, boyut:`, fileContent.length, 'byte');
+        console.log(`6. [${shortId}] Dosya içeriği (ilk 100 karakter):`, fileContent.substring(0, 100));
+        
+        // JSON parse et
+        const data = JSON.parse(fileContent);
+        console.log(`7. [${shortId}] JSON parse edildi, kayıt sayısı:`, Object.keys(data).length);
+        
+        // Kaydı bul
+        const record = data[shortId];
+        console.log(`8. [${shortId}] Kayıt bulundu mu?`, !!record);
+        
+        if (!record) {
+            console.log(`9. [${shortId}] KAYIT YOK! Mevcut ID'ler:`, Object.keys(data).join(', '));
+            return res.redirect('/');
+        }
+        
+        console.log(`10. [${shortId}] Kayıt tipi:`, typeof record);
+        console.log(`11. [${shortId}] Kayıt içeriği:`, JSON.stringify(record).substring(0, 200));
         
         const longUrl = typeof record === 'string' ? record : record.longUrl;
-        const ua = req.headers['user-agent'] || '';
+        console.log(`12. [${shortId}] longUrl:`, longUrl);
         
-        // Twitter bot kontrolü - daha kapsamlı
+        const ua = req.headers['user-agent'] || '';
         const isTwitterBot = ua.includes('Twitterbot') || 
                             ua.includes('twitterbot') || 
                             ua.toLowerCase().includes('twitter');
         
-        console.log(`[/s/${req.params.id}] UA: ${ua}, isTwitterBot: ${isTwitterBot}`);
+        console.log(`13. [${shortId}] Twitter bot mu?`, isTwitterBot);
         
+        // Twitter bot için özel HTML döndür
         if (typeof record === 'object' || isTwitterBot) {
             const { title, city, description, imageUrl, createdAt } = typeof record === 'object' ? record : {};
+            
+            console.log(`14. [${shortId}] Metadata - title:`, title, 'city:', city);
             
             // Varsayılan görsel
             const defaultImage = `https://triptime.ai/img/share_og.png?v=${BUILD_ID}`;
@@ -401,7 +431,10 @@ app.get('/s/:id', (req, res) => {
             
             const ogTitle = title ? `${title} - Triptime AI` : 'Trip Plan - Triptime AI';
             const ogDesc = description || (city ? `Explore this ${city} trip plan created with Triptime AI!` : 'Check out this trip plan created with Triptime AI!');
-            const canonicalUrl = `https://triptime.ai/s/${req.params.id}`;
+            const canonicalUrl = `https://triptime.ai/s/${shortId}`;
+            
+            console.log(`15. [${shortId}] OG başlık:`, ogTitle);
+            console.log(`16. [${shortId}] OG görsel:`, fullImageUrl);
             
             // Twitter bot için cache kontrolü
             if (isTwitterBot) {
@@ -409,6 +442,8 @@ app.get('/s/:id', (req, res) => {
                 res.setHeader('Pragma', 'no-cache');
                 res.setHeader('Expires', '0');
             }
+            
+            console.log(`17. [${shortId}] HTML gönderiliyor...`);
             
             return res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -440,10 +475,11 @@ app.get('/s/:id', (req, res) => {
 </html>`);
         }
         
+        console.log(`18. [${shortId}] String kayıt, direkt yönlendirme:`, longUrl);
         return res.redirect(302, longUrl);
         
     } catch (e) {
-        console.error('[ShortUrl Error]', e);
+        console.error(`[${req.params.id}] HATA:`, e);
         res.redirect('/');
     }
 });
