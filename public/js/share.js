@@ -604,7 +604,29 @@ async function confirmShareWithDates(platform = 'whatsapp') {
 
 case 'twitter': {
     closeShareModal();
-    const shortUrl = await getShortUrl();
+    
+    // URL'i kısalt (fetch ile)
+    const url = createOptimizedLongLink();
+    let shortUrl = url;
+    
+    try {
+        const response = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                longUrl: url,
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
+            })
+        });
+        if (response.ok) {
+            const result = await response.json();
+            shortUrl = result.shortUrl;
+        }
+    } catch (e) {
+        console.warn("URL shortening failed");
+    }
     
     // AYNI SAYFADA aç, yeni pencere DEĞİL
     location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
@@ -700,13 +722,35 @@ async function shareWithoutDates(platform = 'whatsapp') {
             
 case 'twitter': {
     closeShareModal();
-    const shortUrl = await getShortUrl();
+    
+    // URL'i kısalt (fetch ile)
+    const url = createOptimizedLongLink();
+    let shortUrl = url;
+    
+    try {
+        const response = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                longUrl: url,
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
+            })
+        });
+        if (response.ok) {
+            const result = await response.json();
+            shortUrl = result.shortUrl;
+        }
+    } catch (e) {
+        console.warn("URL shortening failed");
+    }
     
     // AYNI SAYFADA aç, yeni pencere DEĞİL
     location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
     
     break;
-}         
+}       
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
