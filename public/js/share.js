@@ -282,6 +282,10 @@ function createOptimizedLongLink() {
 // --- 4. MODAL - İki Aşamalı Share ---
 function showDatePickerBeforeShare(platform = 'whatsapp') {
     // Platform'u global olarak sakla
+     if (platform === 'twitter') {
+        shareWithoutDates('twitter');
+        return;
+    }
     window.selectedSharePlatform = platform;
     
     const maxDay = Math.max(1, ...(window.cart.map(i => i.day || 1)));
@@ -324,8 +328,7 @@ function showDatePickerBeforeShare(platform = 'whatsapp') {
                         ${window.selectedSharePlatform === 'facebook' ? 'Share' : 'Just share'}
 
                     </button>
-                    ${window.selectedSharePlatform === 'facebook' ? '' : `
-<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
+${window.selectedSharePlatform === 'facebook' || window.selectedSharePlatform === 'twitter' ? '' : `<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
     background: white;
     color: #1a1a1a;
     padding: 10px;
