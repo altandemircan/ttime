@@ -713,15 +713,14 @@ case 'twitter': {
         }
     } catch (e) {}
     
-    // TEK BİR PENCERE - AYNI İSİMLE
+    // YENİ SEKMEDE AÇ (popup DEĞİL)
     window.open(
         `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        'twitter-share-dialog', // AYNI İSİM
-        'width=600,height=400'
+        '_blank'  // Bu parametre yeni sekmede açar
     );
     
     break;
-}   
+} 
 
         
 
