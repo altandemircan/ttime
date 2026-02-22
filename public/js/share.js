@@ -588,24 +588,33 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-case 'twitter': {
-    const twitterText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
-    const twitterUrl = encodeURIComponent(shortUrl);
-    const popup = window.open(
-        `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
-        'twitter-share',
-        'width=600,height=500,menubar=no,toolbar=no'
-    );
-    
-    // Popup kapandığında ana sayfada bir şey yapma
-    const timer = setInterval(() => {
-        if (popup && popup.closed) {
-            clearInterval(timer);
-            // popup kapandı, bitti
-        }
-    }, 500);
+case 'twitter': {    // Linki panoya kopyala
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        // Bildirim göster
+        const toast = document.createElement('div');
+        toast.textContent = '🔗 Link copied! Paste it in Twitter.';
+        toast.style.cssText = `
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: #1d9bf0; color: white; padding: 12px 24px;
+            border-radius: 24px; font-size: 14px; font-weight: 600;
+            z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+        
+        // Twitter'ı aç (sadece compose, URL yok)
+        setTimeout(() => {
+            window.open('https://twitter.com/intent/tweet', '_blank');
+        }, 500);
+    }).catch(() => {
+        // Clipboard çalışmazsa eski yöntem
+        window.open(
+            `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+            '_blank'
+        );
+    });
     break;
-}       
+  
        case 'facebook':
     window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
     break;
@@ -691,12 +700,34 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
-        case 'twitter':
-    window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI!')}&url=${encodeURIComponent(shortUrl)}`,
-        '_blank'
-    );
+  case 'twitter': 
+    // Linki panoya kopyala
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        // Bildirim göster
+        const toast = document.createElement('div');
+        toast.textContent = '🔗 Link copied! Paste it in Twitter.';
+        toast.style.cssText = `
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: #1d9bf0; color: white; padding: 12px 24px;
+            border-radius: 24px; font-size: 14px; font-weight: 600;
+            z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+        
+        // Twitter'ı aç (sadece compose, URL yok)
+        setTimeout(() => {
+            window.open('https://twitter.com/intent/tweet', '_blank');
+        }, 500);
+    }).catch(() => {
+        // Clipboard çalışmazsa eski yöntem
+        window.open(
+            `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+            '_blank'
+        );
+    });
     break;
+
             
         case 'facebook':
             // Facebook post - gezi planı + URL
