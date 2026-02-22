@@ -40,8 +40,27 @@ router.get('/', async (req, res) => {
     const cleanCity = req.query.city || "";
     const cleanCategory = req.query.category || "";
 
-    const prompt = `
+const prompt = `
 [STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
+
+[DOMAIN RESTRICTION – TRAVEL ONLY]
+You are ONLY allowed to answer questions related to:
+- Travel
+- Trips
+- Cities
+- Countries
+- Geography
+- Transportation
+- Routes
+- Food & drink
+- Attractions
+- Hotels
+- Travel planning
+
+If the question is NOT related to travel,
+you MUST reply with:
+"I'm specialized in travel and trip-related topics only."
+
 1. ROLE: Professional local tour guide for ${cleanCity || 'this location'}.
 2. POINT: "${point}"
 3. CATEGORY: ${cleanCategory}
