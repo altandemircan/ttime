@@ -604,7 +604,7 @@ async function confirmShareWithDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
-<<<<<<< Updated upstream
+    // URL'i kısalt
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -623,47 +623,13 @@ case 'twitter': {
         }
     } catch (e) {}
     
-    // 1. Önce popup'ı aç
-    const popup = window.open(
+    // TEK BİR PENCERE - AYNI İSİMLE
+    window.open(
         `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        'twitter-share',
+        'twitter-share-dialog', // AYNI İSİM
         'width=600,height=400'
     );
     
-    // 2. 100ms sonra AYNI popup'ı tekrar dene (varsa zaten açık, yoksa aç)
-    setTimeout(() => {
-        if (!popup || popup.closed) {
-            window.open(
-                `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-                'twitter-share',
-                'width=600,height=400'
-            );
-        }
-    }, 100);
-    
-    // 3. 200ms sonra TÜM Twitter pencerelerini tekilleştir
-    setTimeout(() => {
-        const twitterWindows = window.open('', 'twitter-share');
-        if (twitterWindows && !twitterWindows.closed) {
-            twitterWindows.focus();
-        }
-    }, 200);
-    
-=======
-    const shortUrl = await getShortUrl();
-    const width = 600;
-    const height = 400;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    
-    // Popup olarak aç - tarayıcı bunu tek pencere olarak görür
-    window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        'twitter-share',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    );
-    
->>>>>>> Stashed changes
     break;
 }
 
@@ -756,7 +722,6 @@ async function shareWithoutDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
-<<<<<<< Updated upstream
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -803,7 +768,7 @@ case 'twitter': {
     
     break;
 }    
-=======
+
     const shortUrl = await getShortUrl();
     const width = 600;
     const height = 400;
@@ -819,7 +784,7 @@ case 'twitter': {
     
     break;
 }           
->>>>>>> Stashed changes
+
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
