@@ -369,7 +369,7 @@ app.post('/api/shorten', (req, res) => {
     }
 });
 // 2. Yönlendirme (GET /s/id) - DİKKAT: Bunu 'express.static' satırından önceye koy
-// 2. Yönlendirme (GET /s/id) - GÜNCELLENMİŞ VERSİYON
+// 2. Yönlendirme (GET /s/id) - Twitter bot için özel yanıt
 app.get('/s/:id', (req, res) => {
     try {
         if (!fs.existsSync(shortUrlsFile)) return res.redirect('/');
@@ -381,15 +381,18 @@ app.get('/s/:id', (req, res) => {
         
         const longUrl = typeof record === 'string' ? record : record.longUrl;
         const ua = req.headers['user-agent'] || '';
-        console.log(`[/s/${req.params.id}] UA: ${ua}`);
         
-        // Twitter bot kontrolü
-        const isTwitterBot = ua.includes('Twitterbot') || ua.includes('twitterbot');
+        // Twitter bot kontrolü - daha kapsamlı
+        const isTwitterBot = ua.includes('Twitterbot') || 
+                            ua.includes('twitterbot') || 
+                            ua.toLowerCase().includes('twitter');
+        
+        console.log(`[/s/${req.params.id}] UA: ${ua}, isTwitterBot: ${isTwitterBot}`);
         
         if (typeof record === 'object' || isTwitterBot) {
             const { title, city, description, imageUrl, createdAt } = typeof record === 'object' ? record : {};
             
-            // Varsayılan görsel - mutlaka tam URL olmalı
+            // Varsayılan görsel
             const defaultImage = `https://triptime.ai/img/share_og.png?v=${BUILD_ID}`;
             const ogImage = imageUrl || defaultImage;
             
@@ -400,16 +403,20 @@ app.get('/s/:id', (req, res) => {
             const ogDesc = description || (city ? `Explore this ${city} trip plan created with Triptime AI!` : 'Check out this trip plan created with Triptime AI!');
             const canonicalUrl = `https://triptime.ai/s/${req.params.id}`;
             
-            console.log(`[OG HTML] Serving for: ${req.params.id}, Image: ${fullImageUrl}`);
+            // Twitter bot için cache kontrolü
+            if (isTwitterBot) {
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                res.setHeader('Pragma', 'no-cache');
+                res.setHeader('Expires', '0');
+            }
             
-            // Twitter kartı için özel meta etiketler
             return res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>${ogTitle}</title>
   
-  <!-- Open Graph meta tags -->
+  <!-- Open Graph -->
   <meta property="og:title" content="${ogTitle}">
   <meta property="og:description" content="${ogDesc}">
   <meta property="og:image" content="${fullImageUrl}">
@@ -417,31 +424,22 @@ app.get('/s/:id', (req, res) => {
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="${canonicalUrl}">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Triptime AI">
   
-  <!-- Twitter Card meta tags (büyük görsel için) -->
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@triptimeai">
-  <meta name="twitter:creator" content="@triptimeai">
   <meta name="twitter:title" content="${ogTitle}">
   <meta name="twitter:description" content="${ogDesc}">
   <meta name="twitter:image" content="${fullImageUrl}">
-  <meta name="twitter:image:alt" content="${ogTitle}">
   
-  <!-- Cache kontrol -->
-  <meta http-equiv="cache-control" content="no-cache">
-  
-  <!-- Yönlendirme -->
   <meta http-equiv="refresh" content="0;url=${longUrl}">
 </head>
 <body>
-  <p>Redirecting to your trip plan...</p>
+  <p>Redirecting...</p>
 </body>
 </html>`);
         }
         
-        // Eski format (string) → direkt redirect
-        console.log(`[Redirect] ${req.params.id} → ${longUrl.substring(0, 60)}...`);
         return res.redirect(302, longUrl);
         
     } catch (e) {
