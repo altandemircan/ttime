@@ -601,11 +601,9 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             break; 
             
         // share.js - Twitter kısmını değiştir
-
 case 'twitter': {
     closeShareModal();
     
-    // URL'i kısalt (fetch ile)
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -615,21 +613,40 @@ case 'twitter': {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan'
             })
         });
         if (response.ok) {
             const result = await response.json();
             shortUrl = result.shortUrl;
         }
-    } catch (e) {
-        console.warn("URL shortening failed");
-    }
+    } catch (e) {}
     
-    // AYNI SAYFADA aç, yeni pencere DEĞİL
-    location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
+    // 1. Önce popup'ı aç
+    const popup = window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+        'twitter-share',
+        'width=600,height=400'
+    );
+    
+    // 2. 100ms sonra AYNI popup'ı tekrar dene (varsa zaten açık, yoksa aç)
+    setTimeout(() => {
+        if (!popup || popup.closed) {
+            window.open(
+                `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+                'twitter-share',
+                'width=600,height=400'
+            );
+        }
+    }, 100);
+    
+    // 3. 200ms sonra TÜM Twitter pencerelerini tekilleştir
+    setTimeout(() => {
+        const twitterWindows = window.open('', 'twitter-share');
+        if (twitterWindows && !twitterWindows.closed) {
+            twitterWindows.focus();
+        }
+    }, 200);
     
     break;
 }
@@ -723,7 +740,6 @@ async function shareWithoutDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
-    // URL'i kısalt (fetch ile)
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -733,24 +749,43 @@ case 'twitter': {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan'
             })
         });
         if (response.ok) {
             const result = await response.json();
             shortUrl = result.shortUrl;
         }
-    } catch (e) {
-        console.warn("URL shortening failed");
-    }
+    } catch (e) {}
     
-    // AYNI SAYFADA aç, yeni pencere DEĞİL
-    location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
+    // 1. Önce popup'ı aç
+    const popup = window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+        'twitter-share',
+        'width=600,height=400'
+    );
+    
+    // 2. 100ms sonra AYNI popup'ı tekrar dene (varsa zaten açık, yoksa aç)
+    setTimeout(() => {
+        if (!popup || popup.closed) {
+            window.open(
+                `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+                'twitter-share',
+                'width=600,height=400'
+            );
+        }
+    }, 100);
+    
+    // 3. 200ms sonra TÜM Twitter pencerelerini tekilleştir
+    setTimeout(() => {
+        const twitterWindows = window.open('', 'twitter-share');
+        if (twitterWindows && !twitterWindows.closed) {
+            twitterWindows.focus();
+        }
+    }, 200);
     
     break;
-}       
+}    
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
