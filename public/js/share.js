@@ -603,38 +603,7 @@ async function confirmShareWithDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-        // share.js - Twitter kısmını değiştir
-case 'twitter': {
-    closeShareModal();
-    
-    // URL'i kısalt
-    const url = createOptimizedLongLink();
-    let shortUrl = url;
-    
-    try {
-        const response = await fetch('/api/shorten', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan'
-            })
-        });
-        if (response.ok) {
-            const result = await response.json();
-            shortUrl = result.shortUrl;
-        }
-    } catch (e) {}
-    
-    // TEK BİR PENCERE - AYNI İSİMLE
-    window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        'twitter-share-dialog', // AYNI İSİM
-        'width=600,height=400'
-    );
-    
-    break;
-}
+
 
       case 'facebook':
             closeShareModal();
