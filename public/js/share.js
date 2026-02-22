@@ -604,6 +604,7 @@ async function confirmShareWithDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
+<<<<<<< Updated upstream
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -648,6 +649,21 @@ case 'twitter': {
         }
     }, 200);
     
+=======
+    const shortUrl = await getShortUrl();
+    const width = 600;
+    const height = 400;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    
+    // Popup olarak aç - tarayıcı bunu tek pencere olarak görür
+    window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+        'twitter-share',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+    
+>>>>>>> Stashed changes
     break;
 }
 
@@ -740,6 +756,7 @@ async function shareWithoutDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
+<<<<<<< Updated upstream
     const url = createOptimizedLongLink();
     let shortUrl = url;
     
@@ -786,6 +803,23 @@ case 'twitter': {
     
     break;
 }    
+=======
+    const shortUrl = await getShortUrl();
+    const width = 600;
+    const height = 400;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    
+    // Popup olarak aç - tarayıcı bunu tek pencere olarak görür
+    window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+        'twitter-share',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+    
+    break;
+}           
+>>>>>>> Stashed changes
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
