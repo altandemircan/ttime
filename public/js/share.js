@@ -603,12 +603,35 @@ async function confirmShareWithDates(platform = 'whatsapp') {
         // share.js - Twitter kısmını değiştir
 
 case 'twitter': {
-    // shareText zaten URL içeriyor, Twitter için URL'yi ayrı verelim
-    const tweetText = shareText
-        .replace(`View full plan: ${shortUrl}\n\nCreated with triptime.ai!`, 'Created with triptime.ai!');
-
-    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
-    window.open(intentUrl, '_blank');
+    closeShareModal();
+    
+    // Ana tweet (linksiz)
+    const mainTweet = encodeURIComponent(
+        `Check out my ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan on Triptime AI! 🗺️`
+    );
+    
+    // Link ayrı
+    const shortUrl = await getShortUrl();
+    
+    // Twitter'ı aç
+    window.open(
+        `https://twitter.com/intent/tweet?text=${mainTweet}`,
+        '_blank'
+    );
+    
+    // Linki panoya kopyala (yorum olarak eklesin)
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        const toast = document.createElement('div');
+        toast.textContent = '🔗 Link copied! Paste it as a reply';
+        toast.style.cssText = `
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #1D9BF0; color: white; padding: 12px 24px;
+            border-radius: 999px; font-weight: 600; z-index: 999999;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    });
+    
     break;
 }
 
