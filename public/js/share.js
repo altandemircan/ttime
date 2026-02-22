@@ -604,21 +604,10 @@ async function confirmShareWithDates(platform = 'whatsapp') {
 
 case 'twitter': {
     closeShareModal();
-    
     const shortUrl = await getShortUrl();
     
-    // Önce tüm eski pencereleri temizle
-    const twitterWindow = window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        '_blank'
-    );
-    
-    // 1 saniye sonra ikinci açılacak pencereyi engelle
-    setTimeout(() => {
-        if (twitterWindow && !twitterWindow.closed) {
-            twitterWindow.focus(); // sadece bir tanesine odaklan
-        }
-    }, 1000);
+    // AYNI SAYFADA aç, yeni pencere DEĞİL
+    location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
     
     break;
 }
@@ -709,13 +698,15 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
-        case 'twitter': {
-    const tweetText = `Check out my trip plan on Triptime AI!`;
-    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
-    window.open(intentUrl, '_blank');
+case 'twitter': {
+    closeShareModal();
+    const shortUrl = await getShortUrl();
+    
+    // AYNI SAYFADA aç, yeni pencere DEĞİL
+    location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`;
+    
     break;
-}
-            
+}         
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
