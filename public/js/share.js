@@ -589,22 +589,13 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
             break; 
             
 case 'twitter': {
-    // Önce linki oluştur (zaten shortUrl var)
-    // Twitter'ın scrape etmesi için kısa bir bekleme ekle
     const twitterText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
     const twitterUrl = encodeURIComponent(shortUrl);
-    
-    // Scrape tetikle (arka planda)
-    fetch(`/api/preload-twitter?url=${encodeURIComponent(shortUrl)}`).catch(() => {});
-    
-    // 1.5 saniye bekle, sonra intent aç
-    setTimeout(() => {
-        window.open(
-            `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
-            '_blank',
-            'width=600,height=400'
-        );
-    }, 1500);
+    window.open(
+        `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
+        'twitter-share',  // ← sabit isim, her seferinde aynı sekmeyi kullanır
+        'width=600,height=500,menubar=no,toolbar=no'
+    );
     break;
 }
             
