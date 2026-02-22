@@ -575,13 +575,13 @@ async function confirmShareWithDates(platform = 'whatsapp') {
         const response = await fetch('/api/shorten', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`,
-                imageUrl: window.ogImageUrl || null // OG görseli varsa ekle
-            })
+           body: JSON.stringify({ 
+    longUrl: url,
+    title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+    city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+    description: `A ${maxDay}-day trip plan created with Triptime AI!`,
+    imageUrl: window.ogImageUrl || 'https://triptime.ai/img/share_og.png' // Varsayılan görsel
+})
         });
         if (response.ok) {
             const result = await response.json();
