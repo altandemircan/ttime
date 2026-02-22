@@ -512,14 +512,27 @@ function selectModalDate(day, month, year, tripDuration) {
     console.log('Seçilen Başlangıç:', window.modalSelectedStartDate);
 }
 // --- 7. Modal'ı kapat ---
+// --- 7. Modal'ı kapat - GÜÇLENDİRİLMİŞ VERSİYON ---
 function closeShareModal() {
     const modal = document.getElementById('date-picker-modal');
-    if (modal) modal.remove();
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Modal ile ilgili tüm state'leri temizle
     window.modalSelectedStartDate = null;
     window.modalSelectedEndDates = null;
+    window.selectedSharePlatform = null;
+    
+    // Aktif butonları temizle
+    document.querySelectorAll('.share-btn.active, .note-trigger-btn.active').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    console.log('Modal closed and states cleared');
 }
 
-// --- 8. Tarihlerle birlikte share ---
+// --- 8. Tarihlerle birlikte share - GÜNCELLENMİŞ ---
 async function confirmShareWithDates(platform = 'whatsapp') {
     if (!window.modalSelectedStartDate) {
         alert('Please select a date');
@@ -534,17 +547,17 @@ async function confirmShareWithDates(platform = 'whatsapp') {
     // 2. Share linkini oluştur
     const url = createOptimizedLongLink();
     
-    // 3. Share text'i hazırla (HENÜZ MODAL'I KAPATMA, DEĞİŞKENLER LAZIM)
+    // 3. Share text'i hazırla
     let shareText = `Check out my trip plan!\n`;
     const endDate = (window.modalSelectedEndDates && window.modalSelectedEndDates.length > 0)
         ? window.modalSelectedEndDates[window.modalSelectedEndDates.length - 1]
         : window.modalSelectedStartDate;
         
-if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !== endDate) {
-    shareText += `${window.modalSelectedStartDate} - ${endDate}\n\n`;
-} else {
-    shareText += `${window.modalSelectedStartDate}\n\n`;
-}
+    if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !== endDate) {
+        shareText += `${window.modalSelectedStartDate} - ${endDate}\n\n`;
+    } else {
+        shareText += `${window.modalSelectedStartDate}\n\n`;
+    }
     
     const maxDay = Math.max(0, ...window.cart.map(item => item.day || 0));
     for (let day = 1; day <= maxDay; day++) {
@@ -556,21 +569,19 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
         }
     }
     
-    // 4. ŞİMDİ MODAL'I KAPATABİLİRSİN
-    closeShareModal();
-    
-    // 5. URL'i kısalt
+    // 4. URL'i kısalt
     let shortUrl = url;
     try {
         const response = await fetch('/api/shorten', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-    longUrl: url,
-    title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-    city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-    description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
-})
+                longUrl: url,
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`,
+                imageUrl: window.ogImageUrl || null // OG görseli varsa ekle
+            })
         });
         if (response.ok) {
             const result = await response.json();
@@ -582,64 +593,62 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
     
     shareText += `View full plan: ${shortUrl}\n\nCreated with triptime.ai!`;
     
-    // 6. Platform'a göre paylaşım
+    // 5. Platform'a göre paylaşım
     switch(platform) {
         case 'whatsapp':
+            closeShareModal(); // ÖNCE MODAL'I KAPAT
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break; 
             
-case 'twitter':    // Linki panoya kopyala
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        // Bildirim göster
-        const toast = document.createElement('div');
-        toast.textContent = '🔗 Link copied! Paste it in Twitter.';
-        toast.style.cssText = `
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            background: #1d9bf0; color: white; padding: 12px 24px;
-            border-radius: 24px; font-size: 14px; font-weight: 600;
-            z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-        
-        // Twitter'ı aç (sadece compose, URL yok)
-        setTimeout(() => {
-            window.open('https://twitter.com/intent/tweet', '_blank');
-        }, 500);
-    }).catch(() => {
-        // Clipboard çalışmazsa eski yöntem
-        window.open(
-            `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-            '_blank'
-        );
-    });
-    break;
-   
-       case 'facebook':
-    window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
-    break;
+        case 'twitter': {
+            closeShareModal(); // ÖNCE MODAL'I KAPAT
+            
+            // Twitter için sadece URL paylaş - Twitter kartı otomatik görseli çekecek
+            const tweetText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
+            const tweetUrl = encodeURIComponent(shortUrl);
+            
+            // Yeni sekmede Twitter intent aç
+            window.open(
+                `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`,
+                '_blank',
+                'noopener,noreferrer'
+            );
+            
+            // Kısa bir süre sonra butonun aktif kalmasını engelle
+            setTimeout(() => {
+                // Aktif buton varsa temizle
+                document.querySelectorAll('.note-trigger-btn.active').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            }, 500);
+            
+            break;
+        }    
+        case 'facebook':
+            closeShareModal();
+            window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
+            break;
             
         case 'instagram':
-            // Instagram story kamerasını aç
+            closeShareModal();
             window.open('instagram://story-camera', '_blank');
             setTimeout(() => {
-                // Eğer uygulama açılmazsa kullanıcıyı bilgilendir
                 alert('Instagram app will open. Please share your trip manually!');
             }, 1000);
             break;
             
         case 'telegram':
-            // Telegram - gezi planı + URL
+            closeShareModal();
             window.open(`https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
         case 'messenger':
-            // Messenger - link paylaşımı
+            closeShareModal();
             window.open(`fb-messenger://share?link=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'email':
-            // Email - gezi planı + URL
+            closeShareModal();
             const subject = 'Check out my trip plan!';
             const body = shareText;
             window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
@@ -647,7 +656,7 @@ case 'twitter':    // Linki panoya kopyala
     }
 }
 
-// --- 9. Tarih seçmeden share ---
+// --- 9. Tarih seçmeden share - GÜNCELLENMİŞ ---
 async function shareWithoutDates(platform = 'whatsapp') {
     // Tarihleri temizle
     window.modalSelectedStartDate = null;
@@ -677,12 +686,13 @@ async function shareWithoutDates(platform = 'whatsapp') {
         const response = await fetch('/api/shorten', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ 
-    longUrl: url,
-    title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
-    city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
-    description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`
-})
+            body: JSON.stringify({ 
+                longUrl: url,
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`,
+                imageUrl: window.ogImageUrl || null
+            })
         });
         if (response.ok) {
             const result = await response.json();
@@ -700,42 +710,19 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
-  case 'twitter': 
-    // Linki panoya kopyala
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        // Bildirim göster
-        const toast = document.createElement('div');
-        toast.textContent = '🔗 Link copied! Paste it in Twitter.';
-        toast.style.cssText = `
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            background: #1d9bf0; color: white; padding: 12px 24px;
-            border-radius: 24px; font-size: 14px; font-weight: 600;
-            z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-        
-        // Twitter'ı aç (sadece compose, URL yok)
-        setTimeout(() => {
-            window.open('https://twitter.com/intent/tweet', '_blank');
-        }, 500);
-    }).catch(() => {
-        // Clipboard çalışmazsa eski yöntem
-        window.open(
-            `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-            '_blank'
-        );
-    });
-    break;
-
+        case 'twitter':
+            // Twitter için sadece URL paylaş
+            window.open(
+                `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
+                '_blank'
+            );
+            break;
             
         case 'facebook':
-            // Facebook post - gezi planı + URL
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'instagram':
-            // Instagram story kamerasını aç
             window.open('instagram://story-camera', '_blank');
             setTimeout(() => {
                 alert('Instagram app will open. Please share your trip manually!');
@@ -743,17 +730,14 @@ async function shareWithoutDates(platform = 'whatsapp') {
             break;
             
         case 'telegram':
-            // Telegram - gezi planı + URL
             window.open(`https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
         case 'messenger':
-            // Messenger - link paylaşımı
             window.open(`fb-messenger://share?link=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
             
         case 'email':
-            // Email - gezi planı + URL
             const subject = 'Check out my trip plan!';
             const body = shareText;
             window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
