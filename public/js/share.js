@@ -713,15 +713,19 @@ case 'twitter': {
         }
     } catch (e) {}
     
-    // POPUP olarak aç - TEK PENCERE garantisi
+    // Cache kırıcı ekle
+    const cacheBuster = Date.now();
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl + '?cb=' + cacheBuster)}`;
+    
+    // Popup ayarları
     const width = 600;
-    const height = 400;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
+    const height = 500;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
     
     window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        'twitter-share-popup', // AYNI İSİM -> TEK PENCERE
+        twitterUrl,
+        'twitter-share-popup',
         `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     );
     
