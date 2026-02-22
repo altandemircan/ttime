@@ -437,11 +437,9 @@ app.get('/s/:id', (req, res) => {
             console.log(`16. [${shortId}] OG görsel:`, fullImageUrl);
             
             // Twitter bot için cache kontrolü
-            if (isTwitterBot) {
-                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-                res.setHeader('Pragma', 'no-cache');
-                res.setHeader('Expires', '0');
-            }
+             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
             
             console.log(`17. [${shortId}] HTML gönderiliyor...`);
             
