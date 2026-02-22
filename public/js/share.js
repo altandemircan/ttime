@@ -605,32 +605,20 @@ async function confirmShareWithDates(platform = 'whatsapp') {
 case 'twitter': {
     closeShareModal();
     
-    // Ana tweet (linksiz)
-    const mainTweet = encodeURIComponent(
-        `Check out my ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan on Triptime AI! 🗺️`
-    );
-    
-    // Link ayrı
     const shortUrl = await getShortUrl();
     
-    // Twitter'ı aç
-    window.open(
-        `https://twitter.com/intent/tweet?text=${mainTweet}`,
+    // Önce tüm eski pencereleri temizle
+    const twitterWindow = window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
         '_blank'
     );
     
-    // Linki panoya kopyala (yorum olarak eklesin)
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        const toast = document.createElement('div');
-        toast.textContent = '🔗 Link copied! Paste it as a reply';
-        toast.style.cssText = `
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #1D9BF0; color: white; padding: 12px 24px;
-            border-radius: 999px; font-weight: 600; z-index: 999999;
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    });
+    // 1 saniye sonra ikinci açılacak pencereyi engelle
+    setTimeout(() => {
+        if (twitterWindow && !twitterWindow.closed) {
+            twitterWindow.focus(); // sadece bir tanesine odaklan
+        }
+    }, 1000);
     
     break;
 }
