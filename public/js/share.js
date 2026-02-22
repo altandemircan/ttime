@@ -591,14 +591,21 @@ if (window.modalSelectedStartDate && endDate && window.modalSelectedStartDate !=
 case 'twitter': {
     const twitterText = encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️');
     const twitterUrl = encodeURIComponent(shortUrl);
-    window.open(
+    const popup = window.open(
         `https://twitter.com/intent/tweet?text=${twitterText}&url=${twitterUrl}`,
-        'twitter-share',  // ← sabit isim, her seferinde aynı sekmeyi kullanır
+        'twitter-share',
         'width=600,height=500,menubar=no,toolbar=no'
     );
+    
+    // Popup kapandığında ana sayfada bir şey yapma
+    const timer = setInterval(() => {
+        if (popup && popup.closed) {
+            clearInterval(timer);
+            // popup kapandı, bitti
+        }
+    }, 500);
     break;
-}
-            
+}       
        case 'facebook':
     window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
     break;
