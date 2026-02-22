@@ -713,14 +713,38 @@ case 'twitter': {
         }
     } catch (e) {}
     
-    // YENİ SEKMEDE AÇ (popup DEĞİL)
+    // 1. Linki panoya kopyala (her ihtimale karşı)
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        // 2. Bilgi mesajı göster
+        const toast = document.createElement('div');
+        toast.innerHTML = `
+            <div style="background: #1D9BF0; color: white; padding: 16px 24px; border-radius: 12px; font-weight: 500; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
+                <div style="font-size: 16px; margin-bottom: 8px;">✅ Link kopyalandı!</div>
+                <div style="font-size: 14px; opacity: 0.9;">Twitter'da yapıştırıp paylaşın.</div>
+                <div style="font-size: 13px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
+                Eğer iki kere paylaşım isterse, ilkini kapatıp ikincide paylaşın.</div>
+            </div>
+        `;
+        toast.style.cssText = `
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 999999; max-width: 90%; width: 340px;
+            animation: slideDown 0.3s ease;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 8000);
+    }).catch(() => {
+        // Clipboard çalışmazsa alert göster
+        alert(`Link: ${shortUrl}\n\nBu linki Twitter'da yapıştırın. Eğer iki kere paylaşım isterse, ilkini kapatıp ikincide paylaşın.`);
+    });
+    
+    // 3. Twitter'ı yeni sekmede aç (link önceden doldurulmuş olarak)
     window.open(
         `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        '_blank'  // Bu parametre yeni sekmede açar
+        '_blank'
     );
     
     break;
-} 
+}
 
         
 
