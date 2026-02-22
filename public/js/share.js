@@ -603,41 +603,16 @@ async function confirmShareWithDates(platform = 'whatsapp') {
         // share.js - Twitter kısmını değiştir
 
 case 'twitter': {
-    closeShareModal();
-    
-    // Linki kısalt
-    const shortUrl = await getShortUrl(); // shorten işlemi
-    
-    // Linki panoya kopyala
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        // Toast mesajı göster
-        const toast = document.createElement('div');
-        toast.textContent = '✓ Link copied! Paste it in Twitter';
-        toast.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1D9BF0;
-            color: white;
-            padding: 16px 32px;
-            border-radius: 999px;
-            font-weight: 600;
-            z-index: 999999;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            animation: fadeInOut 3s ease;
-        `;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => toast.remove(), 2800);
-        
-        // Twitter'ı aç
-        window.open('https://twitter.com/intent/tweet', '_blank');
-    });
-    
+    // shareText zaten URL içeriyor, Twitter için URL'yi ayrı verelim
+    const tweetText = shareText
+        .replace(`View full plan: ${shortUrl}\n\nCreated with triptime.ai!`, 'Created with triptime.ai!');
+
+    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
+    window.open(intentUrl, '_blank');
     break;
 }
-        case 'facebook':
+
+      case 'facebook':
             closeShareModal();
             window.open(`https://www.facebook.com/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
             break;
@@ -723,13 +698,12 @@ async function shareWithoutDates(platform = 'whatsapp') {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
             break;
             
-        case 'twitter':
-            // Twitter için sadece URL paylaş
-            window.open(
-                `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-                '_blank'
-            );
-            break;
+        case 'twitter': {
+    const tweetText = `Check out my trip plan on Triptime AI!`;
+    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
+    window.open(intentUrl, '_blank');
+    break;
+}
             
         case 'facebook':
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortUrl)}`, '_blank');
