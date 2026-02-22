@@ -704,7 +704,10 @@ case 'twitter': {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 longUrl: url,
-                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan'
+                title: document.getElementById('trip_title')?.innerText || 'My Trip Plan',
+                city: window.selectedCity || window.sharedCityForCollage || 'My Destination',
+                description: `A ${Math.max(...window.cart.map(i => i.day||1))}-day trip plan created with Triptime AI!`,
+                imageUrl: window.ogImageUrl || null
             })
         });
         if (response.ok) {
@@ -713,16 +716,9 @@ case 'twitter': {
         }
     } catch (e) {}
     
-    // Popup ayarları - SADECE POPUP, LİNK DEĞİŞMEDİ
-    const width = 600;
-    const height = 500;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
-    
     window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my trip plan on Triptime AI! 🗺️')}&url=${encodeURIComponent(shortUrl)}`,
-        'twitter-share-popup',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        `https://twitter.com/intent/tweet?url=${encodeURIComponent(shortUrl)}`,
+        '_blank'
     );
     
     break;
