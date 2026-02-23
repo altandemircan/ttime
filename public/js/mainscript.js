@@ -5756,9 +5756,15 @@ function enterShareMode() {
     window.cartShareMode = true;
     applyShareMode();
 
-    // Sol paneli doldur
+    // Sol paneli doldur (normal renkli)
     if (typeof showTripDetails === 'function') {
         showTripDetails(window.cart.startDate || null);
+    }
+    const tripDetails = document.getElementById('tt-trip-details');
+    if (tripDetails) {
+        tripDetails.style.filter = '';
+        tripDetails.style.opacity = '';
+        tripDetails.style.pointerEvents = '';
     }
 
     const shareSection = document.getElementById('trip-share-section');
@@ -5772,14 +5778,25 @@ function exitShareMode() {
     const cartDiv = document.getElementById('cart-items');
     if (!cartDiv) return;
 
+    // Gezi listesini tekrar renkli yap
     cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper').forEach(el => {
-        el.style.display = '';
+        el.style.filter = '';
+        el.style.opacity = '';
+        el.style.pointerEvents = '';
     });
     const dateRange = cartDiv.querySelector('.date-range');
-    if (dateRange) dateRange.style.display = '';
+    if (dateRange) {
+        dateRange.style.filter = '';
+        dateRange.style.opacity = '';
+        dateRange.style.pointerEvents = '';
+    }
 
     const backBtn = document.getElementById('share-mode-back-btn');
     if (backBtn) backBtn.remove();
+
+    // Sol paneli gizle
+    const tripDetails = document.getElementById('tt-trip-details');
+    if (tripDetails) tripDetails.style.display = 'none';
 
     cartDiv.scrollTop = 0;
 }
@@ -5788,12 +5805,19 @@ function applyShareMode() {
     const cartDiv = document.getElementById('cart-items');
     if (!cartDiv) return;
 
+    // Gün containerları siyah beyaz & pasif yap, gizleme
     cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper').forEach(el => {
-        el.style.display = 'none';
+        el.style.filter = 'grayscale(1)';
+        el.style.opacity = '0.45';
+        el.style.pointerEvents = 'none';
     });
 
     const dateRange = cartDiv.querySelector('.date-range');
-    if (dateRange) dateRange.style.display = 'none';
+    if (dateRange) {
+        dateRange.style.filter = 'grayscale(1)';
+        dateRange.style.opacity = '0.45';
+        dateRange.style.pointerEvents = 'none';
+    }
 
     if (!document.getElementById('share-mode-back-btn')) {
         const backBtn = document.createElement('button');
