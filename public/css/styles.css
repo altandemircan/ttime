@@ -3393,8 +3393,7 @@ hr {
 ease;
     font-size: 0.9rem;
     color: #ffffff;
-   
-    cursor: default;
+
     width: -webkit-fill-available;
 }
 .add-to-calendar-btn {

@@ -5779,10 +5779,16 @@ function exitShareMode() {
     if (overlay) overlay.remove();
 
     // Gezi listesini tekrar renkli yap
-    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
         el.style.filter = '';
         el.style.opacity = '';
     });
+
+    const pdfBtn = document.getElementById('tt-pdf-dl-btn');
+    if (pdfBtn) {
+        pdfBtn.style.position = '';
+        pdfBtn.style.zIndex = '';
+    }
 
     // "Share Your Plan" butonunu geri yükle
     const dateRange = cartDiv.querySelector('.date-range');
@@ -5813,11 +5819,18 @@ function applyShareMode() {
     const cartDiv = document.getElementById('cart-items');
     if (!cartDiv) return;
 
-    // Gün containerları + add new day + pdf siyah beyaz yap
-    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
+    // Gün containerları + add new day siyah beyaz yap (pdf butonu hariç)
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
         el.style.filter = 'grayscale(1)';
         el.style.opacity = '0.45';
     });
+
+    // PDF butonu aktif kalsın, overlay üstünde
+    const pdfBtn = document.getElementById('tt-pdf-dl-btn');
+    if (pdfBtn) {
+        pdfBtn.style.position = 'relative';
+        pdfBtn.style.zIndex = '20';
+    }
 
     // Date-range alanındaki "Share Your Plan" butonunu "Back to Editing" yap
     const dateRange = cartDiv.querySelector('.date-range');
