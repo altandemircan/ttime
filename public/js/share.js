@@ -765,3 +765,90 @@ function formatDateLong(dateInput) {
         year: 'numeric' 
     });
 }
+
+// --- buildShareSection: #trip-share-section içini doldurur ---
+function buildShareSection() {
+    const section = document.getElementById('trip-share-section');
+    if (!section) return;
+
+    const isMobile = window.innerWidth <= 768;
+
+    section.innerHTML = `
+        <div class="share-buttons-title">
+            Share your travel plan and help others discover amazing places.<br>
+            With <strong>Triptime AI</strong>, every journey becomes a story worth sharing!
+        </div>
+
+        <div class="share-buttons-container">
+            <div class="share-buttons">
+                <button class="share-btn whatsapp" onclick="showDatePickerBeforeShare('whatsapp')">
+                    <img src="img/share_whatsapp.svg" alt="WhatsApp"> WhatsApp
+                </button>
+                <button class="share-btn telegram" onclick="showDatePickerBeforeShare('telegram')">
+                    <img src="img/share_telegram.svg" alt="Telegram"> Telegram
+                </button>
+                ${isMobile ? `
+                <button class="share-btn messenger" onclick="showDatePickerBeforeShare('messenger')">
+                    <img src="img/share_messenger.svg" alt="Messenger"> Messenger
+                </button>` : ''}
+                <button class="share-btn facebook" onclick="showDatePickerBeforeShare('facebook')">
+                    <img src="img/share_facebook.svg" alt="Facebook"> Facebook
+                </button>
+                <button class="share-btn email" onclick="showDatePickerBeforeShare('email')">
+                    <img src="img/share_email.svg" alt="Email"> Email
+                </button>
+                <button class="share-btn twitter" onclick="showDatePickerBeforeShare('twitter')">
+                    <img src="img/share_x.svg" alt="Twitter"> Twitter
+                </button>
+            </div>
+        </div>
+
+        <div class="copy-link-section">
+            <div class="copy-link-container">
+                <div class="link-label">Or copy your trip link:</div>
+                <div class="link-box">
+                    <input type="text" id="trip-share-url" readonly class="trip-url-input" value="Loading...">
+                    <button class="copy-btn" onclick="copyTripLink()">
+                        <img src="img/share_copy.svg" alt="Copy"> Copy Link
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        ${isMobile ? `
+        <div style="padding: 12px 20px; border-top: 1px solid #e8e0ff;">
+            <button onclick="exitShareMode()" style="
+                width: 100%;
+                padding: 12px 20px;
+                background: #f8f4ff;
+                border: 1px solid #e8e0ff;
+                border-radius: 8px;
+                color: #8a4af3;
+                font-weight: 600;
+                font-size: 0.9rem;
+                cursor: pointer;
+            ">← Back to Editing</button>
+        </div>` : ''}
+    `;
+
+    // Link kısalt ve göster
+    setTimeout(async () => {
+        const url = createOptimizedLongLink();
+        const urlInput = document.getElementById('trip-share-url');
+        try {
+            const response = await fetch('/api/shorten', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ longUrl: url })
+            });
+            if (response.ok) {
+                const result = await response.json();
+                if (urlInput) urlInput.value = result.shortUrl;
+            } else {
+                if (urlInput) urlInput.value = url;
+            }
+        } catch (e) {
+            if (urlInput) urlInput.value = url;
+        }
+    }, 100);
+}
