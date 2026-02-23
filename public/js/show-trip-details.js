@@ -539,19 +539,21 @@ function showTripDetails(startDate) {
     bottomBackBtn.id = 'tt-bottom-back-btn';
     bottomBackBtn.textContent = '← Back to Editing';
     bottomBackBtn.style.cssText = `
-        display: block;
-        width: 100%;
-        padding: 14px 20px;
-        margin-top: 16px;
-        background: #4aac48;
-        border: 1px solid #e8e0ff;
-        border-radius: 8px;
-        color: #ffffff;
-        font-weight: 600;
-        font-size: 0.95rem;
-        text-align: center;
-        cursor: pointer;
-        letter-spacing: 0.01em;
+            background: rgb(74, 172, 72);
+    text-align: center;
+    letter-spacing: 0.01em;
+    padding: 10px;
+    margin-top: 20px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    width: -webkit-fill-available
     `;
     bottomBackBtn.onclick = () => { if (typeof exitShareMode === 'function') exitShareMode(); };
     tripDetailsSection.appendChild(bottomBackBtn);
