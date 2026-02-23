@@ -7392,8 +7392,8 @@ scrollbar-width: thin;
         width: 100px;
     }
     .circle-container {
-        width: 130px !important;
-        height: 100px !important;
+                width: 140px !important;
+        height: 140px !important;
     }
     #tt-welcome h1 {
         font-size: 1.6rem;
