@@ -7399,7 +7399,7 @@ scrollbar-width: thin;
         font-size: 1.6rem !important;
     }
     .main-icon {
-        display: none;
+        display: none !important;
     }
 }
 
