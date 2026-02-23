@@ -534,6 +534,28 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(copyLinkSection);
 
+    // En alta "Back to Editing" butonu
+    const bottomBackBtn = document.createElement('button');
+    bottomBackBtn.id = 'tt-bottom-back-btn';
+    bottomBackBtn.textContent = '← Back to Editing';
+    bottomBackBtn.style.cssText = `
+        display: block;
+        width: 100%;
+        padding: 14px 20px;
+        margin-top: 16px;
+        background: #f8f4ff;
+        border: 1px solid #e8e0ff;
+        border-radius: 8px;
+        color: #8a4af3;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-align: center;
+        cursor: pointer;
+        letter-spacing: 0.01em;
+    `;
+    bottomBackBtn.onclick = () => { if (typeof exitShareMode === 'function') exitShareMode(); };
+    tripDetailsSection.appendChild(bottomBackBtn);
+
     // Generate and display the link (with shortening)
     setTimeout(async () => {
         const url = createOptimizedLongLink();
