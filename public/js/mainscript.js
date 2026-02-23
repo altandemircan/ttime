@@ -5774,11 +5774,14 @@ function exitShareMode() {
     const cartDiv = document.getElementById('cart-items');
     if (!cartDiv) return;
 
+    // Overlay'i kaldır
+    const overlay = document.getElementById('share-mode-overlay');
+    if (overlay) overlay.remove();
+
     // Gezi listesini tekrar renkli yap
     cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
         el.style.filter = '';
         el.style.opacity = '';
-        el.style.pointerEvents = '';
     });
 
     // "Share Your Plan" butonunu geri yükle
@@ -5790,11 +5793,10 @@ function exitShareMode() {
             shareBtn.style.background = '';
             shareBtn.style.color = '';
             shareBtn.style.border = '';
-            shareBtn.style.pointerEvents = '';
-            shareBtn.style.filter = '';
-            shareBtn.style.opacity = '';
             shareBtn.onclick = () => enterShareMode();
         }
+        dateRange.style.position = '';
+        dateRange.style.zIndex = '';
     }
 
     const backBtn = document.getElementById('share-mode-back-btn');
@@ -5811,11 +5813,10 @@ function applyShareMode() {
     const cartDiv = document.getElementById('cart-items');
     if (!cartDiv) return;
 
-    // Gün containerları + add new day + pdf siyah beyaz & pasif
+    // Gün containerları + add new day + pdf siyah beyaz yap
     cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
         el.style.filter = 'grayscale(1)';
         el.style.opacity = '0.45';
-        el.style.pointerEvents = 'none';
     });
 
     // Date-range alanındaki "Share Your Plan" butonunu "Back to Editing" yap
@@ -5831,6 +5832,23 @@ function applyShareMode() {
         }
     }
 
+    // Şeffaf overlay ekle — tüm tıklamaları bloke eder
+    if (!document.getElementById('share-mode-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.id = 'share-mode-overlay';
+        overlay.style.cssText = `
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            background: transparent;
+            cursor: not-allowed;
+        `;
+        cartDiv.style.position = 'relative';
+        cartDiv.appendChild(overlay);
+    }
+
+    // Back to editing butonu overlay'in üstünde kalmalı (z-index)
     if (!document.getElementById('share-mode-back-btn')) {
         const backBtn = document.createElement('button');
         backBtn.id = 'share-mode-back-btn';
@@ -5848,9 +5866,17 @@ function applyShareMode() {
             text-align: left;
             cursor: pointer;
             letter-spacing: 0.01em;
+            position: relative;
+            z-index: 20;
         `;
         backBtn.onclick = exitShareMode;
         cartDiv.insertBefore(backBtn, cartDiv.firstChild);
+    }
+
+    // date-range de overlay üstünde olsun
+    if (dateRange) {
+        dateRange.style.position = 'relative';
+        dateRange.style.zIndex = '20';
     }
 }
 
