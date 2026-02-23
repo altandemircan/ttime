@@ -7395,6 +7395,9 @@ scrollbar-width: thin;
         width: 130px !important;
         height: 100px !important;
     }
+    #tt-welcome h1 {
+        font-size: 1.6rem;
+    }
 }
 
 
