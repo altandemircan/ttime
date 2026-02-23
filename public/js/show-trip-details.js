@@ -168,6 +168,29 @@ function showTripDetails(startDate) {
         return;
     }
 
+    // Mobilde "Back to Editing" butonu en üstte göster
+    if (window.innerWidth <= 768) {
+        const mobileBackBtn = document.createElement('button');
+        mobileBackBtn.id = 'tt-mobile-back-btn';
+        mobileBackBtn.textContent = '← Back to Editing';
+        mobileBackBtn.style.cssText = `
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            background: #f8f4ff;
+            border: none;
+            border-bottom: 1px solid #e8e0ff;
+            color: #8a4af3;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+            letter-spacing: 0.01em;
+        `;
+        mobileBackBtn.onclick = () => { if (typeof exitShareMode === 'function') exitShareMode(); };
+        tripDetailsSection.appendChild(mobileBackBtn);
+    }
+
     const sect = document.createElement("div");
     sect.className = "sect";
     const ul = document.createElement("ul");
