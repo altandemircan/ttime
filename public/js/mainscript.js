@@ -5755,6 +5755,12 @@ window.cartShareMode = false;
 function enterShareMode() {
     window.cartShareMode = true;
     applyShareMode();
+
+    // Sol paneli doldur
+    if (typeof showTripDetails === 'function') {
+        showTripDetails(window.cart.startDate || null);
+    }
+
     const shareSection = document.getElementById('trip-share-section');
     if (shareSection) {
         setTimeout(() => shareSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
