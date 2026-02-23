@@ -5825,24 +5825,14 @@ function applyShareMode() {
     // Date-range alanındaki "Share Your Plan" butonunu "Back to Editing" yap
     const dateRange = cartDiv.querySelector('.date-range');
     if (dateRange) {
-        dateRange.style.filter = 'grayscale(1)';
-        dateRange.style.opacity = '0.45';
-        dateRange.style.pointerEvents = 'none';
-
         const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
         if (shareBtn) {
             shareBtn.textContent = '← Back to Editing';
             shareBtn.style.background = '#f0f0f0';
             shareBtn.style.color = '#444';
             shareBtn.style.border = '1px solid #ddd';
-            shareBtn.style.pointerEvents = 'auto';
-            shareBtn.style.filter = 'none';
-            shareBtn.style.opacity = '1';
             shareBtn.onclick = exitShareMode;
         }
-        dateRange.style.pointerEvents = 'auto';
-        dateRange.style.filter = 'none';
-        dateRange.style.opacity = '1';
     }
 
     if (!document.getElementById('share-mode-back-btn')) {
