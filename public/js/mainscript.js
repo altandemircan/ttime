@@ -5784,10 +5784,11 @@ function exitShareMode() {
         el.style.opacity = '';
     });
 
-    const aiSection = cartDiv.querySelector('.ai-info-section');
+    const aiSection = document.querySelector('.ai-info-section');
     if (aiSection) {
         aiSection.style.filter = '';
         aiSection.style.opacity = '';
+        aiSection.style.pointerEvents = '';
     }
 
     const pdfBtn = document.getElementById('tt-pdf-dl-btn');
@@ -5831,11 +5832,12 @@ function applyShareMode() {
         el.style.opacity = '0.45';
     });
 
-    // AI info section da siyah beyaz
-    const aiSection = cartDiv.querySelector('.ai-info-section');
+    // AI info section da siyah beyaz (cartDiv dışında da olabilir)
+    const aiSection = document.querySelector('.ai-info-section');
     if (aiSection) {
         aiSection.style.filter = 'grayscale(1)';
         aiSection.style.opacity = '0.45';
+        aiSection.style.pointerEvents = 'none';
     }
 
     // PDF butonu aktif kalsın, overlay üstünde
