@@ -5869,7 +5869,7 @@ function applyShareMode() {
         backBtn.style.cssText = `
             display: block;
             width: 100%;
-            padding: 20px 0px
+            padding: 20px 0px;
             background: #f8f4ff;
             border: none;
             border-bottom: 1px solid #e8e0ff;
