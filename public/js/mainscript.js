@@ -5632,9 +5632,7 @@ pdfBtn.style.display = hasRealItem ? '' : 'none';
     const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
     if (detailsBtn) {
         detailsBtn.onclick = () => {
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(window.cart.startDate || null);
-            }
+            enterShareMode();
         };
     }
     
@@ -5654,6 +5652,8 @@ pdfBtn.style.display = hasRealItem ? '' : 'none';
             share = document.createElement('div');
             share.id = 'trip-share-section';
             share.className = 'trip-share-section';
+            // Share modu aktif değilse gizli başlat
+            if (!window.cartShareMode) share.style.display = 'none';
             cartDiv.appendChild(share);
         }
         if (typeof buildShareSection === 'function') buildShareSection();
@@ -5743,7 +5743,84 @@ pdfBtn.style.display = hasRealItem ? '' : 'none';
     if (typeof updateAllChatButtons === 'function') {
         updateAllChatButtons();
     }
+
+    // Share modu aktifse, updateCart sonrası tekrar uygula
+    if (window.cartShareMode) {
+        applyShareMode();
+    }
 }
+
+// === SHARE MODE: Sepet gizlenir, sadece paylaşım ekranı görünür ===
+
+window.cartShareMode = false;
+
+function enterShareMode() {
+    window.cartShareMode = true;
+    applyShareMode();
+    const shareSection = document.getElementById('trip-share-section');
+    if (shareSection) {
+        setTimeout(() => shareSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+}
+
+function exitShareMode() {
+    window.cartShareMode = false;
+    const cartDiv = document.getElementById('cart-items');
+    if (!cartDiv) return;
+
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper').forEach(el => {
+        el.style.display = '';
+    });
+    const dateRange = cartDiv.querySelector('.date-range');
+    if (dateRange) dateRange.style.display = '';
+
+    const shareSection = document.getElementById('trip-share-section');
+    if (shareSection) shareSection.style.display = 'none';
+
+    const backBtn = document.getElementById('share-mode-back-btn');
+    if (backBtn) backBtn.remove();
+
+    cartDiv.scrollTop = 0;
+}
+
+function applyShareMode() {
+    const cartDiv = document.getElementById('cart-items');
+    if (!cartDiv) return;
+
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper').forEach(el => {
+        el.style.display = 'none';
+    });
+
+    const dateRange = cartDiv.querySelector('.date-range');
+    if (dateRange) dateRange.style.display = 'none';
+
+    const shareSection = document.getElementById('trip-share-section');
+    if (shareSection) shareSection.style.display = '';
+
+    if (!document.getElementById('share-mode-back-btn')) {
+        const backBtn = document.createElement('button');
+        backBtn.id = 'share-mode-back-btn';
+        backBtn.innerHTML = `← Back to editing`;
+        backBtn.style.cssText = `
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            background: #f8f4ff;
+            border: none;
+            border-bottom: 1px solid #e8e0ff;
+            color: #8a4af3;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: left;
+            cursor: pointer;
+            letter-spacing: 0.01em;
+        `;
+        backBtn.onclick = exitShareMode;
+        cartDiv.insertBefore(backBtn, cartDiv.firstChild);
+    }
+}
+
+// === / SHARE MODE ===
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
