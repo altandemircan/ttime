@@ -5853,7 +5853,8 @@ function applyShareMode() {
         const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
         if (shareBtn) {
             shareBtn.textContent = '← Back to Editing';
-            
+            shareBtn.style.background = '#4caf50';
+            shareBtn.style.color = '#ffffff';
             shareBtn.style.border = '1px solid #ddd';
             shareBtn.onclick = exitShareMode;
         }
@@ -5887,7 +5888,7 @@ function applyShareMode() {
             background: #4caf50;
             border: none;
             border-bottom: 1px solid #e8e0ff;
-            color: #8a4af3;
+            color: #ffffff;
             font-weight: 600;
             font-size: 0.9rem;
             text-align: left;
