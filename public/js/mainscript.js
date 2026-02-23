@@ -5632,9 +5632,7 @@ pdfBtn.style.display = hasRealItem ? '' : 'none';
     const detailsBtn = dateRangeDiv.querySelector('[data-role="trip-details-btn"]');
     if (detailsBtn) {
         detailsBtn.onclick = () => {
-            if (typeof showTripDetails === 'function') {
-                showTripDetails(window.cart.startDate || null);
-            }
+            enterShareMode();
         };
     }
     
@@ -5743,7 +5741,174 @@ pdfBtn.style.display = hasRealItem ? '' : 'none';
     if (typeof updateAllChatButtons === 'function') {
         updateAllChatButtons();
     }
+
+    // Share modu aktifse, updateCart sonrası tekrar uygula
+    if (window.cartShareMode) {
+        applyShareMode();
+    }
 }
+
+// === SHARE MODE: Sepet gizlenir, sadece paylaşım ekranı görünür ===
+
+window.cartShareMode = false;
+
+function enterShareMode() {
+    window.cartShareMode = true;
+    applyShareMode();
+
+    // Sol paneli doldur (normal renkli)
+    if (typeof showTripDetails === 'function') {
+        const tripDetails = document.getElementById('tt-trip-details');
+        if (tripDetails) tripDetails.style.display = '';
+        showTripDetails(window.cart.startDate || null);
+    }
+
+    const shareSection = document.getElementById('trip-share-section');
+    if (shareSection) {
+        setTimeout(() => shareSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+}
+
+function exitShareMode() {
+    window.cartShareMode = false;
+    const cartDiv = document.getElementById('cart-items');
+    if (!cartDiv) return;
+
+    // Overlay'i kaldır
+    const overlay = document.getElementById('share-mode-overlay');
+    if (overlay) overlay.remove();
+
+    // Gezi listesini tekrar renkli yap
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
+        el.style.filter = '';
+        el.style.opacity = '';
+    });
+
+    const aiSection = document.querySelector('.ai-info-section');
+    if (aiSection) {
+        aiSection.style.filter = '';
+        aiSection.style.opacity = '';
+        aiSection.style.pointerEvents = '';
+    }
+
+    const pdfBtn = document.getElementById('tt-pdf-dl-btn');
+    if (pdfBtn) {
+        pdfBtn.style.position = '';
+        pdfBtn.style.zIndex = '';
+    }
+
+    // "Share Your Plan" butonunu geri yükle
+    const dateRange = cartDiv.querySelector('.date-range');
+    if (dateRange) {
+        const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
+        if (shareBtn) {
+            shareBtn.innerHTML = `<img src="/img/trip_details.svg" alt="" style="width: 18px; height: 18px;"> Share Your Plan`;
+            shareBtn.style.background = '';
+            shareBtn.style.color = '';
+            shareBtn.style.border = '';
+            shareBtn.onclick = () => enterShareMode();
+        }
+        dateRange.style.position = '';
+        dateRange.style.zIndex = '';
+    }
+
+    const backBtn = document.getElementById('share-mode-back-btn');
+    if (backBtn) backBtn.remove();
+
+    // Sol paneli gizle
+    const tripDetails = document.getElementById('tt-trip-details');
+    if (tripDetails) tripDetails.style.display = 'none';
+
+    cartDiv.scrollTop = 0;
+}
+
+function applyShareMode() {
+    const cartDiv = document.getElementById('cart-items');
+    if (!cartDiv) return;
+
+    // Gün containerları + add new day siyah beyaz yap (pdf butonu hariç)
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
+        el.style.filter = 'grayscale(1)';
+        el.style.opacity = '0.45';
+    });
+
+    // AI info section da siyah beyaz (cartDiv dışında da olabilir)
+    const aiSection = document.querySelector('.ai-info-section');
+    if (aiSection) {
+        aiSection.style.filter = 'grayscale(1)';
+        aiSection.style.opacity = '0.45';
+        aiSection.style.pointerEvents = 'none';
+    }
+
+    // PDF butonu aktif kalsın, overlay üstünde
+    const pdfBtn = document.getElementById('tt-pdf-dl-btn');
+    if (pdfBtn) {
+        pdfBtn.style.position = 'relative';
+        pdfBtn.style.zIndex = '20';
+    }
+
+    // Date-range alanındaki "Share Your Plan" butonunu "Back to Editing" yap
+    const dateRange = cartDiv.querySelector('.date-range');
+    if (dateRange) {
+        const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
+        if (shareBtn) {
+            shareBtn.textContent = '← Back to Editing';
+            shareBtn.style.background = '#f0f0f0';
+            shareBtn.style.color = '#444';
+            shareBtn.style.border = '1px solid #ddd';
+            shareBtn.onclick = exitShareMode;
+        }
+    }
+
+    // Şeffaf overlay ekle — tüm tıklamaları bloke eder
+    if (!document.getElementById('share-mode-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.id = 'share-mode-overlay';
+        overlay.style.cssText = `
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            background: transparent;
+            cursor: not-allowed;
+        `;
+        cartDiv.style.position = 'relative';
+        cartDiv.appendChild(overlay);
+    }
+
+    // Back to editing butonu overlay'in üstünde kalmalı (z-index)
+    if (!document.getElementById('share-mode-back-btn')) {
+        const backBtn = document.createElement('button');
+        backBtn.id = 'share-mode-back-btn';
+        backBtn.innerHTML = `← Back to editing`;
+        backBtn.style.cssText = `
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            background: #f8f4ff;
+            border: none;
+            border-bottom: 1px solid #e8e0ff;
+            color: #8a4af3;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: left;
+            cursor: pointer;
+            letter-spacing: 0.01em;
+            position: relative;
+            z-index: 20;
+        `;
+        backBtn.onclick = exitShareMode;
+        cartDiv.insertBefore(backBtn, cartDiv.firstChild);
+    }
+
+    // date-range de overlay üstünde olsun
+    if (dateRange) {
+        dateRange.style.position = 'relative';
+        dateRange.style.zIndex = '20';
+    }
+}
+
+// === / SHARE MODE ===
 
 function showRemoveItemConfirmation(index, btn) {
   const id = `confirmation-item-${index}`;
