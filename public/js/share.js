@@ -325,10 +325,10 @@ function showDatePickerBeforeShare(platform = 'whatsapp') {
     color: #ffffff;
     cursor: default;
     width: -webkit-fill-available;">
-                        ${window.selectedSharePlatform === 'facebook' ? 'Share' : 'Just share'}
+                        ${window.selectedSharePlatform === 'facebook' || window.selectedSharePlatform === 'messenger' ? 'Share' : 'Just share'}
 
                     </button>
-${window.selectedSharePlatform === 'facebook' || window.selectedSharePlatform === 'twitter' ? '' : `<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
+${window.selectedSharePlatform === 'facebook' || window.selectedSharePlatform === 'twitter' || window.selectedSharePlatform === 'messenger' ? '' : `<button onclick="showDateStep()" style="    border: 1px solid #e0e0e0;
     background: white;
     color: #1a1a1a;
     padding: 10px;
@@ -820,10 +820,10 @@ function buildShareSection() {
             <button onclick="exitShareMode()" style="
                 width: 100%;
                 padding: 12px 20px;
-                background: #4aac48;
+                background: #f8f4ff;
                 border: 1px solid #e8e0ff;
                 border-radius: 8px;
-                color: #ffffff;
+                color: #8a4af3;
                 font-weight: 600;
                 font-size: 0.9rem;
                 cursor: pointer;
