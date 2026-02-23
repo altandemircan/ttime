@@ -5779,16 +5779,26 @@ function exitShareMode() {
     if (!cartDiv) return;
 
     // Gezi listesini tekrar renkli yap
-    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper').forEach(el => {
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
         el.style.filter = '';
         el.style.opacity = '';
         el.style.pointerEvents = '';
     });
+
+    // "Share Your Plan" butonunu geri yükle
     const dateRange = cartDiv.querySelector('.date-range');
     if (dateRange) {
-        dateRange.style.filter = '';
-        dateRange.style.opacity = '';
-        dateRange.style.pointerEvents = '';
+        const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
+        if (shareBtn) {
+            shareBtn.innerHTML = `<img src="/img/trip_details.svg" alt="" style="width: 18px; height: 18px;"> Share Your Plan`;
+            shareBtn.style.background = '';
+            shareBtn.style.color = '';
+            shareBtn.style.border = '';
+            shareBtn.style.pointerEvents = '';
+            shareBtn.style.filter = '';
+            shareBtn.style.opacity = '';
+            shareBtn.onclick = () => enterShareMode();
+        }
     }
 
     const backBtn = document.getElementById('share-mode-back-btn');
@@ -5805,18 +5815,34 @@ function applyShareMode() {
     const cartDiv = document.getElementById('cart-items');
     if (!cartDiv) return;
 
-    // Gün containerları siyah beyaz & pasif yap, gizleme
-    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper').forEach(el => {
+    // Gün containerları + add new day + pdf siyah beyaz & pasif
+    cartDiv.querySelectorAll('.day-container, .add-new-day-wrapper, .pdf-export-btn-wrapper, .add-new-day-btn, #add-new-day-button').forEach(el => {
         el.style.filter = 'grayscale(1)';
         el.style.opacity = '0.45';
         el.style.pointerEvents = 'none';
     });
 
+    // Date-range alanındaki "Share Your Plan" butonunu "Back to Editing" yap
     const dateRange = cartDiv.querySelector('.date-range');
     if (dateRange) {
         dateRange.style.filter = 'grayscale(1)';
         dateRange.style.opacity = '0.45';
         dateRange.style.pointerEvents = 'none';
+
+        const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
+        if (shareBtn) {
+            shareBtn.textContent = '← Back to Editing';
+            shareBtn.style.background = '#f0f0f0';
+            shareBtn.style.color = '#444';
+            shareBtn.style.border = '1px solid #ddd';
+            shareBtn.style.pointerEvents = 'auto';
+            shareBtn.style.filter = 'none';
+            shareBtn.style.opacity = '1';
+            shareBtn.onclick = exitShareMode;
+        }
+        dateRange.style.pointerEvents = 'auto';
+        dateRange.style.filter = 'none';
+        dateRange.style.opacity = '1';
     }
 
     if (!document.getElementById('share-mode-back-btn')) {
