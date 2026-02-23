@@ -5781,6 +5781,14 @@ function exitShareMode() {
     const backBtn = document.getElementById('share-mode-back-btn');
     if (backBtn) backBtn.remove();
 
+    // Sol paneli siyah beyaz & pasif yap, gizleme
+    const tripDetails = document.getElementById('tt-trip-details');
+    if (tripDetails) {
+        tripDetails.style.filter = 'grayscale(1)';
+        tripDetails.style.opacity = '0.45';
+        tripDetails.style.pointerEvents = 'none';
+    }
+
     cartDiv.scrollTop = 0;
 }
 
