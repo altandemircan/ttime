@@ -5652,8 +5652,6 @@ pdfBtn.style.display = hasRealItem ? '' : 'none';
             share = document.createElement('div');
             share.id = 'trip-share-section';
             share.className = 'trip-share-section';
-            // Share modu aktif değilse gizli başlat
-            if (!window.cartShareMode) share.style.display = 'none';
             cartDiv.appendChild(share);
         }
         if (typeof buildShareSection === 'function') buildShareSection();
@@ -5774,9 +5772,6 @@ function exitShareMode() {
     const dateRange = cartDiv.querySelector('.date-range');
     if (dateRange) dateRange.style.display = '';
 
-    const shareSection = document.getElementById('trip-share-section');
-    if (shareSection) shareSection.style.display = 'none';
-
     const backBtn = document.getElementById('share-mode-back-btn');
     if (backBtn) backBtn.remove();
 
@@ -5793,9 +5788,6 @@ function applyShareMode() {
 
     const dateRange = cartDiv.querySelector('.date-range');
     if (dateRange) dateRange.style.display = 'none';
-
-    const shareSection = document.getElementById('trip-share-section');
-    if (shareSection) shareSection.style.display = '';
 
     if (!document.getElementById('share-mode-back-btn')) {
         const backBtn = document.createElement('button');
