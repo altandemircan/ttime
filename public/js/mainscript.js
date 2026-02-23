@@ -5784,6 +5784,12 @@ function exitShareMode() {
         el.style.opacity = '';
     });
 
+    const aiSection = cartDiv.querySelector('.ai-info-section');
+    if (aiSection) {
+        aiSection.style.filter = '';
+        aiSection.style.opacity = '';
+    }
+
     const pdfBtn = document.getElementById('tt-pdf-dl-btn');
     if (pdfBtn) {
         pdfBtn.style.position = '';
@@ -5825,6 +5831,13 @@ function applyShareMode() {
         el.style.opacity = '0.45';
     });
 
+    // AI info section da siyah beyaz
+    const aiSection = cartDiv.querySelector('.ai-info-section');
+    if (aiSection) {
+        aiSection.style.filter = 'grayscale(1)';
+        aiSection.style.opacity = '0.45';
+    }
+
     // PDF butonu aktif kalsın, overlay üstünde
     const pdfBtn = document.getElementById('tt-pdf-dl-btn');
     if (pdfBtn) {
@@ -5838,8 +5851,8 @@ function applyShareMode() {
         const shareBtn = dateRange.querySelector('[data-role="trip-details-btn"]');
         if (shareBtn) {
             shareBtn.textContent = '← Back to Editing';
-            shareBtn.style.background = '#1e293b';
-            shareBtn.style.color = '#ffffff';
+            shareBtn.style.background = '#f0f0f0';
+            shareBtn.style.color = '#444';
             shareBtn.style.border = '1px solid #ddd';
             shareBtn.onclick = exitShareMode;
         }
@@ -5869,11 +5882,11 @@ function applyShareMode() {
         backBtn.style.cssText = `
             display: block;
             width: 100%;
-            padding: 20px 0px;
-            background: #ffffff;
+            padding: 12px 20px;
+            background: #f8f4ff;
             border: none;
             border-bottom: 1px solid #e8e0ff;
-            color: #1e293b;
+            color: #8a4af3;
             font-weight: 600;
             font-size: 0.9rem;
             text-align: left;
