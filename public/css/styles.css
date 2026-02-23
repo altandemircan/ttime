@@ -273,6 +273,7 @@ ease;
     margin: 0 auto;
     margin-bottom: 30px;
     overflow: visible; /* artık taşmayı kesmez */
+    z-index: 0;
 }
 
 .circle-video-wrapper {
