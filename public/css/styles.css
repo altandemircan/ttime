@@ -7401,6 +7401,9 @@ scrollbar-width: thin;
     .button-container {
         display: none !important;
     }
+    .cw {
+        margin-bottom: 0 !important;
+    }
 }
 
 
