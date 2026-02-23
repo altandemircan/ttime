@@ -5870,7 +5870,7 @@ function applyShareMode() {
             display: block;
             width: 100%;
             padding: 20px 0px;
-            background: #f8f4ff;
+            background: #ffffff;
             border: none;
             border-bottom: 1px solid #e8e0ff;
             color: #1e293b;
