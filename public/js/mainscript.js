@@ -5758,13 +5758,9 @@ function enterShareMode() {
 
     // Sol paneli doldur (normal renkli)
     if (typeof showTripDetails === 'function') {
+        const tripDetails = document.getElementById('tt-trip-details');
+        if (tripDetails) tripDetails.style.display = '';
         showTripDetails(window.cart.startDate || null);
-    }
-    const tripDetails = document.getElementById('tt-trip-details');
-    if (tripDetails) {
-        tripDetails.style.filter = '';
-        tripDetails.style.opacity = '';
-        tripDetails.style.pointerEvents = '';
     }
 
     const shareSection = document.getElementById('trip-share-section');
