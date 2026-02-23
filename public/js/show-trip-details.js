@@ -543,10 +543,10 @@ function showTripDetails(startDate) {
         width: 100%;
         padding: 14px 20px;
         margin-top: 16px;
-        background: #f8f4ff;
+        background: #4aac48;
         border: 1px solid #e8e0ff;
         border-radius: 8px;
-        color: #8a4af3;
+        color: #ffffff;
         font-weight: 600;
         font-size: 0.95rem;
         text-align: center;
