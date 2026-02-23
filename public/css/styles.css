@@ -7396,7 +7396,10 @@ scrollbar-width: thin;
         height: 140px !important;
     }
     #tt-welcome h1 {
-        font-size: 1.6rem;
+        font-size: 1.6rem !important;
+    }
+    .main-icon {
+        display: none;
     }
 }
 
