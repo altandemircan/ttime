@@ -1839,11 +1839,18 @@ const address = rawAddress
             gap: 4px; flex-shrink: 0; padding-top: 14px;">
           <button class="add-point-to-cart-btn" 
               onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${lat}, ${lon}, '${config.layerPrefix}')" 
-              style="width: 30px; height: 30px; background: #fff; 
-                     border: 1px solid #ddd; border-radius: 50%; 
-                     cursor: pointer; color: #1976d2; font-weight: bold; 
-                     font-size: 16px; display: flex; align-items: center; 
-                     justify-content: center;">
+              style="width: 28px;
+    height: 28px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #1976d2;
+    font-weight: bold;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center">
             +
           </button>
         </div>
