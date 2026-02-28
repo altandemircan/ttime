@@ -1765,7 +1765,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
                                             border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);
                                             max-width: 300px; width: 300px;">
 <button onclick="var p = this.closest('.leaflet-popup') || this.closest('.maplibregl-popup'); if(p) p.remove();"
-        style="position: absolute; top: 6px; left: 6px; width: 22px; height: 22px;
+        style="position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
                background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.10);
                border-radius: 50%;
                cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -1810,9 +1810,10 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
         
         <div style="flex: 1; min-width: 0;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; text-align:left;">
-              ${name}
-            </div>
+            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;">
+  ${name}
+</div>
           </div>
 
           <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
@@ -1820,9 +1821,8 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
             ${address}
           </div>
         </div>
-        
-        <div style="display: flex; flex-direction: column; align-items: center; 
-                    gap: 4px; flex-shrink: 0;">
+ <div style="display: flex; flex-direction: column; align-items: center; 
+            gap: 4px; flex-shrink: 0; padding-top: 14px;">
           <button class="add-point-to-cart-btn" 
               onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${lat}, ${lon}, '${config.layerPrefix}')" 
               style="width: 30px; height: 30px; background: #fff; 
