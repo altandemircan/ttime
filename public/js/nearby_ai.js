@@ -35,7 +35,7 @@ function renderCategoryIconsHTML(categories, { multi = false, maxIcons = 3 } = {
     if (multi) {
         const icons = getIconsForPlaceCategories(categories, { multi: true, maxIcons });
         return icons
-            .map(icon => `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`)
+            .map(icon => `<img src="${icon}" alt="category" style="width: 14px; height: 14px; flex-shrink: 0;">`)
             .join('');
     }
     const icon = getIconsForPlaceCategories(categories, { multi: false });
