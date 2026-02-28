@@ -1712,8 +1712,10 @@ function getCategoryMarkerHtml(color, iconUrl, categoryType, distance = null) {
 function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces = [], idx = 0) {
     // 1. Değişkenleri Tanımla
     const name = f.properties.name || config.layerPrefix.charAt(0).toUpperCase() + config.layerPrefix.slice(1);
-    const address = f.properties.formatted || "";
-    const lat = f.properties.lat;
+const rawAddress = f.properties.formatted || "";
+const address = rawAddress
+  ? rawAddress.replace(new RegExp('^' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*,\\s*', 'i'), '')
+  : "";    const lat = f.properties.lat;
     const lon = f.properties.lon;
 
     // 2. Güvenli Stringler
