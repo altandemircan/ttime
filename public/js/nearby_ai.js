@@ -622,14 +622,25 @@ function attachClickNearbySearch(map, day, options = {}) {
           let lat, lng;
           
           if (isMapLibre) {
-              // MapLibre'de e.lngLat kullanılır
-              lat = e.lngLat.lat;
-              lng = e.lngLat.lng;
-          } else {
-              // Leaflet'te e.latlng kullanılır
-              lat = e.latlng.lat;
-              lng = e.latlng.lng;
-          }
+    // MapLibre'de e.lngLat kullanılır
+    lat = e.lngLat.lat;
+    lng = e.lngLat.lng;
+} else {
+    // Leaflet'te e.latlng kullanılır
+    lat = e.latlng.lat;
+    lng = e.latlng.lng;
+}
+
+// ✅ Tıklanan noktayı merkeze al (köşede kalmasın)
+try {
+    if (isMapLibre && map && typeof map.easeTo === 'function') {
+        map.easeTo({ center: [lng, lat], duration: 350 });
+    } else if (!isMapLibre && map && typeof map.flyTo === 'function') {
+        map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.35 });
+    } else if (!isMapLibre && map && typeof map.panTo === 'function') {
+        map.panTo([lat, lng], { animate: true, duration: 0.35 });
+    }
+} catch (_) {}
           
           // Pulse marker temizle
           if (window._nearbyPulseMarker) {
