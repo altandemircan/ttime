@@ -1768,8 +1768,8 @@ const address = rawAddress
                                             max-width: 300px; width: 300px;">
 <button onclick="var p = this.closest('.leaflet-popup') || this.closest('.maplibregl-popup'); if(p) p.remove();"
         style="position: absolute;
-    top: 2px;
-    right: 2px;
+    top: 4px;
+    right: 4px;
     width: 18px;
     height: 18px;
     background: rgba(255, 255, 255, 0.85);
