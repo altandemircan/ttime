@@ -1611,7 +1611,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             </div>
                             <div style="flex: 1; min-width: 0;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })}
+                                    <!-- ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })} -->
+                    ${renderCategoryIconsHTML(f.properties.categories, { multi: false })}
                                     <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
                                         ${name}
                                     </div>
