@@ -2010,68 +2010,70 @@ window.closeNearbyPopup = function() {
 // ============================================
 function setupViewSwitcherButton(mapInstance) {
     // ✅ Sadece mobile'da göster (768px altında)
-    if (window.innerWidth > 768) {
-        return; // Desktop'ta buton gösterme
-    }
+    if (window.innerWidth > 768) return;
 
     let oldBtn = document.getElementById('nearby-view-switcher-btn');
     if (oldBtn) oldBtn.remove();
 
+    // View mode state (persist)
+    if (!window._nearbyViewMode) window._nearbyViewMode = 'map'; // 'map' | 'list'
+
     const btn = document.createElement('button');
     btn.id = 'nearby-view-switcher-btn';
-    
+
     btn.style.cssText = `
         padding: 10px 16px;
-    background: #ffffff;
-    color: rgb(30, 41, 59);
-    border: none;
-    border-radius: 50px 0 0 50px;
-    box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 2px;
-    font-weight: 500;
-    font-size: 0.8rem;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    position: fixed !important;
-    bottom: 240px !important;
-    right: 0% !important;
-    z-index: 9999999 !important;
-
+        background: #ffffff;
+        color: rgb(30, 41, 59);
+        border: none;
+        border-radius: 50px 0 0 50px;
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 2px;
+        font-weight: 500;
+        font-size: 0.8rem;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        position: fixed !important;
+        bottom: 240px !important;
+        right: 0% !important;
+        z-index: 9999999 !important;
     `;
     document.body.appendChild(btn);
 
-    const contentToMap = `<span>🗺️</span> <span>Show Map</span>`;
+    const contentToMap  = `<span>🗺️</span> <span>Show Map</span>`;
     const contentToList = `<span>📋</span> <span>Show List</span>`;
 
-    btn.onclick = function(e) {
-        e.stopPropagation();
+    function applyMode(mode) {
         const popup = document.getElementById('custom-nearby-popup');
         const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+        if (!popup) return;
 
-        if (!popup) {
-            this.remove();
-            return;
-        }
+        window._nearbyViewMode = mode;
 
-        const isListVisible = (popup.style.display !== 'none');
-
-        if (isListVisible) {
+        if (mode === 'list') {
+            popup.style.display = 'block';
+            if (mapContainer) mapContainer.style.display = 'none';
+            btn.innerHTML = contentToMap;
+        } else {
             popup.style.display = 'none';
             if (mapContainer) mapContainer.style.display = 'block';
             btn.innerHTML = contentToList;
-            btn.style.background = '#ffffff';
+
+            // harita resize/fix
             if (mapInstance && mapInstance.invalidateSize) setTimeout(() => mapInstance.invalidateSize(), 50);
             if (mapInstance && mapInstance.resize) setTimeout(() => mapInstance.resize(), 50);
-        } else {
-            popup.style.display = 'block';
-            btn.innerHTML = contentToMap;
-            btn.style.background = '#ffffff';
         }
+        btn.style.background = '#ffffff';
+    }
+
+    btn.onclick = function(e) {
+        e.stopPropagation();
+        applyMode(window._nearbyViewMode === 'list' ? 'map' : 'list');
     };
 
-    // ✅ İlk başta harita gösterilsin, liste gizli olsun
-    btn.innerHTML = contentToList;
-    
+    // ✅ İlk state'i uygula (önemli: kategori değişince de aynı mod korunacak)
+    applyMode(window._nearbyViewMode);
+
     const ghostChecker = setInterval(() => {
         if (!document.getElementById('custom-nearby-popup')) {
             btn.remove();
@@ -2080,20 +2082,32 @@ function setupViewSwitcherButton(mapInstance) {
     }, 500);
 }
 
+
 // ✅ SADECE BİR KERE tanımla - duplicate kaldırıldı
 const origShowCustomPopup = window.showCustomPopup;
 window.showCustomPopup = function(lat, lng, map, content, showCloseButton = true) {
     // Orijinal fonksiyonu çalıştır
     origShowCustomPopup.call(this, lat, lng, map, content, showCloseButton);
-    
+
     // View switcher butonunu ekle (sadece mobile'da)
     setTimeout(() => {
         const popup = document.getElementById('custom-nearby-popup');
-        if (popup && window.innerWidth < 768) {
-            // ✅ Mobilde ilk başta popup gizli olsun, harita görünsün
+        if (!popup || window.innerWidth >= 768) return;
+
+        // state default
+        if (!window._nearbyViewMode) window._nearbyViewMode = 'map';
+
+        // ✅ ÖNEMLİ: Liste modundayken popup'ı tekrar gizleme
+        const mapContainer = document.querySelector('.leaflet-container, .maplibregl-map');
+        if (window._nearbyViewMode === 'list') {
+            popup.style.display = 'block';
+            if (mapContainer) mapContainer.style.display = 'none';
+        } else {
             popup.style.display = 'none';
-            setupViewSwitcherButton(map);
+            if (mapContainer) mapContainer.style.display = 'block';
         }
+
+        setupViewSwitcherButton(map);
     }, 100);
 };
 
