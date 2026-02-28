@@ -101,7 +101,8 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
         // Veriyi kaydet
         const aiFullText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
-        localStorage.setItem('ai_information', aiFullText);
+  const k = window.activeTripKey ? `ai_information_${window.activeTripKey}` : 'ai_information';
+localStorage.setItem(k, aiFullText);
         
         window.cart = window.cart || [];
         window.cart.aiData = data;
