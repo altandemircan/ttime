@@ -1764,8 +1764,14 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
                                             background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
                                             border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);
                                             max-width: 300px; width: 300px;">
-        <button onclick="var p = this.closest('.leaflet-popup') || this.closest('.maplibregl-popup'); if(p) p.remove();" 
-                style="position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; z-index: 10; padding: 0; line-height: 1; transition: all 0.2s;">×</button>
+<button onclick="var p = this.closest('.leaflet-popup') || this.closest('.maplibregl-popup'); if(p) p.remove();"
+        style="position: absolute; top: 6px; left: 6px; width: 22px; height: 22px;
+               background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.10);
+               border-radius: 50%;
+               cursor: pointer; display: flex; align-items: center; justify-content: center;
+               font-size: 16px; color: #666; z-index: 10; padding: 0; line-height: 1;">
+  ×
+</button>
         
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
           <img id="${imgId}" src="img/placeholder.png" alt="${htmlSafeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
