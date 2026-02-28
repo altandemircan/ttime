@@ -177,10 +177,10 @@ function showTripDetails(startDate) {
             display: block;
             width: 100%;
             padding: 14px 20px;
-            background: #f8f4ff;
+            background: #4aac48;
             border: none;
             border-bottom: 1px solid #e8e0ff;
-            color: #8a4af3;
+            color: #ffffff;
             font-weight: 600;
             font-size: 0.95rem;
             text-align: left;
@@ -533,6 +533,32 @@ function showTripDetails(startDate) {
         </style>
     `;
     tripDetailsSection.appendChild(copyLinkSection);
+
+    // En alta "Back to Editing" butonu
+    const bottomBackBtn = document.createElement('button');
+    bottomBackBtn.id = 'tt-bottom-back-btn';
+    bottomBackBtn.textContent = '← Back to Editing';
+    bottomBackBtn.style.cssText = `
+    background: rgb(74, 172, 72);
+    text-align: center;
+    letter-spacing: 0.01em;
+    padding: 10px;
+    margin-top: 20px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: #ffffff;
+    width: -webkit-fill-available;
+    display: none;
+`;
+if (window.innerWidth <= 768) bottomBackBtn.style.display = 'block';
+    bottomBackBtn.onclick = () => { if (typeof exitShareMode === 'function') exitShareMode(); };
+    tripDetailsSection.appendChild(bottomBackBtn);
 
     // Generate and display the link (with shortening)
     setTimeout(async () => {
