@@ -1335,10 +1335,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 <div style="margin-left: auto; background: #4caf50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;" class="category-count">Loading...</div>
             </div>
             <div class="category-items-container" style="display: flex; flex-direction: column; gap: 10px;">
-                 <div style="padding: 20px; text-align: center; color: #666;">
-                    <div class="nearby-loading-spinner" style="width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1976d2; border-radius: 50%; margin: 0 auto 10px; animation: spin 1s linear infinite;"></div>
-                    Finding ${config.title.toLowerCase()}...
-                 </div>
+                 <div style="padding: 18px; color:#556; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+  <div class="nearby-loading-spinner"
+       style="width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1976d2;
+              border-radius: 50%; animation: spin 1s linear infinite;"></div>
+
+  <div style="font-size: 13px; font-weight: 600; color:#333; text-align:center; line-height:1.2;">
+    Finding ${config.title.toLowerCase()}...
+  </div>
+
+  <div style="font-size: 12px; opacity: .7; text-align:center;">
+    Searching nearby places
+  </div>
+</div>
             </div>
         </div>
     `;
