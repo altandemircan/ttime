@@ -1767,11 +1767,23 @@ const address = rawAddress
                                             border: 1px solid #eee; box-shadow: 0 3px 14px rgba(0,0,0,0.25);
                                             max-width: 300px; width: 300px;">
 <button onclick="var p = this.closest('.leaflet-popup') || this.closest('.maplibregl-popup'); if(p) p.remove();"
-        style="position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
-               background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.10);
-               border-radius: 50%;
-               cursor: pointer; display: flex; align-items: center; justify-content: center;
-               font-size: 16px; color: #666; z-index: 10; padding: 0; line-height: 1;">
+        style="position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #666;
+    z-index: 10;
+    padding: 0;
+    line-height: 1;">
   ×
 </button>
         
