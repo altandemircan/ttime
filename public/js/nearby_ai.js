@@ -632,13 +632,44 @@ function attachClickNearbySearch(map, day, options = {}) {
 }
 
 // ✅ Tıklanan noktayı merkeze al (köşede kalmasın)
+// ✅ Kenara yakınsa, animasyonsuz küçük pan ile içeri al (yanıp-sönme yok)
 try {
-    if (isMapLibre && map && typeof map.easeTo === 'function') {
-        map.easeTo({ center: [lng, lat], duration: 350 });
-    } else if (!isMapLibre && map && typeof map.flyTo === 'function') {
-        map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.35 });
-    } else if (!isMapLibre && map && typeof map.panTo === 'function') {
-        map.panTo([lat, lng], { animate: true, duration: 0.35 });
+    const PAD = 90; // kenarlardan güvenli alan (px)
+
+    if (isMapLibre && map && typeof map.project === 'function' && typeof map.panBy === 'function') {
+        const c = map.getCanvas();
+        const w = c.clientWidth, h = c.clientHeight;
+
+        const pt = map.project([lng, lat]); // {x,y}
+        let dx = 0, dy = 0;
+
+        if (pt.x < PAD) dx = PAD - pt.x;
+        else if (pt.x > w - PAD) dx = (w - PAD) - pt.x;
+
+        if (pt.y < PAD) dy = PAD - pt.y;
+        else if (pt.y > h - PAD) dy = (h - PAD) - pt.y;
+
+        if (dx || dy) {
+            // MapLibre: duration 0 => animasyonsuz
+            map.panBy([dx, dy], { duration: 0 });
+        }
+    } else if (!isMapLibre && map && typeof map.latLngToContainerPoint === 'function' && typeof map.panBy === 'function') {
+        const size = map.getSize(); // {x,y}
+        const w = size.x, h = size.y;
+
+        const pt = map.latLngToContainerPoint([lat, lng]); // Point
+        let dx = 0, dy = 0;
+
+        if (pt.x < PAD) dx = PAD - pt.x;
+        else if (pt.x > w - PAD) dx = (w - PAD) - pt.x;
+
+        if (pt.y < PAD) dy = PAD - pt.y;
+        else if (pt.y > h - PAD) dy = (h - PAD) - pt.y;
+
+        if (dx || dy) {
+            // Leaflet: animate false => animasyonsuz
+            map.panBy([dx, dy], { animate: false });
+        }
     }
 } catch (_) {}
           
