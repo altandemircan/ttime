@@ -39,7 +39,7 @@ function renderCategoryIconsHTML(categories, { multi = false, maxIcons = 3 } = {
             .join('');
     }
     const icon = getIconsForPlaceCategories(categories, { multi: false });
-    return `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`;
+    return `<img src="${icon}" alt="category" style="width: 14px; height: 14px; flex-shrink: 0;">`;
 }
 function getCategoryIcons(categories) {
     if (!categories) return ['img/location.svg'];
