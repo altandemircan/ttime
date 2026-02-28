@@ -1781,11 +1781,13 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
 
           <!-- DISTANCE: sağ alt -->
           ${distanceText ? `
-            <div style="position:absolute; right:4px; bottom:4px; z-index:2; font-size:10px; line-height:1; color:#333;
-                        padding:2px 4px; border-radius:6px; background: rgba(255,255,255,0.85); backdrop-filter: blur(2px);
-                        white-space:nowrap;">
-              ${distanceText}
-            </div>
+            <div style="position:absolute; left:50%; transform: translateX(-50%); bottom:4px; z-index:2;
+            font-size:10px; line-height:1; color:#333;
+            padding:2px 4px; border-radius:6px;
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(2px);
+            white-space:nowrap; text-align:center;">
+  ${distanceText}
+</div>
           ` : ''}
         </div>
         
