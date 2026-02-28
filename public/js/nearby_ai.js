@@ -1772,14 +1772,14 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
           <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
 
           <!-- ICONS: sağ üst -->
-          <div style="position:absolute; top:4px; right:4px; display:flex; gap:3px; z-index:2;">
+   <!--       <div style="position:absolute; top:4px; right:4px; display:flex; gap:3px; z-index:2;">
             <div style="position:absolute; top:4px; left:50%; transform: translateX(-50%); z-index:2;
             padding:2px; border-radius:6px;
             background: rgba(255,255,255,0.85); backdrop-filter: blur(2px);
             display:flex; align-items:center; justify-content:center;">
   ${renderCategoryIconsHTML(f.properties.categories, { multi: false })}
 </div>
-          </div>
+          </div> -->
 
           <!-- DISTANCE: sağ alt -->
           ${distanceText ? `
