@@ -1804,7 +1804,7 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
         
         <div style="flex: 1; min-width: 0;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; text-align:left;">
               ${name}
             </div>
           </div>
