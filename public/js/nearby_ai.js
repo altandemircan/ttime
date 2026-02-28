@@ -1715,16 +1715,17 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
     const address = f.properties.formatted || "";
     const lat = f.properties.lat;
     const lon = f.properties.lon;
-    
+
     // 2. Güvenli Stringler
     const safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
     const safeAddress = address.replace(/'/g, "\\'").replace(/"/g, '\\"');
     const htmlSafeName = name.replace(/"/g, '&quot;');
-    
+
     const activeDay = window.currentDay || day || 1;
 
-    const distanceText = distance ? 
-        `${distance < 1000 ? Math.round(distance)+' m' : (distance/1000).toFixed(2)+' km'}` : '';
+    const distanceText = distance
+        ? `${distance < 1000 ? Math.round(distance) + ' m' : (distance / 1000).toFixed(2) + ' km'}`
+        : '';
 
     // 3. CSS Stili (Popup resetleme)
     if (!document.getElementById('popup-override-styles')) {
@@ -1751,8 +1752,13 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
         `;
         document.head.appendChild(style);
     }
-      
-    // 4. HTML Return (FIX: Kapatma butonu hem Leaflet hem MapLibre destekli)
+
+    // 4. HTML Return
+    // FIX:
+    // - Kategori ikonları görselin SAĞ ÜSTÜNDE overlay
+    // - Mesafe (km/m) görselin SAĞ ALTINDA overlay
+    // - Sağ kolondaki mesafe kaldırıldı (X ile çakışma bitti)
+    // - Başlıktaki ikonlar kaldırıldı (artık görsel üstünde)
     return `
       <div class="category-place-item" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px; 
                                             background: #f8f9fa; border-radius: 8px; margin-bottom: 0px; 
@@ -1764,15 +1770,31 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
         <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
           <img id="${imgId}" src="img/placeholder.png" alt="${htmlSafeName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
           <div class="img-loading-spinner" id="${imgId}-spin" style="display: none;"></div>
+
+          <!-- ICONS: sağ üst -->
+          <div style="position:absolute; top:4px; right:4px; display:flex; gap:3px; z-index:2;">
+            <div style="display:flex; gap:3px; padding:2px 3px; border-radius:6px; background: rgba(255,255,255,0.85); backdrop-filter: blur(2px);">
+              ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })}
+            </div>
+          </div>
+
+          <!-- DISTANCE: sağ alt -->
+          ${distanceText ? `
+            <div style="position:absolute; right:4px; bottom:4px; z-index:2; font-size:10px; line-height:1; color:#333;
+                        padding:2px 4px; border-radius:6px; background: rgba(255,255,255,0.85); backdrop-filter: blur(2px);
+                        white-space:nowrap;">
+              ${distanceText}
+            </div>
+          ` : ''}
         </div>
         
         <div style="flex: 1; min-width: 0;">
-   <div style="display: flex; align-items: center; gap: 8px;">
-  ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })}
-  <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
-      ${name}
-  </div>
-</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
+              ${name}
+            </div>
+          </div>
+
           <div style="font-size: 0.9rem; color: #777; overflow: hidden; 
                         text-overflow: ellipsis; white-space: nowrap;">
             ${address}
@@ -1781,10 +1803,6 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
         
         <div style="display: flex; flex-direction: column; align-items: center; 
                     gap: 4px; flex-shrink: 0;">
-          <div style="font-size: 10px; color: #999; white-space: nowrap;">
-            ${distanceText}
-          </div>
-          
           <button class="add-point-to-cart-btn" 
               onclick="window.addPlaceToTripFromPopup('${imgId}', '${safeName}', '${safeAddress}', ${activeDay}, ${lat}, ${lon}, '${config.layerPrefix}')" 
               style="width: 30px; height: 30px; background: #fff; 
@@ -1798,7 +1816,6 @@ function getFastPlacePopupHTML(f, imgId, day, config, distance = null, topPlaces
       </div>
     `;
 }
-
 // Yardımcı fonksiyon: Popup açıldığında resim yükleme
 function handlePlacePopupImageLoading(f, imgId, categoryType) {
     getImageForPlace(f.properties.name, categoryType, window.selectedCity || "")
