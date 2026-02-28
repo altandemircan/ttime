@@ -65,3 +65,9 @@ curl -X POST http://127.0.0.1:11434/api/ps -H "Content-Type: application/json" -
   // const N = Math.max(40, Math.round(totalKm * 2));
 
   const N = Math.max(80, Math.round(totalKm * 2));
+
+
+
+-------------------------------------
+
+Cloudflare'deki rule eklemesinden sonra triptime.ai'da cache yenilemesi ve kullanıcıların yeni siteyi görmesi için "pm2 restart all" yeterli.
