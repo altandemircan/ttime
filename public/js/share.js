@@ -141,18 +141,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Şehir Planı Verileri
         if (itemsStr) {
-            const rawItems = itemsStr.split('*');
-            window.cart = rawItems.map(str => {
-                const p = str.split(',');
-                if (p.length < 3) return null;
-                return {
-                    name: p[0], lat: parseFloat(p[1]), lng: parseFloat(p[2]),
-                    location: { lat: parseFloat(p[1]), lng: parseFloat(p[2]) },
-                    day: parseInt(p[3]) || 1, image: p[4] === '0' ? 'default' : p[4],
-                    category: "Place"
-                };
-            }).filter(item => item !== null);
+    const rawItems = itemsStr.split('*');
+
+    window.cart = rawItems.map(str => {
+        const p = str.split(',');
+        if (p.length < 3) return null;
+
+        const name = p[0] || "Item";
+        const type = (p[5] || 'p'); // yeni format: 6. alan type (p/n). Eski linklerde yoksa 'p'
+        const day = parseInt(p[3], 10) || 1;
+        const image = (p[4] === '0' || !p[4]) ? 'default' : p[4];
+
+        // NOTE
+        if (type === 'n') {
+            const noteText = p[6] ? p[6].replace(/\\n/g, '\n') : "";
+            return {
+                name,
+                day,
+                image: 'default',
+                category: "Note",
+                noteText
+                // lat/lng/location YOK -> route’a asla girmez
+            };
         }
+
+        // PLACE
+        const lat = parseFloat(p[1]);
+        const lng = parseFloat(p[2]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+        return {
+            name,
+            lat,
+            lng,
+            location: { lat, lng },
+            day,
+            image,
+            category: "Place"
+        };
+    }).filter(Boolean);
+}
 
         // 2. AI Verisi
         if (aiStr && aiStr !== "") {
@@ -246,12 +274,34 @@ document.addEventListener('DOMContentLoaded', () => {
 function createOptimizedLongLink() {
     const title = (document.getElementById('trip_title')?.innerText || "Trip").replace(/[|*~,]/g, '');
     const items = (window.cart || []).map(item => {
-        const name = (item.name || "Place").replace(/[|*~,]/g, ''); 
-        const lat = parseFloat(item.lat || item.location?.lat || 0).toFixed(4);
-        const lng = parseFloat(item.lng || item.location?.lng || 0).toFixed(4);
-        const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
-        return `${name},${lat},${lng},${item.day || 1},${imgPath}`;
-    }).join('*');
+    const name = (item.name || "Item").replace(/[|*~,]/g, '');
+    const day = item.day || 1;
+
+    const isNote =
+        item.category === "Note" ||
+        item.type === "note" ||
+        (item.noteText != null) ||
+        (!item.lat && !item.location?.lat); // coords yoksa zaten note gibi davran
+
+    const imgPath = (item.image && item.image !== 'default') ? item.image : '0';
+
+    if (isNote) {
+        const rawNote = (item.noteText || "").toString();
+        const noteSafe = rawNote
+            .replace(/[|*~,]/g, '')
+            .replace(/\n/g, '\\n'); // tek alanda sakla
+        // note: lat/lng placeholder (0 yazıyoruz ama type=n olduğu için decode route’a sokmayacak)
+        return `${name},0,0,${day},${imgPath},n,${noteSafe}`;
+    }
+
+    const latVal = parseFloat(item.lat ?? item.location?.lat);
+    const lngVal = parseFloat(item.lng ?? item.location?.lng);
+
+    const lat = Number.isFinite(latVal) ? latVal.toFixed(4) : '0';
+    const lng = Number.isFinite(lngVal) ? lngVal.toFixed(4) : '0';
+
+    return `${name},${lat},${lng},${day},${imgPath},p`;
+}).join('*');
 
     let aiPart = "";
     const aiSummaryText = window.lastTripAIInfo?.summary || document.getElementById('ai-summary')?.innerText;
