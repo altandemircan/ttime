@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return {
                 name,
                 day,
-                image: 'default',
+                image: 'img/custom-note.svg',
                 category: "Note",
                 noteText
                 // lat/lng/location YOK -> route’a asla girmez
