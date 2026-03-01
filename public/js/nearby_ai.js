@@ -1592,7 +1592,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const pLng = f.properties.lon;
                 const pLat = f.properties.lat;
                 const name = f.properties.name || "Unknown";
-                const address = f.properties.formatted || "";
+                
+let address = f.properties.formatted || "";
+
+// [FIX] formatted genelde "Name, ..." diye başlıyor → title 2 kez görünmesin
+if (address && name) {
+  const n = String(name).trim();
+  const a = String(address).trim();
+
+  // "Name, ..." veya "Name - ..." veya "Name • ..." gibi başlıyorsa kırp
+  const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`^${escaped}\\s*(,|\\-|–|•)\\s*`, 'i');
+  address = a.replace(re, '');
+}
                 const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
                 const aiContainerId = `ai-item-${config.layerPrefix}-${idx}-${Date.now()}`; // Benzersiz AI container ID
                 const distanceText = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
