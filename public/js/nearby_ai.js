@@ -35,7 +35,7 @@ function renderCategoryIconsHTML(categories, { multi = false, maxIcons = 3 } = {
     if (multi) {
         const icons = getIconsForPlaceCategories(categories, { multi: true, maxIcons });
         return icons
-            .map(icon => `<img src="${icon}" alt="category" style="width: 20px; height: 20px; flex-shrink: 0;">`)
+            .map(icon => `<img src="${icon}" alt="category" style="width: 14px; height: 14px; flex-shrink: 0;">`)
             .join('');
     }
     const icon = getIconsForPlaceCategories(categories, { multi: false });
@@ -1592,7 +1592,19 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                 const pLng = f.properties.lon;
                 const pLat = f.properties.lat;
                 const name = f.properties.name || "Unknown";
-                const address = f.properties.formatted || "";
+                
+let address = f.properties.formatted || "";
+
+// [FIX] formatted genelde "Name, ..." diye başlıyor → title 2 kez görünmesin
+if (address && name) {
+  const n = String(name).trim();
+  const a = String(address).trim();
+
+  // "Name, ..." veya "Name - ..." veya "Name • ..." gibi başlıyorsa kırp
+  const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`^${escaped}\\s*(,|\\-|–|•)\\s*`, 'i');
+  address = a.replace(re, '');
+}
                 const imgId = `${config.layerPrefix}-sidebar-img-${idx}-${Date.now()}`;
                 const aiContainerId = `ai-item-${config.layerPrefix}-${idx}-${Date.now()}`; // Benzersiz AI container ID
                 const distanceText = distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`;
@@ -1611,7 +1623,8 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
                             </div>
                             <div style="flex: 1; min-width: 0;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })}
+                                    <!-- ${renderCategoryIconsHTML(f.properties.categories, { multi: true, maxIcons: 3 })} -->
+                    ${renderCategoryIconsHTML(f.properties.categories, { multi: false })}
                                     <div style="font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis;">
                                         ${name}
                                     </div>
