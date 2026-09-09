@@ -882,7 +882,7 @@ function buildShareSection() {
             ">← Back to Editing</button>
         </div>` : ''}
     `;
-
+ 
     // Link kısalt ve göster
     setTimeout(async () => {
         const url = createOptimizedLongLink();
