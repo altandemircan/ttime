@@ -611,8 +611,7 @@ window.copyTripLink = function() {
     urlInput.setSelectionRange(0, 99999);
     
     navigator.clipboard.writeText(urlInput.value).then(() => {
-        const copyBtn = document.querySelector('.copy-btn');
-        if (copyBtn) {
+const copyBtn = document.getElementById('tt-copy-btn');        if (copyBtn) {
             const originalHTML = copyBtn.innerHTML;
             copyBtn.innerHTML = '<img src="img/check.svg" alt="Copied" style="filter: brightness(0) invert(1);"> Copied!';
             copyBtn.style.background = '#4caf50';
