@@ -853,94 +853,106 @@ function buildShareSection() {
             </div>
         </div>
 
-                <div class="copy-link-section" style="
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            border: 1px solid #e0e0e0;
-            box-sizing: border-box;
-        ">
-            <div class="copy-link-container" style="
-                max-width: 800px;
-                margin: 0;
-            ">
-                <div class="link-label" style="
-                    font-size: 14px;
-                    color: #666;
-                    margin-bottom: 10px;
-                    font-weight: 500;
-                ">
-                    Or copy your trip link:
-                </div>
-
-                <div class="link-box" style="
-                    display: flex;
-                    gap: 10px;
-                    align-items: center;
-                    width: 100%;
-                ">
-                    <input
-                        type="text"
-                        id="trip-share-url"
-                        readonly
-                        class="trip-url-input"
-                        value="Loading..."
-                        style="
-                            flex: 1;
-                            min-width: 0;
-                            max-width: 600px;
-                            padding: 12px 15px;
-                            border: 1px solid #d0d0d0;
-                            border-radius: 8px;
-                            font-size: 14px;
-                            font-family: monospace;
-                            background: #fff;
-                            color: #333;
-                            outline: none;
-                            box-sizing: border-box;
-                        "
-                    >
-
-                    <button
-                        class="copy-btn"
-                        onclick="copyTripLink()"
-                        style="
-                            padding: 12px 20px;
-                            background: #8a4af3;
-                            color: white;
-                            border: none;
-                            border-radius: 8px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 6px;
-                            white-space: nowrap;
-                            flex-shrink: 0;
-                        "
-                    >
-                        <img
-                            src="img/share_copy.svg"
-                            alt="Copy"
-                            style="
-                                width: 16px !important;
-                                height: 16px !important;
-                                min-width: 16px !important;
-                                min-height: 16px !important;
-                                max-width: 16px !important;
-                                max-height: 16px !important;
-                                object-fit: contain !important;
-                                display: block !important;
-                                flex: none !important;
-                            "
-                        >
-                        Copy Link
+        <div class="copy-link-section">
+            <div class="copy-link-container">
+                <div class="link-label">Or copy your trip link:</div>
+                <div class="link-box">
+                    <input type="text" id="trip-share-url" readonly class="trip-url-input" value="Loading...">
+                    <button class="copy-btn" onclick="copyTripLink()">
+                        <img src="img/share_copy.svg" alt="Copy"> Copy Link
                     </button>
                 </div>
             </div>
         </div>
+
+                 <style>
+        #tt-copy-link-section {
+            margin-top: 30px !important;
+            padding: 20px !important;
+            background: #f8f9fa !important;
+            border-radius: 12px !important;
+            border: 1px solid #e0e0e0 !important;
+            box-sizing: border-box !important;
+        }
+
+        #tt-copy-link-container {
+            max-width: 800px !important;
+            margin: 0 !important;
+        }
+
+        #tt-link-label {
+            font-size: 14px !important;
+            color: #666 !important;
+            margin-bottom: 10px !important;
+            font-weight: 500 !important;
+        }
+
+        #tt-link-box {
+            display: flex !important;
+            gap: 10px !important;
+            align-items: center !important;
+            width: 100% !important;
+        }
+
+        #trip-share-url {
+            flex: 1 !important;
+            min-width: 0 !important;
+            max-width: 600px !important;
+            padding: 12px 15px !important;
+            border: 1px solid #d0d0d0 !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-family: monospace !important;
+            background: #fff !important;
+            color: #333 !important;
+            outline: none !important;
+            box-sizing: border-box !important;
+        }
+
+        #tt-copy-btn {
+            padding: 12px 20px !important;
+            background: #8a4af3 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        #tt-copy-btn img {
+            width: 16px !important;
+            height: 16px !important;
+            max-width: 16px !important;
+            max-height: 16px !important;
+            object-fit: contain !important;
+            display: block !important;
+            flex: none !important;
+            filter: brightness(0) invert(1) !important;
+        }
+
+        @media (max-width: 768px) {
+            #tt-link-box {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            #trip-share-url {
+                max-width: none !important;
+                width: 100% !important;
+            }
+
+            #tt-copy-btn {
+                width: 100% !important;
+            }
+        }
+    </style>
+                
 
         ${isMobile ? `
         <div style="padding: 12px 20px; border-top: 1px solid #e8e0ff;">
