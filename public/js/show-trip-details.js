@@ -435,104 +435,122 @@ function showTripDetails(startDate) {
     `;
     tripDetailsSection.appendChild(shareDiv);
 
-    // Copy link section with visible URL
-    const copyLinkSection = document.createElement('div');
-    copyLinkSection.className = 'copy-link-section';
-    copyLinkSection.innerHTML = `
-        <div class="copy-link-container">
-            <div class="link-label">Or copy your trip link:</div>
-            <div class="link-box">
-                <input type="text" id="trip-share-url" readonly class="trip-url-input" value="Loading...">
-                <button class="copy-btn" onclick="copyTripLink()">
-                    <img src="img/share_copy.svg" alt="Copy"> Copy Link
-                </button>
-            </div>
+   const copyLinkSection = document.createElement('div');
+copyLinkSection.id = 'tt-copy-link-section';
+
+copyLinkSection.innerHTML = `
+    <div id="tt-copy-link-container">
+        <div id="tt-link-label">Or copy your trip link:</div>
+
+        <div id="tt-link-box">
+            <input
+                type="text"
+                id="trip-share-url"
+                readonly
+                value="Loading..."
+            >
+
+            <button id="tt-copy-btn" onclick="copyTripLink()">
+                <img
+                    src="img/share_copy.svg"
+                    alt="Copy"
+                    style="width:16px !important;height:16px !important;max-width:16px !important;max-height:16px !important;display:block !important;flex:none !important;"
+                >
+                <span>Copy Link</span>
+            </button>
         </div>
-        
-        <style>
-            .copy-link-section {
-                margin-top: 30px;
-                padding: 20px;
-                background: #f8f9fa;
-                border-radius: 12px;
-                border: 1px solid #e0e0e0;
+    </div>
+
+    <style>
+        #tt-copy-link-section {
+            margin-top: 30px !important;
+            padding: 20px !important;
+            background: #f8f9fa !important;
+            border-radius: 12px !important;
+            border: 1px solid #e0e0e0 !important;
+            box-sizing: border-box !important;
+        }
+
+        #tt-copy-link-container {
+            max-width: 800px !important;
+            margin: 0 !important;
+        }
+
+        #tt-link-label {
+            font-size: 14px !important;
+            color: #666 !important;
+            margin-bottom: 10px !important;
+            font-weight: 500 !important;
+        }
+
+        #tt-link-box {
+            display: flex !important;
+            gap: 10px !important;
+            align-items: center !important;
+            width: 100% !important;
+        }
+
+        #trip-share-url {
+            flex: 1 !important;
+            min-width: 0 !important;
+            max-width: 600px !important;
+            padding: 12px 15px !important;
+            border: 1px solid #d0d0d0 !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-family: monospace !important;
+            background: #fff !important;
+            color: #333 !important;
+            outline: none !important;
+            box-sizing: border-box !important;
+        }
+
+        #tt-copy-btn {
+            padding: 12px 20px !important;
+            background: #8a4af3 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        #tt-copy-btn img {
+            width: 16px !important;
+            height: 16px !important;
+            max-width: 16px !important;
+            max-height: 16px !important;
+            object-fit: contain !important;
+            display: block !important;
+            flex: none !important;
+            filter: brightness(0) invert(1) !important;
+        }
+
+        @media (max-width: 768px) {
+            #tt-link-box {
+                flex-direction: column !important;
+                align-items: stretch !important;
             }
-            
-            .copy-link-container {
-                max-width: 800px;
-                margin: 0;
+
+            #trip-share-url {
+                max-width: none !important;
+                width: 100% !important;
             }
-            
-            .link-label {
-                font-size: 14px;
-                color: #666;
-                margin-bottom: 10px;
-                font-weight: 500;
+
+            #tt-copy-btn {
+                width: 100% !important;
             }
-            
-            .link-box {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-            }
-            
-            .trip-url-input {
-                flex: 1;
-                max-width: 600px;
-                padding: 12px 15px;
-                border: 1px solid #d0d0d0;
-                border-radius: 8px;
-                font-size: 14px;
-                font-family: monospace;
-                background: #fff;
-                color: #333;
-                outline: none;
-                width: -webkit-fill-available;
-            }
-            
-            .trip-url-input:focus {
-                border-color: #8a4af3;
-            }
-            
-            .copy-btn {
-                padding: 12px 20px;
-                background: #8a4af3;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: 600;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                transition: all 0.2s;
-                white-space: nowrap;
-            }
-            
-            .copy-btn:hover {
-                background: #7a3ad3;
-                transform: translateY(-1px);
-            }
-            
-            .copy-btn img {
-                width: 16px;
-                height: 16px;
-                filter: brightness(0) invert(1);
-            }
-            
-            @media (max-width: 768px) {
-                .link-box {
-                    flex-direction: column;
-                }
-                
-                .copy-btn {
-                    width: 100%;
-                    justify-content: center;
-                }
-            }
-        </style>
-    `;
-    tripDetailsSection.appendChild(copyLinkSection);
+        }
+    </style>
+`;
+
+tripDetailsSection.appendChild(copyLinkSection);
 
     // En alta "Back to Editing" butonu
     const bottomBackBtn = document.createElement('button');
