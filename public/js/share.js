@@ -853,13 +853,90 @@ function buildShareSection() {
             </div>
         </div>
 
-        <div class="copy-link-section">
-            <div class="copy-link-container">
-                <div class="link-label">Or copy your trip link:</div>
-                <div class="link-box">
-                    <input type="text" id="trip-share-url" readonly class="trip-url-input" value="Loading...">
-                    <button class="copy-btn" onclick="copyTripLink()">
-                        <img src="img/share_copy.svg" alt="Copy"> Copy Link
+                <div class="copy-link-section" style="
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+        ">
+            <div class="copy-link-container" style="
+                max-width: 800px;
+                margin: 0;
+            ">
+                <div class="link-label" style="
+                    font-size: 14px;
+                    color: #666;
+                    margin-bottom: 10px;
+                    font-weight: 500;
+                ">
+                    Or copy your trip link:
+                </div>
+
+                <div class="link-box" style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                    width: 100%;
+                ">
+                    <input
+                        type="text"
+                        id="trip-share-url"
+                        readonly
+                        class="trip-url-input"
+                        value="Loading..."
+                        style="
+                            flex: 1;
+                            min-width: 0;
+                            max-width: 600px;
+                            padding: 12px 15px;
+                            border: 1px solid #d0d0d0;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-family: monospace;
+                            background: #fff;
+                            color: #333;
+                            outline: none;
+                            box-sizing: border-box;
+                        "
+                    >
+
+                    <button
+                        class="copy-btn"
+                        onclick="copyTripLink()"
+                        style="
+                            padding: 12px 20px;
+                            background: #8a4af3;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 6px;
+                            white-space: nowrap;
+                            flex-shrink: 0;
+                        "
+                    >
+                        <img
+                            src="img/share_copy.svg"
+                            alt="Copy"
+                            style="
+                                width: 16px !important;
+                                height: 16px !important;
+                                min-width: 16px !important;
+                                min-height: 16px !important;
+                                max-width: 16px !important;
+                                max-height: 16px !important;
+                                object-fit: contain !important;
+                                display: block !important;
+                                flex: none !important;
+                            "
+                        >
+                        Copy Link
                     </button>
                 </div>
             </div>
