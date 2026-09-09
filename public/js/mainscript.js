@@ -5859,7 +5859,6 @@ function applyShareMode() {
             shareBtn.onclick = exitShareMode;
         }
     }
-
     // Şeffaf overlay ekle — tüm tıklamaları bloke eder
     if (!document.getElementById('share-mode-overlay')) {
         const overlay = document.createElement('div');
