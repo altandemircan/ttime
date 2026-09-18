@@ -8042,33 +8042,31 @@ expandedContainer.appendChild(panelDiv);
       
 
         // --- 1. FALLBACK (CARTO) VE 3D GİZLEME ---
-        const loadCartoFallback = () => {
-            console.warn("[ExpandedMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor.");
-            // Bir kez daha temizle ki üst üste binmesin
-            if (expandedMapInstance._maplibreLayer) {
-                try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
-                expandedMapInstance._maplibreLayer = null;
-            }
-            
-expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', { 
-               attribution: '&copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(expandedMapInstance);
+      // --- 1. FALLBACK (CARTO VOYAGER) VE 3D GİZLEME ---
+const loadCartoFallback = () => {
+    console.warn("[ExpandedMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor.");
+    if (expandedMapInstance._maplibreLayer) {
+        try { expandedMapInstance.removeLayer(expandedMapInstance._maplibreLayer); } catch(e){}
+        expandedMapInstance._maplibreLayer = null;
+    }
+    
+    expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', { 
+        attribution: '&copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(expandedMapInstance);
 
-            const btn3d = layersBar.querySelector('.map-type-option[data-value="liberty"]');
-            if (btn3d) btn3d.style.display = 'none';
-        };
+    const btn3d = layersBar.querySelector('.map-type-option[data-value="liberty"]');
+    if (btn3d) btn3d.style.display = 'none';
+};
 
-        // --- 2. POSITRON ---
-        if (styleKey === 'positron') {
-            expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?api_key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', {
-                attribution: '&copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(expandedMapInstance);
-            return;
-        }
+// --- 2. POSITRON ---
+if (styleKey === 'positron') {
+    expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', {
+        attribution: '&copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(expandedMapInstance);
 
         // --- 3. LIBERTY (3D) ---
         if (styleKey === 'liberty') {
