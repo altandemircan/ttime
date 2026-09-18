@@ -2295,7 +2295,7 @@ ease;
 }
 
 .add-more-btn {
-        padding: 10px;
+        padding: 8px;
     width: 100%;
     font-weight: 600;
     align-items: center;
@@ -3003,7 +3003,7 @@ ease;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 .add-custom-note-btn {
-        padding: 10px;
+        padding: 8px;
     margin: 0px 0;
     font-weight: 600;
     align-items: center;
