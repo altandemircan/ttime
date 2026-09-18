@@ -125,19 +125,19 @@
   <!-- ======================================================
        GOOGLE ANALYTICS (PROD ONLY)
   ======================================================= -->
-  <script>
-    if (location.hostname === "triptime.ai") {
-      const ga = document.createElement("script");
-      ga.src = "https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7";
-      ga.async = true;
-      document.head.appendChild(ga);
+ <script>
+  if (location.hostname.includes("triptime.ai")) {
+    const ga = document.createElement("script");
+    ga.src = "https://www.googletagmanager.com/gtag/js?id=G-6W42FMZ5T7";
+    ga.async = true;
+    document.head.appendChild(ga);
 
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-6W42FMZ5T7', { anonymize_ip: true });
-    }
-  </script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-6W42FMZ5T7', { anonymize_ip: true });
+  }
+</script>
 
   <!-- ======================================================
        VISUALLY HIDDEN SUPPORT
