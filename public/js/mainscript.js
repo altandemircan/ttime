@@ -8050,7 +8050,8 @@ expandedContainer.appendChild(panelDiv);
                 expandedMapInstance._maplibreLayer = null;
             }
             
-expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', {                attribution: '&copy; CARTO',
+expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', { 
+               attribution: '&copy; CARTO',
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(expandedMapInstance);
@@ -8061,7 +8062,7 @@ expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.c
 
         // --- 2. POSITRON ---
         if (styleKey === 'positron') {
-            expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            expandedMapInstance._osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?api_key=cb1_3pn6_1_3ddc1674d71d28c63b8be3ed', {
                 attribution: '&copy; CARTO',
                 subdomains: 'abcd',
                 maxZoom: 20
