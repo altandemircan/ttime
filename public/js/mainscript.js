@@ -8041,7 +8041,6 @@ expandedContainer.appendChild(panelDiv);
 
       
 
-        // --- 1. FALLBACK (CARTO) VE 3D GİZLEME ---
       // --- 1. FALLBACK (CARTO VOYAGER) VE 3D GİZLEME ---
 const loadCartoFallback = () => {
     console.warn("[ExpandedMap] OpenFreeMap yanıt vermedi -> CartoDB açılıyor.");
@@ -8067,6 +8066,8 @@ if (styleKey === 'positron') {
         subdomains: 'abcd',
         maxZoom: 20
     }).addTo(expandedMapInstance);
+    return;
+}
 
         // --- 3. LIBERTY (3D) ---
         if (styleKey === 'liberty') {
