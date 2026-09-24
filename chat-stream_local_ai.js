@@ -3,7 +3,7 @@ const axios = require('axios');
 const http = require('http');
 const router = express.Router();
 
-/* 🔒 KEEP-ALIVE AGENT */
+/* 🔒 KEEP-ALIVE AGENT (ASIL OLAY BU) */
 const keepAliveAgent = new http.Agent({
     keepAlive: true,
     keepAliveMsecs: 60000,
@@ -40,14 +40,32 @@ router.get('/', async (req, res) => {
     const cleanCity = req.query.city || "";
     const cleanCategory = req.query.category || "";
 
-    const prompt = `
+const prompt = `
 [STRICT GUIDELINES - KEEP RESPONSE UNDER 500 CHARACTERS]
 
 [DOMAIN RESTRICTION – TRAVEL ONLY]
 You are ONLY allowed to answer questions related to:
-- Travel, Trips, Cities, Countries, Geography, Transportation, Routes, Food & drink, Attractions, Hotels, Travel planning.
+- Travel
+- Trips
+- Cities
+- Countries
+- Geography
+- Transportation
+- Routes
+- Food & drink
+- Attractions
+- Hotels
+- Travel planning
 
-If the question is NOT related to travel, politely redirect the conversation to travel without mentioning any restriction.
+If the question is NOT related to travel:
+
+- Do NOT answer the personal or unrelated question.
+- Do NOT mention any restriction.
+- Politely redirect the conversation to travel.
+- Ask a travel-related question to continue naturally.
+
+Example behavior:
+"I’m here to help with travel planning. Are you planning a trip somewhere?"
 
 1. ROLE: Professional local tour guide for ${cleanCity || 'this location'}.
 2. POINT: "${point}"
@@ -84,14 +102,12 @@ If the question is NOT related to travel, politely redirect the conversation to 
                         model: 'llama3.2:3b',
                         messages,
                         stream: true,
-                        options: {
-                            temperature: 0.7,
-                            num_predict: 120,
-                            stop: ["\n\n", "Tip:", "Note:"]
-                        }
+                        temperature: 0.7,
+                        max_tokens: 120,
+                        stop: ["\n\n", "Tip:", "Note:"]
                     },
                     responseType: 'stream',
-                    timeout: 0
+                    timeout: 0 // ❗ ASLA TIMEOUT OLMAZ
                 });
 
                 console.log(`[BACKEND] Ollama attempt ${attempt} BAŞARILI`, Date.now());
@@ -110,46 +126,22 @@ If the question is NOT related to travel, politely redirect the conversation to 
 
         ollamaResponse.data.on('data', chunk => {
             if (finished) return;
-            const lines = chunk.toString().split('\n');
-            
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed) continue;
+            const str = chunk.toString().trim();
+            if (!str) return;
 
-                try {
-                    const parsed = JSON.parse(trimmed);
-                    // Ollama /api/chat yanıt formatı: parsed.message.content
-                    const contentPiece = parsed.message?.content || "";
-                    
-                    if (contentPiece) {
-                        if (!firstChunkTime) {
-                            firstChunkTime = Date.now();
-                            console.log("[BACKEND] Ollama ilk chunk geldi", firstChunkTime);
-                        }
-                        // SSE formatına uygun şekilde frontend'e iletiyoruz
-                        res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: contentPiece } }] })}\n\n`);
-                    }
-
-                    if (parsed.done) {
-                        // İşlem tamamlandı
-                        if (!finished) {
-                            finished = true;
-                            clearInterval(heartbeat);
-                            console.log("[BACKEND] Ollama stream bitti", Date.now());
-                            res.write('event: end\ndata: [DONE]\n\n');
-                            res.end();
-                        }
-                    }
-                } catch (e) {
-                    // JSON parse edilemeyen satırları yoksay
-                }
+            if (!firstChunkTime) {
+                firstChunkTime = Date.now();
+                console.log("[BACKEND] Ollama ilk chunk geldi", firstChunkTime);
             }
+
+            res.write(`data: ${str}\n\n`);
         });
 
         ollamaResponse.data.on('end', () => {
             if (finished) return;
             finished = true;
             clearInterval(heartbeat);
+            console.log("[BACKEND] Ollama stream bitti", Date.now());
             res.write('event: end\ndata: [DONE]\n\n');
             res.end();
         });

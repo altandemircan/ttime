@@ -59,7 +59,7 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
         
         if (facts.popularity_score) {
             const popularityDesc = facts.popularity_score > 7 ? "popular tourist attraction" : 
-                                   facts.popularity_score > 4 ? "known local spot" : "lesser-known place";
+                                 facts.popularity_score > 4 ? "known local spot" : "lesser-known place";
             context += `- Popularity: ${popularityDesc} (score: ${facts.popularity_score}/10)\n`;
         }
         
@@ -75,59 +75,70 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
     }
 
     try {
-        const response = await axios({
-            method: 'post',
-            url: 'https://api.groq.com/openai/v1/chat/completions',
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
+        const response = await axios.post(
+            'http://127.0.0.1:11434/api/generate',
+            {
+                model: "llama3.2:3b",
+                prompt: prompt,
+                stream: true,
+                options: {
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    repeat_penalty: 1.1,
+                    num_predict: 200
+                }
             },
-            data: {
-                model: "llama-3.1-8b-instant",
-                messages: [
-                    { role: "user", content: prompt }
-                ],
-                response_format: { type: "json_object" },
-                temperature: 0.7,
-                max_tokens: 200
-            },
-            timeout: 15000
+            {
+                responseType: 'stream',
+                timeout: 0
+            }
+        );
+
+        let fullContent = "";
+
+        response.data.on('data', chunk => {
+            const lines = chunk.toString().split('\n').filter(Boolean);
+            for (const line of lines) {
+                const data = JSON.parse(line);
+                if (data.response) {
+                    fullContent += data.response;
+                }
+                if (data.done) {
+                    let result = { p1: "", p2: "" };
+                    let content = fullContent || "{}";
+
+                    try {
+                        const jsonMatch = content.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            content = jsonMatch[0];
+                        }
+
+                        result = JSON.parse(content);
+                        result = {
+                            p1: result.p1 || `Explore ${point} in ${city}.`,
+                            p2: result.p2 || `Check opening hours before visiting.`
+                        };
+                    } catch (err) {
+                        console.error('AI JSON parse error:', err.message);
+                        result = {
+                            p1: `${point} is located in ${city}. It's worth exploring.`,
+                            p2: `Consider visiting during daylight hours for the best experience.`
+                        };
+                    }
+
+                    console.log(`[AI RESPONSE for ${point}]`, {
+                        city: city,
+                        factsUsed: Object.keys(facts || {}).length,
+                        responseLength: result.p1.length + result.p2.length
+                    });
+
+                    res.json(result);
+                }
+            }
         });
-
-        const rawContent = response.data?.choices?.[0]?.message?.content || '{}';
-        let result = { p1: "", p2: "" };
-
-        try {
-            const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-            const contentToParse = jsonMatch ? jsonMatch[0] : rawContent;
-            
-            const parsed = JSON.parse(contentToParse);
-            result = {
-                p1: parsed.p1 || `Explore ${point} in ${city}.`,
-                p2: parsed.p2 || `Check opening hours before visiting.`
-            };
-        } catch (err) {
-            console.error('AI JSON parse error:', err.message);
-            result = {
-                p1: `${point} is located in ${city}. It's worth exploring.`,
-                p2: `Consider visiting during daylight hours for the best experience.`
-            };
-        }
-
-        console.log(`[AI RESPONSE for ${point}]`, {
-            city: city,
-            factsUsed: Object.keys(facts || {}).length,
-            responseLength: result.p1.length + result.p2.length
-        });
-
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(result);
 
     } catch (e) {
-        console.error("AI error:", e.response?.data || e.message);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        console.error("AI error:", e.message);
         res.json({ 
             p1: `${point} is a location in ${city}. It offers a unique experience for visitors.`,
             p2: `Plan your visit according to the weather and local conditions.`
