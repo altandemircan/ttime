@@ -179,7 +179,8 @@ localStorage.setItem(k, aiFullText);
     const t0 = performance.now();
     try {
         // BURASI DEĞİŞTİ: '/' yerine backend AI route'unun adresini yazmalısın (örn: '/api/generate' veya '/ai')
-        const resp = await fetch('/api/generate', {
+        // BURASI DEĞİŞTİ: /api/generate yerine /plan-summary kullanılıyor
+        const resp = await fetch('/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city, country })
