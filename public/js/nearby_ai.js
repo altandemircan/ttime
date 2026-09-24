@@ -1003,27 +1003,44 @@ function getSimplePlaceCategoryFromString(cats) {
 // TOGGLE ITEM AI - Liste item için AI gösterimi
 // ============================================
 window.toggleItemAI = async function(aiContainerId, pointName, lat, lng, city) {
-    // Eğer halihazırda 2'den fazla aktif istek varsa yenisine izin verme.
-if (aiRequestControllers.size >= 2) {
-    alert("Please wait for the current AI analysis to finish.");
-    return;
-}
     const aiContainer = document.getElementById(aiContainerId);
-    if (!aiContainer) return;
+    if (!aiContainer || aiContainer.dataset.disabled === "true") return;
+
+    // Eğer halihazırda 2'den fazla aktif istek varsa yenisine izin verme.
+    if (aiRequestControllers.size >= 2) {
+        alert("Please wait for the current AI analysis to finish.");
+        return;
+    }
     
     // Eğer zaten dolu içerik varsa (AI yüklendi), sadece aç/kapa toggle yap
     if (aiContainer.innerHTML.trim() !== '' && aiContainer.style.display === 'block') {
-        // İçerik var ve gösteriliyor - sadece gizle
         aiContainer.style.display = 'none';
         return;
     }
     
-    // İçerik yoksa veya gizliyse - göster ve gerekirse AI'yı getir
     aiContainer.style.display = 'block';
     
     // Eğer içerik boşsa AI'yı getir
     if (aiContainer.innerHTML.trim() === '') {
         await fetchClickedPointAI(pointName, lat, lng, city, {}, aiContainerId);
+        
+        // İletilen istek sonrası içerik hâlâ boşsa veya hata döndüyse butonu pasife çek
+        if (aiContainer.innerHTML.trim() === '') {
+            aiContainer.style.display = 'none';
+            aiContainer.dataset.disabled = "true";
+            
+            // Kapsayıcının yanındaki mor butonu yakala ve pasif yap
+            const parent = aiContainer.parentElement || aiContainer.closest('.category-place-item');
+            const btn = parent ? parent.querySelector('[onclick*="toggleItemAI"]') : null;
+            
+            if (btn) {
+                btn.style.background = '#ccc';
+                btn.style.cursor = 'not-allowed';
+                btn.style.opacity = '0.5';
+                btn.title = 'AI verisi bulunmuyor';
+                btn.removeAttribute('onclick');
+            }
+        }
     }
 };
 
@@ -1619,10 +1636,9 @@ if (address && name) {
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="position: relative; width: 60px; height: 40px; flex-shrink: 0;">
                                 <img id="${imgId}" src="img/placeholder.png" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                                <div onclick="event.stopPropagation(); window.toggleItemAI('${aiContainerId}', '${safeName}', ${pLat}, ${pLng}, '${locationContext}')" 
-                                     style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: #8a4af3; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
-                                    <span style="font-size: 10px; color: white;">✨</span>
-                                </div>
+                                <div ${hasAiData ? `onclick="event.stopPropagation(); window.toggleItemAI('${aiContainerId}', '${place.name}', ${place.lat}, ${place.lng}, '${place.address}')"` : `onclick="event.stopPropagation();"`} style="position: absolute; bottom: -4px; right: -4px; width: 20px; height: 20px; background: ${hasAiData ? '#8a4af3' : '#ccc'}; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: ${hasAiData ? 'pointer' : 'not-allowed'}; opacity: ${hasAiData ? '1' : '0.4'}; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;" ${!hasAiData ? 'title="AI verisi bulunmuyor"' : ''}>
+    <span style="font-size: 10px; color: white;">✨</span>
+</div>
                             </div>
                             <div style="flex: 1; min-width: 0;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
