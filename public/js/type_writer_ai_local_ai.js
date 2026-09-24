@@ -179,12 +179,13 @@ localStorage.setItem(k, aiFullText);
 
     const t0 = performance.now();
     try {
-        const resp = await fetch('/', {
+        const resp = await fetch('/plan-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city, country })
         });
         const ollamaData = await resp.json();
+        const elapsed = Math.round(performance.now() - t0);
 
         const aiData = {
             city,
