@@ -66,13 +66,18 @@ RULES:
                         { role: "user", content: prompt }
                     ],
                     temperature: 0.1,
-                    max_tokens: 200
+                    max_tokens: 600,
+                    reasoning_effort: "low"
                 },
                 timeout: 15000 
             });
 
             let jsonText = response.data?.choices?.[0]?.message?.content || '';
-            if (!jsonText) throw new Error('Empty AI response');
+            const finishReason = response.data?.choices?.[0]?.finish_reason;
+            if (!jsonText) {
+                console.error(`[AI EMPTY CONTENT] city="${aiReqCity}" finish_reason=${finishReason}`);
+                throw new Error('Empty AI response');
+            }
 
             try {
                 return JSON.parse(jsonText);
