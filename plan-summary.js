@@ -83,7 +83,16 @@ RULES:
             }
 
         } catch (err) {
-            console.error("LLM Error:", err.response?.data || err.message);
+            console.error(
+                `[AI LLM ERROR] city="${aiReqCity}" status=${err.response?.status || 'N/A'} ` +
+                `message=${err.message}`
+            );
+            if (err.response?.data) {
+                console.error('[AI LLM ERROR] response body:', JSON.stringify(err.response.data));
+            }
+            if (!process.env.GROQ_API_KEY) {
+                console.error('[AI LLM ERROR] GROQ_API_KEY is NOT set in environment!');
+            }
             return {
                 summary: "Info unavailable.",
                 tip: "Info unavailable.",
