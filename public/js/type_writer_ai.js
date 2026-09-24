@@ -185,6 +185,7 @@ localStorage.setItem(k, aiFullText);
             body: JSON.stringify({ city, country })
         });
         const ollamaData = await resp.json();
+        const elapsed = Math.round(performance.now() - t0);
 
         const aiData = {
             city,
@@ -193,7 +194,6 @@ localStorage.setItem(k, aiFullText);
             highlight: ollamaData.highlight,
             time: elapsed
         };
-
         populateAndShow(aiData, elapsed);
     } catch (e) {
         if (token === window.__aiInfoRequestToken && aiTime) {
