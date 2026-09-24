@@ -98,27 +98,14 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
 
         if (aiSpinner) aiSpinner.style.display = "none";
 
+        // Veriyi kaydet
+        const aiFullText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
+  const k = window.activeTripKey ? `ai_information_${window.activeTripKey}` : 'ai_information';
+localStorage.setItem(k, aiFullText);
+        
         window.cart = window.cart || [];
         window.cart.aiData = data;
         window.lastTripAIInfo = data;
-
-        // Metinleri HEMEN bas (localStorage veya başka bir yan etkinin
-        // patlaması yüzünden ekranın boş kalmaması için önce bu yapılır)
-        aiContent.style.maxHeight = "1200px";
-        aiContent.style.opacity   = "1";
-        aiSummary.textContent   = (data.summary || "").replace(/🤖/g, '').trim();
-        aiTip.textContent       = (data.tip || "").replace(/🤖/g, '').trim();
-        aiHighlight.textContent = (data.highlight || "").replace(/🤖/g, '').trim();
-        aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
-
-        // Veriyi kaydet (kritik değil: quota/gizli mod hatası içeriği bozmasın)
-        try {
-            const aiFullText = `Summary: ${data.summary || ""} \n\nTip: ${data.tip || ""} \n\nHighlight: ${data.highlight || ""}`;
-            const k = window.activeTripKey ? `ai_information_${window.activeTripKey}` : 'ai_information';
-            localStorage.setItem(k, aiFullText);
-        } catch (storageErr) {
-            console.warn("AI info localStorage.setItem failed (ignored):", storageErr);
-        }
 
         // --- CSS EKLEME (OK İŞARETİ İÇİN) ---
         if (!document.getElementById('ai-arrow-style')) {
@@ -168,12 +155,18 @@ window.insertTripAiInfo = async function(onFirstToken, aiStaticInfo = null, city
             });
         }
 
+        // İçeriği göster
+        aiContent.style.maxHeight = "1200px";
+        aiContent.style.opacity   = "1";
+
+        // Metinleri bas
+        aiSummary.textContent   = (data.summary || "").replace(/🤖/g, '').trim();
+        aiTip.textContent       = (data.tip || "").replace(/🤖/g, '').trim();
+        aiHighlight.textContent = (data.highlight || "").replace(/🤖/g, '').trim();
+        aiTime.textContent      = timeElapsed ? `⏱️ Generated in ${timeElapsed} ms` : "";
+
         if (typeof saveCurrentTripToStorage === "function") {
-            try {
-                saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
-            } catch (saveErr) {
-                console.warn("saveCurrentTripToStorage failed (ignored):", saveErr);
-            }
+            saveCurrentTripToStorage({ withThumbnail: false, delayMs: 0 });
         }
     }
 
