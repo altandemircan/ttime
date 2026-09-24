@@ -1,18 +1,13 @@
 const express = require('express');
-const axios = require('axios');
+const { Groq } = require('groq-sdk');
 const http = require('http');
 const router = express.Router();
 
-/* 🔒 KEEP-ALIVE AGENT */
-const keepAliveAgent = new http.Agent({
-    keepAlive: true,
-    keepAliveMsecs: 60000,
-    maxSockets: 5,
-    timeout: 0
-});
+// Groq client başlatma (process.env.GROQ_API_KEY otomatik okunur)
+const groq = new Groq();
 
 router.get('/', async (req, res) => {
-    console.log("[BACKEND] Yeni chat-stream AI SSE isteği geldi", new Date().toISOString());
+    console.log("[BACKEND] Yeni chat-stream Groq SSE isteği geldi", new Date().toISOString());
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,7 +17,6 @@ router.get('/', async (req, res) => {
 
     let finished = false;
 
-    /* 🔁 SSE HEARTBEAT — PROXY / NODE TIMEOUT ENGELLEYİCİ */
     const heartbeat = setInterval(() => {
         if (!finished) {
             res.write(`: ping\n\n`);
@@ -69,115 +63,58 @@ If the question is NOT related to travel, politely redirect the conversation to 
     ];
 
     try {
-        let ollamaResponse;
-        let lastError;
+        console.log(`[BACKEND] Groq API çağrısı başlıyor...`);
 
-        for (let attempt = 1; attempt <= 2; attempt++) {
-            try {
-                console.log(`[BACKEND] Ollama attempt ${attempt} başlıyor`, Date.now());
-
-                ollamaResponse = await axios({
-                    method: 'post',
-                    url: 'http://127.0.0.1:11434/api/chat',
-                    httpAgent: keepAliveAgent,
-                    data: {
-                        model: 'openai/gpt-oss-120b',
-                        messages,
-                        stream: true,
-                        options: {
-                            temperature: 0.7,
-                            num_predict: 120,
-                            stop: ["\n\n", "Tip:", "Note:"]
-                        }
-                    },
-                    responseType: 'stream',
-                    timeout: 0
-                });
-
-                console.log(`[BACKEND] Ollama attempt ${attempt} BAŞARILI`, Date.now());
-                break;
-
-            } catch (err) {
-                lastError = err;
-                console.log(`[chat-stream] Attempt ${attempt} failed`, err.message);
-                if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
-            }
-        }
-
-        if (!ollamaResponse) throw lastError;
+        const chatCompletion = await groq.chat.completions.create({
+            messages: messages,
+            model: "openai/gpt-oss-120b",
+            temperature: 0.7,
+            max_completion_tokens: 2048,
+            top_p: 1,
+            stream: true,
+            reasoning_effort: "medium"
+        });
 
         let firstChunkTime = null;
 
-        ollamaResponse.data.on('data', chunk => {
-            if (finished) return;
-            const lines = chunk.toString().split('\n');
-            
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed) continue;
+        for await (const chunk of chatCompletion) {
+            if (finished) break;
 
-                try {
-                    const parsed = JSON.parse(trimmed);
-                    // Ollama /api/chat yanıt formatı: parsed.message.content
-                    const contentPiece = parsed.message?.content || "";
-                    
-                    if (contentPiece) {
-                        if (!firstChunkTime) {
-                            firstChunkTime = Date.now();
-                            console.log("[BACKEND] Ollama ilk chunk geldi", firstChunkTime);
-                        }
-                        // SSE formatına uygun şekilde frontend'e iletiyoruz
-                        res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: contentPiece } }] })}\n\n`);
-                    }
+            const contentPiece = chunk.choices[0]?.delta?.content || "";
 
-                    if (parsed.done) {
-                        // İşlem tamamlandı
-                        if (!finished) {
-                            finished = true;
-                            clearInterval(heartbeat);
-                            console.log("[BACKEND] Ollama stream bitti", Date.now());
-                            res.write('event: end\ndata: [DONE]\n\n');
-                            res.end();
-                        }
-                    }
-                } catch (e) {
-                    // JSON parse edilemeyen satırları yoksay
+            if (contentPiece) {
+                if (!firstChunkTime) {
+                    firstChunkTime = Date.now();
+                    console.log("[BACKEND] Groq ilk chunk geldi", firstChunkTime);
                 }
+                res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: contentPiece } }] })}\n\n`);
             }
-        });
+        }
 
-        ollamaResponse.data.on('end', () => {
-            if (finished) return;
+        if (!finished) {
             finished = true;
             clearInterval(heartbeat);
+            console.log("[BACKEND] Groq stream bitti", Date.now());
             res.write('event: end\ndata: [DONE]\n\n');
             res.end();
-        });
-
-        ollamaResponse.data.on('error', err => {
-            if (finished) return;
-            finished = true;
-            clearInterval(heartbeat);
-            console.log("[BACKEND] Ollama stream error", err.message);
-            res.write(`event: error\ndata: ${err.message}\n\n`);
-            res.end();
-        });
-
-        req.on('close', () => {
-            if (finished) return;
-            finished = true;
-            clearInterval(heartbeat);
-            console.log("[BACKEND] SSE connection kapandı");
-            res.end();
-        });
+        }
 
     } catch (error) {
+        if (finished) return;
         finished = true;
         clearInterval(heartbeat);
+        console.error('[GROQ ERROR]', error);
         res.write(`event: error\ndata: ${error.message}\n\n`);
         res.end();
-        console.error('[OLLAMA ERROR]', error);
     }
+
+    req.on('close', () => {
+        if (finished) return;
+        finished = true;
+        clearInterval(heartbeat);
+        console.log("[BACKEND] SSE connection kapandı");
+        res.end();
+    });
 });
 
-module.exports = router; 
+module.exports = router;
