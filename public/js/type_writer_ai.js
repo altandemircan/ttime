@@ -1,4 +1,3 @@
-
 function typeWriterEffect(element, text, speed = 18, callback) {
     let i = 0;
     element.innerHTML = "🤖 "; // Emoji sabit başta!
@@ -26,7 +25,7 @@ function onCitySelected(city) {
     });
 } 
 
-// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar alf
+// JSON stringten sadece ilk {...} bloğunu çek, kapanış } yoksa sona kadar al
 function extractFirstJson(str) {
     const start = str.indexOf('{');
     const end = str.lastIndexOf('}');
@@ -179,11 +178,15 @@ localStorage.setItem(k, aiFullText);
 
     const t0 = performance.now();
     try {
-        const resp = await fetch('/', {
+        // BURASI DEĞİŞTİ: '/' yerine backend AI route'unun adresini yazmalısın (örn: '/api/generate' veya '/ai')
+        const resp = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city, country })
         });
+        
+        if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+
         const ollamaData = await resp.json();
         const elapsed = Math.round(performance.now() - t0);
 
