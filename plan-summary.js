@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
     // --- YENİ İŞLEM BAŞLAT ---
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
-        const activeModel = "llama-3.1-8b-instant";
+        const activeModel = "llama-3.3-70b-versatile";
 
         console.log(`[AI START (Groq)] Model: ${activeModel} | City: ${aiReqCity}`);
 

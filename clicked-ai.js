@@ -83,7 +83,7 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
                 'Content-Type': 'application/json'
             },
             data: {
-                model: "llama-3.1-8b-instant",
+                model: "llama-3.3-70b-versatile",
                 messages: [
                     { role: "user", content: prompt }
                 ],
