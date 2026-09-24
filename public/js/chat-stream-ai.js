@@ -413,14 +413,14 @@ async function sendAIChatMessage(userMessage) {
 const eventSource = new EventSource(
         `/chat-stream?messages=${encodeURIComponent(JSON.stringify(chatHistory))}`
     );
-
-    eventSource.onmessage = function(event) {
+eventSource.onmessage = function(event) {
     console.log("[FRONT] SSE onmessage geldi", Date.now(), event.data);
     if (hasError) return;
     try {
         const data = JSON.parse(event.data);
-            if (data.message && data.message.content) {
-                const newText = data.message.content;
+            // Gelen veri formatını doğru yerden okuyoruz:
+            const newText = data.choices?.[0]?.delta?.content || "";
+            if (newText) {
                 fullTextBuffer += newText;
                 
                 // Karakter sayısını kontrol et
