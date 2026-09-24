@@ -81,7 +81,7 @@ If the question is NOT related to travel, politely redirect the conversation to 
                     url: 'http://127.0.0.1:11434/api/chat',
                     httpAgent: keepAliveAgent,
                     data: {
-                        model: 'llama-3.3-70b-versatile',
+                        model: 'openai/gpt-oss-120b',
                         messages,
                         stream: true,
                         options: {
