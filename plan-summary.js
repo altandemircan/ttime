@@ -87,7 +87,8 @@ RULES:
             return {
                 summary: "Info unavailable.",
                 tip: "Info unavailable.",
-                highlight: "Info unavailable."
+                highlight: "Info unavailable.",
+                __failed: true
             };
         }
     })();
@@ -100,16 +101,24 @@ RULES:
     try {
         const result = await processingPromise;
 
-        aiCache[cacheKey] = {
-            status: 'done',
-            data: result
-        };
+        if (result && result.__failed) {
+            // Başarısız/fallback sonucu kalıcı önbelleğe yazma; bir sonraki
+            // istek tekrar denesin.
+            delete aiCache[cacheKey];
+        } else {
+            aiCache[cacheKey] = {
+                status: 'done',
+                data: result
+            };
+        }
 
         console.log(`[AI DONE] ${cacheKey} tamamlandı.`);
         
+        const { __failed, ...clientResult } = result || {};
+
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(result);
+        res.json(clientResult);
 
     } catch (error) {
         console.error(`[AI ERROR] ${cacheKey}:`, error.message);
