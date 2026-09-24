@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
     // --- YENİ İŞLEM BAŞLAT ---
     const processingPromise = (async () => {
         const aiReqCity = country ? `${city}, ${country}` : city;
-        const activeModel = "llama3:8b";
+        const activeModel = "llama3.2:3b";
 
         console.log(`[AI START] Model: ${activeModel} | City: ${aiReqCity}`);
 

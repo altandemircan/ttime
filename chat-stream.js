@@ -99,7 +99,7 @@ Example behavior:
                     url: 'http://127.0.0.1:11434/api/chat',
                     httpAgent: keepAliveAgent,
                     data: {
-                        model: 'llama3:8b',
+                        model: 'llama3.2:3b',
                         messages,
                         stream: true,
                         temperature: 0.7,

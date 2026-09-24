@@ -78,7 +78,7 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
         const response = await axios.post(
             'http://127.0.0.1:11434/api/generate',
             {
-                model: "llama3:8b",
+                model: "llama3.2:3b",
                 prompt: prompt,
                 stream: true,
                 options: {
