@@ -7,7 +7,7 @@ const router = express.Router();
 let aiCache = {};
 
 // --- ENDPOINT ---
-router.post('/', async (req, res) => {
+router.post('/generate', async (req, res) => {
     const { city, country } = req.body;
     if (!city) {
         res.status(400).send('City is required');
