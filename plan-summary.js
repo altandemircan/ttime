@@ -2,8 +2,6 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-// Artık sadece in-memory (bellek içi) çalışıyoruz. 
-// Sunucu restart edildiğinde bu veri sıfırlanır.
 let aiCache = {};
 
 // --- ENDPOINT ---
@@ -50,7 +48,7 @@ Provide specific travel insights for the city "${aiReqCity}" ONLY in ENGLISH.
 RULES:
 1. Do NOT hallucinate. If unknown, state "Info not available".
 2. Verify landmarks are INSIDE "${aiReqCity}".
-3. Respond ONLY with a valid JSON object:
+3. Respond ONLY with a valid JSON object containing these exact keys: summary, tip, highlight.
 { "summary": "...", "tip": "...", "highlight": "..." }
 `.trim();
 
@@ -67,7 +65,6 @@ RULES:
                     messages: [
                         { role: "user", content: prompt }
                     ],
-                    response_format: { type: "json_object" },
                     temperature: 0.1,
                     max_tokens: 200
                 },
@@ -121,4 +118,4 @@ RULES:
     }
 });
 
-module.exports = router; 
+module.exports = router;
