@@ -69,10 +69,9 @@ If the question is NOT related to travel, politely redirect the conversation to 
             messages: messages,
             model: "openai/gpt-oss-120b",
             temperature: 0.7,
-            max_completion_tokens: 2048,
+            max_tokens: 500,
             top_p: 1,
-            stream: true,
-            reasoning_effort: "medium"
+            stream: true
         });
 
         let firstChunkTime = null;
