@@ -1235,18 +1235,21 @@ async function showNearbyPlacesByCategory(lat, lng, map, day, categoryType = 're
         const reverseData = await reverseResp.json();
         if (reverseData.features && reverseData.features[0]) {
             const props = reverseData.features[0].properties;
+            currentCountryName = props.country || "";
+
             if (props.country_code === 'tr' || props.country === 'Turkey') {
                 currentCityName = props.county || "";
             } else {
-                currentCityName = props.city || "";
+                currentCityName = props.city || props.state || props.county || "";
             }
         }
     } catch (e) {}
     
     if (!currentCityName) currentCityName = window.selectedCity || "";
     
-    const country = "Turkey";
-    const locationContext = `${currentCityName}, ${country}`;
+    const locationContext = currentCountryName 
+    ? `${currentCityName}, ${currentCountryName}` 
+    : currentCityName;
     
     // Kategori Yapılandırması
     const categoryConfig = {

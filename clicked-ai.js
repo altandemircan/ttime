@@ -15,22 +15,22 @@ router.post('/', async (req, res) => {
     // Enhanced facts'i prompt'a ekle
     const factsContext = buildFactsContext(facts);
     
-    const prompt = `You are a knowledgeable local tour guide in ${city}. 
-A traveler clicked on a point called "${point}" on the map.
+    const prompt = `You are an expert local tour guide in ${city || 'this destination'}. 
+A traveler selected the location "${point}" on the map.
 
 ${factsContext}
 
 IMPORTANT GUIDELINES:
-1. Focus ONLY on "${point}" specifically, not the general area
-2. Use the provided context to make your description accurate
-3. Keep it brief, practical and useful for a traveler
-4. Be specific about what makes "${point}" unique or interesting
-5. The tip should be practical advice for visiting "${point}"
+1. Focus specifically on "${point}". Describe what makes it unique, historical, or worth seeing.
+2. Use the provided context to ensure accuracy.
+3. Keep the tone engaging, brief, and practical for travelers.
+4. Give a real, actionable tip for visiting "${point}".
+5. Avoid generic boilerplate statements.
 
 Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!):
 {
-  "p1": "brief description about ${point} in ${city}",
-  "p2": "one practical tip about visiting ${point}"
+  "p1": "engaging description focused on ${point}",
+  "p2": "practical visitor tip for ${point}"
 }`;
 
     // Helper function to build facts context
@@ -129,8 +129,8 @@ Return ONLY this valid JSON (no explanation, no markdown, no text outside JSON!)
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json({ 
-            p1: `${point} is a location in ${city}. It offers a unique experience for visitors.`,
-            p2: `Plan your visit according to the weather and local conditions.`
+        p1: `${point} is located in ${city || 'this area'}. It offers a unique experience for visitors.`,
+        p2: `Plan your visit according to the weather and local conditions.`
         });
     }
 });
