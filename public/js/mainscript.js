@@ -706,27 +706,13 @@ document.addEventListener("DOMContentLoaded", function() {
             if (e.key === "ArrowDown") {
                 currentFocus++;
                 addActive(items);
-            } else if (e.key === "ArrowUp") {
-                currentFocus--;
-                addActive(items);
             } else if (e.key === "Enter") {
-                // DURUM 1: Klavye ile listeden bir şey seçiliyse
+                // Klavye ile listeden bir şey seçiliyse onu kullan
                 if (currentFocus > -1 && items && items[currentFocus]) {
-                    e.preventDefault(); // Formu gönderme
-                    items[currentFocus].click(); // O öğeyi tıkla (seçimi yap)
-                } 
-                // DURUM 2: Daha önce seçim yapıldıysa (örn. mouse ile)
-                else if (window.__locationPickedFromSuggestions) {
-                    // İzin ver, normal gönderim (sendMessage) çalışsın
-                } 
-                // DURUM 3: Hiçbir seçim yoksa (NE KLAVYE NE MOUSE)
-                else {
-                    e.preventDefault(); // GÖNDERMEYİ ENGELLE!
-                    // Görsel uyarı: Input kenarını kırmızı yapıp söndür
-                    this.style.transition = "border-color 0.2s";
-                    this.style.borderColor = "#d32f2f";
-                    setTimeout(() => { this.style.borderColor = ""; }, 400);
+                    e.preventDefault();
+                    items[currentFocus].click();
                 }
+                // Aksi halde serbest metni AI çözecek — engelleme yok
             }
         });
     }
@@ -1358,24 +1344,20 @@ async function sendMessage() {
         return;
     }
 
-    const days = parsed.days;
+        const days = parsed.days;
     const aiCity = parsed.city;
     val = `Plan a ${days}-day trip to ${aiCity}`;
-    // ============================================================
 
-    if (!window.__locationPickedFromSuggestions) {
-        addMessage("Please select a city from the suggestions first.", "bot-message");
-        return;
+    // AI şehri bulduysa, listeden seçilmiş gibi kabul et
+    window.__locationPickedFromSuggestions = true;
+    window.selectedLocationLocked = true;
+    if (!window.selectedLocation || window.selectedLocation.city !== aiCity) {
+        window.selectedLocation = { city: aiCity, name: aiCity };
     }
+    // ============================================================
 
     // İlk mesaj
     addWelcomeMessage();
-
-    // Lokasyon kilidi
-    if (!window.selectedLocationLocked || !window.selectedLocation) {
-        addMessage("Please select a city from the suggestions first.", "bot-message");
-        return;
-    }
 
     const city = window.selectedLocation.city || window.selectedLocation.name || aiCity;
 
@@ -2393,20 +2375,13 @@ document.addEventListener("DOMContentLoaded", function() {
             } else if (e.key === "ArrowUp") {
                 currentFocus--;
                 addActive(items);
-            } else if (e.key === "Enter") {
+             } else if (e.key === "Enter") {
                 // Eğer bir öğe seçiliyse (klavye ile), ona tıkla
                 if (currentFocus > -1 && items && items[currentFocus]) {
                     e.preventDefault(); 
                     items[currentFocus].click();
-                } 
-                // Eğer daha önce mouse ile de seçilmediyse -> ENGELLE
-                else if (!window.__locationPickedFromSuggestions) {
-                    e.preventDefault();
-                    // Uyarı efekti
-                    this.style.transition = "border-color 0.2s";
-                    this.style.borderColor = "#d32f2f";
-                    setTimeout(() => { this.style.borderColor = ""; }, 400);
                 }
+                // Aksi halde serbest metni AI çözecek — engelleme yok
             }
         });
     }
