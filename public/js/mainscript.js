@@ -1325,7 +1325,7 @@ function extractPureLocation(input) {
   return "";
 }
 
-function sendMessage() {
+async function sendMessage() {
     // Kilit kontrolü
     if (window.isProcessing) {
         const panel = document.getElementById('loading-panel');
@@ -1338,49 +1338,30 @@ function sendMessage() {
 
     const input = document.getElementById("user-input");
     if (!input) return;
-    
-    let val = input.value.trim(); 
+
+    let val = input.value.trim();
     if (!val) return;
 
     // ============================================================
-    // === 🧹 AKILLI INPUT TEMİZLEYİCİ (TRIPTIME EDITION) ===
+    // === 🤖 AI TABANLI INPUT ANALİZİ (regex temizleyicinin yerine) ===
     // ============================================================
-    
-    let text = val.toLowerCase(); 
-    let days = 1; // Varsayılan
-
-    // 1. Gün Sayısını Yakala
-    const numMatch = text.match(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|gunde|günlük)?/i);
-    if (numMatch) {
-        let detectedVal = parseInt(numMatch[1], 10);
-        if (detectedVal > 0 && detectedVal < 60) {
-            days = detectedVal;
-            text = text.replace(numMatch[0], " "); 
-        }
+    let parsed;
+    try {
+        parsed = await parseTripWithAI(val);
+    } catch (e) {
+        console.error("AI parse hatası:", e);
+        parsed = null;
     }
 
-    // 2. Gereksiz Kelimeleri Sil
-    const stopWords = [
-        "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
-        "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
-        "hakkında", "ile", "gün", "day", "days"
-    ];
-    stopWords.forEach(w => {
-        text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
-    });
-
-    // 3. Şehir Adını Temizle ve Baş Harfini Büyüt
-    let location = text.replace(/[^\w\s\u00C0-\u017F-]/g, " ").replace(/\s+/g, " ").trim();
-    if (location.length > 0) {
-        location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-        
-        // Markaya uygun: "Plan a 3-day trip to Antalya"
-        val = `Plan a ${days}-day trip to ${location}`;
-        
-        console.log(`🧹 Triptime Formatı: "${input.value}" -> "${val}"`);
+    if (!parsed || !parsed.valid || !parsed.city || !parsed.days) {
+        addMessage("Bunu bir gezi isteği olarak anlayamadım. Örn: \"3 days in Rome\"", "bot-message");
+        return;
     }
-    // ============================================================
 
+    const days = parsed.days;
+    const aiCity = parsed.city;
+    val = `Plan a ${days}-day trip to ${aiCity}`;
+    // ============================================================
 
     if (!window.__locationPickedFromSuggestions) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
@@ -1390,39 +1371,36 @@ function sendMessage() {
     // İlk mesaj
     addWelcomeMessage();
 
-    // --- BURADAKİ DIFF / ÜZERİNİ ÇİZME KODLARI SİLİNDİ ---
-    // Artık direkt işleme geçiyoruz.
-
     // Lokasyon kilidi
     if (!window.selectedLocationLocked || !window.selectedLocation) {
         addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
 
-    // 1. Canonical Match (REGEX)
-    const m = val.match(/Plan a (\d+)-day (?:tour|trip) (?:for|to) (.+)$/i);
-    
-    if (m) {
-        let days = parseInt(m[1], 10);
-        if (!days || days < 1) days = 2;
-        const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
-        
-        // Kullanıcının mesajını ekrana bas (Düzeltilmiş halini)
-        addMessage(val, "user-message request-user-message");
-        window.__suppressNextUserEcho = true;
-        
-        showLoadingPanel(); 
-        handleAnswer(`${city} ${days} days`);
-        input.value = "";
-        return;
-    }
+    const city = window.selectedLocation.city || window.selectedLocation.name || aiCity;
 
-    // 2. Standart Akış
-    showLoadingPanel(); 
-    handleAnswer(val); 
-    input.value = ""; 
+    // Kullanıcının mesajını ekrana bas (Düzeltilmiş halini)
+    addMessage(val, "user-message request-user-message");
+    window.__suppressNextUserEcho = true;
+
+    showLoadingPanel();
+    handleAnswer(`${city} ${days} days`);
+    input.value = "";
 }
 document.getElementById('send-button').addEventListener('click', sendMessage);
+
+// AI ile input'tan şehir + gün çıkarma (backend proxy üzerinden çalışır)
+async function parseTripWithAI(text) {
+    const res = await fetch("/api/parse-trip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userInput: text })
+    });
+    if (!res.ok) throw new Error("parse-trip request failed");
+    // Beklenen backend cevabı: { valid: true, city: "Tokyo", days: 1 }
+    // gezi isteği değilse: { valid: false }
+    return await res.json();
+}
 
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
 window.__lastAddedItem = null;
