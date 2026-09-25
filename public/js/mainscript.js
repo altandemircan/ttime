@@ -706,13 +706,27 @@ document.addEventListener("DOMContentLoaded", function() {
             if (e.key === "ArrowDown") {
                 currentFocus++;
                 addActive(items);
+            } else if (e.key === "ArrowUp") {
+                currentFocus--;
+                addActive(items);
             } else if (e.key === "Enter") {
-                // Klavye ile listeden bir şey seçiliyse onu kullan
+                // DURUM 1: Klavye ile listeden bir şey seçiliyse
                 if (currentFocus > -1 && items && items[currentFocus]) {
-                    e.preventDefault();
-                    items[currentFocus].click();
+                    e.preventDefault(); // Formu gönderme
+                    items[currentFocus].click(); // O öğeyi tıkla (seçimi yap)
+                } 
+                // DURUM 2: Daha önce seçim yapıldıysa (örn. mouse ile)
+                else if (window.__locationPickedFromSuggestions) {
+                    // İzin ver, normal gönderim (sendMessage) çalışsın
+                } 
+                // DURUM 3: Hiçbir seçim yoksa (NE KLAVYE NE MOUSE)
+                else {
+                    e.preventDefault(); // GÖNDERMEYİ ENGELLE!
+                    // Görsel uyarı: Input kenarını kırmızı yapıp söndür
+                    this.style.transition = "border-color 0.2s";
+                    this.style.borderColor = "#d32f2f";
+                    setTimeout(() => { this.style.borderColor = ""; }, 400);
                 }
-                // Aksi halde serbest metni AI çözecek — engelleme yok
             }
         });
     }
@@ -1311,7 +1325,7 @@ function extractPureLocation(input) {
   return "";
 }
 
-async function sendMessage() {
+function sendMessage() {
     // Kilit kontrolü
     if (window.isProcessing) {
         const panel = document.getElementById('loading-panel');
@@ -1324,65 +1338,91 @@ async function sendMessage() {
 
     const input = document.getElementById("user-input");
     if (!input) return;
-
-    let val = input.value.trim();
+    
+    let val = input.value.trim(); 
     if (!val) return;
 
     // ============================================================
-    // === 🤖 AI TABANLI INPUT ANALİZİ (regex temizleyicinin yerine) ===
+    // === 🧹 AKILLI INPUT TEMİZLEYİCİ (TRIPTIME EDITION) ===
     // ============================================================
-    let parsed;
-    try {
-        parsed = await parseTripWithAI(val);
-    } catch (e) {
-        console.error("AI parse hatası:", e);
-        parsed = null;
+    
+    let text = val.toLowerCase(); 
+    let days = 1; // Varsayılan
+
+    // 1. Gün Sayısını Yakala
+    const numMatch = text.match(/(\d+)\s*(?:-| )?\s*(?:day|days|gün|gun|gunde|günlük)?/i);
+    if (numMatch) {
+        let detectedVal = parseInt(numMatch[1], 10);
+        if (detectedVal > 0 && detectedVal < 60) {
+            days = detectedVal;
+            text = text.replace(numMatch[0], " "); 
+        }
     }
 
-    if (!parsed || !parsed.valid || !parsed.city || !parsed.days) {
-        addMessage("Bunu bir gezi isteği olarak anlayamadım. Örn: \"3 days in Rome\"", "bot-message");
+    // 2. Gereksiz Kelimeleri Sil
+    const stopWords = [
+        "plan", "a", "tour", "trip", "visit", "travel", "journey", "for", "to", "in", "the", "with", "and", "&",
+        "gezi", "tatil", "seyahat", "tur", "yap", "gitmek", "istiyorum", "bana", "bir", "rota",
+        "hakkında", "ile", "gün", "day", "days"
+    ];
+    stopWords.forEach(w => {
+        text = text.replace(new RegExp(`\\b${w}\\b`, 'gi'), " ");
+    });
+
+    // 3. Şehir Adını Temizle ve Baş Harfini Büyüt
+    let location = text.replace(/[^\w\s\u00C0-\u017F-]/g, " ").replace(/\s+/g, " ").trim();
+    if (location.length > 0) {
+        location = location.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        
+        // Markaya uygun: "Plan a 3-day trip to Antalya"
+        val = `Plan a ${days}-day trip to ${location}`;
+        
+        console.log(`🧹 Triptime Formatı: "${input.value}" -> "${val}"`);
+    }
+    // ============================================================
+
+
+    if (!window.__locationPickedFromSuggestions) {
+        addMessage("Please select a city from the suggestions first.", "bot-message");
         return;
     }
-
-        const days = parsed.days;
-    const aiCity = parsed.city;
-    val = `Plan a ${days}-day trip to ${aiCity}`;
-
-    // AI şehri bulduysa, listeden seçilmiş gibi kabul et
-    window.__locationPickedFromSuggestions = true;
-    window.selectedLocationLocked = true;
-    if (!window.selectedLocation || window.selectedLocation.city !== aiCity) {
-        window.selectedLocation = { city: aiCity, name: aiCity };
-    }
-    // ============================================================
 
     // İlk mesaj
     addWelcomeMessage();
 
-    const city = window.selectedLocation.city || window.selectedLocation.name || aiCity;
+    // --- BURADAKİ DIFF / ÜZERİNİ ÇİZME KODLARI SİLİNDİ ---
+    // Artık direkt işleme geçiyoruz.
 
-    // Kullanıcının mesajını ekrana bas (Düzeltilmiş halini)
-    addMessage(val, "user-message request-user-message");
-    window.__suppressNextUserEcho = true;
+    // Lokasyon kilidi
+    if (!window.selectedLocationLocked || !window.selectedLocation) {
+        addMessage("Please select a city from the suggestions first.", "bot-message");
+        return;
+    }
 
-    showLoadingPanel();
-    handleAnswer(`${city} ${days} days`);
-    input.value = "";
+    // 1. Canonical Match (REGEX)
+    const m = val.match(/Plan a (\d+)-day (?:tour|trip) (?:for|to) (.+)$/i);
+    
+    if (m) {
+        let days = parseInt(m[1], 10);
+        if (!days || days < 1) days = 2;
+        const city = window.selectedLocation.city || window.selectedLocation.name || m[2].trim();
+        
+        // Kullanıcının mesajını ekrana bas (Düzeltilmiş halini)
+        addMessage(val, "user-message request-user-message");
+        window.__suppressNextUserEcho = true;
+        
+        showLoadingPanel(); 
+        handleAnswer(`${city} ${days} days`);
+        input.value = "";
+        return;
+    }
+
+    // 2. Standart Akış
+    showLoadingPanel(); 
+    handleAnswer(val); 
+    input.value = ""; 
 }
 document.getElementById('send-button').addEventListener('click', sendMessage);
-
-// AI ile input'tan şehir + gün çıkarma (backend proxy üzerinden çalışır)
-async function parseTripWithAI(text) {
-    const res = await fetch("/api/parse-trip", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userInput: text })
-    });
-    if (!res.ok) throw new Error("parse-trip request failed");
-    // Beklenen backend cevabı: { valid: true, city: "Tokyo", days: 1 }
-    // gezi isteği değilse: { valid: false }
-    return await res.json();
-}
 
 window.__triptime_addtotrip_listener_set = window.__triptime_addtotrip_listener_set || false;
 window.__lastAddedItem = null;
@@ -2375,13 +2415,20 @@ document.addEventListener("DOMContentLoaded", function() {
             } else if (e.key === "ArrowUp") {
                 currentFocus--;
                 addActive(items);
-             } else if (e.key === "Enter") {
+            } else if (e.key === "Enter") {
                 // Eğer bir öğe seçiliyse (klavye ile), ona tıkla
                 if (currentFocus > -1 && items && items[currentFocus]) {
                     e.preventDefault(); 
                     items[currentFocus].click();
+                } 
+                // Eğer daha önce mouse ile de seçilmediyse -> ENGELLE
+                else if (!window.__locationPickedFromSuggestions) {
+                    e.preventDefault();
+                    // Uyarı efekti
+                    this.style.transition = "border-color 0.2s";
+                    this.style.borderColor = "#d32f2f";
+                    setTimeout(() => { this.style.borderColor = ""; }, 400);
                 }
-                // Aksi halde serbest metni AI çözecek — engelleme yok
             }
         });
     }
