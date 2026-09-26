@@ -367,9 +367,12 @@ async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = 
   trips[tripKey] = tripObj;
   localStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(trips));
 
-  // [FIX] ID ve Şehri LocalStorage'a ayrıca yaz ki yenileyince hatırlasın
+ // [FIX] ID ve Şehri LocalStorage'a ayrıca yaz ki yenileyince hatırlasın
   localStorage.setItem('activeTripKey', tripKey);
   localStorage.setItem('selectedCity', window.selectedCity || "");
+  // [FIX] Ana AI akışı 'cart' anahtarını hiç güncellemiyordu, sayfa yenilenince
+  // hep eski cart geri yükleniyordu — artık her kayıtta güncel cart de yazılıyor
+  localStorage.setItem('cart', JSON.stringify(window.cart || []));
 }
 
 
