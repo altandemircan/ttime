@@ -1389,6 +1389,26 @@ async function sendMessage() {
 }
 document.getElementById('send-button').addEventListener('click', sendMessage);
 
+const ttUserInputEl = document.getElementById('user-input');
+if (ttUserInputEl) {
+    ttUserInputEl.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+
+        const suggestionsDiv = document.getElementById('suggestions');
+        const items = suggestionsDiv
+            ? suggestionsDiv.getElementsByClassName('category-area-option')
+            : null;
+
+        e.preventDefault();
+
+        if (typeof currentFocus !== 'undefined' && currentFocus > -1 && items && items[currentFocus]) {
+            items[currentFocus].click();
+        } else {
+            sendMessage();
+        }
+    });
+}
+
 // AI ile input'tan şehir + gün çıkarma (backend proxy üzerinden çalışır)
 async function parseTripWithAI(text) {
     const res = await fetch("/api/parse-trip", {
