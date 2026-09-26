@@ -251,6 +251,18 @@ function safeParse(jsonStr) {
 async function saveCurrentTripToStorage({ withThumbnail = true, delayMs = 0 } = {}) {
     if (window.__suppressAutoSaveDuringLoad) return; // <-- ekle
 
+    // === GEÇİCİ TEŞHİS LOGU — sorun bulunduktan sonra silinecek ===
+    console.log(
+        '[SAVE-DEBUG]',
+        'activeTripKey=', window.activeTripKey,
+        'selectedCity=', window.selectedCity,
+        'cart.length=', (window.cart || []).length,
+        'cart[0]=', window.cart && window.cart[0] ? window.cart[0].name : null,
+        'cart[0].category=', window.cart && window.cart[0] ? window.cart[0].category : null
+    );
+    console.trace('[SAVE-DEBUG] çağrıldığı yer:');
+    // ================================================================
+
   window.directionsPolylines = window.directionsPolylines || {};
   if (delayMs && delayMs > 0) {
     await new Promise(res => setTimeout(res, delayMs));
