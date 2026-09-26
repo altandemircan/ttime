@@ -659,9 +659,8 @@ suggestionsDiv.innerHTML = "";
 
             setTimeout(() => { window.__programmaticInput = false; }, 300);
 
-            // Süre zaten yazılmışsa (dayMatch bulunduysa) her şey belli demektir,
-            // ekstra bir onay beklemeden direkt gönder.
-            if (dayMatch && typeof sendMessage === "function") {
+            // Öneriden bir şehir seçildiği anda direkt gönder.
+            if (typeof sendMessage === "function") {
                 sendMessage();
             }
         };
@@ -1336,6 +1335,22 @@ async function sendMessage() {
     let val = input.value.trim();
     if (!val) return;
 
+    // Daha önce "kaç gün?" diye sorduysak, bu mesaj süre cevabı olabilir
+    if (window.__pendingCityForDuration) {
+        const numMatch = val.match(/\d+/);
+        const dayNum = numMatch ? parseInt(numMatch[0], 10) : null;
+        if (dayNum && dayNum >= 1 && dayNum <= 60) {
+            const pendingCity = window.__pendingCityForDuration;
+            window.__pendingCityForDuration = null;
+            input.value = `Plan a ${dayNum}-day trip to ${pendingCity}`;
+            return sendMessage();
+        } else {
+            addMessage("Kaç gün olduğunu anlayamadım, lütfen bir sayı yaz (örn: 3).", "bot-message");
+            input.value = "";
+            return;
+        }
+    }
+
     // ============================================================
     // === 🤖 AI TABANLI INPUT ANALİZİ (regex temizleyicinin yerine) ===
     // ============================================================
@@ -1347,13 +1362,21 @@ async function sendMessage() {
         parsed = null;
     }
 
-    if (!parsed || !parsed.valid || !parsed.city || !parsed.days) {
+    if (!parsed || !parsed.valid || !parsed.city) {
         addMessage("Bunu bir gezi isteği olarak anlayamadım. Örn: \"3 days in Rome\"", "bot-message");
+        return;
+    }
+
+    if (!parsed.days) {
+        window.__pendingCityForDuration = parsed.city;
+        addMessage(`${parsed.city} için kaç günlük bir plan yapayım?`, "bot-message");
+        input.value = "";
         return;
     }
 
         const days = parsed.days;
     const aiCity = parsed.city;
+    
     val = `Plan a ${days}-day trip to ${aiCity}`;
 
         // AI şehri bulduysa, listeden seçilmiş gibi kabul et

@@ -102,10 +102,13 @@ app.post('/api/parse-trip', async (req, res) => {
         }
 
         const systemPrompt = `Kullanıcının serbest metin gezi isteğini analiz et.
-Eğer bu bir şehir gezisi planlama isteğiyse (şehir belli, gün sayısı belirtilmiş veya makul şekilde çıkarılabiliyorsa) SADECE şu JSON formatında cevap ver:
-{"valid": true, "city": "şehir adı", "days": sayı}
-Eğer gezi isteği değilse (hava durumu sorgusu, selam, alakasız soru vs.) veya şehir ya da gün belirsizse:
-{"valid": false}
+SADECE şu JSON formatında cevap ver:
+{"valid": true veya false, "city": "şehir adı" veya null, "days": sayı veya null}
+
+Kurallar:
+- Bu bir şehir gezisi planlama isteği değilse (hava durumu sorgusu, selam, alakasız soru vs.): {"valid": false, "city": null, "days": null}
+- Şehir belirtilmişse "valid": true yap ve "city" alanını doldur — gün sayısı belli olmasa bile.
+- Gün sayısı net belirtilmemişse veya makul şekilde çıkarılamıyorsa "days": null döndür, tahmin/varsayım yapma.
 Başka hiçbir açıklama, markdown işareti ya da ekstra metin ekleme, sadece JSON döndür.`;
 
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
