@@ -648,7 +648,7 @@ suggestionsDiv.innerHTML = "";
                 selectedLocation: finalLocation
             };
 
-            window.selectedLocation = finalLocation;
+                        window.selectedLocation = finalLocation;
             window.selectedLocationLocked = true; 
             window.__locationPickedFromSuggestions = true;
             window.__programmaticInput = true;
@@ -658,6 +658,12 @@ suggestionsDiv.innerHTML = "";
             if (typeof showSuggestionsDiv === "function") showSuggestionsDiv();
 
             setTimeout(() => { window.__programmaticInput = false; }, 300);
+
+            // Süre zaten yazılmışsa (dayMatch bulunduysa) her şey belli demektir,
+            // ekstra bir onay beklemeden direkt gönder.
+            if (dayMatch && typeof sendMessage === "function") {
+                sendMessage();
+            }
         };
 
         suggestionsDiv.appendChild(div);
