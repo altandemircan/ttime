@@ -1354,6 +1354,10 @@ async function sendMessage() {
     if (!window.selectedLocation || window.selectedLocation.city !== aiCity) {
         window.selectedLocation = { city: aiCity, name: aiCity };
     }
+    // local_storage.js'deki save/load ve Auto-Fork mantığı bu değişkene bakıyor,
+    // AI akışında da mutlaka güncellenmesi lazım — yoksa yeni plan eski planın üzerine yazılıyor
+    window.selectedCity = aiCity;
+    }
     // ============================================================
 
     // İlk mesaj
