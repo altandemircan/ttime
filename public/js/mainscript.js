@@ -707,12 +707,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 currentFocus++;
                 addActive(items);
             } else if (e.key === "Enter") {
+                e.preventDefault();
                 // Klavye ile listeden bir şey seçiliyse onu kullan
                 if (currentFocus > -1 && items && items[currentFocus]) {
-                    e.preventDefault();
                     items[currentFocus].click();
+                } else {
+                    // Öneri seçili değilse, serbest yazılan metni gönder
+                    sendMessage();
                 }
-                // Aksi halde serbest metni AI çözecek — engelleme yok
             }
         });
     }
@@ -2374,34 +2376,6 @@ function removeActive(x) {
         x[i].classList.remove("selected-suggestion");
     }
 }
-
-document.addEventListener("DOMContentLoaded", function() {
-    const inp = document.getElementById("user-input");
-    if (inp) {
-        inp.addEventListener("keydown", function(e) {
-            const suggestionsDiv = document.getElementById("suggestions");
-            // Eğer liste gizliyse (boşsa) tuşları dinleme
-            if(!suggestionsDiv || suggestionsDiv.innerHTML.trim() === "") return;
-
-            let items = suggestionsDiv.getElementsByClassName("category-area-option");
-            
-            if (e.key === "ArrowDown") {
-                currentFocus++;
-                addActive(items);
-            } else if (e.key === "ArrowUp") {
-                currentFocus--;
-                addActive(items);
-             } else if (e.key === "Enter") {
-                // Eğer bir öğe seçiliyse (klavye ile), ona tıkla
-                if (currentFocus > -1 && items && items[currentFocus]) {
-                    e.preventDefault(); 
-                    items[currentFocus].click();
-                }
-                // Aksi halde serbest metni AI çözecek — engelleme yok
-            }
-        });
-    }
-});
 
 
    
