@@ -1348,16 +1348,28 @@ async function sendMessage() {
     const aiCity = parsed.city;
     val = `Plan a ${days}-day trip to ${aiCity}`;
 
-    // AI şehri bulduysa, listeden seçilmiş gibi kabul et
+        // AI şehri bulduysa, listeden seçilmiş gibi kabul et
     window.__locationPickedFromSuggestions = true;
     window.selectedLocationLocked = true;
     if (!window.selectedLocation || window.selectedLocation.city !== aiCity) {
         window.selectedLocation = { city: aiCity, name: aiCity };
     }
+
+    // Şehir değiştiyse eski gezinin cart'ını kopar (selectedCity GÜNCELLENMEDEN ÖNCE!)
+    // Bu kontrol selectedCity güncellenmeden önce yapılmazsa Auto-Fork mantığı
+    // eski şehir ile yeni şehri hiçbir zaman farklı göremez ve eski cart temizlenmez.
+    if (window.activeTripKey && window.selectedCity) {
+        const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (normalize(window.selectedCity) !== normalize(aiCity)) {
+            console.log(`[sendMessage] New city ${aiCity}. Detaching from old trip.`);
+            window.activeTripKey = null;
+            window.cart = [];
+        }
+    }
+
     // local_storage.js'deki save/load ve Auto-Fork mantığı bu değişkene bakıyor,
     // AI akışında da mutlaka güncellenmesi lazım — yoksa yeni plan eski planın üzerine yazılıyor
     window.selectedCity = aiCity;
-    }
     // ============================================================
 
     // İlk mesaj
